@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "默认权限配置（最小化）：应用仅通过自定义 Rust 命令（core:default）访问能力；fs/shell/http/dialog/os 插件均未使用，不授予权限。",
+  "windows": ["main"],
+  "permissions": ["core:default"],
+  "remote": {
+    "urls": [
+      "https://*",
+      "http://localhost:*",
+      "http://127.0.0.1:*"
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-electron/
+out/
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Test artifacts
+test-results/
+playwright-report/
+coverage/
+
+# Local model / large data
+model/
+
+# Reasonix workspace state
+.reasonix/attachments/
+.reasonix/reports/
+.reasonix/tasks/
+.reasonix/desktop-topic-*.json
+.reasonix/*.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+*.local

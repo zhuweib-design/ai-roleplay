@@ -1,0 +1,26 @@
+# Tauri 2.0 构建产物
+/target/
+**/*.rs.bk
+*.pdb
+
+# 临时文件
+*.tmp
+*.bak
+
+# IDE 文件
+.vscode/
+.idea/
+
+# 证书与签名（敏感信息）
+*.pfx
+*.pvk
+*.key
+*.crt
+*.pem
+
+# Tauri 自动生成的 schema 文件（开发时由 tauri-build 生成）
+gen/
+
+# 操作系统文件
+.DS_Store
+Thumbs.db

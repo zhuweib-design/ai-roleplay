@@ -1,0 +1,128 @@
+/* ═══════════════════════════════════════════════════════════════
+   responsive.css — 多端响应式适配
+   断点：桌面 >1024 | 平板 768-1024 | 移动 <768
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══ 桌面默认（>1024px）：四栏完整布局 ═══ */
+@media (min-width: 1025px) {
+  .context-panel { display: flex !important; width: 320px !important; }
+  .context-panel.collapsed { width: 0 !important; }
+}
+
+/* ═══ 平板（768-1024px）：上下文面板改为抽屉 ═══ */
+@media (max-width: 1024px) {
+  .character-list { width: 240px !important; }
+
+  .context-panel {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    width: 320px !important;
+    height: 100%;
+    z-index: 50;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+    transform: translateX(100%);
+    transition: transform .3s cubic-bezier(.2,.8,.2,1);
+  }
+  .context-panel.active { transform: translateX(0); }
+}
+
+/* ═══ 移动端（<768px）：单栏 + 抽屉式侧栏 ═══ */
+@media (max-width: 767px) {
+  .app-shell {
+    position: relative;
+  }
+
+  /* 主内容区在底部 Tab 上方，预留 64px 避免被遮挡 */
+  .app-main {
+    padding-bottom: 64px;
+  }
+
+  /* 导航栏 -> 底部 Tab */
+  .nav-rail {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100% !important;
+    height: 64px;
+    flex-direction: row !important;
+    justify-content: space-around;
+    padding: 8px 0;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    z-index: 30;
+  }
+  .nav-item {
+    height: 48px;
+    border-left: none !important;
+    border-bottom: 3px solid transparent;
+    flex: 1;
+    margin-top: 0;
+  }
+  .nav-item.active {
+    border-left: none !important;
+    border-bottom: 3px solid var(--secondary);
+  }
+  .nav-item.settings { margin-top: 0; }
+  .nav-label { font-size: 10px; }
+
+  /* 角色列表 -> 左侧抽屉 */
+  .character-list {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 280px !important;
+    height: 100%;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform .3s cubic-bezier(.2,.8,.2,1);
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.4);
+  }
+  .character-list.active { transform: translateX(0); }
+
+  /* 上下文面板 -> 右侧抽屉 */
+  .context-panel {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    width: 320px !important;
+    height: 100%;
+    z-index: 50;
+    transform: translateX(100%);
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+  }
+  .context-panel.active { transform: translateX(0); }
+
+  .mobile-menu-btn { display: inline-flex !important; }
+  .desktop-only { display: none !important; }
+
+  .msg-bubble { max-width: min(88%, 40em) !important; }
+
+  .chat-footer { padding: 8px 12px 12px !important; }
+  .chat-composer { padding: 10px 10px 8px !important; border-radius: var(--radius-lg) !important; }
+  .chat-input { font-size: 16px !important; min-height: 48px !important; max-height: 160px !important; }
+  .composer-btn { width: 30px !important; height: 30px !important; }
+  .send-btn-primary { width: 30px !important; height: 30px !important; }
+  .model-badge,
+  .chat-token { display: none !important; }
+
+  .chat-header { padding: 0 8px !important; }
+}
+
+/* ═══ 极小屏（<380px） ═══ */
+@media (max-width: 380px) {
+  .character-list { width: 240px !important; }
+  .context-panel { width: 280px !important; }
+  .msg-bubble { max-width: min(92%, 40em) !important; }
+}
+
+/* 桌面隐藏移动菜单按钮 */
+.mobile-menu-btn { display: none; }
+
+/* 横屏移动端 */
+@media (max-height: 480px) and (orientation: landscape) and (max-width: 900px) {
+  .nav-rail { height: 56px !important; }
+  .chat-main { padding-bottom: 56px; }
+}

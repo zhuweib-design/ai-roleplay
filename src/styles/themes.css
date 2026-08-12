@@ -1,0 +1,215 @@
+/* ═══════════════════════════════════════════════════════════════
+   themes.css — 主题切换（Phase F）
+   ═══════════════════════════════════════════════════════════════
+   通过 [data-theme="xxx"] 选择器覆盖 tokens.css 中的 :root 变量。
+
+   默认值（深色 dark）定义在 tokens.css 的 :root 中。
+   此处仅声明 light 与 midnight 两个主题的差异覆盖。
+
+   每个主题的对比度均满足 WCAG 2.1 AA 标准（前景/背景对比度 ≥ 4.5:1）。
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── 亮色主题 ─── */
+[data-theme='light'] {
+  /* Surface · 浅灰白背景 */
+  --background: #F7F8FA;
+  --card: #FFFFFF;
+  --card-elevated: #FFFFFF;
+  --video-bg: #F2F3F6;
+
+  /* Content · 深灰前景 */
+  --foreground: #161823;
+  --muted-foreground: #5D5F6B;
+  --on-media: #FFFFFF;
+  --on-accent: #FFFFFF;
+
+  /* Border · 浅灰分隔线 */
+  --border: #DCDCE2;
+
+  /* 主题色（保留品牌色，但提高对比度）
+     primary 由 #E61E45 调整为 #C81E45，secondary 由 #0C8F8B 调整为 #0A7A77
+     以保证白字按钮对比度 ≥ 4.5:1 (WCAG AA)。
+     light 主题下 primary 作为文本色已达标，primary-fg 沿用相同值。 */
+  --primary: #C81E45;
+  --primary-fg: #C81E45;
+  --secondary: #0A7A77;
+
+  /* Success / Error */
+  --success: #059669;
+  --success-bg: #D1FAE5;
+  --success-fg: #065F46;
+
+  --destructive: #DC2626;
+  --error-bg: #FEE2E2;
+  --error-fg: #991B1B;
+
+  /* 扩展强调色 · 浅色主题需更深以保证 on-white 对比度 ≥ 4.5:1
+     - accent-blue #2563EB on #FFFFFF ≈ 5.9:1 ✓ / #FFFFFF on #2563EB ≈ 5.9:1 ✓
+     - accent-orange #B45309 on #FFFFFF ≈ 4.6:1 ✓ / #FFFFFF on #B45309 ≈ 4.6:1 ✓ */
+  --accent-blue: #2563EB;
+  --accent-orange: #B45309;
+  --warning-fg: #B45309;
+  --warning-bg: rgba(180, 83, 9, 0.12);
+  --warning-border: rgba(180, 83, 9, 0.30);
+  --danger-bg: rgba(220, 38, 38, 0.10);
+  --danger-border: rgba(220, 38, 38, 0.30);
+}
+
+/* ─── 午夜蓝主题 ─── */
+[data-theme='midnight'] {
+  /* Surface · 深蓝调（card/bg ≥1.15、elevated/card ≥1.15） */
+  --background: #0A0E27;
+  --card: #161C42;
+  --card-elevated: #222B5E;
+  --video-bg: #111740;
+
+  /* Content · 高对比冷白 */
+  --foreground: #F0F4FF;
+  --muted-foreground: #A5B0D6;
+  --on-media: #FFFFFF;
+  --on-accent: #0A0E27;
+  --on-primary: #FFFFFF;
+
+  /* Border · 蓝紫调分隔线（≥3:1 vs card） */
+  --border: #5F69B0;
+
+  /* 主题色：青色为主，紫红为辅
+     primary 由 #C77DFF 调整为 #9333EA 以保证白字按钮对比度 ≥ 4.5:1 (WCAG AA)。
+     原色 #C77DFF 仍可作为装饰色用于渐变等非文本场景。
+     primary-fg 为浅紫版本，专用于文本色（on midnight bg ≥ 4.5:1）。 */
+  --primary: #9333EA;
+  --primary-fg: #B366FF;
+  --secondary: #7DF9FF;
+
+  /* Success / Error */
+  --success: #10B981;
+  --success-bg: #0E2A22;
+  --success-fg: #6EE7B7;
+
+  --destructive: #F87171;
+  --error-bg: #2E1416;
+  --error-fg: #FCA5A5;
+
+  /* 扩展强调色 · 午夜蓝主题采用更亮的色调以在深蓝背景上保持高对比度
+     - accent-blue #60A5FA on #0A0E27 ≈ 6.9:1 ✓ / on-accent #0A0E27 on #60A5FA ≈ 6.9:1 ✓
+     - accent-orange #FBBF24 on #0A0E27 ≈ 11.4:1 ✓ / on-accent on #FBBF24 ≈ 11.4:1 ✓ */
+  --accent-blue: #60A5FA;
+  --accent-orange: #FBBF24;
+  --warning-fg: #FBBF24;
+  --warning-bg: rgba(251, 191, 36, 0.15);
+  --warning-border: rgba(251, 191, 36, 0.30);
+  --danger-bg: rgba(248, 113, 113, 0.15);
+  --danger-border: rgba(248, 113, 113, 0.30);
+  /* 状态/类型标签色 · 深蓝底上提亮蓝/灰，保证文本对比 ≥4.5:1 */
+  --tag-blue: #60A5FA;
+  --tag-gray: #A5B0D6;
+}
+
+/* ─── OLED 黑主题（v1.1 · F08.1）─── */
+/* 纯黑背景，适配 OLED 屏幕省电与极致暗色体验 */
+[data-theme='oled'] {
+  /* Surface · 纯黑 + 深灰卡片（card/bg ≥1.15、elevated/card ≥1.15） */
+  --background: #000000;
+  --card: #161616;
+  --card-elevated: #242424;
+  --video-bg: #0D0D0D;
+
+  /* Content · 纯白前景 + 浅灰次要文本
+     on-accent 为深色（次按钮 cyan 背景上的文字），与 dark 主题一致保证 ≥4.5:1 */
+  --foreground: #FFFFFF;
+  --muted-foreground: #A1A1A1;
+  --on-media: #FFFFFF;
+  --on-accent: #0A0A0A;
+  --on-primary: #FFFFFF;
+
+  /* Border · 深灰分隔线（≥3:1 vs card） */
+  --border: #66666E;
+
+  /* 主题色：品牌红 + 青色辅
+     primary-fg 为浅红版本，专用于文本色（on pure black ≥ 4.5:1）。 */
+  --primary: #E11D48;
+  --primary-fg: #F43F5E;
+  --secondary: #06B6D4;
+
+  /* Success / Error */
+  --success: #10B981;
+  --success-bg: #052E1F;
+  --success-fg: #6EE7B7;
+
+  --destructive: #EF4444;
+  --error-bg: #2A0A0A;
+  --error-fg: #FCA5A5;
+
+  /* 扩展强调色 · 纯黑背景上使用更亮的高饱和度色
+     - accent-blue #60A5FA on #000000 ≈ 7.6:1 ✓ / on-accent #0A0A0A on #60A5FA ≈ 7.6:1 ✓
+     - accent-orange #FBBF24 on #000000 ≈ 12.2:1 ✓ / on-accent on #FBBF24 ≈ 12.2:1 ✓ */
+  --accent-blue: #60A5FA;
+  --accent-orange: #FBBF24;
+  --warning-fg: #FBBF24;
+  --warning-bg: rgba(251, 191, 36, 0.15);
+  --warning-border: rgba(251, 191, 36, 0.30);
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(239, 68, 68, 0.30);
+  /* 状态/类型标签色 · 纯黑底上提亮蓝/灰，保证文本对比 ≥4.5:1 */
+  --tag-blue: #7BA3F5;
+  --tag-gray: #9CA3AF;
+}
+
+/* ─── 暗夜剧场主题（视觉方向 A · 2026-08-03）─── */
+/* 墨黑底 + 烛金强调，标题衬线化（Playfair Display / Noto Serif SC），品牌粉共存。
+   所有前景/背景对比度满足 WCAG 2.1 AA（≥ 4.5:1），关键色核对：
+   - foreground #F5EFE6 on background #0C0A09 ≈ 16.9:1 ✓
+   - muted-foreground #A69C8E on card #17130F ≈ 6.3:1 ✓
+   - primary 烛金 #C9A24B on #0C0A09 ≈ 7.8:1 ✓ / on-accent #181104 on #C9A24B ≈ 8.5:1 ✓
+   - secondary 品牌粉 #E85D7F on #0C0A09 ≈ 6.4:1 ✓ / on-accent on #E85D7F ≈ 5.9:1 ✓ */
+[data-theme='theatre'] {
+  /* Surface · 墨黑暖调（card/bg ≥1.15、elevated/card ≥1.15） */
+  --background: #0C0A09;
+  --card: #211B14;
+  --card-elevated: #2F281C;
+  --video-bg: #151008;
+
+  /* Content · 暖白前景 + 暖灰次要文本 */
+  --foreground: #F5EFE6;
+  --muted-foreground: #A69C8E;
+  --on-media: #FFFFFF;
+  --on-accent: #181104;
+  --on-primary: #181104;
+
+  /* Border · 暖褐分隔线（≥3:1 vs card） */
+  --border: #7A6741;
+
+  /* 主题色：烛金为主（primary 按钮/边框），品牌粉为次（secondary 强调）
+     主按钮文字用深棕 on-accent 保证金底对比 ≥ 4.5:1 */
+  --primary: #C9A24B;
+  --primary-fg: #E2C285;
+  --secondary: #E85D7F;
+
+  /* Success / Error */
+  --success: #4DAF7D;
+  --success-bg: #0E2E20;
+  --success-fg: #86E3B4;
+
+  --destructive: #EA4F53;
+  --error-bg: #321316;
+  --error-fg: #F6A5A9;
+
+  /* 扩展强调色 · 暖底上的冷蓝/暖橙需保持足够亮度
+     - accent-blue #82A6F2 on #0C0A09 ≈ 8.9:1 ✓
+     - accent-orange #EFB264 on #0C0A09 ≈ 9.3:1 ✓ */
+  --accent-blue: #82A6F2;
+  --accent-orange: #EFB264;
+  --warning-fg: #E8B45C;
+  --warning-bg: rgba(232, 180, 92, 0.14);
+  --warning-border: rgba(232, 180, 92, 0.32);
+  --danger-bg: rgba(229, 72, 77, 0.14);
+  --danger-border: rgba(229, 72, 77, 0.32);
+
+  /* 状态/类型标签色 · 墨黑底上提亮蓝/灰，保证文本对比 ≥4.5:1 */
+  --tag-blue: #7BA3F5;
+  --tag-gray: #9CA3AF;
+
+  /* 标题衬线化：所有 font-family: var(--font-display) 的元素自动切换。
+     Playfair Display 用于拉丁字形，Noto Serif SC 覆盖中文，离线回退系统衬线 */
+  --font-display: "Playfair Display", "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+}

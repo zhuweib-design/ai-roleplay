@@ -1,0 +1,140 @@
+/* ═══════════════════════════════════════════════════════════════
+   base.css — 基础样式与工具类
+   ═══════════════════════════════════════════════════════════════ */
+
+* { box-sizing: border-box; }
+
+/* 视觉隐藏类：仅供屏幕阅读器读取（无障碍） */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  font: 400 14px/1.6 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app { height: 100%; }
+
+button { font-family: inherit; }
+
+/* 滚动条 */
+.tk-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.tk-scroll::-webkit-scrollbar-track { background: transparent; }
+.tk-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-pill); }
+.tk-scroll::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--foreground) 30%, var(--border)); }
+.tk-scroll { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* 图标 mask 基础 */
+[data-icon] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: currentColor;
+}
+
+/* 动画 */
+@keyframes msg-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.msg-enter { animation: msg-enter 0.25s ease-out; }
+
+@keyframes pulse-dot { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+.gen-dot .dot { animation: pulse-dot 1.2s ease-in-out infinite; }
+
+/* 悬停工具类 */
+.hover-surface { transition: background-color .15s ease, color .15s ease, border-color .15s ease, filter .15s ease; }
+.hover-surface:hover { background: color-mix(in srgb, var(--foreground) 6%, transparent); }
+.hover-fg { transition: color .15s ease; }
+.hover-fg:hover { color: var(--foreground); }
+.hover-cyan { transition: color .15s ease, border-color .15s ease; }
+.hover-cyan:hover { color: var(--secondary); border-color: var(--secondary); }
+.hover-red { transition: color .15s ease; }
+.hover-red:hover { color: var(--primary); }
+.hover-bright { transition: filter .15s ease; }
+.hover-bright:hover { filter: brightness(1.12); }
+
+/* 输入框焦点：边框变色 + 外发光环（深色主题清晰可见，WCAG 2.4.7）
+   注意：不设 outline:none —— 由下方全局 :focus-visible outline(var(--ring)) 兜底，
+   保证键盘焦点指示对比度 ≥3:1（P2-4） */
+.tk-input:focus, textarea:focus, input[type="text"]:focus, select:focus,
+.tk-input:focus-visible, textarea:focus-visible, input[type="text"]:focus-visible, select:focus-visible {
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--secondary) 22%, transparent);
+}
+
+/* 全局键盘焦点兜底：无自定义焦点样式的交互元素给出可见焦点环 */
+:where(a, button, [role='button'], input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* 开关 */
+.switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch .slider { position: absolute; cursor: pointer; inset: 0; background: var(--border); border-radius: var(--radius-pill); transition: background-color .2s ease; }
+.switch .slider::before { content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: var(--on-media); border-radius: 50%; transition: transform .2s cubic-bezier(.2,.8,.2,1), background-color .2s ease; }
+.switch input:checked + .slider { background: var(--secondary); }
+.switch input:checked + .slider::before { transform: translateX(16px); background: var(--on-accent); }
+.switch input:focus-visible + .slider { outline: 2px solid var(--secondary); outline-offset: 2px; }
+
+/* 滑块 */
+.tk-range { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: var(--radius-pill); background: var(--border); outline: none; accent-color: var(--secondary); }
+.tk-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--secondary); cursor: pointer; border: 2px solid var(--card); }
+.tk-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--secondary); cursor: pointer; border: 2px solid var(--card); }
+.tk-range:focus-visible { outline: 2px solid var(--secondary); outline-offset: 4px; }
+
+/* 移动端遮罩 */
+.overlay-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .25s ease, visibility .25s ease;
+  z-index: 40;
+}
+.overlay-mask.active { opacity: 1; visibility: visible; }
+
+/* 移动端抽屉通用 */
+.drawer { transform: translateX(-100%); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.drawer.right { transform: translateX(100%); }
+.drawer.active { transform: translateX(0); }
+
+/* 减少动效偏好（WCAG 2.3.3）
+   - 兜底通用规则：将所有 transition/animation 时长降至接近 0，
+     保留滚动行为与可见性切换，避免"瞬间消失"的不良体验。
+   - 显式覆盖关键组件类，确保跨主题一致。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* 显式禁用循环动画（避免 0.01ms 仍触发的边缘情况） */
+  .msg-enter, .gen-dot .dot { animation: none !important; }
+}

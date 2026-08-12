@@ -1,0 +1,72 @@
+# AI Roleplay Tauri 2.0 原生后端 (Phase H)
+#
+# 本 crate 提供：
+# 1. 原生窗口宿主（WebView2）
+# 2. 本地文件系统存储（替代 IndexedDB）
+# 3. Rust reqwest SSE 流式 API 调用（替代浏览器 fetch）
+#
+# 编译要求：
+# - Rust stable 1.75+（推荐通过 rustup 安装）
+# - Windows: MSVC C++ Build Tools（VS 2022 BuildTools + VCTools workload）
+# - WebView2 Runtime（Windows 10/11 自带）
+
+[package]
+name = "ai-roleplay"
+version = "0.1.0"
+description = "AI 角色扮演与多模型对话平台 — 桌面应用"
+authors = ["AI Roleplay Team"]
+edition = "2021"
+rust-version = "1.75"
+
+# 库定义：Tauri 2.0 推荐 lib + main 双入口结构
+[lib]
+name = "ai_roleplay_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+# ── Tauri 核心 ──
+tauri = { version = "2.0", features = ["devtools"] }
+tauri-plugin-fs = "2.0"
+tauri-plugin-dialog = "2.0"
+tauri-plugin-shell = "2.0"
+tauri-plugin-http = "2.0"
+tauri-plugin-os = "2.0"
+
+# ── 序列化 ──
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# ── 异步运行时 ──
+tokio = { version = "1.40", features = ["full"] }
+tokio-stream = "0.1"
+futures-util = "0.3"
+
+# ── HTTP 客户端（用于 SSE 流式调用）──
+reqwest = { version = "0.12", features = [
+    "json",
+    "stream",
+    "rustls-tls",
+], default-features = false }
+
+# ── 日志 ──
+log = "0.4"
+env_logger = "0.11"
+
+# ── 工具 ──
+anyhow = "1.0"
+thiserror = "1.0"
+dirs = "5.0"
+
+[dev-dependencies]
+tempfile = "3.10"
+
+[profile.release]
+# 生产构建优化
+opt-level = "s"     # 体积优先（s = size, z = more aggressive）
+lto = true          # 链接时优化
+codegen-units = 1   # 单元编译（更慢但更优）
+strip = true        # 剥离调试符号
+panic = "abort"     # panic 时直接终止（减小体积）
