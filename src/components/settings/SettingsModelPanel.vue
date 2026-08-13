@@ -16,6 +16,7 @@ import type { ModelSize } from '@/core/local-model-engine';
 import Icon from '@/components/common/Icon.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
+import { t } from '@/i18n';
 
 const settings = useSettingsStore();
 const chatStore = useChatStore();
@@ -48,33 +49,33 @@ const modelMgmtTab = ref<'cloud' | 'local'>('cloud');
 /** 本地模型状态文案 */
 function localModelStatusLabel(id: string): string {
   const status = localModelStore.modelStatuses.get(id);
-  if (status === 'loading' || status === 'downloading') return '加载中…';
-  if (status === 'loaded') return '已加载';
-  if (status === 'error') return '加载失败';
-  return '未加载';
+  if (status === 'loading' || status === 'downloading') return t('modelPanel.statusLoading');
+  if (status === 'loaded') return t('modelPanel.statusLoaded');
+  if (status === 'error') return t('modelPanel.statusError');
+  return t('modelPanel.statusNotLoaded');
 }
 
 async function handleLoadLocalModel(modelId: string) {
   const ok = await localModelStore.loadModel(modelId);
-  showToast(ok ? 'success' : 'error', ok ? `本地模型已加载：${modelId}` : (localModelStore.lastError ?? '加载失败'));
+  showToast(ok ? 'success' : 'error', ok ? t('modelPanel.localLoaded', { id: modelId }) : (localModelStore.lastError ?? t('modelPanel.loadFailed')));
 }
 
 async function handleUnloadLocalModel() {
   await localModelStore.unloadModel();
-  showToast('info', '本地模型已卸载');
+  showToast('info', t('modelPanel.localUnloaded'));
 }
 
 /** 将本地模型注册为模型配置（provider='local'），供对话页直接选择使用 */
 function addLocalModelAsProfile(modelId: string) {
   const exists = settings.apiProfiles.some((p) => p.provider === 'local' && p.model === modelId);
   if (exists) {
-    showToast('info', '该本地模型已是模型配置');
+    showToast('info', t('modelPanel.alreadyProfile'));
     return;
   }
   const meta = localModelStore.models.find((m) => m.id === modelId);
   const profile: ApiProfile = {
     ...settings.createProfileTemplate(),
-    name: `本地·${meta?.name ?? modelId}`,
+    name: t('modelPanel.localProfilePrefix', { name: meta?.name ?? modelId }),
     provider: 'local',
     baseUrl: '',
     apiKey: '',
@@ -82,21 +83,21 @@ function addLocalModelAsProfile(modelId: string) {
     maxTokens: 4096,
   };
   settings.addApiProfile(profile);
-  showToast('success', `已添加本地模型配置：${profile.name}`);
+  showToast('success', t('modelPanel.profileAdded', { name: profile.name }));
 }
 
 /** 模型规模文案 */
 function sizeLabel(size: ModelSize): string {
-  if (size === 'small') return '小';
-  if (size === 'medium') return '中';
-  return '大';
+  if (size === 'small') return t('modelPanel.sizeSmall');
+  if (size === 'medium') return t('modelPanel.sizeMedium');
+  return t('modelPanel.sizeLarge');
 }
 
 /** 引擎状态文案 */
 const engineStatusText = computed(() => {
-  if (localModelStore.capability === null) return '未检测引擎能力';
-  if (localModelStore.isAvailable) return '引擎可用（WebGPU + WebLLM）';
-  return '引擎不可用';
+  if (localModelStore.capability === null) return t('modelPanel.engineStatusIdle');
+  if (localModelStore.isAvailable) return t('modelPanel.engineStatusOk');
+  return t('modelPanel.engineStatusFail');
 });
 
 /** 引擎状态指示点样式 */
@@ -109,28 +110,28 @@ const engineStatusClass = computed(() => {
 async function detectLocalEngine() {
   await localModelStore.detectCapability();
   if (localModelStore.isAvailable) {
-    showToast('success', '本地推理引擎可用');
+    showToast('success', t('modelPanel.engineDetected'));
   } else {
-    showToast('error', localModelStore.lastError ?? '本地推理引擎不可用');
+    showToast('error', localModelStore.lastError ?? t('modelPanel.engineFail'));
   }
 }
 
 // 表单校验
 const errors = computed<Record<string, string>>(() => {
   const e: Record<string, string> = {};
-  if (!form.value.name.trim()) e.name = '名称为必填项';
+  if (!form.value.name.trim()) e.name = t('modelPanel.nameRequired');
   if (form.value.provider !== 'local') {
-    if (!form.value.baseUrl.trim()) e.baseUrl = 'Base URL 不能为空';
-    else if (!/^https?:\/\//.test(form.value.baseUrl)) e.baseUrl = 'Base URL 必须以 http:// 或 https:// 开头';
+    if (!form.value.baseUrl.trim()) e.baseUrl = t('modelPanel.baseUrlRequired');
+    else if (!/^https?:\/\//.test(form.value.baseUrl)) e.baseUrl = t('modelPanel.baseUrlInvalid');
   }
-  if (!form.value.model.trim()) e.model = '模型名不能为空';
+  if (!form.value.model.trim()) e.model = t('modelPanel.modelRequired');
   // T-16: maxTokens 允许为空(空=供应商默认)
   if (
     form.value.maxTokens !== undefined &&
     form.value.maxTokens !== null &&
     (form.value.maxTokens < 1 || form.value.maxTokens > 32768)
   ) {
-    e.maxTokens = 'maxTokens 范围 1 ~ 32768(留空使用供应商默认)';
+    e.maxTokens = t('modelPanel.maxTokensInvalid');
   }
   // apiKey 不强制（部分代理服务无需鉴权）
   return e;
@@ -165,7 +166,7 @@ watch(
 /** 用当前表单值请求 /models，获取可选模型列表 */
 async function fetchModelList(): Promise<void> {
   if (hasErrors.value) {
-    showToast('error', '请先修正表单错误');
+    showToast('error', t('modelPanel.fixErrors'));
     return;
   }
   fetchingModels.value = true;
@@ -176,7 +177,7 @@ async function fetchModelList(): Promise<void> {
     modelOptions.value = models;
     modelListResult.value = {
       ok: true,
-      message: models.length ? `获取到 ${models.length} 个模型，可直接选择` : '该服务未返回模型列表，请手动输入',
+      message: models.length ? t('modelPanel.modelsFetched', { count: models.length }) : t('modelPanel.modelsEmpty'),
     };
   } catch (err) {
     modelOptions.value = [];
@@ -206,13 +207,13 @@ function buildTestHints(err: unknown): string[] {
       host === '::1' ||
       /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host);
     if (isLocal) {
-      hints.push('检测到本地/内网地址：开发模式已自动走代理绕过 CORS，请确认模型服务已启动且 IP/端口正确');
-      hints.push('本地模型建议使用桌面版（原生网络栈，无 CORS 限制）；也可为服务端开启 CORS（如 Ollama 设 OLLAMA_ORIGINS=*）');
+      hints.push(t('modelPanel.hintLocal'));
+      hints.push(t('modelPanel.hintLocal2'));
     } else {
-      hints.push('请检查 API 地址与 Key 是否正确，且服务商允许浏览器跨域（CORS）访问');
+      hints.push(t('modelPanel.hintRemote'));
     }
     if (url.protocol === 'http:' && window.location.protocol === 'https:') {
-      hints.push('HTTPS 页面会拦截对 HTTP 地址的请求（混合内容），请改用 HTTPS 地址或本地环境');
+      hints.push(t('modelPanel.hintMixed'));
     }
   } catch {
     // baseUrl 无法解析，保留通用提示
@@ -223,7 +224,7 @@ function buildTestHints(err: unknown): string[] {
 /** 用当前表单值发起最小请求，验证 url + key 可用性 */
 async function testConnection(): Promise<void> {
   if (hasErrors.value) {
-    showToast('error', '请先修正表单错误');
+    showToast('error', t('modelPanel.fixErrors'));
     return;
   }
   testing.value = true;
@@ -237,7 +238,7 @@ async function testConnection(): Promise<void> {
     });
     testResult.value = {
       ok: true,
-      message: `连接成功${content ? `，响应：${content.slice(0, 40)}` : ''}`,
+      message: t('modelPanel.testOk', { response: content ? t('modelPanel.testOkSuffix', { content: content.slice(0, 40) }) : '' }),
     };
   } catch (err) {
     testResult.value = {
@@ -252,11 +253,11 @@ async function testConnection(): Promise<void> {
 
 // provider 选项
 const providerOptions: Array<{ value: 'openai' | 'anthropic' | 'custom' | 'deepseek' | 'local'; label: string; defaultBaseUrl: string }> = [
-  { value: 'openai', label: 'OpenAI 兼容', defaultBaseUrl: 'https://api.openai.com' },
-  { value: 'deepseek', label: 'DeepSeek', defaultBaseUrl: 'https://api.deepseek.com' },
-  { value: 'anthropic', label: 'Anthropic', defaultBaseUrl: 'https://api.anthropic.com' },
-  { value: 'custom', label: '自定义', defaultBaseUrl: '' },
-  { value: 'local', label: '本地模型（WebLLM）', defaultBaseUrl: '' },
+  { value: 'openai', label: t('modelPanel.providerOpenai'), defaultBaseUrl: 'https://api.openai.com' },
+  { value: 'deepseek', label: t('modelPanel.providerDeepseek'), defaultBaseUrl: 'https://api.deepseek.com' },
+  { value: 'anthropic', label: t('modelPanel.providerAnthropic'), defaultBaseUrl: 'https://api.anthropic.com' },
+  { value: 'custom', label: t('modelPanel.providerCustom'), defaultBaseUrl: '' },
+  { value: 'local', label: t('modelPanel.providerLocal'), defaultBaseUrl: '' },
 ];
 
 function resetForm() {
@@ -305,7 +306,7 @@ function onProviderChange() {
 
 function saveProfile() {
   if (hasErrors.value) {
-    showToast('error', '请修正表单中的错误');
+    showToast('error', t('modelPanel.fixFormErrors'));
     return;
   }
   const payload: ApiProfile = {
@@ -321,14 +322,14 @@ function saveProfile() {
   };
   if (editMode.value === 'create') {
     settings.addApiProfile(payload);
-    showToast('success', `已创建 API 配置：${payload.name}`);
+    showToast('success', t('modelPanel.profileCreated', { name: payload.name }));
   } else {
     settings.updateApiProfile(payload.id, payload);
     // 若更新的是当前激活 profile，同步注入到 chat store
     if (settings.activeApiProfileId === payload.id) {
       chatStore.setApiProfile(payload);
     }
-    showToast('success', `已更新 API 配置：${payload.name}`);
+    showToast('success', t('modelPanel.profileUpdated', { name: payload.name }));
   }
   editModalOpen.value = false;
 }
@@ -349,19 +350,19 @@ function executeDelete() {
   }
   deleteModalOpen.value = false;
   deleteTarget.value = null;
-  showToast('success', `已删除 API 配置：${name}`);
+  showToast('success', t('modelPanel.profileDeleted', { name }));
 }
 
 function activateProfile(profile: ApiProfile) {
   settings.setActiveApiProfile(profile.id);
   chatStore.setApiProfile(profile);
-  showToast('success', `已切换激活 API 配置：${profile.name}`);
+  showToast('success', t('modelPanel.profileActivated', { name: profile.name }));
 }
 
 function deactivateProfile() {
   settings.setActiveApiProfile(null);
   chatStore.setApiProfile(null);
-  showToast('info', '已停用 API Profile（生成将不可用）');
+  showToast('info', t('modelPanel.profileDeactivated'));
 }
 
 // ── 需求3：模型分类管理 ──
@@ -391,7 +392,7 @@ function getPrimaryId(category: ModelCategory): string | null {
 /** 设置某分类的主模型 */
 function handleSetPrimary(profile: ApiProfile, category: ModelCategory): void {
   settings.setPrimaryModel(profile.id, category);
-  showToast('success', `已将「${profile.name}」设为${MODEL_CATEGORIES.find((c) => c.value === category)?.label}主模型`);
+  showToast('success', t('modelPanel.setPrimaryDone', { name: profile.name, category: MODEL_CATEGORIES.find((c) => c.value === category)?.label ?? '' }));
 }
 
 const showApiKey = ref(false);
@@ -421,22 +422,22 @@ watch(
       <header class="section-header">
         <h2 id="model-mgmt-title" class="section-title">
           <Icon name="cpu" :size="16" />
-          <span>模型管理</span>
+          <span>{{ t('modelPanel.title') }}</span>
         </h2>
         <button
           v-if="modelMgmtTab === 'cloud'"
           type="button"
           class="add-btn"
-          aria-label="新增模型配置"
+          :aria-label="t('modelPanel.newAria')"
           @click="openCreateModal"
         >
           <Icon name="plus" :size="14" />
-          <span>新增</span>
+          <span>{{ t('modelPanel.new') }}</span>
         </button>
       </header>
 
       <!-- 云端 / 本地 切换（第9条：统一管理） -->
-      <div class="bg-source-tabs model-mgmt-tabs" role="tablist" aria-label="模型管理范围">
+      <div class="bg-source-tabs model-mgmt-tabs" role="tablist" :aria-label="t('modelPanel.tabsAria')">
         <button
           type="button"
           class="bg-source-tab"
@@ -444,7 +445,7 @@ watch(
           :aria-selected="modelMgmtTab === 'cloud'"
           :class="{ active: modelMgmtTab === 'cloud' }"
           @click="modelMgmtTab = 'cloud'"
-        >云端模型</button>
+        >{{ t('modelPanel.tabCloud') }}</button>
         <button
           type="button"
           class="bg-source-tab"
@@ -452,13 +453,13 @@ watch(
           :aria-selected="modelMgmtTab === 'local'"
           :class="{ active: modelMgmtTab === 'local' }"
           @click="modelMgmtTab = 'local'"
-        >本地模型</button>
+        >{{ t('modelPanel.tabLocal') }}</button>
       </div>
 
       <!-- 云端：按分类分组 + 主模型设置 -->
       <template v-if="modelMgmtTab === 'cloud'">
         <p class="section-hint">
-          按分类管理所有 API 模型，每分类可设置一个主模型供调用使用。
+          {{ t('modelPanel.cloudHint') }}
         </p>
 
         <div
@@ -486,8 +487,8 @@ watch(
                   <span
                     v-if="getPrimaryId(cat.value) === profile.id"
                     class="primary-badge"
-                    aria-label="主模型"
-                  >主模型</span>
+                    :aria-label="t('modelPanel.primaryBadge')"
+                  >{{ t('modelPanel.primaryBadge') }}</span>
                   <span class="provider-badge" :data-provider="profile.provider">
                     {{ profile.provider }}
                   </span>
@@ -501,27 +502,27 @@ watch(
                   v-if="getPrimaryId(cat.value) !== profile.id"
                   type="button"
                   class="action-btn set-primary"
-                  :aria-label="`将 ${profile.name} 设为${cat.label}主模型`"
+                  :aria-label="t('modelPanel.setPrimaryAria', { name: profile.name, category: cat.label })"
                   @click="handleSetPrimary(profile, cat.value)"
                 >
                   <Icon name="star" :size="12" />
-                  <span>设为主模型</span>
+                  <span>{{ t('modelPanel.setPrimary') }}</span>
                 </button>
-                <span v-else class="primary-mark" aria-label="当前主模型">
+                <span v-else class="primary-mark" :aria-label="t('modelPanel.currentPrimary')">
                   <Icon name="check" :size="12" />
-                  <span>当前主模型</span>
+                  <span>{{ t('modelPanel.currentPrimary') }}</span>
                 </span>
               </div>
             </li>
           </ul>
-          <p v-else class="empty-hint">该分类暂无模型，点击「新增」添加。</p>
+          <p v-else class="empty-hint">{{ t('modelPanel.emptyCategory') }}</p>
         </div>
       </template>
 
       <!-- 本地：WebLLM 本地模型管理 -->
       <template v-else>
         <p class="section-hint">
-          本地模型由浏览器内 WebLLM 推理引擎驱动（需 WebGPU），下载后点击「添加到配置」即可在对话页直接调用，无需 API Key。
+          {{ t('modelPanel.localHint') }}
         </p>
 
         <!-- 引擎能力检测 -->
@@ -536,12 +537,15 @@ watch(
             :disabled="localModelStore.isDetecting"
             @click="detectLocalEngine"
           >
-            {{ localModelStore.isDetecting ? '检测中…' : '检测引擎' }}
+            {{ localModelStore.isDetecting ? t('modelPanel.detecting') : t('modelPanel.detectEngine') }}
           </button>
         </div>
         <p v-if="localModelStore.lastError" class="field-error" role="alert">{{ localModelStore.lastError }}</p>
         <p v-if="localModelStore.capability?.webgpuSupported" class="field-hint">
-          浏览器：{{ localModelStore.capability.browserName }}{{ localModelStore.capability.estimatedVramMb ? ` · 可用显存约 ${localModelStore.capability.estimatedVramMb}MB` : '' }}
+          {{ t('modelPanel.browserInfo', {
+            browser: localModelStore.capability.browserName,
+            vram: localModelStore.capability.estimatedVramMb ? t('modelPanel.vramSuffix', { vram: localModelStore.capability.estimatedVramMb }) : '',
+          }) }}
         </p>
 
         <!-- 本地模型列表 -->
@@ -563,7 +567,7 @@ watch(
               </div>
               <div class="profile-meta">
                 <span class="meta-item"><Icon name="gear" :size="11" /> {{ m.id }}</span>
-                <span class="meta-item">下载 {{ m.downloadSizeMb }}MB · 显存约 {{ m.vramMb }}MB · 上下文 {{ m.contextLength }}tokens</span>
+                <span class="meta-item">{{ t('modelPanel.modelMeta', { download: m.downloadSizeMb, vram: m.vramMb, context: m.contextLength }) }}</span>
               </div>
               <div
                 v-if="localModelStore.isLoading && localModelStore.loadProgress?.modelId === m.id"
@@ -577,7 +581,7 @@ watch(
                   ></div>
                 </div>
                 <span class="progress-text">
-                  {{ Math.round(localModelStore.loadProgress.progress * 100) }}%（{{ localModelStore.loadProgress.phase }}）
+                  {{ t('modelPanel.progressText', { percent: Math.round(localModelStore.loadProgress.progress * 100), phase: localModelStore.loadProgress.phase }) }}
                 </span>
               </div>
             </div>
@@ -587,27 +591,27 @@ watch(
                 type="button"
                 class="action-btn"
                 :disabled="localModelStore.isLoading || !localModelStore.isAvailable"
-                :aria-label="`加载本地模型 ${m.name}`"
+                :aria-label="t('modelPanel.loadAria', { name: m.name })"
                 @click="handleLoadLocalModel(m.id)"
               >
-                <span>{{ localModelStore.isLoading && localModelStore.loadProgress?.modelId === m.id ? '加载中…' : '加载' }}</span>
+                <span>{{ localModelStore.isLoading && localModelStore.loadProgress?.modelId === m.id ? t('modelPanel.loading') : t('modelPanel.load') }}</span>
               </button>
               <button
                 v-else
                 type="button"
                 class="action-btn danger"
-                :aria-label="`卸载本地模型 ${m.name}`"
+                :aria-label="t('modelPanel.unloadAria', { name: m.name })"
                 @click="handleUnloadLocalModel"
               >
-                <span>卸载</span>
+                <span>{{ t('modelPanel.unload') }}</span>
               </button>
               <button
                 type="button"
                 class="action-btn"
-                :aria-label="`将本地模型 ${m.name} 添加到模型配置`"
+                :aria-label="t('modelPanel.addToConfigAria', { name: m.name })"
                 @click="addLocalModelAsProfile(m.id)"
               >
-                <span>添加到配置</span>
+                <span>{{ t('modelPanel.addToConfig') }}</span>
               </button>
             </div>
           </li>
@@ -620,21 +624,21 @@ watch(
       <header class="section-header">
         <h2 id="api-section-title" class="section-title">
           <Icon name="git-branch" :size="16" />
-          <span>API 配置</span>
+          <span>{{ t('modelPanel.apiTitle') }}</span>
         </h2>
         <button
           type="button"
           class="add-btn"
-          aria-label="新增 API 配置"
+          :aria-label="t('modelPanel.apiNewAria')"
           @click="openCreateModal"
         >
           <Icon name="plus" :size="14" />
-          <span>新增</span>
+          <span>{{ t('modelPanel.new') }}</span>
         </button>
       </header>
 
       <p v-if="settings.apiProfiles.length === 0" class="empty-hint">
-        还没有 API 配置，点击「新增」开始添加第一个。
+        {{ t('modelPanel.apiEmpty') }}
       </p>
 
       <ul class="profile-list" role="list">
@@ -650,7 +654,7 @@ watch(
               <span
                 v-if="settings.activeApiProfileId === profile.id"
                 class="active-badge"
-              >激活中</span>
+              >{{ t('modelPanel.activeBadge') }}</span>
               <span class="provider-badge" :data-provider="profile.provider">
                 {{ profile.provider }}
               </span>
@@ -665,39 +669,39 @@ watch(
               v-if="settings.activeApiProfileId !== profile.id"
               type="button"
               class="action-btn activate"
-              aria-label="激活此 API 配置"
+              :aria-label="t('modelPanel.activateAria')"
               @click="activateProfile(profile)"
             >
               <Icon name="check" :size="12" />
-              <span>激活</span>
+              <span>{{ t('modelPanel.activate') }}</span>
             </button>
             <button
               v-else
               type="button"
               class="action-btn deactivate"
-              aria-label="停用当前 API 配置"
+              :aria-label="t('modelPanel.deactivateAria')"
               @click="deactivateProfile"
             >
               <Icon name="stop" :size="12" />
-              <span>停用</span>
+              <span>{{ t('modelPanel.deactivate') }}</span>
             </button>
             <button
               type="button"
               class="action-btn edit"
-              aria-label="编辑 API 配置"
+              :aria-label="t('modelPanel.editAria')"
               @click="openEditModal(profile)"
             >
               <Icon name="pencil" :size="12" />
-              <span>编辑</span>
+              <span>{{ t('modelPanel.edit') }}</span>
             </button>
             <button
               type="button"
               class="action-btn delete"
-              aria-label="删除 API 配置"
+              :aria-label="t('modelPanel.deleteAria')"
               @click="confirmDelete(profile)"
             >
               <Icon name="trash-2" :size="12" />
-              <span>删除</span>
+              <span>{{ t('modelPanel.delete') }}</span>
             </button>
           </div>
         </li>
@@ -706,12 +710,12 @@ watch(
 
     <Modal
       v-model="editModalOpen"
-      :title="editMode === 'create' ? '新增 API 配置' : '编辑 API 配置'"
-      aria-label="API 配置表单"
+      :title="editMode === 'create' ? t('modelPanel.createTitle') : t('modelPanel.editTitle')"
+      :aria-label="t('modelPanel.formAria')"
     >
       <form class="profile-form" novalidate @submit.prevent="saveProfile">
         <div class="form-field">
-          <label for="p-name" class="field-label">名称 <span class="required">*</span></label>
+          <label for="p-name" class="field-label">{{ t('modelPanel.nameLabel') }} <span class="required">*</span></label>
           <input
             id="p-name"
             v-model="form.name"
@@ -720,7 +724,7 @@ watch(
             :class="{ 'has-error': errors.name }"
             :aria-invalid="!!errors.name"
             :aria-describedby="errors.name ? 'err-name' : undefined"
-            placeholder="如：OpenAI 官方"
+            :placeholder="t('modelPanel.namePlaceholder')"
             autocomplete="off"
           />
           <p v-if="errors.name" id="err-name" class="field-error" role="alert">
@@ -730,7 +734,7 @@ watch(
         </div>
 
         <div class="form-field">
-          <label for="p-provider" class="field-label">服务商</label>
+          <label for="p-provider" class="field-label">{{ t('modelPanel.providerLabel') }}</label>
           <select
             id="p-provider"
             v-model="form.provider"
@@ -744,7 +748,7 @@ watch(
         </div>
 
         <div class="form-field">
-          <label for="p-category" class="field-label">模型分类</label>
+          <label for="p-category" class="field-label">{{ t('modelPanel.categoryLabel') }}</label>
           <select
             id="p-category"
             v-model="form.category"
@@ -758,7 +762,7 @@ watch(
         </div>
 
         <div class="form-field">
-          <label for="p-baseurl" class="field-label">Base URL <span class="required">*</span></label>
+          <label for="p-baseurl" class="field-label">{{ t('modelPanel.baseUrlLabel') }} <span class="required">*</span></label>
           <input
             id="p-baseurl"
             v-model="form.baseUrl"
@@ -767,7 +771,7 @@ watch(
             :class="{ 'has-error': errors.baseUrl }"
             :aria-invalid="!!errors.baseUrl"
             :aria-describedby="errors.baseUrl ? 'err-baseurl' : undefined"
-            placeholder="https://api.openai.com"
+            :placeholder="t('modelPanel.baseUrlPlaceholder')"
             autocomplete="off"
           />
           <p v-if="errors.baseUrl" id="err-baseurl" class="field-error" role="alert">
@@ -777,7 +781,7 @@ watch(
         </div>
 
         <div class="form-field">
-          <label for="p-model" class="field-label">模型 <span class="required">*</span></label>
+          <label for="p-model" class="field-label">{{ t('modelPanel.modelLabel') }} <span class="required">*</span></label>
           <input
             id="p-model"
             v-model="form.model"
@@ -806,7 +810,7 @@ watch(
               @click="fetchModelList"
             >
               <Icon name="search" :size="14" />
-              <span>{{ fetchingModels ? '获取中…' : '获取模型列表' }}</span>
+              <span>{{ fetchingModels ? t('modelPanel.fetching') : t('modelPanel.fetchModels') }}</span>
             </button>
             <p
               v-if="modelListResult"
@@ -820,7 +824,7 @@ watch(
         </div>
 
         <div class="form-field">
-          <label for="p-apikey" class="field-label">API Key</label>
+          <label for="p-apikey" class="field-label">{{ t('modelPanel.apiKeyLabel') }}</label>
           <div class="apikey-input-wrap">
             <input
               id="p-apikey"
@@ -833,18 +837,18 @@ watch(
             <button
               type="button"
               class="toggle-visibility"
-              :aria-label="showApiKey ? '隐藏 API Key' : '显示 API Key'"
+              :aria-label="showApiKey ? t('modelPanel.hideApiKey') : t('modelPanel.showApiKey')"
               :aria-pressed="showApiKey"
               @click="showApiKey = !showApiKey"
             >
               <Icon :name="showApiKey ? 'eye' : 'eye'" :size="14" />
             </button>
           </div>
-          <p class="field-hint">部分代理服务可留空；仅存储在本地，不会上传</p>
+          <p class="field-hint">{{ t('modelPanel.apiKeyHint') }}</p>
         </div>
 
         <div class="form-field">
-          <label for="p-maxtok" class="field-label">默认最大 Tokens(可留空)</label>
+          <label for="p-maxtok" class="field-label">{{ t('modelPanel.maxTokensLabel') }}</label>
           <input
             id="p-maxtok"
             v-model.number="form.maxTokens"
@@ -856,13 +860,13 @@ watch(
             :class="{ 'has-error': errors.maxTokens }"
             :aria-invalid="!!errors.maxTokens"
             :aria-describedby="errors.maxTokens ? 'err-maxtok' : undefined"
-            placeholder="留空使用供应商默认"
+            :placeholder="t('modelPanel.maxTokensPlaceholder')"
           />
           <p v-if="errors.maxTokens" id="err-maxtok" class="field-error" role="alert">
             <Icon name="alert-triangle" :size="12" />
             <span>{{ errors.maxTokens }}</span>
           </p>
-          <p class="field-hint">单次回复的最大 Token 数；留空则不传 max_tokens，由供应商默认（角色未单独设置时使用此值）</p>
+          <p class="field-hint">{{ t('modelPanel.maxTokensHint') }}</p>
         </div>
 
         <div class="form-field">
@@ -875,9 +879,9 @@ watch(
               @click="testConnection"
             >
               <Icon name="send" :size="14" />
-              <span>{{ testing ? '测试中…' : '测试连接' }}</span>
+              <span>{{ testing ? t('modelPanel.testing') : t('modelPanel.testConnection') }}</span>
             </button>
-            <p class="field-hint">发送最小请求验证 Base URL 与 Key 是否可用</p>
+            <p class="field-hint">{{ t('modelPanel.testHint') }}</p>
           </div>
           <div
             v-if="testResult"
@@ -907,7 +911,7 @@ watch(
           class="modal-btn modal-cancel"
           @click="editModalOpen = false"
         >
-          取消
+          {{ t('modelPanel.cancel') }}
         </button>
         <button
           type="button"
@@ -917,7 +921,7 @@ watch(
           @click="saveProfile"
         >
           <Icon name="save" :size="14" />
-          <span>{{ editMode === 'create' ? '创建' : '保存' }}</span>
+          <span>{{ editMode === 'create' ? t('modelPanel.create') : t('modelPanel.save') }}</span>
         </button>
       </template>
     </Modal>
@@ -932,27 +936,27 @@ watch(
 
     <Modal
       v-model="deleteModalOpen"
-      title="确认删除"
-      aria-label="删除 API 配置确认"
+      :title="t('modelPanel.deleteTitle')"
+      :aria-label="t('modelPanel.deleteAria2')"
     >
       <p v-if="deleteTarget">
-        确定要删除 API 配置「<strong>{{ deleteTarget.name }}</strong>」吗？
+        {{ t('modelPanel.deleteConfirm', { name: deleteTarget.name }) }}
       </p>
-      <p class="delete-warning">删除后无法恢复，对话中将无法继续生成 AI 回复。</p>
+      <p class="delete-warning">{{ t('modelPanel.deleteWarning') }}</p>
       <template #footer>
         <button
           type="button"
           class="modal-btn modal-cancel"
           @click="deleteModalOpen = false"
         >
-          取消
+          {{ t('modelPanel.cancel') }}
         </button>
         <button
           type="button"
           class="modal-btn modal-confirm"
           @click="executeDelete"
         >
-          删除
+          {{ t('modelPanel.delete') }}
         </button>
       </template>
     </Modal>
