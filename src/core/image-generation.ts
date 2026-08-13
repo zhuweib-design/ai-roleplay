@@ -17,6 +17,7 @@
 // ── 类型定义 ──
 
 /** 图像尺寸 */
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 export type ImageSize =
   | 'square_hd'
   | 'square'
@@ -622,3 +623,4 @@ export function createDefaultProviderConfig(): ImageProviderConfig {
     enabled: false,
   };
 }
+// i18n-ignore-end

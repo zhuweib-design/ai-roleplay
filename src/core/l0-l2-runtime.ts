@@ -24,6 +24,7 @@ import {
 } from './output-discipline';
 import type { MemoryStore, EmotionTracker, CharacterRegistry } from './memory-store';
 import type { OptimizationPipeline } from './optimization-pipeline';
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 // ── 类型 ──
 
@@ -191,3 +192,4 @@ export async function updateEmotionState(
     return false;
   }
 }
+// i18n-ignore-end

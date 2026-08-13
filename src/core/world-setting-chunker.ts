@@ -6,6 +6,7 @@
  * - 返回块结构含 meta.title / meta.chunkIndex,供 DualChannelRetriever.addStatic 直接入库
  */
 import { countTokens } from './token-counter';
+import { t } from '@/i18n';
 
 export interface WorldSettingChunk {
   id: string;
@@ -47,7 +48,7 @@ export function chunkWorldSetting(
   const flush = () => {
     if (current.length === 0) return;
     const index = chunks.length;
-    const titleText = index === 0 ? title : `${title}(续 ${index + 1})`;
+    const titleText = index === 0 ? title : t('chunk.continued', { title, index: index + 1 });
     const body = current.join('\n');
     chunks.push({
       id: `${docId}#${index}`,

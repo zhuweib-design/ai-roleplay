@@ -16,6 +16,9 @@
 import { deriveKey, generateSalt, generateIv } from './api-key-crypto';
 
 /** 备份加密格式版本 */
+import { t } from '@/i18n';
+
+
 const BACKUP_ENC_VERSION = 1;
 /** 密文前缀(与 api-key 密文区分,便于识别与向后兼容) */
 export const BACKUP_ENC_PREFIX = `enc:v${BACKUP_ENC_VERSION}:`;
@@ -65,7 +68,7 @@ interface BackupEncryptedPayload {
  */
 export async function encryptBackup(plainJson: string, masterPassword: string): Promise<string> {
   if (!masterPassword) {
-    throw new Error('主密码为空，无法加密备份');
+    throw new Error(t('crypto.bakMasterPwEmptyEnc'));
   }
 
   const salt = generateSalt();
@@ -102,7 +105,7 @@ export async function decryptBackup(encrypted: string, masterPassword: string): 
     return encrypted;
   }
   if (!masterPassword) {
-    throw new Error('主密码为空，无法解密备份');
+    throw new Error(t('crypto.bakMasterPwEmptyDec'));
   }
 
   const payloadBase64 = encrypted.slice(BACKUP_ENC_PREFIX.length);
@@ -110,11 +113,11 @@ export async function decryptBackup(encrypted: string, masterPassword: string): 
   try {
     payload = JSON.parse(bytesToString(base64ToBytes(payloadBase64))) as BackupEncryptedPayload;
   } catch {
-    throw new Error('备份密文格式损坏');
+    throw new Error(t('crypto.bakCipherCorrupted'));
   }
 
   if (payload.v !== BACKUP_ENC_VERSION) {
-    throw new Error(`不支持的备份密文版本：v${payload.v}`);
+    throw new Error(t('crypto.bakUnsupportedVer', { v: payload.v }));
   }
 
   const key = await deriveKey(masterPassword, base64ToBytes(payload.salt));
@@ -127,7 +130,7 @@ export async function decryptBackup(encrypted: string, masterPassword: string): 
       base64ToBytes(payload.ct)
     );
   } catch {
-    throw new Error('备份解密失败：主密码错误或数据已损坏');
+    throw new Error(t('crypto.bakDecryptFailed'));
   }
 
   return bytesToString(new Uint8Array(plaintextBuffer));

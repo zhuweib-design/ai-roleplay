@@ -40,6 +40,7 @@ import type {
   ExtensionPermissions,
 } from './extension-types';
 import { ExtensionError } from './extension-types';
+import { t } from '@/i18n';
 
 // ── 扩展加载选项 ──
 
@@ -115,19 +116,19 @@ class ExtensionRegistry {
    */
   private validateConfig(config: ExtensionConfig): void {
     if (!config || typeof config !== 'object') {
-      throw new ExtensionError('配置无效：必须为对象', 'INVALID_CONFIG');
+      throw new ExtensionError(t('ext.configMustBeObject'), 'INVALID_CONFIG');
     }
     if (typeof config.name !== 'string' || config.name.trim() === '') {
-      throw new ExtensionError('配置无效：name 必填', 'INVALID_CONFIG');
+      throw new ExtensionError(t('ext.configNameRequired'), 'INVALID_CONFIG');
     }
     if (typeof config.displayName !== 'string' || config.displayName.trim() === '') {
-      throw new ExtensionError('配置无效：displayName 必填', 'INVALID_CONFIG');
+      throw new ExtensionError(t('ext.configDisplayNameRequired'), 'INVALID_CONFIG');
     }
     if (typeof config.version !== 'string' || config.version.trim() === '') {
-      throw new ExtensionError('配置无效：version 必填', 'INVALID_CONFIG');
+      throw new ExtensionError(t('ext.configVersionRequired'), 'INVALID_CONFIG');
     }
     if (!config.capabilities || typeof config.capabilities !== 'object') {
-      throw new ExtensionError('配置无效：capabilities 必填', 'INVALID_CONFIG');
+      throw new ExtensionError(t('ext.configCapsRequired'), 'INVALID_CONFIG');
     }
 
     // 校验注册的扩展点与 capability 一致性
@@ -219,7 +220,7 @@ class ExtensionRegistry {
     if (typeof source !== 'string' || source.trim() === '') {
       return {
         success: false,
-        error: '扩展源码为空',
+        error: t('ext.sourceEmpty'),
         errorCode: 'LOAD_FAILED',
       };
     }
@@ -235,8 +236,8 @@ class ExtensionRegistry {
     const has = (p: keyof ExtensionPermissions) => granted[p] === true;
     const denied = (target: string): (() => never) => () => {
       throw new ExtensionError(
-        `扩展「${capturedName ?? '未知'}」调用了 ${target},但未获得对应权限。` +
-          '请在加载扩展时授予 network/dom 权限',
+        t('ext.missingPermission', { name: capturedName ?? t('ext.unknown'), target }) +
+          t('ext.grantNetworkDom'),
         'CAPABILITY_VIOLATION'
       );
     };
@@ -286,7 +287,7 @@ class ExtensionRegistry {
       if (!capturedName) {
         return {
           success: false,
-          error: '扩展代码未调用 registerExtension',
+          error: t('ext.notRegistered'),
           errorCode: 'LOAD_FAILED',
         };
       }
@@ -307,7 +308,7 @@ class ExtensionRegistry {
       const message =
         err instanceof ExtensionError
           ? err.message
-          : `加载扩展失败：${err instanceof Error ? err.message : String(err)}`;
+          : t('ext.loadFailed', { msg: err instanceof Error ? err.message : String(err) });
       return {
         success: false,
         error: message,
@@ -426,7 +427,7 @@ class ExtensionRegistry {
   ): { success: boolean; message?: string; sendMessage?: string } {
     const cmd = this.getSlashCommands().find((c) => c.name === name);
     if (!cmd) {
-      return { success: false, message: `未知命令：/${name}` };
+      return { success: false, message: t('ext.unknownCommand', { name }) };
     }
     try {
       const result = cmd.execute(args);
@@ -438,7 +439,7 @@ class ExtensionRegistry {
     } catch (err) {
       return {
         success: false,
-        message: `执行 /${name} 失败：${err instanceof Error ? err.message : String(err)}`,
+        message: t('ext.execFailed', { name, msg: err instanceof Error ? err.message : String(err) }),
       };
     }
   }

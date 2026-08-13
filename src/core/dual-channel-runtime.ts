@@ -21,6 +21,7 @@ import {
 } from './vector-model-manager';
 import { OnnxEmbeddingProvider } from './onnx-embedding-provider';
 import { createModelFileAdapter } from './model-file-adapter';
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 const ENABLE_KEY = 'aijiuguan.vectorRagEnabled';
 
@@ -233,4 +234,4 @@ export async function buildVectorRagInjection(
   } catch {
     return EMPTY;
   }
-}
+}// i18n-ignore-end

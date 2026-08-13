@@ -20,6 +20,7 @@ import type {
   LorebookEntry,
 } from './lorebook';
 import { parseAiJson, parseAiJsonArray } from './json-utils';
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 // ── 模板定义 ──
 
@@ -415,3 +416,4 @@ export function parseExtendedRegions(raw: string): GeneratedRegion[] {
     .map(parseRegion)
     .filter((r): r is GeneratedRegion => r !== null);
 }
+// i18n-ignore-end

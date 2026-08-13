@@ -13,6 +13,9 @@
  * - 持久化（由 story store + storage adapter 处理）
  */
 
+import { t } from '@/i18n';
+
+
 import type {
   ProtagonistConfig,
   ProtagonistRelation,
@@ -108,9 +111,9 @@ export function validateProtagonist(
 
   // 名称校验
   if (!config.name || config.name.trim() === '') {
-    errors.push('主角名称不能为空');
+    errors.push(t('proto.nameRequired'));
   } else if (config.name.length > MAX_PROTAGONIST_NAME_LENGTH) {
-    errors.push(`主角名称不能超过 ${MAX_PROTAGONIST_NAME_LENGTH} 字符`);
+    errors.push(t('proto.nameTooLong', { max: MAX_PROTAGONIST_NAME_LENGTH }));
   }
 
   // 描述长度软限制（允许超过但提示）
@@ -119,7 +122,7 @@ export function validateProtagonist(
     config.description.length > MAX_PROTAGONIST_DESCRIPTION_LENGTH * 2
   ) {
     errors.push(
-      `主角描述不应过长（建议 ${MAX_PROTAGONIST_DESCRIPTION_LENGTH} 字符内）`
+      t('proto.descTooLong', { max: MAX_PROTAGONIST_DESCRIPTION_LENGTH })
     );
   }
 
@@ -128,7 +131,7 @@ export function validateProtagonist(
     const exists = story.characters.some((c) => c.name === config.name);
     if (!exists) {
       errors.push(
-        `主角名 "${config.name}" 不在故事人物列表中（source=existing 要求复用原有人物）`
+        t('proto.nameNotInStory', { name: config.name ?? '' })
       );
     }
   }
@@ -138,7 +141,7 @@ export function validateProtagonist(
     const sceneExists = story.scenes.some((s) => s.name === config.startingScene);
     if (!sceneExists) {
       errors.push(
-        `起始场景 "${config.startingScene}" 不在故事场景列表中`
+        t('proto.sceneNotInStory', { scene: config.startingScene })
       );
     }
   }
@@ -146,18 +149,18 @@ export function validateProtagonist(
   // 关系列表校验
   if (config.relations) {
     if (config.relations.length > MAX_RELATIONS_COUNT) {
-      errors.push(`关系条目数不能超过 ${MAX_RELATIONS_COUNT} 个`);
+      errors.push(t('proto.relationsLimit', { max: MAX_RELATIONS_COUNT }));
     }
     for (let i = 0; i < config.relations.length; i++) {
       const rel = config.relations[i];
       if (!rel.target || rel.target.trim() === '') {
-        errors.push(`第 ${i + 1} 条关系：目标人物名不能为空`);
+        errors.push(t('proto.relationTargetRequired', { index: i + 1 }));
       }
       if (!rel.relation || rel.relation.trim() === '') {
-        errors.push(`第 ${i + 1} 条关系：关系描述不能为空`);
+        errors.push(t('proto.relationDescRequired', { index: i + 1 }));
       } else if (rel.relation.length > MAX_RELATION_DESC_LENGTH) {
         errors.push(
-          `第 ${i + 1} 条关系：描述长度不能超过 ${MAX_RELATION_DESC_LENGTH} 字符`
+          t('proto.relationDescTooLong', { index: i + 1, max: MAX_RELATION_DESC_LENGTH })
         );
       }
     }
@@ -187,6 +190,7 @@ export function validateProtagonist(
  * @param config 主角配置
  * @returns 提示词文本（config 为空或未设置时返回空字符串）
  */
+// i18n-ignore-start -- LLM 提示词注入（非 UI 文案）
 export function buildProtagonistPrompt(config: ProtagonistConfig | null | undefined): string {
   if (!config) return '';
 
@@ -216,6 +220,8 @@ export function buildProtagonistPrompt(config: ProtagonistConfig | null | undefi
 
   return lines.join('\n');
 }
+// i18n-ignore-end
+
 
 // ── 关系操作辅助 ──
 

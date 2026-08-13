@@ -22,6 +22,7 @@
  * - 'ratio'：每 N 轮推进一个时间单位（N 由 ratioEvery 配置）
  * - 'manual'：仅通过 /time advance 命令手动推进
  */
+import { t } from '@/i18n';
 export type StoryTimeStrategy = 'realtime' | 'ratio' | 'manual';
 
 /**
@@ -103,13 +104,13 @@ export function createDefaultTimeState(config?: StoryTimeConfig): StoryTimeState
 export function getUnitLabel(unit: StoryTimeUnit, customName?: string): string {
   switch (unit) {
     case 'hour':
-      return '小时';
+      return t('time.hour');
     case 'day':
-      return '天';
+      return t('time.day');
     case 'week':
-      return '周';
+      return t('time.week');
     case 'custom':
-      return customName?.trim() || '单位';
+      return customName?.trim() || t('time.unit');
   }
 }
 
@@ -131,10 +132,10 @@ export function formatStoryTime(
   if (!config || !state) return '';
   if (!config.enabled) return '';
 
-  if (state.currentValue <= 0) return '故事开始前';
+  if (state.currentValue <= 0) return t('time.beforeStart');
 
   const unitLabel = getUnitLabel(config.unit, config.customUnitName);
-  return `第 ${state.currentValue} ${unitLabel}`;
+  return t('time.format', { value: state.currentValue, unit: unitLabel });
 }
 
 // ── 策略判断 ──
@@ -286,10 +287,10 @@ export function buildStoryTimePrompt(
 
   const lines: string[] = [];
   lines.push('[Story Time]');
-  lines.push(`当前故事时间：${formatStoryTime(config, state)}`);
+  lines.push(t('time.current', { time: formatStoryTime(config, state) }));
 
   const strategyLabel = getStrategyLabel(config.strategy);
-  lines.push(`时间推进策略：${strategyLabel}`);
+  lines.push(t('time.strategy', { label: strategyLabel }));
 
   return lines.join('\n');
 }
@@ -300,11 +301,11 @@ export function buildStoryTimePrompt(
 export function getStrategyLabel(strategy: StoryTimeStrategy): string {
   switch (strategy) {
     case 'realtime':
-      return '实时模式（每轮推进）';
+      return t('time.realtime');
     case 'ratio':
-      return '比值模式（每 N 轮推进）';
+      return t('time.ratio');
     case 'manual':
-      return '手动模式（/time advance 推进）';
+      return t('time.manual');
   }
 }
 
@@ -320,18 +321,18 @@ export function validateTimeConfig(
   const errors: string[] = [];
 
   if (config.strategy && !['realtime', 'ratio', 'manual'].includes(config.strategy)) {
-    errors.push(`无效的时间策略：${config.strategy}`);
+    errors.push(t('time.invalidStrategy', { strategy: config.strategy }));
   }
 
   if (config.unit && !['hour', 'day', 'week', 'custom'].includes(config.unit)) {
-    errors.push(`无效的时间单位：${config.unit}`);
+    errors.push(t('time.invalidUnit', { unit: config.unit }));
   }
 
   if (config.unit === 'custom') {
     if (!config.customUnitName || config.customUnitName.trim() === '') {
-      errors.push('自定义单位必须指定名称');
+      errors.push(t('time.customUnitNameRequired'));
     } else if (config.customUnitName.length > MAX_CUSTOM_UNIT_NAME_LENGTH) {
-      errors.push(`自定义单位名不能超过 ${MAX_CUSTOM_UNIT_NAME_LENGTH} 字符`);
+      errors.push(t('time.customUnitNameTooLong', { max: MAX_CUSTOM_UNIT_NAME_LENGTH }));
     }
   }
 
@@ -353,7 +354,7 @@ export function validateTimeConfig(
       config.startValue < 0 ||
       config.startValue > MAX_TIME_VALUE
     ) {
-      errors.push(`起始时间值必须在 0-${MAX_TIME_VALUE} 之间`);
+      errors.push(t('time.startValueRange', { max: MAX_TIME_VALUE }));
     }
   }
 

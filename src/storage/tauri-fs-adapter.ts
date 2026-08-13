@@ -6,6 +6,7 @@ import type { StoryAnalysisResult } from '@core/story-types';
 import type { Chat } from './types';
 import type { AppSettings, Persona } from '@/types';
 import type { StorageAdapter } from './storage-adapter';
+import { t } from '@/i18n';
 
 /**
  * Tauri 文件系统存储适配器 (Phase H3)
@@ -67,7 +68,7 @@ export class TauriFSAdapter implements StorageAdapter {
     // Rust 端在 setup 钩子中已自动创建目录结构（characters / chats / settings / backups）
     // 这里仅做存在性校验，避免 silent failure
     if (!TauriFSAdapter.isTauriEnv()) {
-      throw new Error('当前非 Tauri 环境，TauriFSAdapter 不可用');
+      throw new Error(t('storage.notTauriEnv'));
     }
   }
 

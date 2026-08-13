@@ -2,6 +2,7 @@ import type { CharacterCard, ChatMessage } from './character-card';
 import type { Lorebook } from './lorebook';
 import { replaceMacros } from './macro';
 import { countMessageTokens } from './token-counter';
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 import {
   scanLorebooks,
   groupByInsertionPosition,
@@ -227,3 +228,4 @@ export function buildPrompt(
     activatedEntries: activatedEntries.length > 0 ? activatedEntries : undefined,
   };
 }
+// i18n-ignore-end

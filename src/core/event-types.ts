@@ -17,6 +17,9 @@
  * - completed：已完成（事件结束，不再触发）
  * - failed：失败（事件被标记为失败，不再触发）
  */
+import { t } from '@/i18n';
+
+
 export type EventState = 'pending' | 'active' | 'completed' | 'failed';
 
 // ── 触发条件类型 ──
@@ -203,44 +206,44 @@ export function validateEvent(event: Partial<StoryEvent>): string[] {
   const errors: string[] = [];
 
   if (!event.name || event.name.trim() === '') {
-    errors.push('事件名称不能为空');
+    errors.push(t('eventTypes.nameRequired'));
   } else if (event.name.length > 50) {
-    errors.push('事件名称不能超过 50 字符');
+    errors.push(t('eventTypes.nameTooLong'));
   }
 
   if (!event.description || event.description.trim() === '') {
-    errors.push('事件描述不能为空');
+    errors.push(t('eventTypes.descRequired'));
   } else if (event.description.length > 2000) {
-    errors.push('事件描述不能超过 2000 字符');
+    errors.push(t('eventTypes.descTooLong'));
   }
 
   if (event.probability !== undefined) {
     if (typeof event.probability !== 'number' || event.probability < 0 || event.probability > 100) {
-      errors.push('触发概率必须在 0-100 之间');
+      errors.push(t('eventTypes.probabilityRange'));
     }
   }
 
   // 触发条件校验
   if (event.trigger) {
-    const t = event.trigger;
-    if (t.type === 'keyword') {
-      if (!Array.isArray(t.keywords) || t.keywords.length === 0) {
-        errors.push('关键词触发条件必须至少包含一个关键词');
+    const trig = event.trigger;
+    if (trig.type === 'keyword') {
+      if (!Array.isArray(trig.keywords) || trig.keywords.length === 0) {
+        errors.push(t('eventTypes.keywordRequired'));
       }
       // 校验正则表达式有效性
-      if (t.useRegex && Array.isArray(t.keywords)) {
-        for (const kw of t.keywords) {
+      if (trig.useRegex && Array.isArray(trig.keywords)) {
+        for (const kw of trig.keywords) {
           try {
             new RegExp(kw);
           } catch {
-            errors.push(`无效的正则表达式：${kw}`);
+            errors.push(t('eventTypes.invalidRegex', { kw }));
             break;
           }
         }
       }
-    } else if (t.type === 'dependency') {
-      if (!Array.isArray(t.requiredEvents) || t.requiredEvents.length === 0) {
-        errors.push('前置依赖触发条件必须至少包含一个前置事件');
+    } else if (trig.type === 'dependency') {
+      if (!Array.isArray(trig.requiredEvents) || trig.requiredEvents.length === 0) {
+        errors.push(t('eventTypes.prereqRequired'));
       }
     }
   }

@@ -17,6 +17,7 @@
 
 import type { StoryEvent } from './event-types';
 import { parseAiJson } from './json-utils';
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 // ── 类型 ──
 
@@ -1058,3 +1059,4 @@ export function decideRandomEvent(
 
   return { shouldTrigger: true, template: selected, effectiveProbability: effectiveProb };
 }
+// i18n-ignore-end

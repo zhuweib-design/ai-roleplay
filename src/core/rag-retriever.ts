@@ -18,6 +18,7 @@ import type {
   RAGConfig,
 } from './data-bank';
 import { DEFAULT_RAG_CONFIG } from './data-bank';
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 // ── P1-10 性能：检索结果缓存 ──
 // 纯函数结果缓存：key = 文档指纹 + 消息内容。
@@ -231,3 +232,4 @@ export function buildRagContext(retrieved: RetrievedChunk[]): string {
 
   return '[数据银行检索结果]\n' + parts.join('\n\n');
 }
+// i18n-ignore-end

@@ -21,6 +21,7 @@
  */
 
 import type { CharacterCard } from './character-card';
+import { t, type MessageKey } from '@/i18n';
 import { deepClone } from './json-utils';
 
 // ── 类型定义 ──
@@ -209,35 +210,36 @@ function getPathValue(obj: unknown, path: string): unknown {
  * 每个字段定义其路径与显示标签。
  * 嵌套字段（如 attributes.level）使用点路径表达。
  */
-export const TRACKED_FIELDS: ReadonlyArray<{ path: string; label: string }> = [
-  { path: 'name', label: '名称' },
-  { path: 'avatar', label: '头像' },
-  { path: 'description', label: '描述' },
-  { path: 'personality', label: '性格' },
-  { path: 'scenario', label: '场景' },
-  { path: 'firstMessage', label: '首条消息' },
-  { path: 'exampleMessages', label: '示例消息' },
-  { path: 'characterNote', label: '角色备注' },
-  { path: 'talkativeness', label: '健谈度' },
-  { path: 'version', label: '版本' },
-  { path: 'attributes.profession', label: '职业' },
-  { path: 'attributes.level', label: '等级' },
-  { path: 'attributes.experience', label: '经验值' },
-  { path: 'attributes.stats', label: '属性组' },
+export const TRACKED_FIELDS: ReadonlyArray<{ path: string; labelKey: MessageKey }> = [
+  { path: 'name', labelKey: 'cv.fieldName' },
+  { path: 'avatar', labelKey: 'cv.fieldAvatar' },
+  { path: 'description', labelKey: 'cv.fieldDescription' },
+  { path: 'personality', labelKey: 'cv.fieldPersonality' },
+  { path: 'scenario', labelKey: 'cv.fieldScenario' },
+  { path: 'firstMessage', labelKey: 'cv.fieldFirstMessage' },
+  { path: 'exampleMessages', labelKey: 'cv.fieldExampleMessages' },
+  { path: 'characterNote', labelKey: 'cv.fieldCharacterNote' },
+  { path: 'talkativeness', labelKey: 'cv.fieldTalkativeness' },
+  { path: 'version', labelKey: 'cv.fieldVersion' },
+  { path: 'attributes.profession', labelKey: 'cv.fieldProfession' },
+  { path: 'attributes.level', labelKey: 'cv.fieldLevel' },
+  { path: 'attributes.experience', labelKey: 'cv.fieldExperience' },
+  { path: 'attributes.stats', labelKey: 'cv.fieldStats' },
 ];
 
 /**
  * 字段路径 → 显示名映射（用于冲突展示）
  */
-const FIELD_LABEL_MAP: ReadonlyMap<string, string> = new Map(
-  TRACKED_FIELDS.map((f) => [f.path, f.label])
+const FIELD_LABEL_MAP: ReadonlyMap<string, MessageKey> = new Map(
+  TRACKED_FIELDS.map((f) => [f.path, f.labelKey])
 );
 
 /**
  * 获取字段显示名（未知字段返回路径本身）
  */
 export function getFieldLabel(path: string): string {
-  return FIELD_LABEL_MAP.get(path) ?? path;
+  const labelKey = FIELD_LABEL_MAP.get(path);
+  return labelKey ? t(labelKey) : path;
 }
 
 /**
@@ -292,7 +294,7 @@ export class CharacterRepository {
   initialize(
     initialCard: CharacterCard,
     author: VersionAuthor,
-    message: string = '初始版本'
+    message: string = t('cv.initialVersion')
   ): CharacterVersion {
     if (!this.branches.has('main')) {
       const branch: CharacterBranch = {
@@ -324,10 +326,10 @@ export class CharacterRepository {
   ): CharacterVersion {
     const branch = this.branches.get(this.currentBranch);
     if (!branch) {
-      throw new Error(`分支「${this.currentBranch}」不存在`);
+      throw new Error(t('cv.branchNotFound', { name: this.currentBranch }));
     }
     if (branch.locked) {
-      throw new Error(`分支「${this.currentBranch}」已锁定，无法提交`);
+      throw new Error(t('cv.branchLockedCommit', { name: this.currentBranch }));
     }
 
     // 校验锁：若有人持有全字段锁且非当前作者，拒绝
@@ -338,7 +340,7 @@ export class CharacterRepository {
         new Date(l.expiresAt) > new Date()
     );
     if (blocker) {
-      throw new Error(`角色正在被 ${blocker.holder.name} 编辑，无法提交`);
+      throw new Error(t('cv.editedBy', { name: blocker.holder.name }));
     }
 
     const parentId = branch.headId;
@@ -376,14 +378,14 @@ export class CharacterRepository {
     fromBranch: BranchName = this.currentBranch
   ): CharacterBranch {
     if (!isValidBranchName(name)) {
-      throw new Error(`分支名非法：${name}`);
+      throw new Error(t('cv.invalidBranchName', { name }));
     }
     if (this.branches.has(name)) {
-      throw new Error(`分支「${name}」已存在`);
+      throw new Error(t('cv.branchExists', { name }));
     }
     const source = this.branches.get(fromBranch);
     if (!source) {
-      throw new Error(`源分支「${fromBranch}」不存在`);
+      throw new Error(t('cv.sourceBranchNotFound', { name: fromBranch }));
     }
 
     const branch: CharacterBranch = {
@@ -406,10 +408,10 @@ export class CharacterRepository {
   switchBranch(name: BranchName): void {
     const branch = this.branches.get(name);
     if (!branch) {
-      throw new Error(`分支「${name}」不存在`);
+      throw new Error(t('cv.branchNotFound', { name }));
     }
     if (branch.locked) {
-      throw new Error(`分支「${name}」已锁定，无法切换`);
+      throw new Error(t('cv.branchLockedSwitch', { name }));
     }
     this.currentBranch = name;
   }
@@ -422,13 +424,13 @@ export class CharacterRepository {
   deleteBranch(name: BranchName): void {
     const branch = this.branches.get(name);
     if (!branch) {
-      throw new Error(`分支「${name}」不存在`);
+      throw new Error(t('cv.branchNotFound', { name }));
     }
     if (branch.isDefault) {
-      throw new Error('不能删除默认分支（main）');
+      throw new Error(t('cv.cannotDeleteDefault'));
     }
     if (name === this.currentBranch) {
-      throw new Error('不能删除当前所在分支，请先切换到其他分支');
+      throw new Error(t('cv.cannotDeleteCurrent'));
     }
     this.branches.delete(name);
   }
@@ -494,10 +496,10 @@ export class CharacterRepository {
     const from = this.commits.get(fromId);
     const to = this.commits.get(toId);
     if (!from) {
-      throw new Error(`版本 ${fromId} 不存在`);
+      throw new Error(t('cv.versionNotFound', { id: fromId }));
     }
     if (!to) {
-      throw new Error(`版本 ${toId} 不存在`);
+      throw new Error(t('cv.versionNotFound', { id: toId }));
     }
 
     const fields: FieldDiff[] = [];
@@ -518,7 +520,7 @@ export class CharacterRepository {
 
       fields.push({
         path: field.path,
-        label: field.label,
+        label: getFieldLabel(field.path),
         oldValue: oldVal,
         newValue: newVal,
         type,
@@ -580,13 +582,13 @@ export class CharacterRepository {
     const source = this.branches.get(sourceBranch);
     const target = this.branches.get(this.currentBranch);
     if (!source) {
-      throw new Error(`分支「${sourceBranch}」不存在`);
+      throw new Error(t('cv.sourceBranchNotFound', { name: sourceBranch }));
     }
     if (!target) {
-      throw new Error(`当前分支「${this.currentBranch}」不存在`);
+      throw new Error(t('cv.branchNotFound', { name: this.currentBranch }));
     }
     if (!source.headId || !target.headId) {
-      throw new Error('分支缺少 HEAD 提交，无法合并');
+      throw new Error(t('cv.noHeadMerge'));
     }
 
     const sourceHead = this.commits.get(source.headId)!;
@@ -634,7 +636,7 @@ export class CharacterRepository {
       // 双方都改了且不同 → 冲突
       conflicts.push({
         path: field.path,
-        label: field.label,
+        label: getFieldLabel(field.path),
         baseValue: baseVal,
         currentValue: curVal,
         sourceValue: srcVal,
@@ -672,7 +674,7 @@ export class CharacterRepository {
     const source = this.branches.get(sourceBranch);
     const target = this.branches.get(this.currentBranch);
     if (!source?.headId || !target?.headId) {
-      throw new Error('分支缺少 HEAD 提交');
+      throw new Error(t('cv.noHead'));
     }
     const sourceHead = this.commits.get(source.headId)!;
     const targetHead = this.commits.get(target.headId)!;
@@ -705,12 +707,12 @@ export class CharacterRepository {
   ): CharacterVersion {
     const target = this.commits.get(versionId);
     if (!target) {
-      throw new Error(`版本 ${versionId} 不存在`);
+      throw new Error(t('cv.versionNotFound', { id: versionId }));
     }
     return this.commit(
       deepClone(target.snapshot),
       author,
-      message ?? `回滚至 ${versionId}`
+      message ?? t('cv.rollbackTo', { id: versionId })
     );
   }
 
@@ -883,7 +885,7 @@ export class VersionControlEngine {
   private currentAuthor: VersionAuthor;
 
   constructor(author?: VersionAuthor) {
-    this.currentAuthor = author ?? { name: '本地用户' };
+    this.currentAuthor = author ?? { name: t('cv.localUser') };
   }
 
   /** 设置当前操作者 */

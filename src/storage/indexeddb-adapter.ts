@@ -6,6 +6,7 @@ import type { StoryAnalysisResult } from '@core/story-types';
 import type { Chat } from './types';
 import type { AppSettings, Persona } from '@/types';
 import type { StorageAdapter } from './storage-adapter';
+import { t } from '@/i18n';
 
 /** 数据库版本（迭代33 升级 v6：新增 snapshots store） */
 const DB_VERSION = 6;
@@ -113,7 +114,7 @@ export class IndexedDBAdapter implements StorageAdapter {
 
   private requireDB(): IDBDatabase {
     if (!this.db) {
-      throw new Error('StorageAdapter 未初始化，请先调用 init()');
+      throw new Error(t('storage.notInitialized'));
     }
     return this.db;
   }

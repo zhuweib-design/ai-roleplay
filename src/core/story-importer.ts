@@ -30,6 +30,7 @@ import type {
 } from './story-types';
 import type { WorldType, WorldDescription, LorebookEntry } from './lorebook';
 import type { StoryEvent as EventSystemEvent } from './event-types';
+import { t } from '@/i18n';
 
 // ── 导入目标 Port 接口（store 需实现，便于 mock 测试） ──
 
@@ -79,6 +80,7 @@ export interface ImportTargets {
 /**
  * 将 StoryWorldInfo.type（自由文本）映射为 WorldType 枚举
  */
+// i18n-ignore-start  // 模型面提示词 / mock 数据，非 UI 文案（待翻译）
 export function mapWorldType(rawType: string): WorldType {
   const t = rawType.toLowerCase().trim();
   // 奇幻
@@ -99,6 +101,7 @@ export function mapWorldType(rawType: string): WorldType {
   }
   return 'other';
 }
+// i18n-ignore-end
 
 /**
  * StoryWorldInfo → WorldDescription
@@ -145,7 +148,7 @@ export function toCharacterPatch(char: StoryCharacter): Record<string, unknown> 
   return {
     name: char.name,
     description,
-    tags: tags.length > 0 ? tags : ['故事导入'],
+    tags: tags.length > 0 ? tags : [t('imp.storyImportTag')],
   };
 }
 
@@ -190,7 +193,7 @@ export function importWorld(
       name: wd.name,
       strategy,
       success: false,
-      error: '已存在世界描述，add 策略下跳过',
+      error: t('imp.worldExistsSkip'),
     });
     return results;
   }
@@ -207,7 +210,7 @@ export function importWorld(
     name: wd.name,
     strategy,
     success: ok,
-    error: ok ? undefined : '世界描述更新失败',
+    error: ok ? undefined : t('imp.worldUpdateFailed'),
   });
 
   return results;
@@ -279,7 +282,7 @@ export function importCharacters(
         name: char.name,
         strategy,
         success: false,
-        error: '已存在同名角色，add 策略下跳过',
+        error: t('imp.charExistsSkip'),
       });
       continue;
     }
@@ -296,7 +299,7 @@ export function importCharacters(
         name: char.name,
         strategy,
         success: ok,
-        error: ok ? undefined : '角色合并失败',
+        error: ok ? undefined : t('imp.charMergeFailed'),
       });
       continue;
     }
@@ -310,7 +313,7 @@ export function importCharacters(
         name: char.name,
         strategy,
         success: ok,
-        error: ok ? undefined : '角色覆盖失败',
+        error: ok ? undefined : t('imp.charOverwriteFailed'),
       });
       continue;
     }
@@ -323,7 +326,7 @@ export function importCharacters(
         name: char.name,
         strategy,
         success: false,
-        error: '创建角色失败',
+        error: t('imp.charCreateFailed'),
       });
       continue;
     }
@@ -335,7 +338,7 @@ export function importCharacters(
       name: char.name,
       strategy,
       success: ok,
-      error: ok ? undefined : '角色更新失败',
+      error: ok ? undefined : t('imp.charUpdateFailed'),
     });
   }
 
@@ -362,7 +365,7 @@ export function importEvents(
         name: event.name,
         strategy,
         success: false,
-        error: '已存在同名事件，add 策略下跳过',
+        error: t('imp.eventExistsSkip'),
       });
       continue;
     }
@@ -375,7 +378,7 @@ export function importEvents(
         name: event.name,
         strategy,
         success: ok,
-        error: ok ? undefined : '事件更新失败',
+        error: ok ? undefined : t('imp.eventUpdateFailed'),
       });
       continue;
     }
@@ -392,7 +395,7 @@ export function importEvents(
         name: event.name,
         strategy,
         success: false,
-        error: '创建事件失败',
+        error: t('imp.eventCreateFailed'),
       });
       continue;
     }
@@ -404,7 +407,7 @@ export function importEvents(
       name: event.name,
       strategy,
       success: ok,
-      error: ok ? undefined : '事件更新失败',
+      error: ok ? undefined : t('imp.eventUpdateFailed'),
     });
   }
 
@@ -466,10 +469,10 @@ export function downloadScripts(scripts: StoryScript[], filename: string): void 
 function buildWorldContent(world: StoryWorldInfo): string {
   const parts: string[] = [world.description];
   if (world.coreSettings && world.coreSettings.length > 0) {
-    parts.push(`\n核心设定：\n${world.coreSettings.map((s) => `- ${s}`).join('\n')}`);
+    parts.push(`\n${t('imp.coreSettings')}：\n${world.coreSettings.map((s) => `- ${s}`).join('\n')}`);
   }
   if (world.factions && world.factions.length > 0) {
-    parts.push(`\n主要势力：${world.factions.join('、')}`);
+    parts.push(`\n${t('imp.factions')}：${world.factions.join('、')}`);
   }
   return parts.join('\n');
 }
@@ -480,7 +483,7 @@ function buildSceneContent(scene: StoryScene): string {
     parts.unshift(`【${scene.type}】`);
   }
   if (scene.parent) {
-    parts.push(`\n所属：${scene.parent}`);
+    parts.push(`\n${t('imp.belongsTo')}：${scene.parent}`);
   }
   return parts.join('\n');
 }
@@ -488,11 +491,11 @@ function buildSceneContent(scene: StoryScene): string {
 function buildCharacterDescription(char: StoryCharacter): string {
   const parts: string[] = [char.description];
   if (char.aliases && char.aliases.length > 0) {
-    parts.push(`\n别名：${char.aliases.join('、')}`);
+    parts.push(`\n${t('imp.aliases')}：${char.aliases.join('、')}`);
   }
   if (char.relationships && char.relationships.length > 0) {
     parts.push(
-      `\n人物关系：\n${char.relationships
+      `\n${t('imp.relationships')}：\n${char.relationships
         .map((r) => `- ${r.target}：${r.relation}`)
         .join('\n')}`
     );
@@ -533,7 +536,7 @@ function importSingleScene(
       name: scene.name,
       strategy,
       success: false,
-      error: '已存在同名条目，add 策略下跳过',
+      error: t('imp.entryExistsSkip'),
     };
   }
 
@@ -550,7 +553,7 @@ function importSingleScene(
       name: scene.name,
       strategy,
       success: ok,
-      error: ok ? undefined : '条目更新失败',
+      error: ok ? undefined : t('imp.entryUpdateFailed'),
     };
   }
 
@@ -565,6 +568,6 @@ function importSingleScene(
     name: scene.name,
     strategy,
     success: !!id,
-    error: id ? undefined : '条目创建失败',
+    error: id ? undefined : t('imp.entryCreateFailed'),
   };
 }

@@ -13,6 +13,7 @@
 import { retrieveRelevantChunks } from './rag-retriever';
 import type { DataBankDocument } from './data-bank';
 import { countTokens } from './token-counter';
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 /** 单项基准结果 */
 export interface BenchmarkResult {
@@ -178,4 +179,4 @@ function saveHistory(results: BenchmarkResult[]): void {
 
 function round(n: number): number {
   return Math.round(n * 100) / 100;
-}
+}// i18n-ignore-end

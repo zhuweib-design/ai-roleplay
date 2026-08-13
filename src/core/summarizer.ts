@@ -16,6 +16,7 @@
 
 import type { ChatMessage } from './token-counter';
 import { countTokens } from './token-counter';
+import { t } from '@/i18n';
 
 // ── 摘要配置 ──
 
@@ -142,6 +143,7 @@ export function buildSummarizationMessages(
   existingSummary: ConversationSummary | null,
   config: SummarizationConfig
 ): Array<{ role: 'system' | 'user'; content: string }> {
+  // i18n-ignore-start
   // 构建对话文本
   const dialogText = messages
     .map((m) => {
@@ -152,9 +154,11 @@ export function buildSummarizationMessages(
 
   const systemContent =
     '你是一个对话摘要助手。请将对话历史压缩为简洁的摘要，保留关键事件、人物关系、重要决策和未解决的悬念。摘要应保持客观中立，便于后续对话引用。';
+  // i18n-ignore-end
 
   let userContent: string;
   if (existingSummary) {
+    // i18n-ignore-start
     userContent = `已有摘要：
 ${existingSummary.content}
 
@@ -171,6 +175,7 @@ ${dialogText}
 ${dialogText}
 
 请直接输出摘要内容，不要添加任何前缀或解释。`;
+    // i18n-ignore-end
   }
 
   return [
@@ -220,7 +225,7 @@ export class DefaultSummarizationService implements SummarizationService {
     existingSummary: ConversationSummary | null
   ): Promise<ConversationSummary> {
     if (!config.enabled) {
-      throw new SummarizationError('摘要功能未启用', 'NOT_ENABLED');
+      throw new SummarizationError(t('sum.notEnabled'), 'NOT_ENABLED');
     }
 
     // 仅摘要 user/assistant 消息
@@ -239,7 +244,7 @@ export class DefaultSummarizationService implements SummarizationService {
     const messagesToSummarize = dialogMessages.slice(startIndex, keepFromIndex);
 
     if (messagesToSummarize.length === 0) {
-      throw new SummarizationError('没有可摘要的新消息', 'INSUFFICIENT_MESSAGES');
+      throw new SummarizationError(t('sum.noNewMessages'), 'INSUFFICIENT_MESSAGES');
     }
 
     // 构建 Prompt
@@ -268,7 +273,7 @@ export class DefaultSummarizationService implements SummarizationService {
     }
 
     if (!rawContent || rawContent.trim() === '') {
-      throw new SummarizationError('摘要内容为空', 'PARSE_ERROR');
+      throw new SummarizationError(t('sum.emptyContent'), 'PARSE_ERROR');
     }
 
     // 计算摘要覆盖范围（基于对话消息索引）
@@ -305,10 +310,12 @@ export function injectSummary(
 ): ChatMessage[] {
   const summaryMessage: ChatMessage = {
     role: 'system',
+    // i18n-ignore-start
     content: `【前文摘要】
 ${summary.content}
 
 （以上为早期对话的摘要，用于补充上下文）`,
+    // i18n-ignore-end
   };
 
   // 找到第一条非 system 消息的位置，将摘要插入其前

@@ -24,6 +24,9 @@
  */
 
 /** 加密格式版本号 */
+import { t } from '@/i18n';
+
+
 const ENCRYPTED_VERSION = 1;
 
 /** 密文前缀，用于检测字符串是否为加密格式 */
@@ -183,7 +186,7 @@ export async function encryptApiKey(
 ): Promise<string> {
   if (!plaintext) return plaintext; // 空字符串不加密，保持原值
   if (!masterPassword) {
-    throw new Error('主密码为空，无法加密');
+    throw new Error(t('crypto.apiMasterPwEmptyEnc'));
   }
 
   const salt = generateSalt();
@@ -224,7 +227,7 @@ export async function decryptApiKey(
     return encrypted;
   }
   if (!masterPassword) {
-    throw new Error('主密码为空，无法解密');
+    throw new Error(t('crypto.apiMasterPwEmptyDec'));
   }
 
   const payloadBase64 = encrypted.slice(ENCRYPTED_PREFIX.length);
@@ -232,11 +235,11 @@ export async function decryptApiKey(
   try {
     payload = JSON.parse(bytesToString(base64ToBytes(payloadBase64))) as EncryptedPayload;
   } catch {
-    throw new Error('密文格式损坏');
+    throw new Error(t('crypto.apiCipherCorrupted'));
   }
 
   if (payload.v !== ENCRYPTED_VERSION) {
-    throw new Error(`不支持的密文版本：v${payload.v}`);
+    throw new Error(t('crypto.apiUnsupportedVer', { v: payload.v }));
   }
 
   const salt = base64ToBytes(payload.salt);
@@ -253,7 +256,7 @@ export async function decryptApiKey(
       ciphertext
     );
   } catch {
-    throw new Error('解密失败：主密码错误或数据已损坏');
+    throw new Error(t('crypto.apiDecryptFailed'));
   }
 
   return bytesToString(new Uint8Array(plaintextBuffer));

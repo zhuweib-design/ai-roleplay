@@ -15,6 +15,7 @@
  * - 边界处理：API 未连接时禁用；生成失败提示错误并允许重试
  */
 
+import { t } from '@/i18n';
 import {
   type CharacterTemplateId,
   type GeneratedCharacter,
@@ -89,22 +90,23 @@ export function validateNpcParams(params: NpcGenerationParams): string[] {
   const errors: string[] = [];
 
   if (!params.templateId) {
-    errors.push('模板 ID 不能为空');
+    errors.push(t('npc.templateIdEmpty'));
   } else if (!getTemplateMeta(params.templateId)) {
-    errors.push(`未知的模板 ID：${params.templateId}`);
+    errors.push(t('npc.unknownTemplate', { id: params.templateId }));
   }
 
   if (!params.groupContext || typeof params.groupContext.groupName !== 'string') {
-    errors.push('群聊上下文无效');
+    errors.push(t('npc.groupCtxInvalid'));
   } else if (params.groupContext.memberCount >= params.groupContext.maxMembers) {
     errors.push(
-      `群聊已满（${params.groupContext.memberCount}/${params.groupContext.maxMembers}）`
+      t('npc.groupFull', { count: params.groupContext.memberCount, max: params.groupContext.maxMembers })
     );
   }
 
   return errors;
 }
 
+// i18n-ignore-start  // 模型面提示词 / mock 数据，非 UI 文案（待翻译）
 // ── Prompt 构建 ──
 
 /**
@@ -122,7 +124,7 @@ export function buildNpcGenerationMessages(
   params: NpcGenerationParams
 ): Array<{ role: 'system' | 'user'; content: string }> {
   const meta = getTemplateMeta(params.templateId);
-  const templateLabel = meta?.label ?? '通用';
+  const templateLabel = meta?.label ?? t('npc.defaultTemplate');
   const templateDesc = meta?.description ?? '';
   const sampleStats = meta?.sampleStats ?? [];
 
@@ -289,3 +291,4 @@ export function isTemporaryNpc(card: {
   if (card.isTemporary === true) return true;
   return Array.isArray(card.tags) && card.tags.includes(TEMPORARY_NPC_TAG);
 }
+// i18n-ignore-end

@@ -13,6 +13,7 @@
 // ── 分析配置 ──
 
 /** 分析深度 */
+import { t } from '@/i18n';
 export type AnalysisDepth = 'quick' | 'standard' | 'deep';
 
 /** 分析状态 */
@@ -42,8 +43,8 @@ export interface AnalysisDepthMeta {
 export const ANALYSIS_DEPTHS: readonly AnalysisDepthMeta[] = [
   {
     id: 'quick',
-    label: '快速',
-    description: '仅提取人物和世界设定，适合快速了解故事概况',
+    label: t('st.quick'),
+    description: t('st.quickDesc'),
     tokenEstimate: { min: 2000, max: 5000 },
     extractScenes: false,
     extractEvents: false,
@@ -51,8 +52,8 @@ export const ANALYSIS_DEPTHS: readonly AnalysisDepthMeta[] = [
   },
   {
     id: 'standard',
-    label: '标准',
-    description: '提取人物、世界、场景和事件，适合导入角色扮演',
+    label: t('st.standard'),
+    description: t('st.standardDesc'),
     tokenEstimate: { min: 5000, max: 12000 },
     extractScenes: true,
     extractEvents: true,
@@ -60,8 +61,8 @@ export const ANALYSIS_DEPTHS: readonly AnalysisDepthMeta[] = [
   },
   {
     id: 'deep',
-    label: '深度',
-    description: '全部提取并生成故事脚本，适合完整故事引擎体验',
+    label: t('st.deep'),
+    description: t('st.deepDesc'),
     tokenEstimate: { min: 10000, max: 20000 },
     extractScenes: true,
     extractEvents: true,
@@ -231,7 +232,7 @@ export interface AnalysisProgress {
 export const INITIAL_PROGRESS: AnalysisProgress = {
   completed: 0,
   total: 0,
-  stage: '等待开始',
+  stage: t('st.waiting'),
   isAnalyzing: false,
 };
 

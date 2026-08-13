@@ -16,6 +16,7 @@
 // ── TTS 配置 ──
 
 /** 朗读触发条件 */
+import { t } from '@/i18n';
 export type TTSTrigger = 'every' | 'manual' | 'mention';
 
 /** TTS 全局配置 */
@@ -152,7 +153,7 @@ class TTSService {
    */
   speak(options: SpeakOptions): boolean {
     if (!isTTSSupported()) {
-      options.onError?.('当前浏览器不支持语音合成');
+      options.onError?.(t('tts.unsupported'));
       return false;
     }
     if (!options.text || options.text.trim() === '') {

@@ -7,6 +7,8 @@
  * - 导入不含属性字段的 V2 角色卡时，属性面板为空，不影响正常使用
  */
 
+import { t } from '@/i18n';
+
 /** 单个属性项（键值对，支持数值或文本类型） */
 export interface CharacterAttribute {
   /** 属性名（如"力量"/"敏捷"/"智力"） */
@@ -109,45 +111,45 @@ export function validateCharacterCard(card: Partial<CharacterCard>): string[] {
   const errors: string[] = [];
 
   if (!card.name || card.name.trim() === '') {
-    errors.push('角色名不能为空');
+    errors.push(t('charCard.nameRequired'));
   } else if (card.name.length > 50) {
-    errors.push('角色名不能超过50个字符');
+    errors.push(t('charCard.nameTooLong'));
   }
 
   if (card.talkativeness !== undefined && (card.talkativeness < 0 || card.talkativeness > 100)) {
-    errors.push('健谈度必须在0-100之间');
+    errors.push(t('charCard.talkativenessRange'));
   }
 
   // F01.6 角色属性校验
   if (card.attributes) {
     const attrs = card.attributes;
     if (attrs.profession !== undefined && attrs.profession !== '' && attrs.profession.length > 30) {
-      errors.push('职业不能超过30个字符');
+      errors.push(t('charCard.professionTooLong'));
     }
     if (attrs.level !== undefined) {
       if (!Number.isInteger(attrs.level) || attrs.level < 0) {
-        errors.push('等级必须是非负整数');
+        errors.push(t('charCard.levelNonNegative'));
       }
     }
     if (attrs.experience !== undefined) {
       if (!Number.isInteger(attrs.experience) || attrs.experience < 0) {
-        errors.push('经验值必须是非负整数');
+        errors.push(t('charCard.expNonNegative'));
       }
     }
     if (Array.isArray(attrs.stats)) {
       const statNames = new Set<string>();
       for (const stat of attrs.stats) {
         if (!stat.name || stat.name.trim() === '') {
-          errors.push('属性名不能为空');
+          errors.push(t('charCard.statNameRequired'));
           break;
         }
         if (stat.type !== 'number' && stat.type !== 'text') {
-          errors.push(`属性"${stat.name}"的类型必须为 number 或 text`);
+          errors.push(t('charCard.statTypeInvalid', { name: stat.name }));
           break;
         }
         const key = stat.name.trim();
         if (statNames.has(key)) {
-          errors.push(`属性名"${key}"重复`);
+          errors.push(t('charCard.statDuplicate', { key }));
           break;
         }
         statNames.add(key);
@@ -236,17 +238,17 @@ function parseAttributes(raw: unknown): CharacterAttributes | undefined {
  */
 function parseV2CardJson(json: unknown): V2CardJson {
   if (json === null || typeof json !== 'object') {
-    throw new Error('无法识别的角色卡格式：输入不是有效对象');
+    throw new Error(t('charCard.unrecognizedFormat'));
   }
 
   const obj = json as Record<string, unknown>;
 
   if (obj.spec !== 'chara_card_v2') {
-    throw new Error('无法识别的角色卡格式');
+    throw new Error(t('charCard.unrecognized'));
   }
 
   if (obj.data === null || typeof obj.data !== 'object') {
-    throw new Error('角色卡 data 字段无效：必须是对象');
+    throw new Error(t('charCard.invalidDataField'));
   }
 
   return obj as unknown as V2CardJson;

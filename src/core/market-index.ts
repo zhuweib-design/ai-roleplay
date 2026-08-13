@@ -12,6 +12,9 @@
  */
 
 /** 清单格式版本 */
+import { t } from '@/i18n';
+
+
 export const MARKET_INDEX_VERSION = 1;
 
 /** 可下载项类型 */
@@ -62,36 +65,36 @@ export interface MarketIndexResult {
 export function validateMarketItem(item: unknown, idx: number): string[] {
   const errors: string[] = [];
   if (typeof item !== 'object' || item === null) {
-    return [`条目 ${idx} 不是对象`];
+    return [t('mktIndex.entryNotObject', { idx })];
   }
   const it = item as Partial<MarketIndexItem>;
 
   if (typeof it.id !== 'string' || it.id.length === 0) {
-    errors.push(`条目 ${idx} 缺少 id`);
+    errors.push(t('mktIndex.entryMissingId', { idx }));
   }
   if (it.type !== 'character' && it.type !== 'lorebook' && it.type !== 'template') {
-    errors.push(`条目 ${idx} type 非法:${String(it.type)}`);
+    errors.push(t('mktIndex.entryTypeInvalid', { idx, type: String(it.type) }));
   }
   if (typeof it.name !== 'string' || it.name.length === 0) {
-    errors.push(`条目 ${idx} 缺少 name`);
+    errors.push(t('mktIndex.entryMissingName', { idx }));
   }
   if (typeof it.version !== 'string' || !/^\d+\.\d+\.\d+/.test(it.version)) {
-    errors.push(`条目 ${idx} version 非法:${String(it.version)}`);
+    errors.push(t('mktIndex.entryVersionInvalid', { idx, version: String(it.version) }));
   }
   if (typeof it.author !== 'string' || it.author.length === 0) {
-    errors.push(`条目 ${idx} 缺少 author`);
+    errors.push(t('mktIndex.entryMissingAuthor', { idx }));
   }
   if (typeof it.url !== 'string' || !/^https:\/\//.test(it.url)) {
-    errors.push(`条目 ${idx} url 必须为 https 直链`);
+    errors.push(t('mktIndex.entryUrlInvalid', { idx }));
   }
   if (typeof it.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(it.sha256)) {
-    errors.push(`条目 ${idx} sha256 非法(需 64 位小写十六进制)`);
+    errors.push(t('mktIndex.entryShaInvalid', { idx }));
   }
   if (typeof it.size !== 'number' || it.size <= 0 || !Number.isFinite(it.size)) {
-    errors.push(`条目 ${idx} size 非法`);
+    errors.push(t('mktIndex.entrySizeInvalid', { idx }));
   }
   if (it.updatedAt !== undefined && typeof it.updatedAt !== 'string') {
-    errors.push(`条目 ${idx} updatedAt 非法`);
+    errors.push(t('mktIndex.entryUpdatedAtInvalid', { idx }));
   }
   return errors;
 }
@@ -106,18 +109,18 @@ export function validateMarketIndex(json: unknown): MarketIndexResult {
   const errors: string[] = [];
 
   if (typeof json !== 'object' || json === null || Array.isArray(json)) {
-    return { ok: false, items: [], errors: ['清单不是对象'] };
+    return { ok: false, items: [], errors: [t('mktIndex.manifestNotObject')] };
   }
   const file = json as Partial<MarketIndexFile>;
 
   if (file.version !== MARKET_INDEX_VERSION) {
-    errors.push(`清单版本不支持:${String(file.version)}(当前支持 v${MARKET_INDEX_VERSION})`);
+    errors.push(t('mktIndex.manifestVersionUnsupported', { version: String(file.version), supported: MARKET_INDEX_VERSION }));
   }
   if (typeof file.name !== 'string' || file.name.length === 0) {
-    errors.push('清单缺少 name');
+    errors.push(t('mktIndex.manifestMissingName'));
   }
   if (!Array.isArray(file.items)) {
-    errors.push('清单缺少 items 数组');
+    errors.push(t('mktIndex.manifestMissingItems'));
   }
 
   const items: MarketIndexItem[] = [];
@@ -131,7 +134,7 @@ export function validateMarketIndex(json: unknown): MarketIndexResult {
       }
       const it = item as MarketIndexItem;
       if (seenIds.has(it.id)) {
-        errors.push(`条目 ${idx} id 重复:${it.id}`);
+        errors.push(t('mktIndex.entryIdDuplicate', { idx, id: it.id }));
         return;
       }
       seenIds.add(it.id);

@@ -1,5 +1,6 @@
 import type { CharacterCard, ChatMessage } from '@core/character-card';
 import type { UICharacter, UIMessage, WorldEntry } from '@/types';
+import { t } from '@/i18n';
 
 /**
  * 类型适配层 (D3)
@@ -94,7 +95,7 @@ export function cardToUiChar(
     gradientFrom: ext?.gradientFrom ?? (legacy('gradientFrom') as string | undefined) ?? 'var(--tk-cyan-500)',
     gradientTo: ext?.gradientTo ?? (legacy('gradientTo') as string | undefined) ?? 'var(--tk-cyan-700)',
     initial: card.name[0] || '?',
-    lastActive: '刚刚',
+    lastActive: t('type.justNow'),
     favorite: card.favorite,
     tags: [...card.tags],
     // UI description 合并核心 description + personality + scenario

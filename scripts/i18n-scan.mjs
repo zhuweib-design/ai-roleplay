@@ -78,6 +78,24 @@ function isIgnored(rel, ignoreList) {
 function effectiveCode(line, state) {
   let text = line;
 
+  // ⓪ 显式豁免标记（LLM 提示词 / mock 数据，非 UI 文案）
+  //  - 行尾 // i18n-ignore            → 本行跳过
+  //  - // i18n-ignore-start / -end    → 块级豁免（跨行）
+  if (state.inI18nIgnore) {
+    const end = text.indexOf('i18n-ignore-end');
+    if (end >= 0) {
+      state.inI18nIgnore = false;
+      text = text.slice(end + 'i18n-ignore-end'.length);
+    } else {
+      return '';
+    }
+  }
+  if (text.includes('// i18n-ignore-start')) {
+    state.inI18nIgnore = true;
+    return '';
+  }
+  if (/\/\/ i18n-ignore$/.test(text)) return '';
+
   // ① HTML 注释（Vue 模板）——维护跨行状态
   if (state.inHtmlComment) {
     const end = text.indexOf('-->');
@@ -178,7 +196,7 @@ for (const file of scanned) {
   const rel = relative(ROOT, file);
   const content = readFileSync(file, 'utf8');
   const lines = content.split('\n');
-  const st = { inBlock: false, inHtmlComment: false };
+  const st = { inBlock: false, inHtmlComment: false, inI18nIgnore: false };
   for (let i = 0; i < lines.length; i++) {
     const code = effectiveCode(lines[i], st);
     if (!code || !CJK_RE.test(code)) continue;

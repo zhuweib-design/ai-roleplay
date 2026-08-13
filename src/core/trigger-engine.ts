@@ -20,6 +20,7 @@
 
 import type { StoryEvent } from './event-types';
 import { isTriggerable } from './event-types';
+import { t } from '@/i18n';
 
 // ── 上下文 ──
 
@@ -113,7 +114,7 @@ export function scanTriggers(
   for (const evt of sceneFiltered) {
     const result = checkTriggerCondition(evt, context);
     if (!result.success) {
-      skipped.push({ eventName: evt.name, reason: result.reason ?? '未满足触发条件' });
+      skipped.push({ eventName: evt.name, reason: result.reason ?? t('trig.condNotMet') });
       continue;
     }
     matched.push(evt);
@@ -139,7 +140,7 @@ export function scanTriggers(
     }
     skipped.push({
       eventName: evt.name,
-      reason: `概率判定失败（${roll.toFixed(1)}/${evt.probability}）`,
+      reason: t('trig.probFailed', { roll: roll.toFixed(1), prob: evt.probability }),
     });
   }
 
@@ -166,12 +167,12 @@ function checkTriggerCondition(
     );
     return ok
       ? { success: true }
-      : { success: false, reason: '关键词未匹配' };
+      : { success: false, reason: t('trig.keywordNoMatch') };
   }
 
   if (trigger.type === 'dependency') {
     if (!context.getEventByName) {
-      return { success: false, reason: '无法检查依赖（缺少 getEventByName）' };
+      return { success: false, reason: t('trig.depCheckFailed') };
     }
     const allComplete = trigger.requiredEvents.every((name) => {
       const dep = context.getEventByName!(name);
@@ -179,24 +180,24 @@ function checkTriggerCondition(
     });
     return allComplete
       ? { success: true }
-      : { success: false, reason: '前置事件未全部完成' };
+      : { success: false, reason: t('trig.prereqIncomplete') };
   }
 
   if (trigger.type === 'manual') {
-    return { success: false, reason: '仅手动触发' };
+    return { success: false, reason: t('trig.manualOnly') };
   }
 
   if (trigger.type === 'time') {
     // F16.4 对接：比对 TimeTrigger.storyTime 与当前故事时间
     if (!context.currentStoryTime) {
-      return { success: false, reason: '无故事时间上下文' };
+      return { success: false, reason: t('trig.noStoryTime') };
     }
     return trigger.storyTime === context.currentStoryTime
       ? { success: true }
-      : { success: false, reason: `故事时间不匹配（当前：${context.currentStoryTime}，触发条件：${trigger.storyTime}）` };
+      : { success: false, reason: t('trig.timeMismatch', { current: context.currentStoryTime, required: trigger.storyTime }) };
   }
 
-  return { success: false, reason: '未知触发类型' };
+  return { success: false, reason: t('trig.unknownType') };
 }
 
 /**
@@ -261,8 +262,8 @@ export function buildActiveEventsInjection(events: StoryEvent[]): string {
 
   const lines = active.map((e) => {
     const sceneTag = e.sceneName ? `[${e.sceneName}] ` : '';
-    return `【事件】${sceneTag}${e.name}\n${e.description}`;
+    return t('trig.eventItem', { tag: sceneTag, name: e.name, desc: e.description });
   });
 
-  return `当前进行中的事件：\n${lines.join('\n\n')}`;
+  return t('trig.activeEvents', { list: lines.join('\n\n') });
 }

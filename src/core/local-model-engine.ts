@@ -17,6 +17,7 @@
 // ── 类型定义 ──
 
 /** 模型规模级别 */
+import { t } from '@/i18n';
 export type ModelSize = 'small' | 'medium' | 'large';
 
 /** 模型状态 */
@@ -125,7 +126,7 @@ export const MODEL_REGISTRY: LocalModelMeta[] = [
     vramMb: 945,
     contextLength: 4096,
     version: '0.2.84',
-    description: '通义千问 0.5B 量化版，体积最小，适合入门体验与低配设备',
+    description: t('lme.desc05'),
     defaultTemperature: 0.7,
     lowResourceFriendly: true,
   },
@@ -137,7 +138,7 @@ export const MODEL_REGISTRY: LocalModelMeta[] = [
     vramMb: 1620,
     contextLength: 4096,
     version: '0.2.84',
-    description: '通义千问 1.5B 量化版，性能与速度平衡，推荐日常使用',
+    description: t('lme.desc15'),
     defaultTemperature: 0.7,
     lowResourceFriendly: true,
   },
@@ -149,7 +150,7 @@ export const MODEL_REGISTRY: LocalModelMeta[] = [
     vramMb: 1289,
     contextLength: 4096,
     version: '0.2.84',
-    description: 'Meta Llama 3.2 1B 量化版，英文能力优秀',
+    description: t('lme.descLlama1'),
     defaultTemperature: 0.6,
     lowResourceFriendly: true,
   },
@@ -161,7 +162,7 @@ export const MODEL_REGISTRY: LocalModelMeta[] = [
     vramMb: 2810,
     contextLength: 4096,
     version: '0.2.84',
-    description: '通义千问 3B 量化版，中文表现优秀，需要中等显卡',
+    description: t('lme.desc3'),
     defaultTemperature: 0.7,
     lowResourceFriendly: false,
   },
@@ -173,7 +174,7 @@ export const MODEL_REGISTRY: LocalModelMeta[] = [
     vramMb: 2422,
     contextLength: 4096,
     version: '0.2.84',
-    description: 'Meta Llama 3.2 3B 量化版，综合能力更强',
+    description: t('lme.descLlama3'),
     defaultTemperature: 0.6,
     lowResourceFriendly: false,
   },
@@ -232,7 +233,7 @@ export async function detectEngineCapability(): Promise<EngineCapability> {
       browserName,
       estimatedVramMb: 0,
       wasmSupported: false,
-      reason: '浏览器不支持 WebGPU API，请使用 Chrome 113+/Edge 113+/Safari 18+',
+      reason: t('lme.webgpuUnsupported'),
     };
   }
 
@@ -318,7 +319,7 @@ export class LocalModelEngine {
   ): Promise<void> {
     const meta = findModel(modelId);
     if (!meta) {
-      throw new Error(`模型 ${modelId} 不在注册表中`);
+      throw new Error(t('lme.modelNotRegistered', { id: modelId }));
     }
 
     // 已加载相同模型则跳过
@@ -384,12 +385,12 @@ export class LocalModelEngine {
     onDelta?: (delta: string, fullContent: string) => void
   ): Promise<string> {
     if (!this.engine || this.loadedModelId !== request.modelId) {
-      throw new Error('模型未加载，请先调用 loadModel');
+      throw new Error(t('lme.modelNotLoaded'));
     }
 
     const meta = findModel(request.modelId);
     if (!meta) {
-      throw new Error(`模型 ${request.modelId} 不在注册表中`);
+      throw new Error(t('lme.modelNotRegistered', { id: request.modelId }));
     }
 
     const startTime = performance.now();

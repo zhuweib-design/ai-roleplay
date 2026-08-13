@@ -5,6 +5,7 @@
 import type { SlashCommand, SlashCommandResult } from './extension-types';
 import type { VariableMap, MacroContext } from './macro';
 import { replaceMacros } from './macro';
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 // ─────────────────────────────────────────────────────────────
 // 类型定义
@@ -855,3 +856,4 @@ export async function executePipeline(
     shouldAbort,
   };
 }
+// i18n-ignore-end

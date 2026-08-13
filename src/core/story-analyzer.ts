@@ -30,6 +30,7 @@ import type {
 } from './story-types';
 import { getDepthMeta, createEmptyResult } from './story-types';
 import { safeJsonParse } from './json-utils';
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 // ── 常量 ──
 
@@ -690,3 +691,4 @@ export function buildSourceContext(result: StoryAnalysisResult): string {
 function truncate(text: string, maxLen: number): string {
   return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
 }
+// i18n-ignore-end

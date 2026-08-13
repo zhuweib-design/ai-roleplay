@@ -17,6 +17,9 @@ import type { Chat } from '../storage/types';
 import type { Persona, AppSettings } from '@/types';
 
 /** 备份格式版本号（不向后兼容时递增） */
+import { t } from '@/i18n';
+
+
 export const BACKUP_VERSION = '1.0';
 
 /** 备份元信息 */
@@ -90,18 +93,18 @@ export function validateBackup(data: unknown): string[] {
   const errors: string[] = [];
 
   if (!data || typeof data !== 'object') {
-    errors.push('备份文件不是有效对象');
+    errors.push(t('backup.notObject'));
     return errors;
   }
 
   const obj = data as Record<string, unknown>;
 
   if (typeof obj.version !== 'string') {
-    errors.push('备份文件缺少 version 字段');
+    errors.push(t('backup.missingVersion'));
   }
 
   if (typeof obj.exportedAt !== 'string') {
-    errors.push('备份文件缺少 exportedAt 字段');
+    errors.push(t('backup.missingExportedAt'));
   }
 
   // 各数据字段必须是数组
@@ -114,13 +117,13 @@ export function validateBackup(data: unknown): string[] {
   ];
   for (const field of arrayFields) {
     if (obj[field] !== undefined && !Array.isArray(obj[field])) {
-      errors.push(`字段 ${field} 必须是数组`);
+      errors.push(t('backup.fieldNotArray', { field }));
     }
   }
 
   // settings 必须是对象
   if (obj.settings !== undefined && (typeof obj.settings !== 'object' || obj.settings === null)) {
-    errors.push('字段 settings 必须是对象');
+    errors.push(t('backup.settingsNotObject'));
   }
 
   return errors;

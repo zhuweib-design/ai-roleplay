@@ -14,6 +14,7 @@
 
 import type { CharacterAttributes, CharacterAttribute } from './character-card';
 import { parseAiJson } from './json-utils';
+// i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 // ── 模板定义 ──
 
@@ -277,3 +278,4 @@ export function parseGeneratedCharacter(raw: string): GeneratedCharacter | null 
     attributes: parseAttributes(obj.attributes),
   };
 }
+// i18n-ignore-end

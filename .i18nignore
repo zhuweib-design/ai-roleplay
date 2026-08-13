@@ -1,45 +1,9 @@
-# T-13 i18n 未迁移文件白名单
-# 每行一个相对路径；完成文案抽取后移出本清单即纳入门禁
-# 生成时间：2026-08-13（初始 128 个，已迁移 104 个）
-# 提示词/基准数据豁免（模型提示词中文语义,不随界面语言翻译）:
-#   src/core/benchmark.ts, src/core/prompt-builder.ts, src/core/l0-l2-runtime.ts, src/core/dual-channel-runtime.ts
-src/core/api-key-crypto.ts
-src/core/backup-crypto.ts
-src/core/backup.ts
-src/core/benchmark.ts
-src/core/character-card.ts
-src/core/character-generator.ts
-src/core/character-version-control.ts
-src/core/community-market.ts
-src/core/compression.ts
-src/core/dual-channel-runtime.ts
-src/core/event-types.ts
-src/core/extension-loader.ts
-src/core/extension-types.ts
-src/core/image-generation.ts
-src/core/inference-cache.ts
-src/core/l0-l2-runtime.ts
-src/core/local-model-engine.ts
-src/core/lorebook-scanner.ts
-src/core/market-index.ts
-src/core/npc-generator.ts
-src/core/onnx-embedding-provider.ts
-src/core/output-discipline.ts
-src/core/prompt-builder.ts
-src/core/protagonist.ts
-src/core/rag-retriever.ts
-src/core/random-event-generator.ts
-src/core/slash-command.ts
-src/core/story-analyzer.ts
-src/core/story-importer.ts
-src/core/story-time.ts
-src/core/story-types.ts
-src/core/summarizer.ts
-src/core/tool-registry.ts
-src/core/trigger-engine.ts
-src/core/world-generator.ts
-src/core/world-setting-chunker.ts
-src/services/tts-service.ts
-src/services/type-adapters.ts
-src/storage/indexeddb-adapter.ts
-src/storage/tauri-fs-adapter.ts
+# i18n 门禁白名单
+#
+# T-13 国际化迁移已完成：
+#   - 所有用户可见 UI 文案 / 错误消息已迁移为 t() 调用
+#   - LLM 提示词 / mock 数据 / 种子目录采用文件内 // i18n-ignore-start/end 块豁免
+#   - strict 全量扫描（node scripts/i18n-scan.mjs --strict）已通过，src 全量无硬编码中文残留
+#
+# 如后续新增「模型面提示词 / mock 数据」类文件，优先用文件内豁免块标记，
+# 仅在整文件都需跳过时使用本白名单。

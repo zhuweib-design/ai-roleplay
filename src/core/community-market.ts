@@ -19,6 +19,7 @@
 
 import type { CharacterCard } from './character-card';
 import { deepClone } from './json-utils';
+import { t } from '@/i18n';
 
 // ── 类型定义 ──
 
@@ -268,7 +269,7 @@ export class CommunityMarketEngine {
       (u) => u.name.toLowerCase() === name.toLowerCase()
     );
     if (existing) {
-      throw new Error(`用户名「${name}」已被占用`);
+      throw new Error(t('mkt.usernameTaken', { name }));
     }
     const user: MarketUser = {
       id: generateId('user'),
@@ -346,7 +347,7 @@ export class CommunityMarketEngine {
   ): string {
     const author = this.users.get(authorId);
     if (!author) {
-      throw new Error('用户不存在');
+      throw new Error(t('mkt.userNotFound'));
     }
     const marketId = generateId('card');
     const now = new Date().toISOString();
@@ -507,7 +508,7 @@ export class CommunityMarketEngine {
   setModerationStatus(marketId: string, status: ModerationStatus): void {
     const card = this.cards.get(marketId);
     if (!card) {
-      throw new Error(`角色卡 ${marketId} 不存在`);
+      throw new Error(t('mkt.cardNotFound', { marketId }));
     }
     card.moderationStatus = status;
     card.updatedAt = new Date().toISOString();
@@ -519,7 +520,7 @@ export class CommunityMarketEngine {
   setFeatured(marketId: string, featured: boolean): void {
     const card = this.cards.get(marketId);
     if (!card) {
-      throw new Error(`角色卡 ${marketId} 不存在`);
+      throw new Error(t('mkt.cardNotFound', { marketId }));
     }
     card.featured = featured;
     card.updatedAt = new Date().toISOString();
@@ -560,11 +561,11 @@ export class CommunityMarketEngine {
   downloadCard(marketId: string, userId: string): MarketTransaction {
     const card = this.cards.get(marketId);
     if (!card) {
-      throw new Error(`角色卡 ${marketId} 不存在`);
+      throw new Error(t('mkt.cardNotFound', { marketId }));
     }
     const user = this.users.get(userId);
     if (!user) {
-      throw new Error('用户不存在');
+      throw new Error(t('mkt.userNotFound'));
     }
 
     card.downloadCount++;
@@ -590,7 +591,7 @@ export class CommunityMarketEngine {
   toggleFavorite(marketId: string, userId: string): boolean {
     const card = this.cards.get(marketId);
     if (!card) {
-      throw new Error(`角色卡 ${marketId} 不存在`);
+      throw new Error(t('mkt.cardNotFound', { marketId }));
     }
 
     // 检查是否已收藏（通过交易记录）
@@ -664,17 +665,17 @@ export class CommunityMarketEngine {
   ): MarketReview {
     const card = this.cards.get(marketId);
     if (!card) {
-      throw new Error(`角色卡 ${marketId} 不存在`);
+      throw new Error(t('mkt.cardNotFound', { marketId }));
     }
     const user = this.users.get(userId);
     if (!user) {
-      throw new Error('用户不存在');
+      throw new Error(t('mkt.userNotFound'));
     }
     if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
-      throw new Error('评分必须为 1-5 的整数');
+      throw new Error(t('mkt.ratingRange'));
     }
     if (!comment || comment.trim().length === 0) {
-      throw new Error('评论内容不能为空');
+      throw new Error(t('mkt.commentEmpty'));
     }
 
     const review: MarketReview = {
@@ -753,11 +754,11 @@ export class CommunityMarketEngine {
   ): MarketReport {
     const card = this.cards.get(marketId);
     if (!card) {
-      throw new Error(`角色卡 ${marketId} 不存在`);
+      throw new Error(t('mkt.cardNotFound', { marketId }));
     }
     const reporter = this.users.get(reporterId);
     if (!reporter) {
-      throw new Error('举报者不存在');
+      throw new Error(t('mkt.reporterNotFound'));
     }
 
     const report: MarketReport = {
@@ -799,7 +800,7 @@ export class CommunityMarketEngine {
   ): void {
     const report = this.reports.get(reportId);
     if (!report) {
-      throw new Error(`举报 ${reportId} 不存在`);
+      throw new Error(t('mkt.reportNotFound', { reportId }));
     }
     report.status = status;
     report.resolution = resolution;
@@ -936,6 +937,7 @@ export class CommunityMarketEngine {
 /**
  * 生成 Mock 用户
  */
+// i18n-ignore-start  // 模型面提示词 / mock 数据，非 UI 文案（待翻译）
 function createMockUsers(): MarketUser[] {
   return [
     {
@@ -1268,3 +1270,4 @@ export function createMockEngine(): CommunityMarketEngine {
 // ── 默认导出 ──
 
 export default CommunityMarketEngine;
+// i18n-ignore-end

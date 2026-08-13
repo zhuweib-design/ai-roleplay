@@ -11,6 +11,7 @@
  */
 
 import type { ToolCall, ToolDefinition } from '@api/types';
+import { t } from '@/i18n';
 
 /** 工具执行上下文(由装配方注入) */
 export interface ToolExecutionContext {
@@ -25,6 +26,7 @@ export interface ToolExecutionContext {
 }
 
 const VAR_PARAMS = {
+// i18n-ignore-start  // 模型面提示词 / mock 数据，非 UI 文案（待翻译）
   type: 'object',
   properties: { name: { type: 'string', description: '变量名' } },
   required: ['name'],
@@ -82,6 +84,7 @@ const BUILTIN_TOOL_DEFINITIONS: readonly ToolDefinition[] = [
           query: { type: 'string', description: '检索关键词或问题' },
           limit: { type: 'number', description: '最大返回段落数(默认 3)' },
         },
+// i18n-ignore-end
         required: ['query'],
       },
     },
@@ -120,33 +123,33 @@ export async function executeBuiltinTool(
   switch (name) {
     case 'get_var': {
       const key = String(args.name ?? '');
-      if (!key) return '错误:缺少 name 参数';
-      if (!ctx.getVariable) return 'get_var 不可用(未注入变量上下文)';
+      if (!key) return t('tool.missingNameParam');
+      if (!ctx.getVariable) return t('tool.getVarUnavailable');
       const value = ctx.getVariable(key);
-      return value === undefined ? `变量 ${key} 不存在` : String(value);
+      return value === undefined ? `${t('tool.varNotFound', { key })}` : String(value);
     }
     case 'set_var': {
       const key = String(args.name ?? '');
       const value = String(args.value ?? '');
-      if (!key) return '错误:缺少 name 参数';
-      if (!ctx.setVariable) return 'set_var 不可用(未注入变量上下文)';
+      if (!key) return t('tool.missingNameParam');
+      if (!ctx.setVariable) return t('tool.setVarUnavailable');
       ctx.setVariable(key, value);
-      return `已设置变量 ${key} = ${value}`;
+      return `${t('tool.varSet', { key, value })}`;
     }
     case 'search_lorebook': {
       const query = String(args.query ?? '');
-      if (!query) return '错误:缺少 query 参数';
-      if (!ctx.searchLorebook) return 'search_lorebook 不可用(未注入世界书上下文)';
+      if (!query) return t('tool.missingQueryParam');
+      if (!ctx.searchLorebook) return t('tool.searchLorebookUnavailable');
       return String(await ctx.searchLorebook(query));
     }
     case 'retrieve_document': {
       const query = String(args.query ?? '');
-      if (!query) return '错误:缺少 query 参数';
-      if (!ctx.retrieveDocuments) return 'retrieve_document 不可用(未注入资料库上下文)';
+      if (!query) return t('tool.missingQueryParam');
+      if (!ctx.retrieveDocuments) return t('tool.retrieveDocUnavailable');
       const limit = typeof args.limit === 'number' ? args.limit : undefined;
       return String(await ctx.retrieveDocuments(query, limit));
     }
     default:
-      return `错误:未知工具 ${name}`;
+      return `${t('tool.unknownTool', { name })}`;
   }
 }
