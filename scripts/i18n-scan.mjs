@@ -150,6 +150,14 @@ function isTechLine(code) {
   if (/^['"`].*['"`],?$/.test(trimmed)) return true;
   // 含 URL
   if (/https?:\/\//.test(code)) return true;
+  // 正则字面量（功能性匹配，非 UI 文案）——如 /停止生成|aborted/i
+  if (/^\/[\s\S]*\/[a-z]*[,;)]?$/.test(trimmed)) return true;
+  // 正则字面量 + .test() / .exec()（错误分类等逻辑匹配，兼容旧消息关键词）
+  // 覆盖行首直接是正则、或 if (/.../.test(...)) 形式
+  if (/^\/[\s\S]*\/[a-z]*\.(test|exec)\(/.test(trimmed)) return true;
+  if (/^if\s*\(\/[^;\n]*\/[a-z]*\.(test|exec)\(/.test(trimmed)) return true;
+  // RegExp 构造调用
+  if (/new RegExp\(/.test(code)) return true;
   return false;
 }
 

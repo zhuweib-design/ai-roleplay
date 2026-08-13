@@ -13,6 +13,8 @@
  * - 翻译失败时显示错误提示，不影响主流程
  */
 
+import { t } from '@/i18n';
+
 // ── 翻译配置 ──
 
 /** 翻译服务提供商 */
@@ -139,10 +141,10 @@ class GoogleTranslator implements TranslatorService {
 
   async translate(text: string): Promise<TranslationResult> {
     if (!text || text.trim() === '') {
-      throw new TranslationError('翻译文本为空', 'EMPTY_TEXT');
+      throw new TranslationError(t('trans.emptyText'), 'EMPTY_TEXT');
     }
     if (!this.isConfigured()) {
-      throw new TranslationError('未配置 Google API Key', 'API_KEY_MISSING');
+      throw new TranslationError(t('trans.apiKeyMissing'), 'API_KEY_MISSING');
     }
 
     const { source, target } = getLanguageCodes(
@@ -170,7 +172,7 @@ class GoogleTranslator implements TranslatorService {
       });
     } catch (err) {
       throw new TranslationError(
-        `网络错误：${err instanceof Error ? err.message : String(err)}`,
+        t('trans.networkError', { error: err instanceof Error ? err.message : String(err) }),
         'NETWORK_ERROR'
       );
     }
@@ -178,10 +180,10 @@ class GoogleTranslator implements TranslatorService {
     if (!response.ok) {
       const errorBody = await response.text();
       if (response.status === 429) {
-        throw new TranslationError('API 调用频率超限', 'RATE_LIMIT');
+        throw new TranslationError(t('trans.rateLimit'), 'RATE_LIMIT');
       }
       if (response.status === 403) {
-        throw new TranslationError('API Key 无效或权限不足', 'API_KEY_MISSING');
+        throw new TranslationError(t('trans.invalidKey'), 'API_KEY_MISSING');
       }
       throw new TranslationError(
         `Google API 错误（${response.status}）：${errorBody}`,
@@ -192,7 +194,7 @@ class GoogleTranslator implements TranslatorService {
     const data = await response.json();
     const translations = data?.data?.translations;
     if (!Array.isArray(translations) || translations.length === 0) {
-      throw new TranslationError('Google API 返回数据格式异常', 'API_ERROR');
+      throw new TranslationError(t('trans.apiError', { provider: t('trans.providerGoogle') }), 'API_ERROR');
     }
 
     return {
@@ -217,7 +219,7 @@ class GoogleTranslator implements TranslatorService {
         // 单条失败不影响其他条目，记录错误并跳过
         results.push({
           originalText: text,
-          translatedText: `（翻译失败：${err instanceof Error ? err.message : String(err)}）`,
+          translatedText: t('trans.translateFailed', { error: err instanceof Error ? err.message : String(err) }),
           targetLang: '',
           provider: 'google',
           timestamp: Date.now(),
@@ -258,10 +260,10 @@ class DeepLTranslator implements TranslatorService {
 
   async translate(text: string): Promise<TranslationResult> {
     if (!text || text.trim() === '') {
-      throw new TranslationError('翻译文本为空', 'EMPTY_TEXT');
+      throw new TranslationError(t('trans.emptyText'), 'EMPTY_TEXT');
     }
     if (!this.isConfigured()) {
-      throw new TranslationError('未配置 DeepL API Key', 'API_KEY_MISSING');
+      throw new TranslationError(t('trans.deeplKeyMissing'), 'API_KEY_MISSING');
     }
 
     const { source, target } = getLanguageCodes(this.config.direction, 'deepl');
@@ -293,13 +295,13 @@ class DeepLTranslator implements TranslatorService {
     if (!response.ok) {
       const errorBody = await response.text();
       if (response.status === 429) {
-        throw new TranslationError('DeepL API 调用频率超限', 'RATE_LIMIT');
+        throw new TranslationError(t('trans.deeplRateLimit'), 'RATE_LIMIT');
       }
       if (response.status === 403) {
-        throw new TranslationError('DeepL API Key 无效', 'API_KEY_MISSING');
+        throw new TranslationError(t('trans.deeplInvalidKey'), 'API_KEY_MISSING');
       }
       throw new TranslationError(
-        `DeepL API 错误（${response.status}）：${errorBody}`,
+        t('trans.deeplApiError', { status: response.status, body: errorBody }),
         'API_ERROR'
       );
     }
@@ -307,7 +309,7 @@ class DeepLTranslator implements TranslatorService {
     const data = await response.json();
     const translations = data?.translations;
     if (!Array.isArray(translations) || translations.length === 0) {
-      throw new TranslationError('DeepL API 返回数据格式异常', 'API_ERROR');
+      throw new TranslationError(t('trans.apiError', { provider: t('trans.providerDeepL') }), 'API_ERROR');
     }
 
     return {
@@ -329,7 +331,7 @@ class DeepLTranslator implements TranslatorService {
       } catch (err) {
         results.push({
           originalText: text,
-          translatedText: `（翻译失败：${err instanceof Error ? err.message : String(err)}）`,
+          translatedText: t('trans.translateFailed', { error: err instanceof Error ? err.message : String(err) }),
           targetLang: '',
           provider: 'deepl',
           timestamp: Date.now(),
@@ -375,7 +377,7 @@ export async function translateText(
   config: TranslationConfig
 ): Promise<TranslationResult> {
   if (!config.enabled) {
-    throw new TranslationError('翻译功能未启用', 'NOT_CONFIGURED');
+    throw new TranslationError(t('trans.notConfigured'), 'NOT_CONFIGURED');
   }
   const translator = createTranslator(config);
   if (!translator) {

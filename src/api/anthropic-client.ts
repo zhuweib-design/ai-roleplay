@@ -8,6 +8,7 @@ import {
   toAnthropicTools,
 } from './anthropic-protocol';
 import { toDevProxyUrl } from './openai-protocol';
+import { t } from '@/i18n';
 
 /**
  * Anthropic Messages API 客户端 (T-01)
@@ -85,7 +86,7 @@ export class AnthropicClient implements ApiClient {
     const blocks = data?.content;
     if (!Array.isArray(blocks)) {
       throw new ApiError(
-        '响应格式错误：缺少 content 数组',
+        t('api.respMissingContent'),
         res.status,
         this.provider,
         'unknown'
@@ -102,7 +103,7 @@ export class AnthropicClient implements ApiClient {
     );
     if (!text && !hasToolUse) {
       throw new ApiError(
-        '响应格式错误：缺少 text / tool_use block',
+        t('api.respMissingBlock'),
         res.status,
         this.provider,
         'unknown'
@@ -128,11 +129,11 @@ export class AnthropicClient implements ApiClient {
     } catch (err) {
       // 用户中止或网络错误（DOMException 在部分环境不满足 instanceof Error，按 name 判断）
       if (err instanceof Error && err.name === 'AbortError') {
-        yield { type: 'error', error: '已停止生成' };
+        yield { type: 'error', error: t('api.stopped') };
         return;
       }
       if (typeof err === 'object' && err !== null && (err as { name?: unknown }).name === 'AbortError') {
-        yield { type: 'error', error: '已停止生成' };
+        yield { type: 'error', error: t('api.stopped') };
         return;
       }
       throw this.classifyFetchError(err);
@@ -142,7 +143,7 @@ export class AnthropicClient implements ApiClient {
       throw await this.toApiError(res);
     }
     if (!res.body) {
-      throw new ApiError('响应缺少 body 流', res.status, this.provider, 'server');
+      throw new ApiError(t('api.respMissingBody'), res.status, this.provider, 'server');
     }
 
     const reader = res.body.getReader();
@@ -163,7 +164,7 @@ export class AnthropicClient implements ApiClient {
             (err instanceof Error && err.name === 'AbortError') ||
             (typeof err === 'object' && err !== null && (err as { name?: unknown }).name === 'AbortError');
           if (isAbort) {
-            yield { type: 'error', error: '已停止生成' };
+            yield { type: 'error', error: t('api.stopped') };
             return;
           }
           throw err;
@@ -284,7 +285,7 @@ export class AnthropicClient implements ApiClient {
       return await fetch(input, init);
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
-        throw new ApiError('已停止生成', undefined, this.provider, 'aborted');
+        throw new ApiError(t('api.stopped'), undefined, this.provider, 'aborted');
       }
       throw this.classifyFetchError(err);
     }
@@ -307,16 +308,16 @@ export class AnthropicClient implements ApiClient {
       /failed to fetch|network request failed|load failed/i.test(rawMsg)
     ) {
       return new ApiError(
-        `网络请求失败：${rawMsg}（可能原因：1.网络断开 2.API 地址不可达 3.跨域 CORS 被拦截 4.HTTPS 证书无效）`,
+        t('api.networkFailed', { msg: rawMsg }),
         undefined,
         this.provider,
         'network'
       );
     }
     if (/timeout|timed out|aborted/i.test(lower)) {
-      return new ApiError(`请求超时：${rawMsg}`, undefined, this.provider, 'network');
+      return new ApiError(t('api.timeout', { msg: rawMsg }), undefined, this.provider, 'network');
     }
-    return new ApiError(`网络请求失败：${rawMsg}`, undefined, this.provider, 'unknown');
+    return new ApiError(t('api.networkFailed2', { msg: rawMsg }), undefined, this.provider, 'unknown');
   }
 
   private async toApiError(res: Response): Promise<ApiError> {
@@ -410,7 +411,7 @@ function parseAnthropicSSEEvent(raw: string): ParsedAnthropicEvent | null {
       case 'message_stop':
         return { kind: 'stop' };
       case 'error':
-        return { kind: 'error', message: parsed.error?.message || '未知错误' };
+        return { kind: 'error', message: parsed.error?.message || t('api.unknownError') };
       default:
         return { kind: 'other' }; // message_start / ping / content_block_stop 忽略
     }

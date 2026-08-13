@@ -28,6 +28,7 @@ import {
 import { isEncrypted } from '@/core/api-key-crypto';
 import { encryptBackup, decryptBackup, isBackupEncrypted } from '@/core/backup-crypto';
 import { auditLogger } from '@/core/audit-log';
+import { t } from '@/i18n';
 
 export type { ImportResult } from '@/core/backup';
 
@@ -56,20 +57,19 @@ export async function exportAll(adapter: StorageAdapter): Promise<BackupData> {
     if (p.apiKey && !isEncrypted(p.apiKey)) plaintextKeys.push(p.name);
   }
   const trKey = settings?.translationConfig?.apiKey;
-  if (trKey && !isEncrypted(trKey)) plaintextKeys.push('翻译 API Key');
+  if (trKey && !isEncrypted(trKey)) plaintextKeys.push(t('backup.translationKey'));
   if (plaintextKeys.length > 0) {
     // T-06 审计:明文密钥拒绝导出
-    auditLogger.record('backup_export', `明文密钥阻止导出:${plaintextKeys.join('、')}`, 'blocked');
+    auditLogger.record('backup_export', t('backup.plainKeysBlocked', { keys: plaintextKeys.join('、') }), 'blocked');
     throw new Error(
-      `备份中止：检测到未加密的 API Key（${plaintextKeys.join('、')}）。` +
-        '请先在设置中设置主密码（自动加密后重试），或清除这些 API Key。'
+      t('backup.abortedPlainKeys', { keys: plaintextKeys.join('、') })
     );
   }
 
   // T-06 审计:成功导出
   auditLogger.record(
     'backup_export',
-    `角色 ${characters.length} / 对话 ${chats.length} / 世界书 ${lorebooks.length}`,
+    t('backup.summary', { chars: characters.length, chats: chats.length, lbs: lorebooks.length }),
     'ok'
   );
 
@@ -149,7 +149,7 @@ export async function importBackup(
           result.characters.added++;
         }
       } catch (err) {
-        errors.push(`角色卡 ${card.name} 导入失败：${err instanceof Error ? err.message : String(err)}`);
+        errors.push(t('backup.charImportFailed', { name: card.name, error: err instanceof Error ? err.message : String(err) }));
       }
     }
   }
@@ -173,7 +173,7 @@ export async function importBackup(
           result.chats.added++;
         }
       } catch (err) {
-        errors.push(`对话 ${chat.id} 导入失败：${err instanceof Error ? err.message : String(err)}`);
+        errors.push(t('backup.chatImportFailed', { id: chat.id, error: err instanceof Error ? err.message : String(err) }));
       }
     }
   }
@@ -198,7 +198,7 @@ export async function importBackup(
           result.lorebooks.added++;
         }
       } catch (err) {
-        errors.push(`世界书 ${lb.name} 导入失败：${err instanceof Error ? err.message : String(err)}`);
+        errors.push(t('backup.lbImportFailed', { name: lb.name, error: err instanceof Error ? err.message : String(err) }));
       }
     }
   }
@@ -223,7 +223,7 @@ export async function importBackup(
           result.groupChats.added++;
         }
       } catch (err) {
-        errors.push(`群聊 ${gc.name} 导入失败：${err instanceof Error ? err.message : String(err)}`);
+        errors.push(t('backup.groupImportFailed', { name: gc.name, error: err instanceof Error ? err.message : String(err) }));
       }
     }
   }
@@ -248,7 +248,7 @@ export async function importBackup(
           result.personas.added++;
         }
       } catch (err) {
-        errors.push(`Persona ${p.name} 导入失败：${err instanceof Error ? err.message : String(err)}`);
+        errors.push(t('backup.personaImportFailed', { name: p.name, error: err instanceof Error ? err.message : String(err) }));
       }
     }
   }
@@ -263,7 +263,7 @@ export async function importBackup(
       await adapter.saveSettings(merged as AppSettings);
       result.settingsUpdated = true;
     } catch (err) {
-      errors.push(`设置导入失败：${err instanceof Error ? err.message : String(err)}`);
+      errors.push(t('backup.settingsImportFailed', { error: err instanceof Error ? err.message : String(err) }));
     }
   }
 
@@ -274,12 +274,17 @@ export async function importBackup(
   const totalOverwritten =
     result.characters.overwritten + result.chats.overwritten + result.lorebooks.overwritten +
     result.groupChats.overwritten + result.personas.overwritten;
+  const totalSkipped =
+    result.characters.skipped + result.chats.skipped + result.lorebooks.skipped +
+    result.groupChats.skipped + result.personas.skipped;
   auditLogger.record(
     'backup_import',
-    `新增 ${totalAdded} / 覆盖 ${totalOverwritten} / 跳过 ${
-      result.characters.skipped + result.chats.skipped + result.lorebooks.skipped +
-      result.groupChats.skipped + result.personas.skipped
-    }${errors.length > 0 ? `;${errors.length} 项失败` : ''}`,
+    t('backup.importResult', {
+      added: totalAdded,
+      overwritten: totalOverwritten,
+      skipped: totalSkipped,
+      failures: errors.length > 0 ? t('backup.failuresSuffix', { count: errors.length }) : '',
+    }),
     errors.length > 0 ? 'error' : 'ok'
   );
 
@@ -338,14 +343,14 @@ export async function parseBackupFile(
   } catch (err) {
     throw new Error(
       isBackupEncrypted(text)
-        ? `备份解密或解析失败：${err instanceof Error ? err.message : String(err)}`
-        : `JSON 解析失败：${err instanceof Error ? err.message : String(err)}`
+        ? t('backup.decryptFailed', { error: err instanceof Error ? err.message : String(err) })
+        : t('backup.jsonParseFailed', { error: err instanceof Error ? err.message : String(err) })
     );
   }
 
   const errors = validateBackup(json);
   if (errors.length > 0) {
-    throw new Error(`备份文件校验失败：${errors.join('；')}`);
+    throw new Error(t('backup.validationFailed', { errors: errors.join('；') }));
   }
 
   return json as BackupData;
@@ -382,13 +387,13 @@ export function exportChatMarkdown(
   const exportTime = new Date().toISOString();
   const messageCount = chat.messages.length;
 
-  lines.push(`# ${characterName} 的对话`);
+  lines.push(t('backup.mdTitle', { name: characterName }));
   lines.push('');
-  lines.push(`> 对话 ID: \`${chat.id}\``);
-  lines.push(`> 创建时间: ${chat.createdAt}`);
-  lines.push(`> 更新时间: ${chat.updatedAt}`);
-  lines.push(`> 消息数: ${messageCount}`);
-  lines.push(`> 导出时间: ${exportTime}`);
+  lines.push(t('backup.mdChatId', { id: chat.id }));
+  lines.push(t('backup.mdCreated', { time: chat.createdAt }));
+  lines.push(t('backup.mdUpdated', { time: chat.updatedAt }));
+  lines.push(t('backup.mdMsgCount', { count: messageCount }));
+  lines.push(t('backup.mdExported', { time: exportTime }));
   lines.push('');
   lines.push('---');
   lines.push('');
@@ -401,7 +406,7 @@ export function exportChatMarkdown(
     if (msg.content) {
       lines.push(msg.content);
     } else {
-      lines.push('_(空消息)_');
+      lines.push(t('backup.mdEmptyMsg'));
     }
     lines.push('');
   }
@@ -424,13 +429,13 @@ export function downloadChatMarkdown(
   const safeDate = new Date(chat.updatedAt).toISOString().slice(0, 10);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${safeName}-对话-${safeDate}.md`;
+  a.download = `${safeName}-${t('backup.mdFilenameChat')}-${safeDate}.md`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   // T-06 审计
-  auditLogger.record('chat_export_md', `对话「${characterName}」${chat.messages.length} 条`, 'ok');
+  auditLogger.record('chat_export_md', `${characterName} / ${chat.messages.length} msgs`, 'ok');
 }
 
 // ── PNG 嵌入式角色卡 (F13) ──
@@ -578,7 +583,7 @@ export async function importCharacterPng(file: File): Promise<CharacterCard | nu
   // 校验 PNG 签名
   for (let i = 0; i < PNG_SIGNATURE.length; i++) {
     if (bytes[i] !== PNG_SIGNATURE[i]) {
-      throw new Error('文件不是有效的 PNG');
+      throw new Error(t('backup.notPng'));
     }
   }
 
@@ -614,7 +619,7 @@ export async function importCharacterPng(file: File): Promise<CharacterCard | nu
           const json = JSON.parse(jsonString);
           return importV2Card(json);
         } catch (err) {
-          throw new Error(`解析嵌入角色卡失败：${err instanceof Error ? err.message : String(err)}`);
+          throw new Error(t('backup.pngParseFailed', { error: err instanceof Error ? err.message : String(err) }));
         }
       }
     }
@@ -643,5 +648,5 @@ export function downloadCharacterPng(card: CharacterCard): void {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   // T-06 审计
-  auditLogger.record('character_export_png', `角色卡「${card.name}」`, 'ok');
+  auditLogger.record('character_export_png', `${card.name}`, 'ok');
 }

@@ -2,6 +2,7 @@ import type { ApiClient } from './api-client';
 import type { ChatRequest, ChatStream } from './types';
 import { ApiError } from './types';
 import { buildChatCompletionsUrl, buildModelsUrl, toOpenAIMessage } from './openai-protocol';
+import { t } from '@/i18n';
 
 /**
  * Tauri OpenAI 兼容客户端 (Phase H4)
@@ -127,7 +128,7 @@ export class TauriOpenAIClient implements ApiClient {
         if (payload.full_content) fullContent = payload.full_content;
       } else if (payload.type === 'error') {
         error = {
-          message: payload.error || '未知错误',
+          message: payload.error || t('api.unknownError'),
           status: payload.status,
         };
       }
@@ -202,7 +203,7 @@ export class TauriOpenAIClient implements ApiClient {
         } else if (payload.type === 'error') {
           done = true;
           streamError = {
-            message: payload.error || '未知错误',
+            message: payload.error || t('api.unknownError'),
             status: payload.status,
           };
         }
@@ -280,7 +281,7 @@ export class TauriOpenAIClient implements ApiClient {
       await invokePromise;
 
       if (aborted) {
-        yield { type: 'error', error: '已停止生成' };
+        yield { type: 'error', error: t('api.stopped') };
         return;
       }
 

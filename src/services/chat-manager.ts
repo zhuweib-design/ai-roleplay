@@ -10,6 +10,7 @@ import {
   updateEmotionState,
   type L0L2Deps,
 } from '@core/l0-l2-runtime';
+import { t } from '@/i18n';
 
 /**
  * ChatManager 配置
@@ -121,7 +122,7 @@ export class ChatManager {
     callbacks?: ChatManagerCallbacks
   ): Promise<string> {
     if (this._isGenerating) {
-      throw new Error('已有生成任务进行中，请先调用 stop() 中止');
+      throw new Error(t('api.chatRunning'));
     }
 
     const merged = { ...this.config, ...params.overrides };
@@ -251,7 +252,7 @@ export class ChatManager {
             callbacks?.onDone?.(fullContent, ev.finishReason);
             return fullContent;
           } else if (ev.type === 'error') {
-            const err = new Error(ev.error || '生成失败');
+            const err = new Error(ev.error || t('api.genFailed'));
             callbacks?.onError?.(err);
             return fullContent; // 返回已收到的部分内容
           }
@@ -281,7 +282,7 @@ export class ChatManager {
             try {
               result = await merged.executeTool(tc);
             } catch (err) {
-              result = `工具执行失败:${err instanceof Error ? err.message : String(err)}`;
+              result = t('api.toolFailed', { msg: err instanceof Error ? err.message : String(err) });
             }
             toolMsgs.push({ role: 'tool', content: result, toolCallId: tc.id });
           }
@@ -323,7 +324,7 @@ export class ChatManager {
    */
   updateConfig(patch: Partial<ChatManagerConfig>): void {
     if (this._isGenerating) {
-      throw new Error('生成进行中，无法更新配置；请先 stop()');
+      throw new Error(t('api.cannotUpdateWhileRunning'));
     }
     this.config = { ...this.config, ...patch };
   }
@@ -364,28 +365,31 @@ export class ChatManager {
  * 兜底使用消息匹配（兼容旧错误或第三方抛出的 Error）
  */
 export function classifyChatError(err: Error): 'aborted' | 'api' | 'network' | 'unknown' {
-  if (err.name === 'AbortError' || /已停止生成|aborted/i.test(err.message)) {
+  // 优先结构化字段（ApiError.kind 精确分类；AbortError 原生中止）
+  if (err.name === 'AbortError' || err.name === 'ApiError' || (err as { kind?: string }).kind) {
+    const kind = (err as { kind?: string }).kind;
+    if (err.name === 'AbortError' || kind === 'aborted') return 'aborted';
+    if (err instanceof ApiError) {
+      switch (kind) {
+        case 'cors':
+        case 'network':
+        case 'invalid-url':
+        case 'rate-limit':
+          return 'network';
+        case 'auth':
+        case 'server':
+          return 'api';
+        case 'unknown':
+        default:
+          return err.statusCode ? 'api' : 'unknown';
+      }
+    }
+    return 'unknown';
+  }
+  // 兜底文本匹配（兼容旧错误/第三方 Error；结构化字段优先）
+  if (/已停止生成|aborted|generation (stopped|cancelled)/i.test(err.message)) {
     return 'aborted';
   }
-  if (err instanceof ApiError) {
-    // 基于 kind 字段精确分类
-    switch (err.kind) {
-      case 'aborted':
-        return 'aborted';
-      case 'cors':
-      case 'network':
-      case 'invalid-url':
-      case 'rate-limit':
-        return 'network';
-      case 'auth':
-      case 'server':
-        return 'api';
-      case 'unknown':
-      default:
-        // 含 statusCode 视为 API 错误
-        return err.statusCode ? 'api' : 'unknown';
-    }
-  }
-  if (/network|fetch|网络/i.test(err.message)) return 'network';
+  if (/network|fetch|网络|unreachable/i.test(err.message)) return 'network';
   return 'unknown';
 }

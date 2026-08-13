@@ -2,6 +2,7 @@ import type { ApiClient } from './api-client';
 import type { ChatRequest, ChatStream, ApiErrorKind } from './types';
 import { ApiError } from './types';
 import { buildChatCompletionsUrl, buildModelsUrl, toOpenAIMessage, toDevProxyUrl } from './openai-protocol';
+import { t } from '@/i18n';
 
 /**
  * OpenAI Chat Completions 兼容客户端 (F02.1)
@@ -63,7 +64,7 @@ export class OpenAIClient implements ApiClient {
     const content = message?.content;
     if (typeof content !== 'string' && !message?.tool_calls) {
       throw new ApiError(
-        '响应格式错误：缺少 choices[0].message.content',
+        t('api.respMissingChoices'),
         res.status,
         this.provider,
         'unknown'
@@ -91,7 +92,7 @@ export class OpenAIClient implements ApiClient {
     } catch (err) {
       // 用户中止或网络错误
       if (err instanceof Error && err.name === 'AbortError') {
-        yield { type: 'error', error: '已停止生成' };
+        yield { type: 'error', error: t('api.stopped') };
         return;
       }
       throw this.classifyFetchError(err);
@@ -102,7 +103,7 @@ export class OpenAIClient implements ApiClient {
     }
 
     if (!res.body) {
-      throw new ApiError('响应缺少 body 流', res.status, this.provider, 'server');
+      throw new ApiError(t('api.respMissingBody'), res.status, this.provider, 'server');
     }
 
     const reader = res.body.getReader();
@@ -125,7 +126,7 @@ export class OpenAIClient implements ApiClient {
           chunk = await reader.read();
         } catch (err) {
           if (err instanceof Error && err.name === 'AbortError') {
-            yield { type: 'error', error: '已停止生成' };
+            yield { type: 'error', error: t('api.stopped') };
             return;
           }
           throw err;
@@ -248,7 +249,7 @@ export class OpenAIClient implements ApiClient {
     const list = data?.data;
     if (!Array.isArray(list)) {
       throw new ApiError(
-        '响应格式错误：缺少 data 数组（该服务可能不支持 /models 接口，请手动输入模型名）',
+        t('api.respMissingData'),
         res.status,
         this.provider,
         'unknown'
@@ -274,7 +275,7 @@ export class OpenAIClient implements ApiClient {
     } catch (err) {
       // 用户中止
       if (err instanceof Error && err.name === 'AbortError') {
-        throw new ApiError('已停止生成', undefined, this.provider, 'aborted');
+        throw new ApiError(t('api.stopped'), undefined, this.provider, 'aborted');
       }
       throw this.classifyFetchError(err);
     }
@@ -296,7 +297,7 @@ export class OpenAIClient implements ApiClient {
     // URL 格式错误（如缺少 https://、含空格未编码等）
     if (/failed to construct|invalid url|malformed|illegal/i.test(rawMsg)) {
       return new ApiError(
-        `URL 格式错误：${rawMsg}（请检查 baseUrl 是否以 http:// 或 https:// 开头）`,
+        t('api.urlInvalid', { msg: rawMsg }),
         undefined,
         this.provider,
         'invalid-url'
@@ -311,7 +312,7 @@ export class OpenAIClient implements ApiClient {
       // 进一步细分：若 baseUrl 是跨域且未配置 CORS，多半是 CORS 问题
       // 但 TypeError 信息无法直接区分，这里按"网络或 CORS"统一返回 network kind
       return new ApiError(
-        `网络请求失败：${rawMsg}（可能原因：1.网络断开 2.API 地址不可达 3.跨域 CORS 被拦截 4.HTTPS 证书无效）`,
+        t('api.networkFailed', { msg: rawMsg }),
         undefined,
         this.provider,
         'network'
@@ -321,7 +322,7 @@ export class OpenAIClient implements ApiClient {
     // 超时
     if (/timeout|timed out|aborted/i.test(lower)) {
       return new ApiError(
-        `请求超时：${rawMsg}`,
+        t('api.timeout', { msg: rawMsg }),
         undefined,
         this.provider,
         'network'
@@ -330,7 +331,7 @@ export class OpenAIClient implements ApiClient {
 
     // 兜底
     return new ApiError(
-      `网络请求失败：${rawMsg}`,
+      t('api.networkFailed2', { msg: rawMsg }),
       undefined,
       this.provider,
       'unknown'
@@ -369,7 +370,7 @@ export class OpenAIClient implements ApiClient {
       detail = await res.text().catch(() => '');
     }
     return new ApiError(
-      `API 错误 ${res.status}: ${detail || res.statusText}`,
+      t('api.httpError', { status: res.status, detail: detail || res.statusText }),
       res.status,
       this.provider,
       statusToKind(res.status)
