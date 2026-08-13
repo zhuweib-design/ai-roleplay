@@ -26,6 +26,7 @@ import {
   type BenchmarkResult,
 } from '@/core/benchmark';
 import type { ModelSize } from '@/core/local-model-engine';
+import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useLocalModelStore();
@@ -33,11 +34,11 @@ const store = useLocalModelStore();
 // ── Tab ──
 type TabKey = 'models' | 'performance' | 'benchmark' | 'cache' | 'settings';
 const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: 'models', label: '模型管理' },
-  { key: 'performance', label: '性能指标' },
-  { key: 'benchmark', label: '性能基准' },
-  { key: 'cache', label: '推理缓存' },
-  { key: 'settings', label: '设置' },
+  { key: 'models', label: t('lm.tabModels') },
+  { key: 'performance', label: t('lm.tabPerformance') },
+  { key: 'benchmark', label: t('lm.tabBenchmark') },
+  { key: 'cache', label: t('lm.tabCache') },
+  { key: 'settings', label: t('lm.tabSettings') },
 ];
 const activeTab = ref<TabKey>('models');
 
@@ -68,39 +69,39 @@ function goBack() {
 async function handleDetect() {
   await store.detectCapability();
   if (store.isAvailable) {
-    showToast(`引擎可用：${store.capability?.browserName}，显存 ${store.capability?.estimatedVramMb}MB`, 'success');
+    showToast(t('lm.engineAvailable', { browser: store.capability?.browserName ?? '', vram: store.capability?.estimatedVramMb ?? 0 }), 'success');
   } else {
-    showToast(store.lastError ?? '本地推理不可用', 'error');
+    showToast(store.lastError ?? t('lm.engineUnavailable'), 'error');
   }
 }
 
 async function handleLoad(modelId: string) {
   const ok = await store.loadModel(modelId);
   if (ok) {
-    showToast(`模型已加载就绪`, 'success');
+    showToast(t('lm.modelLoaded'), 'success');
   } else {
-    showToast(store.lastError ?? '加载失败', 'error');
+    showToast(store.lastError ?? t('lm.loadFailed'), 'error');
   }
 }
 
 async function handleUnload() {
   await store.unloadModel();
-  showToast('模型已卸载', 'info');
+  showToast(t('lm.modelUnloaded'), 'info');
 }
 
 function handleClearCache() {
   store.clearCache();
-  showToast('缓存已清空', 'info');
+  showToast(t('lm.cacheCleared'), 'info');
 }
 
 function handleClearMetrics() {
   store.clearMetrics();
-  showToast('指标已清空', 'info');
+  showToast(t('lm.metricsCleared'), 'info');
 }
 
 function handleSaveSettings() {
   // 设置已通过 updateSettings 实时更新到 store
-  showToast('设置已保存', 'success');
+  showToast(t('lm.settingsSaved'), 'success');
 }
 
 // ── T-10: 性能基准 ──
@@ -116,9 +117,9 @@ async function handleRunBenchmark() {
     benchmarkResults.value = await runAllBenchmarks();
     benchmarkHistory.value = loadBenchmarkHistory();
     const allPass = benchmarkResults.value.every((r) => r.pass);
-    showToast(allPass ? '基准全部通过预算' : '存在未达预算项，请查看明细', allPass ? 'success' : 'error');
+    showToast(allPass ? t('lm.benchmarkAllPass') : t('lm.benchmarkFailed'), allPass ? 'success' : 'error');
   } catch (err) {
-    showToast(`基准运行失败：${err instanceof Error ? err.message : String(err)}`, 'error');
+    showToast(t('lm.benchmarkRunFailed', { error: err instanceof Error ? err.message : String(err) }), 'error');
   } finally {
     benchmarkRunning.value = false;
   }
@@ -127,7 +128,7 @@ async function handleRunBenchmark() {
 function handleClearBenchmarkHistory() {
   clearBenchmarkHistory();
   benchmarkHistory.value = [];
-  showToast('基准历史已清空', 'info');
+  showToast(t('lm.benchmarkHistoryCleared'), 'info');
 }
 
 // ── 工具 ──
@@ -157,15 +158,15 @@ onMounted(async () => {
   <div class="local-model-view">
     <header class="page-header">
       <div class="header-title">
-        <button type="button" class="header-btn" aria-label="返回" @click="goBack">
+        <button type="button" class="header-btn" :aria-label="t('lm.backAria')" @click="goBack">
           <Icon name="arrow-left" :size="18" aria-hidden="true" />
         </button>
-        <h1>本地模型</h1>
+        <h1>{{ t('lm.title') }}</h1>
         <span
           class="header-tag"
           :class="{ available: store.isAvailable, unavailable: !store.isAvailable }"
         >
-          {{ store.isAvailable ? '可用' : '不可用' }}
+          {{ store.isAvailable ? t('lm.available') : t('lm.unavailable') }}
         </span>
       </div>
       <div class="header-actions">
@@ -176,36 +177,36 @@ onMounted(async () => {
           @click="handleDetect"
         >
           <Icon name="refresh-cw" :size="16" aria-hidden="true" />
-          {{ store.isDetecting ? '检测中…' : '检测能力' }}
+          {{ store.isDetecting ? t('lm.detecting') : t('lm.detect') }}
         </button>
       </div>
     </header>
 
     <!-- 能力状态卡片 -->
-    <section class="capability-card" aria-label="引擎能力">
+    <section class="capability-card" :aria-label="t('lm.capabilityAria')">
       <div class="cap-grid">
         <div class="cap-item">
-          <span class="cap-label">WebGPU</span>
+          <span class="cap-label">{{ t('lm.webgpu') }}</span>
           <span class="cap-value" :class="{ ok: store.capability?.webgpuSupported, no: !store.capability?.webgpuSupported }">
-            {{ store.capability ? (store.capability.webgpuSupported ? '支持' : '不支持') : '未检测' }}
+            {{ store.capability ? (store.capability.webgpuSupported ? t('lm.supported') : t('lm.notSupported')) : t('lm.notDetected') }}
           </span>
         </div>
         <div class="cap-item">
-          <span class="cap-label">WebLLM</span>
+          <span class="cap-label">{{ t('lm.webllm') }}</span>
           <span class="cap-value" :class="{ ok: store.capability?.webllmInstalled, no: store.capability?.webllmInstalled === false }">
-            {{ store.capability ? (store.capability.webllmInstalled ? '已安装' : '未安装') : '未检测' }}
+            {{ store.capability ? (store.capability.webllmInstalled ? t('lm.installed') : t('lm.notInstalled')) : t('lm.notDetected') }}
           </span>
         </div>
         <div class="cap-item">
-          <span class="cap-label">浏览器</span>
-          <span class="cap-value">{{ store.capability?.browserName ?? '未检测' }}</span>
+          <span class="cap-label">{{ t('lm.browser') }}</span>
+          <span class="cap-value">{{ store.capability?.browserName ?? t('lm.notDetected') }}</span>
         </div>
         <div class="cap-item">
-          <span class="cap-label">估算显存</span>
-          <span class="cap-value">{{ store.capability ? formatSize(store.capability.estimatedVramMb) : '未检测' }}</span>
+          <span class="cap-label">{{ t('lm.estimatedVram') }}</span>
+          <span class="cap-value">{{ store.capability ? formatSize(store.capability.estimatedVramMb) : t('lm.notDetected') }}</span>
         </div>
         <div class="cap-item">
-          <span class="cap-label">WASM 降级</span>
+          <span class="cap-label">{{ t('lm.wasmFallback') }}</span>
           <span
             class="cap-value"
             :class="{
@@ -213,7 +214,7 @@ onMounted(async () => {
               no: store.capability?.wasmSupported === false,
             }"
           >
-            {{ store.capability ? (store.capability.wasmSupported ? '可用' : '不可用') : '未检测' }}
+            {{ store.capability ? (store.capability.wasmSupported ? t('lm.wasmAvailable') : t('lm.wasmUnavailable')) : t('lm.notDetected') }}
           </span>
         </div>
       </div>
@@ -224,7 +225,7 @@ onMounted(async () => {
         role="note"
       >
         <Icon name="alert-triangle" :size="14" aria-hidden="true" />
-        当前环境无 WebGPU，将使用 <strong>WASM CPU 降级</strong> 推理（速度较慢，建议选择 small 模型）
+        <span>{{ t('lm.wasmNotice') }}</span>
       </div>
       <p v-if="store.capability?.reason" class="cap-reason" role="alert">
         <Icon name="alert-triangle" :size="14" aria-hidden="true" />
@@ -232,7 +233,7 @@ onMounted(async () => {
       </p>
     </section>
 
-    <nav class="tabs" role="tablist" aria-label="本地模型管理">
+    <nav class="tabs" role="tablist" :aria-label="t('lm.tabsAria')">
       <button
         v-for="tab in TABS"
         :key="tab.key"
@@ -259,7 +260,7 @@ onMounted(async () => {
         class="panel"
       >
         <div class="panel-toolbar">
-          <div class="filter-group" role="radiogroup" aria-label="模型规模筛选">
+          <div class="filter-group" role="radiogroup" :aria-label="t('lm.filterAria')">
             <button
               type="button"
               role="radio"
@@ -268,7 +269,7 @@ onMounted(async () => {
               :class="{ active: filterSize === 'all' }"
               @click="filterSize = 'all'"
             >
-              全部
+              {{ t('lm.filterAll') }}
             </button>
             <button
               type="button"
@@ -278,7 +279,7 @@ onMounted(async () => {
               :class="{ active: filterSize === 'small' }"
               @click="filterSize = 'small'"
             >
-              小型
+              {{ t('lm.filterSmall') }}
             </button>
             <button
               type="button"
@@ -288,17 +289,17 @@ onMounted(async () => {
               :class="{ active: filterSize === 'medium' }"
               @click="filterSize = 'medium'"
             >
-              中型
+              {{ t('lm.filterMedium') }}
             </button>
           </div>
-          <span class="model-count">{{ filteredModels.length }} 个模型</span>
+          <span class="model-count">{{ t('lm.modelCount', { count: filteredModels.length }) }}</span>
         </div>
 
         <!-- 加载进度条 -->
         <div v-if="store.isLoading && store.loadProgress" class="progress-bar" role="status" aria-live="polite">
           <div class="progress-info">
-            <span>加载中：{{ store.loadProgress.phase }}</span>
-            <span>{{ formatPercent(store.loadProgress.progress) }}（{{ formatSize(store.loadProgress.loadedMb) }} / {{ formatSize(store.loadProgress.totalMb) }}）</span>
+            <span>{{ t('lm.loadingPhase', { phase: store.loadProgress.phase }) }}</span>
+            <span>{{ t('lm.loadingProgress', { percent: formatPercent(store.loadProgress.progress), loaded: formatSize(store.loadProgress.loadedMb), total: formatSize(store.loadProgress.totalMb) }) }}</span>
           </div>
           <div class="progress-track">
             <div class="progress-fill" :style="{ width: `${store.loadProgress.progress * 100}%` }" />
@@ -315,17 +316,17 @@ onMounted(async () => {
             <div class="model-header">
               <div class="model-title">
                 <span class="title-text">{{ model.name }}</span>
-                <span class="badge size" :data-size="model.size">{{ model.size === 'small' ? '小型' : model.size === 'medium' ? '中型' : '大型' }}</span>
-                <span v-if="store.loadedModelId === model.id" class="badge loaded">已加载</span>
-                <span v-if="model.lowResourceFriendly" class="badge friendly">低配友好</span>
+                <span class="badge size" :data-size="model.size">{{ model.size === 'small' ? t('lm.sizeSmall') : model.size === 'medium' ? t('lm.sizeMedium') : t('lm.sizeLarge') }}</span>
+                <span v-if="store.loadedModelId === model.id" class="badge loaded">{{ t('lm.loadedBadge') }}</span>
+                <span v-if="model.lowResourceFriendly" class="badge friendly">{{ t('lm.lowResourceFriendly') }}</span>
               </div>
             </div>
             <p class="model-desc">{{ model.description }}</p>
             <dl class="model-meta">
-              <div><dt>下载大小</dt><dd>{{ formatSize(model.downloadSizeMb) }}</dd></div>
-              <div><dt>显存占用</dt><dd>{{ formatSize(model.vramMb) }}</dd></div>
-              <div><dt>上下文</dt><dd>{{ model.contextLength }} tokens</dd></div>
-              <div><dt>版本</dt><dd>{{ model.version }}</dd></div>
+              <div><dt>{{ t('lm.downloadSize') }}</dt><dd>{{ formatSize(model.downloadSizeMb) }}</dd></div>
+              <div><dt>{{ t('lm.vramUsage') }}</dt><dd>{{ formatSize(model.vramMb) }}</dd></div>
+              <div><dt>{{ t('lm.contextLength') }}</dt><dd>{{ model.contextLength }} tokens</dd></div>
+              <div><dt>{{ t('lm.version') }}</dt><dd>{{ model.version }}</dd></div>
             </dl>
             <div class="model-actions">
               <button
@@ -336,7 +337,7 @@ onMounted(async () => {
                 @click="handleLoad(model.id)"
               >
                 <Icon name="download" :size="14" aria-hidden="true" />
-                加载模型
+                {{ t('lm.loadModel') }}
               </button>
               <button
                 v-else
@@ -346,14 +347,14 @@ onMounted(async () => {
                 @click="handleUnload"
               >
                 <Icon name="stop" :size="14" aria-hidden="true" />
-                卸载
+                {{ t('lm.unload') }}
               </button>
             </div>
           </li>
         </ul>
         <div v-else class="empty-state">
           <Icon name="cpu" :size="48" aria-hidden="true" />
-          <p>无符合条件的模型</p>
+          <p>{{ t('lm.noModels') }}</p>
         </div>
       </section>
 
@@ -366,33 +367,33 @@ onMounted(async () => {
         class="panel"
       >
         <div class="panel-toolbar">
-          <p class="panel-hint">展示本地推理的性能指标历史。</p>
+          <p class="panel-hint">{{ t('lm.performanceHint') }}</p>
           <button type="button" class="btn" @click="handleClearMetrics">
             <Icon name="trash-2" :size="14" aria-hidden="true" />
-            清空指标
+            {{ t('lm.clearMetrics') }}
           </button>
         </div>
 
         <div class="stats-grid">
           <div class="stat-card">
-            <span class="stat-label">平均解码速度</span>
+            <span class="stat-label">{{ t('lm.avgDecodeSpeed') }}</span>
             <span class="stat-value">{{ store.averageMetrics.avgTokensPerSecond.toFixed(1) }} <span class="unit">tokens/s</span></span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">平均首字延迟</span>
+            <span class="stat-label">{{ t('lm.avgFirstToken') }}</span>
             <span class="stat-value">{{ formatMs(store.averageMetrics.avgFirstTokenMs) }}</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">平均总耗时</span>
+            <span class="stat-label">{{ t('lm.avgTotal') }}</span>
             <span class="stat-value">{{ formatMs(store.averageMetrics.avgTotalMs) }}</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">推理次数</span>
+            <span class="stat-label">{{ t('lm.inferenceCount') }}</span>
             <span class="stat-value">{{ store.averageMetrics.count }}</span>
           </div>
         </div>
 
-        <h3 class="section-title">最近指标</h3>
+        <h3 class="section-title">{{ t('lm.recentMetrics') }}</h3>
         <ul v-if="store.metricsHistory.length > 0" class="metrics-list" role="list">
           <li v-for="(m, idx) in store.metricsHistory.slice(-20).reverse()" :key="idx" class="metrics-item">
             <span class="metrics-model">{{ m.modelId.split('-')[0] }} {{ m.modelId.split('-')[1] }}</span>
@@ -402,7 +403,7 @@ onMounted(async () => {
           </li>
         </ul>
         <div v-else class="empty-state small">
-          <p>暂无推理记录</p>
+          <p>{{ t('lm.noMetrics') }}</p>
         </div>
       </section>
 
@@ -416,7 +417,7 @@ onMounted(async () => {
       >
         <div class="panel-toolbar">
           <p class="panel-hint">
-            浏览器内微基准:验证性能预算(RAG 召回 &lt;500ms、窗口计算 &lt;50ms;Token 计数为观测项)。
+            {{ t('lm.benchmarkHint') }}
           </p>
           <button
             type="button"
@@ -425,11 +426,11 @@ onMounted(async () => {
             @click="handleRunBenchmark"
           >
             <Icon name="refresh-cw" :size="14" aria-hidden="true" :class="{ spinning: benchmarkRunning }" />
-            {{ benchmarkRunning ? '运行中…' : '运行基准' }}
+            {{ benchmarkRunning ? t('lm.runningBenchmark') : t('lm.runBenchmark') }}
           </button>
           <button type="button" class="btn" @click="handleClearBenchmarkHistory">
             <Icon name="trash-2" :size="14" aria-hidden="true" />
-            清空历史
+            {{ t('lm.clearHistory') }}
           </button>
         </div>
 
@@ -443,23 +444,23 @@ onMounted(async () => {
             <span
               class="benchmark-pass"
               :class="r.pass ? 'pass' : 'fail'"
-              aria-label="是否通过预算"
+              :aria-label="t('lm.benchmarkPassAria')"
             >
               {{ r.pass ? '✓' : '✗' }}
             </span>
             <span class="benchmark-name">{{ r.name }}</span>
             <span class="benchmark-duration">{{ r.durationMs }} ms</span>
-            <span v-if="r.budgetMs" class="benchmark-budget">预算 {{ r.budgetMs }} ms</span>
+            <span v-if="r.budgetMs" class="benchmark-budget">{{ t('lm.benchmarkBudget', { budget: r.budgetMs }) }}</span>
             <span class="benchmark-detail">{{ r.detail }}</span>
           </li>
         </ul>
         <div v-else class="empty-state small">
-          <p>尚未运行基准,点击「运行基准」开始</p>
+          <p>{{ t('lm.benchmarkNoRun') }}</p>
         </div>
 
         <!-- 历史 -->
         <template v-if="benchmarkHistory.length > 0">
-          <h4 class="benchmark-history-title">历史记录</h4>
+          <h4 class="benchmark-history-title">{{ t('lm.benchmarkHistory') }}</h4>
           <ul class="metrics-list" role="list">
             <li
               v-for="(round, ridx) in benchmarkHistory"
@@ -467,14 +468,14 @@ onMounted(async () => {
               class="metrics-item"
             >
               <span class="benchmark-history-time">
-                {{ new Date(round[0]?.ts ?? '').toLocaleString('zh-CN') }}
+                {{ new Date(round[0]?.ts ?? '').toLocaleString() }}
               </span>
               <span
                 v-for="r in round"
                 :key="r.name"
                 class="benchmark-history-chip"
                 :class="r.pass ? 'pass' : 'fail'"
-                :title="`${r.name}: ${r.durationMs}ms${r.budgetMs ? ` / 预算 ${r.budgetMs}ms` : ''}`"
+                :title="t('lm.benchmarkChipTitle', { name: r.name, duration: r.durationMs, budget: r.budgetMs ? t('lm.benchmarkBudgetSuffix', { budget: r.budgetMs }) : '' })"
               >
                 {{ r.durationMs }}ms
               </span>
@@ -492,33 +493,33 @@ onMounted(async () => {
         class="panel"
       >
         <div class="panel-toolbar">
-          <p class="panel-hint">推理结果缓存可避免重复计算，加速相同请求的响应。</p>
+          <p class="panel-hint">{{ t('lm.cacheHint') }}</p>
           <div class="toolbar-actions">
             <button type="button" class="btn" @click="store.purgeExpiredCache()">
-              清理过期
+              {{ t('lm.purgeExpired') }}
             </button>
             <button type="button" class="btn danger" @click="handleClearCache">
               <Icon name="trash-2" :size="14" aria-hidden="true" />
-              清空缓存
+              {{ t('lm.clearCache') }}
             </button>
           </div>
         </div>
 
         <div class="stats-grid">
           <div class="stat-card">
-            <span class="stat-label">缓存条目数</span>
+            <span class="stat-label">{{ t('lm.cacheEntries') }}</span>
             <span class="stat-value">{{ store.cacheStats.size }} / {{ store.cacheStats.maxCapacity }}</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">命中率</span>
+            <span class="stat-label">{{ t('lm.hitRate') }}</span>
             <span class="stat-value">{{ formatPercent(store.cacheStats.hitRate) }}</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">命中次数</span>
+            <span class="stat-label">{{ t('lm.hitCount') }}</span>
             <span class="stat-value">{{ store.cacheStats.totalHits }}</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">淘汰次数</span>
+            <span class="stat-label">{{ t('lm.evictionCount') }}</span>
             <span class="stat-value">{{ store.cacheStats.totalEvictions }}</span>
           </div>
         </div>
@@ -534,17 +535,17 @@ onMounted(async () => {
       >
         <div class="settings-form">
           <label class="setting-row">
-            <span class="setting-label">优先使用本地推理</span>
+            <span class="setting-label">{{ t('lm.preferLocal') }}</span>
             <input
               type="checkbox"
               :checked="store.settings.preferLocal"
               @change="store.updateSettings({ preferLocal: ($event.target as HTMLInputElement).checked })"
             />
-            <span class="setting-desc">开启后，对话时优先尝试本地模型，失败回退到 API</span>
+            <span class="setting-desc">{{ t('lm.preferLocalDesc') }}</span>
           </label>
 
           <label class="setting-row">
-            <span class="setting-label">缓存容量</span>
+            <span class="setting-label">{{ t('lm.cacheCapacity') }}</span>
             <input
               type="number"
               min="1"
@@ -552,11 +553,11 @@ onMounted(async () => {
               :value="store.settings.cacheCapacity"
               @change="store.updateSettings({ cacheCapacity: parseInt(($event.target as HTMLInputElement).value, 10) || 50 })"
             />
-            <span class="setting-desc">缓存的最大条目数（超出后淘汰最旧的）</span>
+            <span class="setting-desc">{{ t('lm.cacheCapacityDesc') }}</span>
           </label>
 
           <label class="setting-row">
-            <span class="setting-label">缓存有效期（分钟）</span>
+            <span class="setting-label">{{ t('lm.cacheTtl') }}</span>
             <input
               type="number"
               min="1"
@@ -564,11 +565,11 @@ onMounted(async () => {
               :value="Math.round(store.settings.cacheTtlMs / 60000)"
               @change="store.updateSettings({ cacheTtlMs: (parseInt(($event.target as HTMLInputElement).value, 10) || 30) * 60000 })"
             />
-            <span class="setting-desc">缓存条目超过此时间后自动失效</span>
+            <span class="setting-desc">{{ t('lm.cacheTtlDesc') }}</span>
           </label>
 
           <label class="setting-row">
-            <span class="setting-label">默认温度</span>
+            <span class="setting-label">{{ t('lm.defaultTemp') }}</span>
             <input
               type="number"
               min="0"
@@ -577,11 +578,11 @@ onMounted(async () => {
               :value="store.settings.defaultTemperature"
               @change="store.updateSettings({ defaultTemperature: parseFloat(($event.target as HTMLInputElement).value) || 0.7 })"
             />
-            <span class="setting-desc">推理默认温度参数</span>
+            <span class="setting-desc">{{ t('lm.defaultTempDesc') }}</span>
           </label>
 
           <label class="setting-row">
-            <span class="setting-label">默认 Top-P</span>
+            <span class="setting-label">{{ t('lm.defaultTopP') }}</span>
             <input
               type="number"
               min="0"
@@ -590,11 +591,11 @@ onMounted(async () => {
               :value="store.settings.defaultTopP"
               @change="store.updateSettings({ defaultTopP: parseFloat(($event.target as HTMLInputElement).value) || 0.95 })"
             />
-            <span class="setting-desc">核采样阈值（0-1，默认 0.95）</span>
+            <span class="setting-desc">{{ t('lm.defaultTopPDesc') }}</span>
           </label>
 
           <label class="setting-row">
-            <span class="setting-label">默认最大 tokens</span>
+            <span class="setting-label">{{ t('lm.defaultMaxTokens') }}</span>
             <input
               type="number"
               min="64"
@@ -603,13 +604,13 @@ onMounted(async () => {
               :value="store.settings.defaultMaxTokens"
               @change="store.updateSettings({ defaultMaxTokens: parseInt(($event.target as HTMLInputElement).value, 10) || 1024 })"
             />
-            <span class="setting-desc">单次推理最大生成 token 数</span>
+            <span class="setting-desc">{{ t('lm.defaultMaxTokensDesc') }}</span>
           </label>
 
           <div class="setting-actions">
             <button type="button" class="btn primary" @click="handleSaveSettings">
               <Icon name="save" :size="14" aria-hidden="true" />
-              保存设置
+              {{ t('lm.saveSettings') }}
             </button>
           </div>
         </div>
