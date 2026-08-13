@@ -22,6 +22,7 @@ import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import { SIZE_DIMENSIONS } from '@/core/image-generation';
 import type { ImageSize, ImageQuality, StylePresetId, ProviderType, GeneratedImage } from '@/core/image-generation';
+import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useImageGenerationStore();
@@ -29,9 +30,9 @@ const store = useImageGenerationStore();
 // ── Tab ──
 type TabKey = 'generate' | 'gallery' | 'settings';
 const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: 'generate', label: '生成' },
-  { key: 'gallery', label: '画廊' },
-  { key: 'settings', label: '设置' },
+  { key: 'generate', label: t('imgGen.tabGenerate') },
+  { key: 'gallery', label: t('imgGen.tabGallery') },
+  { key: 'settings', label: t('imgGen.tabSettings') },
 ];
 const activeTab = ref<TabKey>('generate');
 
@@ -45,16 +46,16 @@ const sizeOptions = computed(() =>
 
 // ── 质量选项 ──
 const qualityOptions: Array<{ value: ImageQuality; label: string }> = [
-  { value: 'draft', label: '草稿（快速）' },
-  { value: 'standard', label: '标准' },
-  { value: 'high', label: '高清' },
-  { value: 'ultra', label: '极致' },
+  { value: 'draft', label: t('imgGen.qualityDraft') },
+  { value: 'standard', label: t('imgGen.qualityStandard') },
+  { value: 'high', label: t('imgGen.qualityHigh') },
+  { value: 'ultra', label: t('imgGen.qualityUltra') },
 ];
 
 // ── Provider 类型选项 ──
 const providerTypeOptions: Array<{ value: ProviderType; label: string }> = [
-  { value: 'openai', label: 'OpenAI 兼容（DALL-E）' },
-  { value: 'custom', label: '自定义 API' },
+  { value: 'openai', label: t('imgGen.providerOpenai') },
+  { value: 'custom', label: t('imgGen.providerCustom') },
 ];
 
 // ── Toast ──
@@ -98,24 +99,24 @@ function goBack() {
 
 async function handleGenerate() {
   if (!store.canGenerate) {
-    showToast('请填写提示词并配置 API Key', 'error');
+    showToast(t('imgGen.needConfig'), 'error');
     return;
   }
   const image = await store.generate();
   if (image) {
-    showToast('图像生成成功', 'success');
+    showToast(t('imgGen.success'), 'success');
   } else {
-    showToast(store.lastError ?? '生成失败', 'error');
+    showToast(store.lastError ?? t('imgGen.failed'), 'error');
   }
 }
 
 async function handleBatchGenerate() {
   if (!store.canGenerate) {
-    showToast('请填写提示词并配置 API Key', 'error');
+    showToast(t('imgGen.needConfig'), 'error');
     return;
   }
   const images = await store.generateBatch();
-  showToast(`批量生成完成：${images.length} 张`, images.length > 0 ? 'success' : 'error');
+  showToast(t('imgGen.batchDone', { count: images.length }), images.length > 0 ? 'success' : 'error');
 }
 
 function openDetail(image: GeneratedImage) {
@@ -132,12 +133,12 @@ function downloadImage(image: GeneratedImage) {
 
 async function handleDelete(id: string) {
   await store.deleteFromGallery(id);
-  showToast('已删除', 'info');
+  showToast(t('imgGen.deleted'), 'info');
 }
 
 async function handleClearGallery() {
   await store.clearGallery();
-  showToast('画廊已清空', 'info');
+  showToast(t('imgGen.galleryCleared'), 'info');
 }
 
 // ── 工具 ──
@@ -165,17 +166,17 @@ onMounted(async () => {
   <div class="image-gen-view">
     <header class="page-header">
       <div class="header-title">
-        <button type="button" class="header-btn" aria-label="返回" @click="goBack">
+        <button type="button" class="header-btn" :aria-label="t('imgGen.backAria')" @click="goBack">
           <Icon name="arrow-left" :size="18" aria-hidden="true" />
         </button>
-        <h1>图像生成</h1>
+        <h1>{{ t('imgGen.title') }}</h1>
         <span class="header-tag" :class="{ enabled: store.providerConfig.enabled }">
-          {{ store.providerConfig.enabled ? '已配置' : '未配置' }}
+          {{ store.providerConfig.enabled ? t('imgGen.configured') : t('imgGen.notConfigured') }}
         </span>
       </div>
     </header>
 
-    <nav class="tabs" role="tablist" aria-label="图像生成">
+    <nav class="tabs" role="tablist" :aria-label="t('imgGen.tabsAria')">
       <button
         v-for="tab in TABS"
         :key="tab.key"
@@ -206,32 +207,32 @@ onMounted(async () => {
           <!-- 左侧：参数 -->
           <div class="params-section">
             <div class="form-group">
-              <label for="prompt" class="form-label">提示词</label>
+              <label for="prompt" class="form-label">{{ t('imgGen.promptLabel') }}</label>
               <textarea
                 id="prompt"
                 v-model="store.params.prompt"
                 class="form-textarea"
                 rows="4"
-                placeholder="描述你想要生成的图像内容…"
+                :placeholder="t('imgGen.promptPlaceholder')"
                 aria-describedby="prompt-hint"
               />
-              <p id="prompt-hint" class="form-hint">支持中文，建议 10-200 字</p>
+              <p id="prompt-hint" class="form-hint">{{ t('imgGen.promptHint') }}</p>
             </div>
 
             <div class="form-group">
-              <label for="negative-prompt" class="form-label">反向提示词（可选）</label>
+              <label for="negative-prompt" class="form-label">{{ t('imgGen.negativeLabel') }}</label>
               <textarea
                 id="negative-prompt"
                 v-model="store.params.negativePrompt"
                 class="form-textarea"
                 rows="2"
-                placeholder="排除不想出现的内容，如：模糊、低质量"
+                :placeholder="t('imgGen.negativePlaceholder')"
               />
             </div>
 
             <div class="form-group">
-              <span class="form-label">风格预设</span>
-              <div class="style-grid" role="radiogroup" aria-label="风格预设">
+              <span class="form-label">{{ t('imgGen.styleLabel') }}</span>
+              <div class="style-grid" role="radiogroup" :aria-label="t('imgGen.styleAria')">
                 <button
                   v-for="preset in store.stylePresets"
                   :key="preset.id"
@@ -250,7 +251,7 @@ onMounted(async () => {
 
             <div class="form-row">
               <div class="form-group">
-                <label for="size" class="form-label">尺寸</label>
+                <label for="size" class="form-label">{{ t('imgGen.sizeLabel') }}</label>
                 <select id="size" v-model="store.params.size" class="form-select">
                   <option v-for="opt in sizeOptions" :key="opt.value" :value="opt.value">
                     {{ opt.label }}
@@ -259,7 +260,7 @@ onMounted(async () => {
               </div>
 
               <div class="form-group">
-                <label for="quality" class="form-label">质量</label>
+                <label for="quality" class="form-label">{{ t('imgGen.qualityLabel') }}</label>
                 <select id="quality" v-model="store.params.quality" class="form-select">
                   <option v-for="opt in qualityOptions" :key="opt.value" :value="opt.value">
                     {{ opt.label }}
@@ -270,7 +271,7 @@ onMounted(async () => {
 
             <div class="form-row">
               <div class="form-group">
-                <label for="steps" class="form-label">步数</label>
+                <label for="steps" class="form-label">{{ t('imgGen.stepsLabel') }}</label>
                 <input
                   id="steps"
                   type="number"
@@ -282,7 +283,7 @@ onMounted(async () => {
               </div>
 
               <div class="form-group">
-                <label for="cfg" class="form-label">CFG</label>
+                <label for="cfg" class="form-label">{{ t('imgGen.cfgLabel') }}</label>
                 <input
                   id="cfg"
                   type="number"
@@ -295,7 +296,7 @@ onMounted(async () => {
               </div>
 
               <div class="form-group">
-                <label for="seed" class="form-label">种子</label>
+                <label for="seed" class="form-label">{{ t('imgGen.seedLabel') }}</label>
                 <input
                   id="seed"
                   type="number"
@@ -307,7 +308,7 @@ onMounted(async () => {
             </div>
 
             <div class="form-group">
-              <label for="batch" class="form-label">批量数量</label>
+              <label for="batch" class="form-label">{{ t('imgGen.batchLabel') }}</label>
               <input
                 id="batch"
                 type="number"
@@ -326,7 +327,7 @@ onMounted(async () => {
                 @click="handleGenerate"
               >
                 <Icon name="play" :size="14" aria-hidden="true" />
-                生成
+                {{ t('imgGen.generateBtn') }}
               </button>
               <button
                 type="button"
@@ -335,7 +336,7 @@ onMounted(async () => {
                 @click="handleBatchGenerate"
               >
                 <Icon name="image-stack" :size="14" aria-hidden="true" />
-                批量生成
+                {{ t('imgGen.batchBtn') }}
               </button>
               <button
                 v-if="store.isGenerating"
@@ -344,14 +345,14 @@ onMounted(async () => {
                 @click="store.cancelGeneration()"
               >
                 <Icon name="stop" :size="14" aria-hidden="true" />
-                取消
+                {{ t('imgGen.cancelBtn') }}
               </button>
             </div>
           </div>
 
           <!-- 右侧：最新结果 -->
           <div class="preview-section">
-            <h2 class="section-title">最新结果</h2>
+            <h2 class="section-title">{{ t('imgGen.latestTitle') }}</h2>
             <div v-if="store.galleryImages.length > 0" class="latest-image">
               <img
                 :src="store.galleryImages[0].data"
@@ -367,7 +368,7 @@ onMounted(async () => {
             </div>
             <div v-else class="empty-preview">
               <Icon name="image" :size="48" aria-hidden="true" />
-              <p>生成的图像将显示在此处</p>
+              <p>{{ t('imgGen.emptyPreview') }}</p>
             </div>
           </div>
         </div>
@@ -386,25 +387,25 @@ onMounted(async () => {
             type="search"
             v-model="searchQuery"
             class="search-input"
-            placeholder="搜索提示词…"
-            aria-label="搜索画廊"
+            :placeholder="t('imgGen.searchPlaceholder')"
+            :aria-label="t('imgGen.searchAria')"
           />
-          <select v-model="filterStyle" class="form-select small" aria-label="按风格筛选">
-            <option value="all">全部风格</option>
+          <select v-model="filterStyle" class="form-select small" :aria-label="t('imgGen.filterAria')">
+            <option value="all">{{ t('imgGen.filterAll') }}</option>
             <option v-for="preset in store.stylePresets" :key="preset.id" :value="preset.id">
               {{ preset.name }}
             </option>
           </select>
           <button type="button" class="btn danger" @click="handleClearGallery">
             <Icon name="trash-2" :size="14" aria-hidden="true" />
-            清空
+            {{ t('imgGen.clearBtn') }}
           </button>
         </div>
 
         <div class="gallery-stats">
-          <span>总数：{{ store.galleryStats.count }}</span>
-          <span>空间：{{ store.galleryStats.totalSizeMb.toFixed(1) }} MB</span>
-          <span>平均耗时：{{ formatDuration(store.galleryStats.avgDurationMs) }}</span>
+          <span>{{ t('imgGen.statsCount', { count: store.galleryStats.count }) }}</span>
+          <span>{{ t('imgGen.statsSize', { size: store.galleryStats.totalSizeMb.toFixed(1) }) }}</span>
+          <span>{{ t('imgGen.statsAvg', { duration: formatDuration(store.galleryStats.avgDurationMs) }) }}</span>
         </div>
 
         <ul v-if="filteredGallery.length > 0" class="gallery-grid" role="list">
@@ -423,10 +424,10 @@ onMounted(async () => {
             <div class="gallery-overlay">
               <p class="gallery-prompt">{{ img.params.prompt }}</p>
               <div class="gallery-item-actions">
-                <button type="button" class="icon-btn" aria-label="下载" @click="downloadImage(img)">
+                <button type="button" class="icon-btn" :aria-label="t('imgGen.downloadAria')" @click="downloadImage(img)">
                   <Icon name="download" :size="14" aria-hidden="true" />
                 </button>
-                <button type="button" class="icon-btn danger" aria-label="删除" @click="handleDelete(img.id)">
+                <button type="button" class="icon-btn danger" :aria-label="t('imgGen.deleteAria')" @click="handleDelete(img.id)">
                   <Icon name="trash-2" :size="14" aria-hidden="true" />
                 </button>
               </div>
@@ -435,8 +436,8 @@ onMounted(async () => {
         </ul>
         <div v-else class="empty-state">
           <Icon name="image" :size="48" aria-hidden="true" />
-          <p>画廊为空</p>
-          <p class="empty-hint">切换到「生成」标签创建第一张图像</p>
+          <p>{{ t('imgGen.emptyGallery') }}</p>
+          <p class="empty-hint">{{ t('imgGen.emptyGalleryHint') }}</p>
         </div>
       </section>
 
@@ -450,7 +451,7 @@ onMounted(async () => {
       >
         <div class="settings-form">
           <div class="form-group">
-            <label for="provider-type" class="form-label">Provider 类型</label>
+            <label for="provider-type" class="form-label">{{ t('imgGen.providerType') }}</label>
             <select
               id="provider-type"
               v-model="store.providerConfig.type"
@@ -463,7 +464,7 @@ onMounted(async () => {
           </div>
 
           <div class="form-group">
-            <label for="endpoint" class="form-label">API 端点</label>
+            <label for="endpoint" class="form-label">{{ t('imgGen.endpoint') }}</label>
             <input
               id="endpoint"
               type="url"
@@ -474,7 +475,7 @@ onMounted(async () => {
           </div>
 
           <div class="form-group">
-            <label for="api-key" class="form-label">API Key</label>
+            <label for="api-key" class="form-label">{{ t('imgGen.apiKey') }}</label>
             <input
               id="api-key"
               type="password"
@@ -485,7 +486,7 @@ onMounted(async () => {
           </div>
 
           <div class="form-group">
-            <label for="model" class="form-label">模型</label>
+            <label for="model" class="form-label">{{ t('imgGen.model') }}</label>
             <input
               id="model"
               type="text"
@@ -500,33 +501,33 @@ onMounted(async () => {
               type="checkbox"
               v-model="store.providerConfig.enabled"
             />
-            <span>启用此 Provider</span>
+            <span>{{ t('imgGen.enableProvider') }}</span>
           </label>
         </div>
       </section>
     </main>
 
     <!-- 图像详情 Modal -->
-    <Modal :model-value="detailOpen" title="图像详情" @update:model-value="detailOpen = $event">
+    <Modal :model-value="detailOpen" :title="t('imgGen.detailTitle')" @update:model-value="detailOpen = $event">
       <div v-if="detailImage" class="detail-content">
         <img :src="detailImage.data" :alt="detailImage.params.prompt" class="detail-img" />
         <dl class="detail-meta">
-          <div><dt>提示词</dt><dd>{{ detailImage.params.prompt }}</dd></div>
+          <div><dt>{{ t('imgGen.detailPrompt') }}</dt><dd>{{ detailImage.params.prompt }}</dd></div>
           <div v-if="detailImage.params.negativePrompt">
-            <dt>反向提示词</dt><dd>{{ detailImage.params.negativePrompt }}</dd>
+            <dt>{{ t('imgGen.detailNegative') }}</dt><dd>{{ detailImage.params.negativePrompt }}</dd>
           </div>
-          <div><dt>尺寸</dt><dd>{{ detailImage.width }}×{{ detailImage.height }}</dd></div>
-          <div><dt>风格</dt><dd>{{ detailImage.params.style }}</dd></div>
-          <div><dt>Provider</dt><dd>{{ detailImage.provider }}</dd></div>
-          <div><dt>耗时</dt><dd>{{ formatDuration(detailImage.durationMs) }}</dd></div>
-          <div><dt>生成时间</dt><dd>{{ formatTime(detailImage.createdAt) }}</dd></div>
+          <div><dt>{{ t('imgGen.detailSize') }}</dt><dd>{{ detailImage.width }}×{{ detailImage.height }}</dd></div>
+          <div><dt>{{ t('imgGen.detailStyle') }}</dt><dd>{{ detailImage.params.style }}</dd></div>
+          <div><dt>{{ t('imgGen.detailProvider') }}</dt><dd>{{ detailImage.provider }}</dd></div>
+          <div><dt>{{ t('imgGen.detailDuration') }}</dt><dd>{{ formatDuration(detailImage.durationMs) }}</dd></div>
+          <div><dt>{{ t('imgGen.detailTime') }}</dt><dd>{{ formatTime(detailImage.createdAt) }}</dd></div>
           <div v-if="detailImage.params.seed >= 0">
-            <dt>种子</dt><dd>{{ detailImage.params.seed }}</dd>
+            <dt>{{ t('imgGen.detailSeed') }}</dt><dd>{{ detailImage.params.seed }}</dd>
           </div>
         </dl>
       </div>
       <template #footer>
-        <button type="button" class="btn" @click="detailOpen = false">关闭</button>
+        <button type="button" class="btn" @click="detailOpen = false">{{ t('imgGen.closeBtn') }}</button>
         <button
           v-if="detailImage"
           type="button"
@@ -534,7 +535,7 @@ onMounted(async () => {
           @click="downloadImage(detailImage)"
         >
           <Icon name="download" :size="14" aria-hidden="true" />
-          下载
+          {{ t('imgGen.downloadBtn') }}
         </button>
       </template>
     </Modal>
