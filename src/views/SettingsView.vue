@@ -53,39 +53,39 @@ interface ThemeOption {
 const themeOptions: ThemeOption[] = [
   {
     value: 'dark',
-    label: '深色',
-    description: '默认深色背景，TikTok 风格',
+    label: t('settingsView.themeDark'),
+    description: t('settingsView.themeDarkDesc'),
     swatchClass: 'swatch-dark',
   },
   {
     value: 'light',
-    label: '亮色',
-    description: '浅色背景，强光环境友好',
+    label: t('settingsView.themeLight'),
+    description: t('settingsView.themeLightDesc'),
     swatchClass: 'swatch-light',
   },
   {
     value: 'midnight',
-    label: '午夜蓝',
-    description: '深蓝调，沉浸式夜间阅读',
+    label: t('settingsView.themeMidnight'),
+    description: t('settingsView.themeMidnightDesc'),
     swatchClass: 'swatch-midnight',
   },
   {
     value: 'oled',
-    label: 'OLED 黑',
-    description: '纯黑背景，OLED 省电模式',
+    label: t('settingsView.themeOled'),
+    description: t('settingsView.themeOledDesc'),
     swatchClass: 'swatch-oled',
   },
   {
     value: 'theatre',
-    label: '暗夜剧场',
-    description: '墨黑底 + 烛金强调，衬线标题',
+    label: t('settingsView.themeTheatre'),
+    description: t('settingsView.themeTheatreDesc'),
     swatchClass: 'swatch-theatre',
   },
 ];
 
-function selectTheme(t: ThemeName) {
-  settings.setTheme(t);
-  showToast('success', `主题已切换为：${themeOptions.find((x) => x.value === t)?.label ?? t}`);
+function selectTheme(themeName: ThemeName) {
+  settings.setTheme(themeName);
+  showToast('success', t('settingsView.themeChanged', { name: themeOptions.find((x) => x.value === themeName)?.label ?? themeName }));
 }
 
 /**
@@ -142,12 +142,12 @@ interface SettingsCategory {
 }
 
 const settingsCategories: SettingsCategory[] = [
-  { id: 'appearance', label: '外观', description: '主题、字号、界面自定义', icon: 'palette' },
-  { id: 'model', label: '模型', description: '云端/本地模型与 API 配置', icon: 'cpu' },
-  { id: 'extension', label: '扩展', description: '扩展系统与快捷功能', icon: 'puzzle' },
-  { id: 'persona', label: '个人', description: '用户 Persona 管理', icon: 'user' },
-  { id: 'data', label: '数据', description: '导入、导出与数据管理', icon: 'database' },
-  { id: 'security', label: '安全', description: '主密码与加密保护', icon: 'lock-keyhole' },
+  { id: 'appearance', label: t('settingsView.categoryAppearance'), description: t('settingsView.categoryAppearanceDesc'), icon: 'palette' },
+  { id: 'model', label: t('settingsView.categoryModel'), description: t('settingsView.categoryModelDesc'), icon: 'cpu' },
+  { id: 'extension', label: t('settingsView.categoryExtension'), description: t('settingsView.categoryExtensionDesc'), icon: 'puzzle' },
+  { id: 'persona', label: t('settingsView.categoryPersona'), description: t('settingsView.categoryPersonaDesc'), icon: 'user' },
+  { id: 'data', label: t('settingsView.categoryData'), description: t('settingsView.categoryDataDesc'), icon: 'database' },
+  { id: 'security', label: t('settingsView.categorySecurity'), description: t('settingsView.categorySecurityDesc'), icon: 'lock-keyhole' },
 ];
 
 const activeCategory = ref<SettingsCategoryId>('appearance');
@@ -200,13 +200,13 @@ interface FontSizeOption {
 
 const fontSizeOptions: FontSizeOption[] = FONT_SIZE_PRESETS.map((size) => ({
   value: size,
-  label: size === 12 ? '小' : size === 14 ? '默认' : size === 16 ? '大' : '特大',
-  sample: '角色对话正文示例',
+  label: size === 12 ? t('settingsView.fontSmall') : size === 14 ? t('settingsView.fontDefault') : size === 16 ? t('settingsView.fontLarge') : t('settingsView.fontXLarge'),
+  sample: t('settingsView.fontSample'),
 }));
 
 function selectFontSize(size: number) {
   settings.setFontSize(size);
-  showToast('success', `字号已设置为：${size}px`);
+  showToast('success', t('settingsView.fontChanged', { size }));
 }
 
 /** 字号 radiogroup 键盘导航（同主题） */
@@ -274,16 +274,16 @@ function openMasterPasswordModal(mode: MasterPasswordMode): void {
 
 function handleMasterPasswordSuccess(): void {
   const labels: Record<MasterPasswordMode, string> = {
-    setup: '主密码已设置，API Key 已加密保护',
-    unlock: '应用已解锁',
-    change: '主密码已修改',
+    setup: t('settingsView.mpSetup'),
+    unlock: t('settingsView.mpUnlock'),
+    change: t('settingsView.mpChange'),
   };
   showToast('success', labels[mpModalMode.value]);
 }
 
 function lockApp(): void {
   settings.lock();
-  showToast('info', '应用已锁定，API Key 已加密保护');
+  showToast('info', t('settingsView.locked'));
 }
 
 // 是否显示 API key 明文
@@ -330,7 +330,7 @@ async function handleBgFileSelected(e: Event) {
   const file = input.files[0];
   // 限制 5MB
   if (file.size > 5 * 1024 * 1024) {
-    showToast('error', '背景图片不能超过 5MB');
+    showToast('error', t('settingsView.bgTooLarge'));
     input.value = '';
     return;
   }
@@ -340,7 +340,7 @@ async function handleBgFileSelected(e: Event) {
     bgValue.value = String(reader.result);
     input.value = '';
   };
-  reader.onerror = () => showToast('error', '文件读取失败');
+  reader.onerror = () => showToast('error', t('settingsView.fileReadFailed'));
   reader.readAsDataURL(file);
 }
 
@@ -358,7 +358,7 @@ function applyBackground() {
     blur: bgBlur.value,
   };
   settings.setChatBackground(bg);
-  showToast('success', '聊天背景已应用');
+  showToast('success', t('settingsView.bgApplied'));
 }
 
 /** 清除背景设置 */
@@ -368,7 +368,7 @@ function clearBackground() {
   bgOpacity.value = 1;
   bgBlur.value = 0;
   settings.setChatBackground({ type: 'none', value: '', opacity: 1, blur: 0 });
-  showToast('info', '已清除聊天背景');
+  showToast('info', t('settingsView.bgCleared'));
 }
 
 /** 应用气泡样式到 store */
@@ -378,20 +378,20 @@ function applyBubbleStyle() {
     opacity: bubbleOpacity.value,
   };
   settings.setBubbleStyle(style);
-  showToast('success', '气泡样式已应用');
+  showToast('success', t('settingsView.bubbleApplied'));
 }
 
 /** 保存自定义 CSS */
 function saveCustomCss() {
   settings.setCustomCss(customCssDraft.value);
-  showToast('success', '自定义 CSS 已保存并应用');
+  showToast('success', t('settingsView.cssSaved'));
 }
 
 /** 重置自定义 CSS */
 function resetCustomCss() {
   customCssDraft.value = '';
   settings.resetCustomCss();
-  showToast('info', '已重置自定义 CSS');
+  showToast('info', t('settingsView.cssReset'));
 }
 
 // ── Persona 管理 (F07) ──
@@ -415,9 +415,9 @@ const personaErrors = computed<Record<string, string>>(() => {
   const e: Record<string, string> = {};
   const name = personaForm.value.name.trim();
   if (!name) {
-    e.name = '名称不能为空';
+    e.name = t('settingsView.personaNameRequired');
   } else if (name.length > MAX_PERSONA_NAME_LENGTH) {
-    e.name = `名称不能超过 ${MAX_PERSONA_NAME_LENGTH} 字符`;
+    e.name = t('settingsView.personaNameTooLong', { max: MAX_PERSONA_NAME_LENGTH });
   }
   return e;
 });
@@ -449,7 +449,7 @@ function savePersona() {
     const id = personaStore.createPersona({ name: name.trim(), description });
     if (id) {
       personaModalOpen.value = false;
-      showToast('success', `已创建 Persona：${name}`);
+      showToast('success', t('settingsView.personaCreated', { name }));
     }
   } else {
     const ok = personaStore.updatePersona(personaForm.value.id, {
@@ -458,14 +458,14 @@ function savePersona() {
     });
     if (ok) {
       personaModalOpen.value = false;
-      showToast('success', `已保存 Persona：${name}`);
+      showToast('success', t('settingsView.personaSaved', { name }));
     }
   }
 }
 
 function confirmDeletePersona(p: Persona) {
   if (personaStore.personas.length <= 1) {
-    showToast('error', '至少保留 1 个 Persona');
+    showToast('error', t('settingsView.personaKeepOne'));
     return;
   }
   personaDeleteTarget.value = p;
@@ -475,7 +475,7 @@ function confirmDeletePersona(p: Persona) {
 function executeDeletePersona() {
   if (!personaDeleteTarget.value) return;
   personaStore.deletePersona(personaDeleteTarget.value.id);
-  showToast('success', `已删除 Persona：${personaDeleteTarget.value.name}`);
+  showToast('success', t('settingsView.personaDeleted', { name: personaDeleteTarget.value.name }));
   personaDeleteModalOpen.value = false;
   personaDeleteTarget.value = null;
 }
@@ -548,10 +548,15 @@ async function handleExportBackup() {
     await downloadBackupFile(data, password);
     showToast(
       'success',
-      `已导出${password ? '加密' : ''}备份（角色 ${data.characters.length} / 对话 ${data.chats.length} / 世界书 ${data.lorebooks.length}）`
+      t('settingsView.exportBackup', {
+        enc: password ? t('settingsView.encrypted') : '',
+        chars: data.characters.length,
+        chats: data.chats.length,
+        lbs: data.lorebooks.length,
+      })
     );
   } catch (err) {
-    showToast('error', `导出失败：${err instanceof Error ? err.message : String(err)}`);
+    showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
   } finally {
     dataManageLoading.value = false;
   }
@@ -590,7 +595,7 @@ async function handleBackupFileSelected(e: Event) {
     await characterStore.loadFromStorage();
     await personaStore.loadFromStorage();
   } catch (err) {
-    showToast('error', `导入失败：${err instanceof Error ? err.message : String(err)}`);
+    showToast('error', t('settingsView.importFailed', { error: err instanceof Error ? err.message : String(err) }));
   } finally {
     dataManageLoading.value = false;
   }
@@ -604,9 +609,9 @@ const quickReplyFileInput = ref<HTMLInputElement | null>(null);
 function handleExportQuickReplies() {
   try {
     settings.exportQuickRepliesSt();
-    showToast('success', '已导出快捷回复为 SillyTavern 格式');
+    showToast('success', t('settingsView.qrExported'));
   } catch (err) {
-    showToast('error', `导出失败：${err instanceof Error ? err.message : String(err)}`);
+    showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
   }
 }
 
@@ -625,10 +630,10 @@ async function handleQuickReplyFileSelected(e: Event) {
     const added = await settings.importQuickRepliesSt(file);
     showToast(
       added > 0 ? 'success' : 'info',
-      added > 0 ? `已导入 ${added} 条快捷回复` : '没有新增（可能全部已存在）'
+      added > 0 ? t('settingsView.qrImported', { count: added }) : t('settingsView.qrNoNew')
     );
   } catch (err) {
-    showToast('error', `导入失败：${err instanceof Error ? err.message : String(err)}`);
+    showToast('error', t('settingsView.importFailed', { error: err instanceof Error ? err.message : String(err) }));
   }
 }
 
@@ -650,30 +655,30 @@ function handleExportAuditLog() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('success', '审计日志已导出');
+    showToast('success', t('settingsView.auditExported'));
   } catch (err) {
-    showToast('error', `导出失败：${err instanceof Error ? err.message : String(err)}`);
+    showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
   }
 }
 
 /** 清空审计日志 */
 function handleClearAuditLog() {
-  if (!window.confirm('确认清空全部审计日志？此操作不可恢复。')) return;
+  if (!window.confirm(t('settingsView.auditClearConfirm'))) return;
   auditLogger.clear();
-  showToast('success', '审计日志已清空');
+  showToast('success', t('settingsView.auditCleared'));
 }
 
 /** 审计动作中文标签 */
 const AUDIT_ACTION_LABELS: Record<string, string> = {
-  backup_export: '全量备份导出',
-  backup_import: '全量备份导入',
-  character_export_png: '角色卡 PNG 导出',
-  character_export_v2: '角色卡 V2 导出',
-  character_import: '角色卡导入',
-  lorebook_export: '世界书导出',
-  lorebook_import: '世界书导入',
-  chat_export_md: '对话导出',
-  settings_reset: '设置重置',
+  backup_export: t('settingsView.auditBackupExport'),
+  backup_import: t('settingsView.auditBackupImport'),
+  character_export_png: t('settingsView.auditCharPng'),
+  character_export_v2: t('settingsView.auditCharV2'),
+  character_import: t('settingsView.auditCharImport'),
+  lorebook_export: t('settingsView.auditLorebookExport'),
+  lorebook_import: t('settingsView.auditLorebookImport'),
+  chat_export_md: t('settingsView.auditChatExport'),
+  settings_reset: t('settingsView.auditSettingsReset'),
 };
 
 /** 审计结果徽标类 */
@@ -690,24 +695,24 @@ const newProfileName = ref('');
 function handleCreateProfile() {
   const name = newProfileName.value.trim();
   if (!name) {
-    showToast('error', '请输入资料档案名称');
+    showToast('error', t('settingsView.profileNameRequired'));
     return;
   }
   if (!/^[a-zA-Z0-9_-]{1,32}$/.test(name)) {
-    showToast('error', '名称仅支持字母/数字/下划线/连字符,1-32 字符');
+    showToast('error', t('settingsView.profileNameInvalid'));
     return;
   }
   setActiveProfileId(name);
   currentProfileId.value = name;
   newProfileName.value = '';
-  showToast('success', `已切换至资料档案「${name}」,重启应用后生效`);
+  showToast('success', t('settingsView.profileSwitched', { name }));
 }
 
 /** 切换回默认档案 */
 function handleResetProfile() {
   setActiveProfileId(DEFAULT_PROFILE);
   currentProfileId.value = DEFAULT_PROFILE;
-  showToast('success', '已切换回默认资料档案,重启应用后生效');
+  showToast('success', t('settingsView.profileReset'));
 }
 
 // ── E-04 二期: 嵌入优化开关 ──
@@ -722,9 +727,9 @@ function toggleOptimization(key: 'enabled' | 'l0Enabled' | 'l1Enabled' | 'l2Enab
     'success',
     key === 'enabled'
       ? value
-        ? '嵌入优化已开启(实验性),重启应用后生效'
-        : '嵌入优化已关闭'
-      : `「${key}」已${value ? '开启' : '关闭'},重启应用后生效`
+        ? t('settingsView.optEnabled')
+        : t('settingsView.optDisabled')
+      : t('settingsView.optToggled', { key, state: value ? t('settingsView.optOn') : t('settingsView.optOff') })
   );
 }
 
@@ -734,12 +739,12 @@ function toggleOptimization(key: 'enabled' | 'l0Enabled' | 'l1Enabled' | 'l2Enab
 function handleExportCharacterPng() {
   const id = exportCharId.value;
   if (!id) {
-    showToast('error', '请先选择角色');
+    showToast('error', t('settingsView.selectCharFirst'));
     return;
   }
   const char = characterStore.characters.find((c) => c.id === id);
   if (!char) {
-    showToast('error', '找不到角色');
+    showToast('error', t('settingsView.charNotFound'));
     return;
   }
   try {
@@ -747,10 +752,10 @@ function handleExportCharacterPng() {
     import('@/services/type-adapters').then(({ uiCharToCard }) => {
       const card = uiCharToCard(char);
       downloadCharacterPng(card);
-      showToast('success', `已导出 PNG 角色卡：${char.name}`);
+      showToast('success', t('settingsView.pngExported', { name: char.name }));
     });
   } catch (err) {
-    showToast('error', `导出失败：${err instanceof Error ? err.message : String(err)}`);
+    showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
   }
 }
 
@@ -760,12 +765,12 @@ function handleExportCharacterPng() {
 async function handleExportChatMarkdown() {
   const id = exportChatCharId.value;
   if (!id) {
-    showToast('error', '请先选择角色');
+    showToast('error', t('settingsView.selectCharFirst'));
     return;
   }
   const char = characterStore.characters.find((c) => c.id === id);
   if (!char) {
-    showToast('error', '找不到角色');
+    showToast('error', t('settingsView.charNotFound'));
     return;
   }
 
@@ -775,7 +780,7 @@ async function handleExportChatMarkdown() {
     const chats = await adapter.loadChats(char.id);
 
     if (chats.length === 0) {
-      showToast('info', `${char.name} 暂无对话记录`);
+      showToast('info', t('settingsView.noChats', { name: char.name }));
       return;
     }
 
@@ -783,9 +788,9 @@ async function handleExportChatMarkdown() {
     const latestChat = chats[0];
     const userName = personaStore.activeUserName;
     downloadChatMarkdown(latestChat, char.name, userName);
-    showToast('success', `已导出对话 Markdown：${char.name}`);
+    showToast('success', t('settingsView.mdExported', { name: char.name }));
   } catch (err) {
-    showToast('error', `导出失败：${err instanceof Error ? err.message : String(err)}`);
+    showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
   } finally {
     dataManageLoading.value = false;
   }
@@ -864,12 +869,12 @@ async function handleExportChatMarkdown() {
       <header class="section-header">
         <h2 id="theme-section-title" class="section-title">
           <Icon name="palette" :size="16" />
-          <span>主题</span>
+          <span>{{ t('settingsView.themeSection') }}</span>
         </h2>
-        <p class="section-hint">点击立即切换，设置会自动保存</p>
+        <p class="section-hint">{{ t('settingsView.themeHint') }}</p>
       </header>
 
-      <div class="theme-grid" role="radiogroup" aria-label="选择主题">
+      <div class="theme-grid" role="radiogroup" :aria-label="t('settingsView.themeAria')">
         <button
           v-for="(opt, idx) in themeOptions"
           :key="opt.value"
@@ -905,12 +910,12 @@ async function handleExportChatMarkdown() {
       <header class="section-header">
         <h2 id="fontsize-section-title" class="section-title">
           <Icon name="type-size" :size="16" />
-          <span>字号</span>
+          <span>{{ t('settingsView.fontSection') }}</span>
         </h2>
-        <p class="section-hint">影响全部正文字号，单位 px</p>
+        <p class="section-hint">{{ t('settingsView.fontHint') }}</p>
       </header>
 
-      <div class="fontsize-grid" role="radiogroup" aria-label="选择字号">
+      <div class="fontsize-grid" role="radiogroup" :aria-label="t('settingsView.fontAria')">
         <button
           v-for="(opt, idx) in fontSizeOptions"
           :key="opt.value"
@@ -935,11 +940,11 @@ async function handleExportChatMarkdown() {
       </div>
 
       <!-- 实时预览 -->
-      <div class="font-preview" aria-label="字号实时预览">
-        <p class="preview-label">实时预览（当前 {{ settings.fontSize }}px）</p>
+      <div class="font-preview" :aria-label="t('settingsView.previewAria')">
+        <p class="preview-label">{{ t('settingsView.previewLabel', { size: settings.fontSize }) }}</p>
         <div class="preview-box" :style="{ fontSize: previewFontPx }">
-          <p class="preview-line"><strong>角色名</strong>：欢迎来到 AI 酒馆。</p>
-          <p class="preview-line muted">这是字号 {{ settings.fontSize }}px 下的对话正文样例。</p>
+          <p class="preview-line"><strong>{{ t('settingsView.previewCharName') }}</strong>：{{ t('settingsView.previewWelcome') }}</p>
+          <p class="preview-line muted">{{ t('settingsView.previewSample', { size: settings.fontSize }) }}</p>
         </div>
       </div>
     </section>
@@ -949,16 +954,16 @@ async function handleExportChatMarkdown() {
       <header class="section-header">
         <h2 id="ui-custom-section-title" class="section-title">
           <Icon name="image" :size="16" />
-          <span>界面自定义</span>
+          <span>{{ t('settingsView.uiCustomSection') }}</span>
         </h2>
       </header>
 
       <!-- F08.2 聊天背景 -->
       <div class="ui-custom-block">
-        <h3 class="ui-custom-subtitle">聊天背景</h3>
-        <p class="ui-custom-hint">支持 URL 或本地上传（Base64，≤5MB），不影响文字可读性。</p>
+        <h3 class="ui-custom-subtitle">{{ t('settingsView.bgSubtitle') }}</h3>
+        <p class="ui-custom-hint">{{ t('settingsView.bgHint') }}</p>
 
-        <div class="bg-source-tabs" role="radiogroup" aria-label="背景来源">
+        <div class="bg-source-tabs" role="radiogroup" :aria-label="t('settingsView.bgSourceAria')">
           <button
             type="button"
             class="bg-source-tab"
@@ -966,7 +971,7 @@ async function handleExportChatMarkdown() {
             :aria-checked="bgType === 'none'"
             :class="{ active: bgType === 'none' }"
             @click="bgType = 'none'; bgValue = ''"
-          >无背景</button>
+          >{{ t('settingsView.bgNone') }}</button>
           <button
             type="button"
             class="bg-source-tab"
@@ -982,7 +987,7 @@ async function handleExportChatMarkdown() {
             :aria-checked="bgType === 'base64'"
             :class="{ active: bgType === 'base64' }"
             @click="triggerBgUpload"
-          >本地上传</button>
+          >{{ t('settingsView.bgUpload') }}</button>
         </div>
 
         <input
@@ -990,12 +995,12 @@ async function handleExportChatMarkdown() {
           type="file"
           accept="image/*"
           class="hidden-file-input"
-          aria-label="上传背景图片"
+          :aria-label="t('settingsView.bgUploadAria')"
           @change="handleBgFileSelected"
         />
 
         <div v-if="bgType === 'url'" class="form-field">
-          <label for="bg-url" class="field-label">图片 URL</label>
+          <label for="bg-url" class="field-label">{{ t('settingsView.bgUrlLabel2') }}</label>
           <input
             id="bg-url"
             v-model="bgValue"
@@ -1004,11 +1009,11 @@ async function handleExportChatMarkdown() {
             placeholder="https://example.com/bg.jpg"
             aria-describedby="bg-url-hint"
           />
-          <p id="bg-url-hint" class="field-hint">输入可公开访问的图片 URL</p>
+          <p id="bg-url-hint" class="field-hint">{{ t('settingsView.bgUrlHint') }}</p>
         </div>
 
         <div v-if="bgType !== 'none'" class="form-field">
-          <label for="bg-opacity" class="field-label">不透明度：{{ Math.round(bgOpacity * 100) }}%</label>
+          <label for="bg-opacity" class="field-label">{{ t('settingsView.bgOpacityLabel', { value: Math.round(bgOpacity * 100) }) }}</label>
           <input
             id="bg-opacity"
             v-model.number="bgOpacity"
@@ -1017,12 +1022,12 @@ async function handleExportChatMarkdown() {
             max="1"
             step="0.1"
             class="form-range"
-            aria-label="背景不透明度"
+            :aria-label="t('settingsView.bgOpacityAria')"
           />
         </div>
 
         <div v-if="bgType !== 'none'" class="form-field">
-          <label for="bg-blur" class="field-label">模糊度：{{ bgBlur }}px</label>
+          <label for="bg-blur" class="field-label">{{ t('settingsView.bgBlurLabel', { value: bgBlur }) }}</label>
           <input
             id="bg-blur"
             v-model.number="bgBlur"
@@ -1031,29 +1036,29 @@ async function handleExportChatMarkdown() {
             max="20"
             step="1"
             class="form-range"
-            aria-label="背景模糊度"
+            :aria-label="t('settingsView.bgBlurAria')"
           />
         </div>
 
-        <div class="bg-preview" :style="bgPreviewStyle" aria-label="背景预览">
+        <div class="bg-preview" :style="bgPreviewStyle" :aria-label="t('settingsView.bgPreviewAria')">
           <div class="bg-preview-overlay" :style="{ opacity: bgType === 'none' ? 1 : bgOpacity, filter: bgBlur > 0 ? `blur(${bgBlur}px)` : 'none' }">
-            <p class="preview-line"><strong>角色名</strong>：背景预览示例</p>
-            <p class="preview-line muted">当前不透明度 {{ Math.round(bgOpacity * 100) }}%</p>
+            <p class="preview-line"><strong>{{ t('settingsView.previewCharName') }}</strong>：{{ t('settingsView.bgPreviewSample') }}</p>
+            <p class="preview-line muted">{{ t('settingsView.bgPreviewOpacity', { value: Math.round(bgOpacity * 100) }) }}</p>
           </div>
         </div>
 
         <div class="ui-custom-actions">
-          <button type="button" class="data-mgmt-btn primary" @click="applyBackground">应用背景</button>
-          <button type="button" class="data-mgmt-btn" @click="clearBackground">清除背景</button>
+          <button type="button" class="data-mgmt-btn primary" @click="applyBackground">{{ t('settingsView.applyBg') }}</button>
+          <button type="button" class="data-mgmt-btn" @click="clearBackground">{{ t('settingsView.clearBg') }}</button>
         </div>
       </div>
 
       <!-- F08.2 消息气泡样式 -->
       <div class="ui-custom-block">
-        <h3 class="ui-custom-subtitle">消息气泡样式</h3>
+        <h3 class="ui-custom-subtitle">{{ t('settingsView.bubbleSubtitle') }}</h3>
 
         <div class="form-field">
-          <label for="bubble-radius" class="field-label">圆角：{{ bubbleRadius }}px</label>
+          <label for="bubble-radius" class="field-label">{{ t('settingsView.bubbleRadiusLabel', { value: bubbleRadius }) }}</label>
           <input
             id="bubble-radius"
             v-model.number="bubbleRadius"
@@ -1062,12 +1067,12 @@ async function handleExportChatMarkdown() {
             max="24"
             step="1"
             class="form-range"
-            aria-label="气泡圆角"
+            :aria-label="t('settingsView.bubbleRadiusAria')"
           />
         </div>
 
         <div class="form-field">
-          <label for="bubble-opacity" class="field-label">不透明度：{{ Math.round(bubbleOpacity * 100) }}%</label>
+          <label for="bubble-opacity" class="field-label">{{ t('settingsView.bubbleOpacityLabel', { value: Math.round(bubbleOpacity * 100) }) }}</label>
           <input
             id="bubble-opacity"
             v-model.number="bubbleOpacity"
@@ -1076,48 +1081,48 @@ async function handleExportChatMarkdown() {
             max="1"
             step="0.05"
             class="form-range"
-            aria-label="气泡不透明度"
+            :aria-label="t('settingsView.bubbleOpacityAria')"
           />
         </div>
 
-        <div class="bubble-preview" aria-label="气泡样式预览">
+        <div class="bubble-preview" :aria-label="t('settingsView.bubblePreviewAria')">
           <div
             class="bubble-preview-item user-bubble"
             :style="{ borderRadius: `${bubbleRadius}px`, opacity: bubbleOpacity }"
-          >用户消息预览</div>
+          >{{ t('settingsView.bubbleUserPreview') }}</div>
           <div
             class="bubble-preview-item assistant-bubble"
             :style="{ borderRadius: `${bubbleRadius}px`, opacity: bubbleOpacity }"
-          >AI 消息预览</div>
+          >{{ t('settingsView.bubbleAiPreview') }}</div>
         </div>
 
         <div class="ui-custom-actions">
-          <button type="button" class="data-mgmt-btn primary" @click="applyBubbleStyle">应用样式</button>
+          <button type="button" class="data-mgmt-btn primary" @click="applyBubbleStyle">{{ t('settingsView.applyBubble') }}</button>
         </div>
       </div>
 
       <!-- F08.3 自定义 CSS -->
       <div class="ui-custom-block">
-        <h3 class="ui-custom-subtitle">自定义 CSS</h3>
-        <p class="ui-custom-hint">注入到页面 <code v-pre>&lt;style&gt;</code> 标签，出错不影响应用功能。</p>
+        <h3 class="ui-custom-subtitle">{{ t('settingsView.cssSubtitle') }}</h3>
+        <p class="ui-custom-hint">{{ t('settingsView.cssHint') }}</p>
 
         <div class="form-field">
-          <label for="custom-css" class="field-label">CSS 代码</label>
+          <label for="custom-css" class="field-label">{{ t('settingsView.cssLabel') }}</label>
           <textarea
             id="custom-css"
             v-model="customCssDraft"
             class="form-textarea custom-css-textarea"
             rows="8"
             spellcheck="false"
-            placeholder="/* 示例：修改主色调 */&#10;:root {&#10;  --primary: #ff6b6b;&#10;}"
+            :placeholder="t('settingsView.cssPlaceholder2')"
             aria-describedby="custom-css-hint"
           ></textarea>
-          <p id="custom-css-hint" class="field-hint">常用选择器：<code>--primary</code> / <code>--background</code> / <code>--card</code> / <code>--foreground</code></p>
+          <p id="custom-css-hint" class="field-hint">{{ t('settingsView.cssHint2', { vars: '--primary / --background / --card / --foreground' }) }}</p>
         </div>
 
         <div class="ui-custom-actions">
-          <button type="button" class="data-mgmt-btn primary" @click="saveCustomCss">保存并应用</button>
-          <button type="button" class="data-mgmt-btn" @click="resetCustomCss">重置</button>
+          <button type="button" class="data-mgmt-btn primary" @click="saveCustomCss">{{ t('settingsView.saveApply') }}</button>
+          <button type="button" class="data-mgmt-btn" @click="resetCustomCss">{{ t('settingsView.resetCss') }}</button>
         </div>
       </div>
     </section>
@@ -1137,39 +1142,38 @@ async function handleExportChatMarkdown() {
       <header class="section-header">
         <h2 id="extensions-section-title" class="section-title">
           <Icon name="star" :size="16" />
-          <span>扩展功能</span>
+          <span>{{ t('settingsView.extensionSection') }}</span>
         </h2>
       </header>
 
       <p class="extension-security-note" role="note">
-        T-09 权限模型:扩展默认零权限,须在加载时显式授予 network(网络)与 dom(DOM 访问)权限;
-        未授权的能力调用会被拒绝并提示。扩展仍与主应用同进程执行,仅安装来源可信、经过审查的扩展。
+        {{ t('settingsView.extensionDesc') }}
       </p>
 
       <!-- F12.2 TTS 语音朗读 -->
       <div class="extension-block">
-        <h3 class="extension-title">TTS 语音朗读 (F12.2)</h3>
+        <h3 class="extension-title">{{ t('settingsView.ttsTitle') }}</h3>
         <label class="form-row">
           <input
             type="checkbox"
             :checked="settings.ttsConfig.enabled"
             @change="settings.setTtsConfig({ enabled: ($event.target as HTMLInputElement).checked })"
           />
-          <span>启用 TTS</span>
+          <span>{{ t('settingsView.ttsEnable') }}</span>
         </label>
         <label class="form-row">
-          <span>触发条件</span>
+          <span>{{ t('settingsView.ttsTrigger') }}</span>
           <select
             :value="settings.ttsConfig.trigger"
             @change="settings.setTtsConfig({ trigger: ($event.target as HTMLSelectElement).value as 'every' | 'manual' | 'mention' })"
           >
-            <option value="manual">手动触发</option>
-            <option value="every">每条 AI 回复</option>
-            <option value="mention">仅 @ 提及</option>
+            <option value="manual">{{ t('settingsView.ttsManual') }}</option>
+            <option value="every">{{ t('settingsView.ttsEvery') }}</option>
+            <option value="mention">{{ t('settingsView.ttsMention') }}</option>
           </select>
         </label>
         <label class="form-row">
-          <span>语速 ({{ settings.ttsConfig.rate.toFixed(1) }})</span>
+          <span>{{ t('settingsView.ttsRate', { value: settings.ttsConfig.rate.toFixed(1) }) }}</span>
           <input
             type="range"
             min="0.5"
@@ -1180,7 +1184,7 @@ async function handleExportChatMarkdown() {
           />
         </label>
         <label class="form-row">
-          <span>音调 ({{ settings.ttsConfig.pitch.toFixed(1) }})</span>
+          <span>{{ t('settingsView.ttsPitch', { value: settings.ttsConfig.pitch.toFixed(1) }) }}</span>
           <input
             type="range"
             min="0"
@@ -1191,28 +1195,28 @@ async function handleExportChatMarkdown() {
           />
         </label>
         <p class="hint-text">
-          注：浏览器需支持 Web Speech API；部分系统可能无中文语音。
+          {{ t('settingsView.ttsNote') }}
         </p>
       </div>
 
       <!-- F12.3 消息翻译 -->
       <div class="extension-block">
-        <h3 class="extension-title">消息翻译 (F12.3)</h3>
+        <h3 class="extension-title">{{ t('settingsView.translateTitle') }}</h3>
         <label class="form-row">
           <input
             type="checkbox"
             :checked="settings.translationConfig.enabled"
             @change="settings.setTranslationConfig({ enabled: ($event.target as HTMLInputElement).checked })"
           />
-          <span>启用翻译</span>
+          <span>{{ t('settingsView.translateEnable') }}</span>
         </label>
         <label class="form-row">
-          <span>翻译服务</span>
+          <span>{{ t('settingsView.translateService') }}</span>
           <select
             :value="settings.translationConfig.provider"
             @change="settings.setTranslationConfig({ provider: ($event.target as HTMLSelectElement).value as 'google' | 'deepl' | 'none' })"
           >
-            <option value="none">未配置</option>
+            <option value="none">{{ t('settingsView.translateNone') }}</option>
             <option value="google">Google Translate</option>
             <option value="deepl">DeepL</option>
           </select>
@@ -1222,39 +1226,39 @@ async function handleExportChatMarkdown() {
           <input
             type="password"
             :value="settings.translationConfig.apiKey"
-            placeholder="输入翻译 API Key"
+            :placeholder="t('settingsView.translateApiKeyPlaceholder')"
             @input="settings.setTranslationConfig({ apiKey: ($event.target as HTMLInputElement).value })"
           />
         </label>
         <label class="form-row">
-          <span>翻译方向</span>
+          <span>{{ t('settingsView.translateDirection') }}</span>
           <select
             :value="settings.translationConfig.direction"
             @change="settings.setTranslationConfig({ direction: ($event.target as HTMLSelectElement).value as 'zh-to-en' | 'en-to-zh' | 'auto' })"
           >
-            <option value="auto">自动检测</option>
-            <option value="zh-to-en">中 → 英</option>
-            <option value="en-to-zh">英 → 中</option>
+            <option value="auto">{{ t('settingsView.translateAuto') }}</option>
+            <option value="zh-to-en">{{ t('settingsView.translateZhToEn') }}</option>
+            <option value="en-to-zh">{{ t('settingsView.translateEnToZh') }}</option>
           </select>
         </label>
         <p class="hint-text">
-          注：翻译 API 调用产生费用由用户承担。
+          {{ t('settingsView.translateNote') }}
         </p>
       </div>
 
       <!-- F12.4 自动摘要 -->
       <div class="extension-block">
-        <h3 class="extension-title">自动摘要 (F12.4)</h3>
+        <h3 class="extension-title">{{ t('settingsView.summaryTitle') }}</h3>
         <label class="form-row">
           <input
             type="checkbox"
             :checked="settings.summarizationConfig.enabled"
             @change="settings.setSummarizationConfig({ enabled: ($event.target as HTMLInputElement).checked })"
           />
-          <span>启用自动摘要</span>
+          <span>{{ t('settingsView.summaryEnable') }}</span>
         </label>
         <label class="form-row">
-          <span>触发阈值 (Token)</span>
+          <span>{{ t('settingsView.summaryThreshold') }}</span>
           <input
             type="number"
             min="1000"
@@ -1265,7 +1269,7 @@ async function handleExportChatMarkdown() {
           />
         </label>
         <label class="form-row">
-          <span>保留最近消息数</span>
+          <span>{{ t('settingsView.summaryKeepRecent') }}</span>
           <input
             type="number"
             min="2"
@@ -1276,7 +1280,7 @@ async function handleExportChatMarkdown() {
           />
         </label>
         <label class="form-row">
-          <span>摘要最大 Token</span>
+          <span>{{ t('settingsView.summaryMaxToken') }}</span>
           <input
             type="number"
             min="100"
@@ -1287,7 +1291,7 @@ async function handleExportChatMarkdown() {
           />
         </label>
         <p class="hint-text">
-          当对话历史超过阈值时自动生成摘要，释放 Token 空间。摘要失败时回退到正常对话。
+          {{ t('settingsView.summaryHint') }}
         </p>
       </div>
     </section>
@@ -1301,29 +1305,28 @@ async function handleExportChatMarkdown() {
       <header class="section-header">
         <h2 id="security-section-title" class="section-title">
           <Icon name="gear" :size="18" aria-hidden="true" />
-          <span>安全 (AC20)</span>
+          <span>{{ t('settingsView.securitySection') }}</span>
         </h2>
       </header>
       <div class="extension-block">
-        <h3 class="extension-title">API Key 加密存储</h3>
+        <h3 class="extension-title">{{ t('settingsView.encryptTitle') }}</h3>
         <p class="hint-text">
-          使用主密码加密所有 API Key（API Profile + 翻译 API Key），加密后存储到本地。
-          主密码不存储于本地，仅在当前浏览器会话内保留。
+          {{ t('settingsView.encryptDesc') }}
         </p>
 
         <!-- 已设置主密码 -->
         <template v-if="settings.hasMasterPassword">
           <div class="form-row security-status">
             <Icon name="check" :size="14" />
-            <span>主密码已设置，API Key 已加密保护</span>
+            <span>{{ t('settingsView.mpSetStatus') }}</span>
           </div>
           <div class="form-row security-status" v-if="settings.isUnlocked">
             <Icon name="check" :size="14" />
-            <span>当前会话已解锁</span>
+            <span>{{ t('settingsView.sessionUnlocked') }}</span>
           </div>
           <div class="form-row security-status" v-else>
             <Icon name="alert-triangle" :size="14" />
-            <span>当前会话已锁定，需解锁才能使用已加密的 API Key</span>
+            <span>{{ t('settingsView.sessionLocked') }}</span>
           </div>
           <div class="security-actions">
             <button
@@ -1333,7 +1336,7 @@ async function handleExportChatMarkdown() {
               @click="openMasterPasswordModal('unlock')"
             >
               <Icon name="eye" :size="14" />
-              <span>解锁</span>
+              <span>{{ t('settingsView.unlock') }}</span>
             </button>
             <button
               type="button"
@@ -1343,7 +1346,7 @@ async function handleExportChatMarkdown() {
               @click="openMasterPasswordModal('change')"
             >
               <Icon name="pencil" :size="14" />
-              <span>修改主密码</span>
+              <span>{{ t('settingsView.changeMp') }}</span>
             </button>
             <button
               v-if="settings.isUnlocked"
@@ -1352,7 +1355,7 @@ async function handleExportChatMarkdown() {
               @click="lockApp"
             >
               <Icon name="stop" :size="14" />
-              <span>锁定</span>
+              <span>{{ t('settingsView.lock') }}</span>
             </button>
           </div>
         </template>
@@ -1361,7 +1364,7 @@ async function handleExportChatMarkdown() {
         <template v-else>
           <div class="form-row security-status">
             <Icon name="alert-triangle" :size="14" />
-            <span>API Key 当前以明文存储，建议设置主密码加密保护</span>
+            <span>{{ t('settingsView.encryptPlainHint') }}</span>
           </div>
           <div class="security-actions">
             <button
@@ -1370,7 +1373,7 @@ async function handleExportChatMarkdown() {
               @click="openMasterPasswordModal('setup')"
             >
               <Icon name="gear" :size="14" />
-              <span>设置主密码</span>
+              <span>{{ t('settingsView.setupMp') }}</span>
             </button>
           </div>
         </template>
