@@ -39,6 +39,7 @@ import {
 } from '@core/world-generator';
 import { useSettingsStore } from '@/stores/settings';
 import { useCharacterStore } from '@/stores/character';
+import { t } from '@/i18n';
 
 const store = useLorebookStore();
 const settingsStore = useSettingsStore();
@@ -57,12 +58,12 @@ const boundCharacters = computed(() => {
 });
 
 // ── 需求1：分类 Tab 筛选（按世界书 scope） ──────────────────────────
-/** scope 中文标签映射 */
+/** scope 标签映射 */
 const SCOPE_LABELS: Record<'global' | 'character' | 'persona' | 'chat', string> = {
-  global: '全局',
-  character: '角色',
-  persona: 'Persona',
-  chat: '对话',
+  global: t('wb.scopeGlobal'),
+  character: t('wb.scopeCharacter'),
+  persona: t('wb.scopePersona'),
+  chat: t('wb.scopeChat'),
 };
 
 /** 过滤 Tab，按 scope 聚合 + 显示数量徽标 */
@@ -115,22 +116,22 @@ const entryDraft = ref<LorebookEntry | null>(null);
 
 // 当前展开/折叠的策略选项
 const strategyOptions: { value: LorebookStrategy; label: string; desc: string }[] = [
-  { value: 'keyword', label: '关键词触发', desc: '命中关键词时激活（默认）' },
-  { value: 'constant', label: '常量', desc: '始终注入，无需关键词' },
-  { value: 'probability', label: '概率触发', desc: '命中关键词后按概率决定' },
+  { value: 'keyword', label: t('wb.strategyKeyword'), desc: t('wb.strategyKeywordDesc') },
+  { value: 'constant', label: t('wb.strategyConstant'), desc: t('wb.strategyConstantDesc') },
+  { value: 'probability', label: t('wb.strategyProbability'), desc: t('wb.strategyProbabilityDesc') },
 ];
 
 const positionOptions: { value: LorebookInsertionPosition; label: string }[] = [
-  { value: 'beforeCharDefs', label: '角色定义前' },
-  { value: 'afterCharDefs', label: '角色定义后' },
-  { value: 'atDepth', label: '指定深度 @D' },
+  { value: 'beforeCharDefs', label: t('wb.positionBeforeChar') },
+  { value: 'afterCharDefs', label: t('wb.positionAfterChar') },
+  { value: 'atDepth', label: t('wb.positionAtDepth') },
 ];
 
 const logicOptions: { value: LorebookLogic; label: string; desc: string }[] = [
-  { value: 'AND_ANY', label: 'AND ANY', desc: '任一关键词命中即激活' },
-  { value: 'AND_ALL', label: 'AND ALL', desc: '所有关键词命中才激活' },
-  { value: 'NOT_ANY', label: 'NOT ANY', desc: '任一关键词命中则不激活' },
-  { value: 'NOT_ALL', label: 'NOT ALL', desc: '所有关键词都不命中才激活' },
+  { value: 'AND_ANY', label: 'AND ANY', desc: t('wb.logicAny') },
+  { value: 'AND_ALL', label: 'AND ALL', desc: t('wb.logicAll') },
+  { value: 'NOT_ANY', label: 'NOT ANY', desc: t('wb.logicNotAny') },
+  { value: 'NOT_ALL', label: 'NOT ALL', desc: t('wb.logicNotAll') },
 ];
 
 // ── 计算属性 ──
@@ -341,7 +342,7 @@ function exportLorebook(id: string) {
 /** 打开生成 Modal */
 function openGenerateModal() {
   if (!hasApiProfile.value) {
-    showToast('error', '未配置 API 连接，请先在设置页添加 API 配置');
+    showToast('error', t('wb.needApi'));
     return;
   }
   generateModalOpen.value = true;
@@ -363,27 +364,27 @@ async function confirmGenerate() {
   const lbId = await store.generateRandomWorldbook(selectedTemplateId.value);
   if (lbId) {
     generateModalOpen.value = false;
-    showToast('success', store.lastInfo ?? '已生成新世界');
+    showToast('success', store.lastInfo ?? t('wb.generated'));
   } else {
-    showToast('error', store.lastError ?? '生成失败，请重试');
+    showToast('error', store.lastError ?? t('wb.generateFailed'));
   }
 }
 
 /** 扩展当前 Lorebook */
 async function extendCurrentWorldbook() {
   if (!store.currentLorebookId) {
-    showToast('error', '请先选择一个世界书');
+    showToast('error', t('wb.selectWorldbook'));
     return;
   }
   if (!hasApiProfile.value) {
-    showToast('error', '未配置 API 连接，请先在设置页添加 API 配置');
+    showToast('error', t('wb.needApi'));
     return;
   }
   const added = await store.extendWorldbook(store.currentLorebookId);
   if (added > 0) {
-    showToast('success', store.lastInfo ?? `已扩展 ${added} 条新条目`);
+    showToast('success', store.lastInfo ?? t('wb.extended', { count: added }));
   } else {
-    showToast('error', store.lastError ?? '扩展失败，请重试');
+    showToast('error', store.lastError ?? t('wb.extendFailed'));
   }
 }
 
@@ -411,11 +412,11 @@ function onNameInput(e: Event) {
 const worldDescDraft = ref<WorldDescription | null>(null);
 
 const worldTypeOptions: { value: WorldType; label: string }[] = [
-  { value: 'fantasy', label: '奇幻' },
-  { value: 'scifi', label: '科幻' },
-  { value: 'modern', label: '现代' },
-  { value: 'historical', label: '历史' },
-  { value: 'other', label: '其他' },
+  { value: 'fantasy', label: t('wb.worldTypeFantasy') },
+  { value: 'scifi', label: t('wb.worldTypeScifi') },
+  { value: 'modern', label: t('wb.worldTypeModern') },
+  { value: 'historical', label: t('wb.worldTypeHistorical') },
+  { value: 'other', label: t('wb.worldTypeOther') },
 ];
 
 const worldDescContentLength = computed(
@@ -742,7 +743,7 @@ function onRandomEventProbabilityInput(e: Event) {
 }
 
 function keysPreview(keys: string[]): string {
-  if (keys.length === 0) return '无关键词';
+  if (keys.length === 0) return t('wb.noKeywords');
   if (keys.length <= 2) return keys.join('、');
   return `${keys.slice(0, 2).join('、')} +${keys.length - 2}`;
 }
@@ -761,35 +762,35 @@ function strategyLabel(s: LorebookStrategy): string {
         <button
           type="button"
           class="header-btn back"
-          aria-label="返回对话页"
+          :aria-label="t('wb.backAria')"
           @click="goBack"
         >
           <Icon name="arrow-left" :size="16" />
-          <span class="btn-label">返回</span>
+          <span class="btn-label">{{ t('wb.back') }}</span>
         </button>
-        <h1>世界书</h1>
-        <span class="header-count">{{ store.lorebooks.length }} 个</span>
+        <h1>{{ t('wb.title') }}</h1>
+        <span class="header-count">{{ t('wb.count', { count: store.lorebooks.length }) }}</span>
       </div>
 
       <div class="header-actions">
         <button
           type="button"
           class="header-btn generate-btn"
-          aria-label="AI 生成世界观"
+          :aria-label="t('wb.aiGenerateAria')"
           :disabled="store.isGeneratingWorld"
           @click="openGenerateModal"
         >
           <Icon name="star" :size="16" />
-          <span class="btn-label">AI 生成</span>
+          <span class="btn-label">{{ t('wb.aiGenerate') }}</span>
         </button>
         <button
           type="button"
           class="header-btn import-btn"
-          aria-label="导入 Lorebook JSON"
+          :aria-label="t('wb.importAria')"
           @click="triggerFileInput"
         >
           <Icon name="upload" :size="16" />
-          <span class="btn-label">导入</span>
+          <span class="btn-label">{{ t('wb.import') }}</span>
         </button>
         <input
           ref="fileInput"
@@ -803,11 +804,11 @@ function strategyLabel(s: LorebookStrategy): string {
         <button
           type="button"
           class="header-btn new-btn"
-          aria-label="新建世界书"
+          :aria-label="t('wb.newAria')"
           @click="createLorebook"
         >
           <Icon name="plus" :size="16" />
-          <span class="btn-label">新建</span>
+          <span class="btn-label">{{ t('wb.new') }}</span>
         </button>
       </div>
     </header>
@@ -815,13 +816,13 @@ function strategyLabel(s: LorebookStrategy): string {
     <!-- 主体：左 Lorebook 列表 + 右编辑器 -->
     <div class="worldbook-body">
       <!-- 左侧 Lorebook 列表 -->
-      <aside class="lorebook-list-panel tk-scroll" aria-label="世界书列表">
+      <aside class="lorebook-list-panel tk-scroll" :aria-label="t('wb.listAria')">
         <div class="search-box">
           <input
             type="text"
             v-model="store.searchQuery"
-            placeholder="搜索世界书..."
-            aria-label="搜索世界书"
+            :placeholder="t('wb.searchPlaceholder')"
+            :aria-label="t('wb.searchAria')"
             class="search-input"
           />
         </div>
@@ -831,8 +832,8 @@ function strategyLabel(s: LorebookStrategy): string {
           v-if="scopeFilterTabs.length > 0"
           v-model="filterScope"
           :tabs="scopeFilterTabs"
-          label="按范围筛选世界书"
-          all-label="全部"
+          :label="t('wb.filterLabel')"
+          :all-label="t('wb.filterAll')"
           :all-value="''"
           :all-count="store.lorebooks.length"
         />
@@ -852,15 +853,15 @@ function strategyLabel(s: LorebookStrategy): string {
             >
               <div class="item-main">
                 <span class="item-name">{{ lb.name }}</span>
-                <span class="item-desc">{{ lb.description || '无描述' }}</span>
+                <span class="item-desc">{{ lb.description || t('wb.noDesc') }}</span>
               </div>
-              <span class="item-meta">{{ lb.entries.length }} 条</span>
+              <span class="item-meta">{{ t('wb.entryCount', { count: lb.entries.length }) }}</span>
             </button>
           </li>
           <li v-if="store.filteredLorebooks.length === 0" class="empty-state">
-            <p>暂无世界书</p>
+            <p>{{ t('wb.emptyList') }}</p>
             <button type="button" class="link-btn" @click="createLorebook">
-              创建第一个世界书
+              {{ t('wb.createFirst') }}
             </button>
           </li>
         </ul>
@@ -870,18 +871,18 @@ function strategyLabel(s: LorebookStrategy): string {
       <main class="lorebook-editor-panel" id="main-content" tabindex="-1">
         <div v-if="!currentLorebook" class="empty-editor">
           <Icon name="compass" :size="48" />
-          <p>选择左侧的世界书开始编辑</p>
+          <p>{{ t('wb.emptyEditor') }}</p>
           <button type="button" class="primary-btn" @click="createLorebook">
-            创建新世界书
+            {{ t('wb.createNew') }}
           </button>
         </div>
 
         <div v-else class="editor-content">
           <!-- Lorebook 元信息 -->
-          <section class="lorebook-meta" aria-label="世界书信息">
+          <section class="lorebook-meta" :aria-label="t('wb.metaAria')">
             <div class="meta-row">
               <label :for="`lb-name-${currentLorebook.id}`" class="meta-label">
-                名称
+                {{ t('wb.nameLabel') }}
               </label>
               <input
                 :id="`lb-name-${currentLorebook.id}`"
@@ -889,19 +890,19 @@ function strategyLabel(s: LorebookStrategy): string {
                 class="meta-input"
                 :value="currentLorebook.name"
                 @input="onNameInput"
-                placeholder="世界书名称"
+                :placeholder="t('wb.namePlaceholder')"
               />
             </div>
             <div class="meta-row">
               <label :for="`lb-desc-${currentLorebook.id}`" class="meta-label">
-                描述
+                {{ t('wb.descLabel') }}
               </label>
               <textarea
                 :id="`lb-desc-${currentLorebook.id}`"
                 class="meta-textarea"
                 :value="currentLorebook.description"
                 @input="onDescInput"
-                placeholder="可选的世界书描述"
+                :placeholder="t('wb.descPlaceholder')"
                 rows="2"
               />
             </div>
@@ -913,7 +914,7 @@ function strategyLabel(s: LorebookStrategy): string {
                 @click="extendCurrentWorldbook"
               >
                 <Icon name="star" :size="14" />
-                <span>{{ store.isGeneratingWorld ? '生成中...' : 'AI 扩展' }}</span>
+                <span>{{ store.isGeneratingWorld ? t('wb.generating') : t('wb.aiExtend') }}</span>
               </button>
               <button
                 type="button"
@@ -921,7 +922,7 @@ function strategyLabel(s: LorebookStrategy): string {
                 @click="exportLorebook(currentLorebook.id)"
               >
                 <Icon name="download" :size="14" />
-                <span>导出 JSON</span>
+                <span>{{ t('wb.exportJson') }}</span>
               </button>
               <button
                 type="button"
@@ -929,22 +930,22 @@ function strategyLabel(s: LorebookStrategy): string {
                 @click="deleteLorebook(currentLorebook.id)"
               >
                 <Icon name="trash-2" :size="14" />
-                <span>删除世界书</span>
+                <span>{{ t('wb.deleteLorebook') }}</span>
               </button>
             </div>
           </section>
 
           <!-- 需求7：已绑定角色展示（反向关系） -->
-          <section class="bound-chars-section" aria-label="已绑定角色">
+          <section class="bound-chars-section" :aria-label="t('wb.boundCharsAria')">
             <header class="bound-chars-header">
               <h2>
                 <Icon name="users" :size="14" aria-hidden="true" />
-                <span>已绑定角色</span>
+                <span>{{ t('wb.boundCharsTitle') }}</span>
               </h2>
               <span class="bound-chars-count">{{ boundCharacters.length }}</span>
             </header>
             <p class="bound-chars-hint">
-              以下角色已绑定此世界书，对话时将自动注入世界书条目。
+              {{ t('wb.boundCharsHint') }}
             </p>
             <ul v-if="boundCharacters.length" class="bound-chars-list" role="list">
               <li
@@ -962,29 +963,29 @@ function strategyLabel(s: LorebookStrategy): string {
               </li>
             </ul>
             <p v-else class="bound-chars-empty">
-              暂无角色绑定此世界书。请在角色编辑页的"世界书绑定"区域添加。
+              {{ t('wb.boundCharsEmpty') }}
             </p>
           </section>
 
           <!-- F06.7 整体世界描述 -->
-          <section class="world-desc-section" aria-label="整体世界描述">
+          <section class="world-desc-section" :aria-label="t('wb.worldDescAria')">
             <header class="world-desc-header">
               <h2>
                 <Icon name="globe" :size="14" />
-                <span>整体世界描述</span>
+                <span>{{ t('wb.worldDescTitle') }}</span>
               </h2>
-              <span class="world-desc-tag">常量注入</span>
+              <span class="world-desc-tag">{{ t('wb.worldDescTag') }}</span>
             </header>
 
             <div v-if="!worldDescDraft" class="world-desc-empty">
-              <p>未设置整体世界描述</p>
+              <p>{{ t('wb.worldDescEmpty') }}</p>
               <button
                 type="button"
                 class="action-btn add-world-btn"
                 @click="addWorldDesc"
               >
                 <Icon name="plus" :size="14" />
-                <span>添加世界描述</span>
+                <span>{{ t('wb.addWorldDesc') }}</span>
               </button>
             </div>
 
@@ -992,7 +993,7 @@ function strategyLabel(s: LorebookStrategy): string {
               <div class="world-desc-row">
                 <div class="world-desc-cell">
                   <label class="form-label" :for="`wd-name-${currentLorebook.id}`">
-                    世界名称
+                    {{ t('wb.worldName') }}
                   </label>
                   <input
                     :id="`wd-name-${currentLorebook.id}`"
@@ -1000,13 +1001,13 @@ function strategyLabel(s: LorebookStrategy): string {
                     class="form-input"
                     :value="worldDescDraft.name"
                     @input="onWorldNameInput"
-                    placeholder="如：艾瑟兰大陆"
+                    :placeholder="t('wb.worldNamePlaceholder')"
                     :maxlength="100"
                   />
                 </div>
                 <div class="world-desc-cell">
                   <label class="form-label" :for="`wd-type-${currentLorebook.id}`">
-                    世界类型
+                    {{ t('wb.worldType') }}
                   </label>
                   <select
                     :id="`wd-type-${currentLorebook.id}`"
@@ -1027,7 +1028,7 @@ function strategyLabel(s: LorebookStrategy): string {
 
               <div class="world-desc-row">
                 <label class="form-label" :for="`wd-keys-${currentLorebook.id}`">
-                  关键字（逗号分隔，用于层级关联）
+                  {{ t('wb.worldKeys') }}
                 </label>
                 <input
                   :id="`wd-keys-${currentLorebook.id}`"
@@ -1035,20 +1036,20 @@ function strategyLabel(s: LorebookStrategy): string {
                   class="form-input"
                   :value="worldKeysToString(worldDescDraft.keys)"
                   @input="onWorldKeysInput"
-                  placeholder="魔法, 王国, 远古遗迹"
+                  :placeholder="t('wb.worldKeysPlaceholder')"
                 />
               </div>
 
               <div class="world-desc-row">
                 <label class="form-label" :for="`wd-content-${currentLorebook.id}`">
-                  世界描述内容（注入提示词）
+                  {{ t('wb.worldContent') }}
                 </label>
                 <textarea
                   :id="`wd-content-${currentLorebook.id}`"
                   class="form-textarea world-desc-content"
                   :value="worldDescDraft.content"
                   @input="onWorldContentInput"
-                  placeholder="描述整个世界的背景、规则、地理、文化等。将作为常量条目始终注入 beforeCharDefs 之前。"
+                  :placeholder="t('wb.worldContentPlaceholder')"
                   rows="5"
                 />
                 <span class="char-count">
@@ -1063,7 +1064,7 @@ function strategyLabel(s: LorebookStrategy): string {
                   @click="clearWorldDesc"
                 >
                   <Icon name="trash-2" :size="14" />
-                  <span>清空世界描述</span>
+                  <span>{{ t('wb.clearWorldDesc') }}</span>
                 </button>
               </div>
             </div>
@@ -1074,15 +1075,15 @@ function strategyLabel(s: LorebookStrategy): string {
           <!-- 条目列表 + 条目编辑器 -->
           <div class="entries-layout">
             <!-- 条目列表（F06.6 树状导航）-->
-            <aside class="entries-list-panel" aria-label="条目列表">
+            <aside class="entries-list-panel" :aria-label="t('wb.editorAria')">
               <div class="entries-header">
-                <h2>条目（{{ currentLorebook.entries.length }}/500）</h2>
+                <h2>{{ t('wb.entriesTitle', { count: currentLorebook.entries.length }) }}</h2>
                 <div class="entries-header-actions">
                   <button
                     type="button"
                     class="tree-action-btn"
-                    aria-label="全部展开"
-                    title="全部展开"
+                    :aria-label="t('wb.expandAll')"
+                    :title="t('wb.expandAll')"
                     @click="expandAll"
                   >
                     <Icon name="chevron-down" :size="14" />
@@ -1090,8 +1091,8 @@ function strategyLabel(s: LorebookStrategy): string {
                   <button
                     type="button"
                     class="tree-action-btn"
-                    aria-label="全部折叠"
-                    title="全部折叠"
+                    :aria-label="t('wb.collapseAll')"
+                    :title="t('wb.collapseAll')"
                     @click="collapseAll"
                   >
                     <Icon name="chevron-up" :size="14" />
@@ -1099,18 +1100,18 @@ function strategyLabel(s: LorebookStrategy): string {
                   <button
                     type="button"
                     class="add-entry-btn"
-                    aria-label="新增条目"
+                    :aria-label="t('wb.addEntry')"
                     @click="addEntry"
                   >
                     <Icon name="plus" :size="14" />
-                    <span>新增</span>
+                    <span>{{ t('wb.add') }}</span>
                   </button>
                 </div>
               </div>
               <div
                 class="entries-list tk-scroll"
                 :role="currentLorebook.entries.length > 0 ? 'tree' : undefined"
-                aria-label="条目树"
+                :aria-label="t('wb.entriesTreeAria')"
               >
                 <div
                   v-for="entry in visibleEntries"
@@ -1135,7 +1136,7 @@ function strategyLabel(s: LorebookStrategy): string {
                     :style="{ paddingLeft: `${8 + getIndent(entry.id)}px` }"
                     tabindex="0"
                     draggable="true"
-                    :aria-label="`条目：${entry.title}（${strategyLabel(entry.strategy)}，${levelLabel(getEntryLevel(entry.id))}层级）`"
+                    :aria-label="t('wb.entryAria', { title: entry.title || t('wb.unnamedEntry'), strategy: strategyLabel(entry.strategy), level: levelLabel(getEntryLevel(entry.id)) })"
                     :aria-current="entry.id === store.currentEntryId ? 'true' : undefined"
                     @click="selectEntry(entry.id)"
                     @keydown.enter="selectEntry(entry.id)"
@@ -1151,7 +1152,7 @@ function strategyLabel(s: LorebookStrategy): string {
                       v-if="hasChildren(entry.id)"
                       type="button"
                       class="expand-toggle"
-                      :aria-label="isExpanded(entry.id) ? '折叠子节点' : '展开子节点'"
+                      :aria-label="isExpanded(entry.id) ? t('wb.collapseChildren') : t('wb.expandChildren')"
                       :aria-expanded="isExpanded(entry.id)"
                       @click.stop="toggleExpand(entry.id)"
                     >
@@ -1166,7 +1167,7 @@ function strategyLabel(s: LorebookStrategy): string {
                     <span
                       class="level-badge"
                       :style="{ color: levelColor(getEntryLevel(entry.id)) }"
-                      :title="`${levelLabel(getEntryLevel(entry.id))} 层级`"
+                      :title="t('wb.levelTitle', { level: levelLabel(getEntryLevel(entry.id)) })"
                     >
                       {{ levelLabel(getEntryLevel(entry.id)).charAt(0) }}
                     </span>
@@ -1175,42 +1176,42 @@ function strategyLabel(s: LorebookStrategy): string {
                       type="button"
                       class="entry-toggle"
                       :class="{ active: entry.enabled }"
-                      :aria-label="entry.enabled ? '禁用条目' : '启用条目'"
+                      :aria-label="entry.enabled ? t('wb.disableEntry') : t('wb.enableEntry')"
                       :aria-pressed="entry.enabled"
                       @click.stop="toggleEntry(entry.id)"
                     >
                       <Icon :name="entry.enabled ? 'eye' : 'eye-off'" :size="12" />
                     </button>
                     <div class="entry-content">
-                      <div class="entry-title">{{ entry.title || '未命名条目' }}</div>
+                      <div class="entry-title">{{ entry.title || t('wb.unnamedEntry') }}</div>
                       <div class="entry-keys">{{ keysPreview(entry.keys) }}</div>
                     </div>
                     <span class="entry-strategy">{{ strategyLabel(entry.strategy) }}</span>
                   </div>
                 </div>
                 <div v-if="currentLorebook.entries.length === 0" class="empty-entries">
-                  <p>暂无条目</p>
+                  <p>{{ t('wb.emptyEntries') }}</p>
                   <button type="button" class="link-btn" @click="addEntry">
-                    添加第一个条目
+                    {{ t('wb.addFirstEntry') }}
                   </button>
                 </div>
               </div>
               <div class="entries-footer">
-                <p class="drag-hint">提示：拖拽到条目上方 25% 同级前移，下方 25% 同级后移，中间 50% 设为子节点</p>
+                <p class="drag-hint">{{ t('wb.dragHint') }}</p>
               </div>
             </aside>
 
             <!-- 条目编辑器 -->
-            <section class="entry-editor-panel" aria-label="条目编辑">
+            <section class="entry-editor-panel" :aria-label="t('wb.editorAria')">
               <div v-if="!currentEntry" class="empty-entry-editor">
                 <Icon name="file" :size="36" />
-                <p>选择左侧条目开始编辑</p>
+                <p>{{ t('wb.emptyEntryEditor') }}</p>
               </div>
 
               <form v-else class="entry-form" @submit.prevent>
                 <div class="entry-form-header">
                   <h3>
-                    {{ currentEntry.title || '未命名条目' }}
+                    {{ currentEntry.title || t('wb.unnamedEntry') }}
                     <span
                       class="form-level-badge"
                       :style="{ color: levelColor(getEntryLevel(currentEntry.id)) }"
@@ -1222,19 +1223,19 @@ function strategyLabel(s: LorebookStrategy): string {
                     <button
                       type="button"
                       class="action-btn"
-                      aria-label="移到顶层"
-                      title="移到顶层（取消父节点）"
+                      :aria-label="t('wb.moveToTop')"
+                      :title="t('wb.moveToTopTitle')"
                       :disabled="getEntryLevel(currentEntry.id) === 0"
                       @click="moveToTopLevel(currentEntry.id)"
                     >
                       <Icon name="chevron-up" :size="14" />
-                      <span>顶层</span>
+                      <span>{{ t('wb.top') }}</span>
                     </button>
                     <button
                       type="button"
                       class="action-btn"
-                      aria-label="同级上移"
-                      title="同级上移"
+                      :aria-label="t('wb.moveUp')"
+                      :title="t('wb.moveUp')"
                       @click="moveUpInLevel(currentEntry.id)"
                     >
                       <Icon name="arrow-up" :size="14" />
@@ -1242,8 +1243,8 @@ function strategyLabel(s: LorebookStrategy): string {
                     <button
                       type="button"
                       class="action-btn"
-                      aria-label="同级下移"
-                      title="同级下移"
+                      :aria-label="t('wb.moveDown')"
+                      :title="t('wb.moveDown')"
                       @click="moveDownInLevel(currentEntry.id)"
                     >
                       <Icon name="arrow-down" :size="14" />
@@ -1251,20 +1252,20 @@ function strategyLabel(s: LorebookStrategy): string {
                     <button
                       type="button"
                       class="action-btn duplicate"
-                      aria-label="复制条目"
+                      :aria-label="t('wb.duplicateEntry')"
                       @click="duplicateEntry(currentEntry.id)"
                     >
                       <Icon name="copy" :size="14" />
-                      <span>复制</span>
+                      <span>{{ t('wb.duplicate') }}</span>
                     </button>
                     <button
                       type="button"
                       class="action-btn delete"
-                      aria-label="删除条目"
+                      :aria-label="t('wb.deleteEntry')"
                       @click="deleteEntry(currentEntry.id)"
                     >
                       <Icon name="trash-2" :size="14" />
-                      <span>删除</span>
+                      <span>{{ t('wb.delete') }}</span>
                     </button>
                   </div>
                 </div>
@@ -1272,7 +1273,7 @@ function strategyLabel(s: LorebookStrategy): string {
                 <div class="form-grid">
                   <div class="form-row">
                     <label class="form-label" :for="`entry-title-${currentEntry.id}`">
-                      标题
+                      {{ t('wb.titleLabel') }}
                     </label>
                     <input
                       :id="`entry-title-${currentEntry.id}`"
@@ -1280,13 +1281,13 @@ function strategyLabel(s: LorebookStrategy): string {
                       class="form-input"
                       :value="currentEntry.title"
                       @input="onTitleInput"
-                      placeholder="条目标题（不注入提示词）"
+                      :placeholder="t('wb.titlePlaceholder')"
                     />
                   </div>
 
                   <div class="form-row">
                     <label class="form-label" :for="`entry-keys-${currentEntry.id}`">
-                      关键词（逗号分隔，支持正则 /pattern/flags）
+                      {{ t('wb.keysLabel') }}
                     </label>
                     <input
                       :id="`entry-keys-${currentEntry.id}`"
@@ -1294,20 +1295,20 @@ function strategyLabel(s: LorebookStrategy): string {
                       class="form-input"
                       :value="keysToString(currentEntry.keys)"
                       @input="onKeysInput"
-                      placeholder="翡翠森林, /magic/i"
+                      :placeholder="t('wb.keysPlaceholder')"
                     />
                   </div>
 
                   <div class="form-row">
                     <label class="form-label" :for="`entry-content-${currentEntry.id}`">
-                      内容（注入提示词的描述）
+                      {{ t('wb.contentLabel') }}
                     </label>
                     <textarea
                       :id="`entry-content-${currentEntry.id}`"
                       class="form-textarea"
                       :value="currentEntry.content"
                       @input="onContentInput"
-                      placeholder="条目内容（自包含的完整描述）"
+                      :placeholder="t('wb.contentPlaceholder')"
                       rows="6"
                     />
                     <span class="char-count">
@@ -1318,7 +1319,7 @@ function strategyLabel(s: LorebookStrategy): string {
                   <div class="form-row form-row-3col">
                     <div class="form-cell">
                       <label class="form-label" :for="`entry-strategy-${currentEntry.id}`">
-                        激活策略
+                        {{ t('wb.strategyLabel') }}
                       </label>
                       <select
                         :id="`entry-strategy-${currentEntry.id}`"
@@ -1338,7 +1339,7 @@ function strategyLabel(s: LorebookStrategy): string {
 
                     <div class="form-cell">
                       <label class="form-label" :for="`entry-position-${currentEntry.id}`">
-                        插入位置
+                        {{ t('wb.positionLabel') }}
                       </label>
                       <select
                         :id="`entry-position-${currentEntry.id}`"
@@ -1358,7 +1359,7 @@ function strategyLabel(s: LorebookStrategy): string {
 
                     <div class="form-cell">
                       <label class="form-label" :for="`entry-logic-${currentEntry.id}`">
-                        关键词逻辑
+                        {{ t('wb.logicLabel') }}
                       </label>
                       <select
                         :id="`entry-logic-${currentEntry.id}`"
@@ -1380,7 +1381,7 @@ function strategyLabel(s: LorebookStrategy): string {
                   <div class="form-row form-row-4col">
                     <div class="form-cell">
                       <label class="form-label" :for="`entry-prob-${currentEntry.id}`">
-                        概率（0-100）
+                        {{ t('wb.probability') }}
                       </label>
                       <input
                         :id="`entry-prob-${currentEntry.id}`"
@@ -1396,7 +1397,7 @@ function strategyLabel(s: LorebookStrategy): string {
 
                     <div class="form-cell">
                       <label class="form-label" :for="`entry-order-${currentEntry.id}`">
-                        插入顺序
+                        {{ t('wb.insertionOrder') }}
                       </label>
                       <input
                         :id="`entry-order-${currentEntry.id}`"
@@ -1410,7 +1411,7 @@ function strategyLabel(s: LorebookStrategy): string {
 
                     <div class="form-cell">
                       <label class="form-label" :for="`entry-depth-${currentEntry.id}`">
-                        深度 @D
+                        {{ t('wb.depth') }}
                       </label>
                       <input
                         :id="`entry-depth-${currentEntry.id}`"
@@ -1425,7 +1426,7 @@ function strategyLabel(s: LorebookStrategy): string {
 
                     <div class="form-cell">
                       <label class="form-label" :for="`entry-group-${currentEntry.id}`">
-                        包含组
+                        {{ t('wb.group') }}
                       </label>
                       <input
                         :id="`entry-group-${currentEntry.id}`"
@@ -1433,7 +1434,7 @@ function strategyLabel(s: LorebookStrategy): string {
                         class="form-input"
                         :value="currentEntry.group"
                         @input="onGroupInput"
-                        placeholder="留空表示无组"
+                        :placeholder="t('wb.groupPlaceholder')"
                       />
                     </div>
                   </div>
@@ -1445,7 +1446,7 @@ function strategyLabel(s: LorebookStrategy): string {
                   >
                     <div class="form-cell">
                       <label class="form-label" :for="`entry-rand-${currentEntry.id}`">
-                        随机事件
+                        {{ t('wb.randomEvent') }}
                       </label>
                       <label class="checkbox-label">
                         <input
@@ -1454,10 +1455,10 @@ function strategyLabel(s: LorebookStrategy): string {
                           :checked="currentEntry.randomEventEnabled ?? false"
                           @change="onRandomEventEnabledChange"
                         />
-                        <span>开启随机事件生成</span>
+                        <span>{{ t('wb.randomEventEnable') }}</span>
                       </label>
                       <span class="form-hint">
-                        每轮对话后按概率触发 AI 生成一次性事件，注入到下一轮提示词
+                        {{ t('wb.randomEventHint') }}
                       </span>
                     </div>
                     <div
@@ -1465,7 +1466,7 @@ function strategyLabel(s: LorebookStrategy): string {
                       class="form-cell"
                     >
                       <label class="form-label" :for="`entry-rand-prob-${currentEntry.id}`">
-                        触发概率：{{ currentEntry.randomEventProbability ?? 10 }}%
+                        {{ t('wb.randomEventProb', { percent: currentEntry.randomEventProbability ?? 10 }) }}
                       </label>
                       <input
                         :id="`entry-rand-prob-${currentEntry.id}`"
@@ -1489,23 +1490,23 @@ function strategyLabel(s: LorebookStrategy): string {
     <!-- 删除确认对话框 -->
     <Modal
       v-model="deleteModalOpen"
-      title="删除世界书"
+      :title="t('wb.deleteTitle')"
     >
-      <p>确定要删除这个世界书吗？所有条目将一并删除，且无法恢复。</p>
+      <p>{{ t('wb.deleteConfirm') }}</p>
       <template #footer>
         <button
           type="button"
           class="modal-btn modal-cancel"
           @click="deleteModalOpen = false"
         >
-          取消
+          {{ t('wb.cancel') }}
         </button>
         <button
           type="button"
           class="modal-btn modal-confirm modal-danger"
           @click="confirmDelete"
         >
-          删除
+          {{ t('wb.delete') }}
         </button>
       </template>
     </Modal>
@@ -1513,37 +1514,36 @@ function strategyLabel(s: LorebookStrategy): string {
     <!-- F06.8 AI 生成世界观 Modal -->
     <Modal
       v-model="generateModalOpen"
-      title="AI 生成世界观"
+      :title="t('wb.generateTitle')"
     >
       <div class="generate-modal-body">
         <p class="generate-hint">
-          选择世界类型，AI 将生成完整世界设定：整体描述 + 3-5 个大区 + 子区域。
-          单次生成约消耗 1000-2000 Token。
+          {{ t('wb.generateHint') }}
         </p>
 
         <div
           class="template-grid"
           role="radiogroup"
-          aria-label="世界类型"
+          :aria-label="t('wb.generateTypeAria')"
         >
           <button
-            v-for="t in WORLD_TEMPLATES"
-            :key="t.id"
+            v-for="tpl in WORLD_TEMPLATES"
+            :key="tpl.id"
             type="button"
             class="template-card"
             role="radio"
-            :aria-checked="selectedTemplateId === t.id"
-            :class="{ active: selectedTemplateId === t.id }"
-            @click="selectTemplate(t.id)"
+            :aria-checked="selectedTemplateId === tpl.id"
+            :class="{ active: selectedTemplateId === tpl.id }"
+            @click="selectTemplate(tpl.id)"
           >
-            <span class="template-label">{{ t.label }}</span>
-            <span class="template-desc">{{ t.description }}</span>
+            <span class="template-label">{{ tpl.label }}</span>
+            <span class="template-desc">{{ tpl.description }}</span>
           </button>
         </div>
 
         <div v-if="store.isGeneratingWorld" class="generating-state" role="status" aria-live="polite">
           <Icon name="refresh-cw" :size="16" />
-          <span>AI 正在生成世界，请稍候...</span>
+          <span>{{ t('wb.generatingWorld') }}</span>
         </div>
 
         <div v-if="store.lastError && store.isGeneratingWorld === false && generateModalOpen" class="generate-error" role="alert">
@@ -1557,7 +1557,7 @@ function strategyLabel(s: LorebookStrategy): string {
           :disabled="store.isGeneratingWorld"
           @click="closeGenerateModal"
         >
-          取消
+          {{ t('wb.cancel') }}
         </button>
         <button
           type="button"
@@ -1565,7 +1565,7 @@ function strategyLabel(s: LorebookStrategy): string {
           :disabled="store.isGeneratingWorld"
           @click="confirmGenerate"
         >
-          {{ store.isGeneratingWorld ? '生成中...' : '生成' }}
+          {{ store.isGeneratingWorld ? t('wb.generating') : t('wb.generateBtn') }}
         </button>
       </template>
     </Modal>
