@@ -25,6 +25,7 @@ import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import type { UICharacter } from '@/types';
 import type { CharacterAttributes, CharacterAttribute } from '@/core/character-card';
+import { t } from '@/i18n';
 
 const props = defineProps<{
   /** 编辑模式时传入的角色 id；新建模式不传 */
@@ -61,7 +62,7 @@ function bindSelectedWorldBook(): void {
   if (!lb) return;
   const changed = characterStore.bindWorldBook(props.id, selectedBindId.value);
   if (changed) {
-    showToast('success', `已绑定世界书：${lb.name}`);
+    showToast('success', t('charEdit.boundWorldBook', { name: lb.name }));
   }
   selectedBindId.value = '';
 }
@@ -72,7 +73,7 @@ function unbindWorldBook(worldBookId: string): void {
   const lb = lorebookStore.lorebooks.find((l) => l.id === worldBookId);
   const changed = characterStore.unbindWorldBook(props.id, worldBookId);
   if (changed) {
-    showToast('info', `已解绑世界书：${lb?.name ?? worldBookId}`);
+    showToast('info', t('charEdit.unboundWorldBook', { name: lb?.name ?? worldBookId }));
   }
 }
 
@@ -138,27 +139,27 @@ const isDirty = ref(false);
 const errors = computed<Record<string, string>>(() => {
   const e: Record<string, string> = {};
   if (!form.value.name.trim()) {
-    e.name = '名称为必填项';
+    e.name = t('charEdit.nameRequired');
   } else if (form.value.name.trim().length > 64) {
-    e.name = '名称不能超过 64 个字符';
+    e.name = t('charEdit.nameTooLong');
   }
   if (form.value.avatarType === 'image' && !form.value.avatar.trim()) {
-    e.avatar = '图像模式下头像 URL 不能为空';
+    e.avatar = t('charEdit.avatarRequired');
   }
   if (
     form.value.avatarType === 'gradient' &&
     (!form.value.gradientFrom.trim() || !form.value.gradientTo.trim())
   ) {
-    e.gradient = '请填写渐变起止颜色';
+    e.gradient = t('charEdit.gradientRequired');
   }
   if (form.value.temperature < 0 || form.value.temperature > 2) {
-    e.temperature = '温度范围 0 ~ 2';
+    e.temperature = t('charEdit.tempRange');
   }
   if (form.value.maxTokens < 1 || form.value.maxTokens > 32768) {
-    e.maxTokens = 'maxTokens 范围 1 ~ 32768';
+    e.maxTokens = t('charEdit.maxTokensRange');
   }
   if (form.value.authorDepth < 0 || form.value.authorDepth > 50) {
-    e.authorDepth = '作者深度范围 0 ~ 50';
+    e.authorDepth = t('charEdit.depthRange');
   }
   // F01.6 角色属性校验
   if (form.value.attrEnabled) {
@@ -167,13 +168,13 @@ const errors = computed<Record<string, string>>(() => {
       form.value.level < 0 ||
       form.value.level > 9999
     ) {
-      e.level = '等级必须为 0-9999 的整数';
+      e.level = t('charEdit.levelInvalid');
     }
     if (
       !Number.isInteger(form.value.experience) ||
       form.value.experience < 0
     ) {
-      e.experience = '经验值必须为非负整数';
+      e.experience = t('charEdit.expInvalid');
     }
     // 校验属性名重复
     const names = form.value.stats
@@ -181,7 +182,7 @@ const errors = computed<Record<string, string>>(() => {
       .filter((n) => n !== '');
     const dup = names.find((n, i) => names.indexOf(n) !== i);
     if (dup) {
-      e.stats = `属性名"${dup}"重复`;
+      e.stats = t('charEdit.statsDuplicate', { name: dup });
     }
   }
   return e;
@@ -241,7 +242,7 @@ onMounted(() => {
     const found = characterStore.characters.find((c) => c.id === props.id);
     if (!found) {
       // 角色不存在，返回列表
-      showToast('error', '未找到要编辑的角色');
+      showToast('error', t('charEdit.notFound'));
       setTimeout(() => router.replace({ name: 'character-list' }), 800);
       return;
     }
@@ -265,16 +266,16 @@ watch(
 // ── 预览角色（基于当前表单状态构造一个 UICharacter 给 Avatar 组件） ──
 const previewCharacter = computed<UICharacter>(() => ({
   id: props.id ?? 'preview',
-  name: form.value.name || '未命名',
+  name: form.value.name || t('charEdit.unnamed'),
   avatarType: form.value.avatarType,
   avatar: form.value.avatar || undefined,
   gradientFrom: form.value.gradientFrom,
   gradientTo: form.value.gradientTo,
   initial: form.value.initial || form.value.name[0] || '?',
-  lastActive: '刚刚',
+  lastActive: t('charEdit.justNow'),
   favorite: form.value.favorite,
   tags: parseTags(form.value.tagsText),
-  description: form.value.description || '（无描述）',
+  description: form.value.description || t('charEdit.noDesc'),
   model: form.value.model,
   conversations: [],
   messages: [],
@@ -326,7 +327,7 @@ function executeDelete() {
   const name = loadedCharacter.value?.name ?? '';
   characterStore.deleteCharacter(props.id);
   deleteModalOpen.value = false;
-  showToast('success', `已删除角色：${name}`);
+  showToast('success', t('charEdit.deleted', { name }));
   setTimeout(() => router.replace({ name: 'character-list' }), 600);
 }
 
@@ -343,12 +344,12 @@ function handleAvatarSelected(e: Event) {
   const file = input.files[0];
   // 限制 1MB
   if (file.size > 1024 * 1024) {
-    showToast('error', '头像图片不能超过 1MB');
+    showToast('error', t('charEdit.avatarTooLarge'));
     input.value = '';
     return;
   }
   if (!file.type.startsWith('image/')) {
-    showToast('error', '请选择图片文件');
+    showToast('error', t('charEdit.avatarNotImage'));
     input.value = '';
     return;
   }
@@ -356,10 +357,10 @@ function handleAvatarSelected(e: Event) {
   reader.onload = () => {
     form.value.avatar = String(reader.result);
     form.value.avatarType = 'image';
-    showToast('success', '头像已加载（保存后生效）');
+    showToast('success', t('charEdit.avatarLoaded'));
   };
   reader.onerror = () => {
-    showToast('error', '头像读取失败');
+    showToast('error', t('charEdit.avatarReadFailed'));
   };
   reader.readAsDataURL(file);
   input.value = '';
@@ -367,12 +368,12 @@ function handleAvatarSelected(e: Event) {
 
 // ── 颜色快选 ──
 const colorPresets: Array<{ from: string; to: string; label: string }> = [
-  { from: 'var(--tk-cyan-500)', to: 'var(--tk-cyan-700)', label: '青' },
-  { from: 'var(--tk-red-500)', to: 'var(--tk-red-700)', label: '红' },
-  { from: '#a78bfa', to: '#7c3aed', label: '紫' },
-  { from: '#f472b6', to: '#db2777', label: '粉' },
-  { from: '#34d399', to: '#047857', label: '绿' },
-  { from: '#fbbf24', to: '#d97706', label: '金' },
+  { from: 'var(--tk-cyan-500)', to: 'var(--tk-cyan-700)', label: t('charEdit.colorCyan') },
+  { from: 'var(--tk-red-500)', to: 'var(--tk-red-700)', label: t('charEdit.colorRed') },
+  { from: '#a78bfa', to: '#7c3aed', label: t('charEdit.colorPurple') },
+  { from: '#f472b6', to: '#db2777', label: t('charEdit.colorPink') },
+  { from: '#34d399', to: '#047857', label: t('charEdit.colorGreen') },
+  { from: '#fbbf24', to: '#d97706', label: t('charEdit.colorGold') },
 ];
 
 function applyPreset(p: { from: string; to: string }) {
@@ -452,22 +453,22 @@ function buildPatch(): Partial<UICharacter> {
 
 function handleSave() {
   if (hasErrors.value) {
-    showToast('error', '请修正表单中的错误');
+    showToast('error', t('charEdit.fixErrors'));
     return;
   }
   if (isEditMode.value && props.id) {
     const ok = characterStore.updateCharacter(props.id, buildPatch());
     if (ok) {
-      showToast('success', '已保存');
+      showToast('success', t('charEdit.saved'));
       setTimeout(() => router.replace({ name: 'character-list' }), 600);
     } else {
-      showToast('error', '保存失败：未找到角色');
+      showToast('error', t('charEdit.saveFailed'));
     }
   } else {
     // 新建：先 createCharacter 再 updateCharacter
     const newId = characterStore.createCharacter();
     characterStore.updateCharacter(newId, buildPatch());
-    showToast('success', '已创建新角色');
+    showToast('success', t('charEdit.created'));
     setTimeout(() => router.replace({ name: 'character-list' }), 600);
   }
 }
@@ -475,7 +476,7 @@ function handleSave() {
 // ── 取消（带未保存确认） ──
 function handleCancel() {
   if (isDirty.value && canSave.value) {
-    if (!window.confirm('有未保存的修改，确定离开吗？')) {
+    if (!window.confirm(t('charEdit.unsaved'))) {
       return;
     }
   }
@@ -490,21 +491,21 @@ function handleExport() {
 </script>
 
 <template>
-  <main id="main-content" class="editor-view" aria-label="角色编辑" tabindex="-1">
+  <main id="main-content" class="editor-view" :aria-label="t('charEdit.aria')" tabindex="-1">
     <!-- 顶部工具栏 -->
     <header class="editor-header">
       <button
         type="button"
         class="header-btn back"
-        aria-label="返回角色列表"
+        :aria-label="t('charEdit.backAria')"
         @click="handleCancel"
       >
         <Icon name="arrow-left" :size="16" />
-        <span class="btn-label">返回</span>
+        <span class="btn-label">{{ t('charEdit.back') }}</span>
       </button>
 
       <h1 class="editor-title">
-        {{ isEditMode ? '编辑角色' : '新建角色' }}
+        {{ isEditMode ? t('charEdit.editTitle') : t('charEdit.newTitle') }}
       </h1>
 
       <div class="header-actions">
@@ -512,40 +513,40 @@ function handleExport() {
           v-if="isEditMode"
           type="button"
           class="header-btn export"
-          aria-label="导出为 V2 卡"
+          :aria-label="t('charEdit.exportAria')"
           @click="handleExport"
         >
           <Icon name="download" :size="16" />
-          <span class="btn-label">导出</span>
+          <span class="btn-label">{{ t('charEdit.export') }}</span>
         </button>
         <button
           v-if="isEditMode"
           type="button"
           class="header-btn delete"
-          aria-label="删除角色"
+          :aria-label="t('charEdit.deleteAria')"
           @click="openDeleteConfirm"
         >
           <Icon name="trash-2" :size="16" />
-          <span class="btn-label">删除</span>
+          <span class="btn-label">{{ t('charEdit.delete') }}</span>
         </button>
         <button
           type="button"
           class="header-btn cancel"
-          aria-label="取消"
+          :aria-label="t('charEdit.cancel')"
           @click="handleCancel"
         >
-          取消
+          {{ t('charEdit.cancel') }}
         </button>
         <button
           type="button"
           class="header-btn save"
           :disabled="!canSave"
           :aria-disabled="!canSave"
-          :aria-label="canSave ? '保存角色' : '请先填写必填项'"
+          :aria-label="canSave ? t('charEdit.saveAria') : t('charEdit.saveDisabled')"
           @click="handleSave"
         >
           <Icon name="save" :size="16" />
-          <span class="btn-label">保存</span>
+          <span class="btn-label">{{ t('charEdit.save') }}</span>
         </button>
       </div>
     </header>
@@ -559,11 +560,11 @@ function handleExport() {
       >
         <!-- 基本信息 -->
         <fieldset class="form-section">
-          <legend class="section-title">基本信息</legend>
+          <legend class="section-title">{{ t('charEdit.basicTitle') }}</legend>
 
           <div class="field">
             <label for="f-name" class="field-label">
-              名称 <span class="required" aria-hidden="true">*</span>
+              {{ t('charEdit.nameLabel') }} <span class="required" aria-hidden="true">*</span>
             </label>
             <input
               id="f-name"
@@ -584,51 +585,51 @@ function handleExport() {
           </div>
 
           <div class="field">
-            <label for="f-tags" class="field-label">标签</label>
+            <label for="f-tags" class="field-label">{{ t('charEdit.tagsLabel') }}</label>
             <input
               id="f-tags"
               v-model="form.tagsText"
               type="text"
               class="field-input"
-              placeholder="用逗号分隔，如：奇幻, 战士, 善良"
+              :placeholder="t('charEdit.tagsPlaceholder')"
               autocomplete="off"
             />
-            <p class="field-hint">最多 16 个标签，用逗号分隔</p>
+            <p class="field-hint">{{ t('charEdit.tagsHint') }}</p>
           </div>
 
           <div class="field">
-            <label for="f-desc" class="field-label">描述</label>
+            <label for="f-desc" class="field-label">{{ t('charEdit.descLabel') }}</label>
             <textarea
               id="f-desc"
               v-model="form.description"
               class="field-input field-textarea"
               rows="5"
-              placeholder="背景故事与总体设定（可选）"
+              :placeholder="t('charEdit.descPlaceholder')"
             ></textarea>
           </div>
 
           <div class="field">
-            <label for="f-personality" class="field-label">性格设定</label>
+            <label for="f-personality" class="field-label">{{ t('charEdit.personalityLabel') }}</label>
             <textarea
               id="f-personality"
               v-model="form.personality"
               class="field-input field-textarea"
               rows="4"
-              placeholder="性格特点、说话方式、行为习惯..."
+              :placeholder="t('charEdit.personalityPlaceholder')"
             ></textarea>
-            <p class="field-hint">将注入提示词的角色性格描述</p>
+            <p class="field-hint">{{ t('charEdit.personalityHint') }}</p>
           </div>
 
           <div class="field">
-            <label for="f-scenario" class="field-label">初始场景</label>
+            <label for="f-scenario" class="field-label">{{ t('charEdit.scenarioLabel') }}</label>
             <textarea
               id="f-scenario"
               v-model="form.scenario"
               class="field-input field-textarea"
               rows="4"
-              placeholder="故事开始的场景、地点、局势..."
+              :placeholder="t('charEdit.scenarioPlaceholder')"
             ></textarea>
-            <p class="field-hint">对话起始的场景设定，注入提示词</p>
+            <p class="field-hint">{{ t('charEdit.scenarioHint') }}</p>
           </div>
 
           <div class="field field-inline">
@@ -637,16 +638,16 @@ function handleExport() {
                 v-model="form.favorite"
                 type="checkbox"
               />
-              <span>收藏此角色</span>
+              <span>{{ t('charEdit.favorite') }}</span>
             </label>
           </div>
         </fieldset>
 
         <!-- 头像 -->
         <fieldset class="form-section">
-          <legend class="section-title">头像</legend>
+          <legend class="section-title">{{ t('charEdit.avatarTitle') }}</legend>
 
-          <div class="avatar-type-switch" role="radiogroup" aria-label="头像类型">
+          <div class="avatar-type-switch" role="radiogroup" :aria-label="t('charEdit.avatarTypeAria')">
             <button
               type="button"
               class="type-btn"
@@ -655,7 +656,7 @@ function handleExport() {
               @click="form.avatarType = 'gradient'"
             >
               <Icon name="palette" :size="14" />
-              <span>渐变色</span>
+              <span>{{ t('charEdit.avatarGradient') }}</span>
             </button>
             <button
               type="button"
@@ -665,13 +666,13 @@ function handleExport() {
               @click="form.avatarType = 'image'"
             >
               <Icon name="image" :size="14" />
-              <span>图片</span>
+              <span>{{ t('charEdit.avatarImage') }}</span>
             </button>
           </div>
 
           <!-- 渐变色配置 -->
           <div v-if="form.avatarType === 'gradient'" class="field">
-            <label class="field-label">渐变色预设</label>
+            <label class="field-label">{{ t('charEdit.gradientPresets') }}</label>
             <div class="preset-row">
               <button
                 v-for="p in colorPresets"
@@ -681,7 +682,7 @@ function handleExport() {
                 :style="{
                   background: `linear-gradient(135deg, ${p.from}, ${p.to})`,
                 }"
-                :aria-label="`应用 ${p.label} 渐变`"
+                :aria-label="t('charEdit.applyPresetAria', { label: p.label })"
                 @click="applyPreset(p)"
               >
                 <Icon
@@ -694,7 +695,7 @@ function handleExport() {
 
             <div class="color-row">
               <div class="color-field">
-                <label for="f-grad-from" class="field-label">起始色</label>
+                <label for="f-grad-from" class="field-label">{{ t('charEdit.gradientFrom') }}</label>
                 <input
                   id="f-grad-from"
                   v-model="form.gradientFrom"
@@ -703,18 +704,18 @@ function handleExport() {
                   :class="{ 'has-error': errors.gradient }"
                   :aria-invalid="!!errors.gradient"
                   :aria-describedby="errors.gradient ? 'err-grad' : undefined"
-                  placeholder="var(--tk-cyan-500) 或 #22d3ee"
+                  :placeholder="t('charEdit.gradientFromPlaceholder')"
                 />
               </div>
               <div class="color-field">
-                <label for="f-grad-to" class="field-label">结束色</label>
+                <label for="f-grad-to" class="field-label">{{ t('charEdit.gradientTo') }}</label>
                 <input
                   id="f-grad-to"
                   v-model="form.gradientTo"
                   type="text"
                   class="field-input"
                   :class="{ 'has-error': errors.gradient }"
-                  placeholder="var(--tk-cyan-700) 或 #0e7490"
+                  :placeholder="t('charEdit.gradientToPlaceholder')"
                 />
               </div>
             </div>
@@ -726,7 +727,7 @@ function handleExport() {
 
           <!-- 图片头像配置 -->
           <div v-else class="field">
-            <label for="f-avatar-url" class="field-label">图片 URL</label>
+            <label for="f-avatar-url" class="field-label">{{ t('charEdit.avatarUrl') }}</label>
             <input
               id="f-avatar-url"
               v-model="form.avatar"
@@ -735,7 +736,7 @@ function handleExport() {
               :class="{ 'has-error': errors.avatar }"
               :aria-invalid="!!errors.avatar"
               :aria-describedby="errors.avatar ? 'err-avatar' : undefined"
-              placeholder="https://... 或 data:image/..."
+              :placeholder="t('charEdit.avatarUrlPlaceholder')"
               autocomplete="off"
             />
             <p v-if="errors.avatar" id="err-avatar" class="field-error" role="alert">
@@ -750,7 +751,7 @@ function handleExport() {
                 @click="triggerAvatarUpload"
               >
                 <Icon name="upload" :size="14" />
-                <span>上传本地图片</span>
+                <span>{{ t('charEdit.uploadLocal') }}</span>
               </button>
               <input
                 ref="avatarInput"
@@ -761,19 +762,19 @@ function handleExport() {
                 tabindex="-1"
                 @change="handleAvatarSelected"
               />
-              <span class="upload-hint">JPG / PNG / WebP，≤1MB</span>
+              <span class="upload-hint">{{ t('charEdit.uploadHint') }}</span>
             </div>
           </div>
 
           <div class="field">
-            <label for="f-initial" class="field-label">首字母（渐变模式显示）</label>
+            <label for="f-initial" class="field-label">{{ t('charEdit.initialLabel') }}</label>
             <input
               id="f-initial"
               v-model="form.initial"
               type="text"
               class="field-input field-initial"
               maxlength="2"
-              placeholder="留空时取名称首字"
+              :placeholder="t('charEdit.initialPlaceholder')"
               autocomplete="off"
             />
           </div>
@@ -781,11 +782,11 @@ function handleExport() {
 
         <!-- 模型设置 -->
         <fieldset class="form-section">
-          <legend class="section-title">模型设置</legend>
+          <legend class="section-title">{{ t('charEdit.modelTitle') }}</legend>
 
           <div class="field">
             <label for="f-temp" class="field-label">
-              温度 <span class="value-badge">{{ form.temperature.toFixed(2) }}</span>
+              {{ t('charEdit.temperatureLabel') }} <span class="value-badge">{{ form.temperature.toFixed(2) }}</span>
             </label>
             <input
               id="f-temp"
@@ -802,11 +803,11 @@ function handleExport() {
               <Icon name="alert-triangle" :size="12" />
               <span>{{ errors.temperature }}</span>
             </p>
-            <p v-else class="field-hint">数值越高回答越发散，越低越稳定</p>
+            <p v-else class="field-hint">{{ t('charEdit.temperatureHint') }}</p>
           </div>
 
           <div class="field">
-            <label for="f-maxtok" class="field-label">最大 Tokens</label>
+            <label for="f-maxtok" class="field-label">{{ t('charEdit.maxTokensLabel') }}</label>
             <input
               id="f-maxtok"
               v-model.number="form.maxTokens"
@@ -829,19 +830,19 @@ function handleExport() {
         <!-- F01.6 角色属性 -->
         <fieldset class="form-section">
           <legend class="section-title attr-legend">
-            <span>角色属性</span>
+            <span>{{ t('charEdit.attrTitle') }}</span>
             <label class="attr-switch">
               <input
                 v-model="form.attrEnabled"
                 type="checkbox"
-                :aria-label="form.attrEnabled ? '关闭角色属性' : '启用角色属性'"
+                :aria-label="form.attrEnabled ? t('charEdit.attrOnAria') : t('charEdit.attrOffAria')"
                 @change="form.attrEnabled && (form.attributesOpen = true)"
               />
               <span class="switch-track" :class="{ on: form.attrEnabled }" aria-hidden="true">
                 <span class="switch-thumb"></span>
               </span>
             </label>
-            <span v-if="form.attrEnabled" class="attr-badge">已启用</span>
+            <span v-if="form.attrEnabled" class="attr-badge">{{ t('charEdit.attrEnabled') }}</span>
           </legend>
 
           <div v-if="form.attrEnabled">
@@ -855,18 +856,18 @@ function handleExport() {
                 :name="form.attributesOpen ? 'chevron-down' : 'chevron-right'"
                 :size="14"
               />
-              <span>{{ form.attributesOpen ? '收起属性详情' : '展开属性详情' }}</span>
+              <span>{{ form.attributesOpen ? t('charEdit.collapseAttrs') : t('charEdit.expandAttrs') }}</span>
             </button>
 
             <div v-show="form.attributesOpen" class="attr-content">
               <div class="field">
-                <label for="f-profession" class="field-label">职业</label>
+                <label for="f-profession" class="field-label">{{ t('charEdit.professionLabel') }}</label>
                 <input
                   id="f-profession"
                   v-model="form.profession"
                   type="text"
                   class="field-input"
-                  placeholder="如：战士/法师/盗贼"
+                  :placeholder="t('charEdit.professionPlaceholder')"
                   maxlength="30"
                   autocomplete="off"
                 />
@@ -875,7 +876,7 @@ function handleExport() {
               <div class="attr-row">
                 <div class="field">
                   <label for="f-level" class="field-label">
-                    等级
+                    {{ t('charEdit.levelLabel') }}
                     <span v-if="errors.level" class="value-badge err" role="alert">{{ errors.level }}</span>
                   </label>
                   <input
@@ -892,7 +893,7 @@ function handleExport() {
                 </div>
                 <div class="field">
                   <label for="f-exp" class="field-label">
-                    经验值
+                    {{ t('charEdit.expLabel') }}
                     <span v-if="errors.experience" class="value-badge err" role="alert">{{ errors.experience }}</span>
                   </label>
                   <input
@@ -910,14 +911,14 @@ function handleExport() {
 
               <div class="field">
                 <div class="stats-header">
-                  <label class="field-label">属性组</label>
+                  <label class="field-label">{{ t('charEdit.statsLabel') }}</label>
                   <button
                     type="button"
                     class="add-stat-btn"
                     @click="addStat"
                   >
                     <Icon name="plus" :size="12" />
-                    <span>添加属性</span>
+                    <span>{{ t('charEdit.addStat') }}</span>
                   </button>
                 </div>
                 <p v-if="errors.stats" class="field-error" role="alert">
@@ -934,63 +935,63 @@ function handleExport() {
                       v-model="stat.name"
                       type="text"
                       class="stat-input stat-name"
-                      placeholder="属性名"
+                      :placeholder="t('charEdit.statNamePlaceholder')"
                       maxlength="20"
                       autocomplete="off"
-                      :aria-label="`属性 ${idx + 1} 名称`"
+                      :aria-label="t('charEdit.statNameAria', { index: idx + 1 })"
                     />
                     <input
                       v-model="stat.value"
                       type="text"
                       class="stat-input stat-value"
-                      placeholder="值"
+                      :placeholder="t('charEdit.statValuePlaceholder')"
                       autocomplete="off"
-                      :aria-label="`属性 ${idx + 1} 值`"
+                      :aria-label="t('charEdit.statValueAria', { index: idx + 1 })"
                     />
                     <select
                       v-model="stat.type"
                       class="stat-select"
-                      :aria-label="`属性 ${idx + 1} 类型`"
+                      :aria-label="t('charEdit.statTypeAria', { index: idx + 1 })"
                     >
-                      <option value="number">数值</option>
-                      <option value="text">文本</option>
+                      <option value="number">{{ t('charEdit.statTypeNumber') }}</option>
+                      <option value="text">{{ t('charEdit.statTypeText') }}</option>
                     </select>
                     <button
                       type="button"
                       class="stat-remove"
-                      :aria-label="`删除属性 ${idx + 1}`"
+                      :aria-label="t('charEdit.statRemoveAria', { index: idx + 1 })"
                       @click="removeStat(idx)"
                     >
                       <Icon name="trash-2" :size="14" />
                     </button>
                   </div>
                 </div>
-                <p v-else class="field-hint">点击"添加属性"创建属性项（如 力量、敏捷、智力）</p>
+                <p v-else class="field-hint">{{ t('charEdit.statEmptyHint') }}</p>
               </div>
             </div>
           </div>
-          <p v-else class="field-hint">可选，启用后可在对话中注入角色属性信息</p>
+          <p v-else class="field-hint">{{ t('charEdit.attrOffHint') }}</p>
         </fieldset>
 
         <!-- 高级 -->
         <fieldset class="form-section">
-          <legend class="section-title">高级</legend>
+          <legend class="section-title">{{ t('charEdit.advancedTitle') }}</legend>
 
           <div class="field">
-            <label for="f-author-note" class="field-label">作者笔记</label>
+            <label for="f-author-note" class="field-label">{{ t('charEdit.authorNoteLabel') }}</label>
             <textarea
               id="f-author-note"
               v-model="form.authorNote"
               class="field-input field-textarea"
               rows="4"
-              placeholder="插入到对话末尾的隐藏提示，引导 AI 行为..."
+              :placeholder="t('charEdit.authorNotePlaceholder')"
             ></textarea>
-            <p class="field-hint">在每次生成时插入到上下文末尾</p>
+            <p class="field-hint">{{ t('charEdit.authorNoteHint') }}</p>
           </div>
 
           <div class="field">
             <label for="f-depth" class="field-label">
-              作者深度 <span class="value-badge">{{ form.authorDepth }}</span>
+              {{ t('charEdit.authorDepthLabel') }} <span class="value-badge">{{ form.authorDepth }}</span>
             </label>
             <input
               id="f-depth"
@@ -1007,19 +1008,19 @@ function handleExport() {
               <Icon name="alert-triangle" :size="12" />
               <span>{{ errors.authorDepth }}</span>
             </p>
-            <p v-else class="field-hint">在历史消息的第 N 条位置插入作者笔记</p>
+            <p v-else class="field-hint">{{ t('charEdit.authorDepthHint') }}</p>
           </div>
         </fieldset>
 
         <!-- 需求7：世界书绑定（仅编辑模式） -->
         <fieldset v-if="isEditMode" class="form-section">
-          <legend class="section-title">世界书绑定</legend>
+          <legend class="section-title">{{ t('charEdit.wbTitle') }}</legend>
           <p class="field-hint">
-            绑定后，该角色对话时会自动注入所绑定世界书的条目作为上下文。
+            {{ t('charEdit.wbHint') }}
           </p>
 
           <!-- 已绑定的世界书列表 -->
-          <div v-if="boundWorldBooks.length" class="wb-bind-list" role="list" aria-label="已绑定的世界书">
+          <div v-if="boundWorldBooks.length" class="wb-bind-list" role="list" :aria-label="t('charEdit.wbBoundAria')">
             <div
               v-for="lb in boundWorldBooks"
               :key="lb.id"
@@ -1029,34 +1030,34 @@ function handleExport() {
               <div class="wb-bind-info">
                 <Icon name="book-open" :size="14" aria-hidden="true" />
                 <span class="wb-bind-name">{{ lb.name }}</span>
-                <span class="wb-bind-meta">{{ lb.entries.length }} 条</span>
+                <span class="wb-bind-meta">{{ t('charEdit.wbEntryCount', { count: lb.entries.length }) }}</span>
               </div>
               <button
                 type="button"
                 class="wb-unbind-btn"
-                :aria-label="`解绑世界书 ${lb.name}`"
+                :aria-label="t('charEdit.wbUnbindAria', { name: lb.name })"
                 @click="unbindWorldBook(lb.id)"
               >
                 <Icon name="close" :size="12" />
-                <span>解绑</span>
+                <span>{{ t('charEdit.wbUnbind') }}</span>
               </button>
             </div>
           </div>
-          <p v-else class="wb-bind-empty">尚未绑定任何世界书</p>
+          <p v-else class="wb-bind-empty">{{ t('charEdit.wbEmpty') }}</p>
 
           <!-- 添加绑定 -->
           <div v-if="unboundWorldBooks.length" class="wb-add-bind">
-            <label for="f-wb-select" class="field-label">添加世界书绑定</label>
+            <label for="f-wb-select" class="field-label">{{ t('charEdit.wbAddLabel') }}</label>
             <div class="wb-add-row">
               <select
                 id="f-wb-select"
                 v-model="selectedBindId"
                 class="field-input wb-select"
-                aria-label="选择要绑定的世界书"
+                :aria-label="t('charEdit.wbSelectAria')"
               >
-                <option value="" disabled>请选择世界书…</option>
+                <option value="" disabled>{{ t('charEdit.wbSelectPlaceholder') }}</option>
                 <option v-for="lb in unboundWorldBooks" :key="lb.id" :value="lb.id">
-                  {{ lb.name }}（{{ lb.entries.length }} 条）
+                  {{ t('charEdit.wbEntryCount2', { name: lb.name, count: lb.entries.length }) }}
                 </option>
               </select>
               <button
@@ -1064,22 +1065,22 @@ function handleExport() {
                 class="wb-bind-btn"
                 :disabled="!selectedBindId"
                 :aria-disabled="!selectedBindId"
-                aria-label="绑定选中的世界书"
+                :aria-label="t('charEdit.wbBindAria')"
                 @click="bindSelectedWorldBook"
               >
                 <Icon name="plus" :size="14" />
-                <span>绑定</span>
+                <span>{{ t('charEdit.wbBind') }}</span>
               </button>
             </div>
           </div>
           <p v-else-if="boundWorldBooks.length" class="field-hint">
-            所有世界书均已绑定
+            {{ t('charEdit.wbAllBound') }}
           </p>
         </fieldset>
 
         <!-- 表单底部按钮（移动端使用） -->
         <div class="form-footer">
-          <button type="button" class="footer-btn cancel" @click="handleCancel">取消</button>
+          <button type="button" class="footer-btn cancel" @click="handleCancel">{{ t('charEdit.cancel') }}</button>
           <button
             type="submit"
             class="footer-btn save"
@@ -1087,14 +1088,14 @@ function handleExport() {
             :aria-disabled="!canSave"
           >
             <Icon name="save" :size="14" />
-            <span>保存</span>
+            <span>{{ t('charEdit.save') }}</span>
           </button>
         </div>
       </form>
 
       <!-- 实时预览 -->
-      <aside class="editor-preview" aria-label="角色预览">
-        <h2 class="preview-title">实时预览</h2>
+      <aside class="editor-preview" :aria-label="t('charEdit.previewTitle')">
+        <h2 class="preview-title">{{ t('charEdit.previewTitle') }}</h2>
         <div class="preview-card">
           <div class="preview-avatar-wrap">
             <Avatar :character="previewCharacter" :size="80" />
@@ -1106,24 +1107,24 @@ function handleExport() {
           <p class="preview-desc">{{ previewCharacter.description }}</p>
           <dl class="preview-meta">
             <div class="meta-row">
-              <dt>模型</dt>
+              <dt>{{ t('charEdit.previewModel') }}</dt>
               <dd>{{ previewCharacter.model }}</dd>
             </div>
             <div class="meta-row">
-              <dt>温度</dt>
+              <dt>{{ t('charEdit.previewTemp') }}</dt>
               <dd>{{ previewCharacter.temperature.toFixed(2) }}</dd>
             </div>
             <div class="meta-row">
-              <dt>Max Tokens</dt>
+              <dt>{{ t('charEdit.previewMaxTokens') }}</dt>
               <dd>{{ previewCharacter.maxTokens }}</dd>
             </div>
             <div class="meta-row">
-              <dt>作者深度</dt>
+              <dt>{{ t('charEdit.previewDepth') }}</dt>
               <dd>{{ previewCharacter.authorDepth }}</dd>
             </div>
             <div class="meta-row">
-              <dt>收藏</dt>
-              <dd>{{ previewCharacter.favorite ? '是' : '否' }}</dd>
+              <dt>{{ t('charEdit.previewFavorite') }}</dt>
+              <dd>{{ previewCharacter.favorite ? t('charEdit.previewYes') : t('charEdit.previewNo') }}</dd>
             </div>
           </dl>
         </div>
@@ -1133,14 +1134,14 @@ function handleExport() {
     <!-- 删除确认 -->
     <Modal
       v-model="deleteModalOpen"
-      title="确认删除"
-      aria-label="删除角色确认"
+      :title="t('charEdit.deleteTitle')"
+      :aria-label="t('charEdit.deleteAria2')"
     >
       <p v-if="loadedCharacter">
-        确定要删除角色「<strong>{{ loadedCharacter.name }}</strong>」吗？
+        {{ t('charEdit.deleteConfirm', { name: loadedCharacter.name }) }}
       </p>
       <p class="delete-warning">
-        该角色的全部对话历史也会一并删除，操作不可撤销。
+        {{ t('charEdit.deleteWarning') }}
       </p>
       <template #footer>
         <button
@@ -1148,14 +1149,14 @@ function handleExport() {
           class="modal-btn modal-cancel"
           @click="deleteModalOpen = false"
         >
-          取消
+          {{ t('charEdit.cancel') }}
         </button>
         <button
           type="button"
           class="modal-btn modal-confirm"
           @click="executeDelete"
         >
-          删除
+          {{ t('charEdit.delete') }}
         </button>
       </template>
     </Modal>
