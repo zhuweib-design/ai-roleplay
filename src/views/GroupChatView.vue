@@ -28,6 +28,7 @@ import type { GroupChatMode, GroupMember } from '@/core/group-chat';
 import type { UICharacter } from '@/types';
 // F10.3 随机 NPC 生成
 import { CHARACTER_TEMPLATES, type CharacterTemplateId } from '@core/character-generator';
+import { t } from '@/i18n';
 
 // 需求6 补充：群聊记录筛选（状态 + 关键词）
 const groupFilter = ref<'all' | 'active' | 'archived'>('all');
@@ -156,11 +157,8 @@ function toggleMemberSelection(charId: string) {
     selectedMemberIds.value.delete(charId);
   } else {
     if (selectedMemberIds.value.size >= 8) {
-      showToast('error', '群聊人数已达上限 8 人');
+      showToast('error', t('group.maxMembers'));
       return;
-    }
-    if (selectedMemberIds.value.size < 2) {
-      // 至少 2 人
     }
     selectedMemberIds.value.add(charId);
   }
@@ -168,11 +166,11 @@ function toggleMemberSelection(charId: string) {
 
 function confirmCreate() {
   if (selectedMemberIds.value.size < 2) {
-    showToast('error', '群聊至少需要 2 个成员');
+    showToast('error', t('group.minMembers'));
     return;
   }
   if (!newGroupName.value.trim()) {
-    showToast('error', '群聊名称不能为空');
+    showToast('error', t('group.nameRequired'));
     return;
   }
 
@@ -226,7 +224,7 @@ async function handleStImport(e: Event) {
 function openAddMemberModal() {
   if (!currentGroup.value) return;
   if (currentGroup.value.members.length >= 8) {
-    showToast('error', '群聊人数已达上限 8 人');
+    showToast('error', t('group.maxMembers'));
     return;
   }
   addMemberTargetGroupId.value = currentGroup.value.id;
@@ -259,7 +257,7 @@ function removeMember(member: GroupMember, e: Event) {
   e.stopPropagation();
   if (!currentGroup.value) return;
   if (currentGroup.value.members.length <= 2) {
-    showToast('error', '群聊至少需要 2 个成员');
+    showToast('error', t('group.minMembers'));
     return;
   }
   groupStore.removeMember(currentGroup.value.id, member.characterId);
@@ -270,11 +268,11 @@ function removeMember(member: GroupMember, e: Event) {
 function openNpcModal() {
   if (!currentGroup.value) return;
   if (currentGroup.value.members.length >= 8) {
-    showToast('error', '群聊人数已达上限 8 人');
+    showToast('error', t('group.maxMembers'));
     return;
   }
   if (!hasApiProfile.value) {
-    showToast('error', '未配置 API 连接，请先在设置页添加 API 配置');
+    showToast('error', t('group.apiRequired'));
     return;
   }
   npcModalOpen.value = true;
@@ -292,7 +290,7 @@ async function confirmGenerateNpc() {
   );
   if (id) {
     npcModalOpen.value = false;
-    showToast('success', '随机 NPC 已生成并加入群聊');
+    showToast('success', t('group.npcGenerated'));
   } else if (groupStore.lastError) {
     showToast('error', groupStore.lastError);
   }
@@ -304,7 +302,7 @@ function archiveCurrentGroup() {
   if (!currentGroup.value) return;
   const ok = groupStore.archiveGroup(currentGroup.value.id);
   if (ok) {
-    showToast('info', '群聊已归档，对话记录已保留');
+    showToast('info', t('group.archived'));
   } else if (groupStore.lastError) {
     showToast('error', groupStore.lastError);
   }
@@ -318,7 +316,7 @@ function restoreCurrentGroup() {
     (charId) => characterStore.characters.some((c) => c.id === charId)
   );
   if (ok) {
-    showToast('success', '群聊已恢复活跃');
+    showToast('success', t('group.restored'));
   } else if (groupStore.lastError) {
     showToast('error', groupStore.lastError);
   }
@@ -329,7 +327,7 @@ function sendMessage() {
   if (!currentGroup.value) return;
   // F10.4 归档群聊为只读状态
   if (currentGroup.value.lifecycleStatus === 'archived') {
-    showToast('error', '群聊已归档，不能发送消息');
+    showToast('error', t('group.archivedReadonly'));
     return;
   }
   const text = groupStore.inputText.trim();
@@ -372,7 +370,7 @@ async function simulateAiReply() {
   // 模拟流式输出
   // 实际实现应调用 chat-manager.streamChat()
   setTimeout(() => {
-    const reply = `（${speaker.name}）这是来自 ${speaker.name} 的模拟回复。`;
+    const reply = t('group.mockReply', { name: speaker.name });
     groupStore.updateLastAssistantMessage(groupId, reply);
   }, 500);
 }
@@ -412,7 +410,7 @@ function insertMention(member: GroupMember) {
     // 触发指定发言
     const speaker = groupStore.designateSpeaker(currentGroup.value.id, member.characterId);
     if (speaker) {
-      showToast('info', `已指定 ${member.name} 下次发言`);
+      showToast('info', t('group.mentionAssigned', { name: member.name }));
     }
   }
   showMentionDropdown.value = false;
@@ -478,25 +476,25 @@ function isSystem(msg: { role: string }): boolean {
         <button
           type="button"
           class="header-btn back"
-          aria-label="返回对话页"
+          :aria-label="t('group.backAria')"
           @click="goBack"
         >
           <Icon name="arrow-left" :size="16" />
-          <span class="btn-label">返回</span>
+          <span class="btn-label">{{ t('group.back') }}</span>
         </button>
-        <h1>群聊</h1>
-        <span class="header-count">{{ groupStore.groups.length }} 个</span>
+        <h1>{{ t('group.title') }}</h1>
+        <span class="header-count">{{ t('group.count', { count: groupStore.groups.length }) }}</span>
       </div>
 
       <div class="header-actions">
         <button
           type="button"
           class="header-btn new-btn"
-          aria-label="新建群聊"
+          :aria-label="t('group.newAria')"
           @click="openCreateModal"
         >
           <Icon name="plus" :size="16" />
-          <span class="btn-label">新建群聊</span>
+          <span class="btn-label">{{ t('group.new') }}</span>
         </button>
       </div>
     </header>
@@ -504,15 +502,15 @@ function isSystem(msg: { role: string }): boolean {
     <!-- 主体：左群聊列表 + 右群聊消息区 -->
     <div class="group-body">
       <!-- 左侧群聊列表 -->
-      <aside class="group-list-panel tk-scroll" aria-label="群聊列表">
+      <aside class="group-list-panel tk-scroll" :aria-label="t('group.listAria')">
         <!-- 需求6 筛选：状态 + 关键词 -->
         <div class="group-filter-bar">
-          <div class="group-filter-tabs" role="tablist" aria-label="群聊状态筛选">
+          <div class="group-filter-tabs" role="tablist" :aria-label="t('group.filterAria')">
             <button
               v-for="f in ([
-                { id: 'all', label: '全部' },
-                { id: 'active', label: '进行中' },
-                { id: 'archived', label: '已归档' },
+                { id: 'all', label: t('group.filterAll') },
+                { id: 'active', label: t('group.filterActive') },
+                { id: 'archived', label: t('group.filterArchived') },
               ] as const)"
               :key="f.id"
               type="button"
@@ -529,8 +527,8 @@ function isSystem(msg: { role: string }): boolean {
             v-model="groupSearch"
             type="search"
             class="group-search-input"
-            placeholder="搜索群聊名称…"
-            aria-label="搜索群聊名称"
+            :placeholder="t('group.searchPlaceholder')"
+            :aria-label="t('group.searchAria')"
           />
         </div>
         <ul class="group-list" role="list">
@@ -551,23 +549,23 @@ function isSystem(msg: { role: string }): boolean {
               <div class="group-info">
                 <div class="group-name">
                   {{ g.name }}
-                  <span v-if="g.lifecycleStatus === 'archived'" class="archived-badge">已归档</span>
+                  <span v-if="g.lifecycleStatus === 'archived'" class="archived-badge">{{ t('group.archivedBadge') }}</span>
                 </div>
-                <div class="group-meta">{{ g.members.length }} 人 · {{ g.messages.length }} 条消息</div>
+                <div class="group-meta">{{ t('group.meta', { members: g.members.length, messages: g.messages.length }) }}</div>
               </div>
             </button>
           </li>
           <li v-if="filteredGroups.length === 0" class="empty-state">
             <Icon name="users" :size="32" />
-            <p v-if="groupStore.groups.length === 0">暂无群聊</p>
-            <p v-else>没有匹配的群聊</p>
+            <p v-if="groupStore.groups.length === 0">{{ t('group.noGroups') }}</p>
+            <p v-else>{{ t('group.noMatch') }}</p>
             <button
               v-if="groupStore.groups.length === 0"
               type="button"
               class="link-btn"
               @click="openCreateModal"
             >
-              创建第一个群聊
+              {{ t('group.createFirst') }}
             </button>
           </li>
         </ul>
@@ -577,9 +575,9 @@ function isSystem(msg: { role: string }): boolean {
       <main class="group-main-panel" id="main-content" tabindex="-1">
         <div v-if="!currentGroup" class="empty-group">
           <Icon name="users" :size="48" />
-          <p>选择左侧的群聊开始对话</p>
+          <p>{{ t('group.selectHint') }}</p>
           <button type="button" class="primary-btn" @click="openCreateModal">
-            创建新群聊
+            {{ t('group.createNew') }}
           </button>
         </div>
 
@@ -593,7 +591,7 @@ function isSystem(msg: { role: string }): boolean {
                   v-if="currentGroup.lifecycleStatus === 'archived'"
                   class="lifecycle-badge archived"
                 >
-                  已归档
+                  {{ t('group.archivedBadge') }}
                 </span>
               </h2>
               <div class="group-header-actions">
@@ -601,66 +599,66 @@ function isSystem(msg: { role: string }): boolean {
                   <button
                     type="button"
                     class="action-btn add-member"
-                    aria-label="添加成员"
+                    :aria-label="t('group.addMemberAria')"
                     @click="openAddMemberModal"
                   >
                     <Icon name="plus" :size="14" />
-                    <span>添加成员</span>
+                    <span>{{ t('group.addMember') }}</span>
                   </button>
                   <button
                     type="button"
                     class="action-btn generate-npc"
-                    aria-label="生成随机 NPC"
+                    :aria-label="t('group.generateNpcAria')"
                     :disabled="npcGenerating"
                     @click="openNpcModal"
                   >
                     <Icon name="star" :size="14" />
-                    <span>{{ npcGenerating ? '生成中...' : '生成随机 NPC' }}</span>
+                    <span>{{ npcGenerating ? t('group.generatingNpc') : t('group.generateNpc') }}</span>
                   </button>
                   <button
                     type="button"
                     class="action-btn archive-btn"
-                    aria-label="归档群聊"
+                    :aria-label="t('group.archiveAria')"
                     @click="archiveCurrentGroup"
                   >
                     <Icon name="save" :size="14" />
-                    <span>归档</span>
+                    <span>{{ t('group.archive') }}</span>
                   </button>
                 </template>
                 <template v-else>
                   <button
                     type="button"
                     class="action-btn restore-btn"
-                    aria-label="恢复群聊"
+                    :aria-label="t('group.restoreAria')"
                     @click="restoreCurrentGroup"
                   >
                     <Icon name="refresh-cw" :size="14" />
-                    <span>恢复群聊</span>
+                    <span>{{ t('group.restore') }}</span>
                   </button>
                 </template>
                 <button
                   type="button"
                   class="action-btn delete"
-                  aria-label="删除群聊"
+                  :aria-label="t('group.deleteAria')"
                   @click="deleteGroup(currentGroup.id)"
                 >
                   <Icon name="trash-2" :size="14" />
-                  <span>删除</span>
+                  <span>{{ t('group.delete') }}</span>
                 </button>
                 <!-- T-07: SillyTavern 群聊格式互导 -->
                 <button
                   type="button"
                   class="action-btn"
-                  aria-label="导出为 SillyTavern 格式"
-                  title="导出为 SillyTavern 群聊 JSON"
+                  :aria-label="t('group.exportStAria')"
+                  :title="t('group.exportStTitle')"
                   @click="groupStore.downloadGroupSt(currentGroup.id)"
                 >
                   <Icon name="download" :size="14" />
-                  <span>导出 ST</span>
+                  <span>{{ t('group.exportSt') }}</span>
                 </button>
-                <label class="action-btn" title="从 SillyTavern 群聊 JSON 导入">
+                <label class="action-btn" :title="t('group.importStTitle')">
                   <Icon name="upload" :size="14" />
-                  <span>导入 ST</span>
+                  <span>{{ t('group.importSt') }}</span>
                   <input
                     type="file"
                     accept=".json,application/json"
@@ -672,13 +670,13 @@ function isSystem(msg: { role: string }): boolean {
             </div>
 
             <!-- 成员列表 -->
-            <div class="members-bar" role="list" aria-label="群聊成员">
+            <div class="members-bar" role="list" :aria-label="t('group.membersAria')">
               <div
                 v-for="member in currentMembers"
                 :key="member.characterId"
                 class="member-chip"
                 role="listitem"
-                :title="`${member.name}（健谈度：${member.talkativeness ?? 50}）`"
+                :title="t('group.memberTitle', { name: member.name, talk: member.talkativeness ?? 50 })"
               >
                 <Avatar
                   :character="{
@@ -694,7 +692,7 @@ function isSystem(msg: { role: string }): boolean {
                 <button type="button"
                   v-if="currentMembers.length > 2"
                   class="member-remove"
-                  :aria-label="`移除 ${member.name}`"
+                  :aria-label="t('group.removeMember', { name: member.name })"
                   @click="removeMember(member, $event)"
                 >
                   <Icon name="x-circle" :size="12" />
@@ -703,7 +701,7 @@ function isSystem(msg: { role: string }): boolean {
             </div>
 
             <!-- 发言模式切换 -->
-            <div class="mode-switcher" role="radiogroup" aria-label="发言模式">
+            <div class="mode-switcher" role="radiogroup" :aria-label="t('group.modeAria')">
               <button
                 type="button"
                 role="radio"
@@ -713,7 +711,7 @@ function isSystem(msg: { role: string }): boolean {
                 @click="setMode('natural')"
               >
                 <Icon name="refresh-cw" :size="12" />
-                <span>自然轮换</span>
+                <span>{{ t('group.modeNatural') }}</span>
               </button>
               <button
                 type="button"
@@ -724,7 +722,7 @@ function isSystem(msg: { role: string }): boolean {
                 @click="setMode('designated')"
               >
                 <Icon name="user" :size="12" />
-                <span>指定发言</span>
+                <span>{{ t('group.modeDesignated') }}</span>
               </button>
             </div>
           </header>
@@ -734,7 +732,7 @@ function isSystem(msg: { role: string }): boolean {
             class="messages-area tk-scroll"
             role="log"
             aria-live="polite"
-            aria-label="群聊消息"
+            :aria-label="t('group.messagesAria')"
           >
             <div
               v-for="msg in currentMessages"
@@ -782,8 +780,8 @@ function isSystem(msg: { role: string }): boolean {
                 :value="groupStore.inputText"
                 @input="onInputChange"
                 @keydown="onInputKeydown"
-                placeholder="输入消息...（@角色名 指定发言）"
-                aria-label="消息输入框"
+                :placeholder="t('group.inputPlaceholder')"
+                :aria-label="t('group.inputAria')"
                 rows="2"
                 class="msg-input"
                 :disabled="groupStore.isStreaming"
@@ -793,7 +791,7 @@ function isSystem(msg: { role: string }): boolean {
                 v-if="showMentionDropdown && mentionCandidates.length > 0"
                 class="mention-dropdown"
                 role="listbox"
-                aria-label="提及角色"
+                :aria-label="t('group.mentionAria')"
               >
                 <button
                   v-for="member in mentionCandidates"
@@ -821,7 +819,7 @@ function isSystem(msg: { role: string }): boolean {
               type="button"
               class="send-btn"
               :disabled="!groupStore.inputText.trim() || groupStore.isStreaming"
-              aria-label="发送消息"
+              :aria-label="t('group.sendAria')"
               @click="sendMessage"
             >
               <Icon name="send" :size="16" />
@@ -834,35 +832,35 @@ function isSystem(msg: { role: string }): boolean {
     <!-- 创建群聊向导 -->
     <Modal
       v-model="createModalOpen"
-      title="创建群聊"
+      :title="t('group.createTitle')"
     >
       <div class="create-form">
         <div class="form-row">
-          <label class="form-label" for="new-group-name">群聊名称</label>
+          <label class="form-label" for="new-group-name">{{ t('group.createName') }}</label>
           <input
             id="new-group-name"
             v-model="newGroupName"
             type="text"
             class="form-input"
-            placeholder="例如：冒险小队"
+            :placeholder="t('group.createNamePlaceholder')"
             maxlength="50"
           />
         </div>
 
         <div class="form-row">
-          <label class="form-label" for="new-group-desc">群聊描述（可选）</label>
+          <label class="form-label" for="new-group-desc">{{ t('group.createDesc') }}</label>
           <textarea
             id="new-group-desc"
             v-model="newGroupDesc"
             class="form-textarea"
-            placeholder="群聊主题或场景描述"
+            :placeholder="t('group.createDescPlaceholder')"
             rows="2"
           />
         </div>
 
         <div class="form-row">
-          <span class="form-label">发言模式</span>
-          <div class="mode-options" role="radiogroup" aria-label="发言模式选择">
+          <span class="form-label">{{ t('group.createMode') }}</span>
+          <div class="mode-options" role="radiogroup" :aria-label="t('group.createModeAria')">
             <button
               type="button"
               role="radio"
@@ -873,8 +871,8 @@ function isSystem(msg: { role: string }): boolean {
             >
               <Icon name="refresh-cw" :size="14" />
               <div>
-                <div class="mode-name">自然轮换</div>
-                <div class="mode-desc">按健谈度概率自动选择</div>
+                <div class="mode-name">{{ t('group.modeNatural') }}</div>
+                <div class="mode-desc">{{ t('group.modeNaturalDesc') }}</div>
               </div>
             </button>
             <button
@@ -887,8 +885,8 @@ function isSystem(msg: { role: string }): boolean {
             >
               <Icon name="user" :size="14" />
               <div>
-                <div class="mode-name">指定发言</div>
-                <div class="mode-desc">用户 @ 指定角色发言</div>
+                <div class="mode-name">{{ t('group.modeDesignated') }}</div>
+                <div class="mode-desc">{{ t('group.modeDesignatedDesc') }}</div>
               </div>
             </button>
           </div>
@@ -896,9 +894,9 @@ function isSystem(msg: { role: string }): boolean {
 
         <div class="form-row">
           <div class="form-label-row">
-            <span class="form-label">选择成员（{{ selectedMemberIds.size }}/8，至少 2 人）</span>
+            <span class="form-label">{{ t('group.selectMembers', { count: selectedMemberIds.size }) }}</span>
           </div>
-          <ul class="char-pick-list tk-scroll" role="group" aria-label="可选角色">
+          <ul class="char-pick-list tk-scroll" role="group" :aria-label="t('group.charPickAria')">
             <li v-for="c in availableCharacters" :key="c.id">
               <button
                 type="button"
@@ -929,14 +927,14 @@ function isSystem(msg: { role: string }): boolean {
           class="modal-btn modal-cancel"
           @click="createModalOpen = false"
         >
-          取消
+          {{ t('group.cancel') }}
         </button>
         <button
           type="button"
           class="modal-btn modal-confirm"
           @click="confirmCreate"
         >
-          创建
+          {{ t('group.create') }}
         </button>
       </template>
     </Modal>
@@ -944,11 +942,11 @@ function isSystem(msg: { role: string }): boolean {
     <!-- 添加成员弹窗 -->
     <Modal
       v-model="addMemberModalOpen"
-      title="添加成员"
+      :title="t('group.addMemberTitle')"
     >
       <div class="add-member-form">
-        <p class="form-hint">选择要加入群聊的角色（可多选）</p>
-        <ul class="char-pick-list tk-scroll" role="group" aria-label="可选角色">
+        <p class="form-hint">{{ t('group.addMemberHint') }}</p>
+        <ul class="char-pick-list tk-scroll" role="group" :aria-label="t('group.charPickAria')">
           <li v-for="c in addMemberAvailable" :key="c.id">
             <button
               type="button"
@@ -971,7 +969,7 @@ function isSystem(msg: { role: string }): boolean {
             </button>
           </li>
           <li v-if="addMemberAvailable.length === 0" class="empty-add">
-            <p>所有角色都已在群聊中</p>
+            <p>{{ t('group.allMembersIn') }}</p>
           </li>
         </ul>
       </div>
@@ -981,14 +979,14 @@ function isSystem(msg: { role: string }): boolean {
           class="modal-btn modal-cancel"
           @click="addMemberModalOpen = false"
         >
-          取消
+          {{ t('group.cancel') }}
         </button>
         <button
           type="button"
           class="modal-btn modal-confirm"
           @click="confirmAddMembers"
         >
-          添加
+          {{ t('group.add') }}
         </button>
       </template>
     </Modal>
@@ -996,23 +994,23 @@ function isSystem(msg: { role: string }): boolean {
     <!-- 删除确认 -->
     <Modal
       v-model="deleteModalOpen"
-      title="删除群聊"
+      :title="t('group.deleteTitle')"
     >
-      <p>确定要删除这个群聊吗？所有消息记录将一并删除，且无法恢复。</p>
+      <p>{{ t('group.deleteConfirm') }}</p>
       <template #footer>
         <button
           type="button"
           class="modal-btn modal-cancel"
           @click="deleteModalOpen = false"
         >
-          取消
+          {{ t('group.cancel') }}
         </button>
         <button
           type="button"
           class="modal-btn modal-confirm modal-danger"
           @click="confirmDeleteGroup"
         >
-          删除
+          {{ t('group.delete') }}
         </button>
       </template>
     </Modal>
@@ -1020,21 +1018,21 @@ function isSystem(msg: { role: string }): boolean {
     <!-- F10.3 随机 NPC 生成弹窗 -->
     <Modal
       v-model="npcModalOpen"
-      title="生成随机 NPC"
+      :title="t('group.npcTitle')"
     >
       <div class="npc-generate-form">
         <p class="form-hint">
-          选择 NPC 风格模板，AI 将根据当前场景上下文生成临时 NPC 加入群聊。
+          {{ t('group.npcHint') }}
         </p>
 
         <!-- 生成中状态 -->
         <div v-if="npcGenerating" class="npc-generating-state" role="status" aria-live="polite">
           <div class="gen-spinner" aria-hidden="true"></div>
-          <p>正在生成 NPC，请稍候...</p>
+          <p>{{ t('group.npcGenerating') }}</p>
         </div>
 
         <!-- 模板选择 -->
-        <div v-else class="npc-template-grid" role="radiogroup" aria-label="NPC 模板">
+        <div v-else class="npc-template-grid" role="radiogroup" :aria-label="t('group.npcTemplateAria')">
           <button
             v-for="tpl in CHARACTER_TEMPLATES"
             :key="tpl.id"
@@ -1052,7 +1050,7 @@ function isSystem(msg: { role: string }): boolean {
 
         <!-- 群聊人数提示 -->
         <p v-if="currentGroup && currentGroup.members.length >= 7" class="npc-warn">
-          当前群聊 {{ currentGroup.members.length }}/8 人，仅剩 {{ 8 - currentGroup.members.length }} 个名额。
+          {{ t('group.npcWarn', { count: currentGroup.members.length, left: 8 - currentGroup.members.length }) }}
         </p>
       </div>
       <template #footer>
@@ -1062,7 +1060,7 @@ function isSystem(msg: { role: string }): boolean {
           :disabled="npcGenerating"
           @click="npcModalOpen = false"
         >
-          取消
+          {{ t('group.cancel') }}
         </button>
         <button
           type="button"
@@ -1070,7 +1068,7 @@ function isSystem(msg: { role: string }): boolean {
           :disabled="npcGenerating"
           @click="confirmGenerateNpc"
         >
-          {{ npcGenerating ? '生成中...' : '生成 NPC' }}
+          {{ npcGenerating ? t('group.generatingNpc') : t('group.npcGenerateBtn') }}
         </button>
       </template>
     </Modal>
