@@ -25,6 +25,7 @@ import {
   validateSceneConfig,
   createDefaultSceneConfig,
 } from '@core/random-event-generator';
+import { t } from '@/i18n';
 
 const props = defineProps<{
   /** 是否显示 */
@@ -130,11 +131,11 @@ function handleSave(): void {
   if (!isEdit.value) {
     const name = form.value.sceneName.trim();
     if (!name) {
-      errors.value = ['场景名不能为空'];
+      errors.value = [t('sceneModal.nameRequired')];
       return;
     }
     if (props.existingNames.includes(name)) {
-      errors.value = [`场景「${name}」已存在`];
+      errors.value = [t('sceneModal.nameExists', { name })];
       return;
     }
   }
@@ -169,13 +170,13 @@ function handleClose(): void {
 <template>
   <Modal
     :model-value="open"
-    :title="isEdit ? '编辑场景配置' : '新建场景配置'"
+    :title="isEdit ? t('sceneModal.editTitle') : t('sceneModal.newTitle')"
     @update:model-value="(v) => !v && handleClose()"
     @close="handleClose"
   >
     <form class="scene-form" @submit.prevent="handleSave">
       <div class="form-row">
-        <label for="scn-name">场景名 <span class="required">*</span></label>
+        <label for="scn-name">{{ t('sceneModal.nameLabel') }} <span class="required">*</span></label>
         <input
           id="scn-name"
           v-model="form.sceneName"
@@ -183,9 +184,9 @@ function handleClose(): void {
           :disabled="isEdit"
           :required="!isEdit"
           maxlength="100"
-          placeholder="如：王都市场"
+          :placeholder="t('sceneModal.namePlaceholder')"
         />
-        <small v-if="isEdit" class="form-hint">场景名不可修改</small>
+        <small v-if="isEdit" class="form-hint">{{ t('sceneModal.nameReadonlyHint') }}</small>
       </div>
 
       <div class="form-row checkbox-row">
@@ -195,7 +196,7 @@ function handleClose(): void {
             v-model="form.enabled"
             type="checkbox"
           />
-          <span>启用此场景的随机事件</span>
+          <span>{{ t('sceneModal.enabled') }}</span>
         </label>
       </div>
 
@@ -206,12 +207,12 @@ function handleClose(): void {
             v-model="form.probabilityOverrideEnabled"
             type="checkbox"
           />
-          <span>覆盖全局默认概率</span>
+          <span>{{ t('sceneModal.probOverride') }}</span>
         </label>
       </div>
 
       <div v-if="form.probabilityOverrideEnabled" class="form-row">
-        <label for="scn-prob">覆盖概率（%）</label>
+        <label for="scn-prob">{{ t('sceneModal.probValue') }}</label>
         <input
           id="scn-prob"
           v-model.number="form.probabilityOverride"
@@ -223,8 +224,8 @@ function handleClose(): void {
       </div>
 
       <fieldset class="category-group">
-        <legend>允许的类别</legend>
-        <small class="form-hint">空=允许全部（与排除列表互斥校验）</small>
+        <legend>{{ t('sceneModal.allowTitle') }}</legend>
+        <small class="form-hint">{{ t('sceneModal.allowHint') }}</small>
         <div class="checkbox-grid">
           <label v-for="cat in store.CATEGORY_OPTIONS" :key="`allow-${cat.value}`">
             <input
@@ -239,8 +240,8 @@ function handleClose(): void {
       </fieldset>
 
       <fieldset class="category-group">
-        <legend>排除的类别</legend>
-        <small class="form-hint">排除优先于允许</small>
+        <legend>{{ t('sceneModal.excludeTitle') }}</legend>
+        <small class="form-hint">{{ t('sceneModal.excludeHint') }}</small>
         <div class="checkbox-grid">
           <label v-for="cat in store.CATEGORY_OPTIONS" :key="`exclude-${cat.value}`">
             <input
@@ -255,13 +256,13 @@ function handleClose(): void {
       </fieldset>
 
       <div class="form-row">
-        <label for="scn-maxsev">严重度上限</label>
+        <label for="scn-maxsev">{{ t('sceneModal.maxSeverity') }}</label>
         <select id="scn-maxsev" v-model="form.maxSeverity">
           <option v-for="sev in store.SEVERITY_OPTIONS" :key="sev.value" :value="sev.value">
             {{ sev.label }}
           </option>
         </select>
-        <small class="form-hint">超过此严重度的模板不会在此场景触发</small>
+        <small class="form-hint">{{ t('sceneModal.maxSeverityHint') }}</small>
       </div>
 
       <!-- 错误提示 -->
@@ -273,9 +274,9 @@ function handleClose(): void {
     </form>
 
     <template #footer>
-      <button type="button" class="btn" @click="handleClose">取消</button>
+      <button type="button" class="btn" @click="handleClose">{{ t('sceneModal.cancel') }}</button>
       <button type="button" class="btn primary" @click="handleSave">
-        {{ isEdit ? '保存' : '创建' }}
+        {{ isEdit ? t('sceneModal.save') : t('sceneModal.create') }}
       </button>
     </template>
   </Modal>

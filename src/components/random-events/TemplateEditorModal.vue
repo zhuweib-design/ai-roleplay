@@ -24,6 +24,7 @@ import {
   DEFAULT_TEMPLATE_WEIGHT,
   DEFAULT_TEMPLATE_COOLDOWN_MS,
 } from '@core/random-event-generator';
+import { t } from '@/i18n';
 
 const props = defineProps<{
   /** 是否显示 */
@@ -153,39 +154,39 @@ function handleClose(): void {
 <template>
   <Modal
     :model-value="open"
-    :title="isEdit ? '编辑事件模板' : '新建事件模板'"
+    :title="isEdit ? t('tplModal.editTitle') : t('tplModal.newTitle')"
     @update:model-value="(v) => !v && handleClose()"
     @close="handleClose"
   >
     <form class="template-form" @submit.prevent="handleSave">
       <div class="form-row">
-        <label for="tpl-name">模板名称 <span class="required">*</span></label>
+        <label for="tpl-name">{{ t('tplModal.nameLabel') }} <span class="required">*</span></label>
         <input
           id="tpl-name"
           v-model="form.name"
           type="text"
           maxlength="50"
           required
-          :aria-invalid="errors.some((e) => e.includes('名称'))"
+          :aria-invalid="errors.some((e) => e.includes(t('tplModal.nameLabel')))"
         />
       </div>
 
       <div class="form-row">
-        <label for="tpl-desc">模板描述 <span class="required">*</span></label>
+        <label for="tpl-desc">{{ t('tplModal.descLabel') }} <span class="required">*</span></label>
         <textarea
           id="tpl-desc"
           v-model="form.description"
           rows="3"
           maxlength="2000"
           required
-          :aria-invalid="errors.some((e) => e.includes('描述'))"
+          :aria-invalid="errors.some((e) => e.includes(t('tplModal.descLabel')))"
         ></textarea>
-        <small class="form-hint">生成事件时的提示上下文，描述模板的意图与情境。</small>
+        <small class="form-hint">{{ t('tplModal.descHint') }}</small>
       </div>
 
       <div class="form-grid-2">
         <div class="form-row">
-          <label for="tpl-category">类别</label>
+          <label for="tpl-category">{{ t('tplModal.category') }}</label>
           <select id="tpl-category" v-model="form.category">
             <option v-for="cat in store.CATEGORY_OPTIONS" :key="cat.value" :value="cat.value">
               {{ cat.label }}
@@ -194,7 +195,7 @@ function handleClose(): void {
         </div>
 
         <div class="form-row">
-          <label for="tpl-severity">严重度</label>
+          <label for="tpl-severity">{{ t('tplModal.severity') }}</label>
           <select id="tpl-severity" v-model="form.severity">
             <option v-for="sev in store.SEVERITY_OPTIONS" :key="sev.value" :value="sev.value">
               {{ sev.label }}
@@ -205,7 +206,7 @@ function handleClose(): void {
 
       <div class="form-grid-2">
         <div class="form-row">
-          <label for="tpl-prob">触发概率（%）</label>
+          <label for="tpl-prob">{{ t('tplModal.probability') }}</label>
           <input
             id="tpl-prob"
             v-model.number="form.probability"
@@ -217,7 +218,7 @@ function handleClose(): void {
         </div>
 
         <div class="form-row">
-          <label for="tpl-weight">权重</label>
+          <label for="tpl-weight">{{ t('tplModal.weight') }}</label>
           <input
             id="tpl-weight"
             v-model.number="form.weight"
@@ -225,13 +226,13 @@ function handleClose(): void {
             min="0"
             step="1"
           />
-          <small class="form-hint">多个候选时按权重选择。</small>
+          <small class="form-hint">{{ t('tplModal.weightHint') }}</small>
         </div>
       </div>
 
       <div class="form-grid-2">
         <div class="form-row">
-          <label for="tpl-cooldown">冷却时间（毫秒）</label>
+          <label for="tpl-cooldown">{{ t('tplModal.cooldown') }}</label>
           <input
             id="tpl-cooldown"
             v-model.number="form.cooldownMs"
@@ -239,11 +240,11 @@ function handleClose(): void {
             min="0"
             step="1000"
           />
-          <small class="form-hint">0=无冷却，600000=10分钟</small>
+          <small class="form-hint">{{ t('tplModal.cooldownHint') }}</small>
         </div>
 
         <div class="form-row">
-          <label for="tpl-maxtriggers">最大触发次数</label>
+          <label for="tpl-maxtriggers">{{ t('tplModal.maxTriggers') }}</label>
           <input
             id="tpl-maxtriggers"
             v-model.number="form.maxTriggers"
@@ -251,39 +252,39 @@ function handleClose(): void {
             min="0"
             step="1"
           />
-          <small class="form-hint">0=无限</small>
+          <small class="form-hint">{{ t('tplModal.maxTriggersHint') }}</small>
         </div>
       </div>
 
       <div class="form-row">
-        <label for="tpl-applicable">适用场景（用顿号/逗号分隔，空=所有场景）</label>
+        <label for="tpl-applicable">{{ t('tplModal.applicable') }}</label>
         <input
           id="tpl-applicable"
           v-model="form.applicableScenesText"
           type="text"
-          placeholder="如：王都市场、幽暗森林"
+          :placeholder="t('tplModal.applicablePlaceholder')"
         />
       </div>
 
       <div class="form-row">
-        <label for="tpl-excluded">排除场景（用顿号/逗号分隔）</label>
+        <label for="tpl-excluded">{{ t('tplModal.excluded') }}</label>
         <input
           id="tpl-excluded"
           v-model="form.excludedScenesText"
           type="text"
-          placeholder="如：新手村"
+          :placeholder="t('tplModal.excludedPlaceholder')"
         />
       </div>
 
       <div class="form-row">
-        <label for="tpl-keywords">触发关键词（用顿号/逗号分隔，空=无关键词约束）</label>
+        <label for="tpl-keywords">{{ t('tplModal.keywords') }}</label>
         <input
           id="tpl-keywords"
           v-model="form.triggerKeywordsText"
           type="text"
-          placeholder="如：魔法、剑、夜晚"
+          :placeholder="t('tplModal.keywordsPlaceholder')"
         />
-        <small class="form-hint">对话中出现任一关键词才允许触发。</small>
+        <small class="form-hint">{{ t('tplModal.keywordsHint') }}</small>
       </div>
 
       <div class="form-row checkbox-row">
@@ -293,7 +294,7 @@ function handleClose(): void {
             v-model="form.enabled"
             type="checkbox"
           />
-          <span>启用此模板</span>
+          <span>{{ t('tplModal.enabled') }}</span>
         </label>
       </div>
 
@@ -306,9 +307,9 @@ function handleClose(): void {
     </form>
 
     <template #footer>
-      <button type="button" class="btn" @click="handleClose">取消</button>
+      <button type="button" class="btn" @click="handleClose">{{ t('tplModal.cancel') }}</button>
       <button type="button" class="btn primary" @click="handleSave">
-        {{ isEdit ? '保存' : '创建' }}
+        {{ isEdit ? t('tplModal.save') : t('tplModal.create') }}
       </button>
     </template>
   </Modal>

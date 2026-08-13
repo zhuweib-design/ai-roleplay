@@ -9,7 +9,6 @@ import { computed, ref } from 'vue';
 import { useStoryStore } from '@/stores/story';
 import { useCharacterStore } from '@/stores/character';
 import {
-  getStrategyLabel as getTimeStrategyLabel,
   type StoryTimeUnit,
   MIN_RATIO_EVERY,
   MAX_RATIO_EVERY,
@@ -18,6 +17,7 @@ import {
 import type { StoryAnalysisResult } from '@/core/story-types';
 import Icon from '@/components/common/Icon.vue';
 import Toast from '@/components/common/Toast.vue';
+import { t } from '@/i18n';
 
 const props = defineProps<{ story: StoryAnalysisResult }>();
 
@@ -35,10 +35,20 @@ const boundCharacterId = computed(() => {
   return characterStore.characters.find((c) => c.storyId === story.id)?.id ?? null;
 });
 
+/** 策略标签（i18n，覆盖 core 的中文标签） */
+const strategyLabelMap: Record<string, string> = {
+  realtime: t('storyTime.strategyRealtime'),
+  ratio: t('storyTime.strategyRatio'),
+  manual: t('storyTime.strategyManual'),
+};
+function timeStrategyLabel(s: string): string {
+  return strategyLabelMap[s] ?? s;
+}
+
 function handleAdvanceTime(storyId: string) {
   const formatted = store.advanceStoryTime(storyId);
   if (formatted) {
-    showToast('success', `故事时间已推进至：${formatted}`);
+    showToast('success', t('storyTime.advanced', { time: formatted }));
   } else if (store.lastError) {
     showToast('error', store.lastError);
   }
@@ -67,9 +77,9 @@ function handleBindCharacter(characterId: string) {
   // 绑定新角色
   if (characterId) {
     characterStore.updateCharacter(characterId, { storyId: story.id });
-    showToast('success', `已绑定到角色：${characterStore.characters.find((c) => c.id === characterId)?.name}`);
+    showToast('success', t('storyTime.bound', { name: characterStore.characters.find((c) => c.id === characterId)?.name ?? '' }));
   } else {
-    showToast('info', '已解除角色绑定');
+    showToast('info', t('storyTime.unbound'));
   }
 }
 
@@ -97,19 +107,19 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
             <section v-if="story.status === 'completed'" class="detail-section time-section">
               <h4 class="detail-title">
                 <Icon name="calendar-check" :size="14" />
-                故事时间配置
+                {{ t('storyTime.title') }}
               </h4>
 
               <!-- 绑定到角色 -->
               <div class="form-row">
-                <label for="bindCharacter" class="form-label">绑定到角色</label>
+                <label for="bindCharacter" class="form-label">{{ t('storyTime.bindCharacter') }}</label>
                 <select
                   id="bindCharacter"
                   class="form-select"
                   :value="boundCharacterId ?? ''"
                   @change="handleBindCharacter(($event.target as HTMLSelectElement).value)"
                 >
-                  <option value="">不绑定（时间系统不生效）</option>
+                  <option value="">{{ t('storyTime.noBind') }}</option>
                   <option
                     v-for="c in characterOptions"
                     :key="c.id"
@@ -119,7 +129,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                   </option>
                 </select>
                 <p class="form-hint">
-                  绑定后，该角色的对话将自动注入故事主角身份与时间上下文，并按策略推进时间
+                  {{ t('storyTime.bindHint') }}
                 </p>
               </div>
 
@@ -131,10 +141,10 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                     :checked="story.timeConfig?.enabled ?? false"
                     @change="store.toggleStoryTime(story.id, ($event.target as HTMLInputElement).checked)"
                   />
-                  <span>启用时间系统</span>
+                  <span>{{ t('storyTime.enable') }}</span>
                 </label>
                 <span v-if="formattedStoryTime" class="time-current-value">
-                  当前：{{ formattedStoryTime }}
+                  {{ t('storyTime.current', { time: formattedStoryTime }) }}
                 </span>
               </div>
 
@@ -142,7 +152,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
               <div v-if="story.timeConfig?.enabled" class="time-config-form">
                 <!-- 时间策略 -->
                 <fieldset class="import-fieldset">
-                  <legend>时间推进策略</legend>
+                  <legend>{{ t('storyTime.strategy') }}</legend>
                   <div class="strategy-options">
                     <label
                       v-for="s in (['realtime', 'ratio', 'manual'] as const)"
@@ -156,37 +166,37 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                         :checked="story.timeConfig?.strategy === s"
                         @change="store.setStoryTimeConfig(story.id, { strategy: s })"
                       />
-                      <span>{{ getTimeStrategyLabel(s) }}</span>
+                      <span>{{ timeStrategyLabel(s) }}</span>
                     </label>
                   </div>
                 </fieldset>
 
                 <!-- 时间单位 -->
                 <div class="form-row">
-                  <label class="form-label">时间单位</label>
+                  <label class="form-label">{{ t('storyTime.unit') }}</label>
                   <select
                     class="form-select"
                     :value="story.timeConfig?.unit ?? 'day'"
                     @change="store.setStoryTimeConfig(story.id, { unit: ($event.target as HTMLSelectElement).value as StoryTimeUnit })"
                   >
-                    <option value="hour">小时</option>
-                    <option value="day">天</option>
-                    <option value="week">周</option>
-                    <option value="custom">自定义</option>
+                    <option value="hour">{{ t('storyTime.unitHour') }}</option>
+                    <option value="day">{{ t('storyTime.unitDay') }}</option>
+                    <option value="week">{{ t('storyTime.unitWeek') }}</option>
+                    <option value="custom">{{ t('storyTime.unitCustom') }}</option>
                   </select>
                 </div>
 
                 <!-- 自定义单位名 -->
                 <div v-if="story.timeConfig?.unit === 'custom'" class="form-row">
                   <label class="form-label">
-                    自定义单位名（最多 {{ MAX_CUSTOM_UNIT_NAME_LENGTH }} 字符）
+                    {{ t('storyTime.customUnitName', { max: MAX_CUSTOM_UNIT_NAME_LENGTH }) }}
                   </label>
                   <input
                     type="text"
                     class="form-input"
                     :value="story.timeConfig?.customUnitName ?? ''"
                     :maxlength="MAX_CUSTOM_UNIT_NAME_LENGTH"
-                    placeholder="如：月、年、章"
+                    :placeholder="t('storyTime.customUnitPlaceholder')"
                     @input="store.setStoryTimeConfig(story.id, { customUnitName: ($event.target as HTMLInputElement).value })"
                   />
                 </div>
@@ -194,7 +204,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                 <!-- 比值 N（ratio 策略时显示） -->
                 <div v-if="story.timeConfig?.strategy === 'ratio'" class="form-row">
                   <label class="form-label">
-                    每 N 轮推进一次（{{ MIN_RATIO_EVERY }}-{{ MAX_RATIO_EVERY }}）
+                    {{ t('storyTime.ratioEvery', { min: MIN_RATIO_EVERY, max: MAX_RATIO_EVERY }) }}
                   </label>
                   <input
                     type="number"
@@ -208,7 +218,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 
                 <!-- 起始值 -->
                 <div class="form-row">
-                  <label class="form-label">起始时间值</label>
+                  <label class="form-label">{{ t('storyTime.startValue') }}</label>
                   <input
                     type="number"
                     class="form-input"
@@ -226,7 +236,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                     @click="handleAdvanceTime(story.id)"
                   >
                     <Icon name="plus" :size="12" />
-                    手动推进
+                    {{ t('storyTime.advance') }}
                   </button>
                   <button
                     type="button"
@@ -234,15 +244,13 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                     @click="handleResetTime(story.id)"
                   >
                     <Icon name="refresh-cw" :size="12" />
-                    重置
+                    {{ t('storyTime.reset') }}
                   </button>
                 </div>
 
                 <!-- 使用提示 -->
                 <p class="form-hint">
-                  在对话中输入 <code>/time advance</code> 可手动推进时间，
-                  <code>/time status</code> 查看当前时间，
-                  <code>/time set N</code> 直接设置时间值
+                  {{ t('storyTime.usageHint') }}
                 </p>
               </div>
             </section>
