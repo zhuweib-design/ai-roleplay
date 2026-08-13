@@ -24,6 +24,7 @@ import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import type { DataBankScope } from '@/core/data-bank';
 import { MAX_FILE_SIZE } from '@/core/data-bank';
+import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useDataBankStore();
@@ -93,12 +94,12 @@ function handleDragOver(event: DragEvent) {
 
 async function handleUpload() {
   if (!selectedFile.value) {
-    showToast('error', '请选择文件');
+    showToast('error', t('databank.selectFileFirst'));
     return;
   }
 
   if (selectedFile.value.size > MAX_FILE_SIZE) {
-    showToast('error', `文件大小超过限制（${MAX_FILE_SIZE / 1024 / 1024}MB）`);
+    showToast('error', t('databank.fileTooLarge', { size: MAX_FILE_SIZE / 1024 / 1024 }));
     return;
   }
 
@@ -133,7 +134,7 @@ async function handleDelete() {
   await store.deleteDocument(deleteTargetId.value);
   deleteModalOpen.value = false;
   deleteTargetId.value = null;
-  showToast('success', '文档已删除');
+  showToast('success', t('databank.deleted'));
 }
 
 function toggleExpand(id: string) {
@@ -169,25 +170,25 @@ function getCharacterName(id?: string): string {
         <button
           type="button"
           class="header-btn back"
-          aria-label="返回对话页"
+          :aria-label="t('databank.backAria')"
           @click="goBack"
         >
           <Icon name="arrow-left" :size="16" />
-          <span class="btn-label">返回</span>
+          <span class="btn-label">{{ t('databank.back') }}</span>
         </button>
-        <h1>数据银行</h1>
-        <span class="header-count">{{ store.documents.length }} 个文档 · {{ totalChunks }} 个分块</span>
+        <h1>{{ t('databank.title') }}</h1>
+        <span class="header-count">{{ t('databank.count', { docs: store.documents.length, chunks: totalChunks }) }}</span>
       </div>
 
       <div class="header-actions">
         <button
           type="button"
           class="header-btn upload-btn"
-          aria-label="上传文档"
+          :aria-label="t('databank.uploadAria')"
           @click="openUploadModal"
         >
           <Icon name="upload" :size="16" />
-          <span class="btn-label">上传文档</span>
+          <span class="btn-label">{{ t('databank.upload') }}</span>
         </button>
       </div>
     </header>
@@ -198,31 +199,31 @@ function getCharacterName(id?: string): string {
       <input
         type="text"
         class="search-input"
-        placeholder="搜索文档名…"
+        :placeholder="t('databank.searchPlaceholder')"
         :value="store.searchQuery"
-        aria-label="搜索文档"
+        :aria-label="t('databank.searchAria')"
         @input="store.setSearchQuery(($event.target as HTMLInputElement).value)"
       />
     </div>
 
     <!-- 文档列表 -->
-    <main class="doc-main" aria-label="文档列表">
+    <main class="doc-main" :aria-label="t('databank.listAria')">
       <!-- 空状态 -->
       <div v-if="store.documents.length === 0" class="empty-state">
         <Icon name="file" :size="48" class="empty-icon" />
-        <p class="empty-text">还没有上传任何文档</p>
-        <p class="empty-hint">上传 TXT/MD/HTML 文件，对话时 AI 会自动检索相关内容</p>
+        <p class="empty-text">{{ t('databank.emptyText') }}</p>
+        <p class="empty-hint">{{ t('databank.emptyHint') }}</p>
         <button type="button" class="header-btn upload-btn" @click="openUploadModal">
           <Icon name="upload" :size="16" />
-          <span class="btn-label">上传第一个文档</span>
+          <span class="btn-label">{{ t('databank.uploadFirst') }}</span>
         </button>
       </div>
 
       <!-- 全局文档 -->
-      <section v-if="globalDocuments.length > 0" class="doc-section" aria-label="全局文档">
+      <section v-if="globalDocuments.length > 0" class="doc-section" :aria-label="t('databank.globalSection')">
         <h2 class="section-title">
           <Icon name="globe" :size="18" />
-          全局文档
+          {{ t('databank.globalSection') }}
           <span class="section-count">{{ globalDocuments.length }}</span>
         </h2>
         <div class="doc-grid">
@@ -235,12 +236,12 @@ function getCharacterName(id?: string): string {
               <Icon name="file" :size="20" class="doc-icon" />
               <div class="card-info">
                 <h3 class="doc-name">{{ doc.name }}</h3>
-                <span class="doc-meta">{{ formatFileSize(doc.fileSize) }} · {{ doc.chunks.length }} 块 · {{ formatDate(doc.createdAt) }}</span>
+                <span class="doc-meta">{{ formatFileSize(doc.fileSize) }} · {{ t('databank.chunksCount', { count: doc.chunks.length }) }} · {{ formatDate(doc.createdAt) }}</span>
               </div>
               <button
                 type="button"
                 class="card-expand"
-                :aria-label="expandedDocId === doc.id ? '收起分块' : '展开分块'"
+                :aria-label="expandedDocId === doc.id ? t('databank.collapseChunks') : t('databank.expandChunks')"
                 :aria-expanded="expandedDocId === doc.id"
                 @click="toggleExpand(doc.id)"
               >
@@ -262,11 +263,11 @@ function getCharacterName(id?: string): string {
               <button
                 type="button"
                 class="card-btn delete-btn"
-                aria-label="删除文档"
+                :aria-label="t('databank.deleteAria')"
                 @click="confirmDelete(doc.id)"
               >
                 <Icon name="trash-2" :size="14" />
-                <span>删除</span>
+                <span>{{ t('databank.delete') }}</span>
               </button>
             </div>
           </article>
@@ -274,10 +275,10 @@ function getCharacterName(id?: string): string {
       </section>
 
       <!-- 角色级文档 -->
-      <section v-if="characterDocuments.length > 0" class="doc-section" aria-label="角色级文档">
+      <section v-if="characterDocuments.length > 0" class="doc-section" :aria-label="t('databank.characterSection')">
         <h2 class="section-title">
           <Icon name="user" :size="18" />
-          角色级文档
+          {{ t('databank.characterSection') }}
           <span class="section-count">{{ characterDocuments.length }}</span>
         </h2>
         <div class="doc-grid">
@@ -290,12 +291,12 @@ function getCharacterName(id?: string): string {
               <Icon name="file" :size="20" class="doc-icon" />
               <div class="card-info">
                 <h3 class="doc-name">{{ doc.name }}</h3>
-                <span class="doc-meta">{{ formatFileSize(doc.fileSize) }} · {{ doc.chunks.length }} 块 · {{ getCharacterName(doc.characterId) }}</span>
+                <span class="doc-meta">{{ formatFileSize(doc.fileSize) }} · {{ t('databank.chunksCount', { count: doc.chunks.length }) }} · {{ getCharacterName(doc.characterId) }}</span>
               </div>
               <button
                 type="button"
                 class="card-expand"
-                :aria-label="expandedDocId === doc.id ? '收起分块' : '展开分块'"
+                :aria-label="expandedDocId === doc.id ? t('databank.collapseChunks') : t('databank.expandChunks')"
                 :aria-expanded="expandedDocId === doc.id"
                 @click="toggleExpand(doc.id)"
               >
@@ -317,11 +318,11 @@ function getCharacterName(id?: string): string {
               <button
                 type="button"
                 class="card-btn delete-btn"
-                aria-label="删除文档"
+                :aria-label="t('databank.deleteAria')"
                 @click="confirmDelete(doc.id)"
               >
                 <Icon name="trash-2" :size="14" />
-                <span>删除</span>
+                <span>{{ t('databank.delete') }}</span>
               </button>
             </div>
           </article>
@@ -329,10 +330,10 @@ function getCharacterName(id?: string): string {
       </section>
 
       <!-- 聊天级文档 -->
-      <section v-if="chatDocuments.length > 0" class="doc-section" aria-label="聊天级文档">
+      <section v-if="chatDocuments.length > 0" class="doc-section" :aria-label="t('databank.chatSection')">
         <h2 class="section-title">
           <Icon name="chat-circle" :size="18" />
-          聊天级文档
+          {{ t('databank.chatSection') }}
           <span class="section-count">{{ chatDocuments.length }}</span>
         </h2>
         <div class="doc-grid">
@@ -345,12 +346,12 @@ function getCharacterName(id?: string): string {
               <Icon name="file" :size="20" class="doc-icon" />
               <div class="card-info">
                 <h3 class="doc-name">{{ doc.name }}</h3>
-                <span class="doc-meta">{{ formatFileSize(doc.fileSize) }} · {{ doc.chunks.length }} 块</span>
+                <span class="doc-meta">{{ formatFileSize(doc.fileSize) }} · {{ t('databank.chunksCount', { count: doc.chunks.length }) }}</span>
               </div>
               <button
                 type="button"
                 class="card-expand"
-                :aria-label="expandedDocId === doc.id ? '收起分块' : '展开分块'"
+                :aria-label="expandedDocId === doc.id ? t('databank.collapseChunks') : t('databank.expandChunks')"
                 :aria-expanded="expandedDocId === doc.id"
                 @click="toggleExpand(doc.id)"
               >
@@ -372,11 +373,11 @@ function getCharacterName(id?: string): string {
               <button
                 type="button"
                 class="card-btn delete-btn"
-                aria-label="删除文档"
+                :aria-label="t('databank.deleteAria')"
                 @click="confirmDelete(doc.id)"
               >
                 <Icon name="trash-2" :size="14" />
-                <span>删除</span>
+                <span>{{ t('databank.delete') }}</span>
               </button>
             </div>
           </article>
@@ -387,14 +388,14 @@ function getCharacterName(id?: string): string {
     <!-- 上传 Modal -->
     <Modal
       v-model="uploadModalOpen"
-      title="上传文档"
-      aria-label="上传文档到数据银行"
+      :title="t('databank.uploadTitle')"
+      :aria-label="t('databank.uploadAria2')"
     >
       <div class="upload-content">
         <!-- 作用域选择 -->
         <fieldset class="scope-fieldset">
-          <legend class="scope-legend">作用域</legend>
-          <div class="scope-options" role="radiogroup" aria-label="文档作用域">
+          <legend class="scope-legend">{{ t('databank.scope') }}</legend>
+          <div class="scope-options" role="radiogroup" :aria-label="t('databank.scopeAria')">
             <label class="scope-option">
               <input
                 type="radio"
@@ -402,7 +403,7 @@ function getCharacterName(id?: string): string {
                 value="global"
                 v-model="selectedScope"
               />
-              <span class="scope-label">全局（所有对话可用）</span>
+              <span class="scope-label">{{ t('databank.scopeGlobal') }}</span>
             </label>
             <label class="scope-option">
               <input
@@ -411,21 +412,21 @@ function getCharacterName(id?: string): string {
                 value="character"
                 v-model="selectedScope"
               />
-              <span class="scope-label">角色级（仅该角色对话可用）</span>
+              <span class="scope-label">{{ t('databank.scopeCharacter') }}</span>
             </label>
           </div>
         </fieldset>
 
         <!-- 角色选择（scope=character 时显示） -->
         <div v-if="selectedScope === 'character'" class="char-select">
-          <label for="character-select" class="char-select-label">绑定角色</label>
+          <label for="character-select" class="char-select-label">{{ t('databank.bindCharacter') }}</label>
           <select
             id="character-select"
             v-model="selectedCharacterId"
             class="char-select-input"
-            aria-label="选择绑定角色"
+            :aria-label="t('databank.bindCharacterAria')"
           >
-            <option value="">请选择角色…</option>
+            <option value="">{{ t('databank.selectCharacter') }}</option>
             <option
               v-for="char in characterStore.characters"
               :key="char.id"
@@ -444,26 +445,25 @@ function getCharacterName(id?: string): string {
           @dragover="handleDragOver"
         >
           <Icon name="upload" :size="32" class="drop-icon" />
-          <p v-if="!selectedFile" class="drop-text">拖拽文件到此处或点击选择</p>
-          <p v-else class="drop-file-name">{{ selectedFile.name }}（{{ formatFileSize(selectedFile.size) }}）</p>
+          <p v-if="!selectedFile" class="drop-text">{{ t('databank.dropHint') }}</p>
+          <p v-else class="drop-file-name">{{ t('databank.fileNameSize', { name: selectedFile.name, size: formatFileSize(selectedFile.size) }) }}</p>
           <input
             type="file"
             class="hidden-file-input"
             accept=".txt,.md,.markdown,.html,.htm,.csv,.json"
-            aria-label="选择文件"
+            :aria-label="t('databank.selectFileAria')"
             @change="handleFileSelect"
           />
         </div>
 
         <p class="upload-hint">
-          支持 TXT/MD/HTML/CSV/JSON，单文件上限 {{ MAX_FILE_SIZE / 1024 / 1024 }}MB。
-          文件将按段落自动分块，对话时 AI 会检索相关内容注入提示词。
+          {{ t('databank.uploadHint', { size: MAX_FILE_SIZE / 1024 / 1024 }) }}
         </p>
       </div>
 
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="closeUploadModal">
-          取消
+          {{ t('databank.cancel') }}
         </button>
         <button
           type="button"
@@ -471,7 +471,7 @@ function getCharacterName(id?: string): string {
           :disabled="!selectedFile || (selectedScope === 'character' && !selectedCharacterId)"
           @click="handleUpload"
         >
-          上传
+          {{ t('databank.uploadBtn') }}
         </button>
       </template>
     </Modal>
@@ -479,16 +479,16 @@ function getCharacterName(id?: string): string {
     <!-- 删除确认 Modal -->
     <Modal
       v-model="deleteModalOpen"
-      title="确认删除"
-      aria-label="确认删除文档"
+      :title="t('databank.deleteTitle')"
+      :aria-label="t('databank.deleteAria2')"
     >
-      <p class="delete-hint">确定要删除这个文档吗？删除后不可恢复。</p>
+      <p class="delete-hint">{{ t('databank.deleteHint') }}</p>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="deleteModalOpen = false">
-          取消
+          {{ t('databank.cancel') }}
         </button>
         <button type="button" class="modal-btn modal-delete" @click="handleDelete">
-          删除
+          {{ t('databank.delete') }}
         </button>
       </template>
     </Modal>

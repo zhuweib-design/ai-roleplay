@@ -17,6 +17,7 @@ import type {
 } from '@/core/event-types';
 import Icon from '@/components/common/Icon.vue';
 import Toast from '@/components/common/Toast.vue';
+import { t } from '@/i18n';
 
 const store = useLorebookStore();
 const eventsStore = useEventsStore();
@@ -60,16 +61,16 @@ function levelLabel(level: number): string {
 // ── F17.1 事件管理 ──
 
 const triggerTypeOptions: { value: TriggerConditionType; label: string; desc: string }[] = [
-  { value: 'keyword', label: '关键词匹配', desc: '前后文出现关键词时触发' },
-  { value: 'dependency', label: '前置依赖', desc: '指定事件全部完成后触发' },
-  { value: 'manual', label: '仅手动触发', desc: '不自动触发，仅通过命令' },
+  { value: 'keyword', label: t('wbEvents.triggerKeyword'), desc: t('wbEvents.triggerKeywordDesc') },
+  { value: 'dependency', label: t('wbEvents.triggerDependency'), desc: t('wbEvents.triggerDependencyDesc') },
+  { value: 'manual', label: t('wbEvents.triggerManual'), desc: t('wbEvents.triggerManualDesc') },
 ];
 
 const eventStateOptions: { value: EventState; label: string; color: string }[] = [
-  { value: 'pending', label: '待触发', color: 'var(--muted-foreground)' },
-  { value: 'active', label: '进行中', color: 'var(--success)' },
-  { value: 'completed', label: '已完成', color: 'var(--tag-blue)' },
-  { value: 'failed', label: '已失败', color: 'var(--error)' },
+  { value: 'pending', label: t('wbEvents.statePending'), color: 'var(--muted-foreground)' },
+  { value: 'active', label: t('wbEvents.stateActive'), color: 'var(--success)' },
+  { value: 'completed', label: t('wbEvents.stateCompleted'), color: 'var(--tag-blue)' },
+  { value: 'failed', label: t('wbEvents.stateFailed'), color: 'var(--error)' },
 ];
 
 const selectedEventId = ref<string | null>(null);
@@ -123,11 +124,11 @@ function triggerTypeLabel(t: TriggerConditionType): string {
 }
 
 function getSceneName(sceneEntryId: string | null): string {
-  if (sceneEntryId === null) return '全局事件';
+  if (sceneEntryId === null) return t('wbEvents.globalScene');
   const lb = currentLorebook.value;
-  if (!lb) return '未知场景';
+  if (!lb) return t('wbEvents.unknownScene');
   const entry = lb.entries.find((e) => e.id === sceneEntryId);
-  return entry?.title ?? '未知场景';
+  return entry?.title ?? t('wbEvents.unknownScene');
 }
 
 function keywordsToString(keywords: string[] | undefined): string {
@@ -321,11 +322,11 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 
 <template>
           <!-- F17.1 事件管理 -->
-          <section class="events-section" aria-label="事件管理">
+          <section class="events-section" :aria-label="t('wbEvents.aria')">
             <header class="events-header">
               <h2>
                 <Icon name="calendar-check" :size="14" />
-                <span>事件（{{ eventsStore.currentEvents.length }}）</span>
+                <span>{{ t('wbEvents.title', { count: eventsStore.currentEvents.length }) }}</span>
               </h2>
               <div class="events-actions">
                 <button
@@ -334,22 +335,22 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                   @click="createNewGlobalEvent"
                 >
                   <Icon name="plus" :size="14" />
-                  <span>全局事件</span>
+                  <span>{{ t('wbEvents.globalEvent') }}</span>
                 </button>
                 <label class="scene-select-label" for="new-event-scene">
-                  <span class="sr-only">绑定场景</span>
+                  <span class="sr-only">{{ t('wbEvents.bindSceneAria') }}</span>
                   <select
                     id="new-event-scene"
                     class="form-select scene-select"
                     @change="onNewEventSceneChange"
                   >
-                    <option value="">+ 为场景添加事件</option>
+                    <option value="">{{ t('wbEvents.addSceneEvent') }}</option>
                     <option
                       v-for="entry in sceneOptions"
                       :key="entry.id"
                       :value="entry.id"
                     >
-                      {{ entry.title }}（{{ levelLabel(getEntryLevel(entry.id)) }}）
+                      {{ t('wbEvents.sceneEntry', { title: entry.title, level: levelLabel(getEntryLevel(entry.id)) }) }}
                     </option>
                   </select>
                 </label>
@@ -358,12 +359,12 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 
             <div v-if="eventsStore.currentEvents.length === 0" class="events-empty">
               <Icon name="calendar-check" :size="32" />
-              <p>未创建事件</p>
-              <p class="hint">事件可在对话中通过关键词或命令触发，将描述注入提示词</p>
+              <p>{{ t('wbEvents.emptyTitle') }}</p>
+              <p class="hint">{{ t('wbEvents.emptyHint') }}</p>
             </div>
 
             <div v-else class="events-content">
-              <aside class="events-list-panel" aria-label="事件列表">
+              <aside class="events-list-panel" :aria-label="t('wbEvents.listAria')">
                 <div
                   v-for="[sceneId, evts] in eventsStore.eventsByScene"
                   :key="sceneId ?? '__global'"
@@ -383,7 +384,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                     :aria-current="evt.id === selectedEventId ? 'true' : undefined"
                     @click="selectEvent(evt.id)"
                   >
-                    <span class="event-name">{{ evt.name || '（未命名）' }}</span>
+                    <span class="event-name">{{ evt.name || t('wbEvents.unnamed') }}</span>
                     <span class="event-meta">
                       <span class="event-trigger-type">{{ triggerTypeLabel(evt.trigger.type) }}</span>
                       <span
@@ -401,10 +402,10 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
               <section
                 v-if="selectedEvent"
                 class="event-editor-panel"
-                aria-label="事件编辑器"
+                :aria-label="t('wbEvents.editorAria')"
               >
                 <div class="event-editor-header">
-                  <h3>{{ selectedEvent.name || '（未命名事件）' }}</h3>
+                  <h3>{{ selectedEvent.name || t('wbEvents.unnamedEvent') }}</h3>
                   <span
                     class="event-state-badge"
                     :class="`state-${selectedEvent.state}`"
@@ -416,39 +417,39 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 
                 <div class="event-editor-grid">
                   <div class="form-row">
-                    <label class="form-label" :for="`evt-name-${selectedEvent.id}`">事件名称</label>
+                    <label class="form-label" :for="`evt-name-${selectedEvent.id}`">{{ t('wbEvents.nameLabel') }}</label>
                     <input
                       :id="`evt-name-${selectedEvent.id}`"
                       type="text"
                       class="form-input"
                       :value="selectedEvent.name"
                       @input="onEventNameInput"
-                      placeholder="如：神秘旅人来访"
+                      :placeholder="t('wbEvents.namePlaceholder')"
                       maxlength="50"
                     />
                   </div>
 
                   <div class="form-row">
-                    <label class="form-label" :for="`evt-scene-${selectedEvent.id}`">绑定场景</label>
+                    <label class="form-label" :for="`evt-scene-${selectedEvent.id}`">{{ t('wbEvents.sceneLabel') }}</label>
                     <select
                       :id="`evt-scene-${selectedEvent.id}`"
                       class="form-select"
                       :value="selectedEvent.sceneEntryId ?? ''"
                       @change="onEventSceneChange"
                     >
-                      <option value="">全局（不绑定场景）</option>
+                      <option value="">{{ t('wbEvents.sceneGlobal') }}</option>
                       <option
                         v-for="entry in sceneOptions"
                         :key="entry.id"
                         :value="entry.id"
                       >
-                        {{ entry.title }}（{{ levelLabel(getEntryLevel(entry.id)) }}）
+                        {{ t('wbEvents.sceneEntry', { title: entry.title, level: levelLabel(getEntryLevel(entry.id)) }) }}
                       </option>
                     </select>
                   </div>
 
                   <div class="form-row">
-                    <label class="form-label" :for="`evt-trigger-${selectedEvent.id}`">触发条件</label>
+                    <label class="form-label" :for="`evt-trigger-${selectedEvent.id}`">{{ t('wbEvents.triggerLabel') }}</label>
                     <select
                       :id="`evt-trigger-${selectedEvent.id}`"
                       class="form-select"
@@ -473,7 +474,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                     class="form-row"
                   >
                     <label class="form-label" :for="`evt-kw-${selectedEvent.id}`">
-                      关键词（逗号分隔）
+                      {{ t('wbEvents.keywordLabel') }}
                     </label>
                     <input
                       :id="`evt-kw-${selectedEvent.id}`"
@@ -481,7 +482,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                       class="form-input"
                       :value="keywordsToString(selectedEvent.trigger.keywords)"
                       @input="onEventKeywordsInput"
-                      placeholder="如：旅人, 访客, 叩门"
+                      :placeholder="t('wbEvents.keywordPlaceholder')"
                     />
                     <div class="checkbox-row">
                       <label>
@@ -490,7 +491,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                           :checked="selectedEvent.trigger.useRegex"
                           @change="onEventUseRegexChange"
                         />
-                        <span>使用正则</span>
+                        <span>{{ t('wbEvents.useRegex') }}</span>
                       </label>
                       <label>
                         <input
@@ -498,7 +499,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                           :checked="selectedEvent.trigger.caseSensitive"
                           @change="onEventCaseSensitiveChange"
                         />
-                        <span>大小写敏感</span>
+                        <span>{{ t('wbEvents.caseSensitive') }}</span>
                       </label>
                     </div>
                   </div>
@@ -508,7 +509,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                     class="form-row"
                   >
                     <label class="form-label" :for="`evt-dep-${selectedEvent.id}`">
-                      前置事件名称（逗号分隔）
+                      {{ t('wbEvents.dependencyLabel') }}
                     </label>
                     <input
                       :id="`evt-dep-${selectedEvent.id}`"
@@ -516,16 +517,16 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                       class="form-input"
                       :value="keywordsToString(selectedEvent.trigger.requiredEvents)"
                       @input="onEventRequiredEventsInput"
-                      placeholder="如：第一章开始, 进入森林"
+                      :placeholder="t('wbEvents.dependencyPlaceholder')"
                     />
                     <span class="form-hint">
-                      输入已存在的事件名称；全部完成后此事件才可触发
+                      {{ t('wbEvents.dependencyHint') }}
                     </span>
                   </div>
 
                   <div class="form-row form-row-inline">
                     <label class="form-label" :for="`evt-prob-${selectedEvent.id}`">
-                      触发概率：{{ selectedEvent.probability }}%
+                      {{ t('wbEvents.probability', { percent: selectedEvent.probability }) }}
                     </label>
                     <input
                       :id="`evt-prob-${selectedEvent.id}`"
@@ -545,34 +546,34 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                         :checked="selectedEvent.repeatable"
                         @change="onEventRepeatableChange"
                       />
-                      <span>允许重复触发（完成后回到待触发状态）</span>
+                      <span>{{ t('wbEvents.repeatable') }}</span>
                     </label>
                   </div>
 
                   <div class="form-row">
                     <label class="form-label" :for="`evt-desc-${selectedEvent.id}`">
-                      事件描述（触发时注入提示词）
+                      {{ t('wbEvents.descLabel') }}
                     </label>
                     <textarea
                       :id="`evt-desc-${selectedEvent.id}`"
                       class="form-textarea"
                       :value="selectedEvent.description"
                       @input="onEventDescriptionInput"
-                      placeholder="如：黄昏时分，一位神秘的旅人叩响了酒馆的大门，他身披灰色斗篷，怀中紧抱一只陈旧的木盒..."
+                      :placeholder="t('wbEvents.descPlaceholder')"
                       rows="5"
                       maxlength="2000"
                     ></textarea>
                   </div>
 
                   <div class="form-row">
-                    <label class="form-label">完成条件</label>
+                    <label class="form-label">{{ t('wbEvents.completionLabel') }}</label>
                     <label class="checkbox-label">
                       <input
                         type="checkbox"
                         :checked="selectedEvent.completion.manualOnly"
                         @change="onEventManualOnlyChange"
                       />
-                      <span>仅手动完成（通过 /event complete 命令）</span>
+                      <span>{{ t('wbEvents.completionManual') }}</span>
                     </label>
                     <input
                       v-if="selectedEvent && !selectedEvent.completion.manualOnly"
@@ -580,12 +581,12 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                       class="form-input"
                       :value="keywordsToString(selectedEvent.completion.keywords)"
                       @input="onEventCompletionKeywordsInput"
-                      placeholder="完成关键词（逗号分隔，任一匹配即完成）"
+                      :placeholder="t('wbEvents.completionPlaceholder')"
                     />
                   </div>
 
                   <div class="form-row state-row">
-                    <span class="form-label">状态操作</span>
+                    <span class="form-label">{{ t('wbEvents.stateActions') }}</span>
                     <div class="event-state-actions">
                       <button
                         type="button"
@@ -593,7 +594,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                         :disabled="!canTriggerSelected"
                         @click="triggerSelectedEvent"
                       >
-                        触发
+                        {{ t('wbEvents.triggerBtn') }}
                       </button>
                       <button
                         type="button"
@@ -601,29 +602,28 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                         :disabled="selectedEvent.state !== 'active'"
                         @click="completeSelectedEvent"
                       >
-                        完成
+                        {{ t('wbEvents.completeBtn') }}
                       </button>
                       <button
                         type="button"
                         class="action-btn reset"
                         @click="resetSelectedEvent"
                       >
-                        重置
+                        {{ t('wbEvents.resetBtn') }}
                       </button>
                       <button
                         type="button"
                         class="action-btn fail"
                         @click="failSelectedEvent"
                       >
-                        标记失败
+                        {{ t('wbEvents.failBtn') }}
                       </button>
                     </div>
                   </div>
 
                   <div class="form-row form-row-actions">
                     <span class="form-meta">
-                      已触发 {{ selectedEvent.triggerCount }} 次 ·
-                      创建于 {{ formatEventTime(selectedEvent.createdAt) }}
+                      {{ t('wbEvents.meta', { count: selectedEvent.triggerCount, date: formatEventTime(selectedEvent.createdAt) }) }}
                     </span>
                     <button
                       type="button"
@@ -631,7 +631,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                       @click="deleteSelectedEvent"
                     >
                       <Icon name="trash-2" :size="14" />
-                      <span>删除事件</span>
+                      <span>{{ t('wbEvents.deleteEvent') }}</span>
                     </button>
                   </div>
                 </div>
@@ -639,7 +639,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 
               <div v-else class="event-editor-empty">
                 <Icon name="cursor" :size="32" />
-                <p>从左侧选择事件进行编辑</p>
+                <p>{{ t('wbEvents.selectHint') }}</p>
               </div>
             </div>
           </section>
