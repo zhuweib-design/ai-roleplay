@@ -23,6 +23,7 @@
 
 import type { GroupChat, GroupChatMessage, GroupMember } from './group-chat';
 import type { QuickReplyButton } from '@/types';
+import { t } from '@/i18n';
 
 // ── 群聊导出 ──
 
@@ -85,11 +86,11 @@ export function exportGroupChatToStJson(chat: GroupChat): string {
 /** ST 群聊 JSON → 本项目 GroupChat（需成员角色 ID 存在性由调用方校验） */
 export function importGroupChatFromSt(json: unknown): GroupChat {
   if (typeof json !== 'object' || json === null) {
-    throw new Error('群聊数据格式错误');
+    throw new Error(t('core.groupChatFormatError'));
   }
   const raw = json as Partial<StGroupChatFile>;
   if (!raw.name || typeof raw.name !== 'string') {
-    throw new Error('群聊缺少 name 字段');
+    throw new Error(t('core.groupChatMissingName'));
   }
 
   const members: GroupMember[] = (raw.members ?? [])
@@ -154,12 +155,12 @@ export function exportQuickRepliesToStJson(buttons: QuickReplyButton[]): string 
 /** ST Quick Reply JSON → 本项目 QuickReplyButton[] */
 export function importQuickRepliesFromSt(json: unknown): QuickReplyButton[] {
   if (!Array.isArray(json)) {
-    throw new Error('Quick Reply 数据格式错误：应为数组');
+    throw new Error(t('core.qrFormatError'));
   }
   return json
     .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
     .map((item, idx) => {
-      const label = typeof item.label === 'string' ? item.label : `按钮 ${idx + 1}`;
+      const label = typeof item.label === 'string' ? item.label : t('core.qrButtonLabel', { index: idx + 1 });
       const message = typeof item.message === 'string' ? item.message : '';
       const id = typeof item.id === 'string' && item.id ? item.id : `qr-${Date.now()}-${idx}`;
       const group = typeof item.group === 'string' ? item.group : '';

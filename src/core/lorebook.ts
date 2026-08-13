@@ -10,6 +10,8 @@
  * 数据存储：Tauri 版 lorebooks/{id}.json，Web 版 IndexedDB lorebooks store
  */
 
+import { t } from '@/i18n';
+
 /** 条目激活策略 (F06.2) */
 export type LorebookStrategy = 'keyword' | 'constant' | 'probability';
 
@@ -250,22 +252,22 @@ export function validateLorebookEntry(entry: Partial<LorebookEntry>): string[] {
   const errors: string[] = [];
 
   if (entry.content !== undefined && entry.content.length > MAX_ENTRY_CONTENT_LENGTH) {
-    errors.push(`条目内容不能超过 ${MAX_ENTRY_CONTENT_LENGTH} 字符`);
+    errors.push(t('lorebook.entryContentTooLong', { max: MAX_ENTRY_CONTENT_LENGTH }));
   }
 
   if (
     entry.probability !== undefined &&
     (entry.probability < 0 || entry.probability > 100)
   ) {
-    errors.push('概率必须在 0-100 之间');
+    errors.push(t('lorebook.probabilityRange'));
   }
 
   if (entry.insertionOrder !== undefined && entry.insertionOrder < 0) {
-    errors.push('插入顺序不能为负数');
+    errors.push(t('lorebook.orderNonNegative'));
   }
 
   if (entry.depth !== undefined && entry.depth < 0) {
-    errors.push('深度不能为负数');
+    errors.push(t('lorebook.depthNonNegative'));
   }
 
   // F06.6 层级深度校验（v1.1）
@@ -275,7 +277,7 @@ export function validateLorebookEntry(entry: Partial<LorebookEntry>): string[] {
     entry.hierarchyLevel !== 1 &&
     entry.hierarchyLevel !== 2
   ) {
-    errors.push('层级深度必须为 0（World）、1（Region）或 2（Sub-area）');
+    errors.push(t('lorebook.levelRange'));
   }
 
   return errors;
@@ -286,26 +288,26 @@ export function validateLorebook(lorebook: Partial<Lorebook>): string[] {
   const errors: string[] = [];
 
   if (!lorebook.name || lorebook.name.trim() === '') {
-    errors.push('Lorebook 名称不能为空');
+    errors.push(t('lorebook.nameRequired'));
   } else if (lorebook.name.length > 100) {
-    errors.push('Lorebook 名称不能超过 100 字符');
+    errors.push(t('lorebook.nameTooLong'));
   }
 
   if (
     lorebook.entries &&
     lorebook.entries.length > MAX_LOREBOOK_ENTRIES
   ) {
-    errors.push(`条目数不能超过 ${MAX_LOREBOOK_ENTRIES} 条`);
+    errors.push(t('lorebook.entriesLimit', { max: MAX_LOREBOOK_ENTRIES }));
   }
 
   // F06.7 整体世界描述验证
   if (lorebook.worldDescription) {
     const wd = lorebook.worldDescription;
     if (wd.content && wd.content.length > MAX_WORLD_DESCRIPTION_LENGTH) {
-      errors.push(`世界描述内容不能超过 ${MAX_WORLD_DESCRIPTION_LENGTH} 字符`);
+      errors.push(t('lorebook.worldDescTooLong', { max: MAX_WORLD_DESCRIPTION_LENGTH }));
     }
     if (wd.name && wd.name.length > 100) {
-      errors.push('世界名称不能超过 100 字符');
+      errors.push(t('lorebook.worldNameTooLong'));
     }
   }
 
@@ -318,7 +320,7 @@ export function validateLorebook(lorebook: Partial<Lorebook>): string[] {
       // parentId 必须指向同 Lorebook 内存在的条目
       if (entry.parentId !== undefined && entry.parentId !== null) {
         if (!idSet.has(entry.parentId)) {
-          errors.push(`条目 "${entry.title}" 的 parentId 指向不存在的条目`);
+          errors.push(t('lorebook.parentNotFound', { title: entry.title }));
         }
       }
 
@@ -341,7 +343,7 @@ export function validateLorebook(lorebook: Partial<Lorebook>): string[] {
       let current: string | null | undefined = entry.id;
       while (current !== null && current !== undefined) {
         if (visited.has(current)) {
-          errors.push(`条目 "${entry.title}" 的层级关系存在循环引用`);
+          errors.push(t('lorebook.circularRef', { title: entry.title }));
           break;
         }
         visited.add(current);

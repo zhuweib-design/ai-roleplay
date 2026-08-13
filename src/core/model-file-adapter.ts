@@ -10,6 +10,7 @@
  */
 import type { ModelFileAdapter } from './vector-model-source';
 import type { VectorModelId } from './vector-model-manager';
+import { t } from '@/i18n';
 
 export function isTauriEnv(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -82,7 +83,7 @@ export class WebFileAdapter implements ModelFileAdapter {
       req.onsuccess = () => resolve(req.result as File | undefined);
       req.onerror = () => resolve(undefined);
     });
-    if (!file) throw new Error(`模型文件未找到: ${modelId}/${fileName}`);
+    if (!file) throw new Error(t('core.modelFileNotFound', { id: modelId, file: fileName }));
     return file;
   }
 

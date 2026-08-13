@@ -9,6 +9,7 @@
  *    字段见 RemoteModelConfig,后续设置页接线后生效
  */
 import type { VectorModelId } from './vector-model-manager';
+import { t } from '@/i18n';
 
 /** 线上服务器引用字段(预留;后续设置页接线) */
 export interface RemoteModelConfig {
@@ -83,7 +84,7 @@ export class VectorModelSourceRegistry {
   /** 登记本地模型(目录存在性由调用方确认) */
   async register(config: LocalModelConfig): Promise<void> {
     if (!(await this.adapter.exists(config.modelId))) {
-      throw new Error(`模型未安装: ${config.modelId}(请先复制到 ${MODEL_DIR_LAYOUT.base}/${config.modelId}/)`);
+      throw new Error(t('core.modelNotInstalled', { id: config.modelId, dir: `${MODEL_DIR_LAYOUT.base}/${config.modelId}/` }));
     }
     this.sources.set(config.modelId, config);
   }

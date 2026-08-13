@@ -1,19 +1,12 @@
 # T-13 i18n 未迁移文件白名单
 # 每行一个相对路径；完成文案抽取后移出本清单即纳入门禁
-# 生成时间：2026-08-13（初始 128 个，已迁移 36 个）
+# 生成时间：2026-08-13（初始 128 个，已迁移 77 个）
+# 提示词/基准数据豁免（模型提示词中文语义,不随界面语言翻译）:
+#   src/core/benchmark.ts, src/core/prompt-builder.ts, src/core/l0-l2-runtime.ts, src/core/dual-channel-runtime.ts
 src/api/anthropic-client.ts
-src/api/anthropic-protocol.ts
-src/api/api-client.ts
-src/api/diagnostics.ts
-src/api/index.ts
-src/api/local-api-client.ts
 src/api/openai-client.ts
-src/api/openai-protocol.ts
 src/api/tauri-openai-client.ts
-src/api/types.ts
-src/components/common/icons.ts
 src/core/api-key-crypto.ts
-src/core/audit-log.ts
 src/core/backup-crypto.ts
 src/core/backup.ts
 src/core/benchmark.ts
@@ -22,65 +15,42 @@ src/core/character-generator.ts
 src/core/character-version-control.ts
 src/core/community-market.ts
 src/core/compression.ts
-src/core/data-bank.ts
-src/core/document-chunker.ts
 src/core/dual-channel-runtime.ts
-src/core/embedding.ts
 src/core/event-types.ts
 src/core/extension-loader.ts
 src/core/extension-types.ts
-src/core/group-chat.ts
 src/core/image-generation.ts
-src/core/image-storage.ts
 src/core/inference-cache.ts
-src/core/json-utils.ts
 src/core/l0-l2-runtime.ts
 src/core/local-model-engine.ts
 src/core/lorebook-scanner.ts
-src/core/lorebook.ts
-src/core/macro.ts
 src/core/market-index.ts
-src/core/memory-store.ts
-src/core/model-file-adapter.ts
 src/core/npc-generator.ts
 src/core/onnx-embedding-provider.ts
-src/core/optimization-pipeline.ts
 src/core/output-discipline.ts
 src/core/prompt-builder.ts
 src/core/protagonist.ts
 src/core/rag-retriever.ts
 src/core/random-event-generator.ts
-src/core/sanitize.ts
 src/core/slash-command.ts
-src/core/st-compat.ts
 src/core/story-analyzer.ts
 src/core/story-importer.ts
 src/core/story-time.ts
 src/core/story-types.ts
 src/core/summarizer.ts
-src/core/token-counter.ts
 src/core/tool-registry.ts
 src/core/trigger-engine.ts
-src/core/variable-store.ts
-src/core/vector-model-manager.ts
-src/core/vector-model-source.ts
 src/core/world-generator.ts
 src/core/world-setting-chunker.ts
-src/main.ts
 src/services/backup-service.ts
 src/services/chat-manager.ts
 src/services/translator.ts
 src/services/tts-service.ts
 src/services/type-adapters.ts
 src/storage/indexeddb-adapter.ts
-src/storage/legacy-migration.ts
-src/storage/storage-adapter.ts
-src/storage/storage-factory.ts
 src/storage/tauri-fs-adapter.ts
-src/storage/types.ts
 src/stores/character-version.ts
 src/stores/character.ts
-src/stores/chat-context.ts
 src/stores/chat.ts
 src/stores/community-market.ts
 src/stores/data-bank.ts
@@ -92,4 +62,3 @@ src/stores/lorebook.ts
 src/stores/persona.ts
 src/stores/random-events.ts
 src/stores/story.ts
-src/types/index.ts

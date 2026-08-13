@@ -6,6 +6,7 @@
  */
 
 import type { CharacterAttributes } from '@core/character-card';
+import { t } from '@/i18n';
 
 export type NavKey = 'chat' | 'character' | 'worldbook' | 'group' | 'databank' | 'archives' | 'settings' | 'story' | 'random-events' | 'local-model' | 'image-gen' | 'character-version' | 'community-market' | 'profile';
 
@@ -113,9 +114,9 @@ export interface ModelCategoryMeta {
 
 /** 需求3：所有模型分类（有序） */
 export const MODEL_CATEGORIES: readonly ModelCategoryMeta[] = [
-  { value: 'chat', label: '对话通用', description: '用于角色对话、故事生成等文本场景' },
-  { value: 'image-video', label: '图片/视频', description: '用于图像和视频生成场景' },
-  { value: 'embedding', label: 'Embedding', description: '用于向量嵌入与 RAG 检索场景' },
+  { value: 'chat', label: t('types.catChat'), description: t('types.catChatDesc') },
+  { value: 'image-video', label: t('types.catImageVideo'), description: t('types.catImageVideoDesc') },
+  { value: 'embedding', label: t('types.catEmbedding'), description: t('types.catEmbeddingDesc') },
 ] as const;
 
 /** 主题名：深色（默认）/ 亮色 / 午夜蓝 / OLED 黑 / 暗夜剧场 */

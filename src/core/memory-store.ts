@@ -12,6 +12,8 @@
  * - 快照不可变:每次 put 生成新修订号,历史可回溯
  */
 
+import { t } from '@/i18n';
+
 // ── 类型 ──
 
 /** 记忆作用域:standing=常驻指令(仅人工写),scoped=作用域事实(优化器可写) */
@@ -96,7 +98,7 @@ export class MemoryStore {
 
     // 写保护:standing 仅人工可写(E-01 硬约束)
     if (fact.scope === 'standing' && author !== 'human') {
-      throw new Error(`写保护:standing 事实「${fact.id}」仅允许人工写入`);
+      throw new Error(t('core.memoryWriteProtected', { id: fact.id }));
     }
 
     if (!history) {
@@ -177,7 +179,7 @@ export class MemoryStore {
     const max = Math.max(linesA.length, linesB.length);
     for (let i = 0; i < max; i++) {
       if (linesA[i] !== linesB[i]) {
-        out.push(`行 ${i + 1}: ${linesA[i] ?? '(无)'} → ${linesB[i] ?? '(无)'}`);
+        out.push(t('core.diffLine', { index: i + 1, from: linesA[i] ?? t('core.diffNone'), to: linesB[i] ?? t('core.diffNone') }));
       }
     }
     return out;

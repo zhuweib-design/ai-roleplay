@@ -10,6 +10,7 @@
  */
 
 import type { ChatMessage } from './character-card';
+import { t } from '@/i18n';
 
 /** 群聊发言顺序模式 (F10.2) */
 export type GroupChatMode = 'natural' | 'designated';
@@ -110,9 +111,9 @@ export function validateGroupChatInput(input: Partial<GroupChatCreateInput>): st
   const errors: string[] = [];
 
   if (!input.name || input.name.trim() === '') {
-    errors.push('群聊名称不能为空');
+    errors.push(t('groupChat.nameRequired'));
   } else if (input.name.length > 50) {
-    errors.push('群聊名称不能超过 50 字符');
+    errors.push(t('groupChat.nameTooLong'));
   }
 
   if (
@@ -120,14 +121,14 @@ export function validateGroupChatInput(input: Partial<GroupChatCreateInput>): st
     (input.memberIds.length < MIN_GROUP_MEMBERS ||
       input.memberIds.length > MAX_GROUP_MEMBERS)
   ) {
-    errors.push(`群聊成员数必须在 ${MIN_GROUP_MEMBERS}-${MAX_GROUP_MEMBERS} 之间`);
+    errors.push(t('groupChat.memberCount', { min: MIN_GROUP_MEMBERS, max: MAX_GROUP_MEMBERS }));
   }
 
   // 检查成员 ID 是否有重复
   if (input.memberIds) {
     const unique = new Set(input.memberIds);
     if (unique.size !== input.memberIds.length) {
-      errors.push('群聊成员不能有重复');
+      errors.push(t('groupChat.memberDuplicate'));
     }
   }
 

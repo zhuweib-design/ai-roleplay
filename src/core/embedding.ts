@@ -14,6 +14,8 @@
  *   standing 前缀 → 与 DeepSeek-Reasonix 的 append-only 契约一致,保证前缀缓存命中
  */
 
+import { t } from '@/i18n';
+
 // ── 向量与存储 ──
 
 export interface EmbeddingVector {
@@ -135,14 +137,14 @@ export class GatewayEmbeddingProvider implements EmbeddingProvider {
     });
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(`嵌入失败 ${res.status}: ${body.slice(0, 200)}`);
+      throw new Error(t('core.embedFailed', { status: res.status, body: body.slice(0, 200) }));
     }
     const data = (await res.json()) as {
       data?: Array<{ embedding: number[] }>;
     };
     const values = data.data?.[0]?.embedding;
     if (!Array.isArray(values) || values.length === 0) {
-      throw new Error('嵌入响应缺少 embedding 数据');
+      throw new Error(t('core.embedMissingData'));
     }
     return { dim: values.length, values };
   }
@@ -158,7 +160,7 @@ export class GatewayEmbeddingProvider implements EmbeddingProvider {
     });
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(`批量嵌入失败 ${res.status}: ${body.slice(0, 200)}`);
+      throw new Error(t('core.batchEmbedFailed', { status: res.status, body: body.slice(0, 200) }));
     }
     const data = (await res.json()) as {
       data?: Array<{ embedding: number[] }>;

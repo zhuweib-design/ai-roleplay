@@ -11,6 +11,7 @@
  */
 
 import { ApiError, type ApiErrorKind } from './types';
+import { t } from '@/i18n';
 
 export interface ApiErrorDiagnostics {
   /** 错误分类（用于 UI 图标/颜色） */
@@ -26,74 +27,74 @@ export interface ApiErrorDiagnostics {
 const DIAGNOSTICS_MAP: Record<ApiErrorKind, Omit<ApiErrorDiagnostics, 'description'>> = {
   aborted: {
     kind: 'aborted',
-    title: '已停止生成',
-    suggestions: ['点击重新生成可继续对话'],
+    title: t('diag.abortedTitle'),
+    suggestions: [t('diag.abortedSug1')],
   },
   'invalid-url': {
     kind: 'invalid-url',
-    title: 'API 地址格式错误',
+    title: t('diag.invalidUrlTitle'),
     suggestions: [
-      '检查 baseUrl 是否以 http:// 或 https:// 开头',
-      '确保地址中无空格（如需空格需进行 URL 编码）',
-      '常见格式：https://api.openai.com 或 https://api.deepseek.com',
+      t('diag.invalidUrlSug1'),
+      t('diag.invalidUrlSug2'),
+      t('diag.invalidUrlSug3'),
     ],
   },
   network: {
     kind: 'network',
-    title: '网络请求失败',
+    title: t('diag.networkTitle'),
     suggestions: [
-      '1. 检查网络连接是否正常',
-      '2. 确认 API 地址可达（可在浏览器中直接访问测试）',
-      '3. 若使用跨域 API，需服务商在响应头中允许 CORS',
-      '4. 检查 HTTPS 证书是否有效（避免混合内容拦截）',
-      '5. Tauri 版本可绕过 CORS（推荐用于第三方 API）',
+      t('diag.networkSug1'),
+      t('diag.networkSug2'),
+      t('diag.networkSug3'),
+      t('diag.networkSug4'),
+      t('diag.networkSug5'),
     ],
   },
   cors: {
     kind: 'cors',
-    title: '跨域请求被拦截',
+    title: t('diag.corsTitle'),
     suggestions: [
-      '浏览器禁止跨域调用此 API',
-      '方案1：使用 Tauri 桌面端绕过 CORS 限制',
-      '方案2：联系 API 服务商开放 CORS 头（Access-Control-Allow-Origin）',
-      '方案3：自建反向代理服务器转发请求',
+      t('diag.corsSug1'),
+      t('diag.corsSug2'),
+      t('diag.corsSug3'),
+      t('diag.corsSug4'),
     ],
   },
   auth: {
     kind: 'auth',
-    title: 'API Key 未授权',
+    title: t('diag.authTitle'),
     suggestions: [
-      '1. 检查 API Key 是否正确（在设置 → API 配置中重新输入）',
-      '2. 确认 API Key 未过期或被禁用',
-      '3. 检查账户余额或配额是否充足',
-      '4. 确认 API Key 有访问所选模型的权限',
+      t('diag.authSug1'),
+      t('diag.authSug2'),
+      t('diag.authSug3'),
+      t('diag.authSug4'),
     ],
   },
   'rate-limit': {
     kind: 'rate-limit',
-    title: '调用频率超限',
+    title: t('diag.rateLimitTitle'),
     suggestions: [
-      '1. 稍等几秒后重试',
-      '2. 检查 API 调用频率是否超出服务商限制',
-      '3. 升级 API 账户的速率限制等级',
+      t('diag.rateLimitSug1'),
+      t('diag.rateLimitSug2'),
+      t('diag.rateLimitSug3'),
     ],
   },
   server: {
     kind: 'server',
-    title: 'API 服务器错误',
+    title: t('diag.serverTitle'),
     suggestions: [
-      '1. 服务商服务器临时故障，请稍后重试',
-      '2. 检查服务商状态页（status.openai.com 等）',
-      '3. 切换到其他 API Profile（设置 → API 配置）',
+      t('diag.serverSug1'),
+      t('diag.serverSug2'),
+      t('diag.serverSug3'),
     ],
   },
   unknown: {
     kind: 'unknown',
-    title: '未知错误',
+    title: t('diag.unknownTitle'),
     suggestions: [
-      '1. 查看浏览器控制台获取详细错误信息（F12）',
-      '2. 检查请求参数是否正确（如模型名是否有效）',
-      '3. 若持续失败，请反馈给开发者',
+      t('diag.unknownSug1'),
+      t('diag.unknownSug2'),
+      t('diag.unknownSug3'),
     ],
   },
 };

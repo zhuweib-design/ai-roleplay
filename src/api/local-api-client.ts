@@ -1,5 +1,6 @@
 import type { ApiClient } from './api-client';
 import type { ChatRequest, ChatStream, ChatStreamEvent } from './types';
+import { t } from '@/i18n';
 
 /** local-model store 实例类型（动态导入避免运行时拉取 WebLLM 链） */
 type LocalStore = ReturnType<typeof import('@/stores/local-model').useLocalModelStore>;
@@ -25,11 +26,11 @@ export class LocalApiClient implements ApiClient {
     const { useLocalModelStore } = await import('@/stores/local-model');
     const store = useLocalModelStore();
     if (!store.isAvailable) {
-      throw new Error('本地推理引擎不可用（WebLLM 需要 WebGPU/WASM 支持），请先在设置页检测引擎');
+      throw new Error(t('core.localEngineUnavailable'));
     }
     if (store.loadedModelId !== this.modelId) {
       const ok = await store.loadModel(this.modelId);
-      if (!ok) throw new Error(store.lastError ?? `本地模型「${this.modelId}」加载失败`);
+      if (!ok) throw new Error(store.lastError ?? t('core.localModelLoadFailed', { id: this.modelId }));
     }
     return store;
   }
@@ -64,7 +65,7 @@ export class LocalApiClient implements ApiClient {
 
     // 用户中止:入队 error 事件,唤醒等待
     const abortHandler = () => {
-      queue.push({ type: 'error', error: '已停止生成' });
+      queue.push({ type: 'error', error: t('core.stoppedGenerating') });
       wake();
     };
     if (request.signal?.aborted) {
