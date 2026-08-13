@@ -53,6 +53,7 @@ import {
   MAX_RELATIONS_COUNT,
 } from '@core/protagonist';
 import { usePersonaStore } from '@/stores/persona';
+import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useStoryStore();
@@ -73,7 +74,7 @@ const quickGenResult = ref<{ worldId: string | null; charId: string | null } | n
 async function handleQuickSetup() {
   if (quickGenRunning.value) return;
   if (!hasApiProfile.value) {
-    showToast('error', '请先在设置页配置 API 后使用一键生成');
+    showToast('error', t('story.quickApiRequired'));
     return;
   }
   quickGenRunning.value = true;
@@ -104,12 +105,12 @@ async function handleQuickSetup() {
     );
     quickGenResult.value = { worldId, charId };
     if (worldId && charId) {
-      showToast('success', '一键生成完成：世界书与主角已就绪');
+      showToast('success', t('story.quickDone'));
     } else {
-      showToast('error', '部分生成失败：请查看各模块提示');
+      showToast('error', t('story.quickPartial'));
     }
   } catch (err) {
-    showToast('error', `一键生成失败：${err instanceof Error ? err.message : String(err)}`);
+    showToast('error', t('story.quickFailed', { error: err instanceof Error ? err.message : String(err) }));
   } finally {
     quickGenRunning.value = false;
   }
@@ -242,10 +243,10 @@ const stories = computed(() => store.filteredStories);
 
 // ── 需求1：分类 Tab 筛选（按故事分析状态） ─────────────────────────
 const STATUS_LABELS: Record<'pending' | 'analyzing' | 'completed' | 'failed', string> = {
-  pending: '待分析',
-  analyzing: '分析中',
-  completed: '已完成',
-  failed: '失败',
+  pending: t('story.statusPending'),
+  analyzing: t('story.statusAnalyzing'),
+  completed: t('story.statusCompleted'),
+  failed: t('story.statusFailed'),
 };
 
 const statusFilterTabs = computed<FilterTab[]>(() => {
@@ -285,7 +286,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 
 function openUploadModal() {
   if (!hasApiProfile.value) {
-    showToast('error', '请先在设置页配置 API 连接后再上传故事');
+    showToast('error', t('story.apiRequired'));
     return;
   }
   selectedDepth.value = 'standard';
@@ -325,32 +326,32 @@ async function loadFileContent(file: File) {
   const ext = getExtension(file.name);
   const supportedExts = ['txt', 'md', 'markdown', 'text'];
   if (!supportedExts.includes(ext)) {
-    showToast('error', `不支持的文件类型：.${ext}（支持 ${supportedExts.join(', ')}）`);
+    showToast('error', t('story.unsupportedExt', { ext, supported: supportedExts.join(', ') }));
     return;
   }
 
   const MAX_STORY_FILE_SIZE = 10 * 1024 * 1024;
   if (file.size > MAX_STORY_FILE_SIZE) {
-    showToast('error', `文件大小超过限制（${MAX_STORY_FILE_SIZE / 1024 / 1024}MB）`);
+    showToast('error', t('story.fileTooLarge', { size: MAX_STORY_FILE_SIZE / 1024 / 1024 }));
     return;
   }
 
   try {
     const text = await file.text();
     if (text.trim().length === 0) {
-      showToast('error', '文件内容为空');
+      showToast('error', t('story.fileEmpty'));
       return;
     }
     selectedFile.value = file;
     fileText.value = text;
   } catch (err) {
-    showToast('error', `读取文件失败：${err instanceof Error ? err.message : String(err)}`);
+    showToast('error', t('story.readFailed', { error: err instanceof Error ? err.message : String(err) }));
   }
 }
 
 async function handleUpload() {
   if (!selectedFile.value || !fileText.value) {
-    showToast('error', '请选择文件');
+    showToast('error', t('story.selectFile'));
     return;
   }
 
@@ -382,7 +383,7 @@ async function handleUpload() {
 
 function handleCancelAnalysis() {
   store.cancelAnalysis();
-  showToast('info', '已请求取消分析');
+  showToast('info', t('story.cancelRequested'));
 }
 
 function confirmDelete(id: string) {
@@ -395,7 +396,7 @@ async function handleDelete() {
   await store.deleteStory(deleteTargetId.value);
   deleteModalOpen.value = false;
   deleteTargetId.value = null;
-  showToast('success', '故事已删除');
+  showToast('success', t('story.deleted'));
 }
 
 function toggleExpand(id: string) {
@@ -411,11 +412,10 @@ function formatDateTime(ts: number): string {
 }
 
 function formatCharCount(n: number): string {
-  if (n < 1000) return `${n} 字`;
-  if (n < 10000) return `${(n / 1000).toFixed(1)}K 字`;
-  return `${(n / 10000).toFixed(1)}W 字`;
+  if (n < 1000) return t('story.charCount', { count: n });
+  if (n < 10000) return t('story.charCountK', { count: (n / 1000).toFixed(1) });
+  return t('story.charCountW', { count: (n / 10000).toFixed(1) });
 }
-
 function getDepthMeta(depth: AnalysisDepth): AnalysisDepthMeta | undefined {
   return ANALYSIS_DEPTHS.find((d) => d.id === depth);
 }
@@ -423,13 +423,13 @@ function getDepthMeta(depth: AnalysisDepth): AnalysisDepthMeta | undefined {
 function getStatusLabel(status: StoryAnalysisResult['status']): string {
   switch (status) {
     case 'pending':
-      return '待分析';
+      return t('story.statusPending');
     case 'analyzing':
-      return '分析中';
+      return t('story.statusAnalyzing');
     case 'completed':
-      return '已完成';
+      return t('story.statusCompleted');
     case 'failed':
-      return '已失败';
+      return t('story.statusFailed');
     default:
       return status;
   }
@@ -484,7 +484,7 @@ function handleImport() {
   }
 
   if (needsLorebook.value && !importLorebookId.value) {
-    showToast('error', '请先选择目标 Lorebook');
+    showToast('error', t('story.needLorebook'));
     return;
   }
 
@@ -519,31 +519,31 @@ function handleImport() {
 
 function getImportCategoryLabel(cat: typeof importCategory.value): string {
   const labels: Record<typeof importCategory.value, string> = {
-    all: '全部',
-    world: '世界',
-    scenes: '场景',
-    characters: '人物',
-    events: '事件',
-    scripts: '脚本',
+    all: t('story.catAll'),
+    world: t('story.catWorld'),
+    scenes: t('story.catScenes'),
+    characters: t('story.catCharacters'),
+    events: t('story.catEvents'),
+    scripts: t('story.catScripts'),
   };
   return labels[cat] ?? cat;
 }
 
 function getStrategyLabel(s: ImportConflictStrategy): string {
   const labels: Record<ImportConflictStrategy, string> = {
-    add: '新增（不覆盖）',
-    overwrite: '覆盖（替换同名）',
-    merge: '合并（追加内容）',
+    add: t('story.strategyAdd'),
+    overwrite: t('story.strategyOverwrite'),
+    merge: t('story.strategyMerge'),
   };
   return labels[s] ?? s;
 }
 
 function getResultLabel(type: ImportResult['type']): string {
   const labels: Record<ImportResult['type'], string> = {
-    character: '角色',
-    lorebook: '世界',
-    event: '事件',
-    scene: '场景',
+    character: t('story.resultTypeChar'),
+    lorebook: t('story.resultTypeLorebook'),
+    event: t('story.resultTypeEvent'),
+    scene: t('story.resultTypeScene'),
   };
   return labels[type] ?? type;
 }
@@ -584,7 +584,7 @@ function openProtagonistModal(storyId: string, characterName?: string) {
 
   const story = store.stories.find((s) => s.id === storyId);
   if (!story) {
-    showToast('error', '找不到目标故事');
+    showToast('error', t('story.storyNotFound'));
     return;
   }
 
@@ -665,11 +665,11 @@ function handleAddRelation() {
   const target = newRelationTarget.value.trim();
   const relation = newRelationDesc.value.trim();
   if (!target || !relation) {
-    showToast('error', '请填写目标人物和关系描述');
+    showToast('error', t('story.needRelationFields'));
     return;
   }
   if (protagonistRelations.value.length >= MAX_RELATIONS_COUNT) {
-    showToast('error', `关系条目数已达上限 ${MAX_RELATIONS_COUNT}`);
+    showToast('error', t('story.relationLimit', { max: MAX_RELATIONS_COUNT }));
     return;
   }
   protagonistRelations.value = addRelationCore(
@@ -692,7 +692,7 @@ function handleRemoveRelation(target: string) {
 /** 保存主角配置 */
 function handleSaveProtagonist() {
   if (!protagonistTargetStoryId.value || !protagonistFormDraft.value) {
-    showToast('error', '请先完成主角配置');
+    showToast('error', t('story.completeFirst'));
     return;
   }
 
@@ -701,7 +701,7 @@ function handleSaveProtagonist() {
   const errors = validateProtagonist(draft, protagonistTargetStory.value ?? undefined);
   if (errors.length > 0) {
     protagonistFormErrors.value = errors;
-    showToast('error', `校验失败：${errors[0]}`);
+    showToast('error', t('story.validateFailed', { error: errors[0] }));
     return;
   }
   protagonistFormErrors.value = [];
@@ -772,7 +772,7 @@ function handleClearProtagonist(storyId: string) {
 function handleActivateProtagonistPersona(storyId: string) {
   const story = store.stories.find((s) => s.id === storyId);
   if (!story?.protagonist?.personaId) {
-    showToast('error', '尚未关联主角 Persona');
+    showToast('error', t('story.personaNotLinked'));
     return;
   }
   personaStore.setActivePersona(story.protagonist.personaId);
@@ -786,7 +786,7 @@ function buildProtagonistPromptForPersona(config: ProtagonistConfig): string {
 }
 
 function getProtagonistRoleLabel(role: ProtagonistRole): string {
-  return role === 'protagonist' ? '主角' : '旁观者';
+  return role === 'protagonist' ? t('story.roleProtagonist') : t('story.roleObserver');
 }
 
 // ── F16.4 故事时间配置 UI 状态 ──
@@ -808,9 +808,9 @@ function handleBindWorldBook(storyId: string, worldBookId: string): void {
   if (ok) {
     if (worldBookId) {
       const lbName = lorebookStore.lorebooks.find((l) => l.id === worldBookId)?.name ?? worldBookId;
-      showToast('success', `已关联世界书：${lbName}`);
+      showToast('success', t('story.boundWorldbookOk', { name: lbName }));
     } else {
-      showToast('info', '已解除世界书关联');
+      showToast('info', t('story.unboundWorldbook'));
     }
   } else if (store.lastError) {
     showToast('error', store.lastError);
@@ -819,7 +819,7 @@ function handleBindWorldBook(storyId: string, worldBookId: string): void {
 
 /** 主角来源标签 */
 function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
-  return source === 'existing' ? '故事人物' : '自定义';
+  return source === 'existing' ? t('story.sourceExisting') : t('story.sourceCustom');
 }
 </script>
 
@@ -831,51 +831,51 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
         <button
           type="button"
           class="header-btn back"
-          aria-label="返回对话页"
+          :aria-label="t('story.backAria')"
           @click="goBack"
         >
           <Icon name="arrow-left" :size="16" />
-          <span class="btn-label">返回</span>
+          <span class="btn-label">{{ t('story.back') }}</span>
         </button>
-        <h1>故事引擎</h1>
-        <span class="header-count">{{ store.stories.length }} 个故事</span>
+        <h1>{{ t('story.title') }}</h1>
+        <span class="header-count">{{ t('story.count', { count: store.stories.length }) }}</span>
       </div>
 
       <div class="header-actions">
         <button
           type="button"
           class="header-btn upload-btn"
-          aria-label="上传小说"
+          :aria-label="t('story.uploadAria')"
           :disabled="isAnalyzing"
           @click="openUploadModal"
         >
           <Icon name="upload" :size="16" />
-          <span class="btn-label">上传小说</span>
+          <span class="btn-label">{{ t('story.upload') }}</span>
         </button>
       </div>
     </header>
 
     <!-- T-08: 一键生成设定（世界书 + 主角角色卡）-->
-    <section class="quick-setup-panel" aria-label="一键生成设定">
+    <section class="quick-setup-panel" :aria-label="t('story.quickAria')">
       <div class="quick-setup-head">
         <Icon name="book-open" :size="16" />
-        <span class="quick-setup-title">一键生成可玩设定</span>
-        <span class="quick-setup-hint">从世界书到主角角色卡，10 分钟出可玩场景</span>
+        <span class="quick-setup-title">{{ t('story.quickTitle') }}</span>
+        <span class="quick-setup-hint">{{ t('story.quickHint') }}</span>
       </div>
       <div class="quick-setup-body">
-        <div class="template-pills" role="radiogroup" aria-label="选择生成模板">
+        <div class="template-pills" role="radiogroup" :aria-label="t('story.quickTemplateAria')">
           <button
-            v-for="t in CHARACTER_TEMPLATES"
-            :key="t.id"
+            v-for="tpl in CHARACTER_TEMPLATES"
+            :key="tpl.id"
             type="button"
             role="radio"
-            :aria-checked="quickGenTemplate === t.id"
+            :aria-checked="quickGenTemplate === tpl.id"
             class="template-pill"
-            :class="{ active: quickGenTemplate === t.id }"
-            :title="t.description"
-            @click="quickGenTemplate = t.id"
+            :class="{ active: quickGenTemplate === tpl.id }"
+            :title="tpl.description"
+            @click="quickGenTemplate = tpl.id"
           >
-            {{ t.label }}
+            {{ tpl.label }}
           </button>
         </div>
         <button
@@ -885,7 +885,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
           @click="handleQuickSetup"
         >
           <Icon name="refresh-cw" :size="16" :class="{ spinning: quickGenRunning }" />
-          <span class="btn-label">{{ quickGenRunning ? '生成中…' : '一键生成' }}</span>
+          <span class="btn-label">{{ quickGenRunning ? t('story.generating') : t('story.quickGenerate') }}</span>
         </button>
       </div>
       <!-- 生成结果：提供跳转入口 -->
@@ -896,15 +896,15 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
         aria-live="polite"
       >
         <span v-if="quickGenResult.worldId" class="result-item">
-          ✓ 世界书已生成
-          <button type="button" class="result-link" @click="router.push({ name: 'worldbook' })">查看 →</button>
+          {{ t('story.worldGenerated') }}
+          <button type="button" class="result-link" @click="router.push({ name: 'worldbook' })">{{ t('story.view') }}</button>
         </span>
-        <span v-else class="result-item fail">✗ 世界书生成失败</span>
+        <span v-else class="result-item fail">{{ t('story.worldFailed') }}</span>
         <span v-if="quickGenResult.charId" class="result-item">
-          ✓ 主角已生成
-          <button type="button" class="result-link" @click="router.push({ name: 'character-list' })">查看 →</button>
+          {{ t('story.charGenerated') }}
+          <button type="button" class="result-link" @click="router.push({ name: 'character-list' })">{{ t('story.view') }}</button>
         </span>
-        <span v-else class="result-item fail">✗ 主角生成失败</span>
+        <span v-else class="result-item fail">{{ t('story.charFailed') }}</span>
       </div>
     </section>
 
@@ -914,9 +914,9 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
       <input
         type="text"
         class="search-input"
-        placeholder="搜索故事名或世界名…"
+        :placeholder="t('story.searchPlaceholder')"
         :value="store.searchQuery"
-        aria-label="搜索故事"
+        :aria-label="t('story.searchAria')"
         @input="store.setSearchQuery(($event.target as HTMLInputElement).value)"
       />
     </div>
@@ -926,8 +926,8 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
       v-if="statusFilterTabs.length > 0"
       v-model="filterStatus"
       :tabs="statusFilterTabs"
-      label="按状态筛选故事"
-      all-label="全部"
+      :label="t('story.filterLabel')"
+      :all-label="t('story.filterAll')"
       :all-value="''"
       :all-count="store.stories.length"
     />
@@ -937,7 +937,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
       v-if="isAnalyzing"
       class="progress-panel"
       role="region"
-      aria-label="分析进度"
+      :aria-label="t('story.progressAria')"
     >
       <div class="progress-header">
         <Icon name="refresh-cw" :size="16" class="progress-icon" />
@@ -945,11 +945,11 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
         <button
           type="button"
           class="cancel-btn"
-          aria-label="取消分析"
+          :aria-label="t('story.cancelAria')"
           @click="handleCancelAnalysis"
         >
           <Icon name="stop" :size="14" />
-          <span>取消</span>
+          <span>{{ t('story.cancel') }}</span>
         </button>
       </div>
       <div
@@ -958,34 +958,34 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
         :aria-valuenow="progress.completed"
         :aria-valuemin="0"
         :aria-valuemax="progress.total"
-        :aria-label="`已完成 ${progress.completed} / ${progress.total} 块`"
+        :aria-label="t('story.progressLabel', { completed: progress.completed, total: progress.total })"
       >
         <div class="progress-fill" :style="{ width: `${progressPercent}%` }" />
       </div>
       <div class="progress-meta">
-        {{ progress.completed }} / {{ progress.total }} 块 · {{ progressPercent }}%
+        {{ t('story.progressMeta', { completed: progress.completed, total: progress.total, percent: progressPercent }) }}
       </div>
     </div>
 
     <!-- 故事列表 -->
-    <main class="story-main" aria-label="故事列表">
+    <main class="story-main" :aria-label="t('story.listAria')">
       <!-- 空状态 -->
       <div v-if="store.stories.length === 0" class="empty-state">
         <Icon name="book-open" :size="48" class="empty-icon" />
-        <p class="empty-text">还没有上传任何故事</p>
-        <p class="empty-hint">上传 TXT/MD 小说文件，AI 将自动提取人物、场景、事件等结构化信息</p>
+        <p class="empty-text">{{ t('story.emptyText') }}</p>
+        <p class="empty-hint">{{ t('story.emptyHint') }}</p>
         <button
           type="button"
           class="header-btn upload-btn"
           @click="openUploadModal"
         >
           <Icon name="upload" :size="16" />
-          <span class="btn-label">上传第一个故事</span>
+          <span class="btn-label">{{ t('story.uploadFirst') }}</span>
         </button>
       </div>
 
       <!-- 故事卡片 -->
-      <section v-else class="story-grid" aria-label="故事卡片列表">
+      <section v-else class="story-grid" :aria-label="t('story.cardsAria')">
         <article
           v-for="story in stories"
           :key="story.id"
@@ -1002,13 +1002,13 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                 </span>
                 · {{ getDepthMeta(story.depth)?.label ?? story.depth }}
                 · {{ formatCharCount(story.textLength) }}
-                · {{ story.chunkCount }} 块
+                · {{ t('story.chunkCount', { count: story.chunkCount }) }}
               </span>
             </div>
             <button
               type="button"
               class="card-expand"
-              :aria-label="expandedStoryId === story.id ? '收起详情' : '展开详情'"
+              :aria-label="expandedStoryId === story.id ? t('story.collapse') : t('story.expand')"
               :aria-expanded="expandedStoryId === story.id"
                 @click="toggleExpand(story.id)"
               >
@@ -1022,7 +1022,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             <div v-if="story.errors && story.errors.length > 0" class="detail-errors">
               <h4 class="detail-title">
                 <Icon name="alert-triangle" :size="14" />
-                错误信息（{{ story.errors.length }}）
+                {{ t('story.errorsTitle', { count: story.errors.length }) }}
               </h4>
               <ul class="error-list">
                 <li v-for="(err, idx) in story.errors" :key="idx" class="error-item">
@@ -1035,17 +1035,17 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             <section v-if="story.worldInfo" class="detail-section">
               <h4 class="detail-title">
                 <Icon name="globe" :size="14" />
-                世界：{{ story.worldInfo.name }}
+                {{ t('story.worldTitle', { name: story.worldInfo.name }) }}
               </h4>
               <p class="detail-desc">{{ story.worldInfo.description }}</p>
               <div v-if="story.worldInfo.type" class="detail-tags">
-                <span class="tag">类型：{{ story.worldInfo.type }}</span>
+                <span class="tag">{{ t('story.worldType', { type: story.worldInfo.type }) }}</span>
               </div>
               <div v-if="story.worldInfo.coreSettings && story.worldInfo.coreSettings.length > 0" class="detail-tags">
                 <span v-for="s in story.worldInfo.coreSettings" :key="s" class="tag">{{ s }}</span>
               </div>
               <div v-if="story.worldInfo.factions && story.worldInfo.factions.length > 0" class="detail-tags">
-                <span class="tag-label">势力：</span>
+                <span class="tag-label">{{ t('story.worldFactions') }}</span>
                 <span v-for="f in story.worldInfo.factions" :key="f" class="tag">{{ f }}</span>
               </div>
             </section>
@@ -1054,7 +1054,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             <section v-if="story.characters.length > 0" class="detail-section">
               <h4 class="detail-title">
                 <Icon name="user" :size="14" />
-                人物（{{ story.characters.length }}）
+                {{ t('story.charsTitle', { count: story.characters.length }) }}
               </h4>
               <div class="char-list">
                 <div v-for="(char, idx) in story.characters" :key="idx" class="char-item">
@@ -1063,12 +1063,12 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                       <div class="char-name">
                         {{ char.name }}
                         <span v-if="char.aliases && char.aliases.length > 0" class="char-aliases">
-                          （别名：{{ char.aliases.join('、') }}）
+                          {{ t('story.charAliases', { aliases: char.aliases.join('、') }) }}
                         </span>
                       </div>
                       <p v-if="char.description" class="char-desc">{{ char.description }}</p>
                       <div v-if="char.relationships && char.relationships.length > 0" class="char-relations">
-                        <span class="relation-label">关系：</span>
+                        <span class="relation-label">{{ t('story.relationsLabel') }}</span>
                         <span v-for="(rel, rIdx) in char.relationships" :key="rIdx" class="relation">
                           {{ rel.target }}（{{ rel.relation }}）
                         </span>
@@ -1078,12 +1078,12 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                       v-if="story.status === 'completed'"
                       type="button"
                       class="char-set-protagonist-btn"
-                      :aria-label="`将 ${char.name} 设为主角`"
+                      :aria-label="t('story.setProtagonistAria', { name: char.name })"
                       :disabled="isAnalyzing"
                       @click="openProtagonistModal(story.id, char.name)"
                     >
                       <Icon name="user" :size="12" />
-                      <span>设为主角</span>
+                      <span>{{ t('story.setProtagonist') }}</span>
                     </button>
                   </div>
                 </div>
@@ -1094,7 +1094,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             <section v-if="story.protagonist" class="detail-section protagonist-section">
               <h4 class="detail-title">
                 <Icon name="user" :size="14" />
-                主角配置
+                {{ t('story.protagonistTitle') }}
               </h4>
               <div class="protagonist-card">
                 <div class="protagonist-header">
@@ -1110,11 +1110,11 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                   {{ story.protagonist.description }}
                 </p>
                 <div v-if="story.protagonist.startingScene" class="protagonist-meta">
-                  <span class="meta-label">起始场景：</span>
+                  <span class="meta-label">{{ t('story.startingScene') }}</span>
                   <span class="meta-value">{{ story.protagonist.startingScene }}</span>
                 </div>
                 <div v-if="story.protagonist.relations.length > 0" class="protagonist-relations">
-                  <span class="meta-label">关系：</span>
+                  <span class="meta-label">{{ t('story.relations') }}</span>
                   <ul class="relation-list">
                     <li
                       v-for="(rel, idx) in story.protagonist.relations"
@@ -1127,8 +1127,8 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                   </ul>
                 </div>
                 <div v-if="story.protagonist.personaId" class="protagonist-meta">
-                  <span class="meta-label">关联 Persona：</span>
-                  <span class="meta-value">已创建（可点击下方"激活主角身份"切换）</span>
+                  <span class="meta-label">{{ t('story.personaLinked') }}</span>
+                  <span class="meta-value">{{ t('story.personaCreated') }}</span>
                 </div>
                 <div class="protagonist-actions">
                   <button
@@ -1137,7 +1137,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                     @click="openProtagonistModal(story.id)"
                   >
                     <Icon name="pencil" :size="12" />
-                    编辑主角
+                    {{ t('story.editProtagonist') }}
                   </button>
                   <button
                     v-if="story.protagonist.personaId"
@@ -1146,7 +1146,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                     @click="handleActivateProtagonistPersona(story.id)"
                   >
                     <Icon name="check" :size="12" />
-                    激活主角身份
+                    {{ t('story.activatePersona') }}
                   </button>
                   <button
                     type="button"
@@ -1154,7 +1154,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                     @click="handleClearProtagonist(story.id)"
                   >
                     <Icon name="trash-2" :size="12" />
-                    清除
+                    {{ t('story.clear') }}
                   </button>
                 </div>
               </div>
@@ -1164,30 +1164,30 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             <section v-if="story.status === 'completed'" class="detail-section worldbook-bind-section">
               <h4 class="detail-title">
                 <Icon name="book-open" :size="14" />
-                关联世界书
+                {{ t('story.bindWorldbook') }}
               </h4>
               <div class="form-row">
-                <label :for="`bindWorldBook-${story.id}`" class="form-label">选择世界书</label>
+                <label :for="`bindWorldBook-${story.id}`" class="form-label">{{ t('story.bindLabel') }}</label>
                 <select
                   :id="`bindWorldBook-${story.id}`"
                   class="form-select"
                   :value="story.boundWorldBookId ?? ''"
                   @change="handleBindWorldBook(story.id, ($event.target as HTMLSelectElement).value)"
                 >
-                  <option value="">不关联（使用故事自带世界信息）</option>
+                  <option value="">{{ t('story.bindNone') }}</option>
                   <option
                     v-for="lb in availableLorebooks"
                     :key="lb.id"
                     :value="lb.id"
                   >
-                    {{ lb.name }}（{{ lb.entries.length }} 条）
+                    {{ t('story.bindEntryCount', { name: lb.name, count: lb.entries.length }) }}
                   </option>
                 </select>
                 <p class="form-hint">
-                  关联后，故事引擎和随机事件将基于该世界书内容进行逻辑联动与内容生成
+                  {{ t('story.bindHint') }}
                 </p>
                 <p v-if="story.boundWorldBookId" class="form-hint success-hint">
-                  当前已关联：{{ getBoundWorldBookName(story.id) }}
+                  {{ t('story.bindCurrent', { name: getBoundWorldBookName(story.id) }) }}
                 </p>
               </div>
             </section>
@@ -1198,7 +1198,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             <section v-if="story.scenes.length > 0" class="detail-section">
               <h4 class="detail-title">
                 <Icon name="map-pin" :size="14" />
-                场景（{{ story.scenes.length }}）
+                {{ t('story.scenesTitle', { count: story.scenes.length }) }}
               </h4>
               <div class="scene-list">
                 <div v-for="(scene, idx) in story.scenes" :key="idx" class="scene-item">
@@ -1216,7 +1216,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             <section v-if="story.events.length > 0" class="detail-section">
               <h4 class="detail-title">
                 <Icon name="calendar-check" :size="14" />
-                事件（{{ story.events.length }}）
+                {{ t('story.eventsTitle', { count: story.events.length }) }}
               </h4>
               <ol class="event-list">
                 <li v-for="(event, idx) in story.events" :key="idx" class="event-item">
@@ -1227,10 +1227,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                   </div>
                   <p v-if="event.description" class="event-desc">{{ event.description }}</p>
                   <div v-if="event.characters.length > 0" class="event-meta">
-                    参与：{{ event.characters.join('、') }}
+                    {{ t('story.eventParticipants', { names: event.characters.join('、') }) }}
                   </div>
                   <div v-if="event.scene" class="event-meta">
-                    场景：{{ event.scene }}
+                    {{ t('story.eventScene', { name: event.scene }) }}
                   </div>
                 </li>
               </ol>
@@ -1240,7 +1240,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             <section v-if="story.scripts.length > 0" class="detail-section">
               <h4 class="detail-title">
                 <Icon name="git-branch" :size="14" />
-                故事脚本（{{ story.scripts.length }}）
+                {{ t('story.scriptsTitle', { count: story.scripts.length }) }}
               </h4>
               <div class="script-list">
                 <div v-for="(script, idx) in story.scripts" :key="idx" class="script-item">
@@ -1250,10 +1250,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                   </div>
                   <p v-if="script.content" class="script-content">{{ script.content }}</p>
                   <div v-if="script.characters.length > 0" class="script-meta">
-                    涉及人物：{{ script.characters.join('、') }}
+                    {{ t('story.scriptChars', { names: script.characters.join('、') }) }}
                   </div>
                   <div v-if="script.scenes.length > 0" class="script-meta">
-                    涉及场景：{{ script.scenes.join('、') }}
+                    {{ t('story.scriptScenes', { names: script.scenes.join('、') }) }}
                   </div>
                 </div>
               </div>
@@ -1261,8 +1261,8 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 
             <!-- 元信息 -->
             <div class="detail-meta">
-              <span>创建：{{ formatDateTime(story.createdAt) }}</span>
-              <span v-if="story.completedAt">完成：{{ formatDateTime(story.completedAt) }}</span>
+              <span>{{ t('story.createdAt', { time: formatDateTime(story.createdAt) }) }}</span>
+              <span v-if="story.completedAt">{{ t('story.completedAt', { time: formatDateTime(story.completedAt) }) }}</span>
             </div>
           </div>
 
@@ -1271,33 +1271,33 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
               v-if="story.status === 'completed'"
               type="button"
               class="card-btn import-btn"
-              aria-label="导入分析结果"
+              :aria-label="t('story.importResultAria')"
               :disabled="isAnalyzing"
               @click="openImportModal(story.id)"
             >
               <Icon name="download" :size="14" />
-              <span>导入结果</span>
+              <span>{{ t('story.importResult') }}</span>
             </button>
             <button
               v-if="story.status === 'completed'"
               type="button"
               class="card-btn protagonist-btn"
-              :aria-label="story.protagonist ? '编辑主角配置' : '设置主角'"
+              :aria-label="story.protagonist ? t('story.editProtagonistBtn') : t('story.setProtagonistBtn')"
               :disabled="isAnalyzing"
               @click="openProtagonistModal(story.id)"
             >
               <Icon name="user" :size="14" />
-              <span>{{ story.protagonist ? '编辑主角' : '设置主角' }}</span>
+              <span>{{ story.protagonist ? t('story.editProtagonistBtn') : t('story.setProtagonistBtn') }}</span>
             </button>
             <button
               type="button"
               class="card-btn delete-btn"
-              aria-label="删除故事"
+              :aria-label="t('story.deleteAria')"
               :disabled="isAnalyzing"
               @click="confirmDelete(story.id)"
             >
               <Icon name="trash-2" :size="14" />
-              <span>删除</span>
+              <span>{{ t('story.delete') }}</span>
             </button>
           </div>
         </article>
@@ -1307,14 +1307,14 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
     <!-- 上传 Modal -->
     <Modal
       v-model="uploadModalOpen"
-      title="上传小说"
-      aria-label="上传小说进行结构化分析"
+      :title="t('story.uploadTitle')"
+      :aria-label="t('story.uploadAria2')"
     >
       <div class="upload-content">
         <!-- 分析深度选择 -->
         <fieldset class="depth-fieldset">
-          <legend class="depth-legend">分析深度</legend>
-          <div class="depth-options" role="radiogroup" aria-label="分析深度">
+          <legend class="depth-legend">{{ t('story.depthLegend') }}</legend>
+          <div class="depth-options" role="radiogroup" :aria-label="t('story.depthAria')">
             <label
               v-for="depth in ANALYSIS_DEPTHS"
               :key="depth.id"
@@ -1331,7 +1331,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                 <div class="depth-label">{{ depth.label }}</div>
                 <div class="depth-desc">{{ depth.description }}</div>
                 <div class="depth-token">
-                  预估 Token：{{ depth.tokenEstimate.min }} - {{ depth.tokenEstimate.max }}
+                  {{ t('story.depthToken', { min: depth.tokenEstimate.min, max: depth.tokenEstimate.max }) }}
                 </div>
               </div>
             </label>
@@ -1344,7 +1344,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
           :class="{ active: selectedFile !== null }"
           role="button"
           tabindex="0"
-          aria-label="点击选择文件或拖拽文件到此处"
+          :aria-label="t('story.dropAria')"
           @click="fileInput?.click()"
           @keydown.enter.prevent="fileInput?.click()"
           @keydown.space.prevent="fileInput?.click()"
@@ -1368,13 +1368,13 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             {{ selectedFile.name }}
             <span class="drop-meta">{{ formatCharCount(fileText.length) }}</span>
           </p>
-          <p v-else class="drop-text">点击选择或拖拽文件到此处</p>
-          <p class="drop-hint">支持 TXT/MD，单文件上限 10MB</p>
+          <p v-else class="drop-text">{{ t('story.dropText') }}</p>
+          <p class="drop-hint">{{ t('story.dropHint') }}</p>
         </div>
 
         <div class="upload-actions">
           <button type="button" class="btn btn-secondary" @click="closeUploadModal">
-            取消
+            {{ t('story.cancelBtn') }}
           </button>
           <button
             type="button"
@@ -1383,7 +1383,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             @click="handleUpload"
           >
             <Icon name="upload" :size="14" />
-            上传并分析
+            {{ t('story.uploadAnalyze') }}
           </button>
         </div>
       </div>
@@ -1392,18 +1392,18 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
     <!-- 删除确认 Modal -->
     <Modal
       v-model="deleteModalOpen"
-      title="确认删除"
-      aria-label="确认删除故事"
+      :title="t('story.deleteTitle')"
+      :aria-label="t('story.deleteAria2')"
     >
       <p class="confirm-text">
-        确定要删除这个故事吗？此操作不可撤销。
+        {{ t('story.deleteConfirm') }}
       </p>
       <div class="confirm-actions">
         <button type="button" class="btn btn-secondary" @click="deleteModalOpen = false">
-          取消
+          {{ t('story.cancelBtn') }}
         </button>
         <button type="button" class="btn btn-danger" @click="handleDelete">
-          删除
+          {{ t('story.delete') }}
         </button>
       </div>
     </Modal>
@@ -1411,13 +1411,13 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
     <!-- F16.2 导入 Modal -->
     <Modal
       v-model="importModalOpen"
-      title="导入分析结果"
-      aria-label="将故事分析结果导入到各功能模块"
+      :title="t('story.importTitle')"
+      :aria-label="t('story.importAria2')"
     >
       <div v-if="importTargetStory" class="import-content">
         <!-- 导入分类选择 -->
         <fieldset class="import-fieldset">
-          <legend>导入类别</legend>
+          <legend>{{ t('story.importCategory') }}</legend>
           <div class="category-grid">
             <label
               v-for="cat in (['all', 'world', 'scenes', 'characters', 'events', 'scripts'] as const)"
@@ -1440,25 +1440,25 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 
         <!-- Lorebook 选择（世界/场景/事件/全部需要） -->
         <div v-if="needsLorebook && importCategory !== 'scripts'" class="form-row">
-          <label for="importLorebook" class="form-label">目标 Lorebook</label>
+          <label for="importLorebook" class="form-label">{{ t('story.targetLorebook') }}</label>
           <select
             id="importLorebook"
             v-model="importLorebookId"
             class="form-select"
           >
-            <option value="" disabled>请选择 Lorebook…</option>
+            <option value="" disabled>{{ t('story.selectLorebook') }}</option>
             <option v-for="lb in availableLorebooks" :key="lb.id" :value="lb.id">
-              {{ lb.name || '未命名' }}（{{ lb.entries.length }} 条目）
+              {{ t('story.lorebookEntryCount', { name: lb.name || t('story.unnamedLorebook'), count: lb.entries.length }) }}
             </option>
           </select>
           <p v-if="availableLorebooks.length === 0" class="form-hint">
-            尚无 Lorebook，请先在「世界书」页面创建一个
+            {{ t('story.noLorebookHint') }}
           </p>
         </div>
 
         <!-- 冲突处理策略（脚本导出不需要） -->
         <fieldset v-if="importCategory !== 'scripts'" class="import-fieldset">
-          <legend>冲突处理策略</legend>
+          <legend>{{ t('story.strategyLegend') }}</legend>
           <div class="strategy-options">
             <label
               v-for="s in (['add', 'overwrite', 'merge'] as const)"
@@ -1474,12 +1474,12 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
         <!-- 脚本导出提示 -->
         <div v-if="importCategory === 'scripts'" class="script-export-hint">
           <Icon name="info" :size="16" />
-          <span>脚本将导出为 JSON 文件下载到本地</span>
+          <span>{{ t('story.scriptExportHint') }}</span>
         </div>
 
         <!-- 导入结果 -->
         <div v-if="importResultsVisible && importResults.length > 0" class="import-results">
-          <h4 class="results-title">导入结果</h4>
+          <h4 class="results-title">{{ t('story.resultsTitle') }}</h4>
           <ul class="results-list">
             <li
               v-for="(r, idx) in importResults"
@@ -1498,7 +1498,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
         <!-- 操作按钮 -->
         <div class="import-actions">
           <button type="button" class="btn btn-secondary" @click="closeImportModal">
-            关闭
+            {{ t('story.close') }}
           </button>
           <button
             type="button"
@@ -1506,7 +1506,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             :disabled="!canImport || (needsLorebook && !importLorebookId)"
             @click="handleImport"
           >
-            {{ importResultsVisible ? '重新导入' : '执行导入' }}
+            {{ importResultsVisible ? t('story.reimport') : t('story.execImport') }}
           </button>
         </div>
       </div>
@@ -1515,13 +1515,13 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
     <!-- F16.3 主角配置 Modal -->
     <Modal
       v-model="protagonistModalOpen"
-      :title="protagonistTargetStory?.protagonist ? '编辑主角配置' : '设置主角'"
-      aria-label="配置故事主角身份、关系与起始场景"
+      :title="protagonistTargetStory?.protagonist ? t('story.protagonistEditTitle') : t('story.protagonistTitle2')"
+      :aria-label="t('story.protagonistAria')"
     >
       <div v-if="protagonistTargetStory" class="protagonist-form">
         <!-- 主角来源选择 -->
         <fieldset class="import-fieldset">
-          <legend>主角来源</legend>
+          <legend>{{ t('story.sourceLegend') }}</legend>
           <div class="strategy-options">
             <label class="strategy-option">
               <input
@@ -1531,7 +1531,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                 :checked="protagonistFormMode === 'existing'"
                 @change="handleProtagonistModeChange('existing')"
               />
-              <span>从故事人物选择</span>
+              <span>{{ t('story.sourceFromChar') }}</span>
             </label>
             <label class="strategy-option">
               <input
@@ -1541,21 +1541,21 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                 :checked="protagonistFormMode === 'custom'"
                 @change="handleProtagonistModeChange('custom')"
               />
-              <span>自定义新角色</span>
+              <span>{{ t('story.sourceCustomNew') }}</span>
             </label>
           </div>
         </fieldset>
 
         <!-- 主角名选择/输入 -->
         <div v-if="protagonistFormMode === 'existing'" class="form-row">
-          <label for="protagonistCharSelect" class="form-label">选择人物</label>
+          <label for="protagonistCharSelect" class="form-label">{{ t('story.selectChar') }}</label>
           <select
             id="protagonistCharSelect"
             class="form-select"
             :value="protagonistSelectedCharName"
             @change="handleSelectedCharChange(($event.target as HTMLSelectElement).value)"
           >
-            <option value="" disabled>请选择…</option>
+            <option value="" disabled>{{ t('story.selectPlaceholder') }}</option>
             <option
               v-for="name in protagonistCharacterOptions"
               :key="name"
@@ -1565,12 +1565,12 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             </option>
           </select>
           <p v-if="protagonistCharacterOptions.length === 0" class="form-hint">
-            故事中暂无人物，请先分析故事或切换到"自定义新角色"
+            {{ t('story.noCharHint') }}
           </p>
         </div>
         <div v-else class="form-row">
           <label for="protagonistNameInput" class="form-label">
-            主角名（最多 {{ MAX_PROTAGONIST_NAME_LENGTH }} 字符）
+            {{ t('story.protagNameLabel', { max: MAX_PROTAGONIST_NAME_LENGTH }) }}
           </label>
           <input
             id="protagonistNameInput"
@@ -1578,13 +1578,13 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             class="form-input"
             v-model="protagonistName"
             :maxlength="MAX_PROTAGONIST_NAME_LENGTH"
-            placeholder="如：李雷"
+            :placeholder="t('story.protagNamePlaceholder')"
           />
         </div>
 
         <!-- 主角身份 -->
         <fieldset class="import-fieldset">
-          <legend>主角身份</legend>
+          <legend>{{ t('story.roleLegend') }}</legend>
           <div class="strategy-options">
             <label class="strategy-option">
               <input
@@ -1593,7 +1593,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                 value="protagonist"
                 v-model="protagonistRole"
               />
-              <span>主角（参与剧情推进）</span>
+              <span>{{ t('story.roleProtagonistDesc') }}</span>
             </label>
             <label class="strategy-option">
               <input
@@ -1602,7 +1602,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                 value="observer"
                 v-model="protagonistRole"
               />
-              <span>旁观者（第三人称视角）</span>
+              <span>{{ t('story.roleObserverDesc') }}</span>
             </label>
           </div>
         </fieldset>
@@ -1610,7 +1610,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
         <!-- 主角描述 -->
         <div class="form-row">
           <label for="protagonistDesc" class="form-label">
-            主角描述（建议 ≤{{ MAX_PROTAGONIST_DESCRIPTION_LENGTH }} 字符，将注入提示词）
+            {{ t('story.protagDescLabel', { max: MAX_PROTAGONIST_DESCRIPTION_LENGTH }) }}
           </label>
           <textarea
             id="protagonistDesc"
@@ -1618,19 +1618,19 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             v-model="protagonistDescription"
             :maxlength="MAX_PROTAGONIST_DESCRIPTION_LENGTH * 2"
             rows="4"
-            placeholder="外貌、性格、背景等"
+            :placeholder="t('story.protagDescPlaceholder')"
           ></textarea>
         </div>
 
         <!-- 起始场景 -->
         <div class="form-row">
-          <label for="protagonistScene" class="form-label">起始场景</label>
+          <label for="protagonistScene" class="form-label">{{ t('story.startScene') }}</label>
           <select
             id="protagonistScene"
             class="form-select"
             v-model="protagonistStartingScene"
           >
-            <option value="">不指定</option>
+            <option value="">{{ t('story.notSpecified') }}</option>
             <option
               v-for="name in protagonistSceneOptions"
               :key="name"
@@ -1640,14 +1640,14 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             </option>
           </select>
           <p v-if="protagonistSceneOptions.length === 0" class="form-hint">
-            故事中暂无场景，请先分析故事
+            {{ t('story.noSceneHint') }}
           </p>
         </div>
 
         <!-- 关系列表 -->
         <fieldset class="import-fieldset">
           <legend>
-            主角与原有人物的关系（{{ protagonistRelations.length }}/{{ MAX_RELATIONS_COUNT }}）
+            {{ t('story.relationsLegend', { count: protagonistRelations.length, max: MAX_RELATIONS_COUNT }) }}
           </legend>
 
           <!-- 已有关系列表 -->
@@ -1663,14 +1663,14 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
               <button
                 type="button"
                 class="rel-remove-btn"
-                :aria-label="`移除与 ${rel.target} 的关系`"
+                :aria-label="t('story.removeRelationAria', { name: rel.target })"
                 @click="handleRemoveRelation(rel.target)"
               >
                 <Icon name="close" :size="12" />
               </button>
             </li>
           </ul>
-          <p v-else class="form-hint">尚未添加关系</p>
+          <p v-else class="form-hint">{{ t('story.noRelations') }}</p>
 
           <!-- 新增关系表单 -->
           <div class="relation-add-form">
@@ -1679,7 +1679,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
               class="form-input relation-target-input"
               v-model="newRelationTarget"
               list="relationTargetOptions"
-              placeholder="目标人物名（可从列表选择或自定义）"
+              :placeholder="t('story.relationTargetPlaceholder')"
             />
             <datalist id="relationTargetOptions">
               <option v-for="name in relationTargetOptions" :key="name" :value="name" />
@@ -1689,7 +1689,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
               class="form-input relation-desc-input"
               v-model="newRelationDesc"
               :maxlength="MAX_RELATION_DESC_LENGTH"
-              placeholder="关系（如：挚友、宿敌、师徒）"
+              :placeholder="t('story.relationDescPlaceholder')"
             />
             <button
               type="button"
@@ -1697,7 +1697,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
               @click="handleAddRelation"
             >
               <Icon name="plus" :size="12" />
-              添加
+              {{ t('story.add') }}
             </button>
           </div>
         </fieldset>
@@ -1713,7 +1713,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
         <!-- 操作按钮 -->
         <div class="protagonist-form-actions">
           <button type="button" class="btn btn-secondary" @click="closeProtagonistModal">
-            取消
+            {{ t('story.cancelBtn') }}
           </button>
           <button
             type="button"
@@ -1722,7 +1722,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             @click="handleSaveProtagonist"
           >
             <Icon name="check" :size="14" />
-            保存主角配置
+            {{ t('story.saveProtagonist') }}
           </button>
         </div>
       </div>
