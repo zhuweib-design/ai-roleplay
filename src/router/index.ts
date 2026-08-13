@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { t, type MessageKey } from '@/i18n';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -11,105 +12,105 @@ const router = createRouter({
       path: '/chat',
       name: 'chat',
       component: () => import('@/views/ChatView.vue'),
-      meta: { title: '对话' },
+      meta: { titleKey: 'router.chat' },
     },
     {
       path: '/character',
       name: 'character-list',
       component: () => import('@/views/CharactersView.vue'),
-      meta: { title: '角色管理' },
+      meta: { titleKey: 'router.characterList' },
     },
     {
       path: '/character/new',
       name: 'character-new',
       component: () => import('@/views/CharacterEditorView.vue'),
-      meta: { title: '新建角色' },
+      meta: { titleKey: 'router.characterNew' },
     },
     {
       path: '/character/:id/edit',
       name: 'character-edit',
       component: () => import('@/views/CharacterEditorView.vue'),
       props: true,
-      meta: { title: '编辑角色' },
+      meta: { titleKey: 'router.characterEdit' },
     },
     {
       path: '/settings',
       name: 'settings',
       component: () => import('@/views/SettingsView.vue'),
-      meta: { title: '设置' },
+      meta: { titleKey: 'router.settings' },
     },
     {
       path: '/worldbook',
       name: 'worldbook',
       component: () => import('@/views/WorldBookView.vue'),
-      meta: { title: '世界书' },
+      meta: { titleKey: 'router.worldbook' },
     },
     {
       path: '/group',
       name: 'group',
       component: () => import('@/views/GroupChatView.vue'),
-      meta: { title: '群聊' },
+      meta: { titleKey: 'router.group' },
     },
     {
       path: '/databank',
       name: 'databank',
       component: () => import('@/views/DataBankView.vue'),
-      meta: { title: '数据银行' },
+      meta: { titleKey: 'router.databank' },
     },
     {
       path: '/archives',
       name: 'archives',
       component: () => import('@/views/ArchivesView.vue'),
-      meta: { title: '对话记录' },
+      meta: { titleKey: 'router.archives' },
     },
     {
       path: '/story',
       name: 'story',
       component: () => import('@/views/StoryEngineView.vue'),
-      meta: { title: '故事引擎' },
+      meta: { titleKey: 'router.story' },
     },
     {
       path: '/random-events',
       name: 'random-events',
       component: () => import('@/views/RandomEventsView.vue'),
-      meta: { title: '随机事件' },
+      meta: { titleKey: 'router.randomEvents' },
     },
     {
       path: '/local-model',
       name: 'local-model',
       component: () => import('@/views/LocalModelView.vue'),
-      meta: { title: '本地模型' },
+      meta: { titleKey: 'router.localModel' },
     },
     {
       path: '/image-gen',
       name: 'image-gen',
       component: () => import('@/views/ImageGeneratorView.vue'),
-      meta: { title: '图像生成' },
+      meta: { titleKey: 'router.imageGen' },
     },
     {
       path: '/character-version',
       name: 'character-version',
       component: () => import('@/views/CharacterVersionView.vue'),
-      meta: { title: '角色卡版本管理' },
+      meta: { titleKey: 'router.characterVersion' },
     },
     {
       path: '/community-market',
       name: 'community-market',
       component: () => import('@/views/CommunityMarketView.vue'),
-      meta: { title: '社区市场' },
+      meta: { titleKey: 'router.market' },
     },
     {
       path: '/profile',
       name: 'profile',
       component: () => import('@/views/ProfileView.vue'),
-      meta: { title: '个人中心' },
+      meta: { titleKey: 'router.profile' },
     },
   ],
 });
 
 router.afterEach((to) => {
-  const title = (to.meta.title as string) || 'AI 酒馆';
-  document.title = `AI 酒馆 — ${title}`;
+  const key = (to.meta.titleKey as MessageKey | undefined) ?? 'router.chat';
+  document.title = `${t('app.name')} — ${t(key)}`;
 });
 
 export default router;

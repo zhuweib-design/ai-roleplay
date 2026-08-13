@@ -25,7 +25,7 @@
 | T-10 | 性能基准页 | ✅ 已完成 | benchmark 核心(3 项微基准+预算断言+历史)+ LocalModelView 基准 tab;首个 token 云端对比待联调 |
 | T-11 | 市场 v1(一期) | ✅ 已完成 | market-index 清单格式/校验 + sha256 哈希校验 + 11 项测试;下载/安装 UI 与真实仓库待接 |
 | T-12 | 多 profile(一期) | ✅ 已完成 | storage-factory profile 隔离(Web 按档案分库)+ 设置页档案管理(创建/切换/回默认)+ 4 项测试;Tauri 文件系统档案隔离需 Rust 路径重构(ponytail) |
-| T-13 | i18n 英文 | ⏳ 待开发 | — |
+| T-13 | i18n 英文 | 🔄 框架上线(批量迁移中) | 轻量零依赖 i18n 模块(@/i18n,类型安全+插值)+ 语言切换 UI(设置-外观)+ 持久化(AppSettings.locale)+ 硬编码中文扫描门禁(scripts/i18n-scan.mjs,.i18nignore 白名单);核心链路已迁移:App 外壳/导航/路由标题/Toast/主密码弹窗/设置语言区块;全量 128 文件文案抽取为后续迭代 |
 | T-14 | 工程基线与技术债 | 🔄 部分完成 | PlaceholderView 死代码删除、市场 Beta 徽标、sanitize 债登记、a11y 测试清理 |
 | T-15 | 桌面端强化(一期) | ✅ 已完成 | 拖拽导入(JSON 角色卡/世界书+PNG 角色卡)+ 断网提示条 + 3 项测试;托盘/全局快捷键/updater 需 Rust 与发布源,待后续 |
 | E-00 | 落地形态决策 | ✅ 已完成 | 决策:内置 TS 形态(docs/e00-decision.md);E-01~03 落点已冻结 |

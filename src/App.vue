@@ -17,6 +17,7 @@ import { cardToUiChar } from '@/services/type-adapters';
 import NavRail from '@/components/layout/NavRail.vue';
 import MasterPasswordModal from '@/components/common/MasterPasswordModal.vue';
 import type { MasterPasswordMode } from '@/components/common/MasterPasswordModal.vue';
+import { t } from '@/i18n';
 
 const settings = useSettingsStore();
 const chatStore = useChatStore();
@@ -94,7 +95,7 @@ async function importDroppedFiles(files: File[]) {
         if (card) {
           const ui = cardToUiChar(card);
           if (characterStore.characters.some((c) => c.name === ui.name)) {
-            ui.name = `${ui.name} (拖入)`;
+            ui.name = `${ui.name}${t('app.importSuffix')}`;
           }
           characterStore.characters.push(ui);
           await characterStore.persistCharacter(ui.id);
@@ -119,8 +120,8 @@ async function importDroppedFiles(files: File[]) {
   }
   platformNotice.value =
     imported > 0
-      ? `已通过拖拽导入 ${imported} 个文件`
-      : '拖拽导入失败:仅支持角色卡 JSON/PNG 与世界书 JSON';
+      ? t('app.dragImportSuccess', { count: imported })
+      : t('app.dragImportFail');
 }
 
 onBeforeUnmount(() => {
@@ -172,7 +173,7 @@ onMounted(async () => {
       if (missing.length > 0) {
         // eslint-disable-next-line no-console
         console.warn(`[Storage] 桌面版暂不支持：${missing.join('、')}`);
-        platformNotice.value = `当前桌面版暂不支持：${missing.join('、')}，相关功能将在后续版本提供`;
+        platformNotice.value = t('app.desktopUnsupported', { features: missing.join('、') });
       }
     }
 
@@ -183,6 +184,7 @@ onMounted(async () => {
     // 应用初始主题与字号（loadFromStorage 内部已应用，这里冗余以确保生效）
     settings.setTheme(settings.theme);
     settings.setFontSize(settings.fontSize);
+    // T-13 语言：i18n localeRef 与 store 已双向同步（loadFromStorage 内完成）
 
     // AC20 安全：主密码仅存运行时内存，刷新后需重新解锁
     // hasMasterPassword=true → 显示解锁 Modal
@@ -248,24 +250,24 @@ function handleMasterPasswordSuccess() {
 
 <template>
   <!-- Skip link：键盘用户可跳过导航直达主内容（WCAG 2.4.1） -->
-  <a href="#main-content" class="skip-link">跳到主内容</a>
+  <a href="#main-content" class="skip-link">{{ t('app.skipToContent') }}</a>
   <div class="app-shell">
     <!-- 候选5：桌面版未实现功能提示（role=alert 供读屏即时播报） -->
     <div v-if="platformNotice" role="alert" class="platform-notice">
       <span>{{ platformNotice }}</span>
-      <button type="button" class="notice-dismiss" aria-label="关闭提示" @click="dismissPlatformNotice">
+      <button type="button" class="notice-dismiss" :aria-label="t('app.closeNotice')" @click="dismissPlatformNotice">
         ×
       </button>
     </div>
     <!-- T-15: 断网提示条 -->
     <div v-if="!isOnline" role="alert" class="platform-notice offline-notice">
-      <span>网络已断开:远程模型调用将不可用,本地模型不受影响</span>
+      <span>{{ t('app.offlineNotice') }}</span>
     </div>
     <!-- T-15: 拖拽导入覆盖层 -->
     <div v-if="isDragging" class="drag-overlay" aria-hidden="true">
       <div class="drag-overlay-box">
-        <p class="drag-overlay-title">释放以导入</p>
-        <p class="drag-overlay-hint">支持角色卡 JSON/PNG 与世界书 JSON</p>
+        <p class="drag-overlay-title">{{ t('app.dragDropTitle') }}</p>
+        <p class="drag-overlay-hint">{{ t('app.dragDropHint') }}</p>
       </div>
     </div>
     <!-- 全局左侧导航栏（所有页面共享） -->

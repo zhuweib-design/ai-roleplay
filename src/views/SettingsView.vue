@@ -26,8 +26,21 @@ import SettingsModelPanel from '@/components/settings/SettingsModelPanel.vue';
 import VectorModelPanel from '@/components/settings/VectorModelPanel.vue';
 import type { ThemeName } from '@/types';
 import { FONT_SIZE_PRESETS } from '@/types';
+import { t, type Locale } from '@/i18n';
 
 const settings = useSettingsStore();
+
+// ── T-13: 语言配置 ──
+const localeOptions: { value: Locale; label: string }[] = [
+  { value: 'zh', label: t('settings.languageZh') },
+  { value: 'en', label: t('settings.languageEn') },
+];
+
+function selectLocale(l: Locale) {
+  if (settings.locale === l) return;
+  settings.setLocale(l);
+  showToast('success', t('common.saveSuccess'));
+}
 
 // ── 主题配置 ──
 interface ThemeOption {
@@ -780,12 +793,12 @@ async function handleExportChatMarkdown() {
 </script>
 
 <template>
-  <main id="main-content" class="settings-view" aria-label="系统设置" tabindex="-1">
+  <main id="main-content" class="settings-view" :aria-label="t('settings.title')" tabindex="-1">
     <!-- 浮动侧边栏：设置分类切换（固定） -->
-    <aside class="settings-nav" aria-label="设置分类">
+    <aside class="settings-nav" :aria-label="t('settings.title')">
       <div class="settings-nav-inner">
-        <h2 class="settings-nav-title">设置</h2>
-        <div class="settings-nav-list" role="tablist" aria-label="设置分类">
+        <h2 class="settings-nav-title">{{ t('settings.title') }}</h2>
+        <div class="settings-nav-list" role="tablist" :aria-label="t('settings.title')">
           <button
             v-for="(cat, idx) in settingsCategories"
             :key="cat.id"
@@ -812,13 +825,40 @@ async function handleExportChatMarkdown() {
     <header class="settings-header">
       <h1 class="settings-title">
         <Icon name="gear" :size="22" />
-        <span>系统设置</span>
+        <span>{{ t('settings.title') }}</span>
       </h1>
       <p class="settings-subtitle">{{ activeCategoryDesc }}</p>
     </header>
 
-    <!-- 外观：主题 / 字号 / 界面自定义 -->
+    <!-- 外观：语言 / 主题 / 字号 / 界面自定义 -->
     <div v-show="activeCategory === 'appearance'">
+    <!-- T-13: 语言选择 -->
+    <section class="settings-section" aria-labelledby="locale-section-title">
+      <header class="section-header">
+        <h2 id="locale-section-title" class="section-title">
+          <Icon name="globe" :size="16" />
+          <span>{{ t('settings.language') }}</span>
+        </h2>
+        <p class="section-hint">{{ t('settings.languageDesc') }}</p>
+      </header>
+
+      <div class="fontsize-grid" role="radiogroup" :aria-label="t('settings.language')">
+        <button
+          v-for="opt in localeOptions"
+          :key="opt.value"
+          type="button"
+          class="fontsize-card"
+          :class="{ active: settings.locale === opt.value }"
+          role="radio"
+          :aria-checked="settings.locale === opt.value"
+          :tabindex="settings.locale === opt.value ? 0 : -1"
+          @click="selectLocale(opt.value)"
+        >
+          <span class="fontsize-value">{{ opt.label }}</span>
+        </button>
+      </div>
+    </section>
+
     <!-- 主题选择 -->
     <section class="settings-section" aria-labelledby="theme-section-title">
       <header class="section-header">

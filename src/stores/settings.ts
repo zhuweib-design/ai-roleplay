@@ -29,6 +29,7 @@ import {
   reencryptApiKey,
 } from '@core/api-key-crypto';
 import { exportQuickRepliesToStJson, importQuickRepliesFromSt } from '@core/st-compat';
+import { setLocale as setI18nLocale, t as i18nT, type Locale } from '@/i18n';
 
 /**
  * Settings Store (Phase F)
@@ -47,6 +48,8 @@ export const useSettingsStore = defineStore('settings', () => {
   // ── 状态 ──
   const theme = ref<ThemeName>('dark');
   const fontSize = ref<number>(14);
+  /** T-13：界面语言（与 i18n 模块 localeRef 同步，持久化到 AppSettings.locale） */
+  const locale = ref<Locale>('zh');
   const apiProfiles = ref<ApiProfile[]>([]);
   const activeApiProfileId = ref<string | null>(null);
   /** F07：当前激活的 Persona ID（由 personaStore 调用 setActivePersona 更新） */
@@ -134,7 +137,7 @@ export const useSettingsStore = defineStore('settings', () => {
    * @param pw 主密码（用户输入，明文）
    */
   async function setMasterPassword(pw: string): Promise<void> {
-    if (!pw) throw new Error('主密码不能为空');
+    if (!pw) throw new Error(i18nT('masterPwd.pwdPlaceholder'));
     masterPasswordVerifier.value = await generateVerifier(pw);
     masterPassword.value = pw;
     await persistSettings();
@@ -234,7 +237,7 @@ export const useSettingsStore = defineStore('settings', () => {
           );
         } catch {
           // 保留密文，记录到 lastError
-          lastError.value = `API Key「${profile.name}」解密失败：主密码错误或数据已损坏`;
+          lastError.value = i18nT('masterPwd.apiKeyDecryptFailed', { name: profile.name });
         }
       }
     }
@@ -248,7 +251,7 @@ export const useSettingsStore = defineStore('settings', () => {
           masterPassword.value
         );
       } catch {
-        lastError.value = `翻译 API Key 解密失败：主密码错误或数据已损坏`;
+        lastError.value = i18nT('masterPwd.translationKeyDecryptFailed');
       }
     }
   }
@@ -278,6 +281,17 @@ export const useSettingsStore = defineStore('settings', () => {
     if (typeof document !== 'undefined') {
       document.documentElement.style.fontSize = `${size}px`;
     }
+    void persistSettings();
+  }
+
+  // ── T-13: 语言 ──
+
+  /**
+   * 切换界面语言（同步 i18n 模块 + 持久化）
+   */
+  function setLocale(l: Locale) {
+    locale.value = l;
+    setI18nLocale(l);
     void persistSettings();
   }
 
@@ -525,7 +539,7 @@ export const useSettingsStore = defineStore('settings', () => {
   function createQuickReplyTemplate(): QuickReplyButton {
     return {
       id: generateQuickReplyId(),
-      label: '新按钮',
+      label: i18nT('app.newButtonLabel'),
       script: '/echo hello',
       group: '',
       autoSend: true,
@@ -559,7 +573,7 @@ export const useSettingsStore = defineStore('settings', () => {
   function createProfileTemplate(): ApiProfile {
     return {
       id: generateProfileId(),
-      name: '新 API 配置',
+      name: i18nT('app.newProfileName'),
       provider: 'openai',
       baseUrl: 'https://api.openai.com',
       apiKey: '',
@@ -600,6 +614,11 @@ export const useSettingsStore = defineStore('settings', () => {
       if (hasSavedData) {
         if (saved.theme) setTheme(saved.theme);
         if (typeof saved.fontSize === 'number') setFontSize(saved.fontSize);
+        // T-13 加载语言（默认 zh）
+        if (saved.locale === 'zh' || saved.locale === 'en') {
+          locale.value = saved.locale;
+          setI18nLocale(saved.locale);
+        }
         if (Array.isArray(saved.apiProfiles)) apiProfiles.value = saved.apiProfiles;
         if (typeof saved.activeApiProfileId !== 'undefined') {
           activeApiProfileId.value = saved.activeApiProfileId;
@@ -650,7 +669,9 @@ export const useSettingsStore = defineStore('settings', () => {
         await persistSettings();
       }
     } catch (err) {
-      lastError.value = `加载设置失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = i18nT('settings.loadFailed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -700,6 +721,7 @@ export const useSettingsStore = defineStore('settings', () => {
       await storageAdapter.saveSettings({
         theme: theme.value,
         fontSize: fontSize.value,
+        locale: locale.value,
         apiProfiles: profilesToSave,
         activeApiProfileId: activeApiProfileId.value,
         activePersonaId: activePersonaId.value,
@@ -716,7 +738,9 @@ export const useSettingsStore = defineStore('settings', () => {
         masterPasswordVerifier: masterPasswordVerifier.value,
       });
     } catch (err) {
-      lastError.value = `保存设置失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = i18nT('settings.saveFailed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -740,6 +764,7 @@ export const useSettingsStore = defineStore('settings', () => {
     // 状态
     theme,
     fontSize,
+    locale,
     apiProfiles,
     activeApiProfileId,
     activePersonaId,
@@ -761,6 +786,8 @@ export const useSettingsStore = defineStore('settings', () => {
     // 主题
     setTheme,
     setFontSize,
+    // T-13 语言
+    setLocale,
     // API Profile CRUD
     addApiProfile,
     updateApiProfile,

@@ -112,7 +112,7 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       const mock = new MockStorageAdapter();
       const store = useSettingsStore();
       store.setStorageAdapter(mock);
-      await expect(store.setMasterPassword('')).rejects.toThrow('主密码不能为空');
+      await expect(store.setMasterPassword('')).rejects.toThrow('请输入主密码');
     });
 
     it('设置主密码后已存在的明文 apiKey 应被加密保存', async () => {

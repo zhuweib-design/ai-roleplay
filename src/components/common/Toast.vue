@@ -8,6 +8,7 @@
  * - 自动消失（5s）+ 手动关闭
  */
 import { watch, onBeforeUnmount } from 'vue';
+import { t } from '@/i18n';
 
 const props = withDefaults(
   defineProps<{
@@ -107,7 +108,7 @@ onBeforeUnmount(() => clearTimer());
         <button
           type="button"
           class="toast-close"
-          aria-label="关闭通知"
+          :aria-label="t('toast.close')"
           @click="close"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">

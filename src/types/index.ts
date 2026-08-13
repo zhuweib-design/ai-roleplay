@@ -156,6 +156,8 @@ export interface BubbleStyle {
 export interface AppSettings {
   theme: ThemeName;
   fontSize: number;
+  /** T-13 新增：界面语言（zh=简体中文 / en=English；可选以兼容旧数据，缺省按 zh 处理） */
+  locale?: 'zh' | 'en';
   apiProfiles: ApiProfile[];
   activeApiProfileId: string | null;
   /** F07 新增：当前激活的 Persona ID（null 表示使用默认 "User"） */

@@ -17,6 +17,7 @@ import { ref, computed, watch, nextTick } from 'vue';
 import Modal from './Modal.vue';
 import Icon from './Icon.vue';
 import { useSettingsStore } from '@/stores/settings';
+import { t } from '@/i18n';
 
 export type MasterPasswordMode = 'setup' | 'unlock' | 'change';
 
@@ -56,22 +57,33 @@ const isProcessing = ref(false);
 const title = computed(() => {
   switch (props.mode) {
     case 'setup':
-      return '设置主密码';
+      return t('masterPwd.setTitle');
     case 'unlock':
-      return '解锁应用';
+      return t('masterPwd.unlockTitle');
     case 'change':
-      return '修改主密码';
+      return t('masterPwd.changeTitle');
   }
 });
 
 const submitLabel = computed(() => {
   switch (props.mode) {
     case 'setup':
-      return '设置';
+      return t('masterPwd.submitSet');
     case 'unlock':
-      return '解锁';
+      return t('masterPwd.submitUnlock');
     case 'change':
-      return '修改';
+      return t('masterPwd.submitChange');
+  }
+});
+
+const descText = computed(() => {
+  switch (props.mode) {
+    case 'setup':
+      return t('masterPwd.setupDesc');
+    case 'unlock':
+      return t('masterPwd.unlockDesc');
+    case 'change':
+      return t('masterPwd.changeDesc');
   }
 });
 
@@ -98,26 +110,26 @@ const canSubmit = computed(() => {
 // ── 表单校验 ──
 function validate(): string | null {
   if (props.mode === 'unlock') {
-    if (!newPassword.value) return '请输入主密码';
+    if (!newPassword.value) return t('masterPwd.pwdPlaceholder');
     return null;
   }
   if (props.mode === 'setup') {
-    if (!newPassword.value) return '请输入主密码';
+    if (!newPassword.value) return t('masterPwd.pwdPlaceholder');
     if (newPassword.value.length < 8)
-      return '主密码至少 8 个字符';
+      return t('masterPwd.pwdTooShort8');
     if (newPassword.value !== confirmPassword.value)
-      return '两次输入的密码不一致';
+      return t('masterPwd.pwdMismatch');
     return null;
   }
   if (props.mode === 'change') {
-    if (!oldPassword.value) return '请输入旧主密码';
-    if (!newPassword.value) return '请输入新主密码';
+    if (!oldPassword.value) return t('masterPwd.enterOldPwd');
+    if (!newPassword.value) return t('masterPwd.enterNewPwd');
     if (newPassword.value.length < 8)
-      return '新主密码至少 8 个字符';
+      return t('masterPwd.newPwdTooShort');
     if (newPassword.value !== confirmPassword.value)
-      return '两次输入的新密码不一致';
+      return t('masterPwd.newPwdMismatch');
     if (newPassword.value === oldPassword.value)
-      return '新密码不能与旧密码相同';
+      return t('masterPwd.newSameAsOld');
     return null;
   }
   return null;
@@ -141,7 +153,7 @@ async function handleSubmit() {
     } else if (props.mode === 'unlock') {
       ok = await settings.unlock(newPassword.value);
       if (!ok) {
-        errorMessage.value = '主密码错误，请重试';
+        errorMessage.value = t('masterPwd.unlockWrong');
         return;
       }
     } else if (props.mode === 'change') {
@@ -150,7 +162,7 @@ async function handleSubmit() {
         newPassword.value
       );
       if (!ok) {
-        errorMessage.value = '旧主密码错误';
+        errorMessage.value = t('masterPwd.oldPwdWrong');
         return;
       }
     }
@@ -216,24 +228,13 @@ function handleKeydown(e: KeyboardEvent) {
   >
     <div class="mpm-content" @keydown="handleKeydown">
       <!-- 描述说明 -->
-      <p class="mpm-desc">
-        <template v-if="mode === 'setup'">
-          为保护 API Key 安全，请设置主密码。主密码不存储于本地，仅在
-          当前浏览器会话内保留。忘记主密码将无法解密已存储的 API Key。
-        </template>
-        <template v-else-if="mode === 'unlock'">
-          请输入主密码以解锁应用并解密已存储的 API Key。
-        </template>
-        <template v-else-if="mode === 'change'">
-          修改主密码后，所有 API Key 将用新密码重新加密。
-        </template>
-      </p>
+      <p class="mpm-desc">{{ descText }}</p>
 
       <!-- 表单 -->
       <form class="mpm-form" @submit.prevent="handleSubmit">
         <!-- 旧密码（仅 change 模式） -->
         <div v-if="mode === 'change'" class="mpm-field">
-          <label for="mpm-old" class="mpm-label">旧主密码</label>
+          <label for="mpm-old" class="mpm-label">{{ t('masterPwd.oldPwd') }}</label>
           <div class="mpm-input-wrap">
             <input
               id="mpm-old"
@@ -246,7 +247,7 @@ function handleKeydown(e: KeyboardEvent) {
             <button
               type="button"
               class="mpm-toggle"
-              :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+              :aria-label="showPassword ? t('masterPwd.hidePassword') : t('masterPwd.showPassword')"
               :aria-pressed="showPassword"
               @click="showPassword = !showPassword"
             >
@@ -258,7 +259,7 @@ function handleKeydown(e: KeyboardEvent) {
         <!-- 新密码 / 解锁密码 -->
         <div class="mpm-field">
           <label for="mpm-new" class="mpm-label">
-            {{ mode === 'change' ? '新主密码' : '主密码' }}
+            {{ mode === 'change' ? t('masterPwd.newPwd') : t('masterPwd.title') }}
           </label>
           <div class="mpm-input-wrap">
             <input
@@ -272,7 +273,7 @@ function handleKeydown(e: KeyboardEvent) {
             <button
               type="button"
               class="mpm-toggle"
-              :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+              :aria-label="showPassword ? t('masterPwd.hidePassword') : t('masterPwd.showPassword')"
               :aria-pressed="showPassword"
               @click="showPassword = !showPassword"
             >
@@ -283,7 +284,7 @@ function handleKeydown(e: KeyboardEvent) {
 
         <!-- 确认密码（setup 与 change 模式） -->
         <div v-if="mode !== 'unlock'" class="mpm-field">
-          <label for="mpm-confirm" class="mpm-label">确认密码</label>
+          <label for="mpm-confirm" class="mpm-label">{{ t('masterPwd.confirmPwd') }}</label>
           <input
             id="mpm-confirm"
             v-model="confirmPassword"
@@ -303,7 +304,7 @@ function handleKeydown(e: KeyboardEvent) {
         <!-- 提示信息 -->
         <p v-if="mode === 'setup'" class="mpm-hint">
           <Icon name="alert-triangle" :size="12" />
-          <span>主密码无法找回，请妥善保管。建议使用密码管理器。</span>
+          <span>{{ t('masterPwd.setupHint') }}</span>
         </p>
       </form>
     </div>
@@ -314,7 +315,7 @@ function handleKeydown(e: KeyboardEvent) {
         class="mpm-btn mpm-cancel"
         @click="handleCancel"
       >
-        取消
+        {{ t('common.cancel') }}
       </button>
       <button
         type="button"
@@ -324,7 +325,7 @@ function handleKeydown(e: KeyboardEvent) {
         @click="handleSubmit"
       >
         <Icon v-if="isProcessing" name="refresh-cw" :size="14" />
-        <span>{{ isProcessing ? '处理中…' : submitLabel }}</span>
+        <span>{{ isProcessing ? t('masterPwd.processing') : submitLabel }}</span>
       </button>
     </template>
   </Modal>

@@ -4,34 +4,36 @@ import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
 import type { IconName } from '@/components/common/icons';
 import type { NavKey } from '@/types';
+import { t, type MessageKey } from '@/i18n';
 
 const router = useRouter();
 const characterStore = useCharacterStore();
 
 interface NavItem {
   key: NavKey;
-  label: string;
+  /** i18n key（对应 nav.* 文案，类型安全） */
+  labelKey: MessageKey;
   icon: IconName;
   route?: string;
 }
 
 const navItems: NavItem[] = [
-  { key: 'chat', label: '对话', icon: 'house', route: '/chat' },
-  { key: 'character', label: '角色', icon: 'user', route: '/character' },
-  { key: 'worldbook', label: '世界书', icon: 'compass', route: '/worldbook' },
-  { key: 'group', label: '群聊', icon: 'chat-circle', route: '/group' },
-  { key: 'databank', label: '数据银行', icon: 'file', route: '/databank' },
-  { key: 'story', label: '故事引擎', icon: 'book-open', route: '/story' },
-  { key: 'random-events', label: '随机事件', icon: 'star', route: '/random-events' },
-  { key: 'local-model', label: '本地模型', icon: 'cpu', route: '/local-model' },
-  { key: 'image-gen', label: '图像生成', icon: 'image-stack', route: '/image-gen' },
-  { key: 'character-version', label: '版本管理', icon: 'git-commit', route: '/character-version' },
-  { key: 'community-market', label: '社区市场', icon: 'store', route: '/community-market' },
-  { key: 'archives', label: '记录', icon: 'bookmark-simple', route: '/archives' },
+  { key: 'chat', labelKey: 'nav.chat', icon: 'house', route: '/chat' },
+  { key: 'character', labelKey: 'nav.character', icon: 'user', route: '/character' },
+  { key: 'worldbook', labelKey: 'nav.worldbook', icon: 'compass', route: '/worldbook' },
+  { key: 'group', labelKey: 'nav.group', icon: 'chat-circle', route: '/group' },
+  { key: 'databank', labelKey: 'nav.databank', icon: 'file', route: '/databank' },
+  { key: 'story', labelKey: 'nav.story', icon: 'book-open', route: '/story' },
+  { key: 'random-events', labelKey: 'nav.randomEvents', icon: 'star', route: '/random-events' },
+  { key: 'local-model', labelKey: 'nav.localModel', icon: 'cpu', route: '/local-model' },
+  { key: 'image-gen', labelKey: 'nav.imageGen', icon: 'image-stack', route: '/image-gen' },
+  { key: 'character-version', labelKey: 'nav.version', icon: 'git-commit', route: '/character-version' },
+  { key: 'community-market', labelKey: 'nav.market', icon: 'store', route: '/community-market' },
+  { key: 'archives', labelKey: 'nav.archives', icon: 'bookmark-simple', route: '/archives' },
 ];
 
-const settingsItem: NavItem = { key: 'settings', label: '设置', icon: 'gear', route: '/settings' };
-const profileItem: NavItem = { key: 'profile', label: '个人中心', icon: 'user', route: '/profile' };
+const settingsItem: NavItem = { key: 'settings', labelKey: 'nav.settings', icon: 'gear', route: '/settings' };
+const profileItem: NavItem = { key: 'profile', labelKey: 'nav.profile', icon: 'user', route: '/profile' };
 
 function handleNav(item: NavItem) {
   characterStore.setNav(item.key);
@@ -52,7 +54,7 @@ function isActive(key: NavKey): boolean {
 </script>
 
 <template>
-  <nav class="nav-rail" aria-label="主导航">
+  <nav class="nav-rail" :aria-label="t('nav.main')">
     <ul class="nav-list" role="list">
       <li v-for="item in navItems" :key="item.key" class="nav-list-item">
         <button
@@ -60,11 +62,11 @@ function isActive(key: NavKey): boolean {
           class="nav-item"
           :class="{ active: isActive(item.key) }"
           :aria-current="isActive(item.key) ? 'page' : undefined"
-          :aria-label="item.label"
+          :aria-label="t(item.labelKey)"
           @click="handleNav(item)"
         >
           <span class="nav-icon" aria-hidden="true"><Icon :name="item.icon" :size="24" /></span>
-          <span class="nav-label">{{ item.label }}</span>
+          <span class="nav-label">{{ t(item.labelKey) }}</span>
         </button>
       </li>
 
@@ -74,11 +76,11 @@ function isActive(key: NavKey): boolean {
           class="nav-item settings"
           :class="{ active: isActive(settingsItem.key) }"
           :aria-current="isActive(settingsItem.key) ? 'page' : undefined"
-          :aria-label="settingsItem.label"
+          :aria-label="t(settingsItem.labelKey)"
           @click="handleNav(settingsItem)"
         >
           <span class="nav-icon" aria-hidden="true"><Icon :name="settingsItem.icon" :size="24" /></span>
-          <span class="nav-label">{{ settingsItem.label }}</span>
+          <span class="nav-label">{{ t(settingsItem.labelKey) }}</span>
         </button>
       </li>
 
@@ -88,11 +90,11 @@ function isActive(key: NavKey): boolean {
           class="nav-item profile"
           :class="{ active: isActive(profileItem.key) }"
           :aria-current="isActive(profileItem.key) ? 'page' : undefined"
-          :aria-label="profileItem.label"
+          :aria-label="t(profileItem.labelKey)"
           @click="handleNav(profileItem)"
         >
           <span class="nav-icon" aria-hidden="true"><Icon :name="profileItem.icon" :size="24" /></span>
-          <span class="nav-label">{{ profileItem.label }}</span>
+          <span class="nav-label">{{ t(profileItem.labelKey) }}</span>
         </button>
       </li>
     </ul>

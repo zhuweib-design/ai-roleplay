@@ -36,3 +36,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.local
+
+# WorkBuddy workspace state (memory logs, local runtime)
+.workbuddy/
