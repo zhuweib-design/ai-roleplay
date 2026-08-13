@@ -16,6 +16,7 @@
  * - 旧 localStorage 存量数据在 loadFromDisk 时一次性迁移
  */
 
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import {
@@ -233,7 +234,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
       const user = engine.login(name, avatar);
       currentUser.value = user;
       void persistMeta();
-      lastInfo.value = `已登录为「${name}」`;
+      lastInfo.value = t('mkt.loggedIn', { name });
       commitTick();
       return true;
     } catch (err) {
@@ -246,7 +247,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     engine.logout();
     currentUser.value = null;
     void persistMeta();
-    lastInfo.value = '已登出';
+    lastInfo.value = t('mkt.loggedOut');
     commitTick();
   }
 
@@ -321,12 +322,12 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
 
   function downloadCard(marketId: string): boolean {
     if (!currentUser.value) {
-      lastError.value = '请先登录';
+      lastError.value = t('mkt.needLogin');
       return false;
     }
     try {
       engine.downloadCard(marketId, currentUser.value.id);
-      lastInfo.value = '下载成功';
+      lastInfo.value = t('mkt.downloadOk');
       commitTick();
       return true;
     } catch (err) {
@@ -377,7 +378,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     categories: string[] = []
   ): string | null {
     if (!currentUser.value) {
-      lastError.value = '请先登录';
+      lastError.value = t('mkt.needLogin');
       return null;
     }
     try {
@@ -386,7 +387,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
         currentUser.value.id,
         categories
       );
-      lastInfo.value = `已发布角色卡「${card.name}」（待审核）`;
+      lastInfo.value = t('mkt.published', { name: card.name });
       commitTick();
       return marketId;
     } catch (err) {
@@ -403,13 +404,13 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     categories: string[] = []
   ): string | null {
     if (!currentUser.value) {
-      lastError.value = '请先登录';
+      lastError.value = t('mkt.needLogin');
       return null;
     }
     const charStore = useCharacterStore();
     const character = charStore.characters.find((c) => c.id === characterId);
     if (!character) {
-      lastError.value = '角色不存在';
+      lastError.value = t('mkt.charNotExist');
       return null;
     }
     const card: CharacterCard = {
@@ -442,7 +443,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     comment: string
   ): boolean {
     if (!currentUser.value) {
-      lastError.value = '请先登录';
+      lastError.value = t('mkt.needLogin');
       return false;
     }
     try {
@@ -452,7 +453,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
         rating,
         comment
       );
-      lastInfo.value = '评论已发布';
+      lastInfo.value = t('mkt.reviewPosted');
       commitTick();
       return true;
     } catch (err) {
@@ -474,7 +475,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     description: string
   ): boolean {
     if (!currentUser.value) {
-      lastError.value = '请先登录';
+      lastError.value = t('mkt.needLogin');
       return false;
     }
     try {
@@ -484,7 +485,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
         reason,
         description
       );
-      lastInfo.value = '举报已提交';
+      lastInfo.value = t('mkt.reportSubmitted');
       commitTick();
       return true;
     } catch (err) {
@@ -536,7 +537,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
   ): boolean {
     try {
       engine.setModerationStatus(marketId, status);
-      lastInfo.value = `审核状态已更新为「${status}」`;
+      lastInfo.value = t('mkt.statusUpdated', { status });
       commitTick();
       return true;
     } catch (err) {
@@ -558,7 +559,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
   ): boolean {
     try {
       engine.resolveReport(reportId, status, resolution);
-      lastInfo.value = `举报已${status === 'resolved' ? '解决' : '驳回'}`;
+      lastInfo.value = t('mkt.reportHandled', { status: status === 'resolved' ? t('mkt.resolved') : t('mkt.dismissed') });
       commitTick();
       return true;
     } catch (err) {
@@ -587,7 +588,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
         favorites.value.splice(idx, 1);
         void persistMeta();
       }
-      lastInfo.value = '角色卡已删除';
+      lastInfo.value = t('mkt.cardDeleted');
       commitTick();
     }
     return ok;

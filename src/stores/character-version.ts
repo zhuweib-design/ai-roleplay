@@ -19,6 +19,7 @@
  * - 每次 commit/branch/merge/rollback 等变更后自动保存
  */
 
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import {
@@ -45,7 +46,7 @@ import { migrateLegacyLocalStorage } from '@storage/legacy-migration';
 
 /** 快照键（沿用旧 localStorage 键名，便于一次性迁移存量数据） */
 const SNAPSHOT_KEY = 'ai-roleplay:character-versions';
-const DEFAULT_AUTHOR: VersionAuthor = { name: '本地用户' };
+const DEFAULT_AUTHOR: VersionAuthor = { name: t('store.localUser') };
 
 // ── 单例引擎 ──
 
@@ -156,7 +157,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     const charStore = useCharacterStore();
     const character = charStore.characters.find((c) => c.id === characterId);
     if (!character) {
-      lastError.value = `角色「${characterId}」不存在`;
+      lastError.value = t('cv2.charNotExist', { id: characterId });
       return null;
     }
     // 转换为 CharacterCard 快照
@@ -264,12 +265,12 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   function commit(card: CharacterCard, message: string): boolean {
     const repo = currentRepository.value;
     if (!repo) {
-      lastError.value = '未选择角色';
+      lastError.value = t('cv.noCharSelected');
       return false;
     }
     try {
       repo.commit(card, author.value, message);
-      lastInfo.value = `已提交版本：${message}`;
+      lastInfo.value = t('store.committed', { message });
       commitTick();
       return true;
     } catch (err) {
@@ -285,7 +286,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
    */
   function commitCurrentCharacter(message: string): boolean {
     if (!currentCharacterId.value) {
-      lastError.value = '未选择角色';
+      lastError.value = t('cv.noCharSelected');
       return false;
     }
     const charStore = useCharacterStore();
@@ -293,7 +294,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
       (c) => c.id === currentCharacterId.value
     );
     if (!character) {
-      lastError.value = '角色已被删除';
+      lastError.value = t('cv.charDeleted');
       return false;
     }
     const card: CharacterCard = {
@@ -326,16 +327,16 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   function createBranch(name: string, fromBranch?: string): boolean {
     const repo = currentRepository.value;
     if (!repo) {
-      lastError.value = '未选择角色';
+      lastError.value = t('cv.noCharSelected');
       return false;
     }
     if (!isValidBranchName(name)) {
-      lastError.value = `分支名非法（仅允许字母数字下划线连字符，长度 1-32）`;
+      lastError.value = t('cv2.branchNameInvalid');
       return false;
     }
     try {
       repo.createBranch(name, author.value, fromBranch);
-      lastInfo.value = `分支「${name}」已创建`;
+      lastInfo.value = t('cv2.branchCreated', { name });
       commitTick();
       return true;
     } catch (err) {
@@ -350,12 +351,12 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   function switchBranch(name: string): boolean {
     const repo = currentRepository.value;
     if (!repo) {
-      lastError.value = '未选择角色';
+      lastError.value = t('cv.noCharSelected');
       return false;
     }
     try {
       repo.switchBranch(name);
-      lastInfo.value = `已切换到分支「${name}」`;
+      lastInfo.value = t('cv2.branchSwitched', { name });
       commitTick();
       return true;
     } catch (err) {
@@ -370,12 +371,12 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   function deleteBranch(name: string): boolean {
     const repo = currentRepository.value;
     if (!repo) {
-      lastError.value = '未选择角色';
+      lastError.value = t('cv.noCharSelected');
       return false;
     }
     try {
       repo.deleteBranch(name);
-      lastInfo.value = `分支「${name}」已删除`;
+      lastInfo.value = t('cv2.branchDeleted', { name });
       commitTick();
       return true;
     } catch (err) {
@@ -392,13 +393,13 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     if (!repo) return false;
     const branch = repo.branches.get(name);
     if (!branch) {
-      lastError.value = `分支「${name}」不存在`;
+      lastError.value = t('cv2.branchNotExist', { name });
       return false;
     }
     branch.locked = !branch.locked;
     lastInfo.value = branch.locked
-      ? `分支「${name}」已锁定`
-      : `分支「${name}」已解锁`;
+      ? t('cv2.branchLocked', { name })
+      : t('cv2.branchUnlocked', { name });
     commitTick();
     return true;
   }
@@ -411,7 +412,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   function diff(fromId: VersionId, toId: VersionId): VersionDiff | null {
     const repo = currentRepository.value;
     if (!repo) {
-      lastError.value = '未选择角色';
+      lastError.value = t('cv.noCharSelected');
       return null;
     }
     try {
@@ -428,7 +429,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   function diffWithHead(versionId: VersionId): VersionDiff | null {
     const head = headVersion.value;
     if (!head) {
-      lastError.value = '当前分支无 HEAD 提交';
+      lastError.value = t('cv2.noHeadCommit');
       return null;
     }
     return diff(versionId, head.id);
@@ -452,24 +453,24 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   ): boolean {
     const repo = currentRepository.value;
     if (!repo) {
-      lastError.value = '未选择角色';
+      lastError.value = t('cv.noCharSelected');
       return false;
     }
     if (sourceBranch === repo.currentBranch) {
-      lastError.value = '不能合并自己：源分支与当前分支相同';
+      lastError.value = t('cv2.cannotMergeSelf');
       return false;
     }
     try {
       const result: MergeResult = repo.mergeBranch(sourceBranch);
       if (result.success) {
         // 自动合并成功 → 直接提交
-        const commitMessage = message ?? `合并分支 ${sourceBranch}`;
+        const commitMessage = message ?? t('cv2.mergeCommitMsg', { branch: sourceBranch });
         repo.commit(
           result.mergedSnapshot!,
           author.value,
           commitMessage
         );
-        lastInfo.value = `已合并分支「${sourceBranch}」（自动解决 ${result.autoResolvedCount} 个字段）`;
+        lastInfo.value = t('cv2.merged', { branch: sourceBranch, count: result.autoResolvedCount });
         commitTick();
         return true;
       } else {
@@ -478,7 +479,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
           sourceBranch,
           conflicts: result.conflicts,
         };
-        lastError.value = `合并冲突：${result.conflicts.length} 个字段需手动解决（自动合并 ${result.autoResolvedCount} 个）`;
+        lastError.value = t('cv2.mergeConflict', { count: result.conflicts.length, auto: result.autoResolvedCount });
         commitTick();
         return false;
       }
@@ -500,7 +501,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   ): boolean {
     const repo = currentRepository.value;
     if (!repo || !pendingConflicts.value) {
-      lastError.value = '无待解决的合并冲突';
+      lastError.value = t('cv2.noPendingConflicts');
       return false;
     }
     try {
@@ -509,9 +510,9 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
         resolutions
       );
       const commitMessage =
-        message ?? `合并分支 ${pendingConflicts.value.sourceBranch}（已解决冲突）`;
+        message ?? t('cv2.mergeResolvedMsg', { branch: pendingConflicts.value.sourceBranch });
       repo.commit(merged, author.value, commitMessage);
-      lastInfo.value = '冲突已解决并提交';
+      lastInfo.value = t('cv2.conflictsResolved2');
       pendingConflicts.value = null;
       commitTick();
       return true;
@@ -526,7 +527,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
    */
   function cancelMerge(): void {
     pendingConflicts.value = null;
-    lastInfo.value = '已取消合并';
+    lastInfo.value = t('cv2.mergeCancelled2');
   }
 
   // ── 动作：回滚 ──
@@ -540,12 +541,12 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   ): boolean {
     const repo = currentRepository.value;
     if (!repo) {
-      lastError.value = '未选择角色';
+      lastError.value = t('cv.noCharSelected');
       return false;
     }
     try {
       const version = repo.rollbackTo(versionId, author.value, message);
-      lastInfo.value = `已回滚到版本 ${version.id}`;
+      lastInfo.value = t('cv2.rolledBack2', { id: version.id });
       commitTick();
       return true;
     } catch (err) {
@@ -568,14 +569,14 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   ): boolean {
     const repo = currentRepository.value;
     if (!repo) {
-      lastError.value = '未选择角色';
+      lastError.value = t('cv.noCharSelected');
       return false;
     }
     const ok = repo.acquireLock(fieldPath, author.value, durationMs);
     if (!ok) {
-      lastError.value = `字段「${fieldPath}」已被他人锁定`;
+      lastError.value = t('cv2.fieldLockedByOther', { field: fieldPath });
     } else {
-      lastInfo.value = `已锁定字段「${fieldPath}」`;
+      lastInfo.value = t('cv2.fieldLocked', { field: fieldPath });
     }
     commitTick();
     return ok;
@@ -588,7 +589,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     const repo = currentRepository.value;
     if (!repo) return;
     repo.releaseLock(fieldPath, author.value);
-    lastInfo.value = `已释放字段「${fieldPath}」的锁`;
+    lastInfo.value = t('cv2.fieldUnlocked', { field: fieldPath });
     commitTick();
   }
 
@@ -599,7 +600,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     const repo = currentRepository.value;
     if (!repo) return;
     repo.releaseAllLocks(author.value);
-    lastInfo.value = '已释放全部锁';
+    lastInfo.value = t('cv2.allLocksReleased');
     commitTick();
   }
 
@@ -622,7 +623,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   function setAuthor(newAuthor: VersionAuthor): void {
     author.value = newAuthor;
     engine.setAuthor(newAuthor);
-    lastInfo.value = `已切换为「${newAuthor.name}」`;
+    lastInfo.value = t('cv2.authorSwitched', { name: newAuthor.name });
     versionTick.value++;
   }
 

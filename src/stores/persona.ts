@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Persona } from '@/types';
@@ -5,7 +6,6 @@ import type { StorageAdapter } from '@/storage/storage-adapter';
 import { useSettingsStore } from './settings';
 import type { ProtagonistConfig } from '@core/story-types';
 import { buildProtagonistPrompt } from '@core/protagonist';
-import { t } from '@/i18n';
 
 /**
  * Persona Store (迭代22 · F07)
@@ -80,7 +80,7 @@ export const usePersonaStore = defineStore('persona', () => {
         settings.setActivePersona(defaultId);
       }
     } catch (err) {
-      lastError.value = `加载 Persona 失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.loadFailed', { name: ' Persona ', error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -92,7 +92,7 @@ export const usePersonaStore = defineStore('persona', () => {
       p.updatedAt = new Date().toISOString();
       await storageAdapter.savePersona(p);
     } catch (err) {
-      lastError.value = `保存 Persona 失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.saveFailed', { name: ' Persona ', error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -101,7 +101,7 @@ export const usePersonaStore = defineStore('persona', () => {
     try {
       await storageAdapter.deletePersona(id);
     } catch (err) {
-      lastError.value = `删除 Persona 失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.deleteFailed', { name: ' Persona ', error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -139,7 +139,7 @@ export const usePersonaStore = defineStore('persona', () => {
     const now = new Date().toISOString();
     const p: Persona = {
       id,
-      name: input?.name ?? '新身份',
+      name: input?.name ?? t('store.newPersona'),
       description: input?.description ?? '',
       createdAt: now,
       updatedAt: now,
@@ -147,13 +147,13 @@ export const usePersonaStore = defineStore('persona', () => {
 
     const errors = validatePersona(p);
     if (errors.length > 0) {
-      lastError.value = `创建失败：${errors.join('；')}`;
+      lastError.value = t('persona.createFailed', { errors: errors.join('；') });
       return '';
     }
 
     personas.value.push(p);
     void persistPersona(id);
-    lastInfo.value = `已创建 Persona：${p.name}`;
+    lastInfo.value = t('persona.created2', { name: p.name });
     return id;
   }
 
@@ -171,7 +171,7 @@ export const usePersonaStore = defineStore('persona', () => {
 
     const errors = validatePersona(p);
     if (errors.length > 0) {
-      lastError.value = `更新失败：${errors.join('；')}`;
+      lastError.value = t('persona.updateFailed', { errors: errors.join('；') });
       return false;
     }
 
@@ -186,7 +186,7 @@ export const usePersonaStore = defineStore('persona', () => {
    */
   function deletePersona(id: string): void {
     if (personas.value.length <= 1) {
-      lastError.value = '至少保留 1 个 Persona';
+      lastError.value = t('persona.keepOne');
       return;
     }
     const idx = personas.value.findIndex((p) => p.id === id);
@@ -199,7 +199,7 @@ export const usePersonaStore = defineStore('persona', () => {
     if (settings.activePersonaId === id) {
       settings.setActivePersona(personas.value[0]?.id ?? null);
     }
-    lastInfo.value = `已删除 Persona：${removed.name}`;
+    lastInfo.value = t('persona.deleted2', { name: removed.name });
   }
 
   /**
@@ -212,10 +212,10 @@ export const usePersonaStore = defineStore('persona', () => {
     if (id) {
       const p = personas.value.find((x) => x.id === id);
       if (p) {
-        lastInfo.value = `已切换 Persona：${p.name}`;
+        lastInfo.value = t('persona.switched', { name: p.name });
       }
     } else {
-      lastInfo.value = '已切换为默认 User';
+      lastInfo.value = t('persona.switchedDefault');
     }
   }
 
@@ -254,13 +254,13 @@ export const usePersonaStore = defineStore('persona', () => {
 
     const errors = validatePersona(p);
     if (errors.length > 0) {
-      lastError.value = `故事主角 Persona 创建失败：${errors.join('；')}`;
+      lastError.value = t('persona.protagonistCreateFailed', { errors: errors.join('；') });
       return '';
     }
 
     personas.value.push(p);
     void persistPersona(id);
-    lastInfo.value = `已创建故事主角 Persona：${p.name}`;
+    lastInfo.value = t('persona.protagonistCreated', { name: p.name });
     return id;
   }
 

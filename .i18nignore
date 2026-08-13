@@ -1,6 +1,6 @@
 # T-13 i18n 未迁移文件白名单
 # 每行一个相对路径；完成文案抽取后移出本清单即纳入门禁
-# 生成时间：2026-08-13（初始 128 个，已迁移 91 个）
+# 生成时间：2026-08-13（初始 128 个，已迁移 104 个）
 # 提示词/基准数据豁免（模型提示词中文语义,不随界面语言翻译）:
 #   src/core/benchmark.ts, src/core/prompt-builder.ts, src/core/l0-l2-runtime.ts, src/core/dual-channel-runtime.ts
 src/core/api-key-crypto.ts
@@ -43,16 +43,3 @@ src/services/tts-service.ts
 src/services/type-adapters.ts
 src/storage/indexeddb-adapter.ts
 src/storage/tauri-fs-adapter.ts
-src/stores/character-version.ts
-src/stores/character.ts
-src/stores/chat.ts
-src/stores/community-market.ts
-src/stores/data-bank.ts
-src/stores/events.ts
-src/stores/group-chat.ts
-src/stores/image-generation.ts
-src/stores/local-model.ts
-src/stores/lorebook.ts
-src/stores/persona.ts
-src/stores/random-events.ts
-src/stores/story.ts

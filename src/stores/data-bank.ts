@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { StorageAdapter } from '@/storage/storage-adapter';
@@ -80,7 +81,7 @@ export const useDataBankStore = defineStore('data-bank', () => {
       const loaded = await storageAdapter.loadDocuments();
       documents.value = loaded;
     } catch (e) {
-      lastError.value = `加载数据银行文档失败：${(e as Error).message}`;
+      lastError.value = t('store.docLoadFailed', { error: (e as Error).message });
     }
   }
 
@@ -91,7 +92,7 @@ export const useDataBankStore = defineStore('data-bank', () => {
     try {
       await storageAdapter.saveDocument(doc);
     } catch (e) {
-      lastError.value = `保存文档失败：${(e as Error).message}`;
+      lastError.value = t('store.docSaveFailed', { error: (e as Error).message });
     }
   }
 
@@ -100,7 +101,7 @@ export const useDataBankStore = defineStore('data-bank', () => {
     try {
       await storageAdapter.deleteDocument(id);
     } catch (e) {
-      lastError.value = `删除文档失败：${(e as Error).message}`;
+      lastError.value = t('store.docDeleteFailed', { error: (e as Error).message });
     }
   }
 
@@ -126,21 +127,21 @@ export const useDataBankStore = defineStore('data-bank', () => {
   ): Promise<string | null> {
     // 1. 校验文件大小
     if (file.size > MAX_FILE_SIZE) {
-      lastError.value = `文件大小超过限制（${MAX_FILE_SIZE / 1024 / 1024}MB）`;
+      lastError.value = t('store.fileTooLarge', { size: MAX_FILE_SIZE / 1024 / 1024 });
       return null;
     }
 
     // 2. PDF 暂不支持（优先于通用扩展名校验，给出明确提示）
     const ext = getExtension(file.name);
     if (ext === 'pdf' || file.type === 'application/pdf') {
-      lastError.value = 'PDF 文本提取暂不支持，请先转换为 TXT 或 MD 格式';
+      lastError.value = t('dataBank.pdfNotSupported');
       return null;
     }
 
     // 3. 校验文件类型（支持 TXT/MD/HTML）
     const supportedExts = ['txt', 'md', 'markdown', 'html', 'htm', 'csv', 'json'];
     if (!supportedExts.includes(ext)) {
-      lastError.value = `不支持的文件类型：.${ext}（支持 ${supportedExts.join(', ')}）`;
+      lastError.value = t('story.unsupportedExt', { ext, supported: supportedExts.join(', ') });
       return null;
     }
 
@@ -172,10 +173,10 @@ export const useDataBankStore = defineStore('data-bank', () => {
       documents.value.unshift(doc);
       await persistDocument(docId);
 
-      lastInfo.value = `已上传文档「${file.name}」（${chunks.length} 个分块）`;
+      lastInfo.value = t('dataBank.uploaded', { name: file.name, count: chunks.length });
       return docId;
     } catch (e) {
-      lastError.value = `处理文件失败：${(e as Error).message}`;
+      lastError.value = t('dataBank.processFailed', { error: (e as Error).message });
       return null;
     }
   }

@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { StorageAdapter } from '@/storage/storage-adapter';
@@ -152,7 +153,7 @@ export const useStoryStore = defineStore('story', () => {
         currentStoryId.value = list[0].id;
       }
     } catch (err) {
-      lastError.value = `加载故事失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.loadFailed', { name: t('store.entityStory'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -163,7 +164,7 @@ export const useStoryStore = defineStore('story', () => {
     try {
       await storageAdapter.saveStory(story);
     } catch (err) {
-      lastError.value = `保存故事失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.saveFailed', { name: t('store.entityStory'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -172,7 +173,7 @@ export const useStoryStore = defineStore('story', () => {
     try {
       await storageAdapter.deleteStory(id);
     } catch (err) {
-      lastError.value = `删除故事失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.deleteFailed', { name: t('store.entityStory'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -216,14 +217,14 @@ export const useStoryStore = defineStore('story', () => {
     const ext = getExtension(file.name);
     const supportedExts = ['txt', 'md', 'markdown', 'text'];
     if (!supportedExts.includes(ext)) {
-      lastError.value = `不支持的文件类型：.${ext}（支持 ${supportedExts.join(', ')}）`;
+      lastError.value = t('story.unsupportedExt', { ext, supported: supportedExts.join(', ') });
       return null;
     }
 
     // 2. 校验文件大小（10MB 上限，防止内存溢出）
     const MAX_STORY_FILE_SIZE = 10 * 1024 * 1024;
     if (file.size > MAX_STORY_FILE_SIZE) {
-      lastError.value = `文件大小超过限制（${MAX_STORY_FILE_SIZE / 1024 / 1024}MB）`;
+      lastError.value = t('story.fileTooLarge2', { size: MAX_STORY_FILE_SIZE / 1024 / 1024 });
       return null;
     }
 
@@ -232,7 +233,7 @@ export const useStoryStore = defineStore('story', () => {
       const text = await file.text();
 
       if (text.trim().length === 0) {
-        lastError.value = '文件内容为空';
+        lastError.value = t('story.fileEmpty');
         return null;
       }
 
@@ -240,7 +241,7 @@ export const useStoryStore = defineStore('story', () => {
       const chunks = chunkNovel(text);
 
       if (chunks.length === 0) {
-        lastError.value = '文本分块失败：未生成有效分块';
+        lastError.value = t('story.chunkFailed');
         return null;
       }
 
@@ -251,10 +252,10 @@ export const useStoryStore = defineStore('story', () => {
       currentStoryId.value = story.id;
       await persistStory(story.id);
 
-      lastInfo.value = `已创建故事任务：${file.name}（${chunks.length} 个分块）`;
+      lastInfo.value = t('story.taskCreated', { name: file.name, count: chunks.length });
       return story.id;
     } catch (err) {
-      lastError.value = `处理文件失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('story.processFailed', { error: err instanceof Error ? err.message : String(err) });
       return null;
     }
   }
@@ -289,18 +290,18 @@ export const useStoryStore = defineStore('story', () => {
     lastInfo.value = null;
 
     if (isAnalyzing.value) {
-      lastError.value = '正在分析中，请稍候';
+      lastError.value = t('story.analyzingBusy');
       return false;
     }
 
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
 
     if (story.status === 'completed') {
-      lastError.value = '该故事已完成分析，如需重新分析请先删除再创建';
+      lastError.value = t('story.alreadyAnalyzed');
       return false;
     }
 
@@ -308,13 +309,13 @@ export const useStoryStore = defineStore('story', () => {
     const settingsStore = useSettingsStore();
     const profile = settingsStore.activeProfile;
     if (!profile) {
-      lastError.value = '未配置 API 连接，请先在设置页添加 API 配置后再分析故事';
+      lastError.value = t('story.noApiAnalyze');
       return false;
     }
 
     const depthMeta = getDepthMeta(story.depth);
     if (!depthMeta) {
-      lastError.value = `无效的分析深度：${story.depth}`;
+      lastError.value = t('story.invalidDepth', { depth: story.depth });
       return false;
     }
 
@@ -334,7 +335,7 @@ export const useStoryStore = defineStore('story', () => {
     progress.value = {
       completed: 0,
       total: chunks.length,
-      stage: '开始分析',
+      stage: t('story.stageStart'),
       isAnalyzing: true,
     };
 
@@ -349,13 +350,13 @@ export const useStoryStore = defineStore('story', () => {
       // 逐块分析
       for (let i = 0; i < chunks.length; i++) {
         if (signal.aborted) {
-          throw new Error('用户取消分析');
+          throw new Error(t('story.userCancelled'));
         }
 
         progress.value = {
           completed: i,
           total: chunks.length,
-          stage: `正在分析第 ${i + 1}/${chunks.length} 块`,
+          stage: t('story.stageChunk', { i: i + 1, total: chunks.length }),
           isAnalyzing: true,
         };
 
@@ -385,7 +386,7 @@ export const useStoryStore = defineStore('story', () => {
           prevResult = result;
         } catch (err) {
           // 单块失败不中断整体流程，记录错误继续
-          const errMsg = `第 ${i + 1} 块分析失败：${err instanceof Error ? err.message : String(err)}`;
+          const errMsg = t('story.chunkFailed2', { i: i + 1, error: err instanceof Error ? err.message : String(err) });
           errors.push(errMsg);
           // 仍推入空结果以保持索引一致
           const emptyResult: ChunkAnalysisResult = {
@@ -400,13 +401,13 @@ export const useStoryStore = defineStore('story', () => {
       }
 
       if (signal.aborted) {
-        throw new Error('用户取消分析');
+        throw new Error(t('story.userCancelled'));
       }
 
       progress.value = {
         completed: chunks.length,
         total: chunks.length,
-        stage: '正在合并结果',
+        stage: t('story.stageMerge'),
         isAnalyzing: true,
       };
 
@@ -419,7 +420,7 @@ export const useStoryStore = defineStore('story', () => {
         progress.value = {
           completed: chunks.length,
           total: chunks.length,
-          stage: '正在生成故事脚本',
+          stage: t('story.stageScripts'),
           isAnalyzing: true,
         };
 
@@ -470,14 +471,14 @@ export const useStoryStore = defineStore('story', () => {
       progress.value = {
         completed: chunks.length,
         total: chunks.length,
-        stage: errors.length > 0 ? `分析完成（${errors.length} 个错误）` : '分析完成',
+        stage: errors.length > 0 ? t('story.stageDoneErrors', { count: errors.length }) : t('story.stageDone'),
         isAnalyzing: false,
       };
 
       if (errors.length > 0) {
-        lastInfo.value = `分析完成，但有 ${errors.length} 个错误`;
+        lastInfo.value = t('story.doneWithErrors', { count: errors.length });
       } else {
-        lastInfo.value = `分析完成：${finalResult.characters.length} 人物、${finalResult.scenes.length} 场景、${finalResult.events.length} 事件`;
+        lastInfo.value = t('story.doneSummary', { chars: finalResult.characters.length, scenes: finalResult.scenes.length, events: finalResult.events.length });
       }
 
       return true;
@@ -487,11 +488,11 @@ export const useStoryStore = defineStore('story', () => {
       progress.value = {
         completed: 0,
         total: chunks.length,
-        stage: '分析失败',
+        stage: t('story.stageFailed'),
         isAnalyzing: false,
         error: err instanceof Error ? err.message : String(err),
       };
-      lastError.value = `分析失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('story.analyzeFailed', { error: err instanceof Error ? err.message : String(err) });
       await persistStory(storyId);
       return false;
     } finally {
@@ -506,7 +507,7 @@ export const useStoryStore = defineStore('story', () => {
   function cancelAnalysis(): void {
     if (abortController) {
       abortController.abort();
-      lastInfo.value = '已请求取消分析';
+      lastInfo.value = t('story.cancelRequested2');
     }
   }
 
@@ -521,7 +522,7 @@ export const useStoryStore = defineStore('story', () => {
     if (currentStoryId.value === id) {
       currentStoryId.value = stories.value[0]?.id ?? null;
     }
-    lastInfo.value = `已删除故事：${removed.sourceFileName}`;
+    lastInfo.value = t('story.deleted2', { name: removed.sourceFileName });
   }
 
   function clearLastError(): void {
@@ -594,12 +595,12 @@ export const useStoryStore = defineStore('story', () => {
   ): ImportResult[] {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return [];
     }
     const targets = createImportTargets();
     const results = importWorldCore(story, lorebookId, targets.lorebook, strategy);
-    summarizeImportResults(results, '世界');
+    summarizeImportResults(results, t('story.catWorld'));
     return results;
   }
 
@@ -613,12 +614,12 @@ export const useStoryStore = defineStore('story', () => {
   ): ImportResult[] {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return [];
     }
     const targets = createImportTargets();
     const results = importScenesCore(story, lorebookId, targets.lorebook, strategy);
-    summarizeImportResults(results, '场景');
+    summarizeImportResults(results, t('story.catScenes'));
     return results;
   }
 
@@ -631,12 +632,12 @@ export const useStoryStore = defineStore('story', () => {
   ): ImportResult[] {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return [];
     }
     const targets = createImportTargets();
     const results = importCharactersCore(story, targets.character, strategy);
-    summarizeImportResults(results, '人物');
+    summarizeImportResults(results, t('story.catChars'));
     return results;
   }
 
@@ -650,12 +651,12 @@ export const useStoryStore = defineStore('story', () => {
   ): ImportResult[] {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return [];
     }
     const targets = createImportTargets();
     const results = importEventsCore(story, lorebookId, targets.events, strategy);
-    summarizeImportResults(results, '事件');
+    summarizeImportResults(results, t('story.catEvents'));
     return results;
   }
 
@@ -669,12 +670,12 @@ export const useStoryStore = defineStore('story', () => {
   ): ImportResult[] {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return [];
     }
     const targets = createImportTargets();
     const results = importAllCore(story, lorebookId, targets, strategy);
-    summarizeImportResults(results, '全部');
+    summarizeImportResults(results, t('story.catAll'));
     return results;
   }
 
@@ -684,12 +685,12 @@ export const useStoryStore = defineStore('story', () => {
   function exportScripts(storyId: string): void {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story || story.scripts.length === 0) {
-      lastError.value = '无脚本可导出';
+      lastError.value = t('story.noScripts');
       return;
     }
     const filename = `${story.sourceFileName.replace(/\.[^.]+$/, '')}-scripts.json`;
     downloadScripts(story.scripts, filename);
-    lastInfo.value = `已导出 ${story.scripts.length} 个脚本`;
+    lastInfo.value = t('story.scriptsExported', { count: story.scripts.length });
   }
 
   /** 汇总导入结果到 lastInfo/lastError */
@@ -697,9 +698,9 @@ export const useStoryStore = defineStore('story', () => {
     const success = results.filter((r) => r.success).length;
     const failed = results.length - success;
     if (failed === 0) {
-      lastInfo.value = `${label}导入完成：${success} 项成功`;
+      lastInfo.value = t('story.importOk', { label, success });
     } else {
-      lastInfo.value = `${label}导入完成：${success} 成功，${failed} 跳过/失败`;
+      lastInfo.value = t('story.importPartial', { label, success, failed });
       const errors = results.filter((r) => !r.success).map((r) => r.error).filter(Boolean);
       if (errors.length > 0) {
         lastError.value = errors.slice(0, 3).join('；');
@@ -726,25 +727,25 @@ export const useStoryStore = defineStore('story', () => {
   ): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
     const character = story.characters.find((c) => c.name === characterName);
     if (!character) {
-      lastError.value = `人物 "${characterName}" 不在故事人物列表中`;
+      lastError.value = t('story.charNotInList', { name: characterName });
       return false;
     }
 
     const config = createProtagonistFromCharacter(character, role, startingScene);
     const errors = validateProtagonist(config, story);
     if (errors.length > 0) {
-      lastError.value = `主角配置校验失败：${errors.join('；')}`;
+      lastError.value = t('story.protagonistInvalid', { errors: errors.join('；') });
       return false;
     }
 
     story.protagonist = config;
     void persistStory(storyId);
-    lastInfo.value = `已设置主角：${config.name}（来自故事人物）`;
+    lastInfo.value = t('story.protagonistSetExisting', { name: config.name });
     return true;
   }
 
@@ -767,20 +768,20 @@ export const useStoryStore = defineStore('story', () => {
   ): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
 
     const config = createNewProtagonist(input);
     const errors = validateProtagonist(config, story);
     if (errors.length > 0) {
-      lastError.value = `主角配置校验失败：${errors.join('；')}`;
+      lastError.value = t('story.protagonistInvalid', { errors: errors.join('；') });
       return false;
     }
 
     story.protagonist = config;
     void persistStory(storyId);
-    lastInfo.value = `已设置主角：${config.name}（自定义角色）`;
+    lastInfo.value = t('story.protagonistSetCustom', { name: config.name });
     return true;
   }
 
@@ -793,24 +794,24 @@ export const useStoryStore = defineStore('story', () => {
   ): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
     if (!story.protagonist) {
-      lastError.value = '尚未配置主角';
+      lastError.value = t('story.noProtagonist');
       return false;
     }
 
     const updated = patchProtagonist(story.protagonist, patch);
     const errors = validateProtagonist(updated, story);
     if (errors.length > 0) {
-      lastError.value = `主角配置校验失败：${errors.join('；')}`;
+      lastError.value = t('story.protagonistInvalid', { errors: errors.join('；') });
       return false;
     }
 
     story.protagonist = updated;
     void persistStory(storyId);
-    lastInfo.value = `已更新主角配置：${updated.name}`;
+    lastInfo.value = t('story.protagonistUpdated', { name: updated.name });
     return true;
   }
 
@@ -820,17 +821,17 @@ export const useStoryStore = defineStore('story', () => {
   function clearProtagonist(storyId: string): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
     if (!story.protagonist) {
-      lastInfo.value = '尚未配置主角，无需清除';
+      lastInfo.value = t('story.noProtagonistClear');
       return true;
     }
     const name = story.protagonist.name;
     story.protagonist = null;
     void persistStory(storyId);
-    lastInfo.value = `已清除主角配置：${name}`;
+    lastInfo.value = t('story.protagonistCleared', { name });
     return true;
   }
 
@@ -845,11 +846,11 @@ export const useStoryStore = defineStore('story', () => {
   ): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
     if (!story.protagonist) {
-      lastError.value = '尚未配置主角';
+      lastError.value = t('story.noProtagonist');
       return false;
     }
 
@@ -863,11 +864,11 @@ export const useStoryStore = defineStore('story', () => {
   function removeProtagonistRelation(storyId: string, target: string): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
     if (!story.protagonist) {
-      lastError.value = '尚未配置主角';
+      lastError.value = t('story.noProtagonist');
       return false;
     }
 
@@ -883,11 +884,11 @@ export const useStoryStore = defineStore('story', () => {
   function setStartingScene(storyId: string, sceneName: string): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
     if (!story.protagonist) {
-      lastError.value = '尚未配置主角';
+      lastError.value = t('story.noProtagonist');
       return false;
     }
 
@@ -901,11 +902,11 @@ export const useStoryStore = defineStore('story', () => {
   function setProtagonistPersonaId(storyId: string, personaId: string | null): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
     if (!story.protagonist) {
-      lastError.value = '尚未配置主角';
+      lastError.value = t('story.noProtagonist');
       return false;
     }
     return updateProtagonist(storyId, { personaId });
@@ -925,14 +926,14 @@ export const useStoryStore = defineStore('story', () => {
   ): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
     story.boundWorldBookId = worldBookId || null;
     void persistStory(storyId);
     lastInfo.value = worldBookId
-      ? '已关联世界书'
-      : '已解除世界书关联';
+      ? t('story.worldLinked')
+      : t('story.worldUnlinked');
     return true;
   }
 
@@ -948,7 +949,7 @@ export const useStoryStore = defineStore('story', () => {
   ): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
 
@@ -956,7 +957,7 @@ export const useStoryStore = defineStore('story', () => {
     const merged: StoryTimeConfig = { ...current, ...patch };
     const errors = validateTimeConfig(merged);
     if (errors.length > 0) {
-      lastError.value = `时间配置校验失败：${errors.join('；')}`;
+      lastError.value = t('story.timeInvalid', { errors: errors.join('；') });
       return false;
     }
 
@@ -966,7 +967,7 @@ export const useStoryStore = defineStore('story', () => {
       story.timeState = createDefaultTimeState(merged);
     }
     void persistStory(storyId);
-    lastInfo.value = `已更新时间配置（${merged.enabled ? '已启用' : '已禁用'}）`;
+    lastInfo.value = t('story.timeUpdated', { state: merged.enabled ? t('story.enabled') : t('story.disabled') });
     return true;
   }
 
@@ -984,11 +985,11 @@ export const useStoryStore = defineStore('story', () => {
   function advanceStoryTime(storyId: string): string {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return '';
     }
     if (!story.timeConfig?.enabled) {
-      lastError.value = '时间系统未启用';
+      lastError.value = t('story.timeDisabled');
       return '';
     }
     if (!story.timeState) {
@@ -998,7 +999,7 @@ export const useStoryStore = defineStore('story', () => {
     story.timeState = advanceTimeCore(story.timeConfig, story.timeState);
     void persistStory(storyId);
     const formatted = formatStoryTime(story.timeConfig, story.timeState);
-    lastInfo.value = `故事时间已推进至：${formatted}`;
+    lastInfo.value = t('story.timeAdvanced2', { time: formatted });
     return formatted;
   }
 
@@ -1032,11 +1033,11 @@ export const useStoryStore = defineStore('story', () => {
   function setStoryTime(storyId: string, value: number): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
     if (!story.timeConfig?.enabled) {
-      lastError.value = '时间系统未启用';
+      lastError.value = t('story.timeDisabled');
       return false;
     }
     if (!story.timeState) {
@@ -1045,7 +1046,7 @@ export const useStoryStore = defineStore('story', () => {
 
     story.timeState = setStoryTimeValueCore(story.timeState, value);
     void persistStory(storyId);
-    lastInfo.value = `故事时间已设置为：${formatStoryTime(story.timeConfig, story.timeState)}`;
+    lastInfo.value = t('story.timeSet2', { time: formatStoryTime(story.timeConfig, story.timeState) });
     return true;
   }
 
@@ -1055,17 +1056,17 @@ export const useStoryStore = defineStore('story', () => {
   function resetStoryTime(storyId: string): boolean {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story) {
-      lastError.value = '找不到目标故事';
+      lastError.value = t('story.notFound2');
       return false;
     }
     if (!story.timeConfig) {
-      lastError.value = '尚未配置时间系统';
+      lastError.value = t('story.noTimeConfig');
       return false;
     }
 
     story.timeState = resetStoryTimeCore(story.timeConfig);
     void persistStory(storyId);
-    lastInfo.value = `故事时间已重置为：${formatStoryTime(story.timeConfig, story.timeState)}`;
+    lastInfo.value = t('story.timeReset2', { time: formatStoryTime(story.timeConfig, story.timeState) });
     return true;
   }
 

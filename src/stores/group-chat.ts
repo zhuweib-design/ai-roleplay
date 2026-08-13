@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { StorageAdapter } from '@/storage/storage-adapter';
@@ -80,7 +81,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
         currentGroupId.value = list[0].id;
       }
     } catch (err) {
-      lastError.value = `加载群聊失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.loadFailed', { name: t('store.entityGroup'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -92,7 +93,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
       g.updatedAt = new Date().toISOString();
       await storageAdapter.saveGroupChat(g);
     } catch (err) {
-      lastError.value = `保存群聊失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.saveFailed', { name: t('store.entityGroup'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -101,7 +102,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     try {
       await storageAdapter.deleteGroupChat(id);
     } catch (err) {
-      lastError.value = `删除群聊失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.deleteFailed', { name: t('store.entityGroup'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -111,7 +112,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
   function exportGroupToStJson(groupId: string): string | null {
     const g = groups.value.find((x) => x.id === groupId);
     if (!g) {
-      lastError.value = '群聊不存在';
+      lastError.value = t('group.notFound');
       return null;
     }
     return exportGroupChatToStJson(g);
@@ -127,12 +128,12 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${safeName}-ST群聊.json`;
+    a.download = t('group.stExportName', { name: safeName });
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    lastInfo.value = `已导出群聊「${g?.name}」为 SillyTavern 格式`;
+    lastInfo.value = t('group.exportedSt', { name: g?.name ?? '' });
     return true;
   }
 
@@ -158,9 +159,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
         return exists;
       });
       if (validMembers.length < 2) {
-        lastError.value =
-          `导入失败：群聊至少需 2 个有效成员角色（缺失：${missing.join('、') || '无'}）。` +
-          '请先导入对应角色卡';
+        lastError.value = t('group.importNeedMembers2', { missing: missing.join('、') || t('lb.unnamed') });
         return null;
       }
       chat.members = validMembers;
@@ -168,11 +167,11 @@ export const useGroupChatStore = defineStore('groupChat', () => {
       groups.value.push(chat);
       await persistGroup(chat.id);
       lastInfo.value =
-        `已导入群聊「${chat.name}」（成员 ${validMembers.length} 人，消息 ${chat.messages.length} 条）` +
-        (missing.length > 0 ? `；已跳过缺失角色 ${missing.length} 个` : '');
+        t('group.imported3', { name: chat.name, members: validMembers.length, msgs: chat.messages.length, skipped: '' }) +
+        (missing.length > 0 ? t('group.importSkipped', { count: missing.length }) : '');
       return chat.id;
     } catch (err) {
-      lastError.value = `导入群聊失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('group.importFailed2', { error: err instanceof Error ? err.message : String(err) });
       return null;
     }
   }
@@ -195,7 +194,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
   ): string | null {
     const errors = validateGroupChatInput(input);
     if (errors.length > 0) {
-      lastError.value = `创建失败：${errors.join('；')}`;
+      lastError.value = t('group.createFailed', { errors: errors.join('；') });
       return null;
     }
 
@@ -211,7 +210,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
         (Array.isArray(card?.tags) && card.tags.includes('__temporary_npc'));
       return {
         characterId: charId,
-        name: card?.name ?? '未知角色',
+        name: card?.name ?? t('group.unknownChar'),
         avatar: card?.avatar,
         talkativeness: card?.talkativeness,
         joinedAt: now,
@@ -280,7 +279,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     groups.value.unshift(group);
     currentGroupId.value = id;
     void persistGroup(id);
-    lastInfo.value = `已创建群聊：${group.name}`;
+    lastInfo.value = t('group.created', { name: group.name });
     return id;
   }
 
@@ -306,7 +305,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     if (idx < 0) return;
     const removed = groups.value.splice(idx, 1)[0];
     void deleteFromStorage(id);
-    lastInfo.value = `已删除群聊：${removed.name}`;
+    lastInfo.value = t('group.deleted', { name: removed.name });
     if (currentGroupId.value === id) {
       currentGroupId.value = groups.value[0]?.id ?? null;
     }
@@ -326,17 +325,17 @@ export const useGroupChatStore = defineStore('groupChat', () => {
 
     // F10.4 归档群聊不允许添加成员
     if (g.lifecycleStatus === 'archived') {
-      lastError.value = '群聊已归档，不能添加成员';
+      lastError.value = t('group.archivedNoAdd');
       return false;
     }
 
     if (g.members.length >= MAX_GROUP_MEMBERS) {
-      lastError.value = `群聊人数已达上限 ${MAX_GROUP_MEMBERS}`;
+      lastError.value = t('group.memberLimit2', { max: MAX_GROUP_MEMBERS });
       return false;
     }
 
     if (g.members.some((m) => m.characterId === character.id)) {
-      lastError.value = '该角色已在群聊中';
+      lastError.value = t('group.alreadyInGroup');
       return false;
     }
 
@@ -361,7 +360,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     g.messages.push({
       id: `msg-${Date.now()}`,
       role: 'system',
-      content: `${character.name} 加入了群聊`,
+      content: t('group.joined', { name: character.name }),
       timestamp: now,
       swipes: [],
       swipeIndex: 0,
@@ -381,7 +380,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
 
     // F10.4 归档群聊不允许移除成员
     if (g.lifecycleStatus === 'archived') {
-      lastError.value = '群聊已归档，不能移除成员';
+      lastError.value = t('group.archivedNoRemove');
       return false;
     }
 
@@ -394,7 +393,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     g.messages.push({
       id: `msg-${Date.now()}`,
       role: 'system',
-      content: `${removed.name} 离开了群聊`,
+      content: t('group.left', { name: removed.name }),
       timestamp: now,
       swipes: [],
       swipeIndex: 0,
@@ -407,7 +406,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
       const remainingTempNpc = g.members.some((m) => m.isTemporary);
       if (!remainingTempNpc) {
         archiveGroupInternal(g, now);
-        lastInfo.value = `${removed.name} 离开后群聊已自动归档`;
+        lastInfo.value = t('group.autoArchived', { name: removed.name });
         void persistGroup(groupId);
         return true;
       }
@@ -428,7 +427,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     g.messages.push({
       id: `msg-${Date.now()}`,
       role: 'system',
-      content: '群聊已归档（只读状态）',
+      content: t('group.archivedReadonly2'),
       timestamp: now,
       swipes: [],
       swipeIndex: 0,
@@ -443,12 +442,12 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     const g = groups.value.find((x) => x.id === groupId);
     if (!g) return false;
     if (g.lifecycleStatus === 'archived') {
-      lastError.value = '群聊已归档';
+      lastError.value = t('group.archived2');
       return false;
     }
     const now = new Date().toISOString();
     archiveGroupInternal(g, now);
-    lastInfo.value = `群聊「${g.name}」已归档`;
+    lastInfo.value = t('group.archivedDone', { name: g.name });
     void persistGroup(groupId);
     return true;
   }
@@ -465,7 +464,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     const g = groups.value.find((x) => x.id === groupId);
     if (!g) return false;
     if (g.lifecycleStatus !== 'archived') {
-      lastError.value = '群聊未归档，无需恢复';
+      lastError.value = t('group.notArchived');
       return false;
     }
 
@@ -473,7 +472,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     if (characterExists) {
       const missing = g.members.filter((m) => !characterExists(m.characterId));
       if (missing.length > 0) {
-        lastError.value = `以下成员角色卡已丢失，无法恢复：${missing.map((m) => m.name).join('、')}`;
+        lastError.value = t('group.restoreMissing', { names: missing.map((m) => m.name).join('、') });
         return false;
       }
     }
@@ -484,13 +483,13 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     g.messages.push({
       id: `msg-${Date.now()}`,
       role: 'system',
-      content: '群聊已恢复活跃',
+      content: t('group.restoredActive'),
       timestamp: now,
       swipes: [],
       swipeIndex: 0,
       eventType: 'none',
     });
-    lastInfo.value = `群聊「${g.name}」已恢复活跃`;
+    lastInfo.value = t('group.restoredDone', { name: g.name });
     void persistGroup(groupId);
     return true;
   }
@@ -558,7 +557,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
 
     // F10.4 归档群聊为只读状态，不能发新消息
     if (g.lifecycleStatus === 'archived') {
-      lastError.value = '群聊已归档，不能发送消息';
+      lastError.value = t('group.archivedNoSend');
       return false;
     }
 
@@ -676,7 +675,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
 
     const g = groups.value.find((x) => x.id === groupId);
     if (!g) {
-      lastError.value = '群聊不存在';
+      lastError.value = t('group.notFound');
       return null;
     }
 
@@ -703,7 +702,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     const settingsStore = useSettingsStore();
     const profile = settingsStore.activeProfile;
     if (!profile) {
-      lastError.value = '未配置 API 连接，请先在设置页添加 API 配置后再生成 NPC';
+      lastError.value = t('group.noApiNpc');
       return null;
     }
 
@@ -724,7 +723,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
       // 解析返回
       const npc = parseGeneratedNpc(raw, sceneContext);
       if (!npc) {
-        lastError.value = '生成失败：无法解析 AI 返回的 NPC 数据，请重试';
+        lastError.value = t('group.npcParseFailed');
         return null;
       }
 
@@ -744,7 +743,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
         try {
           await storageAdapter.saveCharacter(newCard);
         } catch (err) {
-          lastError.value = `保存 NPC 角色卡失败：${err instanceof Error ? err.message : String(err)}`;
+          lastError.value = t('group.npcSaveFailed', { error: err instanceof Error ? err.message : String(err) });
           return null;
         }
       }
@@ -752,10 +751,10 @@ export const useGroupChatStore = defineStore('groupChat', () => {
       // 添加到群聊成员（触发 join 系统消息）
       addMember(groupId, newCard);
 
-      lastInfo.value = `已生成 NPC：${npc.name}`;
+      lastInfo.value = t('group.npcGenerated2', { name: npc.name });
       return newCharId;
     } catch (err) {
-      lastError.value = `生成失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('group.npcGenFailed2', { error: err instanceof Error ? err.message : String(err) });
       return null;
     } finally {
       isGeneratingNpc.value = false;

@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { UICharacter, NavKey } from '@/types';
@@ -129,7 +130,7 @@ export const useCharacterStore = defineStore('character', () => {
         await Promise.all(characters.value.map((c) => persistCharacter(c.id)));
       }
     } catch (err) {
-      lastError.value = `加载角色失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.loadFailed', { name: t('store.entityChar'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -144,7 +145,7 @@ export const useCharacterStore = defineStore('character', () => {
       const card = uiCharToCard(char);
       await storageAdapter.saveCharacter(card);
     } catch (err) {
-      lastError.value = `保存角色失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.saveFailed', { name: t('store.entityChar'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -156,7 +157,7 @@ export const useCharacterStore = defineStore('character', () => {
     try {
       await storageAdapter.deleteCharacter(id);
     } catch (err) {
-      lastError.value = `删除角色失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.deleteFailed', { name: t('store.entityChar'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -200,15 +201,15 @@ export const useCharacterStore = defineStore('character', () => {
     const id = `char-${Date.now()}`;
     const newChar: UICharacter = {
       id,
-      name: '新角色',
+      name: t('store.newChar'),
       avatarType: 'gradient',
       gradientFrom: 'var(--tk-cyan-500)',
       gradientTo: 'var(--tk-cyan-700)',
-      initial: '新',
-      lastActive: '刚刚',
+      initial: t('char.initial'),
+      lastActive: t('char.justNow'),
       favorite: false,
-      tags: ['未分类'],
-      description: '点击编辑角色设定…',
+      tags: [t('char.uncategorized')],
+      description: t('char.clickToEdit'),
       model: 'GPT-4o',
       conversations: [],
       messages: [],
@@ -233,7 +234,7 @@ export const useCharacterStore = defineStore('character', () => {
     const char = characters.value.find((c) => c.id === id);
     if (!char) return false;
     Object.assign(char, patch);
-    char.lastActive = '刚刚';
+    char.lastActive = t('char.justNow');
     void persistCharacter(id);
     return true;
   }
@@ -356,7 +357,7 @@ export const useCharacterStore = defineStore('character', () => {
       try {
         json = JSON.parse(text);
       } catch {
-        lastError.value = 'JSON 格式错误：无法解析文件内容';
+        lastError.value = t('char.jsonParseFailed2');
         return null;
       }
 
@@ -365,14 +366,14 @@ export const useCharacterStore = defineStore('character', () => {
       try {
         card = importV2Card(json);
       } catch (err) {
-        lastError.value = `V2 卡格式错误：${err instanceof Error ? err.message : String(err)}`;
+        lastError.value = t('char.v2FormatError', { error: err instanceof Error ? err.message : String(err) });
         return null;
       }
 
       // 验证
       const errors = validateCharacterCard(card);
       if (errors.length > 0) {
-        lastError.value = `角色卡验证失败：${errors.join('；')}`;
+        lastError.value = t('char.validateFailed2', { errors: errors.join('；') });
         return null;
       }
 
@@ -382,16 +383,16 @@ export const useCharacterStore = defineStore('character', () => {
       // 但若与现有角色同名，提示用户
       if (characters.value.some((c) => c.name === ui.name)) {
         // 自动重命名
-        ui.name = `${ui.name} (导入)`;
+        ui.name = `${ui.name}${t('char.importSuffix')}`;
       }
 
       characters.value.push(ui);
       currentCharacterId.value = ui.id;
       await persistCharacter(ui.id);
-      lastInfo.value = `已导入角色卡：${ui.name}`;
+      lastInfo.value = t('char.imported2', { name: ui.name });
       return ui.id;
     } catch (err) {
-      lastError.value = `导入失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('char.importFailed2', { error: err instanceof Error ? err.message : String(err) });
       return null;
     }
   }
@@ -405,7 +406,7 @@ export const useCharacterStore = defineStore('character', () => {
     lastError.value = null;
     const char = characters.value.find((c) => c.id === id);
     if (!char) {
-      lastError.value = '找不到要导出的角色';
+      lastError.value = t('char.exportNotFound');
       return null;
     }
     try {
@@ -413,7 +414,7 @@ export const useCharacterStore = defineStore('character', () => {
       const v2 = exportV2Card(card);
       return JSON.stringify(v2, null, 2);
     } catch (err) {
-      lastError.value = `导出失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('char.exportFailed2', { error: err instanceof Error ? err.message : String(err) });
       return null;
     }
   }
@@ -436,7 +437,7 @@ export const useCharacterStore = defineStore('character', () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    lastInfo.value = `已导出：${safeName}.json`;
+    lastInfo.value = t('char.exported2', { name: safeName });
     return true;
   }
 
@@ -473,7 +474,7 @@ export const useCharacterStore = defineStore('character', () => {
     const settingsStore = useSettingsStore();
     const profile = settingsStore.activeProfile;
     if (!profile) {
-      lastError.value = '未配置 API 连接，请先在设置页添加 API 配置后再生成角色';
+      lastError.value = t('char.noApiForGen');
       return null;
     }
 
@@ -496,13 +497,13 @@ export const useCharacterStore = defineStore('character', () => {
       // 4. 解析返回
       const generated = parseGeneratedCharacter(raw);
       if (!generated) {
-        lastError.value = '生成失败：无法解析 AI 返回的角色数据，请重试';
+        lastError.value = t('char.genParseFailed');
         return null;
       }
 
       // 5. 转换为 UICharacter 并保存
       const id = `char-${Date.now()}`;
-      const now = '刚刚';
+      const now = t('char.justNow');
       const newChar: UICharacter = {
         id,
         name: generated.name,
@@ -512,8 +513,8 @@ export const useCharacterStore = defineStore('character', () => {
         initial: generated.name[0] || '?',
         lastActive: now,
         favorite: false,
-        tags: generated.tags.length > 0 ? generated.tags : ['未分类'],
-        description: generated.description || '（无描述）',
+        tags: generated.tags.length > 0 ? generated.tags : [t('char.uncategorized')],
+        description: generated.description || t('char.noDesc2'),
         model: profile.model,
         conversations: [],
         messages: generated.firstMessage
@@ -538,10 +539,10 @@ export const useCharacterStore = defineStore('character', () => {
       characters.value.push(newChar);
       currentCharacterId.value = id;
       await persistCharacter(id);
-      lastInfo.value = `已生成新角色：${generated.name}`;
+      lastInfo.value = t('char.genSuccess2', { name: generated.name });
       return id;
     } catch (err) {
-      lastError.value = `生成失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('char.genFailed2', { error: err instanceof Error ? err.message : String(err) });
       return null;
     } finally {
       isGeneratingCharacter.value = false;

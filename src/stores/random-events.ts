@@ -11,6 +11,7 @@
  * 持久化策略：当前为内存维护，与 events store 一致。
  * 后续可序列化到 Lorebook 扩展字段或 settings 进行持久化。
  */
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import {
@@ -81,7 +82,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
       return null;
     }
     templates.value.push(tpl);
-    lastInfo.value = `模板「${tpl.name}」已创建`;
+    lastInfo.value = t('re.tplCreated', { name: tpl.name });
     return tpl.id;
   }
 
@@ -94,7 +95,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
   ): boolean {
     const idx = templates.value.findIndex((t) => t.id === id);
     if (idx < 0) {
-      lastError.value = '模板不存在';
+      lastError.value = t('re.tplNotFound');
       return false;
     }
     const merged = { ...templates.value[idx], ...patch };
@@ -104,7 +105,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
       return false;
     }
     templates.value[idx] = updateRandomEventTemplate(templates.value[idx], patch);
-    lastInfo.value = `模板「${templates.value[idx].name}」已更新`;
+    lastInfo.value = t('re.tplUpdated', { name: templates.value[idx].name });
     return true;
   }
 
@@ -115,7 +116,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
     const idx = templates.value.findIndex((t) => t.id === id);
     if (idx < 0) return false;
     const removed = templates.value.splice(idx, 1)[0];
-    lastInfo.value = `模板「${removed.name}」已删除`;
+    lastInfo.value = t('re.tplDeleted', { name: removed.name });
     return true;
   }
 
@@ -132,7 +133,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
   function toggleTemplate(id: string, enabled?: boolean): boolean {
     const tpl = templates.value.find((t) => t.id === id);
     if (!tpl) {
-      lastError.value = '模板不存在';
+      lastError.value = t('re.tplNotFound');
       return false;
     }
     const newState = enabled ?? !tpl.enabled;
@@ -175,7 +176,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
       return false;
     }
     sceneConfigs.value.set(sceneName, merged);
-    lastInfo.value = `场景「${sceneName}」配置已更新`;
+    lastInfo.value = t('re.sceneUpdated2', { name: sceneName });
     return true;
   }
 
@@ -194,7 +195,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
   function deleteSceneConfig(sceneName: string): boolean {
     if (!sceneConfigs.value.has(sceneName)) return false;
     sceneConfigs.value.delete(sceneName);
-    lastInfo.value = `场景「${sceneName}」配置已删除`;
+    lastInfo.value = t('re.sceneDeleted2', { name: sceneName });
     return true;
   }
 
@@ -207,7 +208,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
     patch: Partial<RandomEventGeneratorConfig>
   ): void {
     generatorConfig.value = { ...generatorConfig.value, ...patch };
-    lastInfo.value = '生成器配置已更新';
+    lastInfo.value = t('re.genConfigUpdated');
   }
 
   /**
@@ -286,7 +287,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
   ): boolean {
     const idx = results.value.findIndex((r) => r.id === resultId);
     if (idx < 0) {
-      lastError.value = '结果记录不存在';
+      lastError.value = t('re.resultNotFound');
       return false;
     }
     results.value[idx] = applyFeedbackToResult(results.value[idx], feedback, note);
@@ -302,7 +303,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
         );
         tpl.probability = newProb;
         tpl.updatedAt = new Date().toISOString();
-        lastInfo.value = `模板「${tpl.name}」概率已调整至 ${newProb}%`;
+        lastInfo.value = t('re.probAdjusted', { name: tpl.name, prob: newProb });
       }
     }
 
@@ -314,7 +315,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
    */
   function clearResults(): void {
     results.value = [];
-    lastInfo.value = '结果历史已清空';
+    lastInfo.value = t('re.historyCleared2');
   }
 
   // ── 重置 ──
@@ -339,21 +340,21 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
   // ── 类别与严重度常量（便于 UI 使用） ──
 
   const CATEGORY_OPTIONS: Array<{ value: RandomEventCategory; label: string }> = [
-    { value: 'encounter', label: '偶遇 NPC' },
-    { value: 'discovery', label: '发现物品/地点' },
-    { value: 'combat', label: '战斗冲突' },
-    { value: 'social', label: '社交互动' },
-    { value: 'environment', label: '环境变化' },
-    { value: 'mystery', label: '神秘事件' },
-    { value: 'custom', label: '自定义' },
+    { value: 'encounter', label: t('re.catEncounter') },
+    { value: 'discovery', label: t('re.catDiscovery') },
+    { value: 'combat', label: t('re.catCombat') },
+    { value: 'social', label: t('re.catSocial') },
+    { value: 'environment', label: t('re.catEnvironment') },
+    { value: 'mystery', label: t('re.catMystery') },
+    { value: 'custom', label: t('re.catCustom') },
   ];
 
   const SEVERITY_OPTIONS: Array<{ value: RandomEventSeverity; label: string }> = [
-    { value: 'trivial', label: '琐碎' },
-    { value: 'minor', label: '轻微' },
-    { value: 'moderate', label: '中等' },
-    { value: 'major', label: '重大' },
-    { value: 'critical', label: '关键' },
+    { value: 'trivial', label: t('re.sevTrivial') },
+    { value: 'minor', label: t('re.sevMinor') },
+    { value: 'moderate', label: t('re.sevModerate') },
+    { value: 'major', label: t('re.sevMajor') },
+    { value: 'critical', label: t('re.sevCritical') },
   ];
 
   return {

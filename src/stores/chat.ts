@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { UIMessage, UICharacter, ApiProfile } from '@/types';
@@ -239,12 +240,12 @@ export const useChatStore = defineStore('chat', () => {
               const docs = useDataBankStore().retrieveForChat([query], 'global');
               const limited = limit && limit > 0 ? docs.slice(0, limit) : docs;
               return limited.length === 0
-                ? '资料库中未找到相关内容'
+                ? t('chat.dbNoContent')
                 : limited
                     .map((d) => `【${d.documentName}】${d.chunk.content}`)
                     .join('\n\n');
             } catch {
-              return '资料库不可用';
+              return t('chat.dbUnavailable');
             }
           },
         }),
@@ -272,10 +273,10 @@ export const useChatStore = defineStore('chat', () => {
       const existing = await l0l2Deps.store.get(`char-${characterId}`);
       if (existing) return; // 已种入,保持前缀稳定
       const body = [
-        card.name && `名字：${card.name}`,
-        card.description && `描述：${card.description}`,
-        card.personality && `性格：${card.personality}`,
-        card.scenario && `场景：${card.scenario}`,
+        card.name && t('chat.cardName', { value: card.name }),
+        card.description && t('chat.cardDesc', { value: card.description }),
+        card.personality && t('chat.cardPersonality', { value: card.personality }),
+        card.scenario && t('chat.cardScenario', { value: card.scenario }),
       ]
         .filter(Boolean)
         .join('\n');
@@ -346,10 +347,10 @@ export const useChatStore = defineStore('chat', () => {
     if (!chatManager) {
       // 未配置 API Profile，给出明确提示而非静默失败
       liveMsg.generating = false;
-      liveMsg.content = '（未配置 API Profile，请在设置页添加 API 配置后再开始对话）';
+      liveMsg.content = t('char.noApiProfile2');
       lastError.value = {
         type: 'unknown',
-        message: '未配置 ChatManager',
+        message: t('char.noChatManager'),
       };
       return;
     }
@@ -443,9 +444,9 @@ export const useChatStore = defineStore('chat', () => {
             liveMsg.generating = false;
             // 用户中止时保留已生成的部分内容
             if (type === 'aborted') {
-              if (!liveMsg.content) liveMsg.content = '（已停止生成）';
+              if (!liveMsg.content) liveMsg.content = t('char.stoppedGen2');
             } else {
-              liveMsg.content = `（生成失败：${err.message}）`;
+              liveMsg.content = t('char.genFailed3', { error: err.message });
             }
             lastError.value = toLastErrorRecord(err, type);
             streamingContent.value = '';
@@ -522,8 +523,8 @@ export const useChatStore = defineStore('chat', () => {
               return {
                 success: ok,
                 message: ok
-                  ? `已触发事件「${eventsStore.getEvent(id)?.name ?? id}」`
-                  : (eventsStore.lastError ?? `触发事件 ${id} 失败`),
+                  ? t('char.eventTriggered', { name: eventsStore.getEvent(id)?.name ?? id })
+                  : (eventsStore.lastError ?? t('store.triggerFailed', { id })),
               };
             },
             complete: (id: string) => {
@@ -531,8 +532,8 @@ export const useChatStore = defineStore('chat', () => {
               return {
                 success: ok,
                 message: ok
-                  ? `已完成事件「${eventsStore.getEvent(id)?.name ?? id}」`
-                  : (eventsStore.lastError ?? `完成事件 ${id} 失败`),
+                  ? t('char.eventDone', { name: eventsStore.getEvent(id)?.name ?? id })
+                  : (eventsStore.lastError ?? t('store.completeFailed', { id })),
               };
             },
           }
@@ -564,8 +565,8 @@ export const useChatStore = defineStore('chat', () => {
     const resultContent = result.message
       ? result.message
       : result.success
-        ? '（命令执行完成）'
-        : '（命令执行失败）';
+        ? t('char.cmdDone')
+        : t('char.cmdFailed');
     const resultMsg: UIMessage = {
       id: `m-${Date.now() + 1}`,
       role: 'assistant',
@@ -641,7 +642,7 @@ export const useChatStore = defineStore('chat', () => {
 
     if (!chatManager) {
       target.generating = false;
-      target.content = '（未配置 API Profile）';
+      target.content = t('char.noApiProfile2');
       return;
     }
 
@@ -711,9 +712,9 @@ export const useChatStore = defineStore('chat', () => {
             const type = classifyChatError(err);
             target.generating = false;
             if (type === 'aborted') {
-              if (!target.content) target.content = '（已停止生成）';
+              if (!target.content) target.content = t('char.stoppedGen2');
             } else {
-              target.content = `（生成失败：${err.message}）`;
+              target.content = t('char.genFailed3', { error: err.message });
             }
             lastError.value = toLastErrorRecord(err, type);
             streamingContent.value = '';
@@ -769,7 +770,7 @@ export const useChatStore = defineStore('chat', () => {
     const chat: Chat = {
       id: chatId,
       characterId: character.id,
-      title: `与 ${character.name} 的对话`,
+      title: t('chat.conversationTitle', { name: character.name }),
       messages: uiMsgsToChatMsgs(character.messages),
       createdAt: character.messages[0].timestamp
         ? new Date(character.messages[0].timestamp as number).toISOString()
@@ -783,7 +784,7 @@ export const useChatStore = defineStore('chat', () => {
       // 持久化失败不应阻塞 UI 流程，记录到 lastError
       lastError.value = {
         type: 'unknown',
-        message: `持久化失败：${err instanceof Error ? err.message : String(err)}`,
+        message: t('chat.persistFailed', { error: err instanceof Error ? err.message : String(err) }),
       };
     }
   }
@@ -852,9 +853,9 @@ export const useChatStore = defineStore('chat', () => {
       // 若决策选中了模板，将模板的类别/严重度/触发关键词作为生成提示
       const tpl = decision.template;
       const templateHint = tpl
-        ? `【事件模板提示】名称=${tpl.name}；类别=${tpl.category}；严重度=${tpl.severity}${
-            tpl.triggerKeywords.length > 0 ? `；关键词=${tpl.triggerKeywords.join('、')}` : ''
-          }；描述=${tpl.description}`
+        ? `[Event Template] name=${tpl.name}; category=${tpl.category}; severity=${tpl.severity}${
+            tpl.triggerKeywords.length > 0 ? `; keywords=${tpl.triggerKeywords.join('、')}` : ''
+          }; description=${tpl.description}`
         : '';
 
       const params: RandomEventParams = {
@@ -898,9 +899,9 @@ export const useChatStore = defineStore('chat', () => {
       eventsStore.events.push(storyEvent);
 
       console.info(
-        `[F17.3] 随机事件已生成：${generated.name}（模板=${
-          tpl?.name ?? '(即时)'
-        }，概率=${decision.effectiveProbability}%）`
+        `[F17.3] Random event generated: ${generated.name} (template=${
+          tpl?.name ?? '(instant)'
+        }, probability=${decision.effectiveProbability}%)`
       );
     } catch (err) {
       // 集成失败不影响主对话流程
@@ -924,7 +925,7 @@ export const useChatStore = defineStore('chat', () => {
     } catch (err) {
       lastError.value = {
         type: 'unknown',
-        message: `加载历史失败：${err instanceof Error ? err.message : String(err)}`,
+        message: t('chat.loadHistoryFailed', { error: err instanceof Error ? err.message : String(err) }),
       };
     }
   }

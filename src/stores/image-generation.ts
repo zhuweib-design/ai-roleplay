@@ -9,6 +9,7 @@
  * - 持久化
  */
 
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import {
@@ -97,7 +98,7 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
   /** 生成单张图像 */
   async function generate(): Promise<GeneratedImage | null> {
     if (!canGenerate.value) {
-      lastError.value = '请填写提示词并配置 API Key';
+      lastError.value = t('store.needPromptAndKey');
       return null;
     }
 
@@ -108,7 +109,7 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
       const image = await engine.generate(params.value, providerConfig.value);
       gallery.add(image);
       galleryVersion.value++;
-      lastInfo.value = '图像生成成功';
+      lastInfo.value = t('store.genSuccess');
 
       // 异步持久化（不阻塞）
       void persistImage(image).catch(() => {
@@ -117,7 +118,7 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
 
       return image;
     } catch (err) {
-      lastError.value = `生成失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.genFailed', { error: err instanceof Error ? err.message : String(err) });
       return null;
     } finally {
       isGenerating.value = false;
@@ -127,7 +128,7 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
   /** 批量生成 */
   async function generateBatch(): Promise<GeneratedImage[]> {
     if (!canGenerate.value) {
-      lastError.value = '请填写提示词并配置 API Key';
+      lastError.value = t('store.needPromptAndKey');
       return [];
     }
 
@@ -151,10 +152,10 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
         }
       );
 
-      lastInfo.value = `批量生成完成：${results.length} 张成功`;
+      lastInfo.value = t('imgGen.batchDone2', { count: results.length });
       return images;
     } catch (err) {
-      lastError.value = `批量生成失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('imgGen.batchFailed', { error: err instanceof Error ? err.message : String(err) });
       return results;
     } finally {
       isGenerating.value = false;
@@ -166,7 +167,7 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
   function cancelGeneration(): void {
     isGenerating.value = false;
     generationProgress.value = null;
-    lastInfo.value = '已取消生成';
+    lastInfo.value = t('imgGen.cancelled');
   }
 
   /** 从画廊删除图像 */
@@ -181,7 +182,7 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
     gallery.clear();
     galleryVersion.value++;
     void clearAllImages().catch(() => {});
-    lastInfo.value = '画廊已清空';
+    lastInfo.value = t('imgGen.galleryCleared2');
   }
 
   /** 搜索画廊 */
@@ -203,7 +204,7 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
       galleryVersion.value++;
       galleryLoaded.value = true;
     } catch (err) {
-      lastError.value = `加载画廊失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.loadFailed', { name: t('store.entityGallery'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 

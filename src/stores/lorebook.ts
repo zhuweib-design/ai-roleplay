@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { StorageAdapter } from '@/storage/storage-adapter';
@@ -120,7 +121,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
         currentLorebookId.value = list[0].id;
       }
     } catch (err) {
-      lastError.value = `加载世界书失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.loadFailed', { name: t('store.entityWorldbook'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -132,7 +133,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
       lb.updatedAt = new Date().toISOString();
       await storageAdapter.saveLorebook(lb);
     } catch (err) {
-      lastError.value = `保存世界书失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.saveFailed', { name: t('store.entityWorldbook'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -141,7 +142,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     try {
       await storageAdapter.deleteLorebook(id);
     } catch (err) {
-      lastError.value = `删除世界书失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.deleteFailed', { name: t('store.entityWorldbook'), error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -172,7 +173,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     const now = new Date().toISOString();
     const lb: Lorebook = {
       id,
-      name: input?.name ?? '新世界书',
+      name: input?.name ?? t('store.newWorldbook'),
       description: input?.description ?? '',
       entries: input?.entries ?? [],
       scope: input?.scope ?? 'global',
@@ -187,7 +188,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
 
     const errors = validateLorebook(lb);
     if (errors.length > 0) {
-      lastError.value = `创建失败：${errors.join('；')}`;
+      lastError.value = t('lb.createFailed', { errors: errors.join('；') });
       return '';
     }
 
@@ -195,7 +196,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     currentLorebookId.value = id;
     currentEntryId.value = null;
     void persistLorebook(id);
-    lastInfo.value = `已创建世界书：${lb.name}`;
+    lastInfo.value = t('lb.created2', { name: lb.name });
     return id;
   }
 
@@ -212,7 +213,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
 
     const errors = validateLorebook(lb);
     if (errors.length > 0) {
-      lastError.value = `更新失败：${errors.join('；')}`;
+      lastError.value = t('lb.updateFailed', { errors: errors.join('；') });
       return false;
     }
 
@@ -243,15 +244,15 @@ export const useLorebookStore = defineStore('lorebook', () => {
     // 复用 validateLorebook 校验（含 worldDescription 规则）
     const errors = validateLorebook(lb);
     if (errors.length > 0) {
-      lastError.value = `世界描述验证失败：${errors.join('；')}`;
+      lastError.value = t('lb.worldDescValidateFailed', { errors: errors.join('；') });
       // 不回滚数据，但提示错误，调用方可视化展示
       return false;
     }
 
     void persistLorebook(lorebookId);
     lastInfo.value = wd
-      ? `已保存世界描述：${wd.name || '未命名'}`
-      : '已清空世界描述';
+      ? t('lb.worldDescSaved', { name: wd.name || t('lb.unnamed') })
+      : t('lb.worldDescCleared');
     return true;
   }
 
@@ -263,7 +264,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     if (idx < 0) return;
     const removed = lorebooks.value.splice(idx, 1)[0];
     void deleteFromStorage(id);
-    lastInfo.value = `已删除世界书：${removed.name}`;
+    lastInfo.value = t('lb.deleted', { name: removed.name });
     if (currentLorebookId.value === id) {
       currentLorebookId.value = lorebooks.value[0]?.id ?? null;
       currentEntryId.value = null;
@@ -288,13 +289,13 @@ export const useLorebookStore = defineStore('lorebook', () => {
     if (!lb) return null;
 
     if (lb.entries.length >= MAX_LOREBOOK_ENTRIES) {
-      lastError.value = `条目数已达上限 ${MAX_LOREBOOK_ENTRIES}`;
+      lastError.value = t('lb.entriesLimit2', { max: MAX_LOREBOOK_ENTRIES });
       return null;
     }
 
     const entry: LorebookEntry = {
       id: input?.id ?? `entry-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
-      title: input?.title ?? '新条目',
+      title: input?.title ?? t('lb.newEntry'),
       keys: input?.keys ?? [],
       content: input?.content ?? '',
       strategy: input?.strategy ?? 'keyword',
@@ -313,7 +314,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
 
     const errors = validateLorebookEntry(entry);
     if (errors.length > 0) {
-      lastError.value = `条目验证失败：${errors.join('；')}`;
+      lastError.value = t('lb.entryValidateFailed', { errors: errors.join('；') });
       return null;
     }
 
@@ -340,7 +341,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
 
     const errors = validateLorebookEntry(entry);
     if (errors.length > 0) {
-      lastError.value = `条目验证失败：${errors.join('；')}`;
+      lastError.value = t('lb.entryValidateFailed', { errors: errors.join('；') });
       return false;
     }
 
@@ -373,14 +374,14 @@ export const useLorebookStore = defineStore('lorebook', () => {
     if (!entry) return null;
 
     if (lb.entries.length >= MAX_LOREBOOK_ENTRIES) {
-      lastError.value = `条目数已达上限 ${MAX_LOREBOOK_ENTRIES}`;
+      lastError.value = t('lb.entriesLimit2', { max: MAX_LOREBOOK_ENTRIES });
       return null;
     }
 
     const copy: LorebookEntry = {
       ...entry,
       id: `entry-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
-      title: `${entry.title} (副本)`,
+      title: t('lb.entryCopy', { title: entry.title }),
     };
     lb.entries.push(copy);
     currentEntryId.value = copy.id;
@@ -551,7 +552,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     if (!entry) return false;
 
     if (!canSetEntryParent(lorebookId, entryId, newParentId)) {
-      lastError.value = '无法设置父节点：可能形成循环引用或超出层级深度';
+      lastError.value = t('lb.cannotSetParent');
       return false;
     }
 
@@ -574,14 +575,14 @@ export const useLorebookStore = defineStore('lorebook', () => {
     // 整体校验
     const errors = validateLorebook(lb);
     if (errors.length > 0) {
-      lastError.value = `层级关系校验失败：${errors.join('；')}`;
+      lastError.value = t('lb.hierarchyValidateFailed', { errors: errors.join('；') });
       return false;
     }
 
     void persistLorebook(lorebookId);
     lastInfo.value = newParentId === null
-      ? '已将条目移至顶层'
-      : '已设置条目父节点';
+      ? t('lb.movedToTop')
+      : t('lb.parentSet');
     return true;
   }
 
@@ -603,7 +604,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     if (!entry) return false;
 
     if (level !== 0 && level !== 1 && level !== 2) {
-      lastError.value = '层级深度必须为 0、1 或 2';
+      lastError.value = t('lb.levelRange2');
       return false;
     }
 
@@ -616,7 +617,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     // 此分支主要用于校验当前层级关系是否合法
     const currentParentId = entry.parentId ?? null;
     if (currentParentId === null && level > 0) {
-      lastError.value = `移动到层级 ${level} 需要先设置父节点`;
+      lastError.value = t('lb.moveNeedParent', { level });
       return false;
     }
 
@@ -624,14 +625,14 @@ export const useLorebookStore = defineStore('lorebook', () => {
       const parent = lb.entries.find((e) => e.id === currentParentId);
       const parentLevel = parent?.hierarchyLevel ?? 0;
       if (level <= parentLevel) {
-        lastError.value = `子节点层级（${level}）必须大于父节点层级（${parentLevel}）`;
+        lastError.value = t('lb.childLevelInvalid', { level, parent: parentLevel });
         return false;
       }
     }
 
     entry.hierarchyLevel = level;
     void persistLorebook(lorebookId);
-    lastInfo.value = `已将条目移动到层级 ${level}`;
+    lastInfo.value = t('lb.movedToLevel', { level });
     return true;
   }
 
@@ -721,7 +722,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
   function exportLorebook(id: string): string | null {
     const lb = lorebooks.value.find((l) => l.id === id);
     if (!lb) {
-      lastError.value = '找不到要导出的世界书';
+      lastError.value = t('lb.exportNotFound');
       return null;
     }
 
@@ -854,17 +855,17 @@ export const useLorebookStore = defineStore('lorebook', () => {
 
       const errors = validateLorebook(lb);
       if (errors.length > 0) {
-        lastError.value = `导入验证失败：${errors.join('；')}`;
+        lastError.value = t('lb.importValidateFailed', { errors: errors.join('；') });
         return null;
       }
 
       lorebooks.value.unshift(lb);
       currentLorebookId.value = id;
       await persistLorebook(id);
-      lastInfo.value = `已导入世界书：${lb.name}`;
+      lastInfo.value = t('lb.imported', { name: lb.name });
       return id;
     } catch (err) {
-      lastError.value = `导入失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('lb.importFailed2', { error: err instanceof Error ? err.message : String(err) });
       return null;
     }
   }
@@ -883,7 +884,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    lastInfo.value = `已导出：${safeName}.json`;
+    lastInfo.value = t('lb.exported2', { name: safeName });
     return true;
   }
 
@@ -1036,7 +1037,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     lastInfo.value = null;
 
     if (isGeneratingWorld.value) {
-      lastError.value = '正在生成中，请稍候';
+      lastError.value = t('lb.generatingBusy');
       return null;
     }
 
@@ -1044,7 +1045,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     const settingsStore = useSettingsStore();
     const profile = settingsStore.activeProfile;
     if (!profile) {
-      lastError.value = '未配置 API 连接，请先在设置页添加 API 配置后再生成世界';
+      lastError.value = t('lb.noApiGen');
       return null;
     }
 
@@ -1068,7 +1069,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
       // 4. 解析
       const generated = parseGeneratedWorld(raw);
       if (!generated) {
-        lastError.value = '生成失败：无法解析 AI 返回的世界数据，请重试';
+        lastError.value = t('lb.genParseFailed');
         return null;
       }
 
@@ -1078,8 +1079,8 @@ export const useLorebookStore = defineStore('lorebook', () => {
       const now = new Date().toISOString();
       const lb: Lorebook = {
         id: lbId,
-        name: generated.world.name || `${meta?.label ?? 'AI'}生成世界`,
-        description: `${meta?.label ?? 'AI'}生成的世界设定（${new Date().toLocaleString('zh-CN')}）`,
+        name: generated.world.name || t('lb.aiGeneratedName', { label: meta?.label ?? 'AI' }),
+        description: t('lb.aiGeneratedDesc', { label: meta?.label ?? 'AI', time: new Date().toLocaleString('zh-CN') }),
         entries,
         scope,
         // 默认全局，调用方可指定其他 scope 后再 updateLorebook 调整绑定
@@ -1096,7 +1097,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
 
       const errors = validateLorebook(lb);
       if (errors.length > 0) {
-        lastError.value = `生成结果验证失败：${errors.join('；')}`;
+        lastError.value = t('lb.genValidateFailed', { errors: errors.join('；') });
         return null;
       }
 
@@ -1105,10 +1106,10 @@ export const useLorebookStore = defineStore('lorebook', () => {
       currentEntryId.value = null;
       await persistLorebook(lbId);
 
-      lastInfo.value = `已生成新世界：${lb.name}（${entries.length} 条目）`;
+      lastInfo.value = t('lb.genDone', { name: lb.name, count: entries.length });
       return lbId;
     } catch (err) {
-      lastError.value = `生成失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('lb.genFailed2', { error: err instanceof Error ? err.message : String(err) });
       return null;
     } finally {
       isGeneratingWorld.value = false;
@@ -1129,18 +1130,18 @@ export const useLorebookStore = defineStore('lorebook', () => {
     lastInfo.value = null;
 
     if (isGeneratingWorld.value) {
-      lastError.value = '正在生成中，请稍候';
+      lastError.value = t('lb.generatingBusy');
       return 0;
     }
 
     const lb = lorebooks.value.find((l) => l.id === lorebookId);
     if (!lb) {
-      lastError.value = '找不到目标世界书';
+      lastError.value = t('lb.extendNotFound');
       return 0;
     }
 
     if (lb.entries.length >= MAX_LOREBOOK_ENTRIES) {
-      lastError.value = `条目数已达上限 ${MAX_LOREBOOK_ENTRIES}`;
+      lastError.value = t('lb.entriesLimit2', { max: MAX_LOREBOOK_ENTRIES });
       return 0;
     }
 
@@ -1148,7 +1149,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     const settingsStore = useSettingsStore();
     const profile = settingsStore.activeProfile;
     if (!profile) {
-      lastError.value = '未配置 API 连接，请先在设置页添加 API 配置后再扩展';
+      lastError.value = t('lb.noApiExtend');
       return 0;
     }
 
@@ -1175,7 +1176,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
       // 4. 解析
       const regions = parseExtendedRegions(raw);
       if (regions.length === 0) {
-        lastError.value = '扩展失败：无法解析 AI 返回的新条目数据，请重试';
+        lastError.value = t('lb.extendParseFailed');
         return 0;
       }
 
@@ -1192,10 +1193,10 @@ export const useLorebookStore = defineStore('lorebook', () => {
       lb.entries.push(...entriesToAdd);
       await persistLorebook(lorebookId);
 
-      lastInfo.value = `已扩展 ${entriesToAdd.length} 条新条目到「${lb.name}」`;
+      lastInfo.value = t('lb.extended2', { count: entriesToAdd.length, name: lb.name });
       return entriesToAdd.length;
     } catch (err) {
-      lastError.value = `扩展失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('lb.extendFailed2', { error: err instanceof Error ? err.message : String(err) });
       return 0;
     } finally {
       isGeneratingWorld.value = false;
@@ -1340,7 +1341,7 @@ function parseEntryFromJson(
 
   return {
     id: rawEntryId ?? `entry-${Date.now()}-${idx}-${Math.floor(Math.random() * 1e6)}`,
-    title: typeof raw.comment === 'string' ? raw.comment : `条目 ${idx + 1}`,
+    title: typeof raw.comment === 'string' ? raw.comment : t('lb.entryComment', { index: idx + 1 }),
     keys,
     content: typeof raw.content === 'string' ? raw.content : '',
     strategy: raw.constant === true ? 'constant' : 'keyword',

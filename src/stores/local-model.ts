@@ -10,6 +10,7 @@
  * - 设置持久化
  */
 
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import {
@@ -132,12 +133,12 @@ export const useLocalModelStore = defineStore('localModel', () => {
     try {
       capability.value = await detectEngineCapability();
       if (!capability.value.webgpuSupported) {
-        lastError.value = capability.value.reason ?? 'WebGPU 不可用';
+        lastError.value = capability.value.reason ?? t('store.webgpuUnavailable');
       } else if (!capability.value.webllmInstalled) {
-        lastError.value = 'WebLLM 包未正确安装';
+        lastError.value = t('store.webllmNotInstalled');
       }
     } catch (err) {
-      lastError.value = `能力检测失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('store.detectFailed', { error: err instanceof Error ? err.message : String(err) });
     } finally {
       isDetecting.value = false;
     }
@@ -147,17 +148,17 @@ export const useLocalModelStore = defineStore('localModel', () => {
   async function loadModel(modelId: string): Promise<boolean> {
     const meta = findModel(modelId);
     if (!meta) {
-      lastError.value = `模型 ${modelId} 不在注册表中`;
+      lastError.value = t('store.modelNotInRegistry', { id: modelId });
       return false;
     }
 
     if (!isAvailable.value) {
-      lastError.value = '本地推理不可用，请先检测引擎能力';
+      lastError.value = t('lm.unavailableFirst');
       return false;
     }
 
     if (loadedModelId.value === modelId) {
-      lastInfo.value = `模型「${meta.name}」已加载`;
+      lastInfo.value = t('lm.loaded3', { name: meta.name });
       return true;
     }
 
@@ -175,12 +176,12 @@ export const useLocalModelStore = defineStore('localModel', () => {
 
       loadedModelId.value = modelId;
       modelStatuses.value.set(modelId, 'loaded');
-      lastInfo.value = `模型「${meta.name}」已加载就绪`;
+      lastInfo.value = t('lm.loadedReady', { name: meta.name });
       loadProgress.value = null;
       return true;
     } catch (err) {
       modelStatuses.value.set(modelId, 'error');
-      lastError.value = `加载失败：${err instanceof Error ? err.message : String(err)}`;
+      lastError.value = t('lm.loadFailed2', { error: err instanceof Error ? err.message : String(err) });
       loadProgress.value = null;
       return false;
     } finally {
@@ -195,7 +196,7 @@ export const useLocalModelStore = defineStore('localModel', () => {
     await engine.unloadModel();
     loadedModelId.value = null;
     modelStatuses.value.set(oldId, 'ready');
-    lastInfo.value = '模型已卸载';
+    lastInfo.value = t('lm.unloaded2');
   }
 
   /**
@@ -210,7 +211,7 @@ export const useLocalModelStore = defineStore('localModel', () => {
     onDelta?: (delta: string, fullContent: string) => void
   ): Promise<string> {
     if (!loadedModelId.value || loadedModelId.value !== request.modelId) {
-      throw new Error('模型未加载');
+      throw new Error(t('lm.modelNotLoaded'));
     }
 
     // 缓存命中检查（仅当无 onDelta 时使用缓存，流式场景不走缓存）
@@ -222,7 +223,7 @@ export const useLocalModelStore = defineStore('localModel', () => {
       );
       const cached = cache.get(cacheKey);
       if (cached !== null) {
-        lastInfo.value = '推理结果命中缓存';
+        lastInfo.value = t('lm.cacheHit2');
         return cached;
       }
 
@@ -258,14 +259,14 @@ export const useLocalModelStore = defineStore('localModel', () => {
   /** 清空缓存 */
   function clearCache(): void {
     cache.clear();
-    lastInfo.value = '推理缓存已清空';
+    lastInfo.value = t('lm.cacheCleared2');
   }
 
   /** 清理过期缓存 */
   function purgeExpiredCache(): number {
     const purged = cache.purgeExpired();
     if (purged > 0) {
-      lastInfo.value = `已清理 ${purged} 条过期缓存`;
+      lastInfo.value = t('lm.purged2', { count: purged });
     }
     return purged;
   }
@@ -274,7 +275,7 @@ export const useLocalModelStore = defineStore('localModel', () => {
   function clearMetrics(): void {
     engine.clearMetrics();
     metricsHistory.value = [];
-    lastInfo.value = '性能指标已清空';
+    lastInfo.value = t('lm.metricsCleared2');
   }
 
   /** 更新设置 */
@@ -299,7 +300,7 @@ export const useLocalModelStore = defineStore('localModel', () => {
     cache.setTtl(settings.value.cacheTtlMs);
     modelStatuses.value.clear();
     lastError.value = null;
-    lastInfo.value = '已重置全部本地模型设置';
+    lastInfo.value = t('lm.settingsReset');
   }
 
   function clearLastError(): void {

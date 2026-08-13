@@ -10,6 +10,7 @@
  * 持久化策略：当前为简化实现，事件仅在内存中维护。
  * 后续可扩展为序列化到 Lorebook 的扩展字段进行持久化。
  */
+import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import {
@@ -74,7 +75,7 @@ export const useEventsStore = defineStore('events', () => {
         (e) => e.sceneEntryId === sceneEntryId && e.lorebookId === lorebookId
       ).length;
       if (count >= MAX_EVENTS_PER_SCENE) {
-        lastError.value = `该场景事件数已达上限 ${MAX_EVENTS_PER_SCENE}`;
+        lastError.value = t('ev.eventLimit2', { max: MAX_EVENTS_PER_SCENE });
         return null;
       }
     }
@@ -90,7 +91,7 @@ export const useEventsStore = defineStore('events', () => {
     };
 
     events.value.push(newEvent);
-    lastInfo.value = '已创建新事件';
+    lastInfo.value = t('ev.created2');
     return id;
   }
 
@@ -106,7 +107,7 @@ export const useEventsStore = defineStore('events', () => {
   ): boolean {
     const idx = events.value.findIndex((e) => e.id === id);
     if (idx < 0) {
-      lastError.value = '事件不存在';
+      lastError.value = t('ev.notFound');
       return false;
     }
 
@@ -119,7 +120,7 @@ export const useEventsStore = defineStore('events', () => {
 
     merged.updatedAt = new Date().toISOString();
     events.value[idx] = merged;
-    lastInfo.value = `事件「${merged.name}」已更新`;
+    lastInfo.value = t('ev.updated2', { name: merged.name });
     return true;
   }
 
@@ -130,7 +131,7 @@ export const useEventsStore = defineStore('events', () => {
     const idx = events.value.findIndex((e) => e.id === id);
     if (idx < 0) return false;
     const removed = events.value.splice(idx, 1)[0];
-    lastInfo.value = `事件「${removed.name}」已删除`;
+    lastInfo.value = t('ev.deleted2', { name: removed.name });
     return true;
   }
 
@@ -142,7 +143,7 @@ export const useEventsStore = defineStore('events', () => {
     events.value = events.value.filter((e) => e.sceneEntryId !== sceneEntryId);
     const removed = before - events.value.length;
     if (removed > 0) {
-      lastInfo.value = `已删除 ${removed} 个绑定事件`;
+      lastInfo.value = t('ev.boundDeleted', { count: removed });
     }
     return removed;
   }
@@ -155,7 +156,7 @@ export const useEventsStore = defineStore('events', () => {
   function setEventState(id: string, state: EventState): boolean {
     const evt = events.value.find((e) => e.id === id);
     if (!evt) {
-      lastError.value = '事件不存在';
+      lastError.value = t('ev.notFound');
       return false;
     }
 
@@ -171,7 +172,7 @@ export const useEventsStore = defineStore('events', () => {
       // 可重复事件重置
     }
 
-    lastInfo.value = `事件「${evt.name}」状态：${state}`;
+    lastInfo.value = t('ev.statusChanged', { name: evt.name, state });
     return true;
   }
 
@@ -181,11 +182,11 @@ export const useEventsStore = defineStore('events', () => {
   function triggerEvent(id: string): boolean {
     const evt = events.value.find((e) => e.id === id);
     if (!evt) {
-      lastError.value = '事件不存在';
+      lastError.value = t('ev.notFound');
       return false;
     }
     if (!isTriggerable(evt)) {
-      lastError.value = `事件「${evt.name}」当前状态不可触发（${evt.state}）`;
+      lastError.value = t('ev.cannotTrigger', { name: evt.name, state: evt.state });
       return false;
     }
     return setEventState(id, 'active');
@@ -197,11 +198,11 @@ export const useEventsStore = defineStore('events', () => {
   function completeEvent(id: string): boolean {
     const evt = events.value.find((e) => e.id === id);
     if (!evt) {
-      lastError.value = '事件不存在';
+      lastError.value = t('ev.notFound');
       return false;
     }
     if (evt.state !== 'active') {
-      lastError.value = `事件「${evt.name}」不在进行中状态，无法完成`;
+      lastError.value = t('ev.notActive', { name: evt.name });
       return false;
     }
     return setEventState(id, 'completed');
