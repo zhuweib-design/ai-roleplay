@@ -24,6 +24,7 @@ import {
   CHARACTER_TEMPLATES,
   type CharacterTemplateId,
 } from '@/core/character-generator';
+import { t } from '@/i18n';
 
 const router = useRouter();
 const characterStore = useCharacterStore();
@@ -137,14 +138,14 @@ function executeDelete() {
   characterStore.deleteCharacter(deleteTarget.value.id);
   deleteModalOpen.value = false;
   deleteTarget.value = null;
-  showToast('success', `已删除角色：${name}`);
+  showToast('success', t('characters.deleted', { name }));
 }
 
 // ── F01.7 随机生成 ──
 
 function openGenerateModal() {
   if (!hasApiProfile.value) {
-    showToast('error', '请先在设置页配置 API 连接后再使用随机生成');
+    showToast('error', t('characters.generateApiRequired'));
     return;
   }
   selectedTemplate.value = null;
@@ -157,7 +158,7 @@ function selectTemplate(id: CharacterTemplateId) {
 
 async function handleGenerate() {
   if (!selectedTemplate.value) {
-    showToast('error', '请选择一个生成模板');
+    showToast('error', t('characters.generateSelectTemplate'));
     return;
   }
   if (characterStore.isGeneratingCharacter) return;
@@ -191,7 +192,7 @@ async function handleFileSelected(e: Event) {
   const file = input.files[0];
   const id = await characterStore.importV2File(file);
   if (id) {
-    showToast('success', `已导入角色卡：${characterStore.characters.find((c) => c.id === id)?.name ?? ''}`);
+    showToast('success', t('characters.imported', { name: characterStore.characters.find((c) => c.id === id)?.name ?? '' }));
   }
   // 重置 input 允许重复选择同一文件
   input.value = '';
@@ -203,12 +204,12 @@ async function handleDrop(e: DragEvent) {
   if (!e.dataTransfer || e.dataTransfer.files.length === 0) return;
   const file = e.dataTransfer.files[0];
   if (!file.name.endsWith('.json') && file.type !== 'application/json') {
-    showToast('error', '请拖入 .json 格式的 V2 角色卡文件');
+    showToast('error', t('characters.dropJsonOnly'));
     return;
   }
   const id = await characterStore.importV2File(file);
   if (id) {
-    showToast('success', `已导入角色卡：${characterStore.characters.find((c) => c.id === id)?.name ?? ''}`);
+    showToast('success', t('characters.imported', { name: characterStore.characters.find((c) => c.id === id)?.name ?? '' }));
   }
 }
 
@@ -252,7 +253,7 @@ function tagsPreview(tags: string[]): string {
   <main
     id="main-content"
     class="characters-view"
-    aria-label="角色管理"
+    :aria-label="t('characters.aria')"
     tabindex="-1"
     @drop="handleDrop"
     @dragover="handleDragOver"
@@ -264,14 +265,14 @@ function tagsPreview(tags: string[]): string {
         <button
           type="button"
           class="header-btn back"
-          aria-label="返回对话页"
+          :aria-label="t('characters.backAria')"
           @click="goBack"
         >
           <Icon name="arrow-left" :size="16" />
-          <span class="btn-label">返回</span>
+          <span class="btn-label">{{ t('characters.back') }}</span>
         </button>
-        <h1 class="characters-title">角色管理</h1>
-        <span class="character-count" aria-live="polite">{{ characterList.length }} 个角色</span>
+        <h1 class="characters-title">{{ t('characters.title') }}</h1>
+        <span class="character-count" aria-live="polite">{{ t('characters.count', { count: characterList.length }) }}</span>
       </div>
 
       <!-- 搜索框 -->
@@ -280,9 +281,9 @@ function tagsPreview(tags: string[]): string {
         <input
           type="text"
           class="search-input"
-          placeholder="搜索角色名或标签…"
+          :placeholder="t('characters.searchPlaceholder')"
           :value="characterStore.searchQuery"
-          aria-label="搜索角色"
+          :aria-label="t('characters.searchAria')"
           @input="characterStore.setSearchQuery(($event.target as HTMLInputElement).value)"
         />
       </div>
@@ -291,11 +292,11 @@ function tagsPreview(tags: string[]): string {
         <button
           type="button"
           class="header-btn import-btn"
-          aria-label="导入 V2 角色卡"
+          :aria-label="t('characters.importAria')"
           @click="triggerFileInput"
         >
           <Icon name="upload" :size="16" />
-          <span class="btn-label">导入</span>
+          <span class="btn-label">{{ t('characters.import') }}</span>
         </button>
         <input
           ref="fileInput"
@@ -311,20 +312,20 @@ function tagsPreview(tags: string[]): string {
           class="header-btn generate-btn"
           :disabled="!hasApiProfile"
           :aria-disabled="!hasApiProfile"
-          :aria-label="hasApiProfile ? '随机生成角色' : '请先配置 API 连接'"
+          :aria-label="hasApiProfile ? t('characters.generateAria') : t('characters.generateDisabled')"
           @click="openGenerateModal"
         >
           <Icon name="refresh-cw" :size="16" />
-          <span class="btn-label">随机生成</span>
+          <span class="btn-label">{{ t('characters.generate') }}</span>
         </button>
         <button
           type="button"
           class="header-btn new-btn"
-          aria-label="新建角色"
+          :aria-label="t('characters.newAria')"
           @click="startNewCharacter"
         >
           <Icon name="plus" :size="16" />
-          <span class="btn-label">新建</span>
+          <span class="btn-label">{{ t('characters.new') }}</span>
         </button>
       </div>
     </header>
@@ -334,8 +335,8 @@ function tagsPreview(tags: string[]): string {
       v-if="filterTabs.length > 0"
       v-model="filterTag"
       :tabs="filterTabs"
-      label="按标签筛选角色"
-      all-label="全部"
+      :label="t('characters.filterLabel')"
+      :all-label="t('characters.filterAll')"
       :all-value="''"
       :all-count="characterStore.characters.length"
     />
@@ -348,7 +349,7 @@ function tagsPreview(tags: string[]): string {
         class="char-card hover-surface"
         :class="{ 'is-busy': busyCharacterId === char.id }"
         tabindex="0"
-        :aria-label="`角色：${char.name}`"
+        :aria-label="t('characters.cardAria', { name: char.name })"
         @click="editCharacter(char.id)"
         @keydown.enter="editCharacter(char.id)"
         @keydown.space.prevent="editCharacter(char.id)"
@@ -359,7 +360,7 @@ function tagsPreview(tags: string[]): string {
             type="button"
             class="favorite-btn"
             :class="{ active: char.favorite }"
-            :aria-label="char.favorite ? '取消收藏' : '收藏'"
+            :aria-label="char.favorite ? t('characters.unfavorite') : t('characters.favorite')"
             :aria-pressed="char.favorite"
             @click="toggleFavorite(char.id, $event)"
           >
@@ -374,7 +375,7 @@ function tagsPreview(tags: string[]): string {
         <div class="card-meta">
           <span class="meta-item">
             <Icon name="chat-circle" :size="12" />
-            <span>{{ char.conversations.length }} 对话</span>
+            <span>{{ t('characters.convCount', { count: char.conversations.length }) }}</span>
           </span>
           <span class="meta-item">
             <Icon name="gear" :size="12" />
@@ -386,39 +387,39 @@ function tagsPreview(tags: string[]): string {
           <button
             type="button"
             class="action-btn edit"
-            aria-label="编辑角色"
+            :aria-label="t('characters.editAria')"
             @click.stop="editCharacter(char.id)"
           >
             <Icon name="pencil" :size="14" />
-            <span>编辑</span>
+            <span>{{ t('characters.edit') }}</span>
           </button>
           <button
             type="button"
             class="action-btn chat"
-            aria-label="开始对话"
+            :aria-label="t('characters.chatAria')"
             @click.stop="startConversation(char.id)"
           >
             <Icon name="chat-circle" :size="14" />
-            <span>对话</span>
+            <span>{{ t('characters.chat') }}</span>
           </button>
           <button
             type="button"
             class="action-btn export"
-            aria-label="导出为 V2 卡"
+            :aria-label="t('characters.exportAria')"
             :disabled="busyCharacterId === char.id"
             @click.stop="exportCharacter(char.id, $event)"
           >
             <Icon name="download" :size="14" />
-            <span>导出</span>
+            <span>{{ t('characters.export') }}</span>
           </button>
           <button
             type="button"
             class="action-btn delete"
-            aria-label="删除角色"
+            :aria-label="t('characters.deleteAria')"
             @click.stop="confirmDelete(char, $event)"
           >
             <Icon name="trash-2" :size="14" />
-            <span>删除</span>
+            <span>{{ t('characters.delete') }}</span>
           </button>
         </div>
       </article>
@@ -426,30 +427,30 @@ function tagsPreview(tags: string[]): string {
       <!-- 空状态 -->
       <div v-if="characterList.length === 0" class="empty-state">
         <Icon name="user" :size="48" />
-        <p class="empty-title">{{ characterStore.searchQuery ? '未找到匹配的角色' : '还没有角色' }}</p>
+        <p class="empty-title">{{ characterStore.searchQuery ? t('characters.emptySearch') : t('characters.emptyNoChar') }}</p>
         <p class="empty-hint">
-          {{ characterStore.searchQuery ? '试试更换关键词' : '点击"新建"或"导入"开始创建你的第一个角色' }}
+          {{ characterStore.searchQuery ? t('characters.emptySearchHint') : t('characters.emptyNoCharHint') }}
         </p>
       </div>
 
       <!-- 拖拽提示 -->
       <div v-if="isDragging" class="drag-overlay" aria-hidden="true">
         <Icon name="upload" :size="48" />
-        <p>松开以导入 V2 角色卡</p>
+        <p>{{ t('characters.dropHint') }}</p>
       </div>
     </div>
 
     <!-- 删除确认对话框 -->
     <Modal
       v-model="deleteModalOpen"
-      title="确认删除"
-      aria-label="删除角色确认"
+      :title="t('characters.deleteTitle')"
+      :aria-label="t('characters.deleteModalAria')"
     >
       <p v-if="deleteTarget">
-        确定要删除角色「<strong>{{ deleteTarget.name }}</strong>」吗？
+        {{ t('characters.deleteConfirm', { name: deleteTarget.name }) }}
       </p>
       <p class="delete-warning">
-        该角色的全部对话历史也会一并删除，操作不可撤销。
+        {{ t('characters.deleteWarning') }}
       </p>
       <template #footer>
         <button
@@ -457,14 +458,14 @@ function tagsPreview(tags: string[]): string {
           class="modal-btn modal-cancel"
           @click="deleteModalOpen = false"
         >
-          取消
+          {{ t('common.cancel') }}
         </button>
         <button
           type="button"
           class="modal-btn modal-confirm"
           @click="executeDelete"
         >
-          删除
+          {{ t('characters.delete') }}
         </button>
       </template>
     </Modal>
@@ -479,16 +480,16 @@ function tagsPreview(tags: string[]): string {
     <!-- F01.7 随机生成 Modal -->
     <Modal
       v-model="generateModalOpen"
-      title="随机生成角色"
-      aria-label="随机生成角色模板选择"
+      :title="t('characters.generateModalTitle')"
+      :aria-label="t('characters.generateModalAria')"
     >
       <div class="generate-content">
         <p class="generate-hint">
-          选择一个风格模板，AI 将根据模板生成完整的角色卡（含属性）。
-          <span class="generate-cost">单次消耗约 500-1000 Token</span>
+          {{ t('characters.generateHint') }}
+          <span class="generate-cost">{{ t('characters.generateCost') }}</span>
         </p>
 
-        <div class="template-grid" role="radiogroup" aria-label="生成模板选择">
+        <div class="template-grid" role="radiogroup" :aria-label="t('characters.templateAria')">
           <button
             v-for="tpl in templates"
             :key="tpl.id"
@@ -497,7 +498,7 @@ function tagsPreview(tags: string[]): string {
             :class="{ active: selectedTemplate === tpl.id }"
             role="radio"
             :aria-checked="selectedTemplate === tpl.id"
-            :aria-label="`选择 ${tpl.label} 模板：${tpl.description}`"
+            :aria-label="t('characters.templateSelect', { label: tpl.label, description: tpl.description })"
             :disabled="characterStore.isGeneratingCharacter"
             @click="selectTemplate(tpl.id)"
           >
@@ -514,7 +515,7 @@ function tagsPreview(tags: string[]): string {
           aria-live="polite"
         >
           <Icon name="refresh-cw" :size="20" class="spin-icon" />
-          <span>正在生成角色，请稍候...</span>
+          <span>{{ t('characters.generating') }}</span>
         </div>
       </div>
 
@@ -525,7 +526,7 @@ function tagsPreview(tags: string[]): string {
           :disabled="characterStore.isGeneratingCharacter"
           @click="closeGenerateModal"
         >
-          取消
+          {{ t('common.cancel') }}
         </button>
         <button
           type="button"
@@ -538,7 +539,7 @@ function tagsPreview(tags: string[]): string {
             name="refresh-cw"
             :size="14"
           />
-          <span>{{ characterStore.isGeneratingCharacter ? '生成中...' : '生成角色' }}</span>
+          <span>{{ characterStore.isGeneratingCharacter ? t('characters.generatingBtn') : t('characters.generateBtn') }}</span>
         </button>
       </template>
     </Modal>

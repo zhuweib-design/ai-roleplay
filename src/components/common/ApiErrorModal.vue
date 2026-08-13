@@ -18,6 +18,7 @@ import Icon from './Icon.vue';
 import type { IconName } from './icons';
 import { diagnoseError, type ApiErrorDiagnostics } from '@/api/diagnostics';
 import type { ApiErrorKind } from '@/api/types';
+import { t } from '@/i18n';
 
 interface LastErrorRecord {
   type: 'aborted' | 'api' | 'network' | 'unknown';
@@ -134,7 +135,7 @@ function handleRetry() {
 <template>
   <Modal
     :model-value="modelValue"
-    title="API 请求错误诊断"
+    :title="t('apiErrorModal.title')"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div v-if="diagnostics" class="error-detail">
@@ -153,13 +154,13 @@ function handleRetry() {
 
       <!-- 错误详细描述（P2-4：Modal 打开已移焦+播标题，移除内层 alert 防双重播报） -->
       <div class="error-description">
-        <span class="desc-label">错误详情：</span>
+        <span class="desc-label">{{ t('apiErrorModal.detailLabel') }}</span>
         <code class="desc-message">{{ diagnostics.description }}</code>
       </div>
 
       <!-- 修复建议 -->
       <div class="error-suggestions">
-        <h4 class="suggestions-title">修复建议</h4>
+        <h4 class="suggestions-title">{{ t('apiErrorModal.suggestionsTitle') }}</h4>
         <ol class="suggestions-list" role="list">
           <li
             v-for="(s, idx) in diagnostics.suggestions"
@@ -173,7 +174,7 @@ function handleRetry() {
 
       <!-- 帮助链接 -->
       <p class="error-help">
-        如以上建议均无法解决问题，请检查浏览器控制台（F12）获取详细网络日志。
+        {{ t('apiErrorModal.help') }}
       </p>
     </div>
 
@@ -183,7 +184,7 @@ function handleRetry() {
         class="btn-secondary"
         @click="handleClose"
       >
-        关闭
+        {{ t('apiErrorModal.close') }}
       </button>
       <button
         v-if="showRetryButton"
@@ -191,7 +192,7 @@ function handleRetry() {
         class="btn-secondary"
         @click="handleRetry"
       >
-        重试
+        {{ t('apiErrorModal.retry') }}
       </button>
       <button
         v-if="showSettingsButton"
@@ -199,7 +200,7 @@ function handleRetry() {
         class="btn-primary"
         @click="handleSettings"
       >
-        前往设置
+        {{ t('apiErrorModal.goSettings') }}
       </button>
     </template>
   </Modal>

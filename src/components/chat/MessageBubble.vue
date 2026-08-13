@@ -2,6 +2,7 @@
 import type { UIMessage } from '@/types';
 import Icon from '@/components/common/Icon.vue';
 import type { IconName } from '@/components/common/icons';
+import { t } from '@/i18n';
 
 defineProps<{
   msg: UIMessage;
@@ -19,13 +20,13 @@ interface MsgAction {
 }
 
 const assistantActions: MsgAction[] = [
-  { key: 'edit', icon: 'pencil', label: '编辑' },
-  { key: 'copy', icon: 'copy', label: '复制' },
-  { key: 'speak', icon: 'volume-2', label: '朗读' },
-  { key: 'translate', icon: 'globe', label: '翻译' },
-  { key: 'regenerate', icon: 'refresh-cw', label: '重新生成' },
-  { key: 'branch', icon: 'git-branch', label: '分支' },
-  { key: 'delete', icon: 'trash-2', label: '删除', danger: true },
+  { key: 'edit', icon: 'pencil', label: t('bubble.edit') },
+  { key: 'copy', icon: 'copy', label: t('bubble.copy') },
+  { key: 'speak', icon: 'volume-2', label: t('bubble.speak') },
+  { key: 'translate', icon: 'globe', label: t('bubble.translate') },
+  { key: 'regenerate', icon: 'refresh-cw', label: t('bubble.regenerate') },
+  { key: 'branch', icon: 'git-branch', label: t('bubble.branch') },
+  { key: 'delete', icon: 'trash-2', label: t('bubble.delete'), danger: true },
 ];
 </script>
 
@@ -34,7 +35,7 @@ const assistantActions: MsgAction[] = [
     class="msg-wrap msg-enter"
     :class="msg.role === 'user' ? 'msg-wrap-user' : 'msg-wrap-assistant'"
     role="article"
-    :aria-label="`${msg.role === 'user' ? '用户' : '角色'}消息`"
+    :aria-label="msg.role === 'user' ? t('bubble.userMsg') : t('bubble.assistantMsg')"
   >
     <!-- 用户消息 -->
     <div v-if="msg.role === 'user'" class="msg-bubble msg-user">
@@ -54,14 +55,14 @@ const assistantActions: MsgAction[] = [
         class="gen-dot"
         role="status"
         aria-live="polite"
-        aria-label="正在生成回复"
+        :aria-label="t('bubble.generating')"
       >
         <span class="dot" aria-hidden="true" />
-        <span class="gen-text">正在生成…</span>
+        <span class="gen-text">{{ t('bubble.generatingText') }}</span>
       </div>
 
       <!-- 消息操作栏（hover 或聚焦时显示，保证键盘可达） -->
-      <div class="msg-toolbar" role="toolbar" :aria-label="`消息操作：${assistantActions.map((a) => a.label).join('、')}`">
+      <div class="msg-toolbar" role="toolbar" :aria-label="t('bubble.toolbarAria', { actions: assistantActions.map((a) => a.label).join('、') })">
         <button
           v-for="a in assistantActions"
           :key="a.key"

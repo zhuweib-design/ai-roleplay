@@ -4,6 +4,7 @@ import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import NewConversationModal from '@/components/chat/NewConversationModal.vue';
+import { t } from '@/i18n';
 
 const characterStore = useCharacterStore();
 
@@ -16,7 +17,7 @@ function openNewConversation() {
 </script>
 
 <template>
-  <aside id="character-drawer" tabindex="-1" class="character-list" :class="{ active: characterStore.characterListOpen }" aria-label="角色列表">
+  <aside id="character-drawer" tabindex="-1" class="character-list" :class="{ active: characterStore.characterListOpen }" :aria-label="t('charList.aria')">
     <!-- 搜索区 -->
     <div class="character-search" style="position: relative">
       <span class="search-icon" aria-hidden="true">
@@ -25,15 +26,15 @@ function openNewConversation() {
       <input
         type="text"
         class="tk-input char-search-input"
-        placeholder="搜索角色..."
+        :placeholder="t('charList.searchPlaceholder')"
         :value="characterStore.searchQuery"
-        aria-label="搜索角色"
+        :aria-label="t('charList.searchAria')"
         @input="characterStore.setSearchQuery(($event.target as HTMLInputElement).value)"
       />
       <button
         type="button"
         class="mobile-menu-btn char-close-btn"
-        aria-label="关闭"
+        :aria-label="t('charList.close')"
         @click="characterStore.closeAllDrawers()"
       >
         <Icon name="close" :size="18" />
@@ -44,7 +45,7 @@ function openNewConversation() {
     <div class="character-list-scroll tk-scroll">
       <!-- 收藏分组 -->
       <template v-if="characterStore.favorites.length">
-        <div class="char-group-header" aria-hidden="true">收藏</div>
+        <div class="char-group-header" aria-hidden="true">{{ t('charList.favorites') }}</div>
         <button
           v-for="c in characterStore.favorites"
           :key="c.id"
@@ -52,7 +53,7 @@ function openNewConversation() {
           class="char-row hover-surface"
           :class="{ active: c.id === characterStore.currentCharacterId }"
           :aria-current="c.id === characterStore.currentCharacterId ? 'true' : undefined"
-          :aria-label="`选择角色 ${c.name}${c.id === characterStore.currentCharacterId ? '（当前）' : ''}`"
+          :aria-label="c.id === characterStore.currentCharacterId ? t('charList.selectCharCurrent', { name: c.name }) : t('charList.selectChar', { name: c.name })"
           @click="characterStore.selectCharacter(c.id)"
         >
           <Avatar :character="c" :size="32" />
@@ -70,7 +71,7 @@ function openNewConversation() {
           v-if="characterStore.currentCharacter.conversations.length"
           class="conv-list"
           role="list"
-          aria-label="历史对话列表"
+          :aria-label="t('charList.convHistory')"
         >
           <div
             v-for="conv in characterStore.currentCharacter.conversations"
@@ -86,7 +87,7 @@ function openNewConversation() {
 
       <!-- 全部角色分组 -->
       <template v-if="characterStore.others.length">
-        <div class="char-group-header" aria-hidden="true" style="padding-top: 14px">全部角色</div>
+        <div class="char-group-header" aria-hidden="true" style="padding-top: 14px">{{ t('charList.all') }}</div>
         <button
           v-for="c in characterStore.others"
           :key="c.id"
@@ -94,7 +95,7 @@ function openNewConversation() {
           class="char-row hover-surface"
           :class="{ active: c.id === characterStore.currentCharacterId }"
           :aria-current="c.id === characterStore.currentCharacterId ? 'true' : undefined"
-          :aria-label="`选择角色 ${c.name}${c.id === characterStore.currentCharacterId ? '（当前）' : ''}`"
+          :aria-label="c.id === characterStore.currentCharacterId ? t('charList.selectCharCurrent', { name: c.name }) : t('charList.selectChar', { name: c.name })"
           @click="characterStore.selectCharacter(c.id)"
         >
           <Avatar :character="c" :size="32" />
@@ -107,7 +108,7 @@ function openNewConversation() {
 
       <!-- 空状态 -->
       <div v-if="!characterStore.filteredCharacters.length" class="char-empty">
-        未找到匹配的角色
+        {{ t('charList.empty') }}
       </div>
     </div>
 
@@ -116,11 +117,11 @@ function openNewConversation() {
       <button
         type="button"
         class="hover-cyan new-char-btn"
-        aria-label="新建对话"
+        :aria-label="t('charList.newConv')"
         @click="openNewConversation"
       >
         <Icon name="plus" :size="16" />
-        <span>新建对话</span>
+        <span>{{ t('charList.newConv') }}</span>
       </button>
     </div>
 

@@ -19,6 +19,7 @@ import type { QuickReplyButton } from '@/types';
 // F12.2 TTS / F12.3 翻译
 import { ttsService, isTTSSupported } from '@services/tts-service';
 import { translateText, TranslationError } from '@services/translator';
+import { t } from '@/i18n';
 
 const router = useRouter();
 const characterStore = useCharacterStore();
@@ -223,7 +224,7 @@ function handleStop() {
 function handleExportChat() {
   const msgs = char.value.messages;
   if (msgs.length === 0) {
-    toastMessage.value = '暂无对话内容';
+    toastMessage.value = t('chat.emptyChat');
     toastType.value = 'info';
     toastOpen.value = true;
     return;
@@ -231,13 +232,13 @@ function handleExportChat() {
   const chat: Chat = {
     id: `chat-${char.value.id}`,
     characterId: char.value.id,
-    title: `与 ${char.value.name} 的对话`,
+    title: t('chat.conversationTitle', { name: char.value.name }),
     messages: uiMsgsToChatMsgs(msgs),
     createdAt: new Date(msgs[0].timestamp).toISOString(),
     updatedAt: new Date().toISOString(),
   };
   downloadChatMarkdown(chat, char.value.name, personaStore.activeUserName);
-  toastMessage.value = '已导出对话 Markdown';
+  toastMessage.value = t('chat.exportedMarkdown');
   toastType.value = 'success';
   toastOpen.value = true;
 }
@@ -256,7 +257,7 @@ function handleMessageAction(msgId: string, action: string) {
     case 'edit': {
       const msg = char.value.messages.find((m) => m.id === msgId);
       if (msg) {
-        const newText = window.prompt('编辑消息', msg.content);
+        const newText = window.prompt(t('chat.editMessage'), msg.content);
         if (newText !== null) {
           chatStore.editMessage(msg, newText);
           chatStore.persistAfterEdit(char.value);
@@ -265,7 +266,7 @@ function handleMessageAction(msgId: string, action: string) {
       break;
     }
     case 'branch':
-      window.alert('分支功能：已创建对话分支（演示）');
+      window.alert(t('chat.branchDemo'));
       break;
     case 'speak': {
       // F12.2 TTS 朗读
@@ -290,14 +291,14 @@ function handleMessageAction(msgId: string, action: string) {
 
 function speakMessage(text: string) {
   if (!isTTSSupported()) {
-    toastMessage.value = '当前浏览器不支持语音朗读';
+    toastMessage.value = t('chat.ttsUnsupported');
     toastType.value = 'error';
     toastOpen.value = true;
     return;
   }
   if (ttsService.isSpeaking) {
     ttsService.stop();
-    toastMessage.value = '已停止朗读';
+    toastMessage.value = t('chat.ttsStopped');
     toastType.value = 'info';
     toastOpen.value = true;
     return;
@@ -310,7 +311,7 @@ function speakMessage(text: string) {
     pitch: config.pitch,
     volume: config.volume,
     onError: (err) => {
-      toastMessage.value = `朗读失败：${err}`;
+      toastMessage.value = t('chat.ttsFailed', { error: String(err) });
       toastType.value = 'error';
       toastOpen.value = true;
     },
@@ -322,7 +323,7 @@ function speakMessage(text: string) {
 async function translateMessage(msg: { id: string; content: string }) {
   const config = settings.translationConfig;
   if (!config.enabled) {
-    toastMessage.value = '翻译功能未启用，请在设置页配置';
+    toastMessage.value = t('chat.translateDisabled');
     toastType.value = 'error';
     toastOpen.value = true;
     return;
@@ -331,14 +332,16 @@ async function translateMessage(msg: { id: string; content: string }) {
     const result = await translateText(msg.content, config);
     // 将翻译结果存到 messageTranslation 映射
     messageTranslations.value[msg.id] = result.translatedText;
-    toastMessage.value = '翻译完成';
+    toastMessage.value = t('chat.translateDone');
     toastType.value = 'success';
     toastOpen.value = true;
   } catch (err) {
     const message =
       err instanceof TranslationError
         ? err.message
-        : `翻译失败：${err instanceof Error ? err.message : String(err)}`;
+        : t('chat.translateFailed', {
+            error: err instanceof Error ? err.message : String(err),
+          });
     toastMessage.value = message;
     toastType.value = 'error';
     toastOpen.value = true;
@@ -346,15 +349,15 @@ async function translateMessage(msg: { id: string; content: string }) {
 }
 
 const toolButtons: Array<{ icon: IconName; label: string }> = [
-  { icon: 'plus', label: '附加文件' },
-  { icon: 'bookmark-simple', label: '引用' },
-  { icon: 'share-fat', label: '图片' },
-  { icon: 'music-notes', label: '语音' },
+  { icon: 'plus', label: t('chat.attachFile') },
+  { icon: 'bookmark-simple', label: t('chat.reference') },
+  { icon: 'share-fat', label: t('chat.image') },
+  { icon: 'music-notes', label: t('chat.voice') },
 ];
 
 function handleToolClick(label: string) {
   // Vue 模板无法直接访问 window，需通过方法调用
-  window.alert(`${label} 功能待接入`);
+  window.alert(t('chat.featurePending', { feature: label }));
 }
 
 // ── F11.3 Quick Reply ──
@@ -390,13 +393,13 @@ function handleQuickReply(btn: QuickReplyButton) {
 </script>
 
 <template>
-  <main id="main-content" class="chat-main" :style="bubbleCssVars" aria-label="聊天主区" tabindex="-1">
+  <main id="main-content" class="chat-main" :style="bubbleCssVars" :aria-label="t('chat.mainAria')" tabindex="-1">
     <!-- 顶栏 -->
     <header class="chat-header">
       <button
         type="button"
         class="mobile-menu-btn"
-        aria-label="打开角色列表"
+        :aria-label="t('chat.openCharList')"
         @click="characterStore.toggleCharacterList()"
       >
         <Icon name="menu" :size="20" />
@@ -409,20 +412,20 @@ function handleQuickReply(btn: QuickReplyButton) {
       </div>
 
       <div class="chat-token" aria-hidden="true">
-        已耗 {{ (chatStore.totalTokenUsage / 1000).toFixed(1) }}k
+        {{ t('chat.tokenUsed', { count: (chatStore.totalTokenUsage / 1000).toFixed(1) }) }}
         <span
           v-if="chatStore.prefixCacheHitRate !== null"
           class="cache-rate"
-          :title="`前缀缓存:命中 ${chatStore.cacheUsage.hitTokens} tok / 未命中 ${chatStore.cacheUsage.missTokens} tok(${chatStore.cacheUsage.reported} 次上报)`"
+          :title="t('chat.cacheHitTitle', { hit: chatStore.cacheUsage.hitTokens, miss: chatStore.cacheUsage.missTokens, reported: chatStore.cacheUsage.reported })"
         >
-          · 缓存 {{ (chatStore.prefixCacheHitRate * 100).toFixed(0) }}%
+          · {{ t('chat.cacheHit', { percent: (chatStore.prefixCacheHitRate * 100).toFixed(0) }) }}
         </span>
         <span
           v-else-if="chatStore.prefixStableRate !== null"
           class="cache-rate local"
-          :title="`本地检测:角色前缀稳定 ${chatStore.prefixStability.stable}/${chatStore.prefixStability.total} 轮(缓存命中的必要条件;供应商未返回缓存字段,以稳定率为参考)。TTFT:最近 ${chatStore.ttftStats.lastMs}ms / 平均 ${chatStore.ttftStats.avgMs}ms`"
+          :title="t('chat.prefixStableTitle', { stable: chatStore.prefixStability.stable, total: chatStore.prefixStability.total, last: chatStore.ttftStats.lastMs, avg: chatStore.ttftStats.avgMs })"
         >
-          · 前缀稳定 {{ (chatStore.prefixStableRate * 100).toFixed(0) }}%
+          · {{ t('chat.prefixStable', { percent: (chatStore.prefixStableRate * 100).toFixed(0) }) }}
         </span>
       </div>
 
@@ -430,7 +433,7 @@ function handleQuickReply(btn: QuickReplyButton) {
       <div
         v-if="storyTimeText"
         class="chat-story-time"
-        :title="`当前故事时间（/time advance 推进 / /time set N 设置）`"
+        :title="t('chat.storyTimeTitle')"
         role="status"
         aria-live="polite"
       >
@@ -442,8 +445,8 @@ function handleQuickReply(btn: QuickReplyButton) {
         <button
           type="button"
           class="hover-surface panel-toggle-btn"
-          aria-label="导出对话"
-          :title="'导出对话为 Markdown'"
+          :aria-label="t('chat.exportChat')"
+          :title="t('chat.exportChatTitle')"
           @click="handleExportChat"
         >
           <Icon name="download" :size="20" />
@@ -451,7 +454,7 @@ function handleQuickReply(btn: QuickReplyButton) {
         <button
           type="button"
           class="hover-surface panel-toggle-btn"
-          aria-label="切换上下文面板"
+          :aria-label="t('chat.togglePanel')"
           :aria-expanded="characterStore.panelOpen"
           @click="characterStore.togglePanel()"
         >
@@ -470,7 +473,7 @@ function handleQuickReply(btn: QuickReplyButton) {
       aria-live="polite"
       :aria-busy="chatStore.isGenerating ? 'true' : 'false'"
       aria-relevant="additions text"
-      aria-label="对话消息历史"
+      :aria-label="t('chat.messagesAria')"
       @scroll="handleScroll"
     >
       <!-- F08.2 背景遮罩层（保证文字可读性） -->
@@ -483,7 +486,7 @@ function handleQuickReply(btn: QuickReplyButton) {
           class="load-older-btn"
           @click="loadOlderMessages"
         >
-          加载更早消息（还有 {{ char.messages.length - visibleMessages.length }} 条）
+          {{ t('chat.loadOlder', { count: char.messages.length - visibleMessages.length }) }}
         </button>
         <MessageBubble
           v-for="msg in visibleMessages"
@@ -501,7 +504,7 @@ function handleQuickReply(btn: QuickReplyButton) {
         v-if="quickReplyGroups.length > 0"
         class="quick-reply-bar"
         role="toolbar"
-        aria-label="快捷回复按钮"
+        :aria-label="t('chat.quickReplyAria')"
       >
         <div
           v-for="group in quickReplyGroups"
@@ -525,18 +528,18 @@ function handleQuickReply(btn: QuickReplyButton) {
         </div>
       </div>
       <div class="chat-composer">
-        <label class="chat-input-label" for="chat-input">输入消息</label>
+        <label class="chat-input-label" for="chat-input">{{ t('chat.inputLabel') }}</label>
         <textarea
           id="chat-input"
           ref="textarea"
           class="chat-input"
-          placeholder="输入消息… (Shift+Enter 换行)"
+          :placeholder="t('chat.inputPlaceholder')"
           rows="1"
           aria-describedby="chat-input-hint"
           @input="adjustHeight"
           @keydown="handleKeydown"
         />
-        <span id="chat-input-hint" class="sr-only">按 Enter 发送消息，Shift+Enter 换行</span>
+        <span id="chat-input-hint" class="sr-only">{{ t('chat.inputHint') }}</span>
         <div class="composer-toolbar">
           <div class="composer-actions">
             <button
@@ -553,7 +556,7 @@ function handleQuickReply(btn: QuickReplyButton) {
           <button
             type="button"
             class="send-btn-primary"
-            :aria-label="chatStore.isGenerating ? '停止生成' : '发送消息'"
+            :aria-label="chatStore.isGenerating ? t('chat.stopGenerating') : t('chat.sendMessage')"
             @click="chatStore.isGenerating ? handleStop() : handleSend()"
           >
             <Icon :name="chatStore.isGenerating ? 'stop' : 'send'" :size="chatStore.isGenerating ? 14 : 16" />

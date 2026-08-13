@@ -28,6 +28,7 @@
 import { computed, ref } from 'vue';
 import Icon from '@/components/common/Icon.vue';
 import { type IconName } from '@/components/common/icons';
+import { t } from '@/i18n';
 
 /** 单个 Tab 描述 */
 export interface FilterTab<T extends string = string> {
@@ -61,8 +62,8 @@ const props = withDefaults(
     orientation?: 'horizontal' | 'vertical';
   }>(),
   {
-    label: '分类筛选',
-    allLabel: '全部',
+    label: t('filterTabs.label'),
+    allLabel: t('filterTabs.all'),
     allValue: '',
     orientation: 'horizontal',
   }
@@ -166,7 +167,7 @@ function onKeydown(e: KeyboardEvent): void {
         <span
           v-if="typeof tab.count === 'number'"
           class="tab-count"
-          :aria-label="`共 ${tab.count} 项`"
+          :aria-label="t('filterTabs.count', { count: tab.count })"
         >{{ tab.count }}</span>
       </button>
     </div>

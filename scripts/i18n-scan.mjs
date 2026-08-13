@@ -78,14 +78,21 @@ function isIgnored(rel, ignoreList) {
 function effectiveCode(line, state) {
   let text = line;
 
-  // ① HTML 注释（Vue 模板）
+  // ① HTML 注释（Vue 模板）——维护跨行状态
+  if (state.inHtmlComment) {
+    const end = text.indexOf('-->');
+    if (end < 0) return '';
+    text = text.slice(end + 3);
+    state.inHtmlComment = false;
+  }
   if (text.includes('<!--')) {
     const start = text.indexOf('<!--');
     const end = text.indexOf('-->', start);
     if (end >= 0) {
       text = text.slice(0, start) + text.slice(end + 3);
     } else {
-      return ''; // 多行 HTML 注释起始行
+      state.inHtmlComment = true;
+      text = text.slice(0, start);
     }
   }
   if (text.trimStart().startsWith('-->')) return '';
@@ -163,7 +170,7 @@ for (const file of scanned) {
   const rel = relative(ROOT, file);
   const content = readFileSync(file, 'utf8');
   const lines = content.split('\n');
-  const st = { inBlock: false };
+  const st = { inBlock: false, inHtmlComment: false };
   for (let i = 0; i < lines.length; i++) {
     const code = effectiveCode(lines[i], st);
     if (!code || !CJK_RE.test(code)) continue;

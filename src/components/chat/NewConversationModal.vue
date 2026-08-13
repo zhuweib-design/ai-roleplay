@@ -26,6 +26,7 @@ import type { UICharacter } from '@/types';
 import type { CharacterCard } from '@core/character-card';
 import type { GroupChatMode } from '@core/group-chat';
 import { MIN_GROUP_MEMBERS, MAX_GROUP_MEMBERS } from '@core/group-chat';
+import { t } from '@/i18n';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -147,7 +148,7 @@ function toggleCharacter(charId: string) {
     } else {
       // 群聊：多选，检查上限
       if (next.size >= MAX_GROUP_MEMBERS) {
-        showToast('error', `群聊成员数已达上限 ${MAX_GROUP_MEMBERS} 人`);
+        showToast('error', t('newConv.groupMax', { count: MAX_GROUP_MEMBERS }));
         return;
       }
       next.add(charId);
@@ -187,7 +188,7 @@ function uiCharToCard(c: UICharacter): CharacterCard {
 function confirmCreate() {
   if (convType.value === 'single') {
     if (!canConfirmSingle.value) {
-      showToast('error', '请选择 1 个角色');
+      showToast('error', t('newConv.needOne'));
       return;
     }
     const charId = Array.from(selectedMemberIds.value)[0];
@@ -198,9 +199,9 @@ function confirmCreate() {
   } else {
     if (!canConfirmGroup.value) {
       if (!groupName.value.trim()) {
-        showToast('error', '群聊名称不能为空');
+        showToast('error', t('newConv.groupNameRequired'));
       } else if (selectedMemberIds.value.size < MIN_GROUP_MEMBERS) {
-        showToast('error', `群聊至少需要 ${MIN_GROUP_MEMBERS} 个成员`);
+        showToast('error', t('newConv.groupMin', { count: MIN_GROUP_MEMBERS }));
       }
       return;
     }
@@ -249,23 +250,23 @@ watch(
 <template>
   <Modal
     :model-value="modelValue"
-    :title="step === 1 ? '新建对话' : '选择角色'"
-    aria-label="新建对话向导"
+    :title="step === 1 ? t('newConv.title') : t('newConv.selectCharTitle')"
+    :aria-label="t('newConv.wizardAria')"
     @update:model-value="(v) => emit('update:modelValue', v)"
   >
     <div class="new-conv-modal">
       <!-- 步骤指示器 -->
-      <div class="step-indicator" role="navigation" aria-label="创建步骤">
+      <div class="step-indicator" role="navigation" :aria-label="t('newConv.stepAria')">
         <span class="step-dot" :class="{ active: step >= 1 }" :aria-current="step === 1 ? 'step' : undefined">1</span>
         <span class="step-line" :class="{ active: step >= 2 }"></span>
         <span class="step-dot" :class="{ active: step >= 2 }" :aria-current="step === 2 ? 'step' : undefined">2</span>
-        <span class="step-label">{{ step === 1 ? '选择类型' : '选择角色' }}</span>
+        <span class="step-label">{{ step === 1 ? t('newConv.stepType') : t('newConv.stepSelectChar') }}</span>
       </div>
 
       <!-- 第一步：选择对话类型 -->
       <div v-if="step === 1" class="step-content">
-        <p class="step-hint">请选择对话类型</p>
-        <div class="type-cards" role="radiogroup" aria-label="对话类型">
+        <p class="step-hint">{{ t('newConv.typeHint') }}</p>
+        <div class="type-cards" role="radiogroup" :aria-label="t('newConv.typeAria')">
           <button
             type="button"
             class="type-card"
@@ -276,8 +277,8 @@ watch(
             @keydown.enter.prevent="selectType('single')"
           >
             <span class="type-icon" aria-hidden="true"><Icon name="chat-circle" :size="32" /></span>
-            <span class="type-name">单聊</span>
-            <span class="type-desc">与单个角色进行一对一对话</span>
+            <span class="type-name">{{ t('newConv.single') }}</span>
+            <span class="type-desc">{{ t('newConv.singleDesc') }}</span>
           </button>
           <button
             type="button"
@@ -289,8 +290,8 @@ watch(
             @keydown.enter.prevent="selectType('group')"
           >
             <span class="type-icon" aria-hidden="true"><Icon name="users" :size="32" /></span>
-            <span class="type-name">群聊</span>
-            <span class="type-desc">2-8 个角色同场对话，自然轮换发言</span>
+            <span class="type-name">{{ t('newConv.group') }}</span>
+            <span class="type-desc">{{ t('newConv.groupDesc') }}</span>
           </button>
         </div>
       </div>
@@ -301,26 +302,26 @@ watch(
         <div v-if="convType === 'group'" class="group-form">
           <div class="form-field">
             <label for="group-name" class="field-label">
-              群聊名称 <span class="required" aria-label="必填">*</span>
+              {{ t('newConv.groupName') }} <span class="required" :aria-label="t('common.required')">*</span>
             </label>
             <input
               id="group-name"
               v-model="groupName"
               type="text"
               class="field-input"
-              placeholder="如：茶话会"
+              :placeholder="t('newConv.groupNamePlaceholder')"
               maxlength="50"
               autocomplete="off"
             />
           </div>
           <div class="form-field">
-            <label for="group-desc" class="field-label">描述（可选）</label>
+            <label for="group-desc" class="field-label">{{ t('newConv.groupDescLabel') }}</label>
             <input
               id="group-desc"
               v-model="groupDesc"
               type="text"
               class="field-input"
-              placeholder="群聊场景描述"
+              :placeholder="t('newConv.groupDescPlaceholder')"
               maxlength="200"
               autocomplete="off"
             />
@@ -334,23 +335,23 @@ watch(
             v-model="searchQuery"
             type="text"
             class="search-input"
-            placeholder="搜索角色名或标签…"
-            aria-label="搜索角色"
+            :placeholder="t('newConv.searchPlaceholder')"
+            :aria-label="t('newConv.searchAria')"
           />
         </div>
 
         <!-- 选中计数 -->
         <div class="selection-info" aria-live="polite">
           <span v-if="convType === 'single'">
-            {{ selectedCount === 1 ? '已选 1 个角色' : '请选择 1 个角色' }}
+            {{ selectedCount === 1 ? t('newConv.singleSelected') : t('newConv.singleSelectHint') }}
           </span>
           <span v-else>
-            已选 {{ selectedCount }} / {{ MIN_GROUP_MEMBERS }}-{{ MAX_GROUP_MEMBERS }} 个角色
+            {{ t('newConv.groupCount', { count: selectedCount, min: MIN_GROUP_MEMBERS, max: MAX_GROUP_MEMBERS }) }}
           </span>
         </div>
 
         <!-- 角色列表 -->
-        <div class="char-select-list" role="listbox" :aria-label="convType === 'single' ? '选择对话角色' : '选择群聊成员'" :aria-multiselectable="convType === 'group'">
+        <div class="char-select-list" role="listbox" :aria-label="convType === 'single' ? t('newConv.listboxSingle') : t('newConv.listboxGroup')" :aria-multiselectable="convType === 'group'">
           <button
             v-for="c in filteredCharacters"
             :key="c.id"
@@ -359,7 +360,7 @@ watch(
             :class="{ selected: isSelected(c.id) }"
             role="option"
             :aria-selected="isSelected(c.id)"
-            :aria-label="`${isSelected(c.id) ? '已选 ' : ''}${c.name}`"
+            :aria-label="`${isSelected(c.id) ? t('newConv.selectedPrefix') : ''}${c.name}`"
             @click="toggleCharacter(c.id)"
           >
             <Avatar :character="c" :size="36" />
@@ -374,7 +375,7 @@ watch(
 
           <!-- 空状态 -->
           <p v-if="filteredCharacters.length === 0" class="empty-hint">
-            {{ searchQuery ? '未找到匹配的角色' : '暂无角色，请先到角色页创建' }}
+            {{ searchQuery ? t('newConv.emptySearch') : t('newConv.emptyNoChar') }}
           </p>
         </div>
       </div>
@@ -388,9 +389,9 @@ watch(
         @click="backToStep1"
       >
         <Icon name="arrow-left" :size="14" />
-        <span>上一步</span>
+        <span>{{ t('newConv.back') }}</span>
       </button>
-      <button type="button" class="modal-btn modal-cancel" @click="closeModal">取消</button>
+      <button type="button" class="modal-btn modal-cancel" @click="closeModal">{{ t('common.cancel') }}</button>
       <button
         v-if="step === 1"
         type="button"
@@ -398,7 +399,7 @@ watch(
         :disabled="!canNext"
         @click="goToStep2"
       >
-        <span>下一步</span>
+        <span>{{ t('newConv.next') }}</span>
         <Icon name="chevron-right" :size="14" />
       </button>
       <button
@@ -409,7 +410,7 @@ watch(
         @click="confirmCreate"
       >
         <Icon name="check" :size="14" />
-        <span>创建对话</span>
+        <span>{{ t('newConv.create') }}</span>
       </button>
     </template>
 
