@@ -31,6 +31,7 @@ import type {
   RandomEventResult,
   RandomEventFeedback,
 } from '@core/random-event-generator';
+import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useRandomEventsStore();
@@ -40,10 +41,10 @@ const lorebookStore = useLorebookStore();
 type TabKey = 'templates' | 'scenes' | 'generator' | 'results';
 const activeTab = ref<TabKey>('templates');
 const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: 'templates', label: '事件模板' },
-  { key: 'scenes', label: '场景配置' },
-  { key: 'generator', label: '生成器' },
-  { key: 'results', label: '结果与统计' },
+  { key: 'templates', label: t('re.tabTemplates') },
+  { key: 'scenes', label: t('re.tabScenes') },
+  { key: 'generator', label: t('re.tabGenerator') },
+  { key: 'results', label: t('re.tabResults') },
 ];
 
 // ── Toast ──
@@ -96,19 +97,19 @@ function onTemplateModalSave(data: {
 }): void {
   if (data.id) {
     const ok = store.updateTemplate(data.id, data.input);
-    if (ok) showToast('success', '模板已更新');
+    if (ok) showToast('success', t('re.templateUpdated'));
   } else {
     const id = store.createTemplate(data.input);
-    if (id) showToast('success', '模板已创建');
+    if (id) showToast('success', t('re.templateCreated'));
   }
   flushStoreMessages();
   templateModalOpen.value = false;
 }
 
 function deleteTemplate(id: string): void {
-  if (confirm('确定删除此模板？此操作不可恢复。')) {
+  if (confirm(t('re.templateDeleteConfirm'))) {
     const ok = store.deleteTemplate(id);
-    if (ok) showToast('success', '模板已删除');
+    if (ok) showToast('success', t('re.templateDeleted'));
     flushStoreMessages();
   }
 }
@@ -138,15 +139,15 @@ function onSceneModalSave(data: {
   config: Partial<Omit<RandomEventSceneConfig, 'sceneName'>>;
 }): void {
   const ok = store.updateSceneConfig(data.sceneName, data.config);
-  if (ok) showToast('success', data.isEdit ? '场景配置已更新' : '场景配置已创建');
+  if (ok) showToast('success', data.isEdit ? t('re.sceneUpdated') : t('re.sceneCreated'));
   flushStoreMessages();
   sceneModalOpen.value = false;
 }
 
 function deleteScene(sceneName: string): void {
-  if (confirm(`确定删除场景「${sceneName}」的随机事件配置？`)) {
+  if (confirm(t('re.sceneDeleteConfirm', { name: sceneName }))) {
     const ok = store.deleteSceneConfig(sceneName);
-    if (ok) showToast('success', '场景配置已删除');
+    if (ok) showToast('success', t('re.sceneDeleted'));
     flushStoreMessages();
   }
 }
@@ -175,7 +176,7 @@ function saveGeneratorConfig(): void {
     feedbackAdjustStep: generatorForm.value.feedbackAdjustStep,
     boundWorldBookId: generatorForm.value.boundWorldBookId || null,
   });
-  showToast('success', '生成器配置已保存');
+  showToast('success', t('re.configSaved'));
   flushStoreMessages();
 }
 
@@ -191,21 +192,25 @@ function toggleGenerator(): void {
   generatorForm.value.enabled = store.generatorConfig.enabled;
   showToast(
     'success',
-    store.generatorConfig.enabled ? '随机事件已启用' : '随机事件已禁用'
+    store.generatorConfig.enabled ? t('re.generatorEnabled') : t('re.generatorDisabled')
   );
 }
 
 // ── 结果反馈 ──
 function applyFeedback(result: RandomEventResult, feedback: RandomEventFeedback): void {
   const ok = store.applyFeedback(result.id, feedback);
-  if (ok) showToast('success', `已记录反馈：${feedback === 'positive' ? '喜欢' : feedback === 'negative' ? '不喜欢' : '中立'}`);
+  if (ok) {
+    const label =
+      feedback === 'positive' ? t('re.feedbackLike') : feedback === 'negative' ? t('re.feedbackDislike') : t('re.feedbackNeutral');
+    showToast('success', t('re.feedbackRecorded', { feedback: label }));
+  }
   flushStoreMessages();
 }
 
 function clearResults(): void {
-  if (confirm('确定清空所有结果历史？统计将一并清空。')) {
+  if (confirm(t('re.clearHistoryConfirm'))) {
     store.clearResults();
-    showToast('success', '结果历史已清空');
+    showToast('success', t('re.historyCleared'));
   }
 }
 
@@ -238,10 +243,10 @@ function formatTime(iso: string | null): string {
 }
 
 function formatCooldown(ms: number): string {
-  if (ms <= 0) return '无冷却';
-  if (ms < 60_000) return `${Math.round(ms / 1000)}秒`;
-  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}分钟`;
-  return `${(ms / 3_600_000).toFixed(1)}小时`;
+  if (ms <= 0) return t('re.cooldownNone');
+  if (ms < 60_000) return t('re.cooldownSec', { sec: Math.round(ms / 1000) });
+  if (ms < 3_600_000) return t('re.cooldownMin', { min: Math.round(ms / 60_000) });
+  return t('re.cooldownHour', { hour: (ms / 3_600_000).toFixed(1) });
 }
 </script>
 
@@ -252,14 +257,14 @@ function formatCooldown(ms: number): string {
         <button
           type="button"
           class="header-btn"
-          aria-label="返回"
+          :aria-label="t('re.backAria')"
           @click="goBack"
         >
           <Icon name="arrow-left" :size="18" aria-hidden="true" />
         </button>
-        <h1>随机事件</h1>
+        <h1>{{ t('re.title') }}</h1>
         <span class="header-tag" :class="{ enabled: store.generatorConfig.enabled }">
-          {{ store.generatorConfig.enabled ? '已启用' : '未启用' }}
+          {{ store.generatorConfig.enabled ? t('re.enabled') : t('re.disabled') }}
         </span>
       </div>
       <div class="header-actions">
@@ -270,12 +275,12 @@ function formatCooldown(ms: number): string {
           @click="toggleGenerator"
         >
           <Icon :name="store.generatorConfig.enabled ? 'stop' : 'play'" :size="16" aria-hidden="true" />
-          {{ store.generatorConfig.enabled ? '停用' : '启用' }}
+          {{ store.generatorConfig.enabled ? t('re.stop') : t('re.start') }}
         </button>
       </div>
     </header>
 
-    <nav class="tabs" role="tablist" aria-label="随机事件管理">
+    <nav class="tabs" role="tablist" :aria-label="t('re.tabsAria')">
       <button
         v-for="tab in TABS"
         :key="tab.key"
@@ -306,10 +311,10 @@ function formatCooldown(ms: number): string {
         class="panel"
       >
         <div class="panel-toolbar">
-          <p class="panel-hint">事件模板用于预定义可重复使用的随机事件类型，支持多维度参数（概率/权重/类别/严重度/冷却）。</p>
+          <p class="panel-hint">{{ t('re.templatesHint') }}</p>
           <button type="button" class="btn primary" @click="openCreateTemplate">
             <Icon name="plus" :size="16" aria-hidden="true" />
-            新建模板
+            {{ t('re.newTemplate') }}
           </button>
         </div>
 
@@ -320,34 +325,34 @@ function formatCooldown(ms: number): string {
                 <span class="title-text">{{ tpl.name }}</span>
                 <span class="badge category">{{ getCategoryLabel(tpl.category) }}</span>
                 <span class="badge severity" :data-sev="tpl.severity">{{ getSeverityLabel(tpl.severity) }}</span>
-                <span v-if="!tpl.enabled" class="badge off">已禁用</span>
+                <span v-if="!tpl.enabled" class="badge off">{{ t('re.templateDisabled') }}</span>
               </div>
               <div class="card-actions">
-                <button type="button" class="icon-btn" :aria-label="tpl.enabled ? '禁用' : '启用'" @click="toggleTemplate(tpl)">
+                <button type="button" class="icon-btn" :aria-label="tpl.enabled ? t('re.disableAria') : t('re.enableAria')" @click="toggleTemplate(tpl)">
                   <Icon :name="tpl.enabled ? 'eye' : 'eye-off'" :size="16" aria-hidden="true" />
                 </button>
-                <button type="button" class="icon-btn" aria-label="编辑" @click="openEditTemplate(tpl)">
+                <button type="button" class="icon-btn" :aria-label="t('re.editAria')" @click="openEditTemplate(tpl)">
                   <Icon name="pencil" :size="16" aria-hidden="true" />
                 </button>
-                <button type="button" class="icon-btn danger" aria-label="删除" @click="deleteTemplate(tpl.id)">
+                <button type="button" class="icon-btn danger" :aria-label="t('re.deleteAria')" @click="deleteTemplate(tpl.id)">
                   <Icon name="trash-2" :size="16" aria-hidden="true" />
                 </button>
               </div>
             </div>
             <p class="card-desc">{{ tpl.description }}</p>
             <dl class="card-meta">
-              <div><dt>概率</dt><dd>{{ tpl.probability }}%</dd></div>
-              <div><dt>权重</dt><dd>{{ tpl.weight }}</dd></div>
-              <div><dt>冷却</dt><dd>{{ formatCooldown(tpl.cooldownMs) }}</dd></div>
-              <div><dt>触发次数</dt><dd>{{ tpl.triggerCount }}{{ tpl.maxTriggers > 0 ? ` / ${tpl.maxTriggers}` : '' }}</dd></div>
-              <div><dt>最后触发</dt><dd>{{ formatTime(tpl.lastTriggeredAt) }}</dd></div>
+              <div><dt>{{ t('re.probability') }}</dt><dd>{{ tpl.probability }}%</dd></div>
+              <div><dt>{{ t('re.weight') }}</dt><dd>{{ tpl.weight }}</dd></div>
+              <div><dt>{{ t('re.cooldown') }}</dt><dd>{{ formatCooldown(tpl.cooldownMs) }}</dd></div>
+              <div><dt>{{ t('re.triggerCount') }}</dt><dd>{{ tpl.triggerCount }}{{ tpl.maxTriggers > 0 ? ` / ${tpl.maxTriggers}` : '' }}</dd></div>
+              <div><dt>{{ t('re.lastTriggered') }}</dt><dd>{{ formatTime(tpl.lastTriggeredAt) }}</dd></div>
             </dl>
           </li>
         </ul>
         <div v-else class="empty-state">
           <Icon name="star" :size="48" aria-hidden="true" />
-          <p>暂无事件模板</p>
-          <p class="empty-hint">点击「新建模板」创建第一个事件模板</p>
+          <p>{{ t('re.noTemplates') }}</p>
+          <p class="empty-hint">{{ t('re.noTemplatesHint') }}</p>
         </div>
       </section>
 
@@ -360,10 +365,10 @@ function formatCooldown(ms: number): string {
         class="panel"
       >
         <div class="panel-toolbar">
-          <p class="panel-hint">为每个场景独立配置随机事件开关与参数覆盖（概率/类别/严重度上限）。</p>
+          <p class="panel-hint">{{ t('re.scenesHint') }}</p>
           <button type="button" class="btn primary" @click="openCreateScene">
             <Icon name="plus" :size="16" aria-hidden="true" />
-            新建场景配置
+            {{ t('re.newScene') }}
           </button>
         </div>
 
@@ -373,32 +378,32 @@ function formatCooldown(ms: number): string {
               <div class="card-title">
                 <Icon name="map-pin" :size="16" aria-hidden="true" />
                 <span class="title-text">{{ cfg.sceneName }}</span>
-                <span class="badge" :class="cfg.enabled ? 'on' : 'off'">{{ cfg.enabled ? '启用' : '禁用' }}</span>
+                <span class="badge" :class="cfg.enabled ? 'on' : 'off'">{{ cfg.enabled ? t('re.sceneOn') : t('re.sceneOff') }}</span>
               </div>
               <div class="card-actions">
-                <button type="button" class="icon-btn" :aria-label="cfg.enabled ? '禁用' : '启用'" @click="toggleScene(cfg.sceneName, cfg)">
+                <button type="button" class="icon-btn" :aria-label="cfg.enabled ? t('re.disableAria') : t('re.enableAria')" @click="toggleScene(cfg.sceneName, cfg)">
                   <Icon :name="cfg.enabled ? 'eye' : 'eye-off'" :size="16" aria-hidden="true" />
                 </button>
-                <button type="button" class="icon-btn" aria-label="编辑" @click="openEditScene(cfg.sceneName)">
+                <button type="button" class="icon-btn" :aria-label="t('re.editAria')" @click="openEditScene(cfg.sceneName)">
                   <Icon name="pencil" :size="16" aria-hidden="true" />
                 </button>
-                <button type="button" class="icon-btn danger" aria-label="删除" @click="deleteScene(cfg.sceneName)">
+                <button type="button" class="icon-btn danger" :aria-label="t('re.deleteAria')" @click="deleteScene(cfg.sceneName)">
                   <Icon name="trash-2" :size="16" aria-hidden="true" />
                 </button>
               </div>
             </div>
             <dl class="card-meta">
-              <div><dt>概率覆盖</dt><dd>{{ cfg.probabilityOverride === null ? '使用全局默认' : `${cfg.probabilityOverride}%` }}</dd></div>
-              <div><dt>允许类别</dt><dd>{{ cfg.allowedCategories.length === 0 ? '全部' : cfg.allowedCategories.map(getCategoryLabel).join('、') }}</dd></div>
-              <div><dt>排除类别</dt><dd>{{ cfg.excludedCategories.length === 0 ? '无' : cfg.excludedCategories.map(getCategoryLabel).join('、') }}</dd></div>
-              <div><dt>严重度上限</dt><dd>{{ getSeverityLabel(cfg.maxSeverity) }}</dd></div>
+              <div><dt>{{ t('re.probOverride') }}</dt><dd>{{ cfg.probabilityOverride === null ? t('re.probDefault') : `${cfg.probabilityOverride}%` }}</dd></div>
+              <div><dt>{{ t('re.allowCategories') }}</dt><dd>{{ cfg.allowedCategories.length === 0 ? t('re.allCategories') : cfg.allowedCategories.map(getCategoryLabel).join('、') }}</dd></div>
+              <div><dt>{{ t('re.excludeCategories') }}</dt><dd>{{ cfg.excludedCategories.length === 0 ? t('re.none') : cfg.excludedCategories.map(getCategoryLabel).join('、') }}</dd></div>
+              <div><dt>{{ t('re.maxSeverity') }}</dt><dd>{{ getSeverityLabel(cfg.maxSeverity) }}</dd></div>
             </dl>
           </li>
         </ul>
         <div v-else class="empty-state">
           <Icon name="map-pin" :size="48" aria-hidden="true" />
-          <p>暂无场景配置</p>
-          <p class="empty-hint">未配置的场景将使用全局默认参数</p>
+          <p>{{ t('re.noScenes') }}</p>
+          <p class="empty-hint">{{ t('re.noScenesHint') }}</p>
         </div>
       </section>
 
@@ -411,8 +416,8 @@ function formatCooldown(ms: number): string {
         class="panel"
       >
         <div class="form-section">
-          <h2 class="section-title">生成器全局配置</h2>
-          <p class="section-hint">配置随机事件生成器的全局行为。未配置模板时将使用默认参数。</p>
+          <h2 class="section-title">{{ t('re.generatorTitle') }}</h2>
+          <p class="section-hint">{{ t('re.generatorHint') }}</p>
 
           <div class="form-grid">
             <div class="form-row">
@@ -422,12 +427,12 @@ function formatCooldown(ms: number): string {
                   v-model="generatorForm.enabled"
                   type="checkbox"
                 />
-                <span>启用随机事件生成器</span>
+                <span>{{ t('re.enableGenerator') }}</span>
               </label>
             </div>
 
             <div class="form-row">
-              <label for="gen-prob">默认触发概率（%）</label>
+              <label for="gen-prob">{{ t('re.defaultProb') }}</label>
               <input
                 id="gen-prob"
                 v-model.number="generatorForm.defaultProbability"
@@ -436,11 +441,11 @@ function formatCooldown(ms: number): string {
                 max="100"
                 step="1"
               />
-              <small class="form-hint">0-100，无模板匹配时使用此概率决定是否触发纯 AI 即时生成。</small>
+              <small class="form-hint">{{ t('re.defaultProbHint') }}</small>
             </div>
 
             <div class="form-row">
-              <label for="gen-maxperturn">每轮最大生成数</label>
+              <label for="gen-maxperturn">{{ t('re.maxPerTurn') }}</label>
               <input
                 id="gen-maxperturn"
                 v-model.number="generatorForm.maxPerTurn"
@@ -449,11 +454,11 @@ function formatCooldown(ms: number): string {
                 max="5"
                 step="1"
               />
-              <small class="form-hint">避免单轮生成过多事件。</small>
+              <small class="form-hint">{{ t('re.maxPerTurnHint') }}</small>
             </div>
 
             <div class="form-row">
-              <label for="gen-cooldown">全局冷却时间（毫秒）</label>
+              <label for="gen-cooldown">{{ t('re.globalCooldown') }}</label>
               <input
                 id="gen-cooldown"
                 v-model.number="generatorForm.globalCooldownMs"
@@ -461,11 +466,11 @@ function formatCooldown(ms: number): string {
                 min="0"
                 step="1000"
               />
-              <small class="form-hint">两次生成之间的最小间隔（如 300000 = 5 分钟）。</small>
+              <small class="form-hint">{{ t('re.globalCooldownHint') }}</small>
             </div>
 
             <div class="form-row">
-              <label for="gen-step">反馈调整步长（%）</label>
+              <label for="gen-step">{{ t('re.feedbackStep') }}</label>
               <input
                 id="gen-step"
                 v-model.number="generatorForm.feedbackAdjustStep"
@@ -474,33 +479,33 @@ function formatCooldown(ms: number): string {
                 max="20"
                 step="1"
               />
-              <small class="form-hint">每次点赞/点踩后模板概率调整幅度。</small>
+              <small class="form-hint">{{ t('re.feedbackStepHint') }}</small>
             </div>
 
             <!-- 需求8：关联世界书 -->
             <div class="form-row">
               <label for="gen-worldbook">
                 <Icon name="book-open" :size="14" aria-hidden="true" />
-                关联世界书
+                {{ t('re.bindWorldBook') }}
               </label>
               <select
                 id="gen-worldbook"
                 v-model="generatorForm.boundWorldBookId"
               >
-                <option value="">不关联（使用默认生成逻辑）</option>
+                <option value="">{{ t('re.noBind') }}</option>
                 <option
                   v-for="lb in lorebookStore.lorebooks"
                   :key="lb.id"
                   :value="lb.id"
                 >
-                  {{ lb.name }}（{{ lb.entries.length }} 条）
+                  {{ t('re.bindEntryCount', { name: lb.name, count: lb.entries.length }) }}
                 </option>
               </select>
               <small class="form-hint">
-                关联后，随机事件将基于该世界书的场景与世界观内容进行逻辑联动生成
+                {{ t('re.bindHint') }}
               </small>
               <small v-if="generatorForm.boundWorldBookId" class="form-hint success-hint">
-                当前已关联：{{ getBoundWorldBookName() }}
+                {{ t('re.boundHint', { name: getBoundWorldBookName() }) }}
               </small>
             </div>
           </div>
@@ -508,7 +513,7 @@ function formatCooldown(ms: number): string {
           <div class="form-actions">
             <button type="button" class="btn primary" @click="saveGeneratorConfig">
               <Icon name="save" :size="16" aria-hidden="true" />
-              保存配置
+              {{ t('re.saveConfig') }}
             </button>
           </div>
         </div>
@@ -526,29 +531,29 @@ function formatCooldown(ms: number): string {
         <div class="stats-grid" v-if="store.stats.totalGenerated > 0">
           <div class="stat-card">
             <div class="stat-value">{{ store.stats.totalGenerated }}</div>
-            <div class="stat-label">总生成次数</div>
+            <div class="stat-label">{{ t('re.statTotal') }}</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">{{ store.stats.averageProbability }}%</div>
-            <div class="stat-label">平均概率</div>
+            <div class="stat-label">{{ t('re.statAvgProb') }}</div>
           </div>
           <div class="stat-card positive">
             <div class="stat-value">{{ store.stats.byFeedback.positive }}</div>
-            <div class="stat-label">喜欢</div>
+            <div class="stat-label">{{ t('re.statLike') }}</div>
           </div>
           <div class="stat-card neutral">
             <div class="stat-value">{{ store.stats.byFeedback.neutral }}</div>
-            <div class="stat-label">中立</div>
+            <div class="stat-label">{{ t('re.statNeutral') }}</div>
           </div>
           <div class="stat-card negative">
             <div class="stat-value">{{ store.stats.byFeedback.negative }}</div>
-            <div class="stat-label">不喜欢</div>
+            <div class="stat-label">{{ t('re.statDislike') }}</div>
           </div>
         </div>
 
         <!-- 类别分布 -->
         <div class="stats-section" v-if="store.stats.totalGenerated > 0">
-          <h3 class="subsection-title">按类别分布</h3>
+          <h3 class="subsection-title">{{ t('re.categoryDist') }}</h3>
           <div class="dist-bars">
             <div v-for="cat in store.CATEGORY_OPTIONS" :key="cat.value" class="dist-row">
               <span class="dist-label">{{ cat.label }}</span>
@@ -565,10 +570,10 @@ function formatCooldown(ms: number): string {
 
         <!-- 结果列表 -->
         <div class="panel-toolbar">
-          <p class="panel-hint">生成结果历史记录与用户反馈。点赞/点踩会自动调整模板概率。</p>
+          <p class="panel-hint">{{ t('re.resultsHint') }}</p>
           <button type="button" v-if="store.results.length > 0" class="btn danger-outline" @click="clearResults">
             <Icon name="trash-2" :size="16" aria-hidden="true" />
-            清空历史
+            {{ t('re.clearHistory') }}
           </button>
         </div>
 
@@ -582,9 +587,9 @@ function formatCooldown(ms: number): string {
             </div>
             <p class="result-desc">{{ r.eventDescription }}</p>
             <div class="result-meta">
-              <span>模板：{{ r.templateName }}</span>
-              <span>场景：{{ r.sceneName }}</span>
-              <span>概率：{{ r.effectiveProbability }}%</span>
+              <span>{{ t('re.template', { name: r.templateName }) }}</span>
+              <span>{{ t('re.scene', { name: r.sceneName }) }}</span>
+              <span>{{ t('re.prob', { percent: r.effectiveProbability }) }}</span>
             </div>
             <div class="result-feedback">
               <button
@@ -592,41 +597,41 @@ function formatCooldown(ms: number): string {
                 class="feedback-btn"
                 :class="{ active: r.feedback === 'positive' }"
                 :aria-pressed="r.feedback === 'positive'"
-                aria-label="喜欢"
+                :aria-label="t('re.like')"
                 @click="applyFeedback(r, 'positive')"
               >
                 <Icon name="heart" :size="16" aria-hidden="true" />
-                喜欢
+                {{ t('re.like') }}
               </button>
               <button
                 type="button"
                 class="feedback-btn"
                 :class="{ active: r.feedback === 'neutral' }"
                 :aria-pressed="r.feedback === 'neutral'"
-                aria-label="中立"
+                :aria-label="t('re.neutral')"
                 @click="applyFeedback(r, 'neutral')"
               >
                 <Icon name="star" :size="16" aria-hidden="true" />
-                中立
+                {{ t('re.neutral') }}
               </button>
               <button
                 type="button"
                 class="feedback-btn"
                 :class="{ active: r.feedback === 'negative' }"
                 :aria-pressed="r.feedback === 'negative'"
-                aria-label="不喜欢"
+                :aria-label="t('re.dislike')"
                 @click="applyFeedback(r, 'negative')"
               >
                 <Icon name="close" :size="16" aria-hidden="true" />
-                不喜欢
+                {{ t('re.dislike') }}
               </button>
             </div>
           </li>
         </ul>
         <div v-else class="empty-state">
           <Icon name="star" :size="48" aria-hidden="true" />
-          <p>暂无生成记录</p>
-          <p class="empty-hint">启用生成器后，每轮对话结束将自动判定是否触发随机事件</p>
+          <p>{{ t('re.noResults') }}</p>
+          <p class="empty-hint">{{ t('re.noResultsHint') }}</p>
         </div>
       </section>
     </main>
