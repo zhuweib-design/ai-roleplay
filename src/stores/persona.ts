@@ -5,6 +5,7 @@ import type { StorageAdapter } from '@/storage/storage-adapter';
 import { useSettingsStore } from './settings';
 import type { ProtagonistConfig } from '@core/story-types';
 import { buildProtagonistPrompt } from '@core/protagonist';
+import { t } from '@/i18n';
 
 /**
  * Persona Store (迭代22 · F07)
@@ -305,13 +306,13 @@ export function validatePersona(p: Partial<Persona>): string[] {
   const errors: string[] = [];
 
   if (!p.name || p.name.trim() === '') {
-    errors.push('Persona 名称不能为空');
+    errors.push(t('persona.nameRequired'));
   } else if (p.name.length > MAX_PERSONA_NAME_LENGTH) {
-    errors.push(`Persona 名称不能超过 ${MAX_PERSONA_NAME_LENGTH} 字符`);
+    errors.push(t('persona.nameTooLong', { max: MAX_PERSONA_NAME_LENGTH }));
   }
 
   if (p.description && p.description.length > MAX_PERSONA_DESCRIPTION_LENGTH * 2) {
-    errors.push(`Persona 描述不应过长（建议 ${MAX_PERSONA_DESCRIPTION_LENGTH} 字符内）`);
+    errors.push(t('persona.descTooLong', { max: MAX_PERSONA_DESCRIPTION_LENGTH }));
   }
 
   return errors;

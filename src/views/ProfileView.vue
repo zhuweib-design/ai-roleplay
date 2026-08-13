@@ -16,6 +16,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { usePersonaStore, MAX_PERSONA_NAME_LENGTH, MAX_PERSONA_DESCRIPTION_LENGTH, validatePersona } from '@/stores/persona';
 import Icon from '@/components/common/Icon.vue';
+import { t } from '@/i18n';
 
 const personaStore = usePersonaStore();
 
@@ -97,18 +98,18 @@ function cancelEdit(): void {
 
 /** 实时校验输入 */
 function validateField(field: 'name' | 'description'): void {
-  const result = validatePersona({
-    name: editName.value,
-    description: editDescription.value,
-  });
-  errors.value = {};
-  for (const msg of result) {
-    if (msg.includes('名称')) errors.value.name = msg;
-    else if (msg.includes('描述')) errors.value.description = msg;
+  const next: { name?: string; description?: string } = {};
+  // 独立校验各字段，避免依赖消息文本判断（i18n 后消息语言可变）
+  if (field === 'name' || field === 'description') {
+    const nameResult = validatePersona({ name: editName.value });
+    const descResult = validatePersona({ description: editDescription.value });
+    if (nameResult.length > 0) next.name = nameResult[0];
+    if (descResult.length > 0) next.description = descResult[0];
   }
-  if (field === 'name' && !errors.value.name && editName.value.trim() === '') {
-    errors.value.name = '昵称不能为空';
+  if (field === 'name' && !next.name && editName.value.trim() === '') {
+    next.name = t('profile.nameRequired');
   }
+  errors.value = next;
 }
 
 /** 保存：校验通过后调用 store.updatePersona（自动持久化） */
@@ -156,25 +157,25 @@ function switchPersona(id: string): void {
 </script>
 
 <template>
-  <main id="main-content" class="profile-view tk-scroll" aria-label="个人中心" tabindex="-1">
+  <main id="main-content" class="profile-view tk-scroll" :aria-label="t('profile.aria')" tabindex="-1">
     <!-- 头部 -->
     <header class="profile-header">
       <h1 class="profile-title">
         <Icon name="user" :size="22" aria-hidden="true" />
-        <span>个人中心</span>
+        <span>{{ t('profile.title') }}</span>
       </h1>
-      <p class="profile-subtitle">管理你的昵称与身份信息</p>
+      <p class="profile-subtitle">{{ t('profile.subtitle') }}</p>
     </header>
 
     <!-- 无 Persona 兜底（理论上 store 会自动创建默认 User） -->
-    <p v-if="!hasPersona" class="empty-hint">尚未创建身份，请前往设置页初始化 Persona。</p>
+    <p v-if="!hasPersona" class="empty-hint">{{ t('profile.noPersona') }}</p>
 
     <!-- 当前身份卡片 -->
     <section v-else class="settings-section profile-card-section" aria-labelledby="current-profile-title">
       <header class="section-header">
         <h2 id="current-profile-title" class="section-title">
           <Icon name="user" :size="18" aria-hidden="true" />
-          <span>当前身份</span>
+          <span>{{ t('profile.currentIdentity') }}</span>
         </h2>
         <button
           v-if="!isEditing"
@@ -183,7 +184,7 @@ function switchPersona(id: string): void {
           @click="startEdit"
         >
           <Icon name="pencil" :size="14" aria-hidden="true" />
-          <span>编辑</span>
+          <span>{{ t('profile.edit') }}</span>
         </button>
       </header>
 
@@ -193,22 +194,22 @@ function switchPersona(id: string): void {
         <div class="profile-info">
           <div class="profile-name-row">
             <span class="profile-name">{{ activePersona?.name }}</span>
-            <span class="badge-active" aria-label="当前激活">激活</span>
+            <span class="badge-active" :aria-label="t('profile.active')">{{ t('profile.active') }}</span>
           </div>
           <p class="profile-description">
-            {{ activePersona?.description || '暂无描述' }}
+            {{ activePersona?.description || t('profile.noDescription') }}
           </p>
           <dl class="profile-meta">
             <div class="meta-item">
-              <dt>创建时间</dt>
+              <dt>{{ t('profile.createdAt') }}</dt>
               <dd>{{ formattedCreatedAt }}</dd>
             </div>
             <div class="meta-item">
-              <dt>最后更新</dt>
+              <dt>{{ t('profile.updatedAt') }}</dt>
               <dd>{{ formattedUpdatedAt }}</dd>
             </div>
             <div class="meta-item">
-              <dt>宏替换</dt>
+              <dt>{{ t('profile.macroReplace') }}</dt>
               <dd><code v-pre>{{user}}</code> → <strong>{{ activePersona?.name }}</strong></dd>
             </div>
           </dl>
@@ -219,7 +220,7 @@ function switchPersona(id: string): void {
       <form v-else class="profile-edit-form" novalidate @submit.prevent="saveEdit">
         <div class="form-field">
           <label for="profile-name" class="field-label">
-            昵称 <span class="required" aria-label="必填">*</span>
+            {{ t('profile.nameLabel') }} <span class="required" :aria-label="t('common.required')">*</span>
           </label>
           <input
             id="profile-name"
@@ -231,7 +232,7 @@ function switchPersona(id: string): void {
             :aria-invalid="!!errors.name"
             :aria-describedby="errors.name ? 'err-name' : 'name-help'"
             :maxlength="MAX_PERSONA_NAME_LENGTH"
-            placeholder="请输入昵称"
+            :placeholder="t('profile.namePlaceholder')"
             autocomplete="off"
             @input="validateField('name')"
           />
@@ -240,12 +241,12 @@ function switchPersona(id: string): void {
             <span>{{ errors.name }}</span>
           </p>
           <p v-else id="name-help" class="field-hint">
-            {{ editName.length }} / {{ MAX_PERSONA_NAME_LENGTH }} 字符 · 对话中 <code v-pre>{{user}}</code> 宏将替换为此值
+            {{ t('profile.nameHint', { len: editName.length, max: MAX_PERSONA_NAME_LENGTH, macro: '{{user}}' }) }}
           </p>
         </div>
 
         <div class="form-field">
-          <label for="profile-description" class="field-label">描述（可选）</label>
+          <label for="profile-description" class="field-label">{{ t('profile.descLabel') }}</label>
           <textarea
             id="profile-description"
             v-model="editDescription"
@@ -255,7 +256,7 @@ function switchPersona(id: string): void {
             :aria-describedby="errors.description ? 'err-desc' : 'desc-help'"
             :maxlength="MAX_PERSONA_DESCRIPTION_LENGTH * 2"
             rows="4"
-            placeholder="描述你的外貌、性格、背景等（注入到提示词）"
+            :placeholder="t('profile.descPlaceholder')"
             @input="validateField('description')"
           ></textarea>
           <p v-if="errors.description" id="err-desc" class="field-error" role="alert">
@@ -263,15 +264,15 @@ function switchPersona(id: string): void {
             <span>{{ errors.description }}</span>
           </p>
           <p v-else id="desc-help" class="field-hint">
-            建议 ≤ {{ MAX_PERSONA_DESCRIPTION_LENGTH }} 字符（占用永久 Token）
+            {{ t('profile.descHint', { max: MAX_PERSONA_DESCRIPTION_LENGTH }) }}
           </p>
         </div>
 
         <div class="form-actions">
-          <button type="button" class="action-btn" @click="cancelEdit">取消</button>
+          <button type="button" class="action-btn" @click="cancelEdit">{{ t('profile.cancel') }}</button>
           <button type="submit" class="action-btn primary" :disabled="!canSave">
             <Icon name="save" :size="14" aria-hidden="true" />
-            <span>保存</span>
+            <span>{{ t('profile.save') }}</span>
           </button>
         </div>
       </form>
@@ -282,9 +283,9 @@ function switchPersona(id: string): void {
       <header class="section-header">
         <h2 id="persona-switch-title" class="section-title">
           <Icon name="users" :size="18" aria-hidden="true" />
-          <span>身份切换</span>
+          <span>{{ t('profile.switchTitle') }}</span>
         </h2>
-        <p class="section-hint">点击切换当前激活身份</p>
+        <p class="section-hint">{{ t('profile.switchHint') }}</p>
       </header>
       <ul class="profile-list" role="list">
         <li
@@ -297,14 +298,14 @@ function switchPersona(id: string): void {
             type="button"
             class="profile-info"
             :aria-pressed="p.id === activePersona?.id"
-            :aria-label="`切换到身份 ${p.name}`"
+            :aria-label="t('profile.switchTo', { name: p.name })"
             @click="switchPersona(p.id)"
           >
             <div class="profile-name">
               {{ p.name }}
-              <span v-if="p.id === activePersona?.id" class="badge-active" aria-label="当前激活">激活</span>
+              <span v-if="p.id === activePersona?.id" class="badge-active" :aria-label="t('profile.active')">{{ t('profile.active') }}</span>
             </div>
-            <div class="profile-baseurl">{{ p.description || '无描述' }}</div>
+            <div class="profile-baseurl">{{ p.description || t('profile.noDesc') }}</div>
           </button>
         </li>
       </ul>

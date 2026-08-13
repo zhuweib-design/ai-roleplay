@@ -11,6 +11,7 @@
  * - 点击遮罩关闭（可配置）
  */
 import { ref, watch, nextTick, onBeforeUnmount, useTemplateRef, useId } from 'vue';
+import { t } from '@/i18n';
 
 const props = withDefaults(
   defineProps<{
@@ -126,7 +127,7 @@ onBeforeUnmount(() => {
               v-if="dismissible"
               type="button"
               class="modal-close"
-              aria-label="关闭对话框"
+              :aria-label="t('modal.closeDialog')"
               @click="close"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">

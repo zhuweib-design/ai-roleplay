@@ -26,6 +26,7 @@ import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import type { GroupChat } from '@/core/group-chat';
 import type { UICharacter } from '@/types';
+import { t } from '@/i18n';
 
 const groupStore = useGroupChatStore();
 const router = useRouter();
@@ -118,9 +119,9 @@ function memberInitial(name: string): string {
 
 /** 获取群聊的最后一条消息预览 */
 function lastMessagePreview(g: GroupChat): string {
-  if (g.messages.length === 0) return '（暂无消息）';
+  if (g.messages.length === 0) return t('archives.noMessages');
   const last = g.messages[g.messages.length - 1];
-  const prefix = last.role === 'user' ? '我：' : last.characterName ? `${last.characterName}：` : '';
+  const prefix = last.role === 'user' ? t('archives.me') : last.characterName ? `${last.characterName}：` : '';
   const content = last.content.length > 50 ? last.content.slice(0, 50) + '...' : last.content;
   return prefix + content;
 }
@@ -164,62 +165,62 @@ function goToGroupChat() {
         <button
           type="button"
           class="header-btn back"
-          aria-label="返回对话页"
+          :aria-label="t('archives.backAria')"
           @click="goBack"
         >
           <Icon name="arrow-left" :size="16" />
-          <span class="btn-label">返回</span>
+          <span class="btn-label">{{ t('archives.back') }}</span>
         </button>
-        <h1>对话记录</h1>
-        <span class="header-count">{{ filteredGroups.length }} / {{ groupStore.groups.length }} 条</span>
+        <h1>{{ t('archives.title') }}</h1>
+        <span class="header-count">{{ t('archives.count', { filtered: filteredGroups.length, total: groupStore.groups.length }) }}</span>
       </div>
     </header>
 
     <!-- 筛选区 -->
-    <section class="filter-section" aria-label="筛选条件">
+    <section class="filter-section" :aria-label="t('archives.filterAria')">
       <div class="filter-row">
         <div class="filter-field search-field">
-          <label for="search-keyword" class="filter-label">关键词搜索</label>
+          <label for="search-keyword" class="filter-label">{{ t('archives.keywordLabel') }}</label>
           <input
             id="search-keyword"
             v-model="searchKeyword"
             type="search"
             class="filter-input"
-            placeholder="搜索消息内容..."
-            aria-label="搜索消息内容"
+            :placeholder="t('archives.keywordPlaceholder')"
+            :aria-label="t('archives.keywordAria')"
           />
         </div>
         <div class="filter-field">
-          <label for="filter-member" class="filter-label">角色名</label>
+          <label for="filter-member" class="filter-label">{{ t('archives.memberLabel') }}</label>
           <input
             id="filter-member"
             v-model="filterMemberName"
             type="text"
             class="filter-input"
-            placeholder="筛选角色..."
-            aria-label="按角色名筛选"
+            :placeholder="t('archives.memberPlaceholder')"
+            :aria-label="t('archives.memberAria')"
           />
         </div>
       </div>
       <div class="filter-row">
         <div class="filter-field">
-          <label for="filter-start" class="filter-label">开始日期</label>
+          <label for="filter-start" class="filter-label">{{ t('archives.startDate') }}</label>
           <input
             id="filter-start"
             v-model="filterStartDate"
             type="date"
             class="filter-input"
-            aria-label="开始日期"
+            :aria-label="t('archives.startDate')"
           />
         </div>
         <div class="filter-field">
-          <label for="filter-end" class="filter-label">结束日期</label>
+          <label for="filter-end" class="filter-label">{{ t('archives.endDate') }}</label>
           <input
             id="filter-end"
             v-model="filterEndDate"
             type="date"
             class="filter-input"
-            aria-label="结束日期"
+            :aria-label="t('archives.endDate')"
           />
         </div>
         <div class="filter-field checkbox-field">
@@ -228,17 +229,17 @@ function goToGroupChat() {
               v-model="showArchivedOnly"
               type="checkbox"
             />
-            <span>仅显示已归档</span>
+            <span>{{ t('archives.archivedOnly') }}</span>
           </label>
         </div>
         <button
           type="button"
           class="clear-btn"
-          aria-label="清除筛选"
+          :aria-label="t('archives.clearFilters')"
           @click="clearFilters"
         >
           <Icon name="x-circle" :size="14" />
-          <span>清除</span>
+          <span>{{ t('archives.clear') }}</span>
         </button>
       </div>
     </section>
@@ -264,7 +265,7 @@ function goToGroupChat() {
                     v-if="g.lifecycleStatus === 'archived'"
                     class="archived-tag"
                   >
-                    已归档
+                    {{ t('archives.archivedTag') }}
                   </span>
                 </span>
                 <span class="archive-time">{{ formatDateTime(g.updatedAt) }}</span>
@@ -286,16 +287,16 @@ function goToGroupChat() {
                 <span v-if="g.members.length > 5" class="more-members">
                   +{{ g.members.length - 5 }}
                 </span>
-                <span class="member-count">{{ g.members.length }} 人</span>
+                <span class="member-count">{{ t('archives.memberCount', { count: g.members.length }) }}</span>
               </div>
               <div class="archive-preview">{{ lastMessagePreview(g) }}</div>
               <div class="archive-meta">
-                <span>{{ g.messages.length }} 条消息</span>
+                <span>{{ t('archives.msgCount', { count: g.messages.length }) }}</span>
                 <span
                   v-if="searchKeyword.trim() && countKeywordMatches(g) > 0"
                   class="match-count"
                 >
-                  匹配 {{ countKeywordMatches(g) }} 条
+                  {{ t('archives.matchCount', { count: countKeywordMatches(g) }) }}
                 </span>
               </div>
             </div>
@@ -306,14 +307,14 @@ function goToGroupChat() {
       <!-- 空状态 -->
       <div v-else class="empty-state">
         <Icon name="bookmark-simple" :size="48" />
-        <p v-if="groupStore.groups.length === 0">暂无对话记录</p>
-        <p v-else>无匹配记录，请调整筛选条件</p>
+        <p v-if="groupStore.groups.length === 0">{{ t('archives.emptyNoData') }}</p>
+        <p v-else>{{ t('archives.emptyNoMatch') }}</p>
         <button type="button"
           v-if="groupStore.groups.length > 0"
           class="link-btn"
           @click="clearFilters"
         >
-          清除筛选
+          {{ t('archives.clearLink') }}
         </button>
       </div>
     </main>
@@ -321,15 +322,15 @@ function goToGroupChat() {
     <!-- 查看对话 Modal -->
     <Modal
       v-model="viewModalOpen"
-      :title="viewingGroup ? viewingGroup.name : '对话记录'"
+      :title="viewingGroup ? viewingGroup.name : t('archives.viewTitle')"
     >
       <div v-if="viewingGroup" class="view-modal-body tk-scroll">
         <div class="view-modal-info">
-          <span>成员：{{ viewingGroup.members.map((m) => m.name).join('、') }}</span>
-          <span>消息：{{ viewingGroup.messages.length }} 条</span>
-          <span>更新：{{ formatDateTime(viewingGroup.updatedAt) }}</span>
+          <span>{{ t('archives.viewMembers', { names: viewingGroup.members.map((m) => m.name).join('、') }) }}</span>
+          <span>{{ t('archives.viewMessages', { count: viewingGroup.messages.length }) }}</span>
+          <span>{{ t('archives.viewUpdated', { time: formatDateTime(viewingGroup.updatedAt) }) }}</span>
           <span v-if="viewingGroup.lifecycleStatus === 'archived'" class="archived-tag">
-            已归档
+            {{ t('archives.archivedTag') }}
           </span>
         </div>
         <ul class="view-msg-list" role="list">
@@ -345,7 +346,7 @@ function goToGroupChat() {
             </div>
             <template v-else>
               <div class="view-msg-sender">
-                {{ msg.role === 'user' ? '我' : msg.characterName ?? 'AI' }}
+                {{ msg.role === 'user' ? t('archives.senderMe') : msg.characterName ?? t('archives.senderAi') }}
               </div>
               <div class="view-msg-content">{{ msg.content }}</div>
             </template>
@@ -358,7 +359,7 @@ function goToGroupChat() {
           class="modal-btn modal-cancel"
           @click="viewModalOpen = false"
         >
-          关闭
+          {{ t('archives.close') }}
         </button>
         <button
           v-if="viewingGroup && viewingGroup.lifecycleStatus !== 'archived'"
@@ -366,7 +367,7 @@ function goToGroupChat() {
           class="modal-btn modal-confirm"
           @click="goToGroupChat"
         >
-          前往群聊
+          {{ t('archives.goGroup') }}
         </button>
       </template>
     </Modal>

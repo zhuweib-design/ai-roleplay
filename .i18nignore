@@ -1,6 +1,6 @@
 # T-13 i18n 未迁移文件白名单
 # 每行一个相对路径；完成文案抽取后移出本清单即纳入门禁
-# 生成时间：2026-08-13（初始 128 个，已迁移 13 个）
+# 生成时间：2026-08-13（初始 128 个，已迁移 18 个）
 src/api/anthropic-client.ts
 src/api/anthropic-protocol.ts
 src/api/api-client.ts
@@ -11,8 +11,6 @@ src/api/openai-client.ts
 src/api/openai-protocol.ts
 src/api/tauri-openai-client.ts
 src/api/types.ts
-src/components/common/Avatar.vue
-src/components/common/Modal.vue
 src/components/common/icons.ts
 src/components/layout/ContextPanel.vue
 src/components/random-events/SceneConfigModal.vue
@@ -102,16 +100,13 @@ src/stores/persona.ts
 src/stores/random-events.ts
 src/stores/story.ts
 src/types/index.ts
-src/views/ArchivesView.vue
 src/views/CharacterEditorView.vue
 src/views/CharacterVersionView.vue
-src/views/ChatView.vue
 src/views/CommunityMarketView.vue
 src/views/DataBankView.vue
 src/views/GroupChatView.vue
 src/views/ImageGeneratorView.vue
 src/views/LocalModelView.vue
-src/views/ProfileView.vue
 src/views/RandomEventsView.vue
 src/views/SettingsView.vue
 src/views/StoryEngineView.vue
