@@ -15,6 +15,9 @@ const chatStore = useChatStore();
 
 const char = computed(() => characterStore.currentCharacter);
 
+/** {{user}} 宏字面量（模板内嵌套双花括号会破坏编译，故提为常量） */
+const USER_MACRO = '{{user}}';
+
 // 角色页绑定的世界书（需求7：唯一数据源 boundWorldBookIds）
 const boundLorebooks = computed(() => {
   const bound = char.value.boundWorldBookIds ?? [];
@@ -160,7 +163,7 @@ function onAuthorDepth(e: Event) {
           </select>
         </label>
         <p class="ctx-persona-hint">
-          {{ t('ctx.personaHint', { macro: '{{user}}' }) }}
+          {{ t('ctx.personaHint', { macro: USER_MACRO }) }}
         </p>
       </section>
 

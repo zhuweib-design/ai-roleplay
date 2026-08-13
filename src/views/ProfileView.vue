@@ -18,6 +18,9 @@ import { usePersonaStore, MAX_PERSONA_NAME_LENGTH, MAX_PERSONA_DESCRIPTION_LENGT
 import Icon from '@/components/common/Icon.vue';
 import { t } from '@/i18n';
 
+/** {{user}} 宏字面量（模板内嵌套双花括号会破坏编译，故提为常量） */
+const USER_MACRO = '{{user}}';
+
 const personaStore = usePersonaStore();
 
 // ── 编辑状态 ──
@@ -241,7 +244,7 @@ function switchPersona(id: string): void {
             <span>{{ errors.name }}</span>
           </p>
           <p v-else id="name-help" class="field-hint">
-            {{ t('profile.nameHint', { len: editName.length, max: MAX_PERSONA_NAME_LENGTH, macro: '{{user}}' }) }}
+            {{ t('profile.nameHint', { len: editName.length, max: MAX_PERSONA_NAME_LENGTH, macro: USER_MACRO }) }}
           </p>
         </div>
 
