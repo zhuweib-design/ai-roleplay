@@ -27,6 +27,7 @@ import Toast from '@/components/common/Toast.vue';
 import Modal from '@/components/common/Modal.vue';
 import FilterTabs, { type FilterTab } from '@/components/common/FilterTabs.vue';
 import type { MarketCharacterCard, SortOption, ReportReason } from '@core/community-market';
+import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useCommunityMarketStore();
@@ -41,11 +42,11 @@ onMounted(() => {
 type TabKey = 'market' | 'recommendations' | 'favorites' | 'published' | 'admin';
 const activeTab = ref<TabKey>('market');
 const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: 'market', label: '市场' },
-  { key: 'recommendations', label: '推荐' },
-  { key: 'favorites', label: '收藏' },
-  { key: 'published', label: '我的发布' },
-  { key: 'admin', label: '管理' },
+  { key: 'market', label: t('market.tabMarket') },
+  { key: 'recommendations', label: t('market.tabRecommend') },
+  { key: 'favorites', label: t('market.tabFavorites') },
+  { key: 'published', label: t('market.tabPublished') },
+  { key: 'admin', label: t('market.tabAdmin') },
 ];
 
 // ── 需求1：市场内分类筛选 Tab（单选） ──────────────────────────────
@@ -101,10 +102,10 @@ watch(
 
 // ── 排序选项 ──
 const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
-  { value: 'popular', label: '最热' },
-  { value: 'rating', label: '评分' },
-  { value: 'newest', label: '最新' },
-  { value: 'alphabetical', label: '名称' },
+  { value: 'popular', label: t('market.sortPopular') },
+  { value: 'rating', label: t('market.sortRating') },
+  { value: 'newest', label: t('market.sortNewest') },
+  { value: 'alphabetical', label: t('market.sortName') },
 ];
 
 // ── 登录 Modal ──
@@ -118,7 +119,7 @@ function openLoginModal(): void {
 
 function handleLogin(): void {
   if (!loginName.value.trim()) {
-    showToast('error', '请输入用户名');
+    showToast('error', t('market.needUsername'));
     return;
   }
   if (store.login(loginName.value.trim())) {
@@ -155,7 +156,7 @@ function handleDownload(marketId: string): void {
 // ── 收藏 ──
 function handleToggleFavorite(marketId: string): void {
   if (!store.isLoggedIn) {
-    showToast('error', '请先登录');
+    showToast('error', t('market.needLogin'));
     return;
   }
   store.toggleFavorite(marketId);
@@ -168,7 +169,7 @@ const publishCategories = ref('');
 
 function openPublishModal(): void {
   if (!store.isLoggedIn) {
-    showToast('error', '请先登录');
+    showToast('error', t('market.needLogin'));
     return;
   }
   publishCharacterId.value = '';
@@ -178,7 +179,7 @@ function openPublishModal(): void {
 
 function handlePublish(): void {
   if (!publishCharacterId.value) {
-    showToast('error', '请选择角色');
+    showToast('error', t('market.needCharacter'));
     return;
   }
   const categories = publishCategories.value
@@ -196,7 +197,7 @@ function handlePublish(): void {
 
 function getCharacterCard(characterId: string) {
   const char = characterStore.characters.find((c) => c.id === characterId);
-  if (!char) throw new Error('角色不存在');
+  if (!char) throw new Error(t('market.charNotFound'));
   return {
     id: char.id,
     name: char.name,
@@ -225,7 +226,7 @@ const reviewComment = ref('');
 
 function openReviewModal(): void {
   if (!store.isLoggedIn) {
-    showToast('error', '请先登录');
+    showToast('error', t('market.needLogin'));
     return;
   }
   reviewRating.value = 5;
@@ -236,7 +237,7 @@ function openReviewModal(): void {
 function handleReview(): void {
   if (!selectedCardId.value) return;
   if (!reviewComment.value.trim()) {
-    showToast('error', '请输入评论内容');
+    showToast('error', t('market.needReviewText'));
     return;
   }
   if (store.addReview(selectedCardId.value, reviewRating.value, reviewComment.value)) {
@@ -250,16 +251,16 @@ const reportReason = ref<ReportReason>('inappropriate');
 const reportDescription = ref('');
 
 const REPORT_REASONS: Array<{ value: ReportReason; label: string }> = [
-  { value: 'inappropriate', label: '不当内容' },
-  { value: 'copyright', label: '版权问题' },
-  { value: 'spam', label: '垃圾信息' },
-  { value: 'misleading', label: '误导信息' },
-  { value: 'other', label: '其他' },
+  { value: 'inappropriate', label: t('market.reasonInappropriate') },
+  { value: 'copyright', label: t('market.reasonCopyright') },
+  { value: 'spam', label: t('market.reasonSpam') },
+  { value: 'misleading', label: t('market.reasonMisleading') },
+  { value: 'other', label: t('market.reasonOther') },
 ];
 
 function openReportModal(): void {
   if (!store.isLoggedIn) {
-    showToast('error', '请先登录');
+    showToast('error', t('market.needLogin'));
     return;
   }
   reportReason.value = 'inappropriate';
@@ -270,7 +271,7 @@ function openReportModal(): void {
 function handleReport(): void {
   if (!selectedCardId.value) return;
   if (!reportDescription.value.trim()) {
-    showToast('error', '请填写举报描述');
+    showToast('error', t('market.needReportText'));
     return;
   }
   if (store.reportCard(selectedCardId.value, reportReason.value, reportDescription.value)) {
@@ -281,19 +282,19 @@ function handleReport(): void {
 // ── D6 补完：管理操作 ──
 function handleApprove(marketId: string): void {
   if (store.setModerationStatus(marketId, 'approved')) {
-    showToast('success', '已通过审核');
+    showToast('success', t('market.approved'));
   }
 }
 
 function handleReject(marketId: string): void {
   if (store.setModerationStatus(marketId, 'rejected')) {
-    showToast('error', '已拒绝该角色卡');
+    showToast('error', t('market.rejected'));
   }
 }
 
 function handleResolveReport(reportId: string, status: 'resolved' | 'dismissed'): void {
   if (store.resolveReport(reportId, status)) {
-    showToast('success', status === 'resolved' ? '举报已解决' : '举报已驳回');
+    showToast('success', status === 'resolved' ? t('market.reportResolved') : t('market.reportDismissed'));
   }
 }
 
@@ -339,15 +340,15 @@ function ratingStars(rating: number): string {
 <template>
   <div class="community-market-view">
     <header class="page-header">
-      <button type="button" class="header-btn" aria-label="返回" @click="goBack">
+      <button type="button" class="header-btn" :aria-label="t('market.backAria')" @click="goBack">
         <Icon name="arrow-left" :size="18" aria-hidden="true" />
       </button>
       <h1 class="page-title">
-        社区市场
+        {{ t('market.title') }}
         <span
           class="beta-badge"
-          title="当前为本地模拟版本：无真实交易、无后端，仅演示流程"
-        >Beta</span>
+          :title="t('market.betaTitle')"
+        >{{ t('market.beta') }}</span>
       </h1>
       <div class="header-right">
         <template v-if="store.isLoggedIn">
@@ -355,15 +356,15 @@ function ratingStars(rating: number): string {
             <Icon name="user" :size="16" />
             {{ store.currentUser?.name }}
           </span>
-          <button type="button" class="btn btn-ghost" @click="handleLogout">登出</button>
+          <button type="button" class="btn btn-ghost" @click="handleLogout">{{ t('market.logout') }}</button>
         </template>
         <template v-else>
-          <button type="button" class="btn btn-primary" @click="openLoginModal">登录</button>
+          <button type="button" class="btn btn-primary" @click="openLoginModal">{{ t('market.login') }}</button>
         </template>
       </div>
     </header>
 
-    <nav class="tabs" role="tablist" aria-label="社区市场导航">
+    <nav class="tabs" role="tablist" :aria-label="t('market.tabsAria')">
       <button type="button"
         v-for="tab in TABS"
         :key="tab.key"
@@ -385,13 +386,13 @@ function ratingStars(rating: number): string {
             <input
               :value="store.searchQuery"
               type="text"
-              placeholder="搜索角色卡..."
-              aria-label="搜索"
+              :placeholder="t('market.searchPlaceholder')"
+              :aria-label="t('market.searchAria')"
               class="search-input"
               @input="store.setSearch(($event.target as HTMLInputElement).value)"
             />
           </div>
-          <div class="sort-buttons" role="group" aria-label="排序方式">
+          <div class="sort-buttons" role="group" :aria-label="t('market.sortAria')">
             <button type="button"
               v-for="opt in SORT_OPTIONS"
               :key="opt.value"
@@ -409,7 +410,7 @@ function ratingStars(rating: number): string {
               :class="['chip', { active: store.featuredOnly }]"
               @click="store.toggleFeaturedOnly()"
             >
-              精选
+              {{ t('market.featured') }}
             </button>
           </div>
           <!-- 需求1：分类 Tab 筛选（单选） -->
@@ -417,19 +418,19 @@ function ratingStars(rating: number): string {
             v-if="categoryFilterTabs.length > 0"
             v-model="filterCategory"
             :tabs="categoryFilterTabs"
-            label="按分类筛选角色卡"
-            all-label="全部分类"
+            :label="t('market.filterLabel')"
+            :all-label="t('market.filterAll')"
             :all-value="''"
             :all-count="store.filteredCards.length"
           />
           <button type="button" v-if="store.searchQuery || store.selectedTags.length || store.selectedCategories.length || store.featuredOnly" class="btn btn-ghost btn-sm" @click="store.clearFilters()">
-            清除筛选
+            {{ t('market.clearFilters') }}
           </button>
         </div>
 
         <div v-if="store.filteredCards.length === 0" class="empty-state">
           <Icon name="search" :size="48" />
-          <p>未找到匹配的角色卡</p>
+          <p>{{ t('market.emptySearch') }}</p>
         </div>
         <div v-else class="card-grid">
           <article
@@ -441,7 +442,7 @@ function ratingStars(rating: number): string {
             @keydown.enter="openDetail(card.marketId)"
           >
             <div class="card-header">
-              <span v-if="card.featured" class="badge badge-featured">精选</span>
+              <span v-if="card.featured" class="badge badge-featured">{{ t('market.featured') }}</span>
               <span class="card-name">{{ card.card.name }}</span>
             </div>
             <p class="card-desc">{{ card.card.description }}</p>
@@ -449,11 +450,11 @@ function ratingStars(rating: number): string {
               <span v-for="tag in card.card.tags.slice(0, 3)" :key="tag" class="tag">{{ tag }}</span>
             </div>
             <div class="card-footer">
-              <span class="rating" :aria-label="`评分 ${card.averageRating}`">{{ ratingStars(card.averageRating) }}</span>
+              <span class="rating" :aria-label="t('market.ratingAria', { rating: card.averageRating })">{{ ratingStars(card.averageRating) }}</span>
               <span class="stat"><Icon name="download" :size="14" /> {{ formatCount(card.downloadCount) }}</span>
               <span class="stat"><Icon name="heart" :size="14" /> {{ formatCount(card.favoriteCount) }}</span>
             </div>
-            <div class="card-author">作者：{{ card.authorName }}</div>
+            <div class="card-author">{{ t('market.author', { name: card.authorName }) }}</div>
           </article>
         </div>
       </section>
@@ -462,12 +463,12 @@ function ratingStars(rating: number): string {
       <section v-if="activeTab === 'recommendations'" role="tabpanel" class="tab-panel">
         <div v-if="!store.isLoggedIn" class="empty-state">
           <Icon name="info" :size="48" />
-          <p>登录后获取个性化推荐</p>
-          <button type="button" class="btn btn-primary" @click="openLoginModal">登录</button>
+          <p>{{ t('market.recommendLogin') }}</p>
+          <button type="button" class="btn btn-primary" @click="openLoginModal">{{ t('market.login') }}</button>
         </div>
         <div v-else-if="recommendations.length === 0" class="empty-state">
           <Icon name="star" :size="48" />
-          <p>收藏一些角色卡以获取个性化推荐</p>
+          <p>{{ t('market.recommendEmpty') }}</p>
         </div>
         <div v-else class="card-grid">
           <article
@@ -478,7 +479,7 @@ function ratingStars(rating: number): string {
             @click="openDetail(item.card.marketId)"
             @keydown.enter="openDetail(item.card.marketId)"
           >
-            <div class="recommend-score">推荐分：{{ item.score }}</div>
+            <div class="recommend-score">{{ t('market.recommendScore', { score: item.score }) }}</div>
             <div class="card-header">
               <span class="card-name">{{ item.card.card.name }}</span>
             </div>
@@ -498,7 +499,7 @@ function ratingStars(rating: number): string {
       <section v-if="activeTab === 'favorites'" role="tabpanel" class="tab-panel">
         <div v-if="favoriteCards.length === 0" class="empty-state">
           <Icon name="heart" :size="48" />
-          <p>还没有收藏任何角色卡</p>
+          <p>{{ t('market.favoriteEmpty') }}</p>
         </div>
         <div v-else class="card-grid">
           <article
@@ -528,17 +529,17 @@ function ratingStars(rating: number): string {
       <section v-if="activeTab === 'published'" role="tabpanel" class="tab-panel">
         <div v-if="!store.isLoggedIn" class="empty-state">
           <Icon name="info" :size="48" />
-          <p>登录后管理已发布的角色卡</p>
-          <button type="button" class="btn btn-primary" @click="openLoginModal">登录</button>
+          <p>{{ t('market.publishLogin') }}</p>
+          <button type="button" class="btn btn-primary" @click="openLoginModal">{{ t('market.login') }}</button>
         </div>
         <template v-else>
           <button type="button" class="btn btn-primary" @click="openPublishModal">
             <Icon name="plus" :size="16" />
-            发布角色卡
+            {{ t('market.publishBtn') }}
           </button>
           <div v-if="myPublishedCards.length === 0" class="empty-state">
             <Icon name="upload" :size="48" />
-            <p>还没有发布任何角色卡</p>
+            <p>{{ t('market.publishedEmpty') }}</p>
           </div>
           <div v-else class="card-grid">
             <article
@@ -551,7 +552,7 @@ function ratingStars(rating: number): string {
             >
               <div class="card-header">
                 <span :class="['badge', `badge-${card.moderationStatus}`]">
-                  {{ card.moderationStatus === 'approved' ? '已审核' : card.moderationStatus === 'pending' ? '审核中' : '已拒绝' }}
+                  {{ card.moderationStatus === 'approved' ? t('market.statusApproved') : card.moderationStatus === 'pending' ? t('market.statusPending') : t('market.statusRejected') }}
                 </span>
                 <span class="card-name">{{ card.card.name }}</span>
               </div>
@@ -559,7 +560,7 @@ function ratingStars(rating: number): string {
               <div class="card-footer">
                 <span class="rating">{{ ratingStars(card.averageRating) }}</span>
                 <span class="stat"><Icon name="download" :size="14" /> {{ formatCount(card.downloadCount) }}</span>
-                <span class="stat"><Icon name="star" :size="14" /> {{ card.reviewCount }} 评论</span>
+                <span class="stat"><Icon name="star" :size="14" /> {{ t('market.reviewCount', { count: card.reviewCount }) }}</span>
               </div>
             </article>
           </div>
@@ -571,32 +572,32 @@ function ratingStars(rating: number): string {
         <div class="stats-grid">
           <div class="stat-card">
             <span class="stat-value">{{ store.stats.totalCards }}</span>
-            <span class="stat-label">总角色卡</span>
+            <span class="stat-label">{{ t('market.statTotalCards') }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ store.stats.totalUsers }}</span>
-            <span class="stat-label">用户</span>
+            <span class="stat-label">{{ t('market.statUsers') }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ store.stats.totalReviews }}</span>
-            <span class="stat-label">评论</span>
+            <span class="stat-label">{{ t('market.statReviews') }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ store.stats.totalDownloads }}</span>
-            <span class="stat-label">总下载</span>
+            <span class="stat-label">{{ t('market.statDownloads') }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ store.stats.pendingCards }}</span>
-            <span class="stat-label">待审核</span>
+            <span class="stat-label">{{ t('market.statPending') }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ store.stats.totalReports }}</span>
-            <span class="stat-label">举报</span>
+            <span class="stat-label">{{ t('market.statReports') }}</span>
           </div>
         </div>
 
         <!-- D6 补完：待审核角色卡操作 -->
-        <h3 class="admin-section-title">待审核角色卡</h3>
+        <h3 class="admin-section-title">{{ t('market.adminPendingTitle') }}</h3>
         <ul class="admin-list" role="list">
           <li
             v-for="card in store.filteredCards.filter((c) => c.moderationStatus === 'pending')"
@@ -605,31 +606,31 @@ function ratingStars(rating: number): string {
             role="listitem"
           >
             <span class="admin-name">{{ card.card.name }}</span>
-            <span class="admin-meta">作者：{{ card.authorName }}</span>
+            <span class="admin-meta">{{ t('market.author', { name: card.authorName }) }}</span>
             <div class="admin-actions">
               <button
                 type="button"
                 class="btn btn-primary btn-sm"
                 @click="handleApprove(card.marketId)"
               >
-                通过
+                {{ t('market.adminApprove') }}
               </button>
               <button
                 type="button"
                 class="btn btn-ghost btn-sm"
                 @click="handleReject(card.marketId)"
               >
-                拒绝
+                {{ t('market.adminReject') }}
               </button>
             </div>
           </li>
           <li v-if="store.filteredCards.filter((c) => c.moderationStatus === 'pending').length === 0" class="empty-mini">
-            暂无待审核角色卡
+            {{ t('market.adminNoPending') }}
           </li>
         </ul>
 
         <!-- D6 补完：举报处理 -->
-        <h3 class="admin-section-title">待处理举报</h3>
+        <h3 class="admin-section-title">{{ t('market.adminReportsTitle') }}</h3>
         <ul class="admin-list" role="list">
           <li
             v-for="report in store.getReports().filter((r) => r.status === 'pending')"
@@ -638,47 +639,47 @@ function ratingStars(rating: number): string {
             role="listitem"
           >
             <span class="admin-name">{{ report.marketId }}</span>
-            <span class="admin-meta">原因：{{ report.reason }} · {{ report.description }}</span>
+            <span class="admin-meta">{{ t('market.adminReportMeta', { reason: report.reason, desc: report.description }) }}</span>
             <div class="admin-actions">
               <button
                 type="button"
                 class="btn btn-primary btn-sm"
                 @click="handleResolveReport(report.id, 'resolved')"
               >
-                解决
+                {{ t('market.adminResolve') }}
               </button>
               <button
                 type="button"
                 class="btn btn-ghost btn-sm"
                 @click="handleResolveReport(report.id, 'dismissed')"
               >
-                驳回
+                {{ t('market.adminDismiss') }}
               </button>
             </div>
           </li>
           <li v-if="store.getReports().filter((r) => r.status === 'pending').length === 0" class="empty-mini">
-            暂无待处理举报
+            {{ t('market.adminNoReports') }}
           </li>
         </ul>
       </section>
     </main>
 
     <!-- 登录 Modal -->
-    <Modal v-model="loginModalOpen" title="登录社区市场">
+    <Modal v-model="loginModalOpen" :title="t('market.loginTitle')">
       <div class="form-group">
-        <label for="login-name" class="form-label">用户名</label>
+        <label for="login-name" class="form-label">{{ t('market.username') }}</label>
         <input
           id="login-name"
           v-model="loginName"
           type="text"
           class="form-input"
-          placeholder="输入用户名"
+          :placeholder="t('market.usernamePlaceholder')"
           @keydown.enter="handleLogin"
         />
       </div>
       <template #footer>
-        <button type="button" class="btn btn-ghost" @click="loginModalOpen = false">取消</button>
-        <button type="button" class="btn btn-primary" @click="handleLogin">登录</button>
+        <button type="button" class="btn btn-ghost" @click="loginModalOpen = false">{{ t('market.cancel') }}</button>
+        <button type="button" class="btn btn-primary" @click="handleLogin">{{ t('market.loginBtn') }}</button>
       </template>
     </Modal>
 
@@ -694,14 +695,14 @@ function ratingStars(rating: number): string {
           <span v-for="tag in selectedCard.card.tags" :key="tag" class="tag">{{ tag }}</span>
         </div>
         <div class="detail-meta">
-          <span>作者：{{ selectedCard.authorName }}</span>
-          <span>发布：{{ formatDate(selectedCard.publishedAt) }}</span>
-          <span>下载：{{ selectedCard.downloadCount }}</span>
-          <span>评分：{{ selectedCard.averageRating }} ({{ selectedCard.reviewCount }} 评论)</span>
+          <span>{{ t('market.detailAuthor', { name: selectedCard.authorName }) }}</span>
+          <span>{{ t('market.detailDate', { date: formatDate(selectedCard.publishedAt) }) }}</span>
+          <span>{{ t('market.detailDownload', { count: selectedCard.downloadCount }) }}</span>
+          <span>{{ t('market.detailRating', { rating: selectedCard.averageRating, count: selectedCard.reviewCount }) }}</span>
         </div>
 
-        <h3 class="detail-section-title">评论</h3>
-        <div v-if="selectedCardReviews.length === 0" class="empty-mini">暂无评论</div>
+        <h3 class="detail-section-title">{{ t('market.detailReviews') }}</h3>
+        <div v-if="selectedCardReviews.length === 0" class="empty-mini">{{ t('market.detailNoReviews') }}</div>
         <ul v-else class="review-list">
           <li v-for="review in selectedCardReviews" :key="review.id" class="review-item">
             <div class="review-header">
@@ -716,58 +717,58 @@ function ratingStars(rating: number): string {
       <template #footer>
         <button type="button" class="btn btn-ghost" @click="openReviewModal">
           <Icon name="star" :size="14" />
-          评论
+          {{ t('market.reviewBtn') }}
         </button>
         <button type="button" class="btn btn-ghost" @click="openReportModal">
           <Icon name="alert-triangle" :size="14" />
-          举报
+          {{ t('market.reportBtn') }}
         </button>
         <button type="button"
           :class="['btn', store.isFavorite(selectedCard.marketId) ? 'btn-primary' : 'btn-ghost']"
           @click="handleToggleFavorite(selectedCard.marketId)"
         >
           <Icon name="heart" :size="14" />
-          {{ store.isFavorite(selectedCard.marketId) ? '已收藏' : '收藏' }}
+          {{ store.isFavorite(selectedCard.marketId) ? t('market.favorited') : t('market.favorite') }}
         </button>
         <button type="button" class="btn btn-primary" @click="handleDownload(selectedCard.marketId)">
           <Icon name="download" :size="14" />
-          下载
+          {{ t('market.download') }}
         </button>
       </template>
     </Modal>
 
     <!-- 发布 Modal -->
-    <Modal v-model="publishModalOpen" title="发布角色卡">
+    <Modal v-model="publishModalOpen" :title="t('market.publishTitle')">
       <div class="form-group">
-        <label for="publish-character" class="form-label">选择角色</label>
+        <label for="publish-character" class="form-label">{{ t('market.selectCharacter') }}</label>
         <select id="publish-character" v-model="publishCharacterId" class="form-input">
-          <option value="">请选择...</option>
+          <option value="">{{ t('market.selectPlaceholder') }}</option>
           <option v-for="char in characterStore.characters" :key="char.id" :value="char.id">
             {{ char.name }}
           </option>
         </select>
       </div>
       <div class="form-group">
-        <label for="publish-categories" class="form-label">分类（逗号分隔）</label>
+        <label for="publish-categories" class="form-label">{{ t('market.categories') }}</label>
         <input
           id="publish-categories"
           v-model="publishCategories"
           type="text"
           class="form-input"
-          placeholder="奇幻, 治愈, 冒险"
+          :placeholder="t('market.categoriesPlaceholder')"
         />
       </div>
       <template #footer>
-        <button type="button" class="btn btn-ghost" @click="publishModalOpen = false">取消</button>
-        <button type="button" class="btn btn-primary" @click="handlePublish">发布</button>
+        <button type="button" class="btn btn-ghost" @click="publishModalOpen = false">{{ t('market.cancel') }}</button>
+        <button type="button" class="btn btn-primary" @click="handlePublish">{{ t('market.publish') }}</button>
       </template>
     </Modal>
 
     <!-- 评论 Modal -->
-    <Modal v-model="reviewModalOpen" title="发表评论">
+    <Modal v-model="reviewModalOpen" :title="t('market.reviewTitle')">
       <div class="form-group">
-        <label class="form-label">评分</label>
-        <div class="rating-input" role="radiogroup" aria-label="评分">
+        <label class="form-label">{{ t('market.reviewLabel') }}</label>
+        <div class="rating-input" role="radiogroup" :aria-label="t('market.reviewAria')">
           <button
             v-for="n in 5"
             :key="n"
@@ -782,42 +783,42 @@ function ratingStars(rating: number): string {
         </div>
       </div>
       <div class="form-group">
-        <label for="review-comment" class="form-label">评论</label>
+        <label for="review-comment" class="form-label">{{ t('market.reviewComment') }}</label>
         <textarea
           id="review-comment"
           v-model="reviewComment"
           class="form-input form-textarea"
-          placeholder="写下你的评价..."
+          :placeholder="t('market.reviewPlaceholder')"
           rows="3"
         ></textarea>
       </div>
       <template #footer>
-        <button type="button" class="btn btn-ghost" @click="reviewModalOpen = false">取消</button>
-        <button type="button" class="btn btn-primary" @click="handleReview">发布评论</button>
+        <button type="button" class="btn btn-ghost" @click="reviewModalOpen = false">{{ t('market.cancel') }}</button>
+        <button type="button" class="btn btn-primary" @click="handleReview">{{ t('market.publishReview') }}</button>
       </template>
     </Modal>
 
     <!-- 举报 Modal -->
-    <Modal v-model="reportModalOpen" title="举报角色卡">
+    <Modal v-model="reportModalOpen" :title="t('market.reportTitle')">
       <div class="form-group">
-        <label class="form-label">举报原因</label>
+        <label class="form-label">{{ t('market.reportReason') }}</label>
         <select v-model="reportReason" class="form-input">
           <option v-for="r in REPORT_REASONS" :key="r.value" :value="r.value">{{ r.label }}</option>
         </select>
       </div>
       <div class="form-group">
-        <label for="report-desc" class="form-label">详细描述</label>
+        <label for="report-desc" class="form-label">{{ t('market.reportDesc') }}</label>
         <textarea
           id="report-desc"
           v-model="reportDescription"
           class="form-input form-textarea"
-          placeholder="请描述举报原因..."
+          :placeholder="t('market.reportPlaceholder')"
           rows="3"
         ></textarea>
       </div>
       <template #footer>
-        <button type="button" class="btn btn-ghost" @click="reportModalOpen = false">取消</button>
-        <button type="button" class="btn btn-primary" @click="handleReport">提交举报</button>
+        <button type="button" class="btn btn-ghost" @click="reportModalOpen = false">{{ t('market.cancel') }}</button>
+        <button type="button" class="btn btn-primary" @click="handleReport">{{ t('market.submitReport') }}</button>
       </template>
     </Modal>
 
