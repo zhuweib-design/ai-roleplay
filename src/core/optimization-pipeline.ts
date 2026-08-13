@@ -140,9 +140,24 @@ export class OptimizationPipeline {
 
   constructor(private readonly config: OptimizationConfig) {}
 
+  /** 是否启用任意层(总开关) */
+  get enabled(): boolean {
+    return this.config.enabled;
+  }
+
   /** 是否启用 L1 压缩(总开关 × 阶段开关) */
   get l1Enabled(): boolean {
     return this.config.enabled && this.config.l1Enabled;
+  }
+
+  /** 是否启用 L0 上下文结构(总开关 × 阶段开关) */
+  get l0Enabled(): boolean {
+    return this.config.enabled && this.config.l0Enabled;
+  }
+
+  /** 是否启用 L2 输出纪律(总开关 × 阶段开关) */
+  get l2Enabled(): boolean {
+    return this.config.enabled && this.config.l2Enabled;
   }
 
   /**

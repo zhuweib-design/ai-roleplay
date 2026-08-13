@@ -32,6 +32,8 @@ import { getBuiltinToolDefinitions, executeBuiltinTool } from '@/core/tool-regis
 import { loadGlobalVariables, setGlobalVariable } from '@/core/variable-store';
 import { useDataBankStore } from './data-bank';
 import { OptimizationPipeline, loadOptimizationConfig } from '@/core/optimization-pipeline';
+import { MemoryStore, CharacterRegistry, EmotionTracker } from '@/core/memory-store';
+import type { L0L2Deps } from '@/core/l0-l2-runtime';
 
 /**
  * 将任意错误对象转换为 lastError 记录
@@ -154,6 +156,13 @@ export const useChatStore = defineStore('chat', () => {
   // 注入的依赖（运行时由外部设置）
   let chatManager: ChatManager | null = null;
   let storageAdapter: StorageAdapter | null = null;
+  // E-01/E-02: L0/L2 运行时依赖(内存实现;持久化接线待续 ponytail)
+  const l0Store = new MemoryStore();
+  const l0l2Deps: L0L2Deps = {
+    store: l0Store,
+    registry: new CharacterRegistry(l0Store),
+    tracker: new EmotionTracker(),
+  };
   // 生成中切换的 API Profile 暂存，任务结束后应用（修复：原实现直接丢弃）
   let pendingProfile: {
     profile: ApiProfile | null;
@@ -219,6 +228,8 @@ export const useChatStore = defineStore('chat', () => {
       tools: getBuiltinToolDefinitions(),
       // E-04 二期: 嵌入优化管线(默认关闭,由设置页开关;fail-open 不影响主链路)
       optimization: new OptimizationPipeline(loadOptimizationConfig()),
+      // E-01/E-02: L0/L2 运行时依赖(内存实现;持久化接线待续 ponytail)
+      l0l2: l0l2Deps,
       executeTool: async (call) =>
         executeBuiltinTool(call, {
           getVariable: (name) => loadGlobalVariables()[name],
@@ -249,6 +260,32 @@ export const useChatStore = defineStore('chat', () => {
     const pending = pendingProfile;
     pendingProfile = null;
     applyApiProfile(pending.profile, pending.options);
+  }
+
+  /**
+   * E-01: 将角色卡 standing 事实种入 MemoryStore(仅首次)
+   * 以角色 ID 为稳定键,写 standing 角色事实(人工 author,触发写保护语义)
+   * 幂等:已存在该 ID 事实则跳过(避免每轮重复写、破坏前缀稳定)
+   */
+  async function seedStandingFacts(card: CharacterCard, characterId: string): Promise<void> {
+    try {
+      const existing = await l0l2Deps.store.get(`char-${characterId}`);
+      if (existing) return; // 已种入,保持前缀稳定
+      const body = [
+        card.name && `名字：${card.name}`,
+        card.description && `描述：${card.description}`,
+        card.personality && `性格：${card.personality}`,
+        card.scenario && `场景：${card.scenario}`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+      await l0l2Deps.store.put(
+        { id: `char-${characterId}`, scope: 'standing', kind: 'character', body },
+        'human'
+      );
+    } catch {
+      /* fail-open:种入失败不影响主链路 */
+    }
   }
 
   // ── 消息操作 ──
@@ -336,6 +373,10 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       beginRequestTracking(card);
+      // E-01: 以角色 ID 作为会话键(情绪状态按角色隔离)
+      chatManager.updateConfig({ sessionId: character.id });
+      // E-01: 种入角色 standing 事实(首次;字节稳定前缀数据源)
+      await seedStandingFacts(card, character.id);
       await chatManager.sendMessage(
         {
           card,
@@ -623,6 +664,10 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       beginRequestTracking(card);
+      // E-01: 以角色 ID 作为会话键(情绪状态按角色隔离)
+      chatManager.updateConfig({ sessionId: character.id });
+      // E-01: 种入角色 standing 事实(首次;字节稳定前缀数据源)
+      await seedStandingFacts(card, character.id);
       await chatManager.sendMessage(
         {
           card,

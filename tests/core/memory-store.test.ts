@@ -94,6 +94,24 @@ describe('CharacterRegistry (E-01)', () => {
     expect(p.text).toContain('常驻');
     expect(p.text).not.toContain('动态情绪');
   });
+
+  it('assemblePrefix(sessionId):只组装该会话 standing 事实(跨角色隔离)', async () => {
+    const store = new MemoryStore();
+    const reg = new CharacterRegistry(store);
+    await store.put({ id: 'char-1', scope: 'standing', kind: 'character', body: '角色1' });
+    await store.put({ id: 'char-2', scope: 'standing', kind: 'character', body: '角色2' });
+
+    const p1 = await reg.assemblePrefix('BASE', '1');
+    const p2 = await reg.assemblePrefix('BASE', '2');
+    expect(p1.text).toContain('角色1');
+    expect(p1.text).not.toContain('角色2');
+    expect(p2.text).toContain('角色2');
+    expect(p2.text).not.toContain('角色1');
+    // 无 sessionId 时组装全部(兼容单会话场景)
+    const pall = await reg.assemblePrefix('BASE');
+    expect(pall.text).toContain('角色1');
+    expect(pall.text).toContain('角色2');
+  });
 });
 
 describe('EmotionTracker (E-01)', () => {

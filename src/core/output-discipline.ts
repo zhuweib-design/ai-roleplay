@@ -21,11 +21,23 @@ export type NarrationScope =
   | 'other';
 
 /** 情绪词表(示例级,生产可接 NRC 中文/DUTIR 扩充) */
-const EMOTION_WORDS = new Set([
+export const EMOTION_WORDS = new Set([
   '愤怒', '喜悦', '悲伤', '恐惧', '焦虑', '紧张', '温暖', '甜蜜',
   '苦涩', '感动', '惊喜', '慌乱', '平静', '厌恶', '羞耻', '骄傲',
   '心疼', '愧疚', '期待', '失望', '兴奋', '绝望', '释然', '愤懑',
 ]);
+
+/**
+ * 简单规则情绪标注(E-01 L0 情绪状态机用,纯确定性、无 LLM 依赖)
+ * 扫描情绪词,返回首个命中词作为情绪标签;无命中返回 null。
+ */
+export function detectEmotion(text: string): string | null {
+  if (!text) return null;
+  for (const w of EMOTION_WORDS) {
+    if (text.includes(w)) return w;
+  }
+  return null;
+}
 
 /** 状态性旁白动词(可精简,不承载情绪) */
 const META_VERBS = [

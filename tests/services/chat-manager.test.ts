@@ -4,6 +4,9 @@ import { ApiError } from '../../src/api/types';
 import type { ApiClient } from '../../src/api/api-client';
 import type { ChatStream, ChatStreamEvent, ChatRequest, ApiMessage } from '../../src/api/types';
 import type { CharacterCard, ChatMessage } from '@core/character-card';
+import { MemoryStore, CharacterRegistry, EmotionTracker } from '@core/memory-store';
+import { OptimizationPipeline, createDefaultConfig } from '@core/optimization-pipeline';
+import type { L0L2Deps } from '@core/l0-l2-runtime';
 
 // ── 测试辅助：构造 mock ApiClient ──
 
@@ -545,6 +548,153 @@ describe('ChatManager', () => {
       });
 
       expect(manager.isGenerating).toBe(false);
+    });
+  });
+
+  describe('E-01/E-02 嵌入优化接线', () => {
+    function makeDeps(): L0L2Deps {
+      const store = new MemoryStore();
+      return {
+        store,
+        registry: new CharacterRegistry(store),
+        tracker: new EmotionTracker(),
+      };
+    }
+
+    function makeRecordingClient(requests: ChatRequest[]): ApiClient {
+      return {
+        provider: 'recording',
+        async chat(): Promise<string> {
+          return '';
+        },
+        async *chatStream(req: ChatRequest): ChatStream {
+          requests.push(req);
+          yield { type: 'done', fullContent: '她感到一阵剧烈的愤怒。' };
+        },
+      };
+    }
+
+    it('L2 启用时:状态性旁白被精简,对白/情绪零损失', async () => {
+      const requests: ChatRequest[] = [];
+      const deps = makeDeps();
+      const pipeline = new OptimizationPipeline({
+        enabled: true,
+        l0Enabled: true,
+        l2Enabled: true,
+        l1Enabled: false,
+        stage: 'l0-l2',
+      });
+      const manager = new ChatManager({
+        apiClient: makeRecordingClient(requests),
+        model: 'gpt-4o',
+        optimization: pipeline,
+        l0l2: deps,
+        sessionId: 'char-1',
+      });
+
+      const history: ChatMessage[] = [
+        makeMessage('assistant', '他然后站起身，沉默片刻。'),
+        makeMessage('user', '继续'),
+      ];
+      await manager.sendMessage({
+        card: makeCard(),
+        history,
+        userMessage: '继续',
+      });
+
+      expect(requests.length).toBe(1);
+      const msgs = requests[0].messages;
+      // 状态性旁白被精简(删除"然后")
+      const assistantMsg = msgs.find((m) => m.role === 'assistant');
+      expect(assistantMsg?.content).not.toContain('然后');
+    });
+
+    it('L0 启用时:注入 standing 前缀与情绪状态', async () => {
+      const requests: ChatRequest[] = [];
+      const deps = makeDeps();
+      await deps.store.put(
+        { id: 'char-1', scope: 'standing', kind: 'character', body: '测试角色设定' },
+        'human'
+      );
+      await deps.tracker.update('1', '平静', '开场');
+      const pipeline = new OptimizationPipeline({
+        enabled: true,
+        l0Enabled: true,
+        l2Enabled: false,
+        l1Enabled: false,
+        stage: 'l0',
+      });
+      const manager = new ChatManager({
+        apiClient: makeRecordingClient(requests),
+        model: 'gpt-4o',
+        optimization: pipeline,
+        l0l2: deps,
+        sessionId: '1',
+      });
+
+      await manager.sendMessage({
+        card: makeCard(),
+        history: [],
+        userMessage: '你好',
+      });
+
+      expect(requests.length).toBe(1);
+      const systemMsg = requests[0].messages.find((m) => m.role === 'system');
+      expect(systemMsg?.content).toContain('测试角色设定');
+      expect(systemMsg?.content).toContain('平静');
+    });
+
+    it('情绪状态在回复后自动更新(onEmotionUpdated 触发)', async () => {
+      const requests: ChatRequest[] = [];
+      const deps = makeDeps();
+      const pipeline = new OptimizationPipeline({
+        enabled: true,
+        l0Enabled: true,
+        l2Enabled: false,
+        l1Enabled: false,
+        stage: 'l0',
+      });
+      const manager = new ChatManager({
+        apiClient: makeRecordingClient(requests),
+        model: 'gpt-4o',
+        optimization: pipeline,
+        l0l2: deps,
+        sessionId: 'char-1',
+      });
+
+      const emotions: string[] = [];
+      await manager.sendMessage(
+        { card: makeCard(), history: [], userMessage: '你好' },
+        { onEmotionUpdated: (label) => emotions.push(label) }
+      );
+
+      // 回复含"愤怒",应触发情绪更新回调
+      expect(emotions).toContain('愤怒');
+      const state = await deps.tracker.current('char-1');
+      expect(state?.label).toBe('愤怒');
+    });
+
+    it('未启用优化时:不注入前缀/情绪,原样透传', async () => {
+      const requests: ChatRequest[] = [];
+      const deps = makeDeps();
+      const pipeline = new OptimizationPipeline(createDefaultConfig()); // 全关
+      const manager = new ChatManager({
+        apiClient: makeRecordingClient(requests),
+        model: 'gpt-4o',
+        optimization: pipeline,
+        l0l2: deps,
+        sessionId: 'char-1',
+      });
+
+      await manager.sendMessage({
+        card: makeCard(),
+        history: [],
+        userMessage: '你好',
+      });
+
+      const systemMsg = requests[0].messages.find((m) => m.role === 'system');
+      expect(systemMsg?.content).not.toContain('当前情绪状态');
+      expect(systemMsg?.content).not.toContain('输出纪律');
     });
   });
 });

@@ -4,6 +4,12 @@ import { ApiError } from '@api/types';
 import { buildPrompt, type PromptContexts, type PromptSettings } from '@core/prompt-builder';
 import type { CharacterCard, ChatMessage } from '@core/character-card';
 import { compressMessages, type OptimizationPipeline } from '@core/optimization-pipeline';
+import {
+  applyL0Context,
+  applyOutputDiscipline,
+  updateEmotionState,
+  type L0L2Deps,
+} from '@core/l0-l2-runtime';
 
 /**
  * ChatManager 配置
@@ -34,6 +40,10 @@ export interface ChatManagerConfig {
   executeTool?: (call: ToolCall) => Promise<string>;
   /** E-04 二期：嵌入优化管线（默认关闭；启用后对长历史消息做 L1 压缩，fail-open） */
   optimization?: OptimizationPipeline;
+  /** E-01/E-02：L0/L2 运行时依赖（MemoryStore/CharacterRegistry/EmotionTracker） */
+  l0l2?: L0L2Deps;
+  /** E-01：会话 ID（情绪状态键；缺省用前缀哈希兜底） */
+  sessionId?: string;
 }
 
 export interface SendMessageParams {
@@ -64,6 +74,8 @@ export interface ChatManagerCallbacks {
   onError?: (error: Error) => void;
   /** prompt 构建完成后触发，可用于 UI 显示 Token 计数与裁剪状态 */
   onPromptBuilt?: (info: { tokenCount: number; trimmed: boolean; messageCount: number }) => void;
+  /** E-01：本轮生成完成后情绪状态更新回调（成功时触发，供 UI 展示） */
+  onEmotionUpdated?: (label: string, sessionId: string) => void;
 }
 
 /**
@@ -134,6 +146,34 @@ export class ChatManager {
       trimmed: built.trimmed,
       messageCount: built.messages.length,
     });
+
+    // E-01/E-02 二期: L0 上下文结构 + L2 输出纪律挂载(默认关闭;fail-open 不影响主链路)
+    if (this.config.l0l2 && this.config.optimization) {
+      const pipeline = this.config.optimization;
+      // L0: 前缀稳定 + 情绪状态 + Auto-Clarity 组装进 system
+      if (pipeline.l0Enabled || pipeline.l2Enabled) {
+        const systemMsg = built.messages.find((m) => m.role === 'system');
+        if (systemMsg) {
+          const l0 = await applyL0Context(
+            this.config.l0l2,
+            systemMsg.content,
+            pipeline,
+            this.config.sessionId
+          );
+          systemMsg.content = l0.systemContent;
+        }
+      }
+      // L2: 状态性旁白精简(对历史 assistant 消息)
+      if (pipeline.l2Enabled) {
+        const l2 = applyOutputDiscipline(
+          built.messages as { role: string; content: string }[],
+          pipeline
+        );
+        if (l2.compressedCount > 0) {
+          built.messages = l2.messages as typeof built.messages;
+        }
+      }
+    }
 
     // E-04 二期: 嵌入优化挂载 —— 对长历史消息做 L1 压缩(默认关闭;fail-open 不影响主链路)
     if (this.config.optimization?.l1Enabled) {
@@ -206,6 +246,8 @@ export class ChatManager {
             if (ev.fullContent) fullContent = ev.fullContent;
             // 用量统计透传(缓存命中率统计用)
             if (ev.usage) callbacks?.onUsage?.(ev.usage);
+            // E-01: 情绪状态更新(规则标注;fail-open;仅在 L0 启用且有 deps 时)
+            void this.updateEmotion(fullContent, callbacks);
             callbacks?.onDone?.(fullContent, ev.finishReason);
             return fullContent;
           } else if (ev.type === 'error') {
@@ -284,6 +326,33 @@ export class ChatManager {
       throw new Error('生成进行中，无法更新配置；请先 stop()');
     }
     this.config = { ...this.config, ...patch };
+  }
+
+  /**
+   * E-01: 情绪状态更新(每轮回复完成后调用)
+   * 仅当 L0 启用且有 deps 时生效;规则标注命中情绪词才写入;fail-open 不影响主链路
+   */
+  private async updateEmotion(
+    reply: string,
+    callbacks?: ChatManagerCallbacks
+  ): Promise<void> {
+    if (!this.config.l0l2 || !this.config.optimization?.l0Enabled) return;
+    try {
+      const ok = await updateEmotionState(
+        this.config.l0l2,
+        this.config.sessionId ?? 'default-session',
+        reply
+      );
+      if (ok && callbacks?.onEmotionUpdated) {
+        // 读取更新后的状态标签用于回调
+        const state = await this.config.l0l2.tracker.current(
+          this.config.sessionId ?? 'default-session'
+        );
+        if (state) callbacks.onEmotionUpdated(state.label, this.config.sessionId ?? 'default-session');
+      }
+    } catch {
+      /* fail-open:情绪更新失败静默 */
+    }
   }
 }
 

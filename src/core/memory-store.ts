@@ -202,11 +202,18 @@ export class CharacterRegistry {
   /**
    * 组装字节稳定前缀
    * @param base 固定基础段(如系统提示词头部)
+   * @param sessionId 会话 ID(可选):仅组装该会话的 standing 事实
+   *   (id 前缀 `char-${sessionId}` / `world-${sessionId}`);
+   *   缺省组装全部 standing 事实(单会话/全局场景)
    */
-  async assemblePrefix(base: string): Promise<AssembledPrefix> {
-    const standingFacts = (await Promise.all(
+  async assemblePrefix(base: string, sessionId?: string): Promise<AssembledPrefix> {
+    const all = (await Promise.all(
       this.store.listIds().map((id) => this.store.get(id))
     )).filter((f): f is MemoryFact => f !== null && f.scope === 'standing');
+
+    const standingFacts = sessionId
+      ? all.filter((f) => f.id === `char-${sessionId}` || f.id === `world-${sessionId}`)
+      : all;
 
     // 稳定排序(按 id)保证与写入顺序无关
     const ordered = [...standingFacts].sort((a, b) => a.id.localeCompare(b.id));
