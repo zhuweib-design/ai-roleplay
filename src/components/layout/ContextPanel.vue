@@ -6,6 +6,7 @@ import { useLorebookStore } from '@/stores/lorebook';
 import { useChatStore } from '@/stores/chat';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
+import { t } from '@/i18n';
 
 const characterStore = useCharacterStore();
 const personaStore = usePersonaStore();
@@ -53,21 +54,21 @@ const segments = computed(() => {
   return [
     {
       key: 'character',
-      label: '角色卡',
+      label: t('ctx.character'),
       value: char.value.tokenBudget.character,
       percent: (char.value.tokenBudget.character / total) * 100,
       color: 'var(--tk-cyan-500)',
     },
     {
       key: 'world',
-      label: '世界书',
+      label: t('ctx.world'),
       value: char.value.tokenBudget.worldInfo,
       percent: (char.value.tokenBudget.worldInfo / total) * 100,
       color: 'var(--tk-red-500)',
     },
     {
       key: 'history',
-      label: '对话',
+      label: t('ctx.history'),
       value: char.value.tokenBudget.chatHistory,
       percent: (char.value.tokenBudget.chatHistory / total) * 100,
       color: 'var(--tk-yellow-500)',
@@ -103,15 +104,15 @@ function onAuthorDepth(e: Event) {
     tabindex="-1"
     class="context-panel"
     :class="{ active: characterStore.panelOpen }"
-    aria-label="上下文面板"
+    :aria-label="t('ctx.aria')"
   >
     <!-- 顶栏 -->
     <header class="ctx-header">
-      <span class="ctx-title">上下文</span>
+      <span class="ctx-title">{{ t('ctx.title') }}</span>
       <button
         type="button"
         class="mobile-menu-btn ctx-close"
-        aria-label="关闭面板"
+        :aria-label="t('ctx.closePanel')"
         @click="characterStore.togglePanel()"
       >
         <Icon name="close" :size="18" />
@@ -138,15 +139,15 @@ function onAuthorDepth(e: Event) {
       <!-- F07 Persona 切换 -->
       <section class="ctx-section" aria-labelledby="ctx-persona-title">
         <header class="ctx-section-header">
-          <span id="ctx-persona-title" class="ctx-section-title">用户身份</span>
+          <span id="ctx-persona-title" class="ctx-section-title">{{ t('ctx.personaTitle') }}</span>
           <span class="ctx-section-value">{{ activePersonaName }}</span>
         </header>
         <label class="ctx-persona-select-label">
-          <span class="visually-hidden">切换 Persona</span>
+          <span class="visually-hidden">{{ t('ctx.switchPersona') }}</span>
           <select
             class="tk-input ctx-persona-select"
             :value="activePersonaId"
-            aria-label="选择当前 Persona"
+            :aria-label="t('ctx.selectPersona')"
             @change="onPersonaChange"
           >
             <option
@@ -159,19 +160,19 @@ function onAuthorDepth(e: Event) {
           </select>
         </label>
         <p class="ctx-persona-hint">
-          切换后 <code v-pre>{{user}}</code> 宏将更新为该名称
+          {{ t('ctx.personaHint', { macro: '{{user}}' }) }}
         </p>
       </section>
 
       <!-- Token 预算 -->
       <section class="ctx-section" aria-labelledby="ctx-token-title">
         <header class="ctx-section-header">
-          <span id="ctx-token-title" class="ctx-section-title">Token 预算</span>
+          <span id="ctx-token-title" class="ctx-section-title">{{ t('ctx.tokenTitle') }}</span>
           <span class="ctx-section-value">{{ usedTokens }} / {{ TOTAL_BUDGET }}</span>
         </header>
         <div class="token-bar" role="progressbar"
           :aria-valuenow="usedTokens" :aria-valuemin="0" :aria-valuemax="TOTAL_BUDGET"
-          :aria-label="`已使用 ${usedPercent}%`">
+          :aria-label="t('ctx.tokenUsed', { percent: usedPercent })">
           <div class="token-bar-fill" :style="{ width: `${usedPercent}%` }">
             <div
               v-for="seg in segments"
@@ -185,7 +186,7 @@ function onAuthorDepth(e: Event) {
             />
           </div>
         </div>
-        <ul class="token-legend" aria-label="Token 分布">
+        <ul class="token-legend" :aria-label="t('ctx.tokenLegend')">
           <li v-for="seg in segments" :key="seg.key">
             <span class="legend-dot" :style="{ backgroundColor: seg.color }" aria-hidden="true" />
             <span class="legend-label">{{ seg.label }}</span>
@@ -193,12 +194,12 @@ function onAuthorDepth(e: Event) {
           </li>
           <li>
             <span class="legend-dot legend-remaining" aria-hidden="true" />
-            <span class="legend-label">剩余</span>
+            <span class="legend-label">{{ t('ctx.remaining') }}</span>
             <span class="legend-value">{{ char.tokenBudget.remaining }}</span>
           </li>
           <li class="legend-usage">
             <span class="legend-dot legend-usage-dot" aria-hidden="true" />
-            <span class="legend-label">累计消耗</span>
+            <span class="legend-label">{{ t('ctx.totalUsage') }}</span>
             <span class="legend-value">{{ chatStore.totalTokenUsage }} Tokens</span>
           </li>
         </ul>
@@ -207,36 +208,36 @@ function onAuthorDepth(e: Event) {
       <!-- 世界书 -->
       <section class="ctx-section" aria-labelledby="ctx-world-title">
         <header class="ctx-section-header">
-          <span id="ctx-world-title" class="ctx-section-title">世界书</span>
-          <span class="ctx-section-value">{{ boundLorebooks.length }} 本</span>
+          <span id="ctx-world-title" class="ctx-section-title">{{ t('ctx.worldTitle') }}</span>
+          <span class="ctx-section-value">{{ t('ctx.worldCount', { count: boundLorebooks.length }) }}</span>
         </header>
         <ul v-if="boundLorebooks.length" class="world-list">
           <li v-for="lb in boundLorebooks" :key="lb.id" class="world-lorebook">
             <span class="world-entry-name">{{ lb.name }}</span>
             <span class="world-entry-count">
-              {{ lb.entries.filter((e) => e.enabled).length }} 条启用
+              {{ t('ctx.worldEnabled', { count: lb.entries.filter((e) => e.enabled).length }) }}
             </span>
           </li>
         </ul>
-        <p v-else class="ctx-empty">未绑定世界书，去角色编辑页绑定</p>
+        <p v-else class="ctx-empty">{{ t('ctx.worldEmpty') }}</p>
       </section>
 
       <!-- 作者笔记 -->
       <section class="ctx-section" aria-labelledby="ctx-author-title">
         <header class="ctx-section-header">
-          <span id="ctx-author-title" class="ctx-section-title">作者笔记</span>
-          <span class="ctx-section-value">深度 {{ char.authorDepth }}</span>
+          <span id="ctx-author-title" class="ctx-section-title">{{ t('ctx.authorTitle') }}</span>
+          <span class="ctx-section-value">{{ t('ctx.authorDepth', { depth: char.authorDepth }) }}</span>
         </header>
         <textarea
           class="tk-input ctx-textarea"
           :value="char.authorNote"
-          placeholder="添加作者笔记（影响 AI 行为）…"
-          aria-label="作者笔记内容"
+          :placeholder="t('ctx.authorPlaceholder')"
+          :aria-label="t('ctx.authorAria')"
           rows="3"
           @input="onAuthorNote"
         />
         <label class="ctx-range-label">
-          <span>插入深度</span>
+          <span>{{ t('ctx.insertDepth') }}</span>
           <input
             type="range"
             class="tk-range"
@@ -244,7 +245,7 @@ function onAuthorDepth(e: Event) {
             max="10"
             step="1"
             :value="char.authorDepth"
-            aria-label="作者笔记插入深度"
+            :aria-label="t('ctx.authorDepthAria')"
             @input="onAuthorDepth"
           />
           <span class="ctx-range-value" aria-hidden="true">{{ char.authorDepth }}</span>
@@ -254,10 +255,10 @@ function onAuthorDepth(e: Event) {
       <!-- 生成参数 -->
       <section class="ctx-section" aria-labelledby="ctx-gen-title">
         <header class="ctx-section-header">
-          <span id="ctx-gen-title" class="ctx-section-title">生成参数</span>
+          <span id="ctx-gen-title" class="ctx-section-title">{{ t('ctx.genTitle') }}</span>
         </header>
         <label class="ctx-range-label">
-          <span>温度</span>
+          <span>{{ t('ctx.temperature') }}</span>
           <input
             type="range"
             class="tk-range"
@@ -265,13 +266,13 @@ function onAuthorDepth(e: Event) {
             max="2"
             step="0.05"
             :value="char.temperature"
-            aria-label="温度"
+            :aria-label="t('ctx.temperatureAria')"
             @input="onTemperature"
           />
           <span class="ctx-range-value" aria-hidden="true">{{ char.temperature.toFixed(2) }}</span>
         </label>
         <label class="ctx-range-label">
-          <span>最大 Tokens</span>
+          <span>{{ t('ctx.maxTokens') }}</span>
           <input
             type="range"
             class="tk-range"
@@ -279,7 +280,7 @@ function onAuthorDepth(e: Event) {
             max="8192"
             step="256"
             :value="char.maxTokens"
-            aria-label="最大 Tokens"
+            :aria-label="t('ctx.maxTokensAria')"
             @input="onMaxTokens"
           />
           <span class="ctx-range-value" aria-hidden="true">{{ char.maxTokens }}</span>
