@@ -31,6 +31,7 @@ import {
   type VersionDiff,
   type VersionAuthor,
 } from '@core/character-version-control';
+import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useCharacterVersionStore();
@@ -51,11 +52,11 @@ onMounted(() => {
 type TabKey = 'history' | 'branches' | 'diff' | 'merge' | 'settings';
 const activeTab = ref<TabKey>('history');
 const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: 'history', label: '版本历史' },
-  { key: 'branches', label: '分支' },
-  { key: 'diff', label: '差异对比' },
-  { key: 'merge', label: '合并' },
-  { key: 'settings', label: '设置' },
+  { key: 'history', label: t('cv.tabHistory') },
+  { key: 'branches', label: t('cv.tabBranches') },
+  { key: 'diff', label: t('cv.tabDiff') },
+  { key: 'merge', label: t('cv.tabMerge') },
+  { key: 'settings', label: t('cv.tabSettings') },
 ];
 
 // ── Toast ──
@@ -120,13 +121,13 @@ function openCommitModal(): void {
 
 function onCommitSubmit(): void {
   if (!commitMessage.value.trim()) {
-    showToast('error', '请输入提交信息');
+    showToast('error', t('cv.needCommitMessage'));
     return;
   }
   const ok = store.commitCurrentCharacter(commitMessage.value.trim());
   commitModalOpen.value = false;
   if (ok) {
-    showToast('success', '已提交新版本');
+    showToast('success', t('cv.committed'));
   } else {
     flushStoreMessages();
   }
@@ -136,13 +137,13 @@ function onCommitSubmit(): void {
 function handleRollback(version: CharacterVersion): void {
   if (
     !confirm(
-      `确认回滚当前分支到版本「${version.id}」？\n将创建新提交而非删除历史。`
+      t('cv.rollbackConfirm', { id: version.id })
     )
   ) {
     return;
   }
   const ok = store.rollbackTo(version.id);
-  if (ok) showToast('success', '已回滚');
+  if (ok) showToast('success', t('cv.rolledBack'));
   else flushStoreMessages();
 }
 
@@ -180,35 +181,35 @@ function openCreateBranchModal(): void {
 function onCreateBranchSubmit(): void {
   const name = newBranchName.value.trim();
   if (!name) {
-    showToast('error', '请输入分支名');
+    showToast('error', t('cv.needBranchName'));
     return;
   }
   if (!isValidBranchName(name)) {
-    showToast('error', '分支名仅允许字母数字下划线连字符，1-32 字符');
+    showToast('error', t('cv.invalidBranchName'));
     return;
   }
   const ok = store.createBranch(name, newBranchFrom.value || undefined);
   branchModalOpen.value = false;
-  if (ok) showToast('success', `分支「${name}」已创建`);
+  if (ok) showToast('success', t('cv.branchCreated', { name }));
   else flushStoreMessages();
 }
 
 function handleSwitchBranch(name: string): void {
   if (
     store.pendingConflicts &&
-    !confirm('当前有未解决的合并冲突，切换分支将丢弃冲突解决进度，是否继续？')
+    !confirm(t('cv.branchSwitchConflict'))
   ) {
     return;
   }
   const ok = store.switchBranch(name);
-  if (ok) showToast('success', `已切换到「${name}」`);
+  if (ok) showToast('success', t('cv.branchSwitched', { name }));
   else flushStoreMessages();
 }
 
 function handleDeleteBranch(name: string): void {
-  if (!confirm(`确认删除分支「${name}」？此操作不可恢复。`)) return;
+  if (!confirm(t('cv.branchDeleteConfirm', { name }))) return;
   const ok = store.deleteBranch(name);
-  if (ok) showToast('success', `分支「${name}」已删除`);
+  if (ok) showToast('success', t('cv.branchDeleted', { name }));
   else flushStoreMessages();
 }
 
@@ -224,11 +225,11 @@ const diffResult = ref<VersionDiff | null>(null);
 
 function computeDiff(): void {
   if (!diffFromId.value || !diffToId.value) {
-    showToast('error', '请选择两个版本');
+    showToast('error', t('cv.needTwoVersions'));
     return;
   }
   if (diffFromId.value === diffToId.value) {
-    showToast('error', '请选择不同的版本');
+    showToast('error', t('cv.needDifferentVersions'));
     return;
   }
   const result = store.diff(diffFromId.value, diffToId.value);
@@ -236,7 +237,7 @@ function computeDiff(): void {
     diffResult.value = result;
     showToast(
       'info',
-      result.identical ? '两版本完全相同' : `共 ${result.changes} 个差异字段`
+      result.identical ? t('cv.identicalVersions') : t('cv.diffChanges', { count: result.changes })
     );
   } else {
     flushStoreMessages();
@@ -248,7 +249,7 @@ function formatDiffValue(value: unknown): string {
 }
 
 function diffTypeLabel(type: 'added' | 'removed' | 'modified'): string {
-  return type === 'added' ? '新增' : type === 'removed' ? '删除' : '修改';
+  return type === 'added' ? t('cv.diffAdded') : type === 'removed' ? t('cv.diffRemoved') : t('cv.diffModified');
 }
 
 // ── 合并 ──
@@ -257,20 +258,20 @@ const mergeMessage = ref('');
 
 function handleMerge(): void {
   if (!mergeSourceBranch.value) {
-    showToast('error', '请选择要合并的源分支');
+    showToast('error', t('cv.needMergeSource'));
     return;
   }
   if (mergeSourceBranch.value === store.currentRepoInfo?.currentBranch) {
-    showToast('error', '不能合并自己');
+    showToast('error', t('cv.cannotMergeSelf'));
     return;
   }
   const ok = store.mergeBranch(mergeSourceBranch.value, mergeMessage.value || undefined);
   mergeMessage.value = '';
   if (ok) {
-    showToast('success', '合并成功');
+    showToast('success', t('cv.mergeSuccess'));
   } else if (store.pendingConflicts) {
     // 冲突 → 切换到合并 Tab 不需要，弹 Modal
-    showToast('error', `检测到 ${store.pendingConflicts.conflicts.length} 个冲突，请解决`);
+    showToast('error', t('cv.mergeConflicts', { count: store.pendingConflicts.conflicts.length }));
   } else {
     flushStoreMessages();
   }
@@ -297,13 +298,13 @@ watch(
 
 function onResolveConflictsSubmit(): void {
   const ok = store.resolveConflicts(conflictResolutions.value);
-  if (ok) showToast('success', '冲突已解决并提交');
+  if (ok) showToast('success', t('cv.conflictsResolved'));
   else flushStoreMessages();
 }
 
 function onCancelMerge(): void {
   store.cancelMerge();
-  showToast('info', '已取消合并');
+  showToast('info', t('cv.mergeCancelled'));
 }
 
 // ── 设置：操作者切换 ──
@@ -313,7 +314,7 @@ const authorAvatar = ref(store.author.avatar ?? '');
 function saveAuthor(): void {
   const name = authorName.value.trim();
   if (!name) {
-    showToast('error', '请输入操作者名称');
+    showToast('error', t('cv.needAuthorName'));
     return;
   }
   const newAuthor: VersionAuthor = {
@@ -321,13 +322,13 @@ function saveAuthor(): void {
     avatar: authorAvatar.value || undefined,
   };
   store.setAuthor(newAuthor);
-  showToast('success', `已切换为「${name}」`);
+  showToast('success', t('cv.authorChanged', { name }));
 }
 
 // ── 操作锁 ──
 function handleAcquireLock(): void {
   const ok = store.acquireLock('*');
-  if (ok) showToast('success', '已获取全字段编辑锁');
+  if (ok) showToast('success', t('cv.lockAcquired'));
   else flushStoreMessages();
 }
 
@@ -338,7 +339,7 @@ function handleReleaseAllLocks(): void {
 
 function handlePurgeExpiredLocks(): void {
   const n = store.purgeExpiredLocks();
-  showToast('info', `已清理 ${n} 个过期锁`);
+  showToast('info', t('cv.locksPurged', { count: n }));
 }
 
 // ── 仓库管理 ──
@@ -346,13 +347,13 @@ function handleDeleteRepository(): void {
   if (!store.currentCharacterId) return;
   if (
     !confirm(
-      `确认删除角色「${currentCharacter.value?.name}」的全部版本仓库？\n所有分支与提交历史将被永久删除。`
+      t('cv.repoDeleteConfirm', { name: currentCharacter.value?.name ?? '' })
     )
   ) {
     return;
   }
   const ok = store.deleteRepository(store.currentCharacterId);
-  if (ok) showToast('success', '仓库已删除');
+  if (ok) showToast('success', t('cv.repoDeleted'));
   else flushStoreMessages();
 }
 
@@ -385,24 +386,24 @@ function goBack(): void {
   <div class="version-view">
     <header class="page-header">
       <div class="header-title">
-        <button type="button" class="header-btn" aria-label="返回" @click="goBack">
+        <button type="button" class="header-btn" :aria-label="t('cv.backAria')" @click="goBack">
           <Icon name="arrow-left" :size="18" aria-hidden="true" />
         </button>
-        <h1>角色卡版本管理</h1>
+        <h1>{{ t('cv.title') }}</h1>
         <span class="header-tag">
-          {{ store.currentRepoInfo ? store.currentRepoInfo.characterName : '未选择' }}
+          {{ store.currentRepoInfo ? store.currentRepoInfo.characterName : t('cv.notSelected') }}
         </span>
       </div>
       <div class="header-actions">
         <label class="header-field">
-          <span class="sr-only">选择角色</span>
+          <span class="sr-only">{{ t('cv.selectCharAria') }}</span>
           <select
             :value="store.currentCharacterId ?? ''"
             class="header-select"
-            aria-label="选择角色"
+            :aria-label="t('cv.selectCharAria')"
             @change="handleSelectCharacter(($event.target as HTMLSelectElement).value)"
           >
-            <option value="" disabled>选择角色…</option>
+            <option value="" disabled>{{ t('cv.selectCharPlaceholder') }}</option>
             <option
               v-for="c in characterStore.characters"
               :key="c.id"
@@ -419,12 +420,12 @@ function goBack(): void {
           @click="openCommitModal"
         >
           <Icon name="save" :size="14" aria-hidden="true" />
-          提交
+          {{ t('cv.commit') }}
         </button>
       </div>
     </header>
 
-    <nav class="tabs" role="tablist" aria-label="角色卡版本管理">
+    <nav class="tabs" role="tablist" :aria-label="t('cv.tabsAria')">
       <button
         v-for="tab in TABS"
         :key="tab.key"
@@ -455,13 +456,13 @@ function goBack(): void {
       >
         <div class="panel-toolbar">
           <p class="panel-hint">
-            当前分支：<strong>{{ store.currentRepoInfo?.currentBranch ?? '—' }}</strong>
+            {{ t('cv.currentBranch', { branch: store.currentRepoInfo?.currentBranch ?? '—' }) }}
             ·
-            共 {{ store.history.length }} 个提交
+            {{ t('cv.commitCount', { count: store.history.length }) }}
           </p>
           <button type="button" class="btn primary" @click="openCommitModal">
             <Icon name="plus" :size="14" aria-hidden="true" />
-            提交新版本
+            {{ t('cv.newCommit') }}
           </button>
         </div>
 
@@ -478,7 +479,7 @@ function goBack(): void {
             <div class="commit-main">
               <div class="commit-title">
                 <span class="commit-id">{{ v.id }}</span>
-                <span v-if="idx === 0" class="badge head">HEAD</span>
+                <span v-if="idx === 0" class="badge head">{{ t('cv.headBadge') }}</span>
                 <span class="badge branch">{{ v.branch }}</span>
               </div>
               <p class="commit-msg">{{ shortMessage(v.message, 80) }}</p>
@@ -494,29 +495,29 @@ function goBack(): void {
                 <button
                   type="button"
                   class="icon-btn"
-                  aria-label="查看快照"
+                  :aria-label="t('cv.viewSnapshot')"
                   @click="viewSnapshot(v)"
                 >
                   <Icon name="eye" :size="14" aria-hidden="true" />
-                  查看
+                  {{ t('cv.view') }}
                 </button>
                 <button type="button"
                   v-if="idx > 0"
                   class="icon-btn"
-                  aria-label="回滚到此版本"
+                  :aria-label="t('cv.rollbackAria')"
                   @click="handleRollback(v)"
                 >
                   <Icon name="refresh-cw" :size="14" aria-hidden="true" />
-                  回滚
+                  {{ t('cv.rollback') }}
                 </button>
                 <button type="button"
                   v-if="idx > 0"
                   class="icon-btn"
-                  aria-label="与HEAD对比"
+                  :aria-label="t('cv.compareHeadAria')"
                   @click="diffFromId = v.id; diffToId = store.headVersion?.id ?? ''; activeTab = 'diff';"
                 >
                   <Icon name="git-branch" :size="14" aria-hidden="true" />
-                  对比 HEAD
+                  {{ t('cv.compareHead') }}
                 </button>
               </div>
             </div>
@@ -524,8 +525,8 @@ function goBack(): void {
         </ol>
         <div v-else class="empty-state">
           <Icon name="file" :size="48" aria-hidden="true" />
-          <p>暂无提交历史</p>
-          <p class="empty-hint">点击「提交新版本」创建第一个版本</p>
+          <p>{{ t('cv.noHistory') }}</p>
+          <p class="empty-hint">{{ t('cv.noHistoryHint') }}</p>
         </div>
       </section>
 
@@ -538,10 +539,10 @@ function goBack(): void {
         class="panel"
       >
         <div class="panel-toolbar">
-          <p class="panel-hint">管理当前角色的分支。每个分支维护独立的提交链，可独立编辑与回滚。</p>
+          <p class="panel-hint">{{ t('cv.branchesHint') }}</p>
           <button type="button" class="btn primary" @click="openCreateBranchModal">
             <Icon name="plus" :size="14" aria-hidden="true" />
-            新建分支
+            {{ t('cv.newBranch') }}
           </button>
         </div>
 
@@ -559,15 +560,15 @@ function goBack(): void {
               <div class="card-title">
                 <Icon name="git-branch" :size="16" aria-hidden="true" />
                 <span class="title-text">{{ b.name }}</span>
-                <span v-if="b.isDefault" class="badge default">默认</span>
-                <span v-if="b.name === store.currentRepoInfo?.currentBranch" class="badge current">当前</span>
-                <span v-if="b.locked" class="badge locked">已锁定</span>
+                <span v-if="b.isDefault" class="badge default">{{ t('cv.branchDefault') }}</span>
+                <span v-if="b.name === store.currentRepoInfo?.currentBranch" class="badge current">{{ t('cv.branchCurrent') }}</span>
+                <span v-if="b.locked" class="badge locked">{{ t('cv.branchLocked') }}</span>
               </div>
               <div class="card-actions">
                 <button
                   type="button"
                   class="icon-btn"
-                  :aria-label="b.locked ? '解锁' : '锁定'"
+                  :aria-label="b.locked ? t('cv.unlockAria') : t('cv.lockAria')"
                   @click="handleToggleLock(b.name)"
                 >
                   <Icon :name="b.locked ? 'eye-off' : 'eye'" :size="14" aria-hidden="true" />
@@ -576,17 +577,17 @@ function goBack(): void {
                   v-if="b.name !== store.currentRepoInfo?.currentBranch"
                   type="button"
                   class="icon-btn"
-                  aria-label="切换到此分支"
+                  :aria-label="t('cv.switchBranchAria')"
                   @click="handleSwitchBranch(b.name)"
                 >
                   <Icon name="refresh-cw" :size="14" aria-hidden="true" />
-                  切换
+                  {{ t('cv.switchBranch') }}
                 </button>
                 <button
                   v-if="!b.isDefault && b.name !== store.currentRepoInfo?.currentBranch"
                   type="button"
                   class="icon-btn danger"
-                  aria-label="删除"
+                  :aria-label="t('cv.deleteAria')"
                   @click="handleDeleteBranch(b.name)"
                 >
                   <Icon name="trash-2" :size="14" aria-hidden="true" />
@@ -594,16 +595,16 @@ function goBack(): void {
               </div>
             </div>
             <dl class="card-meta">
-              <div><dt>HEAD</dt><dd>{{ b.headId ?? '—' }}</dd></div>
-              <div><dt>创建时间</dt><dd>{{ formatTime(b.createdAt) }}</dd></div>
-              <div><dt>创建者</dt><dd>{{ b.createdBy.name }}</dd></div>
+              <div><dt>{{ t('cv.head') }}</dt><dd>{{ b.headId ?? '—' }}</dd></div>
+              <div><dt>{{ t('cv.createdAt') }}</dt><dd>{{ formatTime(b.createdAt) }}</dd></div>
+              <div><dt>{{ t('cv.createdBy') }}</dt><dd>{{ b.createdBy.name }}</dd></div>
             </dl>
           </li>
         </ul>
         <div v-else class="empty-state">
           <Icon name="git-branch" :size="48" aria-hidden="true" />
-          <p>暂无分支</p>
-          <p class="empty-hint">默认 main 分支在首次提交时自动创建</p>
+          <p>{{ t('cv.noBranches') }}</p>
+          <p class="empty-hint">{{ t('cv.noBranchesHint') }}</p>
         </div>
       </section>
 
@@ -617,9 +618,9 @@ function goBack(): void {
       >
         <div class="diff-form">
           <div class="form-group">
-            <label for="diff-from">源版本</label>
+            <label for="diff-from">{{ t('cv.diffFrom') }}</label>
             <select id="diff-from" v-model="diffFromId">
-              <option value="">选择版本…</option>
+              <option value="">{{ t('cv.selectVersion') }}</option>
               <option v-for="v in store.history" :key="v.id" :value="v.id">
                 {{ v.id }} · {{ shortMessage(v.message, 30) }}
               </option>
@@ -627,9 +628,9 @@ function goBack(): void {
           </div>
           <div class="diff-arrow" aria-hidden="true">→</div>
           <div class="form-group">
-            <label for="diff-to">目标版本</label>
+            <label for="diff-to">{{ t('cv.diffTo') }}</label>
             <select id="diff-to" v-model="diffToId">
-              <option value="">选择版本…</option>
+              <option value="">{{ t('cv.selectVersion') }}</option>
               <option v-for="v in store.history" :key="v.id" :value="v.id">
                 {{ v.id }} · {{ shortMessage(v.message, 30) }}
               </option>
@@ -637,14 +638,14 @@ function goBack(): void {
           </div>
           <button type="button" class="btn primary" @click="computeDiff">
             <Icon name="search" :size="14" aria-hidden="true" />
-            对比
+            {{ t('cv.diffBtn') }}
           </button>
         </div>
 
         <div v-if="diffResult" class="diff-result">
           <div class="diff-summary">
-            <span>差异字段：<strong>{{ diffResult.changes }}</strong></span>
-            <span v-if="diffResult.identical" class="badge success">完全相同</span>
+            <span>{{ t('cv.diffFields', { count: diffResult.changes }) }}</span>
+            <span v-if="diffResult.identical" class="badge success">{{ t('cv.diffIdentical') }}</span>
           </div>
 
           <ul v-if="diffResult.fields.length > 0" class="diff-list" role="list">
@@ -661,11 +662,11 @@ function goBack(): void {
               </div>
               <div class="diff-values">
                 <div class="diff-old">
-                  <span class="diff-tag">旧</span>
+                  <span class="diff-tag">{{ t('cv.diffOld') }}</span>
                   <pre class="diff-pre">{{ formatDiffValue(field.oldValue) }}</pre>
                 </div>
                 <div class="diff-new">
-                  <span class="diff-tag">新</span>
+                  <span class="diff-tag">{{ t('cv.diffNew') }}</span>
                   <pre class="diff-pre">{{ formatDiffValue(field.newValue) }}</pre>
                 </div>
               </div>
@@ -674,8 +675,8 @@ function goBack(): void {
         </div>
         <div v-else class="empty-state">
           <Icon name="git-branch" :size="48" aria-hidden="true" />
-          <p>选择两个版本进行对比</p>
-          <p class="empty-hint">差异对比展示字段级变更，便于审计版本演进</p>
+          <p>{{ t('cv.diffEmpty') }}</p>
+          <p class="empty-hint">{{ t('cv.diffEmptyHint') }}</p>
         </div>
       </section>
 
@@ -690,26 +691,26 @@ function goBack(): void {
         <div v-if="store.hasPendingConflicts" class="conflict-banner" role="alert">
           <Icon name="alert-triangle" :size="20" aria-hidden="true" />
           <div>
-            <strong>有未解决的合并冲突</strong>
-            <p>共 {{ store.pendingConflicts?.conflicts.length }} 个字段需要手动解决</p>
+            <strong>{{ t('cv.conflictBanner') }}</strong>
+            <p>{{ t('cv.conflictCount', { count: store.pendingConflicts?.conflicts.length ?? 0 }) }}</p>
           </div>
           <button type="button" class="btn primary" @click="conflictModalOpen = true">
             <Icon name="check" :size="14" aria-hidden="true" />
-            解决冲突
+            {{ t('cv.resolveConflicts') }}
           </button>
-          <button type="button" class="btn" @click="onCancelMerge">取消合并</button>
+          <button type="button" class="btn" @click="onCancelMerge">{{ t('cv.cancelMerge') }}</button>
         </div>
 
         <div class="merge-form">
-          <h2 class="section-title">合并分支到当前分支</h2>
+          <h2 class="section-title">{{ t('cv.mergeTitle') }}</h2>
           <p class="section-hint">
-            当前分支：<strong>{{ store.currentRepoInfo?.currentBranch ?? '—' }}</strong>
+            {{ t('cv.mergeCurrentBranch', { branch: store.currentRepoInfo?.currentBranch ?? '—' }) }}
           </p>
 
           <div class="form-group">
-            <label for="merge-source">选择源分支</label>
+            <label for="merge-source">{{ t('cv.mergeSource') }}</label>
             <select id="merge-source" v-model="mergeSourceBranch">
-              <option value="">选择分支…</option>
+              <option value="">{{ t('cv.selectBranch') }}</option>
               <option
                 v-for="b in store.branches.filter(b => b.name !== store.currentRepoInfo?.currentBranch)"
                 :key="b.name"
@@ -721,12 +722,12 @@ function goBack(): void {
           </div>
 
           <div class="form-group">
-            <label for="merge-msg">提交信息（可选）</label>
+            <label for="merge-msg">{{ t('cv.mergeMessage') }}</label>
             <input
               id="merge-msg"
               v-model="mergeMessage"
               type="text"
-              placeholder="如：合并 dev 分支的修改"
+              :placeholder="t('cv.mergeMessagePlaceholder')"
             />
           </div>
 
@@ -737,17 +738,17 @@ function goBack(): void {
             @click="handleMerge"
           >
             <Icon name="git-branch" :size="14" aria-hidden="true" />
-            合并
+            {{ t('cv.mergeBtn') }}
           </button>
 
           <div class="merge-explain">
-            <h3>合并说明</h3>
+            <h3>{{ t('cv.mergeExplainTitle') }}</h3>
             <ul>
-              <li>采用基于共同祖先的三方合并算法</li>
-              <li>若仅一方修改某字段，自动采用修改后的值</li>
-              <li>若双方修改同一字段且不同，标记冲突由用户手动选择</li>
-              <li>合并成功后自动在当前分支创建一个新提交</li>
-              <li>冲突时不会创建提交，需先解决冲突</li>
+              <li>{{ t('cv.mergeExplain1') }}</li>
+              <li>{{ t('cv.mergeExplain2') }}</li>
+              <li>{{ t('cv.mergeExplain3') }}</li>
+              <li>{{ t('cv.mergeExplain4') }}</li>
+              <li>{{ t('cv.mergeExplain5') }}</li>
             </ul>
           </div>
         </div>
@@ -762,69 +763,67 @@ function goBack(): void {
         class="panel"
       >
         <div class="settings-section">
-          <h2 class="section-title">当前操作者</h2>
+          <h2 class="section-title">{{ t('cv.settingsAuthor') }}</h2>
           <p class="section-hint">
-            由于项目无后端，"多人协作" 通过切换操作者模拟。
-            切换后提交/锁定/分支操作将以新操作者身份进行。
+            {{ t('cv.settingsAuthorHint') }}
           </p>
           <div class="form-grid">
             <div class="form-row">
-              <label for="author-name">名称</label>
+              <label for="author-name">{{ t('cv.authorName') }}</label>
               <input id="author-name" v-model="authorName" type="text" maxlength="30" />
             </div>
             <div class="form-row">
-              <label for="author-avatar">头像 URL（可选）</label>
+              <label for="author-avatar">{{ t('cv.authorAvatar') }}</label>
               <input id="author-avatar" v-model="authorAvatar" type="url" />
             </div>
           </div>
           <button type="button" class="btn primary" @click="saveAuthor">
             <Icon name="save" :size="14" aria-hidden="true" />
-            保存
+            {{ t('cv.save') }}
           </button>
         </div>
 
         <div class="settings-section">
-          <h2 class="section-title">操作锁</h2>
+          <h2 class="section-title">{{ t('cv.settingsLocks') }}</h2>
           <p class="section-hint">
-            操作锁防止多人并发编辑同一字段。本地模拟多用户场景下，
-            切换作者后可观察到他人持有的锁。
+            {{ t('cv.settingsLocksHint') }}
           </p>
           <div v-if="store.currentRepoInfo && store.currentRepoInfo.activeLocks.length > 0">
-            <h3>当前活跃锁</h3>
+            <h3>{{ t('cv.activeLocks') }}</h3>
             <ul class="lock-list" role="list">
               <li
                 v-for="lock in store.currentRepoInfo?.activeLocks"
                 :key="lock.fieldPath + lock.holder.name"
                 class="lock-item"
               >
-                <span class="lock-field">{{ lock.fieldPath === '*' ? '全部字段' : lock.fieldPath }}</span>
+                <span class="lock-field">{{ lock.fieldPath === '*' ? t('cv.allFields') : lock.fieldPath }}</span>
                 <span class="lock-holder">{{ lock.holder.name }}</span>
-                <span class="lock-time">至 {{ formatTime(lock.expiresAt) }}</span>
+                <span class="lock-time">{{ t('cv.lockUntil', { time: formatTime(lock.expiresAt) }) }}</span>
               </li>
             </ul>
           </div>
-          <p v-else class="muted">当前无活跃锁</p>
+          <p v-else class="muted">{{ t('cv.noActiveLocks') }}</p>
 
           <div class="action-row">
             <button type="button" class="btn" @click="handleAcquireLock">
               <Icon name="check" :size="14" aria-hidden="true" />
-              获取全字段锁
+              {{ t('cv.acquireLock') }}
             </button>
             <button type="button" class="btn" @click="handleReleaseAllLocks">
               <Icon name="x-circle" :size="14" aria-hidden="true" />
-              释放我的锁
+              {{ t('cv.releaseLocks') }}
             </button>
             <button type="button" class="btn" @click="handlePurgeExpiredLocks">
               <Icon name="trash-2" :size="14" aria-hidden="true" />
-              清理过期锁
+              {{ t('cv.purgeLocks') }}
             </button>
           </div>
         </div>
 
         <div class="settings-section danger-zone">
-          <h2 class="section-title">危险操作</h2>
+          <h2 class="section-title">{{ t('cv.settingsDanger') }}</h2>
           <p class="section-hint">
-            删除当前角色的全部版本仓库，包括所有分支与提交历史。操作不可恢复。
+            {{ t('cv.settingsDangerHint') }}
           </p>
           <button
             type="button"
@@ -833,7 +832,7 @@ function goBack(): void {
             @click="handleDeleteRepository"
           >
             <Icon name="trash-2" :size="14" aria-hidden="true" />
-            删除此角色版本仓库
+            {{ t('cv.deleteRepo') }}
           </button>
         </div>
       </section>
@@ -842,27 +841,26 @@ function goBack(): void {
     <!-- ── 提交 Modal ── -->
     <Modal
       :model-value="commitModalOpen"
-      title="提交新版本"
+      :title="t('cv.commitTitle')"
       @update:model-value="commitModalOpen = $event"
     >
       <p class="modal-hint">
-        将当前角色「{{ currentCharacter?.name }}」的状态保存为新版本提交。
-        提交后无法修改，但可创建后续版本或回滚到此版本。
+        {{ t('cv.commitHint', { name: currentCharacter?.name ?? '' }) }}
       </p>
       <div class="form-group">
-        <label for="commit-msg-input">提交信息</label>
+        <label for="commit-msg-input">{{ t('cv.commitMessage') }}</label>
         <textarea
           id="commit-msg-input"
           v-model="commitMessage"
           rows="3"
-          placeholder="简述本次修改，如：增加角色背景故事"
+          :placeholder="t('cv.commitPlaceholder')"
         />
       </div>
       <template #footer>
-        <button type="button" class="btn" @click="commitModalOpen = false">取消</button>
+        <button type="button" class="btn" @click="commitModalOpen = false">{{ t('cv.cancel') }}</button>
         <button type="button" class="btn primary" @click="onCommitSubmit">
           <Icon name="check" :size="14" aria-hidden="true" />
-          确认提交
+          {{ t('cv.confirmCommit') }}
         </button>
       </template>
     </Modal>
@@ -870,22 +868,22 @@ function goBack(): void {
     <!-- ── 创建分支 Modal ── -->
     <Modal
       :model-value="branchModalOpen"
-      title="新建分支"
+      :title="t('cv.branchTitle')"
       @update:model-value="branchModalOpen = $event"
     >
       <div class="form-group">
-        <label for="branch-name-input">分支名</label>
+        <label for="branch-name-input">{{ t('cv.branchName') }}</label>
         <input
           id="branch-name-input"
           v-model="newBranchName"
           type="text"
-          placeholder="如：dev / rewrite / alt-ending"
+          :placeholder="t('cv.branchNamePlaceholder')"
           maxlength="32"
         />
-        <small class="form-hint">仅允许字母数字下划线连字符，长度 1-32</small>
+        <small class="form-hint">{{ t('cv.branchNameHint') }}</small>
       </div>
       <div class="form-group">
-        <label for="branch-from-input">从分支创建</label>
+        <label for="branch-from-input">{{ t('cv.branchFrom') }}</label>
         <select id="branch-from-input" v-model="newBranchFrom">
           <option v-for="b in store.branches" :key="b.name" :value="b.name">
             {{ b.name }}
@@ -893,10 +891,10 @@ function goBack(): void {
         </select>
       </div>
       <template #footer>
-        <button type="button" class="btn" @click="branchModalOpen = false">取消</button>
+        <button type="button" class="btn" @click="branchModalOpen = false">{{ t('cv.cancel') }}</button>
         <button type="button" class="btn primary" @click="onCreateBranchSubmit">
           <Icon name="check" :size="14" aria-hidden="true" />
-          创建
+          {{ t('cv.create') }}
         </button>
       </template>
     </Modal>
@@ -904,49 +902,49 @@ function goBack(): void {
     <!-- ── 查看快照 Modal ── -->
     <Modal
       :model-value="snapshotModalOpen"
-      :title="snapshotViewing ? `版本 ${snapshotViewing.id} 快照` : '版本快照'"
+      :title="snapshotViewing ? t('cv.snapshotTitle', { id: snapshotViewing.id }) : t('cv.snapshotTitleGeneric')"
       @update:model-value="snapshotModalOpen = $event"
     >
       <div v-if="snapshotViewing" class="snapshot-grid">
         <div class="snapshot-row">
-          <span class="snapshot-label">分支</span>
+          <span class="snapshot-label">{{ t('cv.snapshotBranch') }}</span>
           <span class="snapshot-value">{{ snapshotViewing.branch }}</span>
         </div>
         <div class="snapshot-row">
-          <span class="snapshot-label">作者</span>
+          <span class="snapshot-label">{{ t('cv.snapshotAuthor') }}</span>
           <span class="snapshot-value">{{ snapshotViewing.author.name }}</span>
         </div>
         <div class="snapshot-row">
-          <span class="snapshot-label">提交时间</span>
+          <span class="snapshot-label">{{ t('cv.snapshotTime') }}</span>
           <span class="snapshot-value">{{ formatTime(snapshotViewing.timestamp) }}</span>
         </div>
         <div class="snapshot-row">
-          <span class="snapshot-label">提交信息</span>
+          <span class="snapshot-label">{{ t('cv.snapshotMessage') }}</span>
           <span class="snapshot-value">{{ snapshotViewing.message }}</span>
         </div>
         <div class="snapshot-divider" />
         <div class="snapshot-row">
-          <span class="snapshot-label">名称</span>
+          <span class="snapshot-label">{{ t('cv.snapshotName') }}</span>
           <span class="snapshot-value">{{ snapshotViewing.snapshot.name }}</span>
         </div>
         <div class="snapshot-row">
-          <span class="snapshot-label">描述</span>
+          <span class="snapshot-label">{{ t('cv.snapshotDesc') }}</span>
           <pre class="snapshot-pre">{{ formatSnapshotField(snapshotViewing.snapshot.description) }}</pre>
         </div>
         <div class="snapshot-row">
-          <span class="snapshot-label">性格</span>
+          <span class="snapshot-label">{{ t('cv.snapshotPersonality') }}</span>
           <pre class="snapshot-pre">{{ formatSnapshotField(snapshotViewing.snapshot.personality) }}</pre>
         </div>
         <div class="snapshot-row">
-          <span class="snapshot-label">场景</span>
+          <span class="snapshot-label">{{ t('cv.snapshotScenario') }}</span>
           <pre class="snapshot-pre">{{ formatSnapshotField(snapshotViewing.snapshot.scenario) }}</pre>
         </div>
         <div class="snapshot-row">
-          <span class="snapshot-label">首条消息</span>
+          <span class="snapshot-label">{{ t('cv.snapshotFirstMessage') }}</span>
           <pre class="snapshot-pre">{{ formatSnapshotField(snapshotViewing.snapshot.firstMessage) }}</pre>
         </div>
         <div class="snapshot-row">
-          <span class="snapshot-label">标签</span>
+          <span class="snapshot-label">{{ t('cv.snapshotTags') }}</span>
           <span class="snapshot-value">{{ snapshotViewing.snapshot.tags.join('、') || '—' }}</span>
         </div>
       </div>
@@ -955,12 +953,12 @@ function goBack(): void {
     <!-- ── 解决冲突 Modal ── -->
     <Modal
       :model-value="conflictModalOpen"
-      title="解决合并冲突"
+      :title="t('cv.conflictTitle')"
       :dismissible="false"
       @update:model-value="conflictModalOpen = $event"
     >
       <p class="modal-hint">
-        以下字段在源分支与当前分支均被修改，请逐个选择保留哪个版本。
+        {{ t('cv.conflictHint') }}
       </p>
       <ul v-if="store.pendingConflicts" class="conflict-list" role="list">
         <li
@@ -980,7 +978,7 @@ function goBack(): void {
                 value="current"
                 v-model="conflictResolutions[c.path]"
               />
-              <span class="conflict-tag">当前</span>
+              <span class="conflict-tag">{{ t('cv.conflictCurrent') }}</span>
               <pre class="conflict-pre">{{ formatSnapshotField(c.currentValue) }}</pre>
             </label>
             <label class="conflict-option">
@@ -990,17 +988,17 @@ function goBack(): void {
                 value="source"
                 v-model="conflictResolutions[c.path]"
               />
-              <span class="conflict-tag">源分支</span>
+              <span class="conflict-tag">{{ t('cv.conflictSource') }}</span>
               <pre class="conflict-pre">{{ formatSnapshotField(c.sourceValue) }}</pre>
             </label>
           </div>
         </li>
       </ul>
       <template #footer>
-        <button type="button" class="btn" @click="onCancelMerge">取消合并</button>
+        <button type="button" class="btn" @click="onCancelMerge">{{ t('cv.cancelMerge') }}</button>
         <button type="button" class="btn primary" @click="onResolveConflictsSubmit">
           <Icon name="check" :size="14" aria-hidden="true" />
-          提交解决结果
+          {{ t('cv.submitResolution') }}
         </button>
       </template>
     </Modal>
