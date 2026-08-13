@@ -141,6 +141,10 @@ export default defineConfig({
     strictPort: isTauriDev, // Tauri dev 模式下端口被占用直接报错
     open: !isTauriEnv, // Tauri dev 模式下不自动打开浏览器
     host: isTauriDev ? '127.0.0.1' : 'localhost',
+    // 排除 Rust 构建产物,避免 Windows 文件锁 EBUSY 中断 dev(真机验证修复)
+    watch: {
+      ignored: ['**/src-tauri/target/**', '**/target/**'],
+    },
   },
   // Tauri 使用相对路径加载资源（file:// 协议）
   build: {

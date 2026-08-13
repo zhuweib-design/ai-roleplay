@@ -13,6 +13,7 @@ import path from 'node:path';
 import {
   OnnxEmbeddingProvider,
   BertWordPieceTokenizer,
+  JsonWordPieceTokenizer,
 } from '@core/onnx-embedding-provider';
 import type { ModelFileAdapter } from '@core/vector-model-source';
 import { cosineSimilarity } from '@core/embedding';
@@ -63,6 +64,16 @@ describe('真实模型验证(model/ 目录)', () => {
     const ids = t.encode('星陨之剑');
     expect(ids.length).toBeGreaterThan(0);
     expect(ids.every((id) => id < t.vocabSize)).toBe(true);
+  });
+
+  it('JsonWordPieceTokenizer:tokenizer.json(反转 vocab)加载与中文编码', () => {
+    const raw = fs.readFileSync(path.join(MODEL_ROOT, 'gte-large-zh-int8-onnx', 'tokenizer.json'), 'utf-8');
+    const t = new JsonWordPieceTokenizer(JSON.parse(raw));
+    expect(t.vocabSize).toBeGreaterThanOrEqual(21128);
+    // 特殊 token 映射正确(反转 vocab 自动检测)
+    const ids = t.encode('星陨之剑');
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids.every((id) => id >= 0 && id < t.vocabSize)).toBe(true);
   });
 
   it(

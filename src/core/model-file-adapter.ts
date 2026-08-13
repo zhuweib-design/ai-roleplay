@@ -119,11 +119,28 @@ export class TauriFileAdapter implements ModelFileAdapter {
     return `model/${modelId}`;
   }
 
+  /**
+   * 项目目录 model/ 路径(dev 直读;生产打包后不存在则走 appData)
+   * exe 工作目录 = src-tauri/target/debug/ → 项目根 = ../../../model
+   */
+  private projectModelDir(modelId: VectorModelId): string {
+    return `../../../model/${modelId}`;
+  }
+
+  /** 存在性:优先项目 model/(dev),其次 appData */
   async exists(modelId: VectorModelId): Promise<boolean> {
+    const fs = await this.fs();
+    // 1. 项目目录(dev 场景,用户已放模型)
     try {
-      const fs = await this.fs();
+      const entries = await fs.readDir(this.projectModelDir(modelId));
+      return entries.some((e) => e.name === 'model.onnx' || e.name === 'model_int8.onnx');
+    } catch {
+      /* 项目目录不存在 */
+    }
+    // 2. appData(生产,设置页复制)
+    try {
       const entries = await fs.readDir(this.modelDir(modelId), { baseDir: BaseDirectory.AppData });
-      return entries.some((e) => e.name === 'model.onnx');
+      return entries.some((e) => e.name === 'model.onnx' || e.name === 'model_int8.onnx');
     } catch {
       return false;
     }
@@ -152,30 +169,44 @@ export class TauriFileAdapter implements ModelFileAdapter {
 
   async readModelBuffer(modelId: VectorModelId, fileName: string): Promise<ArrayBuffer> {
     const fs = await this.fs();
-    const bytes = await fs.readFile(`${this.modelDir(modelId)}/${fileName}`, {
-      baseDir: BaseDirectory.AppData,
-    });
+    const bytes = await this.tryRead(fs, modelId, fileName);
     return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
   }
 
   async readText(modelId: VectorModelId, fileName: string): Promise<string> {
     const fs = await this.fs();
-    const bytes = await fs.readFile(`${this.modelDir(modelId)}/${fileName}`, {
-      baseDir: BaseDirectory.AppData,
-    });
+    const bytes = await this.tryRead(fs, modelId, fileName);
     return new TextDecoder('utf-8').decode(bytes);
   }
 
-  async listInstalled(): Promise<VectorModelId[]> {
+  /** 读取:项目 model/ 优先,appData 兜底 */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async tryRead(fs: any, modelId: VectorModelId, fileName: string): Promise<Uint8Array> {
     try {
-      const fs = await this.fs();
-      const entries = await fs.readDir('model', { baseDir: BaseDirectory.AppData });
-      return entries
-        .filter((e) => e.isDirectory)
-        .map((e) => e.name as VectorModelId);
+      return await fs.readFile(`${this.projectModelDir(modelId)}/${fileName}`);
     } catch {
-      return [];
+      return fs.readFile(`${this.modelDir(modelId)}/${fileName}`, { baseDir: BaseDirectory.AppData });
     }
+  }
+
+  async listInstalled(): Promise<VectorModelId[]> {
+    const fs = await this.fs();
+    const ids = new Set<VectorModelId>();
+    // 项目目录
+    try {
+      const entries = await fs.readDir('../../../model');
+      for (const e of entries) if (e.isDirectory) ids.add(e.name as VectorModelId);
+    } catch {
+      /* 无项目目录 */
+    }
+    // appData
+    try {
+      const entries = await fs.readDir('model', { baseDir: BaseDirectory.AppData });
+      for (const e of entries) if (e.isDirectory) ids.add(e.name as VectorModelId);
+    } catch {
+      /* 无 appData 目录 */
+    }
+    return [...ids];
   }
 }
 

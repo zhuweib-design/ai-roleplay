@@ -69,6 +69,113 @@ export class BertWordPieceTokenizer implements Tokenizer {
   }
 }
 
+/**
+ * 基于 HuggingFace tokenizer.json 的 WordPiece 分词器
+ *
+ * 支持:标准 vocab(正向 token→id 或反转 id→token 自动检测)、
+ * 中文单字分词(BertPreTokenizer 行为)、整词查表 + ## 子词。
+ */
+export class JsonWordPieceTokenizer implements Tokenizer {
+  private readonly id: Map<string, number>;
+  private readonly unkId: number;
+  readonly vocabSize: number;
+
+  constructor(tokenizerJson: unknown) {
+    const tj = tokenizerJson as {
+      model?: { vocab?: Record<string, unknown>; unk_token?: string };
+      added_tokens?: Array<{ content: string; id: number }>;
+    };
+    const vocab = tj.model?.vocab ?? {};
+    const entries = Object.entries(vocab);
+
+    // 检测方向:若值都是小整数且含 [PAD]=0,则 vocab 是 id→token(反转)
+    const valuesAreIds = entries.length > 0 && entries.every(([, v]) => typeof v === 'number' && Number.isInteger(v as number));
+    this.id = new Map<string, number>();
+    if (valuesAreIds) {
+      // 反转:值=token id,键=token 文本
+      for (const [k, v] of entries) this.id.set(String(v as number), Number(k));
+    } else {
+      // 正向:键=token,值=id
+      for (const [k, v] of entries) this.id.set(k, Number(v));
+    }
+    // added_tokens 合并(确保特殊 token 命中)
+    for (const at of tj.added_tokens ?? []) this.id.set(at.content, at.id);
+
+    // UNK id:优先 model.unk_token 查表,缺省 100
+    const unkToken = tj.model?.unk_token ?? '[UNK]';
+    this.unkId = this.id.get(unkToken) ?? 100;
+    this.vocabSize = this.id.size;
+  }
+
+  encode(text: string): number[] {
+    const ids: number[] = [];
+    // 中文单字直接查;英文按词(保留大小写,简化:小写化英文 + 子词 ##)
+    const tokens = this.preTokenize(text);
+    for (const token of tokens) {
+      if (this.id.has(token)) {
+        ids.push(this.id.get(token)!);
+        continue;
+      }
+      // 子词分解:尝试整词 → 逐前缀 ## 切分
+      const sub = this.wordPiece(token);
+      if (sub.length > 0) {
+        ids.push(...sub);
+      } else {
+        ids.push(this.unkId);
+      }
+    }
+    return ids.slice(0, 510);
+  }
+
+  /** BertPreTokenizer 近似:中文/符号单字,英文连续串 */
+  private preTokenize(text: string): string[] {
+    const out: string[] = [];
+    const parts = text.split(/([\u4e00-\u9fff，。！？、；：“”‘’（）《》【】])|(\s+)/).filter((x) => x && x.length > 0);
+    for (const part of parts) {
+      if (/^[\u4e00-\u9fff，。！？、；：“”‘’（）《》【】]$/.test(part)) {
+        out.push(part);
+      } else if (/^[a-zA-Z0-9_]+$/.test(part)) {
+        out.push(part.toLowerCase());
+      } else {
+        // 混合:按非字母数字拆
+        for (const seg of part.split(/([^a-zA-Z0-9_])/).filter((x) => x)) {
+          out.push(/^[a-zA-Z0-9_]+$/.test(seg) ? seg.toLowerCase() : seg);
+        }
+      }
+    }
+    return out;
+  }
+
+  /** WordPiece 分解:整词 → ## 后缀子词 */
+  private wordPiece(token: string): number[] {
+    const ids: number[] = [];
+    let rest = token;
+    // 整词
+    if (this.id.has(rest)) {
+      ids.push(this.id.get(rest)!);
+      return ids;
+    }
+    // 逐前缀贪心(参考 BERT 实现:从最长匹配)
+    while (rest.length > 0) {
+      let found = false;
+      // 首子词用原词,后续用 ## 前缀
+      for (let end = rest.length; end > 0; end--) {
+        const candidate = ids.length === 0 ? rest.slice(0, end) : '##' + rest.slice(0, end);
+        if (this.id.has(candidate)) {
+          ids.push(this.id.get(candidate)!);
+          rest = rest.slice(end);
+          found = true;
+          break;
+        }
+      }
+      if (!found) return []; // 无法分解 → UNK
+    }
+    return ids;
+  }
+}
+
+/** 基于 HuggingFace tokenizer.json 的 WordPiece 分词器(较 vocab.txt 简化版更准) */
+
 /** 字符级占位分词器(模型目录无 vocab.txt 时的回退) */
 export class CharLevelTokenizer implements Tokenizer {
   readonly vocabSize = 21128;
@@ -160,9 +267,22 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     );
   }
 
-  /** 加载真实分词器(优先 vocab.txt → BERT WordPiece;无则字符级回退) */
+  /** 加载真实分词器(优先 tokenizer.json → JsonWordPiece;其次 vocab.txt → BertWordPiece;无则字符级回退) */
   private async resolveTokenizer(): Promise<Tokenizer> {
     if (this.config.tokenizer) return this.config.tokenizer;
+    // 1. tokenizer.json(完整 WordPiece,含子词)
+    try {
+      const json = await this.config.adapter.readText(this.config.modelId, 'tokenizer.json');
+      if (json.length > 100) {
+        const parsed = JSON.parse(json) as { model?: { type?: string } };
+        if (parsed.model?.type === 'WordPiece') {
+          return new JsonWordPieceTokenizer(parsed);
+        }
+      }
+    } catch {
+      /* 无 tokenizer.json 或非 JSON */
+    }
+    // 2. vocab.txt(简化 WordPiece)
     try {
       const vocab = await this.config.adapter.readText(this.config.modelId, 'vocab.txt');
       if (vocab.length > 100) return new BertWordPieceTokenizer(vocab);
