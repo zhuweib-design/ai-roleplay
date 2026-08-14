@@ -1,6 +1,6 @@
 # AI 酒馆(ai-roleplay)开发计划文档
 
-> 版本:v1.1(状态同步于 2026-08 开发迭代)
+> 版本:v1.1(状态同步于 2026-08-14 开发迭代)
 > 依据:`public/sillytavern-vs-airoleplay.html`(系统化对比报告 v1.1,含后续计划)
 > 适用范围:AI 酒馆 —— AI 角色扮演与多模型对话平台(Tauri 2 + Vue 3 + TypeScript)
 > 用途:团队成员直接用于开发跟踪;任务编号(T-xx / E-xx)贯穿提交信息与 issue
@@ -25,8 +25,8 @@
 | T-10 | 性能基准页 | ✅ 已完成 | benchmark 核心(3 项微基准+预算断言+历史)+ LocalModelView 基准 tab;首个 token 云端对比待联调 |
 | T-11 | 市场 v1(一期) | ✅ 已完成 | market-index 清单格式/校验 + sha256 哈希校验 + 11 项测试;下载/安装 UI 与真实仓库待接 |
 | T-12 | 多 profile(一期) | ✅ 已完成 | storage-factory profile 隔离(Web 按档案分库)+ 设置页档案管理(创建/切换/回默认)+ 4 项测试;Tauri 文件系统档案隔离需 Rust 路径重构(ponytail) |
-| T-13 | i18n 英文 | 🔄 框架上线(批量迁移中) | 轻量零依赖 i18n 模块(@/i18n,类型安全+插值)+ 语言切换 UI(设置-外观)+ 持久化(AppSettings.locale)+ 硬编码中文扫描门禁(scripts/i18n-scan.mjs,.i18nignore 白名单);核心链路已迁移:App 外壳/导航/路由标题/Toast/主密码弹窗/设置语言区块;全量 128 文件文案抽取为后续迭代 |
-| T-14 | 工程基线与技术债 | 🔄 部分完成 | PlaceholderView 死代码删除、市场 Beta 徽标、sanitize 债登记、a11y 测试清理 |
+| T-13 | i18n 英文 | ✅ 已完成 | 轻量零依赖 i18n 模块(@/i18n,类型安全 t(key,params)+ 插值)+ 语言切换 UI(设置-外观)+ 持久化(AppSettings.locale)+ 扫描门禁(scripts/i18n-scan.mjs,--strict 全量);src 全 132 文件硬编码中文 UI 文案迁移为 t(),strict 门禁 0 残留;en.ts 用 Record<MessageKey,string> 类型校验(占位级译文待校译);LLM 提示词/mock 数据经 // i18n-ignore 块级/行级豁免;已提交 75bbc74 |
+| T-14 | 工程基线与技术债 | 🔄 持续中(已盘点) | 死代码/市场 Beta/sanitize/a11y 已落地(2026-08-14 盘点确认);本地门禁固化 typecheck+test+coverage+i18n:check,远程 CI 工作流待建;缺陷编号 F 系列已落地(F10.4/F17.3),P0-P3 清单待登记;eslint 待评估引入 |
 | T-15 | 桌面端强化(一期) | ✅ 已完成 | 拖拽导入(JSON 角色卡/世界书+PNG 角色卡)+ 断网提示条 + 3 项测试;托盘/全局快捷键/updater 需 Rust 与发布源,待后续 |
 | E-00 | 落地形态决策 | ✅ 已完成 | 决策:内置 TS 形态(docs/e00-decision.md);E-01~03 落点已冻结 |
 | E-01 | L0 上下文结构层(核心) | ✅ 已完成 | memory-store.ts(版本化/写保护/前缀哈希/情绪状态机)+ 9 项测试;storage 持久化接线待续 |
@@ -34,7 +34,7 @@
 | E-03 | L1 内容压缩层 | ✅ 已完成 | compression.ts(提取式压缩/语义校验/CCR/触发决策/豁免)+ 17 项测试;chat-manager 挂载待续 |
 | E-04 | 集成灰度 | ✅ 已完成 | optimization-pipeline(开关/阶段/统计/回退暂停)+ chat-manager 挂载(compressMessages)+ 设置页开关 UI + 9 项测试;真实灰度数据评估待二期 |
 
-**测试基线:81 测试文件 / 2518 用例全绿 + Rust 35 测试,e2e 10/10;vite build 通过。**
+**测试基线:89 测试文件 / 2574 用例全绿 + Rust 35 测试,e2e 10/10;vite build 通过。**
 
 **真实联调(2026-08,本地网关 192.168.9.40):** listModels/非流式(不传 max_tokens)/流式 SSE/工具调用 tool_calls 解析 4/4 通过,模型 oc/deepseek-v4-flash-free(reasoning,thinking 耗 token)。
 
@@ -295,6 +295,12 @@
 - **预期产出**:清理 PR + 测试补齐 + 债清单(编号登记)。
 - **依赖**:持续进行。
 - **验收**:CI 全绿;死代码扫描(未引用文件)清零。
+
+**债清单登记(2026-08-14 盘点)**:
+- 缺陷编号机制已落地(代码内 F 前缀):F10.4(临时 NPC 群聊生命周期)、F17.3(随机事件触发决策)等;统一登记为 P0-P3 待补。
+- 门禁现状:本地已固化 `typecheck`(vue-tsc)、`test`(vitest 2574 用例全绿)、`test:coverage`(coverage-v8)、`i18n:check`/`i18n:check:strict`;远程 CI 工作流(.github/workflows)尚未建立。
+- 代码健康度:无 TODO/FIXME/HACK/XXX 债标记;PlaceholderView 死代码已删;`sanitize.ts`(DOMPurify)实现完整;`any` 类型仅 5 处且均合理/已豁免;无被跳过的测试。
+- 待办(后续迭代):① 引入 eslint 并固化门禁;② 建立 GitHub Actions CI;③ 覆盖率阈值门禁(80%);④ P0-P3 缺陷清单正式登记。
 
 ### T-15 桌面端强化
 - **描述**:Tauri updater 自动更新、系统托盘 + 全局快捷键、拖拽导入角色卡/PNG/世界书;断网检测提示。
