@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+# 同一分支的重复推送取消旧运行，节省算力
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+
+      # 代码质量/风格门禁（eslint flat config, 0 errors 才通过）
+      - name: Lint (eslint .)
+        run: npm run lint
+
+      # i18n 扫描门禁：strict 模式, 全量无硬编码中文残留才通过
+      - name: i18n check (strict)
+        run: npm run i18n:check:strict
+
+      # 覆盖率门禁：vitest v8 provider, 80% 阈值未达标则非零退出
+      # 注：Linux 路径大小写一致, 无 Windows 本地盘符重复误报, 80% 门禁正常生效
+      - name: Test + coverage gate (80%)
+        run: npm run test:coverage
+
+      # 构建门禁：vue-tsc 类型检查 + vite 生产构建
+      - name: Build (typecheck + vite build)
+        run: npm run build
+
+      # 持久化覆盖率报告供人工查看（不影响门禁结果）
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+# 后续可扩展（需额外密钥/资源, 本次未纳入默认门禁）:
+# 1. Tauri 桌面构建: 用 tauri-apps/tauri-action, 需 TAURI_SIGNING_PRIVATE_KEY 等签名密钥
+# 2. E2E: playwright test, 需先 npx playwright install --with-deps 下载浏览器二进制

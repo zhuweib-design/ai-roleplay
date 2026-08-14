@@ -26,7 +26,7 @@
 | T-11 | 市场 v1(一期) | ✅ 已完成 | market-index 清单格式/校验 + sha256 哈希校验 + 11 项测试;下载/安装 UI 与真实仓库待接 |
 | T-12 | 多 profile(一期) | ✅ 已完成 | storage-factory profile 隔离(Web 按档案分库)+ 设置页档案管理(创建/切换/回默认)+ 4 项测试;Tauri 文件系统档案隔离需 Rust 路径重构(ponytail) |
 | T-13 | i18n 英文 | ✅ 已完成 | 轻量零依赖 i18n 模块(@/i18n,类型安全 t(key,params)+ 插值)+ 语言切换 UI(设置-外观)+ 持久化(AppSettings.locale)+ 扫描门禁(scripts/i18n-scan.mjs,--strict 全量);src 全 132 文件硬编码中文 UI 文案迁移为 t(),strict 门禁 0 残留;en.ts 用 Record<MessageKey,string> 类型校验(占位级译文待校译);LLM 提示词/mock 数据经 // i18n-ignore 块级/行级豁免;已提交 75bbc74 |
-| T-14 | 工程基线与技术债 | 🔄 持续中(已盘点) | 死代码/市场 Beta/sanitize/a11y 已落地(2026-08-14 盘点确认);本地门禁固化 typecheck+test+coverage+i18n:check,远程 CI 工作流待建;P0-P3 缺陷清单已登记(全量 44 个 F 编号落点,详见 T-14 债清单 D 项);eslint 已引入(flat config,0 errors) |
+| T-14 | 工程基线与技术债 | 🔄 持续中(已盘点) | 死代码/市场 Beta/sanitize/a11y 已落地(2026-08-14 盘点确认);本地门禁固化 typecheck+test+coverage+i18n:check,远程 CI 工作流已建(.github/workflows/ci.yml, 串联 lint/i18n/coverage/build);P0-P3 缺陷清单已登记(全量 44 个 F 编号落点,详见 T-14 债清单 D 项);eslint 已引入(flat config,0 errors) |
 | T-15 | 桌面端强化(一期) | ✅ 已完成 | 拖拽导入(JSON 角色卡/世界书+PNG 角色卡)+ 断网提示条 + 3 项测试;托盘/全局快捷键/updater 需 Rust 与发布源,待后续 |
 | E-00 | 落地形态决策 | ✅ 已完成 | 决策:内置 TS 形态(docs/e00-decision.md);E-01~03 落点已冻结 |
 | E-01 | L0 上下文结构层(核心) | ✅ 已完成 | memory-store.ts(版本化/写保护/前缀哈希/情绪状态机)+ 9 项测试;storage 持久化接线待续 |
@@ -298,11 +298,11 @@
 
 **债清单登记(2026-08-14 盘点 + D 项全量 F 编号登记)**:
 
-- 门禁现状:本地已固化 `typecheck`(vue-tsc)、`test`(vitest 2574 用例全绿)、`test:coverage`(coverage-v8)、`i18n:check`/`i18n:check:strict`、`lint`(eslint 0 errors);远程 CI 工作流(.github/workflows)尚未建立。
+- 门禁现状:本地已固化 `typecheck`(vue-tsc)、`test`(vitest 2574 用例全绿)、`test:coverage`(coverage-v8)、`i18n:check`/`i18n:check:strict`、`lint`(eslint 0 errors);远程 CI 工作流已建立(.github/workflows/ci.yml, ubuntu-latest + node 22 + npm ci, 串联 lint/i18n:check:strict/test:coverage/build)。
 - 代码健康度:无 TODO/FIXME/HACK/XXX 债标记;PlaceholderView 死代码已删;`sanitize.ts`(DOMPurify)实现完整;`any` 类型仅 5 处且均合理/已豁免;无被跳过的测试。
 - 覆盖率基线(vitest.config.ts,2026-08-14 实测):`thresholds` 已固化 80%(statements/branches/functions/lines),新增 `json-summary` reporter 供 CI 读取。去重后**真实覆盖率 ~89.7%**(覆盖 20793/23169 语句),远超 80% 门禁。注意:Windows 本地开发机因 v8 覆盖率盘符大小写(G:/g:)把同一文件重复计两份(一份全 0),会误报总覆盖率 ~44.6% 触发门禁失败;该误报仅影响 Windows 本地,vitest 在 CI(Linux/macOS) 路径大小写一致、无此重复,80% 门禁正常通过。(曾尝试 root/alias 路径全小写化消除重复,但会破坏 vite sourcemap 映射使覆盖率归 0,已撤销。)
 - 缺陷编号机制:代码内 `Fxx.x` 前缀标记功能需求落点(源于 PRD/W 工作流),已全量扫描 `src` 共 **44 个 F 编号需求落点**,统一登记为 P0-P3 风险分级清单(下表)。其中已实现 41 项,部分实现 1 项、待补 2 项(F06.5、F09.3;F17.1 时间触发为部分实现)。
-- 待办(后续迭代):① 引入 eslint 并固化门禁:**已固化**(eslint.config.js flat config,0 errors / 50 warnings 不阻断;npm 脚本 `lint`/`lint:fix`;提交 b5cc6b4);② 建立 GitHub Actions CI;③ 覆盖率阈值门禁(80%):**已固化**(thresholds 80% + json-summary reporter,见上);④ P0-P3 缺陷清单正式登记:**已完成**(见下表 D 项,提交见本迭代尾注);⑤ eslint type-aware 增强:补充 `no-floating-promises` 等需类型信息的规则(需 `parserOptions.project` 指向 tsconfig,评估性能与全量接入成本);⑥ npm audit 漏洞评估:eslint 生态链传递依赖报 2 critical/3 high(2026-08-14),评估是否升级或 `npm audit fix`(避免破坏版本)。
+- 待办(后续迭代):① 引入 eslint 并固化门禁:**已固化**(eslint.config.js flat config,0 errors / 50 warnings 不阻断;npm 脚本 `lint`/`lint:fix`;提交 b5cc6b4);② 建立 GitHub Actions CI:**已固化**(.github/workflows/ci.yml, ubuntu-latest + node 22 + npm ci, 串联 lint/i18n:check:strict/test:coverage/build, coverage 在 Linux 无 Windows 盘符重复误报、80% 门禁正常生效);③ 覆盖率阈值门禁(80%):**已固化**(thresholds 80% + json-summary reporter,见上);④ P0-P3 缺陷清单正式登记:**已完成**(见下表 D 项,提交见本迭代尾注);⑤ eslint type-aware 增强:补充 `no-floating-promises` 等需类型信息的规则(需 `parserOptions.project` 指向 tsconfig,评估性能与全量接入成本);⑥ npm audit 漏洞评估:eslint 生态链传递依赖报 2 critical/3 high(2026-08-14),评估是否升级或 `npm audit fix`(避免破坏版本)。
 
 #### D 项:P0-P3 缺陷/需求落点清单(全量 F 编号登记)
 
