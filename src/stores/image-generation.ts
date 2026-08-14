@@ -57,13 +57,13 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
 
   /** 画廊图像列表（响应式） */
   const galleryImages = computed<GeneratedImage[]>(() => {
-    galleryVersion.value; // 依赖触发
+    void galleryVersion.value; // 依赖触发
     return gallery.list();
   });
 
   /** 画廊统计 */
   const galleryStats = computed<ImageGalleryStats>(() => {
-    galleryVersion.value;
+    void galleryVersion.value;
     return gallery.getStats();
   });
 

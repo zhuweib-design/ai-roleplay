@@ -823,7 +823,7 @@ export class CommunityMarketEngine {
     const limit = params.limit ?? 10;
     const excludeIds = new Set(params.excludeIds ?? []);
 
-    let candidates = Array.from(this.cards.values()).filter(
+    const candidates = Array.from(this.cards.values()).filter(
       (c) =>
         c.moderationStatus === 'approved' && !excludeIds.has(c.marketId)
     );

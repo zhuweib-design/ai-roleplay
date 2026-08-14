@@ -101,7 +101,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
 
   /** 全部角色卡（经过当前筛选+排序） */
   const filteredCards = computed<MarketCharacterCard[]>(() => {
-    tick.value;
+    void tick.value;
     const filter: MarketFilter = {
       search: searchQuery.value || undefined,
       tags: selectedTags.value.length > 0 ? selectedTags.value : undefined,
@@ -118,13 +118,13 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
 
   /** 全部分类 */
   const allCategories = computed<string[]>(() => {
-    tick.value;
+    void tick.value;
     return engine.listCategories();
   });
 
   /** 需求1：每个分类的卡片数量（用于 FilterTabs 徽标） */
   const categoryCounts = computed<Record<string, number>>(() => {
-    tick.value;
+    void tick.value;
     const counts: Record<string, number> = {};
     const all = engine.listCards({ approvedOnly: true }, 'popular');
     for (const c of all) {
@@ -137,13 +137,13 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
 
   /** 全部标签 */
   const allTags = computed<string[]>(() => {
-    tick.value;
+    void tick.value;
     return engine.listAllTags();
   });
 
   /** 统计信息 */
   const stats = computed(() => {
-    tick.value;
+    void tick.value;
     return engine.getStats();
   });
 

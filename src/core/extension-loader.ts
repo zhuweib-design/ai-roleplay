@@ -226,6 +226,7 @@ class ExtensionRegistry {
     }
 
     // 捕获 registerExtension 调用
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- new Function 动态作用域需保留外层 this
     const self = this;
     // 显式类型标注避免 TypeScript 控制流分析将闭包赋值后的值推断为 null
     let capturedName: string | null = null;

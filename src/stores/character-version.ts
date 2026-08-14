@@ -89,20 +89,20 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
 
   /** 全部仓库信息列表 */
   const repositories = computed<RepositoryInfo[]>(() => {
-    versionTick.value; // 依赖触发
+    void versionTick.value; // 依赖触发
     return engine.listRepositories();
   });
 
   /** 当前选中的仓库 */
   const currentRepository = computed<CharacterRepository | null>(() => {
-    versionTick.value;
+    void versionTick.value;
     if (!currentCharacterId.value) return null;
     return engine.getRepository(currentCharacterId.value);
   });
 
   /** 当前仓库信息 */
   const currentRepoInfo = computed<RepositoryInfo | null>(() => {
-    versionTick.value;
+    void versionTick.value;
     if (!currentCharacterId.value) return null;
     return engine.getRepository(currentCharacterId.value)?.getInfo() ?? null;
   });
@@ -116,13 +116,13 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   const history = computed<CharacterVersion[]>(() => {
     const repo = currentRepository.value;
     if (!repo) return [];
-    versionTick.value;
+    void versionTick.value;
     return repo.getBranchHistory(repo.currentBranch);
   });
 
   /** 当前 HEAD 提交 */
   const headVersion = computed<CharacterVersion | null>(() => {
-    versionTick.value;
+    void versionTick.value;
     return currentRepository.value?.getHead() ?? null;
   });
 

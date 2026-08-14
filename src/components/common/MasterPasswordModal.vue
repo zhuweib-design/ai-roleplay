@@ -54,37 +54,43 @@ const errorMessage = ref<string | null>(null);
 const isProcessing = ref(false);
 
 // ── 计算属性 ──
-const title = computed(() => {
-  switch (props.mode) {
-    case 'setup':
-      return t('masterPwd.setTitle');
-    case 'unlock':
-      return t('masterPwd.unlockTitle');
-    case 'change':
-      return t('masterPwd.changeTitle');
-  }
-});
+  const title = computed(() => {
+    switch (props.mode) {
+      case 'setup':
+        return t('masterPwd.setTitle');
+      case 'unlock':
+        return t('masterPwd.unlockTitle');
+      case 'change':
+        return t('masterPwd.changeTitle');
+      default:
+        return '';
+    }
+  });
 
-const submitLabel = computed(() => {
-  switch (props.mode) {
-    case 'setup':
-      return t('masterPwd.submitSet');
-    case 'unlock':
-      return t('masterPwd.submitUnlock');
-    case 'change':
-      return t('masterPwd.submitChange');
-  }
-});
+  const submitLabel = computed(() => {
+    switch (props.mode) {
+      case 'setup':
+        return t('masterPwd.submitSet');
+      case 'unlock':
+        return t('masterPwd.submitUnlock');
+      case 'change':
+        return t('masterPwd.submitChange');
+      default:
+        return '';
+    }
+  });
 
-const descText = computed(() => {
-  switch (props.mode) {
-    case 'setup':
-      return t('masterPwd.setupDesc');
-    case 'unlock':
-      return t('masterPwd.unlockDesc');
-    case 'change':
-      return t('masterPwd.changeDesc');
-  }
+  const descText = computed(() => {
+    switch (props.mode) {
+      case 'setup':
+        return t('masterPwd.setupDesc');
+      case 'unlock':
+        return t('masterPwd.unlockDesc');
+      case 'change':
+        return t('masterPwd.changeDesc');
+      default:
+        return '';
+    }
 });
 
 const canSubmit = computed(() => {

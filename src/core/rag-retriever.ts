@@ -106,6 +106,7 @@ function tokenize(text: string): string[] {
   const tokens: string[] = [];
   // 按标点和空白分割
   const segments = text.split(
+    // eslint-disable-next-line no-useless-escape -- 字符类内 ] 需转义以保持语义
     /[\s,，。！？.!?\-—:：;；()（）\[\]【】""''`'""''<>《》~～·]+/
   );
 

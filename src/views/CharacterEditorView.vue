@@ -1,4 +1,4 @@
-﻿﻿﻿﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * CharacterEditorView — 角色卡编辑表单页 (Phase E2)
  *

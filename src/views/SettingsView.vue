@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * SettingsView — 系统设置页 (Phase F)
  *
