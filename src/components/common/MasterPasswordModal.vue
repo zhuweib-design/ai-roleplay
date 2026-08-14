@@ -205,7 +205,7 @@ watch(
       }, 200);
     } else {
       // 打开时自动聚焦到第一个输入框
-      nextTick(() => {
+      void nextTick(() => {
         const firstInput = document.querySelector<HTMLElement>(
           '.mpm-form input[type="password"], .mpm-form input[type="text"]'
         );

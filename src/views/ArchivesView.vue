@@ -33,7 +33,7 @@ const router = useRouter();
 
 /** 返回对话页 */
 function goBack() {
-  router.push({ name: 'chat' });
+  void router.push({ name: 'chat' });
 }
 
 // ── 筛选状态 ──
@@ -151,7 +151,7 @@ function viewGroup(g: GroupChat) {
 function goToGroupChat() {
   if (!viewingGroup.value) return;
   viewModalOpen.value = false;
-  router.push({ name: 'group' });
+  void router.push({ name: 'group' });
   // 选中该群聊
   groupStore.selectGroup(viewingGroup.value.id);
 }

@@ -4,7 +4,7 @@ import pluginVue from 'eslint-plugin-vue';
 import globals from 'globals';
 
 // ESLint 9 flat config — T-14 质量防线「代码质量/风格」层
-// 错误类(阻断): 未用变量(忽略下划线占位); 悬空 Promise/非法 await 为 type-aware 规则, 当前 warn 不阻断(见下方⑤块, 清理后可提升 error)
+// 错误类(阻断): 未用变量(忽略下划线占位); type-aware 规则(no-floating-promises/await-thenable)已提升 error 强化 CI 防线
 // 风格类(仅 warn, 不阻断): 引号 / 分号 / 组件命名 等
 // 纯排版规则(无 prettier 配合) 降级 off 以减少噪声
 export default [
@@ -66,13 +66,13 @@ export default [
   },
   {
     // ── type-aware 增强(T-14 待办⑤): 需 TS 类型信息, 依赖上方 projectService ──
-    // 当前以 warn 级别接入, 暴露悬空 Promise / 非法 await 等隐患但不阻断门禁;
-    // 待清理全部告警后可提升为 error 强化 CI 防线。
+    // 已全部清理 33 处告警(悬空 Promise 加 void / 非法 await 修类型 / 测试 await expect),
+    // 现提升为 error 强化 CI 防线(任一悬空 Promise 即阻断合并)。
     // 注: no-misused-promises 在 Vue 事件处理器(@click 等)误报多, 暂不启用。
     files: ['src/**/*.ts', 'src/**/*.vue', 'tests/**/*.ts'],
     rules: {
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/await-thenable': 'warn',
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/await-thenable': 'error',
     },
   },
   {

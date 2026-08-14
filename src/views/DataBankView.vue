@@ -54,7 +54,7 @@ const totalChunks = computed(() =>
 // ── 方法 ──
 
 function goBack() {
-  router.push({ name: 'chat' });
+  void router.push({ name: 'chat' });
 }
 
 function showToast(type: 'info' | 'success' | 'error', message: string) {

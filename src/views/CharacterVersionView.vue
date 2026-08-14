@@ -378,7 +378,7 @@ function shortMessage(message: string, max = 50): string {
 
 // ── 返回 ──
 function goBack(): void {
-  router.push({ name: 'chat' });
+  void router.push({ name: 'chat' });
 }
 </script>
 

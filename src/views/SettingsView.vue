@@ -120,7 +120,7 @@ function handleThemeKeydown(e: KeyboardEvent, currentIndex: number): void {
   if (nextIndex !== null) {
     selectTheme(themeOptions[nextIndex].value);
     // 将焦点移到新选中的按钮
-    nextTick(() => {
+    void nextTick(() => {
       const target = document.querySelector<HTMLElement>(
         `.theme-card[data-value="${themeOptions[nextIndex!].value}"]`
       );
@@ -185,7 +185,7 @@ function handleCategoryKeydown(e: KeyboardEvent, currentIndex: number): void {
   e.preventDefault();
   if (nextIndex !== null) {
     selectCategory(settingsCategories[nextIndex].id);
-    nextTick(() => {
+    void nextTick(() => {
       document.querySelectorAll<HTMLElement>('.settings-nav-item')[nextIndex!]?.focus();
     });
   }
@@ -234,7 +234,7 @@ function handleFontSizeKeydown(e: KeyboardEvent, currentIndex: number): void {
   e.preventDefault();
   if (nextIndex !== null) {
     selectFontSize(fontSizeOptions[nextIndex].value);
-    nextTick(() => {
+    void nextTick(() => {
       const target = document.querySelector<HTMLElement>(
         `.fontsize-card[data-value="${fontSizeOptions[nextIndex!].value}"]`
       );
@@ -749,11 +749,15 @@ function handleExportCharacterPng() {
   }
   try {
     // 将 UICharacter 转换为 CharacterCard（复用 type-adapters）
-    import('@/services/type-adapters').then(({ uiCharToCard }) => {
-      const card = uiCharToCard(char);
-      downloadCharacterPng(card);
-      showToast('success', t('settingsView.pngExported', { name: char.name }));
-    });
+    void import('@/services/type-adapters')
+      .then(({ uiCharToCard }) => {
+        const card = uiCharToCard(char);
+        downloadCharacterPng(card);
+        showToast('success', t('settingsView.pngExported', { name: char.name }));
+      })
+      .catch((err) => {
+        showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
+      });
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
   }

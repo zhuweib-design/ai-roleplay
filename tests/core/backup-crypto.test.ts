@@ -20,7 +20,7 @@ describe('backup-crypto (T-06)', () => {
   it('加密→解密往返一致', async () => {
     const plain = JSON.stringify({ version: '1.0', characters: [{ id: 'c1', name: '测试' }] });
     const enc = await encryptBackup(plain, 'master-pass');
-    expect(decryptBackup(enc, 'master-pass')).resolves.toBe(plain);
+    await expect(decryptBackup(enc, 'master-pass')).resolves.toBe(plain);
   });
 
   it('密文含前缀且不含明文内容', async () => {

@@ -85,7 +85,7 @@ const filterScope = computed({
 
 /** 返回对话页 */
 function goBack() {
-  router.push({ name: 'chat' });
+  void router.push({ name: 'chat' });
 }
 
 // ── UI 状态 ──
@@ -503,7 +503,7 @@ function addEntry() {
   if (!currentLorebook.value) return;
   const id = store.addEntry(currentLorebook.value.id);
   if (id) {
-    nextTick(() => {
+    void nextTick(() => {
       const el = document.querySelector(`[data-entry-id="${id}"]`);
       (el as HTMLElement | null)?.focus();
     });

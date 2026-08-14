@@ -50,7 +50,7 @@ const router = useRouter();
 
 /** 返回对话页 */
 function goBack() {
-  router.push({ name: 'chat' });
+  void router.push({ name: 'chat' });
 }
 
 // ── UI 状态 ──
@@ -341,7 +341,7 @@ function sendMessage() {
   groupStore.setInput('');
 
   // 模拟 AI 回复（实际应调用 chat-manager + api-client）
-  simulateAiReply();
+  void simulateAiReply();
 }
 
 async function simulateAiReply() {

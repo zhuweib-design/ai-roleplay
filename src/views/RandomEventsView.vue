@@ -216,7 +216,7 @@ function clearResults(): void {
 
 // ── 返回 ──
 function goBack(): void {
-  router.push({ name: 'chat' });
+  void router.push({ name: 'chat' });
 }
 
 // ── 辅助 ──

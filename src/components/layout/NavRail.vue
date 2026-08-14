@@ -44,7 +44,7 @@ function handleNav(item: NavItem) {
   }
 
   if (item.route) {
-    router.push(item.route);
+    void router.push(item.route);
   }
 }
 

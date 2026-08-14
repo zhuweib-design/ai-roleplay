@@ -415,7 +415,7 @@ export class LocalModelEngine {
       };
     };
 
-    const stream = await engine.chat.completion.create({
+    const stream = engine.chat.completion.create({
       stream: true,
       messages: request.messages,
       temperature: request.temperature ?? meta.defaultTemperature,

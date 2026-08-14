@@ -195,7 +195,7 @@ function confirmCreate() {
     characterStore.selectCharacter(charId);
     emit('created-single', charId);
     closeModal();
-    router.push({ name: 'chat' });
+    void router.push({ name: 'chat' });
   } else {
     if (!canConfirmGroup.value) {
       if (!groupName.value.trim()) {
@@ -224,7 +224,7 @@ function confirmCreate() {
       groupStore.selectGroup(id);
       emit('created-group', id);
       closeModal();
-      router.push({ name: 'group' });
+      void router.push({ name: 'group' });
     } else if (groupStore.lastError) {
       showToast('error', groupStore.lastError);
     }

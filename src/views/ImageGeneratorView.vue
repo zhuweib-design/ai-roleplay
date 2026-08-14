@@ -94,7 +94,7 @@ const detailImage = ref<GeneratedImage | null>(null);
 
 // ── 操作 ──
 function goBack() {
-  router.push({ name: 'chat' });
+  void router.push({ name: 'chat' });
 }
 
 async function handleGenerate() {

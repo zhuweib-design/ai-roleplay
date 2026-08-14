@@ -56,7 +56,7 @@ watch(
 );
 
 function handleApiErrorGoToSettings() {
-  router.push({ name: 'settings' });
+  void router.push({ name: 'settings' });
 }
 
 function handleApiErrorRetry() {
@@ -102,7 +102,7 @@ function loadOlderMessages() {
   const prevScrollHeight = el ? el.scrollHeight : 0;
   suppressScroll = true;
   renderLimit.value += RENDER_WINDOW;
-  nextTick(() => {
+  void nextTick(() => {
     // T-03：顶部插入后补偿滚动位置，保持视觉稳定（用户不会跳走）
     if (el) {
       const added = el.scrollHeight - prevScrollHeight;
@@ -169,7 +169,7 @@ watch(
   () => char.value.messages.length,
   () => {
     if (suppressScroll) return;
-    nextTick(() => {
+    void nextTick(() => {
       if (msgArea.value) {
         msgArea.value.scrollTop = msgArea.value.scrollHeight;
       }
@@ -181,7 +181,7 @@ watch(
   () => visibleMessages.value.map((m) => m.content).join(''),
   () => {
     if (suppressScroll) return;
-    nextTick(() => {
+    void nextTick(() => {
       if (msgArea.value) {
         msgArea.value.scrollTop = msgArea.value.scrollHeight;
       }

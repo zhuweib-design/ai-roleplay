@@ -137,7 +137,7 @@ function loadRemote() {
 
 onMounted(() => {
   ENABLED.value = isVectorRagEnabled();
-  refreshInstalled();
+  void refreshInstalled();
   loadRemote();
 });
 </script>

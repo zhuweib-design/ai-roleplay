@@ -84,14 +84,14 @@ watch(
 
 /** 返回对话页 */
 function goBack() {
-  router.push({ name: 'chat' });
+  void router.push({ name: 'chat' });
 }
 
 function goToEditor(id?: string) {
   if (id) {
-    router.push({ name: 'character-edit', params: { id } });
+    void router.push({ name: 'character-edit', params: { id } });
   } else {
-    router.push({ name: 'character-new' });
+    void router.push({ name: 'character-new' });
   }
 }
 
@@ -105,7 +105,7 @@ function editCharacter(id: string) {
 
 function startConversation(id: string) {
   characterStore.selectCharacter(id);
-  router.push({ name: 'chat' });
+  void router.push({ name: 'chat' });
 }
 
 function toggleFavorite(id: string, e: Event) {
@@ -169,7 +169,7 @@ async function handleGenerate() {
     generateModalOpen.value = false;
     // 生成成功后自动跳转到编辑页查看结果
     setTimeout(() => {
-      router.push({ name: 'character-edit', params: { id } });
+      void router.push({ name: 'character-edit', params: { id } });
     }, 300);
   }
   // 失败时 lastError 会通过 watch 显示 toast，保持 Modal 打开允许重试
