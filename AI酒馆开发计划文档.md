@@ -26,7 +26,7 @@
 | T-11 | 市场 v1(一期) | ✅ 已完成 | market-index 清单格式/校验 + sha256 哈希校验 + 11 项测试;下载/安装 UI 与真实仓库待接 |
 | T-12 | 多 profile(一期) | ✅ 已完成 | storage-factory profile 隔离(Web 按档案分库)+ 设置页档案管理(创建/切换/回默认)+ 4 项测试;Tauri 文件系统档案隔离需 Rust 路径重构(ponytail) |
 | T-13 | i18n 英文 | ✅ 已完成 | 轻量零依赖 i18n 模块(@/i18n,类型安全 t(key,params)+ 插值)+ 语言切换 UI(设置-外观)+ 持久化(AppSettings.locale)+ 扫描门禁(scripts/i18n-scan.mjs,--strict 全量);src 全 132 文件硬编码中文 UI 文案迁移为 t(),strict 门禁 0 残留;en.ts 用 Record<MessageKey,string> 类型校验(占位级译文待校译);LLM 提示词/mock 数据经 // i18n-ignore 块级/行级豁免;已提交 75bbc74 |
-| T-14 | 工程基线与技术债 | 🔄 持续中(已盘点) | 死代码/市场 Beta/sanitize/a11y 已落地(2026-08-14 盘点确认);本地门禁固化 typecheck+test+coverage+i18n:check,远程 CI 工作流待建;缺陷编号 F 系列已落地(F10.4/F17.3),P0-P3 清单待登记;eslint 已引入(flat config,0 errors) |
+| T-14 | 工程基线与技术债 | 🔄 持续中(已盘点) | 死代码/市场 Beta/sanitize/a11y 已落地(2026-08-14 盘点确认);本地门禁固化 typecheck+test+coverage+i18n:check,远程 CI 工作流待建;P0-P3 缺陷清单已登记(全量 44 个 F 编号落点,详见 T-14 债清单 D 项);eslint 已引入(flat config,0 errors) |
 | T-15 | 桌面端强化(一期) | ✅ 已完成 | 拖拽导入(JSON 角色卡/世界书+PNG 角色卡)+ 断网提示条 + 3 项测试;托盘/全局快捷键/updater 需 Rust 与发布源,待后续 |
 | E-00 | 落地形态决策 | ✅ 已完成 | 决策:内置 TS 形态(docs/e00-decision.md);E-01~03 落点已冻结 |
 | E-01 | L0 上下文结构层(核心) | ✅ 已完成 | memory-store.ts(版本化/写保护/前缀哈希/情绪状态机)+ 9 项测试;storage 持久化接线待续 |
@@ -296,12 +296,69 @@
 - **依赖**:持续进行。
 - **验收**:CI 全绿;死代码扫描(未引用文件)清零。
 
-**债清单登记(2026-08-14 盘点)**:
-- 缺陷编号机制已落地(代码内 F 前缀):F10.4(临时 NPC 群聊生命周期)、F17.3(随机事件触发决策)等;统一登记为 P0-P3 待补。
+**债清单登记(2026-08-14 盘点 + D 项全量 F 编号登记)**:
+
 - 门禁现状:本地已固化 `typecheck`(vue-tsc)、`test`(vitest 2574 用例全绿)、`test:coverage`(coverage-v8)、`i18n:check`/`i18n:check:strict`、`lint`(eslint 0 errors);远程 CI 工作流(.github/workflows)尚未建立。
 - 代码健康度:无 TODO/FIXME/HACK/XXX 债标记;PlaceholderView 死代码已删;`sanitize.ts`(DOMPurify)实现完整;`any` 类型仅 5 处且均合理/已豁免;无被跳过的测试。
 - 覆盖率基线(vitest.config.ts,2026-08-14 实测):`thresholds` 已固化 80%(statements/branches/functions/lines),新增 `json-summary` reporter 供 CI 读取。去重后**真实覆盖率 ~89.7%**(覆盖 20793/23169 语句),远超 80% 门禁。注意:Windows 本地开发机因 v8 覆盖率盘符大小写(G:/g:)把同一文件重复计两份(一份全 0),会误报总覆盖率 ~44.6% 触发门禁失败;该误报仅影响 Windows 本地,vitest 在 CI(Linux/macOS) 路径大小写一致、无此重复,80% 门禁正常通过。(曾尝试 root/alias 路径全小写化消除重复,但会破坏 vite sourcemap 映射使覆盖率归 0,已撤销。)
-- 待办(后续迭代):① 引入 eslint 并固化门禁:**已固化**(eslint.config.js flat config,0 errors / 50 warnings 不阻断;npm 脚本 `lint`/`lint:fix`;提交 b5cc6b4);② 建立 GitHub Actions CI;③ 覆盖率阈值门禁(80%):**已固化**(thresholds 80% + json-summary reporter,见上);④ P0-P3 缺陷清单正式登记;⑤ eslint type-aware 增强:补充 `no-floating-promises` 等需类型信息的规则(需 `parserOptions.project` 指向 tsconfig,评估性能与全量接入成本);⑥ npm audit 漏洞评估:eslint 生态链传递依赖报 2 critical/3 high(2026-08-14),评估是否升级或 `npm audit fix`(避免破坏版本)。
+- 缺陷编号机制:代码内 `Fxx.x` 前缀标记功能需求落点(源于 PRD/W 工作流),已全量扫描 `src` 共 **44 个 F 编号需求落点**,统一登记为 P0-P3 风险分级清单(下表)。其中已实现 41 项,部分实现 1 项、待补 2 项(F06.5、F09.3;F17.1 时间触发为部分实现)。
+- 待办(后续迭代):① 引入 eslint 并固化门禁:**已固化**(eslint.config.js flat config,0 errors / 50 warnings 不阻断;npm 脚本 `lint`/`lint:fix`;提交 b5cc6b4);② 建立 GitHub Actions CI;③ 覆盖率阈值门禁(80%):**已固化**(thresholds 80% + json-summary reporter,见上);④ P0-P3 缺陷清单正式登记:**已完成**(见下表 D 项,提交见本迭代尾注);⑤ eslint type-aware 增强:补充 `no-floating-promises` 等需类型信息的规则(需 `parserOptions.project` 指向 tsconfig,评估性能与全量接入成本);⑥ npm audit 漏洞评估:eslint 生态链传递依赖报 2 critical/3 high(2026-08-14),评估是否升级或 `npm audit fix`(避免破坏版本)。
+
+#### D 项:P0-P3 缺陷/需求落点清单(全量 F 编号登记)
+
+> 说明:`F` 编号 = PRD/工作流功能需求落点标记(非运行时缺陷);本清单将其结构化登记,`风险级` 取该需求的核心阻塞度 + 是否存在待补缺口。状态:✅已实现 / 🔶部分实现 / ⬜待实现。
+
+| 编号 | 功能域 | 功能说明 | 主要落点(file:line) | 状态 | 风险级 |
+|---|---|---|---|---|---|
+| F01.1 | 角色 | 角色卡 schema 验证 | core/character-card.ts:107 | ✅ | P3 |
+| F01.2 | 角色 | 角色卡 V2 导入 | core/character-card.ts:258 | ✅ | P3 |
+| F01.3 | 角色 | 角色卡 V2 导出 | core/character-card.ts:308 | ✅ | P3 |
+| F01.5 | 角色 | 宏替换系统 | core/macro.ts:9 | ✅ | P2 |
+| F01.6 | 角色 | 角色属性(自定义字段) | types/index.ts:74;core/character-card.ts:93;views/CharacterEditorView.vue:98 | ✅ | P2 |
+| F01.7 | 角色 | 角色随机生成 | core/character-generator.ts:2;stores/character.ts:452;views/CharactersView.vue:51 | ✅ | P2 |
+| F02.1 | API/安全 | OpenAI 兼容客户端(含 AC20 密钥加密) | api/openai-client.ts:8;core/api-key-crypto.ts:2 | ✅ | P0 |
+| F02.2 | API/安全 | ApiClient 工厂 | api/index.ts:24 | ✅ | P0 |
+| F03.2 | API/安全 | Token 计数 | core/token-counter.ts:27 | ✅ | P3 |
+| F06.1 | 世界书 | 条目/文件结构 | core/lorebook.ts:28,96 | ✅ | P2 |
+| F06.2 | 世界书 | 条目激活策略/关键词逻辑 | core/lorebook.ts:15,24;core/lorebook-scanner.ts:65,80 | ✅ | P2 |
+| F06.3 | 世界书 | 插入位置/排序 | core/lorebook.ts:18;core/lorebook-scanner.ts:305,340 | ✅ | P2 |
+| F06.4 | 世界书 | 包含组 | core/lorebook-scanner.ts:255 | ✅ | P3 |
+| F06.5 | 世界书 | 规格项(扫描深度/常量,PRD 含但未单独拆注释) | 仅 core/lorebook.ts:4 范围引用 | ⬜ | P3 |
+| F06.6 | 世界书 | 树状层级节点 | core/lorebook.ts:35;stores/lorebook.ts:31;views/WorldBookView.vue:108 | ✅ | P2 |
+| F06.7 | 世界书 | 整体世界描述 | core/lorebook.ts:130,230;views/WorldBookView.vue:411 | ✅ | P2 |
+| F06.8 | 世界书 | AI 生成世界观 | core/world-generator.ts:2;stores/lorebook.ts:891;views/WorldBookView.vue:340 | ✅ | P2 |
+| F07.1 | Persona | Persona 规则约束(最少 1 个/长度) | stores/persona.ts:184,232,296,299 | ✅ | P2 |
+| F07.2 | Persona | Persona scope 激活 | stores/chat-context.ts:48,69 | ✅ | P2 |
+| F08.1 | 外观 | OLED 黑主题 | styles/themes.css:108 | ✅ | P3 |
+| F08.2 | 外观 | 聊天背景+气泡样式 | stores/settings.ts:58,66;components/chat/ChatMain.vue:131 | ✅ | P3 |
+| F08.3 | 外观 | 自定义 CSS 注入 | stores/settings.ts:72;views/SettingsView.vue:1104 | ✅ | P3 |
+| F09.1 | RAG | 文档分块器 | core/document-chunker.ts:2 | ✅ | P3 |
+| F09.2 | RAG | RAG 关键词检索 | core/rag-retriever.ts:2;services/chat-manager.ts:136;core/prompt-builder.ts:200 | ✅ | P1 |
+| F09.3 | RAG | 向量嵌入 | stores/data-bank.ts:29(后续实现) | ⬜ | P1 |
+| F10.1 | 群聊 | 群聊(成员/上限) | core/group-chat.ts:53,105;views/GroupChatView.vue:3 | ✅ | P2 |
+| F10.2 | 群聊 | 发言顺序控制 | core/group-chat.ts:15;stores/group-chat.ts:497 | ✅ | P2 |
+| F10.3 | 群聊 | 随机 NPC 生成 | core/npc-generator.ts:2;views/GroupChatView.vue:29 | ✅ | P2 |
+| F10.4 | 群聊 | 临时群聊生命周期 | core/group-chat.ts:32,60;stores/group-chat.ts:207 | ✅ | P2 |
+| F10.5 | 群聊 | 归档与筛选 | views/ArchivesView.vue:3 | ✅ | P3 |
+| F11.1 | 变量 | 斜杠命令系统 | core/slash-command.ts:1;stores/chat.ts:312,468 | ✅ | P2 |
+| F11.2 | 变量 | 局部变量持久化 | core/variable-store.ts:1;types/index.ts:32;stores/chat.ts:103 | ✅ | P2 |
+| F11.3 | 变量 | Quick Reply 按钮 | stores/settings.ts:88;components/chat/ChatMain.vue:363 | ✅ | P3 |
+| F12.1 | 扩展 | 扩展系统架构(沙箱 v1) | core/extension-loader.ts:2;core/extension-types.ts:2 | ✅ | P1 |
+| F12.2 | 增强 | TTS 语音朗读 | services/tts-service.ts:2;components/chat/ChatMain.vue:272 | ✅ | P3 |
+| F12.3 | 增强 | 消息翻译 | services/translator.ts:2;components/chat/ChatMain.vue:280 | ✅ | P3 |
+| F12.4 | 增强 | 自动摘要 | core/summarizer.ts:2;stores/settings.ts:83 | ✅ | P3 |
+| F16.1 | 故事引擎 | 小说结构化分析 | core/story-analyzer.ts:2;stores/story.ts:71;views/StoryEngineView.vue:3 | ✅ | P2 |
+| F16.2 | 故事引擎 | 导入到角色/世界书 | core/story-importer.ts:2;stores/story.ts:533,1122 | ✅ | P2 |
+| F16.3 | 故事引擎 | 主角身份配置 | core/protagonist.ts:2;stores/persona.ts:227;core/story-types.ts:291 | ✅ | P2 |
+| F16.4 | 故事引擎 | 故事时间推进 | core/story-time.ts:2;stores/story.ts:915;components/chat/ChatMain.vue:160 | ✅ | P2 |
+| F17.1 | 随机事件 | 事件状态机/类型(时间触发预留) | core/event-types.ts:14,28,103;stores/events.ts:2 | 🔶 | P2 |
+| F17.2 | 随机事件 | 事件触发引擎 | core/trigger-engine.ts:2;stores/chat-context.ts:82 | ✅ | P2 |
+| F17.3 | 随机事件 | 随机事件生成决策 | core/random-event-generator.ts:2;stores/random-events.ts:2;views/RandomEventsView.vue:3 | ✅ | P2 |
+
+**重点待补缺口(真·技术债,需后续迭代闭环)**:
+- **F09.3 向量嵌入(P1)**:`stores/data-bank.ts:29` 标注"后续实现",当前 RAG 仅走关键词检索(F09.2),未落地向量化。建议:接入嵌入模型 + 向量库,提升语义召回;在 RAG 补全前 F09.2 关键词检索可维持基本可用。
+- **F17.1 时间触发(P2)**:`core/event-types.ts:31,61` 标注"time 触发条件当前未实现,预留接口",依赖 F16.4 故事时间。关键词/手动触发已可用;建议:接入 F16.4 故事时间后补 time trigger 决策。
+- **F06.5 规格项(P3)**:PRD 世界书规格含 F06.1-F06.5,但代码无独立 F06.5 落点注释(疑似并入 F06.2/F06.3 扫描深度/常量)。建议:确认 F06.5 具体语义(扫描深度/作者笔记常量)并补专门注释或实现,避免规格漂移。
 
 ### T-15 桌面端强化
 - **描述**:Tauri updater 自动更新、系统托盘 + 全局快捷键、拖拽导入角色卡/PNG/世界书;断网检测提示。
