@@ -12,6 +12,7 @@ src-tauri/gen/schemas/
 test-results/
 playwright-report/
 coverage/
+coverage-ci/
 
 # Local model / large data
 model/

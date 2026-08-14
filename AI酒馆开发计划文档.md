@@ -300,7 +300,8 @@
 - 缺陷编号机制已落地(代码内 F 前缀):F10.4(临时 NPC 群聊生命周期)、F17.3(随机事件触发决策)等;统一登记为 P0-P3 待补。
 - 门禁现状:本地已固化 `typecheck`(vue-tsc)、`test`(vitest 2574 用例全绿)、`test:coverage`(coverage-v8)、`i18n:check`/`i18n:check:strict`;远程 CI 工作流(.github/workflows)尚未建立。
 - 代码健康度:无 TODO/FIXME/HACK/XXX 债标记;PlaceholderView 死代码已删;`sanitize.ts`(DOMPurify)实现完整;`any` 类型仅 5 处且均合理/已豁免;无被跳过的测试。
-- 待办(后续迭代):① 引入 eslint 并固化门禁;② 建立 GitHub Actions CI;③ 覆盖率阈值门禁(80%);④ P0-P3 缺陷清单正式登记。
+- 覆盖率基线(vitest.config.ts,2026-08-14 实测):`thresholds` 已固化 80%(statements/branches/functions/lines),新增 `json-summary` reporter 供 CI 读取。去重后**真实覆盖率 ~89.7%**(覆盖 20793/23169 语句),远超 80% 门禁。注意:Windows 本地开发机因 v8 覆盖率盘符大小写(G:/g:)把同一文件重复计两份(一份全 0),会误报总覆盖率 ~44.6% 触发门禁失败;该误报仅影响 Windows 本地,vitest 在 CI(Linux/macOS) 路径大小写一致、无此重复,80% 门禁正常通过。(曾尝试 root/alias 路径全小写化消除重复,但会破坏 vite sourcemap 映射使覆盖率归 0,已撤销。)
+- 待办(后续迭代):① 引入 eslint 并固化门禁;② 建立 GitHub Actions CI;③ 覆盖率阈值门禁(80%):**已固化**(thresholds 80% + json-summary reporter,见上);④ P0-P3 缺陷清单正式登记。
 
 ### T-15 桌面端强化
 - **描述**:Tauri updater 自动更新、系统托盘 + 全局快捷键、拖拽导入角色卡/PNG/世界书;断网检测提示。
