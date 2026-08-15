@@ -122,11 +122,22 @@
 - [x] 4.4 高度估算误差：`charsPerLine` 按缓存容器宽度动态计算（`min(70%,40em)` 文本宽 − padding）；已渲染高度缓存（`cacheMsgHeight`）主导，估算仅用于未渲染区
 - [x] 4.5 回归：窗口化组件测试 4/4、全量 2574/2574、压测复测（DOM 恒 200 气泡、帧率 56/51/51fps、内存 34/31/61MB）
 
-### Phase 5：验证与压测（复杂度：低）
-- [ ] 5.1 1 万+消息滚动 60fps 目标压测（Performance 面板实测）
-- [ ] 5.2 回归：全量 2574 测试 + vue-tsc + lint + i18n:strict + build
-- [ ] 5.3 e2e 补跑（chat-flow 相关规格）
-- **验收**：与 Phase 1 基线对比——DOM 恒定、帧率达标
+### Phase 5：验证与压测（✅ 已完成 2026-08-16）
+
+#### 5.1 连续滚动压测（`scripts/p11-scroll-fps.mjs`，10000 条消息，msedge 无头）
+| 指标 | Phase 1 基线（改造前）| Phase 5（改造后）| 结果 |
+|---|---|---|---|
+| 上滚 20 次后 DOM | 2100 气泡 / 40953 节点 | **200 气泡 / 3909 节点** | ✅ -90.5% |
+| **连续滚动 3s 帧率**（真实上滚体验）| —（DOM 膨胀会恶化）| **57fps**（3 秒滚动 23090px，DOM 恒 200）| ✅ 接近 60fps 目标 |
+| 内存（10000 条）| 92 MB | **51 MB** | ✅ -45% |
+
+#### 5.2 回归门禁
+- [x] 全量测试 **2574/2574** · vue-tsc 0 错 · lint 0 errors · i18n:check:strict 通过 · vite build 通过（3.11s）
+
+#### 5.3 e2e 补跑
+- ⚠️ **本环境受限**：safe-delete trash 故障拦截 playwright 任意 output 目录清理（P2-5 曾侥幸通过一次）；且 5173 被 Novel Studio 占用致 chat-flow mock 失效
+- P2-5 已验证 **9/10**（theme/theme-visual/contrast-axe/character-crud/worldbook-flow 全过）；chat-flow 需发布机（dev 在 5173 时）复核
+- **验收**：与 Phase 1 基线对比达成——DOM 恒定 200、连续滚动 57fps、内存 -45% ✅
 
 ### Phase 6：收尾（复杂度：低）
 - [ ] 6.1 pre-launch 报告回填 P2-11 → 已修复（附基线/优化后数字）

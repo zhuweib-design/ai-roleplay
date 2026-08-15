@@ -12,6 +12,7 @@ src-tauri/gen/schemas/
 
 # Test artifacts
 test-results/
+test-results-*/
 playwright-report/
 coverage/
 coverage-ci/
