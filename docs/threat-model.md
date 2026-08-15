@@ -39,7 +39,7 @@
 | 市场文件篡改 | 清单 sha256 校验,拒绝非 https | `core/market-index.ts` |
 | SSRF(代理出站) | dev 代理仅放行本地/私网;Tauri 侧 Rust `validate_endpoint` 禁 link-local/私网 | `vite.config.ts` / `src-tauri/src/commands/chat_stream.rs` |
 | 数据完整性(写入) | Tauri fs 原子写入(.tmp+rename);IndexedDB 事务 | `fs_commands.rs` / `indexeddb-adapter.ts` |
-| CSP | Tauri 严格 CSP(script-src 'self';connect-src https) | `tauri.conf.json` |
+| CSP | Tauri CSP:script-src 'self'(禁远程代码执行);connect-src https://*(支持任意自定义模型端点,禁 http 明文);capabilities remote 同(仅 https+本地回环);权限最小化 core:default(无 fs/shell/http 插件) | `tauri.conf.json` / `capabilities/default.json` |
 | 提示词注入(可执行层面) | 模型输出/导入文本**永不被当作代码执行**(无 eval/Function 路径);对话内容文本插值渲染 | 渲染层 / 第 6 节 |
 
 ## 4. 已知残余风险(接受或缓解中)
@@ -52,6 +52,7 @@
 | 浏览器扩展/恶意网页读取 localStorage | 中 | Web 模式数据在 IndexedDB/localStorage | Tauri 模式推荐;CSP 收紧 |
 | 导入 JSON 深度嵌套 DoS | 低 | 未限制 JSON 深度 | 导入解析加深度限制(待办) |
 | 市场清单伪造 | 低 | 哈希校验但清单本身无签名 | 远期:清单签名(GPG/Ed25519) |
+| 任意 https 端点外发(用户配置驱动) | 中(定位固有) | 端点由用户主动配置;私网探测已由 Rust 阻断;https-only 加密 | P2-9 决策(2026-08-16):保留开放定位不收敛;可选强化:保存端点 UI 提示/协议校验 |
 | 提示词注入(模型输出/导入内容操纵对话) | 中(固有) | 模型输出仅对话内展示不执行;角色卡/世界书经 schema 校验;注入仅影响本次回复,不影响本地数据/密钥 | 文档化用户责任边界(第 6 节);保持文本插值渲染,禁止未净化 v-html |
 
 ## 5. 评审清单(新功能接入时)
