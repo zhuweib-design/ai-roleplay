@@ -109,8 +109,6 @@ export class WebFileAdapter implements ModelFileAdapter {
 // ── Tauri ──
 
 /** Tauri fs 适配器(动态 import 插件,非 Tauri 环境不加载) */
-import { BaseDirectory } from '@tauri-apps/plugin-fs';
-
 export class TauriFileAdapter implements ModelFileAdapter {
   private async fs() {
     return import('@tauri-apps/plugin-fs');
@@ -140,7 +138,7 @@ export class TauriFileAdapter implements ModelFileAdapter {
     }
     // 2. appData(生产,设置页复制)
     try {
-      const entries = await fs.readDir(this.modelDir(modelId), { baseDir: BaseDirectory.AppData });
+      const entries = await fs.readDir(this.modelDir(modelId), { baseDir: fs.BaseDirectory.AppData });
       return entries.some((e) => e.name === 'model.onnx' || e.name === 'model_int8.onnx');
     } catch {
       return false;
@@ -150,7 +148,7 @@ export class TauriFileAdapter implements ModelFileAdapter {
   async importFromDir(modelId: VectorModelId, source: string | File[]): Promise<string[]> {
     const fs = await this.fs();
     const dest = this.modelDir(modelId);
-    await fs.mkdir(dest, { baseDir: BaseDirectory.AppData, recursive: true });
+    await fs.mkdir(dest, { baseDir: fs.BaseDirectory.AppData, recursive: true });
     if (Array.isArray(source)) return [];
     const sourceDir = source;
     const entries = await fs.readDir(sourceDir);
@@ -159,8 +157,8 @@ export class TauriFileAdapter implements ModelFileAdapter {
     for (const e of entries) {
       if (e.name && wanted.has(e.name)) {
         await fs.copyFile(`${sourceDir}/${e.name}`, `${dest}/${e.name}`, {
-          fromPathBaseDir: BaseDirectory.AppData,
-          toPathBaseDir: BaseDirectory.AppData,
+          fromPathBaseDir: fs.BaseDirectory.AppData,
+          toPathBaseDir: fs.BaseDirectory.AppData,
         });
         saved.push(e.name);
       }
@@ -186,7 +184,7 @@ export class TauriFileAdapter implements ModelFileAdapter {
     try {
       return await fs.readFile(`${this.projectModelDir(modelId)}/${fileName}`);
     } catch {
-      return fs.readFile(`${this.modelDir(modelId)}/${fileName}`, { baseDir: BaseDirectory.AppData });
+      return fs.readFile(`${this.modelDir(modelId)}/${fileName}`, { baseDir: fs.BaseDirectory.AppData });
     }
   }
 
@@ -202,7 +200,7 @@ export class TauriFileAdapter implements ModelFileAdapter {
     }
     // appData
     try {
-      const entries = await fs.readDir('model', { baseDir: BaseDirectory.AppData });
+      const entries = await fs.readDir('model', { baseDir: fs.BaseDirectory.AppData });
       for (const e of entries) if (e.isDirectory) ids.add(e.name as VectorModelId);
     } catch {
       /* 无 appData 目录 */

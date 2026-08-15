@@ -308,6 +308,13 @@ describe('AnthropicClient', () => {
 // ── T-02 工具调用 ──
 
 describe('AnthropicClient 工具调用 (T-02)', () => {
+  // P1-2(pre-launch): T-02 为独立 describe, 必须自备 spy 清理。
+  // 缺失时相邻用例共享同一 fetch mock(calls 累积), 后置用例的
+  // mock.calls[0] 会读到前置用例的请求体, 导致断言失败(测试卫生问题)。
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('请求应转换并透传 tools 定义(OpenAI → Anthropic 格式)', async () => {
     const client = makeClient();
     const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(

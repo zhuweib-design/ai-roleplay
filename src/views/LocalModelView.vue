@@ -939,8 +939,8 @@ onMounted(async () => {
 }
 
 .badge.size[data-size="medium"] {
-  background: color-mix(in srgb, #f59e0b 20%, transparent);
-  color: #f59e0b;
+  background: color-mix(in srgb, var(--warning-fg) 20%, transparent);
+  color: var(--warning-fg);
 }
 
 .badge.loaded {
@@ -949,8 +949,8 @@ onMounted(async () => {
 }
 
 .badge.friendly {
-  background: color-mix(in srgb, #3b82f6 15%, transparent);
-  color: #3b82f6;
+  background: color-mix(in srgb, var(--accent-blue) 15%, transparent);
+  color: var(--accent-blue);
 }
 
 .model-desc {

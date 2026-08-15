@@ -1245,13 +1245,13 @@ watch(
 }
 
 .provider-badge[data-provider='openai'] {
-  background: color-mix(in srgb, #10A37F 20%, transparent);
-  color: #10A37F;
+  background: color-mix(in srgb, var(--brand-openai) 20%, transparent);
+  color: var(--brand-openai);
 }
 
 .provider-badge[data-provider='anthropic'] {
-  background: color-mix(in srgb, #D97757 20%, transparent);
-  color: #D97757;
+  background: color-mix(in srgb, var(--brand-anthropic) 20%, transparent);
+  color: var(--brand-anthropic);
 }
 
 .provider-badge[data-provider='custom'] {

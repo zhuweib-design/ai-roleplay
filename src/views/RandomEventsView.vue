@@ -915,33 +915,33 @@ function formatCooldown(ms: number): string {
 }
 
 .badge.category {
-  background: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
+  background: color-mix(in srgb, var(--tag-purple) 15%, transparent);
+  color: var(--tag-purple);
 }
 
 .badge.severity {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
+  background: color-mix(in srgb, var(--warning-fg) 15%, transparent);
+  color: var(--warning-fg);
 }
 
 .badge.severity[data-sev='major'] {
-  background: rgba(249, 115, 22, 0.15);
-  color: #fb923c;
+  background: color-mix(in srgb, var(--accent-orange) 15%, transparent);
+  color: var(--accent-orange);
 }
 
 .badge.severity[data-sev='critical'] {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: color-mix(in srgb, var(--danger-fg) 15%, transparent);
+  color: var(--danger-fg);
 }
 
 .badge.on {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background: color-mix(in srgb, var(--success-fg) 15%, transparent);
+  color: var(--success-fg);
 }
 
 .badge.off {
-  background: rgba(107, 114, 128, 0.15);
-  color: #9ca3af;
+  background: color-mix(in srgb, var(--tag-gray) 15%, transparent);
+  color: var(--tag-gray);
 }
 
 .card-actions {
@@ -1125,11 +1125,11 @@ function formatCooldown(ms: number): string {
 }
 
 .stat-card.positive .stat-value {
-  color: #22c55e;
+  color: var(--success-fg);
 }
 
 .stat-card.negative .stat-value {
-  color: #ef4444;
+  color: var(--danger-fg);
 }
 
 .stat-card.neutral .stat-value {

@@ -172,6 +172,10 @@
   /* 辅助强调色 · 警示橙（用于 AI 生成按钮、归档标签、随机 NPC 等场景）*/
   --accent-orange: #E0A060;
 
+  /* Provider 品牌标识色 · 固定色(不随主题切换), 用于模型提供商徽标 */
+  --brand-openai: #10A37F;
+  --brand-anthropic: #D97757;
+
   /* 警示状态色 · 中等优先级（合并冲突、版本警告等）*/
   --warning-fg: #F59E0B;
   --warning-bg: rgba(245, 158, 11, 0.15);

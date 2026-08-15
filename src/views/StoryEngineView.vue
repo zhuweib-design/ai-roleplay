@@ -2543,7 +2543,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
+  background: color-mix(in srgb, var(--error) 75%, #000);
 }
 
 .confirm-text {

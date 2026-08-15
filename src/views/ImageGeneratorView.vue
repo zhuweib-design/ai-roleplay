@@ -885,7 +885,7 @@ onMounted(async () => {
 
 .gallery-prompt {
   font-size: 11px;
-  color: #fff;
+  color: var(--on-media);
   margin: 0 0 4px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -902,7 +902,7 @@ onMounted(async () => {
 .icon-btn {
   background: rgba(255,255,255,0.2);
   border: none;
-  color: #fff;
+  color: var(--on-media);
   padding: 4px;
   border-radius: var(--radius-sm);
   cursor: pointer;
