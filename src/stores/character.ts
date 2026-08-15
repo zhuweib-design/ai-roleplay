@@ -121,7 +121,14 @@ export const useCharacterStore = defineStore('character', () => {
       const cards = await storageAdapter.loadCharacters();
       if (cards.length > 0) {
         // 用存储中的角色覆盖 mock
-        characters.value = cards.map((c) => cardToUiChar(c));
+        // P2-11 Phase1: 保留角色卡 messages(loadChatHistory 未接线, 已持久化会话历史
+        // 刷新后无法进 UI; 恢复行为符合产品预期, 也是超长对话压测的前置)
+        characters.value = cards.map((c) => {
+          const ui = cardToUiChar(c);
+          const raw = (c as unknown as { messages?: unknown[] }).messages;
+          if (Array.isArray(raw)) ui.messages = raw as UICharacter['messages'];
+          return ui;
+        });
         if (characters.value.length > 0 && !characters.value.find((c) => c.id === currentCharacterId.value)) {
           currentCharacterId.value = characters.value[0].id;
         }
