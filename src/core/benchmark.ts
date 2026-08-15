@@ -122,8 +122,8 @@ export async function runTokenCountBenchmark(): Promise<BenchmarkResult> {
     role: (i % 2 === 0 ? 'user' : 'assistant') as 'user' | 'assistant',
     content: `第 ${i} 条消息:翡翠森林的精灵守护者缓缓睁开双眼,凝视着远方。`.repeat(3),
   }));
-  const { ms } = await timed(() => {
-    for (const m of messages) countTokens(m.content);
+  const { ms } = await timed(async () => {
+    for (const m of messages) await countTokens(m.content);
   });
   return {
     name: 'Token 计数(100 条消息)',

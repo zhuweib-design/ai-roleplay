@@ -152,7 +152,7 @@ export const useDataBankStore = defineStore('data-bank', () => {
       // 4. 分块
       const rawChunks = chunkDocument(text);
       const docId = generateId();
-      const chunks = buildChunks(docId, rawChunks);
+      const chunks = await buildChunks(docId, rawChunks);
 
       // 5. 创建文档
       const now = new Date().toISOString();

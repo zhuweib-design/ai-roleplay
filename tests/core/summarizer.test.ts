@@ -82,29 +82,29 @@ function makeSummary(overrides: Partial<ConversationSummary> = {}): Conversation
 
 describe('summarizer (F12.4)', () => {
   describe('estimateMessagesTokens Token 估算', () => {
-    test('空消息列表 Token 数为 3（仅对话开销）', () => {
-      expect(estimateMessagesTokens([])).toBe(3);
+    test('空消息列表 Token 数为 3（仅对话开销）', async () => {
+      expect(await estimateMessagesTokens([])).toBe(3);
     });
 
-    test('单条消息包含内容 Token + 角色开销', () => {
-      const tokens = estimateMessagesTokens([
+    test('单条消息包含内容 Token + 角色开销', async () => {
+      const tokens = await estimateMessagesTokens([
         makeMessage('user', '你好'),
       ]);
       // 内容 Token + 1（role 开销）+ 3（对话开销）
       expect(tokens).toBeGreaterThan(3);
     });
 
-    test('多条消息 Token 累加', () => {
-      const one = estimateMessagesTokens([makeMessage('user', '你好')]);
-      const two = estimateMessagesTokens([
+    test('多条消息 Token 累加', async () => {
+      const one = await estimateMessagesTokens([makeMessage('user', '你好')]);
+      const two = await estimateMessagesTokens([
         makeMessage('user', '你好'),
         makeMessage('assistant', '你好'),
       ]);
       expect(two).toBeGreaterThan(one);
     });
 
-    test('system 消息也参与计算', () => {
-      const tokens = estimateMessagesTokens([
+    test('system 消息也参与计算', async () => {
+      const tokens = await estimateMessagesTokens([
         makeMessage('system', '系统消息'),
       ]);
       expect(tokens).toBeGreaterThan(3);
@@ -112,26 +112,26 @@ describe('summarizer (F12.4)', () => {
   });
 
   describe('shouldSummarize 触发判断', () => {
-    test('未启用时返回 false', () => {
+    test('未启用时返回 false', async () => {
       const messages = makeDialogMessages(30);
       const config: SummarizationConfig = {
         ...DEFAULT_SUMMARIZATION_CONFIG,
         enabled: false,
       };
-      expect(shouldSummarize(messages, config, null)).toBe(false);
+      expect(await shouldSummarize(messages, config, null)).toBe(false);
     });
 
-    test('消息不足 keepRecent*2 时返回 false', () => {
+    test('消息不足 keepRecent*2 时返回 false', async () => {
       const messages = makeDialogMessages(5);
       const config: SummarizationConfig = {
         ...DEFAULT_SUMMARIZATION_CONFIG,
         keepRecent: 10,
       };
       // 5 < 10*2 = 20
-      expect(shouldSummarize(messages, config, null)).toBe(false);
+      expect(await shouldSummarize(messages, config, null)).toBe(false);
     });
 
-    test('消息超过阈值时返回 true', () => {
+    test('消息超过阈值时返回 true', async () => {
       // 构造大量长消息触发阈值
       const messages: ChatMessage[] = [];
       for (let i = 0; i < 30; i++) {
@@ -145,10 +145,10 @@ describe('summarizer (F12.4)', () => {
         threshold: 4000,
         keepRecent: 10,
       };
-      expect(shouldSummarize(messages, config, null)).toBe(true);
+      expect(await shouldSummarize(messages, config, null)).toBe(true);
     });
 
-    test('已有摘要时计算未被覆盖的消息', () => {
+    test('已有摘要时计算未被覆盖的消息', async () => {
       const messages: ChatMessage[] = [];
       for (let i = 0; i < 30; i++) {
         messages.push({
@@ -166,23 +166,23 @@ describe('summarizer (F12.4)', () => {
       });
       // 未覆盖的消息只有 4 条，可能不足以触发
       // 实际：30 条对话 - 26 已覆盖 = 4 条未覆盖，远低于阈值
-      const result = shouldSummarize(messages, config, existingSummary);
+      const result = await shouldSummarize(messages, config, existingSummary);
       // 4 条消息约 1600 Token，低于 4000 阈值
       expect(result).toBe(false);
     });
 
-    test('阈值较高时不触发', () => {
+    test('阈值较高时不触发', async () => {
       const messages = makeDialogMessages(25);
       const config: SummarizationConfig = {
         ...DEFAULT_SUMMARIZATION_CONFIG,
         threshold: 100000, // 极高阈值
       };
-      expect(shouldSummarize(messages, config, null)).toBe(false);
+      expect(await shouldSummarize(messages, config, null)).toBe(false);
     });
   });
 
   describe('buildSummarizationMessages Prompt 构建', () => {
-    test('返回 system + user 两条消息', () => {
+    test('返回 system + user 两条消息', async () => {
       const messages = makeDialogMessages(5);
       const result = buildSummarizationMessages(messages, null, DEFAULT_SUMMARIZATION_CONFIG);
       expect(result).toHaveLength(2);
@@ -190,14 +190,14 @@ describe('summarizer (F12.4)', () => {
       expect(result[1].role).toBe('user');
     });
 
-    test('无现有摘要时使用"首次生成"Prompt', () => {
+    test('无现有摘要时使用"首次生成"Prompt', async () => {
       const messages = makeDialogMessages(5);
       const result = buildSummarizationMessages(messages, null, DEFAULT_SUMMARIZATION_CONFIG);
       expect(result[1].content).toContain('压缩为摘要');
       expect(result[1].content).not.toContain('已有摘要');
     });
 
-    test('有现有摘要时使用"增量更新"Prompt', () => {
+    test('有现有摘要时使用"增量更新"Prompt', async () => {
       const messages = makeDialogMessages(5);
       const existing = makeSummary({ content: '之前的摘要内容' });
       const result = buildSummarizationMessages(messages, existing, DEFAULT_SUMMARIZATION_CONFIG);
@@ -205,7 +205,7 @@ describe('summarizer (F12.4)', () => {
       expect(result[1].content).toContain('之前的摘要内容');
     });
 
-    test('包含对话内容', () => {
+    test('包含对话内容', async () => {
       const messages = [
         makeMessage('user', '用户消息内容'),
         makeMessage('assistant', 'AI 回复内容'),
@@ -215,7 +215,7 @@ describe('summarizer (F12.4)', () => {
       expect(result[1].content).toContain('AI 回复内容');
     });
 
-    test('包含 maxSummaryTokens 约束', () => {
+    test('包含 maxSummaryTokens 约束', async () => {
       const messages = makeDialogMessages(3);
       const config: SummarizationConfig = {
         ...DEFAULT_SUMMARIZATION_CONFIG,
@@ -225,7 +225,7 @@ describe('summarizer (F12.4)', () => {
       expect(result[1].content).toContain('300');
     });
 
-    test('消息角色转换为中文标签', () => {
+    test('消息角色转换为中文标签', async () => {
       const messages = [
         makeMessage('user', '你好'),
         makeMessage('assistant', '你好'),
@@ -237,7 +237,7 @@ describe('summarizer (F12.4)', () => {
   });
 
   describe('injectSummary 摘要注入', () => {
-    test('在第一条非 system 消息前插入摘要', () => {
+    test('在第一条非 system 消息前插入摘要', async () => {
       const messages: ChatMessage[] = [
         makeMessage('system', '系统提示'),
         makeMessage('user', '你好'),
@@ -256,7 +256,7 @@ describe('summarizer (F12.4)', () => {
       expect(result[2].content).toBe('你好');
     });
 
-    test('无 system 消息时摘要插入到开头', () => {
+    test('无 system 消息时摘要插入到开头', async () => {
       const messages: ChatMessage[] = [
         makeMessage('user', '你好'),
         makeMessage('assistant', '你好啊'),
@@ -269,7 +269,7 @@ describe('summarizer (F12.4)', () => {
       expect(result[1].content).toBe('你好');
     });
 
-    test('全 system 消息时摘要追加到末尾', () => {
+    test('全 system 消息时摘要追加到末尾', async () => {
       const messages: ChatMessage[] = [
         makeMessage('system', '系统1'),
       ];
@@ -280,14 +280,14 @@ describe('summarizer (F12.4)', () => {
       expect(result[1].content).toContain('摘要');
     });
 
-    test('空消息列表仍可注入', () => {
+    test('空消息列表仍可注入', async () => {
       const summary = makeSummary({ content: '摘要' });
       const result = injectSummary([], summary);
       expect(result).toHaveLength(1);
       expect(result[0].content).toContain('摘要');
     });
 
-    test('注入消息包含【前文摘要】标记', () => {
+    test('注入消息包含【前文摘要】标记', async () => {
       const result = injectSummary(
         [makeMessage('user', '你好')],
         makeSummary({ content: '摘要内容' })
@@ -409,29 +409,29 @@ describe('summarizer (F12.4)', () => {
   });
 
   describe('DEFAULT_SUMMARIZATION_CONFIG', () => {
-    test('默认启用', () => {
+    test('默认启用', async () => {
       expect(DEFAULT_SUMMARIZATION_CONFIG.enabled).toBe(true);
     });
 
-    test('默认阈值 4000', () => {
+    test('默认阈值 4000', async () => {
       expect(DEFAULT_SUMMARIZATION_CONFIG.threshold).toBe(4000);
     });
 
-    test('默认保留最近 10 条', () => {
+    test('默认保留最近 10 条', async () => {
       expect(DEFAULT_SUMMARIZATION_CONFIG.keepRecent).toBe(10);
     });
 
-    test('默认摘要 Token 500', () => {
+    test('默认摘要 Token 500', async () => {
       expect(DEFAULT_SUMMARIZATION_CONFIG.maxSummaryTokens).toBe(500);
     });
 
-    test('默认温度 0.3', () => {
+    test('默认温度 0.3', async () => {
       expect(DEFAULT_SUMMARIZATION_CONFIG.temperature).toBe(0.3);
     });
   });
 
   describe('SummarizationError', () => {
-    test('包含 code 属性', () => {
+    test('包含 code 属性', async () => {
       const err = new SummarizationError('msg', 'API_ERROR');
       expect(err.code).toBe('API_ERROR');
       expect(err.message).toBe('msg');

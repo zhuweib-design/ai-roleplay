@@ -102,15 +102,17 @@ function splitLongParagraph(text: string, maxLen: number): string[] {
  * @param documentId 所属文档 ID
  * @param rawChunks 原始分块文本数组（来自 chunkDocument）
  */
-export function buildChunks(
+export async function buildChunks(
   documentId: string,
   rawChunks: string[]
-): DocumentChunk[] {
-  return rawChunks.map((content, index) => ({
-    id: `${documentId}-${index}`,
-    documentId,
-    index,
-    content,
-    tokenCount: countTokens(content),
-  }));
+): Promise<DocumentChunk[]> {
+  return Promise.all(
+    rawChunks.map(async (content, index) => ({
+      id: `${documentId}-${index}`,
+      documentId,
+      index,
+      content,
+      tokenCount: await countTokens(content),
+    }))
+  );
 }

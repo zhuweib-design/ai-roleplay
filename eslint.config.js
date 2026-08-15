@@ -13,6 +13,7 @@ export default [
       'node_modules/**',
       'dist/**',
       'dist-i18n-check/**',
+      'dist-p13-check/**',
       'dist-electron/**',
       'coverage/**',
       'coverage-ci/**',

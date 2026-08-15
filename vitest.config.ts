@@ -20,6 +20,8 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     coverage: {
       provider: 'v8',
+      // clean:false 规避沙箱 safe-delete trash 故障导致启动期 clean 目录失败(CI 为干净环境, 不受影响; 本地需手动清 reportsDirectory)
+      clean: false,
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.d.ts'],
       reporter: ['text', 'json', 'json-summary', 'html'],

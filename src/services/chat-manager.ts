@@ -134,7 +134,7 @@ export class ChatManager {
     };
 
     // 1. 构建 prompt（含 token 裁剪，W6 集成 Lorebook 扫描与注入 F06.2-F06.3，F09.2 集成 RAG 注入，F17.2 集成激活事件注入，F16.3 主角身份注入，F16.4 故事时间注入）
-    const built = buildPrompt(
+    const built = await buildPrompt(
       params.card,
       params.history,
       params.userMessage,

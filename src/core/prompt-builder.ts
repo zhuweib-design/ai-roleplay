@@ -58,14 +58,14 @@ export interface PromptContexts {
  *
  * W6 扩展：支持 Lorebook 条目注入 (F06.2-F06.3)
  */
-export function buildPrompt(
+export async function buildPrompt(
   card: CharacterCard,
   history: ChatMessage[],
   userMessage: string,
   settings: PromptSettings,
   /** 迭代33：可选注入上下文收拢为单一对象 */
   contexts: PromptContexts = {}
-): BuiltPrompt {
+): Promise<BuiltPrompt> {
   const {
     lorebooks,
     ragContext,
@@ -210,14 +210,14 @@ export function buildPrompt(
 
   // 8. Token 预算裁剪
   const budget = settings.maxContextTokens - settings.reservedTokens;
-  let tokenCount = countMessageTokens(messages);
+  let tokenCount = await countMessageTokens(messages);
   let trimmed = false;
 
   // 从最早的历史消息开始裁剪（保留 system 消息和最后的 user 消息）
   // 低 insertionOrder 的 Lorebook 条目优先裁剪（F06.3 规则约束）
   while (tokenCount > budget && messages.length > 2) {
     messages.splice(1, 1); // 移除 system 之后的第一条历史消息
-    tokenCount = countMessageTokens(messages);
+    tokenCount = await countMessageTokens(messages);
     trimmed = true;
   }
 

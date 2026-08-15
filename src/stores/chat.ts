@@ -420,7 +420,7 @@ export const useChatStore = defineStore('chat', () => {
             }
           },
           onDone: (fullContent) => {
-            tokenUsage.value.completion += countTokens(fullContent);
+            void countTokens(fullContent).then((n) => { tokenUsage.value.completion += n; });
             liveMsg.content = fullContent;
             liveMsg.generating = false;
             streamingContent.value = '';
@@ -703,7 +703,7 @@ export const useChatStore = defineStore('chat', () => {
             streamingContent.value = fullContent;
           },
           onDone: (fullContent) => {
-            tokenUsage.value.completion += countTokens(fullContent);
+            void countTokens(fullContent).then((n) => { tokenUsage.value.completion += n; });
             target.content = fullContent;
             target.generating = false;
             streamingContent.value = '';

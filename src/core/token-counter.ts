@@ -1,4 +1,10 @@
-import { encode } from 'gpt-tokenizer';
+// gpt-tokenizer 词表 ~983KB(gzip ~447KB), 动态 import 懒加载避免进入首屏 chunk(P1-3)
+// 首次调用时加载, 之后复用同一 promise; 所有调用方需 await(P1-3 改造)
+let encoderPromise: Promise<typeof import('gpt-tokenizer')> | null = null;
+function getEncoder(): Promise<typeof import('gpt-tokenizer')> {
+  encoderPromise ??= import('gpt-tokenizer');
+  return encoderPromise;
+}
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -27,9 +33,19 @@ const DEFAULT_OVERHEAD: Required<TokenOverheadConfig> = {
  * Token 计数 (F03.2)
  * 使用 gpt-tokenizer 库在前端执行 Token 计数。
  */
-export function countTokens(text: string): number {
+export async function countTokens(text: string): Promise<number> {
   if (!text) return 0;
+  const { encode } = await getEncoder();
   return encode(text).length;
+}
+
+/**
+ * 预加载 tokenizer 并返回同步计数函数。
+ * 高频循环场景(如字符级预算切分)先调用一次, 循环内同步计数, 避免每字符 await 的 microtask 开销。
+ */
+export async function loadTokenCounter(): Promise<(text: string) => number> {
+  const { encode } = await getEncoder();
+  return (text: string) => (text ? encode(text).length : 0);
 }
 
 /**
@@ -37,16 +53,16 @@ export function countTokens(text: string): number {
  * 默认每条消息有 4 Token 的格式开销，整体有 3 Token 的对话开销。
  * 可通过 overhead 参数自定义开销值以适配不同 API 提供商。
  */
-export function countMessageTokens(
+export async function countMessageTokens(
   messages: ChatMessage[],
   overhead: TokenOverheadConfig = {}
-): number {
+): Promise<number> {
   const config = { ...DEFAULT_OVERHEAD, ...overhead };
   let total = config.conversationOverhead;
   for (const msg of messages) {
     total += config.perMessageOverhead;
-    total += countTokens(msg.content);
-    total += countTokens(msg.role);
+    total += await countTokens(msg.content);
+    total += await countTokens(msg.role);
   }
   return total;
 }

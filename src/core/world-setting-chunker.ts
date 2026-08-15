@@ -5,7 +5,7 @@
  *   首块标题=原标题,续块标题=「原标题(续 N)」,块文本首行带标题(检索相似度偏向标题)
  * - 返回块结构含 meta.title / meta.chunkIndex,供 DualChannelRetriever.addStatic 直接入库
  */
-import { countTokens } from './token-counter';
+import { loadTokenCounter } from './token-counter';
 import { t } from '@/i18n';
 
 export interface WorldSettingChunk {
@@ -27,13 +27,16 @@ const DEFAULT_MAX_TOKENS = 512;
  * @param text 设定正文
  * @param maxTokens 单块 token 上限(需求 1:512)
  */
-export function chunkWorldSetting(
+export async function chunkWorldSetting(
   docId: string,
   title: string,
   text: string,
   maxTokens = DEFAULT_MAX_TOKENS
-): WorldSettingChunk[] {
+): Promise<WorldSettingChunk[]> {
   if (!text || typeof text !== 'string' || text.trim().length === 0) return [];
+
+  // 预加载 tokenizer 一次, 循环内同步计数(P1-3: 避免字符级循环每字符 await 的 microtask 开销)
+  const count = await loadTokenCounter();
 
   // 按段落切分(双换行),再按句切分超长段落
   const paragraphs = text
@@ -62,7 +65,7 @@ export function chunkWorldSetting(
   };
 
   for (const para of paragraphs) {
-    const paraTokens = countTokens(para);
+    const paraTokens = count(para);
     // 单段落超预算:按句子切分
     if (paraTokens > maxTokens) {
       const sentences = para
@@ -70,14 +73,14 @@ export function chunkWorldSetting(
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
       for (const sentence of sentences) {
-        const sTokens = countTokens(sentence);
+        const sTokens = count(sentence);
         if (currentTokens + sTokens > maxTokens && current.length > 0) flush();
         // 单句仍超预算:强制按字符切(防死循环)
         if (sTokens > maxTokens) {
           const chars = Array.from(sentence);
           let sub = '';
           for (const c of chars) {
-            if (countTokens(sub + c) > maxTokens && sub) {
+            if (count(sub + c) > maxTokens && sub) {
               current.push(sub);
               flush();
               sub = c;

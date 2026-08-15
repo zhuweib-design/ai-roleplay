@@ -41,12 +41,12 @@ const sampleHistory: ChatMessage[] = [
 ];
 
 describe('提示词构建引擎 (F03.1)', () => {
-  test('基础构建：系统提示词 + 角色定义 + 对话历史 + 用户消息', () => {
+  test('基础构建：系统提示词 + 角色定义 + 对话历史 + 用户消息', async () => {
     const card = makeCard();
     const settings = makeSettings();
     const userMessage = '你是什么人？';
 
-    const result = buildPrompt(card, sampleHistory, userMessage, settings);
+    const result = await buildPrompt(card, sampleHistory, userMessage, settings);
 
     // 第一条应该是 system 角色消息
     expect(result.messages[0].role).toBe('system');
@@ -63,11 +63,11 @@ describe('提示词构建引擎 (F03.1)', () => {
     expect(result.messages.length).toBeGreaterThan(3);
   });
 
-  test('宏替换在构建时执行', () => {
+  test('宏替换在构建时执行', async () => {
     const card = makeCard({ scenario: '{{user}}在{{char}}的小屋中' });
     const settings = makeSettings({ userName: '勇者' });
 
-    const result = buildPrompt(card, [], '', settings);
+    const result = await buildPrompt(card, [], '', settings);
 
     const systemContent = result.messages[0].content;
     expect(systemContent).toContain('勇者在Seraphina的小屋中');
@@ -75,11 +75,11 @@ describe('提示词构建引擎 (F03.1)', () => {
     expect(systemContent).not.toContain('{{char}}');
   });
 
-  test('返回 Token 计数', () => {
+  test('返回 Token 计数', async () => {
     const card = makeCard();
     const settings = makeSettings();
 
-    const result = buildPrompt(card, sampleHistory, '测试消息', settings);
+    const result = await buildPrompt(card, sampleHistory, '测试消息', settings);
 
     expect(result.tokenCount).toBeGreaterThan(0);
     expect(result.tokenCount).toBeLessThan(settings.maxContextTokens);
@@ -87,7 +87,7 @@ describe('提示词构建引擎 (F03.1)', () => {
 });
 
 describe('Token 预算裁剪 (F03.2/F03.3)', () => {
-  test('对话历史超过预算时从最早消息开始裁剪', () => {
+  test('对话历史超过预算时从最早消息开始裁剪', async () => {
     const card = makeCard();
     // 设置极小的上下文预算，迫使历史被裁剪
     const settings = makeSettings({ maxContextTokens: 100, reservedTokens: 20 });
@@ -98,7 +98,7 @@ describe('Token 预算裁剪 (F03.2/F03.3)', () => {
       { role: 'assistant', content: 'b'.repeat(200), id: '5', timestamp: '', swipes: [], swipeIndex: 0 },
     ];
 
-    const result = buildPrompt(card, longHistory, '新消息', settings);
+    const result = await buildPrompt(card, longHistory, '新消息', settings);
 
     // 裁剪后 Token 计数不应超过预算
     expect(result.tokenCount).toBeLessThanOrEqual(settings.maxContextTokens);
@@ -106,25 +106,25 @@ describe('Token 预算裁剪 (F03.2/F03.3)', () => {
     expect(result.trimmed).toBe(true);
   });
 
-  test('角色定义永远保留不被裁剪', () => {
+  test('角色定义永远保留不被裁剪', async () => {
     const card = makeCard({
       description: 'a'.repeat(200),
       personality: 'b'.repeat(200),
     });
     const settings = makeSettings({ maxContextTokens: 150, reservedTokens: 20 });
 
-    const result = buildPrompt(card, sampleHistory, '测试', settings);
+    const result = await buildPrompt(card, sampleHistory, '测试', settings);
 
     // 系统消息中仍应包含角色描述
     const systemContent = result.messages[0].content;
     expect(systemContent).toContain('a'.repeat(200));
   });
 
-  test('历史在预算内时不裁剪', () => {
+  test('历史在预算内时不裁剪', async () => {
     const card = makeCard();
     const settings = makeSettings({ maxContextTokens: 8192, reservedTokens: 1024 });
 
-    const result = buildPrompt(card, sampleHistory, '测试', settings);
+    const result = await buildPrompt(card, sampleHistory, '测试', settings);
 
     expect(result.trimmed).toBe(false);
     // 所有历史消息都应保留
@@ -133,13 +133,13 @@ describe('Token 预算裁剪 (F03.2/F03.3)', () => {
 });
 
 describe('作者笔记注入 (F03.5)', () => {
-  test('深度0：注入在最后一条消息后', () => {
+  test('深度0：注入在最后一条消息后', async () => {
     const card = makeCard({
       characterNote: { text: '[OOC: 保持神秘感]', depth: 0, role: 'system' },
     });
     const settings = makeSettings();
 
-    const result = buildPrompt(card, sampleHistory, '你是什么人？', settings);
+    const result = await buildPrompt(card, sampleHistory, '你是什么人？', settings);
 
     // 作者笔记应出现在用户消息之前（最后一条历史之后）
     const noteIdx = result.messages.findIndex(m => m.content.includes('[OOC: 保持神秘感]'));
@@ -149,13 +149,13 @@ describe('作者笔记注入 (F03.5)', () => {
     expect(noteIdx).toBe(userMsgIdx - 1);
   });
 
-  test('深度2：注入在倒数第2条消息后', () => {
+  test('深度2：注入在倒数第2条消息后', async () => {
     const card = makeCard({
       characterNote: { text: '[Note: 提示]', depth: 2, role: 'system' },
     });
     const settings = makeSettings();
 
-    const result = buildPrompt(card, sampleHistory, '你是什么人？', settings);
+    const result = await buildPrompt(card, sampleHistory, '你是什么人？', settings);
 
     const noteIdx = result.messages.findIndex(m => m.content.includes('[Note: 提示]'));
     // 深度2 = 从最新消息往前数第2条后注入

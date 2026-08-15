@@ -83,10 +83,10 @@ export class SummarizationError extends Error {
  * @param messages 消息列表
  * @returns Token 数估算值
  */
-export function estimateMessagesTokens(messages: ChatMessage[]): number {
+export async function estimateMessagesTokens(messages: ChatMessage[]): Promise<number> {
   let total = 0;
   for (const msg of messages) {
-    total += countTokens(msg.content);
+    total += await countTokens(msg.content);
     // role 标记开销（约 1 Token）
     total += 1;
   }
@@ -105,11 +105,11 @@ export function estimateMessagesTokens(messages: ChatMessage[]): number {
  * @param existingSummary 现有摘要（若有）
  * @returns 是否应触发摘要
  */
-export function shouldSummarize(
+export async function shouldSummarize(
   messages: ChatMessage[],
   config: SummarizationConfig,
   existingSummary: ConversationSummary | null
-): boolean {
+): Promise<boolean> {
   if (!config.enabled) return false;
 
   // 仅计算 user/assistant 消息
@@ -123,7 +123,7 @@ export function shouldSummarize(
     ? existingSummary.lastCoveredMessageIndex + 1
     : 0;
   const uncoveredMessages = dialogMessages.slice(startIndex);
-  const tokens = estimateMessagesTokens(uncoveredMessages);
+  const tokens = await estimateMessagesTokens(uncoveredMessages);
 
   return tokens >= config.threshold;
 }
@@ -287,7 +287,7 @@ export class DefaultSummarizationService implements SummarizationService {
       coveredMessageCount:
         (existingSummary?.coveredMessageCount ?? 0) + coveredCount,
       createdAt: Date.now(),
-      tokenCount: countTokens(rawContent),
+      tokenCount: await countTokens(rawContent),
     };
   }
 }
