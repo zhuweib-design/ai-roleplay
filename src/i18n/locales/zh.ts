@@ -183,6 +183,7 @@ export default {
   'chat.togglePanel': '切换上下文面板',
   'chat.messagesAria': '对话消息历史',
   'chat.loadOlder': '加载更早消息（还有 {count} 条）',
+  'chat.jumpToBottomAria': '回到底部（查看最新消息）',
   'chat.emptyChat': '暂无对话内容',
   'chat.exportedMarkdown': '已导出对话 Markdown',
   'chat.editMessage': '编辑消息',

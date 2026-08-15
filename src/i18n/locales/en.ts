@@ -183,6 +183,7 @@ const en: Record<MessageKey, string> = {
   'chat.togglePanel': 'Toggle context panel',
   'chat.messagesAria': 'Chat message history',
   'chat.loadOlder': 'Load earlier messages ({count} more)',
+  'chat.jumpToBottomAria': 'Jump to bottom (view latest messages)',
   'chat.emptyChat': 'No messages yet',
   'chat.exportedMarkdown': 'Chat exported as Markdown',
   'chat.editMessage': 'Edit message',

@@ -91,15 +91,25 @@ const msgHeights = new Map<string, number>();
 // 首次消息就绪后初始化窗口
 let windowInitialized = false;
 
-// 高度估算(MessageBubble 纯文本为主, 无媒体)
-const EST_LINE_HEIGHT = 20;
-const EST_MSG_PADDING = 20;
-const EST_CHARS_PER_LINE = 28;
+// 高度估算(MessageBubble: font-size 14px / line-height 1.7 / max-width min(70%, 40em) / padding 12+16)
+const EST_FONT_SIZE = 14;
+const EST_LINE_HEIGHT = 14 * 1.7;
+const EST_MSG_PADDING_V = 24; // 上下 padding
+const EST_MSG_PADDING_H = 32; // 左右 padding
+
+// 容器宽度缓存(避免滚动加载循环中反复读 clientWidth 强制 reflow)
+let cachedWidth = 600;
+
+/** 按缓存的消息区宽度估算每行可容纳字符数(P2-11 Phase4) */
+function charsPerLine(): number {
+  const textWidth = Math.min(cachedWidth * 0.7, 560) - EST_MSG_PADDING_H;
+  return Math.max(8, Math.floor(textWidth / EST_FONT_SIZE));
+}
 
 function estimateMsgHeight(content: string): number {
-  if (!content) return EST_MSG_PADDING;
-  const lines = Math.max(1, Math.ceil(content.length / EST_CHARS_PER_LINE));
-  return EST_MSG_PADDING + lines * EST_LINE_HEIGHT;
+  if (!content) return EST_MSG_PADDING_V;
+  const lines = Math.max(1, Math.ceil(content.length / charsPerLine()));
+  return EST_MSG_PADDING_V + lines * EST_LINE_HEIGHT;
 }
 
 function msgHeightAt(index: number): number {
@@ -121,6 +131,7 @@ let suppressScroll = false;
 const windowLoading = ref(false);
 
 function resetWindow(): void {
+  cachedWidth = msgArea.value?.clientWidth ?? cachedWidth;
   const len = char.value.messages.length;
   windowEnd.value = len;
   windowStart.value = Math.max(0, len - RENDER_WINDOW);
@@ -197,10 +208,24 @@ async function loadNewerMessages(): Promise<void> {
   windowLoading.value = false;
 }
 
+// P2-11 Phase4: 视口不在底部时显示"回到底部"浮动按钮
+const atBottom = ref(true);
+function jumpToBottom(): void {
+  const el = msgArea.value;
+  if (!el) return;
+  if (windowEnd.value < char.value.messages.length) {
+    windowEnd.value = char.value.messages.length;
+    bottomSpacerHeight.value = 0;
+  }
+  el.scrollTop = el.scrollHeight;
+  atBottom.value = true;
+}
+
 // 滚动方向感知: 上滚近顶加载更早, 下滚近底恢复更晚
 function handleScroll() {
   const el = msgArea.value;
   if (!el || windowLoading.value || suppressScroll) return;
+  atBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
   if (el.scrollTop < 300 && hasOlderMessages.value) {
     void loadOlderMessages();
     return;
@@ -622,6 +647,16 @@ function handleQuickReply(btn: QuickReplyButton) {
           aria-hidden="true"
         ></div>
       </div>
+      <!-- P2-11 Phase4: 回到底部浮动按钮(上滚查看历史后一键回最新) -->
+      <button
+        v-if="!atBottom"
+        type="button"
+        class="jump-bottom-btn"
+        :aria-label="t('chat.jumpToBottomAria')"
+        @click="jumpToBottom"
+      >
+        <Icon name="arrow-down" :size="14" aria-hidden="true" />
+      </button>
     </div>
 
     <!-- 输入区 -->
@@ -730,6 +765,37 @@ function handleQuickReply(btn: QuickReplyButton) {
 .msg-spacer {
   width: 100%;
   pointer-events: none;
+}
+
+/* P2-11 Phase4: 回到底部浮动按钮(视口不在底部时显示, 绝对定位于滚动容器底部) */
+.jump-bottom-btn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--card-elevated);
+  color: var(--foreground);
+  cursor: pointer;
+  box-shadow: var(--shadow-popup);
+  transition: opacity 0.15s ease;
+}
+
+.jump-bottom-btn:hover {
+  background: color-mix(in srgb, var(--primary) 14%, var(--card-elevated));
+  color: var(--primary-fg);
+}
+
+.jump-bottom-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 /* F08.2 气泡样式覆盖（通过 CSS 变量控制圆角和透明度） */
