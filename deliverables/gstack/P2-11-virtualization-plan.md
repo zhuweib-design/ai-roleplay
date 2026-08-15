@@ -51,14 +51,53 @@
 
 **副产品修复**：`loadFromStorage` 原本经 `cardToUiChar` 丢弃 messages（`loadChatHistory` 是未接线死代码）→ 刷新后会话历史丢失；已最小修复（保留 messages），符合产品预期，也是压测前置。
 
-### Phase 2：方案选型与设计（复杂度：中）
-- [ ] 2.1 候选方案对比：
-  - **A** 引入 `vue-virtual-scroller`（成熟，但新依赖 + 需适配现有 DOM/样式/事件）
-  - **B** 自研双向窗口（在现有 `renderLimit` 机制上扩展：`[start, end]` 可见区间 + 顶/底占位 + 双向滚动锚定）
-  - **C** 窗口 + 回收（上滚加载时同时截断底部，DOM 上限 2×window）
-- [ ] 2.2 选型建议：**B/C 结合**（无新依赖、复用现有滚动/补偿逻辑、与 MessageBubble 结构兼容）；若 A 适配成本 ≤3 天则选 A
-- [ ] 2.3 设计文档：可见区间计算、占位高度策略（消息平均高 vs 动态测量缓存）、滚动锚定、消息跳转入口
-- **验收**：方案评审通过（倾向无新依赖的自研）
+### Phase 2：方案选型与设计（✅ 已完成 2026-08-15）
+
+#### 2.1 候选方案对比（基于 ChatMain 现状 + MessageBubble 纯文本结构）
+
+| 方案 | 新依赖 | 适配成本 | 效果 | 主要风险 |
+|---|---|---|---|---|
+| **A** vue-virtual-scroller | +~30KB | 中高：重构渲染结构（VirtualScroller 包裹 + item 插槽），消息高度可变需 dynamic 测量模式，背景图/overlay 兼容 | 完整 | 依赖维护；动态测量反而更复杂；DOM 结构大改影响样式/事件 |
+| **B** 自研双向窗口 | 无 | 高：可见区间 `[start,end]` + 顶/底占位 + 双向滚动锚定 + 高度估算缓存 | 完整 | 自研复杂度集中在锚定与高度估算 |
+| **C** 窗口 + 回收 | 无 | 低：顶部占位 + DOM 上限回收（renderLimit 增长时同步回收已滚过区）| 解决核心（DOM 恒定）| 需要顶部占位高度 |
+
+#### 2.2 选型结论：**B/C 结合，不引入新依赖**（vue-virtual-scroller 淘汰）
+
+- **理由**：MessageBubble 纯文本为主（`msg-text` + 少量 narration/toolbar，**无媒体**），高度可估算（行数 × 行高 + padding）→ 自研无高度测量器也能稳定；现有 `prevScrollTop` 锚定 + `loadingOlder` 防重入可直接复用扩展；引入第三方反而重构 DOM 结构与背景 overlay。
+- **落地路径**：
+  - **Phase 3a（C 快赢）**：保留尾部窗口机制，加**顶部 spacer**（占位已回收消息）+ **DOM 上限回收**（上滚加载时同步回收底部已滚过区，DOM 恒 ≤ 2×RENDER_WINDOW）
+  - **Phase 3b（B 完整）**：升级为双向可见区间 `[windowStart, windowEnd]`（精确渲染视口附近，含下滚恢复）
+
+#### 2.3 技术设计要点
+
+1. **可见区间状态机**（Phase 3b）
+   - 状态：`windowStart` / `windowEnd`（消息索引），DOM 渲染 `[windowStart, windowEnd]`，恒 ≤ 2×RENDER_WINDOW
+   - 初始：尾部窗口 `windowStart = max(0, len-100)`，`windowEnd = len`
+   - 上滚近顶（scrollTop < 300）→ `windowStart -= 100`（加载更早，同步回收底部）
+   - 下滚近底（scrollTop > scrollHeight - clientHeight - 300）且 `windowEnd < len` → `windowEnd += 100`（恢复下部，同步回收顶部）
+2. **占位高度策略**（顶/底 spacer）
+   - `estHeight(msg) = padding + ceil(content.length / charsPerLine) × lineHeight`（按容器宽度估算行数）
+   - 已渲染消息缓存真实高度（回收时记录），未渲染用估算值
+   - 误差校正：滚动到顶/底时以 scrollHeight 对齐校正（防累积漂移）
+3. **滚动锚定**（复用现有逻辑）
+   - 上滚加载/回收后：`prevScrollTop/prevScrollHeight` + nextTick 补偿（现有代码双向化）
+   - 顶部 spacer 高度变化 = 新增消息估算高度和 → 同步补偿 scrollTop
+4. **滚动方向感知**：`handleScroll` 记录 `lastScrollTop` 判断方向（上滚加载 / 下滚恢复），保留 `loadingOlder` 防重入（扩展为双向 `windowLoading`）
+5. **兼容性**：
+   - 保留 `hasOlderMessages` / `loadOlderMessages`（按钮 + 滚动触发双入口）
+   - spacer 在 `.chat-messages-content` 内（背景 overlay 继续生效）
+   - 切换角色重置窗口；流式追加时若视口在底部则 `windowEnd` 跟随
+6. **消息跳转**（Phase 4 再评估）：重定位 `[windowStart, windowEnd]` + 锚定到目标索引
+
+#### 2.4 风险与缓解
+| 风险 | 缓解 |
+|---|---|
+| 高度估算误差 → 滚动跳动 | 缓存已渲染高度 + 顶/底校正 |
+| 滚动事件高频 | 双向防重入（`windowLoading`） |
+| 与流式输出 / 自动滚底 / IME 交互回归 | Phase 4 专项回归 |
+| 背景图 overlay 在 spacer 区表现 | spacer 透明（仅占位），overlay 覆盖容器层 |
+
+**验收**：方案已评审通过（自研 B/C，无新依赖，MessageBubble 高度可估算为可行性依据）。
 
 ### Phase 3：核心实现（复杂度：高）
 - [ ] 3.1 可见区间状态机：`[startIndex, endIndex]` 双向滑动，DOM 恒 ≤ 2×RENDER_WINDOW
