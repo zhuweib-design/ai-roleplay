@@ -101,6 +101,11 @@ function goBack() {
   void router.push({ name: 'chat' });
 }
 
+/** P2-6 UI 修复: 未配置时引导用户前往设置添加模型 */
+function goToSettings(): void {
+  void router.push({ name: 'settings' });
+}
+
 async function handleGenerate() {
   if (!store.canGenerate) {
     showToast(t('imgGen.needConfig'), 'error');
@@ -220,6 +225,14 @@ onMounted(async () => {
         aria-labelledby="tab-generate"
         class="panel"
       >
+        <!-- P2-6 UI 修复: 未配置时醒目引导用户前往设置添加模型 -->
+        <div v-if="!store.canGenerate" class="config-warning" role="alert">
+          <Icon name="alert-triangle" :size="18" aria-hidden="true" />
+          <span class="config-warning-text">{{ t('imgGen.configWarning') }}</span>
+          <button type="button" class="config-warning-btn" @click="goToSettings">
+            {{ t('imgGen.goToSettings') }}
+          </button>
+        </div>
         <div class="generate-layout">
           <!-- 左侧：参数 -->
           <div class="params-section">
@@ -702,6 +715,46 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+
+/* P2-6 UI 修复: 未配置模型时醒目引导卡片 */
+.config-warning {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--destructive) 14%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--destructive) 35%, transparent);
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+.config-warning > :first-child {
+  color: var(--destructive);
+  flex-shrink: 0;
+}
+
+.config-warning-text {
+  flex: 1 1 auto;
+}
+
+.config-warning-btn {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--primary);
+  color: var(--primary-fg);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.config-warning-btn:hover {
+  background: color-mix(in srgb, var(--primary) 88%, var(--foreground));
 }
 
 .params-section {

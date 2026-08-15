@@ -743,6 +743,8 @@ const en: Record<MessageKey, string> = {
   'imgGen.title': 'Image Generation',
   'imgGen.configured': 'Configured',
   'imgGen.notConfigured': 'Not configured',
+  'imgGen.configWarning': 'Add a model first to generate images',
+  'imgGen.goToSettings': 'Go to Settings',
   'imgGen.tabsAria': 'Image generation',
   'imgGen.tabGenerate': 'Generate',
   'imgGen.tabGallery': 'Gallery',

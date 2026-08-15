@@ -743,6 +743,8 @@ export default {
   'imgGen.title': '图像生成',
   'imgGen.configured': '已配置',
   'imgGen.notConfigured': '未配置',
+  'imgGen.configWarning': '需要先添加模型才能生成图像',
+  'imgGen.goToSettings': '前往设置配置',
   'imgGen.tabsAria': '图像生成',
   'imgGen.tabGenerate': '生成',
   'imgGen.tabGallery': '画廊',

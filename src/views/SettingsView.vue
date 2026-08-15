@@ -2079,8 +2079,11 @@ async function handleExportChatMarkdown() {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* P2-6 UI 修复: 描述改为 2 行 line-clamp, 避免单行 nowrap 截断丢失信息(原 "云端/本地模型与 API..." 被无声裁切) */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
   text-align: right;
   font-size: 11px;
   color: var(--muted-foreground);
