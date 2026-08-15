@@ -99,13 +99,21 @@
 
 **验收**：方案已评审通过（自研 B/C，无新依赖，MessageBubble 高度可估算为可行性依据）。
 
-### Phase 3：核心实现（复杂度：高）
-- [ ] 3.1 可见区间状态机：`[startIndex, endIndex]` 双向滑动，DOM 恒 ≤ 2×RENDER_WINDOW
-- [ ] 3.2 顶部/底部占位（spacer）高度：缓存已渲染消息高度，未渲染用平均高估算
-- [ ] 3.3 滚动锚定补偿：加载/回收时保持视口稳定（复用现有 `prevScrollTop` 逻辑并双向化）
-- [ ] 3.4 滚动方向感知：上滚加载 + 下滚回收联动
-- [ ] 3.5 切换角色 / 新消息流式追加 / 自动滚底时窗口重置与定位
-- **验收**：1 万消息反复滚动，DOM 恒 ~200 节点
+### Phase 3：核心实现（✅ 已完成 2026-08-15，3a+3b 合并落地）
+- [x] 3.1 可见区间状态机：`[windowStart, windowEnd]` 双向滑动，DOM 恒 ≤ 2×RENDER_WINDOW（ChatMain.vue）
+- [x] 3.2 顶/底占位：spacer 高度 = 已回收消息估算高（`estimateMsgHeight`：padding + 行数×行高），已渲染消息经 `cacheMsgHeight` 缓存真实高度
+- [x] 3.3 滚动锚定：`loadOlderMessages`/`loadNewerMessages` 均按 `scrollHeight` 差值补偿，`suppressScroll` 抑制自动滚底
+- [x] 3.4 方向感知：`handleScroll` 上滚近顶(加载更早+回收底部) / 下滚近底(恢复更晚+回收顶部)，`windowLoading` 双向防重入
+- [x] 3.5 切角色重置窗口；新消息在底部时 `windowEnd` 跟随并滚底（自动滚底 watch 改造）
+
+**实现效果（p11-baseline 复测，10000 条消息）**：
+
+| 指标 | Phase 1 基线(改造前) | Phase 3(改造后) | 改善 |
+|---|---|---|---|
+| 上滚 20 次后 DOM | 2100 气泡 / 40953 节点 | **200 气泡 / 3905 节点** | **-90.5%** |
+| 内存 used (10000 条) | 92 MB | **61 MB** | **-34%** |
+| 滚动帧率 | 52 fps | 51 fps（DOM 恒定不再恶化）| 稳定 |
+| 初始 DOM | 100 / 1953 | 100 / 1953 | = |
 
 ### Phase 4：边界与体验（复杂度：中）
 - [ ] 4.1 快速滚动防抖（现有 `loadingOlder` 防重入扩展为双向）

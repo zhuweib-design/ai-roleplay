@@ -78,55 +78,159 @@ const msgArea = ref<HTMLElement | null>(null);
 
 const char = computed(() => characterStore.currentCharacter);
 
-// ── P1-9 性能：消息窗口化渲染 ──
-// 只渲染最近 N 条消息，更早消息按需加载，避免长对话 DOM 线性膨胀
+// ── P2-11 性能：双向窗口化渲染(替代 P1-9 尾部窗口) ──
+// 只渲染可见区间 [windowStart, windowEnd) 附近消息(恒 ≤ 2×RENDER_WINDOW),
+// 顶/底 spacer 占位回收区; 上滚加载更早 + 下滚恢复更晚, 消除长对话 DOM 线性膨胀
 const RENDER_WINDOW = 100;
-const renderLimit = ref(RENDER_WINDOW);
-const visibleMessages = computed(() => {
-  const all = char.value.messages;
-  if (all.length <= renderLimit.value) return all;
-  return all.slice(all.length - renderLimit.value);
-});
-const hasOlderMessages = computed(
-  () => char.value.messages.length > renderLimit.value
+const windowStart = ref(0);
+const windowEnd = ref(0);
+const topSpacerHeight = ref(0);
+const bottomSpacerHeight = ref(0);
+// 已渲染消息真实高度缓存(回收后恢复时用缓存, 比估算更准)
+const msgHeights = new Map<string, number>();
+// 首次消息就绪后初始化窗口
+let windowInitialized = false;
+
+// 高度估算(MessageBubble 纯文本为主, 无媒体)
+const EST_LINE_HEIGHT = 20;
+const EST_MSG_PADDING = 20;
+const EST_CHARS_PER_LINE = 28;
+
+function estimateMsgHeight(content: string): number {
+  if (!content) return EST_MSG_PADDING;
+  const lines = Math.max(1, Math.ceil(content.length / EST_CHARS_PER_LINE));
+  return EST_MSG_PADDING + lines * EST_LINE_HEIGHT;
+}
+
+function msgHeightAt(index: number): number {
+  const m = char.value.messages[index];
+  if (!m) return 0;
+  return msgHeights.get(m.id) ?? estimateMsgHeight(m.content);
+}
+
+const visibleMessages = computed(() =>
+  char.value.messages.slice(windowStart.value, windowEnd.value)
 );
-// 加载更早时抑制自动滚动（保持阅读位置）
+const hasOlderMessages = computed(() => windowStart.value > 0);
+const hasNewerMessages = computed(
+  () => windowEnd.value < char.value.messages.length
+);
+// 加载/回收时抑制自动滚动(保持阅读位置)
 let suppressScroll = false;
-// T-03：自动加载防重入（滚动事件高频触发）
-const loadingOlder = ref(false);
-function loadOlderMessages() {
-  if (loadingOlder.value) return;
-  loadingOlder.value = true;
+// 双向防重入(滚动事件高频触发)
+const windowLoading = ref(false);
+
+function resetWindow(): void {
+  const len = char.value.messages.length;
+  windowEnd.value = len;
+  windowStart.value = Math.max(0, len - RENDER_WINDOW);
+  topSpacerHeight.value = 0;
+  bottomSpacerHeight.value = 0;
+}
+
+// 消息加载就绪后初始化窗口(初始显示尾部窗口)
+function ensureWindow(): void {
+  if (!windowInitialized && char.value.messages.length > 0) {
+    windowInitialized = true;
+    resetWindow();
+  }
+}
+
+/** 上滚加载更早消息 + 同步回收底部(窗口恒 ≤ 2×RENDER_WINDOW) */
+async function loadOlderMessages(): Promise<void> {
+  if (windowLoading.value || windowStart.value <= 0) return;
+  windowLoading.value = true;
   const el = msgArea.value;
   const prevScrollTop = el ? el.scrollTop : 0;
   const prevScrollHeight = el ? el.scrollHeight : 0;
   suppressScroll = true;
-  renderLimit.value += RENDER_WINDOW;
-  void nextTick(() => {
-    // T-03：顶部插入后补偿滚动位置，保持视觉稳定（用户不会跳走）
-    if (el) {
-      const added = el.scrollHeight - prevScrollHeight;
-      el.scrollTop = prevScrollTop + added;
+  const newStart = Math.max(0, windowStart.value - RENDER_WINDOW);
+  for (let i = newStart; i < windowStart.value; i++) {
+    topSpacerHeight.value += msgHeightAt(i);
+  }
+  windowStart.value = newStart;
+  // 回收底部
+  const maxEnd = windowStart.value + 2 * RENDER_WINDOW;
+  if (windowEnd.value > maxEnd) {
+    for (let i = maxEnd; i < windowEnd.value; i++) {
+      bottomSpacerHeight.value += msgHeightAt(i);
     }
-    suppressScroll = false;
-    loadingOlder.value = false;
-  });
+    windowEnd.value = maxEnd;
+  }
+  await nextTick();
+  // 顶部 spacer 增加 → 补偿滚动位置, 保持视觉稳定
+  if (el) {
+    el.scrollTop = prevScrollTop + (el.scrollHeight - prevScrollHeight);
+  }
+  suppressScroll = false;
+  windowLoading.value = false;
 }
-// T-03：滚动接近顶部时自动加载更早消息（按钮保留供键盘用户）
+
+/** 下滚恢复更晚消息 + 同步回收顶部 */
+async function loadNewerMessages(): Promise<void> {
+  if (windowLoading.value || !hasNewerMessages.value) return;
+  windowLoading.value = true;
+  const el = msgArea.value;
+  const prevScrollTop = el ? el.scrollTop : 0;
+  const prevScrollHeight = el ? el.scrollHeight : 0;
+  suppressScroll = true;
+  const newEnd = Math.min(char.value.messages.length, windowEnd.value + RENDER_WINDOW);
+  for (let i = windowEnd.value; i < newEnd; i++) {
+    bottomSpacerHeight.value = Math.max(0, bottomSpacerHeight.value - msgHeightAt(i));
+  }
+  windowEnd.value = newEnd;
+  // 回收顶部
+  const minStart = windowEnd.value - 2 * RENDER_WINDOW;
+  if (windowStart.value < minStart) {
+    for (let i = windowStart.value; i < minStart; i++) {
+      topSpacerHeight.value += msgHeightAt(i);
+    }
+    windowStart.value = minStart;
+  }
+  await nextTick();
+  // 底部 spacer 减少/消息增加 → 内容向下延伸, 按差值补偿保持视口内容稳定
+  if (el) {
+    const delta = el.scrollHeight - prevScrollHeight;
+    if (delta !== 0) el.scrollTop = prevScrollTop + delta;
+  }
+  suppressScroll = false;
+  windowLoading.value = false;
+}
+
+// 滚动方向感知: 上滚近顶加载更早, 下滚近底恢复更晚
 function handleScroll() {
   const el = msgArea.value;
-  if (!el || loadingOlder.value || suppressScroll) return;
+  if (!el || windowLoading.value || suppressScroll) return;
   if (el.scrollTop < 300 && hasOlderMessages.value) {
-    loadOlderMessages();
+    void loadOlderMessages();
+    return;
+  }
+  if (
+    el.scrollHeight - el.scrollTop - el.clientHeight < 300 &&
+    hasNewerMessages.value
+  ) {
+    void loadNewerMessages();
   }
 }
-// 切换角色时重置窗口
+
+// 切换角色时重置窗口(immediate: 首次挂载即初始化窗口, P2-11)
 watch(
   () => char.value.id,
   () => {
-    renderLimit.value = RENDER_WINDOW;
-  }
+    windowInitialized = false;
+    resetWindow();
+  },
+  { immediate: true }
 );
+
+/** 渲染后缓存消息真实高度(回收恢复时用缓存替代估算) */
+function cacheMsgHeight(el: unknown, id: string): void {
+  const node = el as ({ $el?: HTMLElement } & HTMLElement) | null;
+  const domEl = node && node.$el ? node.$el : (node as HTMLElement | null);
+  if (domEl && domEl.offsetHeight > 0 && !msgHeights.has(id)) {
+    msgHeights.set(id, domEl.offsetHeight);
+  }
+}
 
 // F08.2 聊天背景图片样式（应用到 .chat-messages 容器）
 const chatBgStyle = computed(() => {
@@ -168,7 +272,15 @@ const storyTimeText = computed(() => {
 watch(
   () => char.value.messages.length,
   () => {
+    ensureWindow(); // P2-11: 消息就绪后初始化窗口(首次)
     if (suppressScroll) return;
+    const el = msgArea.value;
+    // 视口在底部时, 窗口跟随新消息并滚底
+    const atBottom = el && el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+    if (atBottom && windowEnd.value < char.value.messages.length) {
+      windowEnd.value = char.value.messages.length;
+      bottomSpacerHeight.value = 0;
+    }
     void nextTick(() => {
       if (msgArea.value) {
         msgArea.value.scrollTop = msgArea.value.scrollHeight;
@@ -479,21 +591,36 @@ function handleQuickReply(btn: QuickReplyButton) {
       <!-- F08.2 背景遮罩层（保证文字可读性） -->
       <div class="chat-bg-overlay" :style="chatBgOverlayStyle" aria-hidden="true"></div>
       <div class="chat-messages-content">
-        <!-- 更早消息按需加载（窗口化渲染，避免长对话性能退化） -->
+        <!-- P2-11 顶部占位(已回收的更早消息高度) -->
+        <div
+          v-if="topSpacerHeight > 0"
+          class="msg-spacer"
+          :style="{ height: topSpacerHeight + 'px' }"
+          aria-hidden="true"
+        ></div>
+        <!-- 更早消息按需加载（双向窗口化渲染，避免长对话 DOM 膨胀） -->
         <button
           v-if="hasOlderMessages"
           type="button"
           class="load-older-btn"
           @click="loadOlderMessages"
         >
-          {{ t('chat.loadOlder', { count: char.messages.length - visibleMessages.length }) }}
+          {{ t('chat.loadOlder', { count: windowStart }) }}
         </button>
         <MessageBubble
           v-for="msg in visibleMessages"
           :key="msg.id"
           :msg="msg"
           @action="handleMessageAction"
+          :ref="(el) => cacheMsgHeight(el, msg.id)"
         />
+        <!-- P2-11 底部占位(已回收的更晚消息高度) -->
+        <div
+          v-if="bottomSpacerHeight > 0"
+          class="msg-spacer"
+          :style="{ height: bottomSpacerHeight + 'px' }"
+          aria-hidden="true"
+        ></div>
       </div>
     </div>
 
@@ -597,6 +724,12 @@ function handleQuickReply(btn: QuickReplyButton) {
 .chat-messages-content {
   position: relative;
   z-index: 1;
+}
+
+/* P2-11 双向窗口占位(纯占位, 不参与交互与背景绘制) */
+.msg-spacer {
+  width: 100%;
+  pointer-events: none;
 }
 
 /* F08.2 气泡样式覆盖（通过 CSS 变量控制圆角和透明度） */
