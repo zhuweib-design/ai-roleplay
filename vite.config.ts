@@ -128,11 +128,11 @@ export default defineConfig({
     alias: [
       // 数组形式（@rollup/plugin-alias 标准）：精确字符串匹配
       // 必须放在 '@' 之前，避免被前缀截胡
-      { find: '@core/', replacement: resolve(__dirname, 'src/core') + '/' },
-      { find: '@storage/', replacement: resolve(__dirname, 'src/storage') + '/' },
-      { find: '@api/', replacement: resolve(__dirname, 'src/api') + '/' },
-      { find: '@services/', replacement: resolve(__dirname, 'src/services') + '/' },
-      { find: '@/', replacement: resolve(__dirname, 'src') + '/' },
+      { find: '@core/', replacement: resolve(import.meta.dirname, 'src/core') + '/' },
+      { find: '@storage/', replacement: resolve(import.meta.dirname, 'src/storage') + '/' },
+      { find: '@api/', replacement: resolve(import.meta.dirname, 'src/api') + '/' },
+      { find: '@services/', replacement: resolve(import.meta.dirname, 'src/services') + '/' },
+      { find: '@/', replacement: resolve(import.meta.dirname, 'src') + '/' },
     ],
   },
   // Tauri 期望 dev server 在固定端口，并允许任意 host 访问
