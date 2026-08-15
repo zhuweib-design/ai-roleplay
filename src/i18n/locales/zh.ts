@@ -791,6 +791,10 @@ export default {
   'imgGen.batchDone': '批量生成完成：{count} 张',
   'imgGen.deleted': '已删除',
   'imgGen.galleryCleared': '画廊已清空',
+  'imgGen.deleteConfirmTitle': '删除图片',
+  'imgGen.deleteConfirm': '确定要删除这张图片吗？此操作无法恢复。',
+  'imgGen.clearConfirmTitle': '清空画廊',
+  'imgGen.clearConfirm': '确定要清空画廊中的全部图片吗？此操作无法恢复。',
 
   // ── 社区市场（CommunityMarketView） ──
   'market.backAria': '返回',

@@ -791,6 +791,10 @@ const en: Record<MessageKey, string> = {
   'imgGen.batchDone': 'Batch generation complete: {count} image(s)',
   'imgGen.deleted': 'Deleted',
   'imgGen.galleryCleared': 'Gallery cleared',
+  'imgGen.deleteConfirmTitle': 'Delete Image',
+  'imgGen.deleteConfirm': 'Delete this image? This cannot be undone.',
+  'imgGen.clearConfirmTitle': 'Clear Gallery',
+  'imgGen.clearConfirm': 'Clear all images in the gallery? This cannot be undone.',
 
   // ── Community market (CommunityMarketView) ──
   'market.backAria': 'Back',

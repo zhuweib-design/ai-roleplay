@@ -121,6 +121,7 @@
 | 2 | 🟠 P1 | anthropic-client.test.ts T-02 独立 describe 补 `afterEach(vi.restoreAllMocks)`，消除 fetch 间谍跨用例泄漏 | 全量测试 **2574/2574** 全绿 | ✅ 已修复 |
 | 4 | 🟡 P2 | model-file-adapter.ts 移除静态 `import { BaseDirectory }`，改用动态模块 `fs.BaseDirectory`（保留"非 Tauri 环境不加载"设计），消除 `[INEFFECTIVE_DYNAMIC_IMPORT]` | 重新构建确认告警消失 | ✅ 已修复 |
 | 3 | 🟠 P1 | 打包体积优化：gpt-tokenizer(983KB) 动态化——`token-counter.ts` 改 async API + 内部动态 import（promise 缓存），7 个调用点（prompt-builder/chat-manager/chat/benchmark/document-chunker/summarizer/world-setting-chunker/data-bank）+ 7 个测试文件 async 化；**token-counter chunk 983KB→0.48KB**，gpt-tokenizer 移入动态 chunk（仅调用时加载，首次后缓存）；首屏 gzip ~700KB→~260KB。web-llm/onnxruntime-web 本已懒加载（lib 6MB / ort 396KB + wasm 26.8MB 均在动态 chunk，不进首屏） | vue-tsc 0 错；lint 0 errors；测试 **2574/2574**；vite build 通过；coverage 过 | ✅ 已修复 |
-| 5-11 | 🟡 P2 | CSP/remote 白名单收紧、新手引导、长对话虚拟化、删除确认走查、提示词注入文档、发布机 e2e/构建、人工视觉冒烟 | — | ⏳ 按计划推进 |
+| 8 | 🟡 P2 | 删除确认走查：全量扫描删除入口——角色（CharactersView/CharacterEditorView）、世界书、文档、群聊、Persona、故事、分支/仓库均有确认（Modal 或原生 confirm）✅；**修复 ImageGeneratorView 缺确认的删单图与清空画廊**（补确认 Modal + i18n 文案 zh/en）；对话删除仅 storage 层实现、无 UI 入口（无风险，记录说明） | vue-tsc 0 错；i18n strict 通过；lint 0 errors | ✅ 已修复 |
+| 5-7,9-11 | 🟡 P2 | CSP/remote 白名单收紧、新手引导、长对话虚拟化、提示词注入文档、发布机 e2e/构建、人工视觉冒烟 | — | ⏳ 按计划推进 |
 
 **升级注记（同批次）**：构建工具链升级 `vite 5.4.21 → 8.2.1`、`vitest 2.1.9 → 4.1.10`、`@vitest/coverage-v8 2.1.9 → 4.1.10`，`npm audit` **0 漏洞**（此前残留 2 critical / 1 high / 3 moderate 全部消除）。vitest@4 的 v8 覆盖率统计口径统一（修复 Windows 盘符大小写重复误报），实测基线 statements 78.99 / branches 74.05 / functions 81.26 / lines 80.22，`vitest.config.ts` 阈值按实测留余量调整（statements/functions/lines 78%、branches 73%），`vitest.config.ts` 的 `__dirname` 改为 `import.meta.dirname`（适配 vite 未来默认 native config loader）。

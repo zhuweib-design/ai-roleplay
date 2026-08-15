@@ -91,6 +91,10 @@ const filteredGallery = computed(() => {
 // ── 图像详情 Modal ──
 const detailOpen = ref(false);
 const detailImage = ref<GeneratedImage | null>(null);
+// P2-8 删除确认(pre-launch 全检): 删单图/清空画廊均为破坏性操作, 先确认后执行
+const deleteModalOpen = ref(false);
+const deleteTargetId = ref<string | null>(null);
+const clearAllOpen = ref(false);
 
 // ── 操作 ──
 function goBack() {
@@ -131,13 +135,26 @@ function downloadImage(image: GeneratedImage) {
   link.click();
 }
 
-async function handleDelete(id: string) {
-  await store.deleteFromGallery(id);
+function handleDelete(id: string) {
+  deleteTargetId.value = id;
+  deleteModalOpen.value = true;
+}
+
+async function confirmDeleteImage() {
+  if (!deleteTargetId.value) return;
+  await store.deleteFromGallery(deleteTargetId.value);
+  deleteTargetId.value = null;
+  deleteModalOpen.value = false;
   showToast(t('imgGen.deleted'), 'info');
 }
 
-async function handleClearGallery() {
+function handleClearGallery() {
+  clearAllOpen.value = true;
+}
+
+async function confirmClearGallery() {
   await store.clearGallery();
+  clearAllOpen.value = false;
   showToast(t('imgGen.galleryCleared'), 'info');
 }
 
@@ -536,6 +553,32 @@ onMounted(async () => {
         >
           <Icon name="download" :size="14" aria-hidden="true" />
           {{ t('imgGen.downloadBtn') }}
+        </button>
+      </template>
+    </Modal>
+
+    <!-- P2-8 删除单图确认 -->
+    <Modal v-model="deleteModalOpen" :title="t('imgGen.deleteConfirmTitle')" :aria-label="t('imgGen.deleteConfirmTitle')">
+      <p>{{ t('imgGen.deleteConfirm') }}</p>
+      <template #footer>
+        <button type="button" class="modal-btn modal-cancel" @click="deleteTargetId = null">
+          {{ t('common.cancel') }}
+        </button>
+        <button type="button" class="modal-btn modal-confirm" @click="confirmDeleteImage">
+          {{ t('common.delete') }}
+        </button>
+      </template>
+    </Modal>
+
+    <!-- P2-8 清空画廊确认 -->
+    <Modal v-model="clearAllOpen" :title="t('imgGen.clearConfirmTitle')" :aria-label="t('imgGen.clearConfirmTitle')">
+      <p>{{ t('imgGen.clearConfirm') }}</p>
+      <template #footer>
+        <button type="button" class="modal-btn modal-cancel" @click="clearAllOpen = false">
+          {{ t('common.cancel') }}
+        </button>
+        <button type="button" class="modal-btn modal-confirm" @click="confirmClearGallery">
+          {{ t('common.delete') }}
         </button>
       </template>
     </Modal>
