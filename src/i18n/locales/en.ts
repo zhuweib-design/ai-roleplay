@@ -87,6 +87,19 @@ const en: Record<MessageKey, string> = {
   'app.newProfileName': 'New API Profile',
   'app.newButtonLabel': 'New Button',
 
+  // ── Onboarding (OnboardingModal.vue, P2-7) ──
+  'onboarding.title': 'Welcome to AI Tavern',
+  'onboarding.desc': 'A platform for roleplay and multi-model chat. Start with these four things:',
+  'onboarding.featureCharTitle': 'Create Characters',
+  'onboarding.featureCharDesc': 'Design character cards: personality, background, world, even custom avatar gradients',
+  'onboarding.featureChatTitle': 'Start Chatting',
+  'onboarding.featureChatDesc': 'Chat 1-on-1 or in groups, with streaming replies and automatic token budget trimming',
+  'onboarding.featureLoreTitle': 'World Book',
+  'onboarding.featureLoreDesc': 'Add dynamic lore entries that are retrieved and injected during conversation',
+  'onboarding.featureApiTitle': 'Configure Models',
+  'onboarding.featureApiDesc': 'Connect OpenAI-compatible APIs or local models; keys are encrypted locally',
+  'onboarding.start': 'Get Started',
+
   // ── Router / page titles ──
   'router.chat': 'Chat',
   'router.characterList': 'Characters',

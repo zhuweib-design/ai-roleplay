@@ -17,6 +17,8 @@ import { cardToUiChar } from '@/services/type-adapters';
 import NavRail from '@/components/layout/NavRail.vue';
 import MasterPasswordModal from '@/components/common/MasterPasswordModal.vue';
 import type { MasterPasswordMode } from '@/components/common/MasterPasswordModal.vue';
+import OnboardingModal from '@/components/common/OnboardingModal.vue';
+import { shouldShowOnboarding } from '@/utils/onboarding';
 import { t } from '@/i18n';
 
 const settings = useSettingsStore();
@@ -33,6 +35,9 @@ const characterVersionStore = useCharacterVersionStore();
 // AC20 主密码弹窗状态
 const mpModalVisible = ref(false);
 const mpModalMode = ref<MasterPasswordMode>('unlock');
+
+// P2-7 新手引导: 首次启动展示核心功能指引(完成后不再自动弹出)
+const onboardingOpen = ref(false);
 
 // 候选5：Tauri 桌面版未实现功能的一次性提示（可关闭）
 const platformNotice = ref('');
@@ -237,6 +242,11 @@ onMounted(async () => {
       chatStore.setApiProfile(activeProfile);
     }
   }
+
+  // P2-7 新手引导: 首次启动(未标记完成)且未在解锁流程时, 展示核心功能指引
+  if (shouldShowOnboarding() && !mpModalVisible.value) {
+    onboardingOpen.value = true;
+  }
 });
 
 // AC20 主密码弹窗：解锁成功后注入 API Profile
@@ -285,6 +295,9 @@ function handleMasterPasswordSuccess() {
     :dismissible="false"
     @success="handleMasterPasswordSuccess"
   />
+
+  <!-- P2-7 新手引导（首次启动展示，完成后 localStorage 标记） -->
+  <OnboardingModal v-model="onboardingOpen" />
 </template>
 
 <style>

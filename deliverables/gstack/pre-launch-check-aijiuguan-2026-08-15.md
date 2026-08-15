@@ -124,6 +124,7 @@
 | 8 | 🟡 P2 | 删除确认走查：全量扫描删除入口——角色（CharactersView/CharacterEditorView）、世界书、文档、群聊、Persona、故事、分支/仓库均有确认（Modal 或原生 confirm）✅；**修复 ImageGeneratorView 缺确认的删单图与清空画廊**（补确认 Modal + i18n 文案 zh/en）；对话删除仅 storage 层实现、无 UI 入口（无风险，记录说明） | vue-tsc 0 错；i18n strict 通过；lint 0 errors | ✅ 已修复 |
 | 9 | 🟡 P2 | 提示词注入文档化：`docs/threat-model.md` 新增第 6 节专项（攻击路径 / 已落实缓解 / 用户责任边界 / 开发约束），防护表与残余风险表补条目，评审清单追加 v-html 检查项 | 文档已交付 | ✅ 已修复 |
 | 10 | 🟡 P2 | e2e 补跑：本环境用临时 config（dev 在 5174）运行 6 规格 → **10 用例 9 通过**（theme/theme-visual/contrast-axe/character-crud/worldbook-flow 全过）。chat-flow 唯一失败：规格硬编码 `baseURL: http://localhost:5173/mock`，本环境 5173 被另一项目（Novel Studio）占用致跨源走 llm-proxy、mock 拦截失效（应用正确显示"生成失败：API 错误 404"，错误处理正常）；CI/发布机 dev 在 5173 时规格可过 | 9/10 通过 | ✅ 已补跑（1 项环境差异待发布机复核） |
-| 5-7,11 | 🟡 P2 | CSP/remote 白名单收紧、新手引导、长对话虚拟化、人工视觉冒烟 | — | ⏳ 按计划推进 |
+| 7 | 🟡 P2 | 新手引导：新增 `OnboardingModal.vue`（欢迎卡片 + 4 项核心功能指引：创建角色/开始对话/世界书/配置模型），首次启动自动弹出（localStorage 标志 `ai-roleplay:onboarding-done`，`utils/onboarding.ts`），完成即标记不再弹出；i18n zh/en 双语 | vue-tsc 0 错；i18n strict 通过；lint 0 errors | ✅ 已修复 |
+| 5-6,11 | 🟡 P2 | CSP/remote 白名单收紧、人工视觉冒烟、长对话虚拟化 | — | ⏳ 按计划推进 |
 
 **升级注记（同批次）**：构建工具链升级 `vite 5.4.21 → 8.2.1`、`vitest 2.1.9 → 4.1.10`、`@vitest/coverage-v8 2.1.9 → 4.1.10`，`npm audit` **0 漏洞**（此前残留 2 critical / 1 high / 3 moderate 全部消除）。vitest@4 的 v8 覆盖率统计口径统一（修复 Windows 盘符大小写重复误报），实测基线 statements 78.99 / branches 74.05 / functions 81.26 / lines 80.22，`vitest.config.ts` 阈值按实测留余量调整（statements/functions/lines 78%、branches 73%），`vitest.config.ts` 的 `__dirname` 改为 `import.meta.dirname`（适配 vite 未来默认 native config loader）。
