@@ -148,9 +148,11 @@ export class TauriFSAdapter implements StorageAdapter {
   // ── Lorebook CRUD (F06) ──
 
   async saveLorebook(lorebook: Lorebook): Promise<void> {
+    // 修复: Vue 响应式 Proxy 不能 structured clone 跨 IPC, 需 JSON 解包(同 indexeddb saveLorebook)
+    const plain = JSON.parse(JSON.stringify(lorebook)) as Lorebook;
     await TauriFSAdapter.invoke<void>('save_lorebook_file', {
-      id: lorebook.id,
-      lorebook,
+      id: plain.id,
+      lorebook: plain,
     });
   }
 

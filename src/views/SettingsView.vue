@@ -50,7 +50,7 @@ interface ThemeOption {
   swatchClass: string;
 }
 
-const themeOptions: ThemeOption[] = [
+const themeOptions = computed<ThemeOption[]>(() => [
   {
     value: 'dark',
     label: t('settingsView.themeDark'),
@@ -81,11 +81,11 @@ const themeOptions: ThemeOption[] = [
     description: t('settingsView.themeTheatreDesc'),
     swatchClass: 'swatch-theatre',
   },
-];
+]);
 
 function selectTheme(themeName: ThemeName) {
   settings.setTheme(themeName);
-  showToast('success', t('settingsView.themeChanged', { name: themeOptions.find((x) => x.value === themeName)?.label ?? themeName }));
+  showToast('success', t('settingsView.themeChanged', { name: themeOptions.value.find((x) => x.value === themeName)?.label ?? themeName }));
 }
 
 /**
@@ -96,7 +96,7 @@ function selectTheme(themeName: ThemeName) {
  * - End：末项
  */
 function handleThemeKeydown(e: KeyboardEvent, currentIndex: number): void {
-  const len = themeOptions.length;
+  const len = themeOptions.value.length;
   let nextIndex: number | null = null;
   switch (e.key) {
     case 'ArrowLeft':
@@ -118,11 +118,11 @@ function handleThemeKeydown(e: KeyboardEvent, currentIndex: number): void {
   }
   e.preventDefault();
   if (nextIndex !== null) {
-    selectTheme(themeOptions[nextIndex].value);
+    selectTheme(themeOptions.value[nextIndex].value);
     // 将焦点移到新选中的按钮
     void nextTick(() => {
       const target = document.querySelector<HTMLElement>(
-        `.theme-card[data-value="${themeOptions[nextIndex!].value}"]`
+        `.theme-card[data-value="${themeOptions.value[nextIndex!].value}"]`
       );
       target?.focus();
     });
@@ -141,19 +141,19 @@ interface SettingsCategory {
   icon: IconName;
 }
 
-const settingsCategories: SettingsCategory[] = [
+const settingsCategories = computed<SettingsCategory[]>(() => [
   { id: 'appearance', label: t('settingsView.categoryAppearance'), description: t('settingsView.categoryAppearanceDesc'), icon: 'palette' },
   { id: 'model', label: t('settingsView.categoryModel'), description: t('settingsView.categoryModelDesc'), icon: 'cpu' },
   { id: 'extension', label: t('settingsView.categoryExtension'), description: t('settingsView.categoryExtensionDesc'), icon: 'puzzle' },
   { id: 'persona', label: t('settingsView.categoryPersona'), description: t('settingsView.categoryPersonaDesc'), icon: 'user' },
   { id: 'data', label: t('settingsView.categoryData'), description: t('settingsView.categoryDataDesc'), icon: 'database' },
   { id: 'security', label: t('settingsView.categorySecurity'), description: t('settingsView.categorySecurityDesc'), icon: 'lock-keyhole' },
-];
+]);
 
 const activeCategory = ref<SettingsCategoryId>('appearance');
 
 const activeCategoryDesc = computed(
-  () => settingsCategories.find((c) => c.id === activeCategory.value)?.description ?? ''
+  () => settingsCategories.value.find((c) => c.id === activeCategory.value)?.description ?? ''
 );
 
 function selectCategory(id: SettingsCategoryId) {
@@ -162,7 +162,7 @@ function selectCategory(id: SettingsCategoryId) {
 
 /** 侧边栏 tab 键盘导航（WAI-ARIA：Arrow/Home/End） */
 function handleCategoryKeydown(e: KeyboardEvent, currentIndex: number): void {
-  const len = settingsCategories.length;
+  const len = settingsCategories.value.length;
   let nextIndex: number | null = null;
   switch (e.key) {
     case 'ArrowLeft':
@@ -184,7 +184,7 @@ function handleCategoryKeydown(e: KeyboardEvent, currentIndex: number): void {
   }
   e.preventDefault();
   if (nextIndex !== null) {
-    selectCategory(settingsCategories[nextIndex].id);
+    selectCategory(settingsCategories.value[nextIndex].id);
     void nextTick(() => {
       document.querySelectorAll<HTMLElement>('.settings-nav-item')[nextIndex!]?.focus();
     });
@@ -198,11 +198,13 @@ interface FontSizeOption {
   sample: string;
 }
 
-const fontSizeOptions: FontSizeOption[] = FONT_SIZE_PRESETS.map((size) => ({
-  value: size,
-  label: size === 12 ? t('settingsView.fontSmall') : size === 14 ? t('settingsView.fontDefault') : size === 16 ? t('settingsView.fontLarge') : t('settingsView.fontXLarge'),
-  sample: t('settingsView.fontSample'),
-}));
+const fontSizeOptions = computed<FontSizeOption[]>(() =>
+  FONT_SIZE_PRESETS.map((size) => ({
+    value: size,
+    label: size === 12 ? t('settingsView.fontSmall') : size === 14 ? t('settingsView.fontDefault') : size === 16 ? t('settingsView.fontLarge') : t('settingsView.fontXLarge'),
+    sample: t('settingsView.fontSample'),
+  }))
+);
 
 function selectFontSize(size: number) {
   settings.setFontSize(size);
@@ -211,7 +213,7 @@ function selectFontSize(size: number) {
 
 /** 字号 radiogroup 键盘导航（同主题） */
 function handleFontSizeKeydown(e: KeyboardEvent, currentIndex: number): void {
-  const len = fontSizeOptions.length;
+  const len = fontSizeOptions.value.length;
   let nextIndex: number | null = null;
   switch (e.key) {
     case 'ArrowLeft':
@@ -233,10 +235,10 @@ function handleFontSizeKeydown(e: KeyboardEvent, currentIndex: number): void {
   }
   e.preventDefault();
   if (nextIndex !== null) {
-    selectFontSize(fontSizeOptions[nextIndex].value);
+    selectFontSize(fontSizeOptions.value[nextIndex].value);
     void nextTick(() => {
       const target = document.querySelector<HTMLElement>(
-        `.fontsize-card[data-value="${fontSizeOptions[nextIndex!].value}"]`
+        `.fontsize-card[data-value="${fontSizeOptions.value[nextIndex!].value}"]`
       );
       target?.focus();
     });

@@ -191,7 +191,9 @@ export class IndexedDBAdapter implements StorageAdapter {
   // ── Lorebook CRUD (F06) ──
 
   async saveLorebook(lorebook: Lorebook): Promise<void> {
-    await this.wrap(this.store(STORE_LOREBOOKS, 'readwrite').put(lorebook));
+    // 修复: Vue 响应式 Proxy 对象不能 structured clone, 需 JSON 解包(同 saveSnapshot 模式)
+    const plain = JSON.parse(JSON.stringify(lorebook)) as Lorebook;
+    await this.wrap(this.store(STORE_LOREBOOKS, 'readwrite').put(plain));
   }
 
   async loadLorebook(id: string): Promise<Lorebook | null> {
