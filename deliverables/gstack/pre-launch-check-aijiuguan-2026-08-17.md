@@ -21,7 +21,7 @@
 | 项目 | 内容 |
 |------|------|
 | Go / No-Go | 🟢 Go（无 P0/P1 阻断） |
-| 严重度分布 | 🔴 P0: 0 ｜ 🟠 P1: 0 ｜ 🟡 P2: 7（原 8，#5 长对话虚拟化已由 P2-11 关闭）|
+| 严重度分布 | 🔴 P0: 0 ｜ 🟠 P1: 0 ｜ 🟡 P2: 6（原 8，#5 长对话虚拟化、#8 dist-qa 忽略已关闭）|
 | 关键跃迁 | 测试 0 失败 / 硬编码颜色 0 处 / 5 重 CI 门禁 / 5 主题 / i18n strict 通过 |
 | 建议负责人 | 前端 / 架构 / CI |
 
@@ -80,7 +80,7 @@
 | 5 | ✅ 已解决 | 性能/交互 | `src/components/chat/ChatMain.vue` | 长对话**已启用双向窗口虚拟化**（P2-11）：DOM 2100→200（-90.5%），连续滚动 57fps，内存 -45%（5000 条基准 `p11-scroll-fps.mjs`） | 维持窗口化渲染；超大对话可后续按需升级 vue-virtual-scroller | 设计师 / P2-11 |
 | 6 | 🟡 P2 | 交互空态 | `src/views/ChatView.vue` | 空对话主区无引导/示例提示（`01-chat.png` 截图显示大面积留白） | 空态显示「选择角色或新建对话」引导卡 + 示例 prompt | 设计师 |
 | 7 | 🟡 P2 | UI 验证 | `ui-shots/` | 仅覆盖深色主题，**未见 light/midnight 主题截图** | 用 `ui-shot.mjs` 补 light/midnight/OLED Black 主题截图 | 设计师 |
-| 8 | 🟡 P2 | 工程卫生 | `.gitignore` + `eslint.config.js` | `dist-qa/`（本次构建验证残留）未在任何忽略清单；本地 lint 会被其污染（已被识别为构建产物） | 把 `dist-qa/**` 加入 `.gitignore` 与 `eslint.config.js` ignores；或在 `npm run build` 后用脚本清理临时目录 | 质量门神 |
+| 8 | ✅ 已解决 | 工程卫生 | `.gitignore` + `eslint.config.js` | `dist-qa/` 已加入 `.gitignore`（build outputs 区）与 `eslint.config.js` ignores（`dist-qa/**`）；`npm run lint` 实测 0 errors（dist-qa 不再污染） | 维持忽略；后续临时验证构建可复用 `dist-qa/`，无需清理 | 质量门神 |
 
 ---
 
@@ -89,7 +89,7 @@
 | # | 行动 | 负责方 | 紧急度 | 期望完成 |
 |---|------|--------|--------|---------|
 | 1 | **🟢 可上线，无需发布前必做**——CI 全绿、无 P0/P1，按当前节奏迭代 | — | — | — |
-| 2 | 把 `dist-qa/**` 加入 `.gitignore` 与 `eslint.config.js` ignores（顺手补一个 P2） | 工程 | P2 | 本周 |
+| 2 | ~~把 `dist-qa/**` 加入忽略清单~~ ✅ **已完成**（`.gitignore` build outputs 区 + `eslint.config.js` ignores `dist-qa/**`） | 工程 | ✅ 已完成 | — |
 | 3 | Tauri 桌面打包纳入 CI（按 `ci.yml` 注释预留扩展位补 `tauri-action` + 签名密钥） | CI/发布 | P2 | 下个迭代 |
 | 4 | ~~ChatView 长对话启用虚拟列表~~ ✅ **已由 P2-11 完成**（双向窗口虚拟化，DOM 2100→200） | 前端 | ✅ 已完成 | — |
 | 5 | 打包体积拆分（onnxruntime-web / tokenizer 按需加载或 manualChunks） | 架构 | P2 | 下个迭代 |
@@ -111,7 +111,7 @@
 
 **重要区分**：报告 P2-#6（「ChatView 空对话无引导卡」）与 P2-6 UI 冒烟修复的「图像生成页引导缺失」是**不同**事项——后者落点 ImageGeneratorView，前者指 ChatView 空对话态，**仍未做**，保留为 P2，不可误关。
 
-**计数修正**：原报告 P2 计数 8 → 关闭 #5 后剩 **7**（#1/#2/#3/#4/#6/#7/#8）。P2-9 与 P2-6-image 属报告外已闭环关联工作，不计入原 8 项。
+**计数修正**：原报告 P2 计数 8 → 关闭 #5、#8 后剩 **6**（#1/#2/#3/#4/#6/#7）。P2-9 与 P2-6-image 属报告外已闭环关联工作，不计入原 8 项；#8 dist-qa 忽略已于本回填补齐（`.gitignore` + `eslint.config.js`）。
 
 ## ⚠️ 待完善 / 已知局限
 
