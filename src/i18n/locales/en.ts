@@ -214,6 +214,15 @@ const en: Record<MessageKey, string> = {
   'chat.conversationTitle': 'Chat with {name}',
   'chat.toolbarGroup': 'Quick reply buttons',
 
+  // ── empty conversation guide (P2-#6) ──
+  'chat.emptyStateTitle': 'Start a conversation with {name}',
+  'chat.emptyStateDesc': 'Type a message below, or pick an opener from below to begin',
+  'chat.emptyStateExamples': 'Example openers',
+  'chat.example1': 'Hi, could you introduce yourself first?',
+  'chat.example2': "What should we talk about today?",
+  'chat.example3': 'Tell me an interesting story',
+  'chat.example4': 'If you could make one wish, what would it be?',
+
   // ── Message bubble (MessageBubble) ──
   'bubble.userMsg': 'User message',
   'bubble.assistantMsg': 'Character message',

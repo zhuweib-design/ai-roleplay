@@ -527,6 +527,26 @@ function handleQuickReply(btn: QuickReplyButton) {
     }
   }
 }
+
+// ── P2-#6 空对话引导卡 ──
+const isChatEmpty = computed(
+  () => !!char.value && char.value.messages.length === 0
+);
+const examplePrompts = computed(() => [
+  { key: 'chat.example1', text: t('chat.example1') },
+  { key: 'chat.example2', text: t('chat.example2') },
+  { key: 'chat.example3', text: t('chat.example3') },
+  { key: 'chat.example4', text: t('chat.example4') },
+]);
+/** 点击示例开场白：填入输入框并聚焦（不自动发送，由用户确认后发送） */
+function startWithExample(text: string) {
+  if (chatStore.isGenerating) return;
+  if (textarea.value) {
+    textarea.value.value = text;
+    adjustHeight();
+    textarea.value.focus();
+  }
+}
 </script>
 
 <template>
@@ -646,6 +666,34 @@ function handleQuickReply(btn: QuickReplyButton) {
           :style="{ height: bottomSpacerHeight + 'px' }"
           aria-hidden="true"
         ></div>
+      </div>
+      <!-- P2-#6 空对话引导卡（当前角色无消息时显示，替代大面积留白） -->
+      <div
+        v-if="isChatEmpty"
+        class="empty-state"
+        role="status"
+        aria-live="polite"
+      >
+        <div class="empty-state-icon" aria-hidden="true">
+          <Icon name="chat-circle" :size="46" />
+        </div>
+        <h2 class="empty-state-title">{{ t('chat.emptyStateTitle', { name: char.name }) }}</h2>
+        <p class="empty-state-desc">{{ t('chat.emptyStateDesc') }}</p>
+        <div class="empty-state-examples">
+          <span class="empty-state-examples-label">{{ t('chat.emptyStateExamples') }}</span>
+          <div class="example-chips">
+            <button
+              v-for="ex in examplePrompts"
+              :key="ex.key"
+              type="button"
+              class="example-chip"
+              :disabled="chatStore.isGenerating"
+              @click="startWithExample(ex.text)"
+            >
+              {{ ex.text }}
+            </button>
+          </div>
+        </div>
       </div>
       <!-- P2-11 Phase4: 回到底部浮动按钮(上滚查看历史后一键回最新) -->
       <button
@@ -963,6 +1011,95 @@ function handleQuickReply(btn: QuickReplyButton) {
   color: var(--text-primary);
 }
 .load-older-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* P2-#6 空对话引导卡（覆盖整个消息区，居中展示） */
+.empty-state {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  display: flex;
+  color: var(--muted-foreground);
+  opacity: 0.7;
+}
+
+.empty-state-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.empty-state-desc {
+  margin: 0;
+  max-width: 420px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+.empty-state-examples {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.empty-state-examples-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.example-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 540px;
+}
+
+.example-chip {
+  padding: 8px 14px;
+  font-size: 13px;
+  line-height: 1.4;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.example-chip:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  color: var(--primary-fg);
+}
+
+.example-chip:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.example-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.example-chip:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }

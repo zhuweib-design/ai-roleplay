@@ -214,6 +214,15 @@ export default {
   'chat.conversationTitle': '与 {name} 的对话',
   'chat.toolbarGroup': '快捷回复按钮组',
 
+  // ── 空对话引导（P2-#6） ──
+  'chat.emptyStateTitle': '开始与 {name} 的对话',
+  'chat.emptyStateDesc': '在下方输入消息，或从下面的开场白里挑一个开始',
+  'chat.emptyStateExamples': '示例开场白',
+  'chat.example1': '你好，能先介绍一下你自己吗？',
+  'chat.example2': '我们今天聊点什么好呢？',
+  'chat.example3': '给我讲一个有趣的故事吧',
+  'chat.example4': '如果可以许一个愿望，你希望是什么？',
+
   // ── 消息气泡（MessageBubble） ──
   'bubble.userMsg': '用户消息',
   'bubble.assistantMsg': '角色消息',

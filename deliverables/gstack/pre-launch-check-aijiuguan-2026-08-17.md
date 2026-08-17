@@ -21,7 +21,7 @@
 | 项目 | 内容 |
 |------|------|
 | Go / No-Go | 🟢 Go（无 P0/P1 阻断） |
-| 严重度分布 | 🔴 P0: 0 ｜ 🟠 P1: 0 ｜ 🟡 P2: 3（原 8，#5 长对话虚拟化、#8 dist-qa 忽略、#2 E2E 入 CI、#3 回滚文档化、#7 主题截图已关闭）|
+| 严重度分布 | 🔴 P0: 0 ｜ 🟠 P1: 0 ｜ 🟡 P2: 2（原 8，#5 长对话虚拟化、#8 dist-qa 忽略、#2 E2E 入 CI、#3 回滚文档化、#7 主题截图、#6 空对话引导卡已关闭）|
 | 关键跃迁 | 测试 0 失败 / 硬编码颜色 0 处 / 6 重 CI 门禁 / 5 主题 / i18n strict 通过 |
 | 建议负责人 | 前端 / 架构 / CI |
 
@@ -53,7 +53,7 @@
   - 截图亮点（`01-chat.png`、`lang-2-en.png`、`04-settings-tab1.png`）：三栏布局合理、品牌色一致、Toast 反馈到位、Live preview 字号、5 主题卡片预览。
   - 局限：`ui-shots/` 基线为**深色主题**（26 张）；light/midnight 已用 `scripts/ui-shot.mjs`（THEME 参数）补齐各 15 张路由截图（见发现表 #7），仅 OLED Black 仍待后续补（深色基线已含 `04-settings-tab0-5` 作参考）。
 - **核心判断（交互）**：i18n 中英文切换**完整响应**（上次报告的「中英文切换响应不全」已修复，提交 `9f12196`）；拖拽/输入/工具按钮/快捷键提示（Shift+Enter 换行）/主密码门控/Toast 反馈到位。
-  - P2：`01-chat.png` 中央聊天主区空对话时**无空态引导**（仍待做）；长对话虚拟化已由 P2-11 完成（DOM 2100→200，见 📝 回填记录），该项不再计为缺陷。
+  - 空态引导：ChatView 空对话主区已新增**空态引导卡**（P2-#6 已关闭），含角色名标题、描述与 4 个示例 prompt（点击填入输入框）；长对话虚拟化已由 P2-11 完成（DOM 2100→200，见 📝 回填记录），该项不再计为缺陷。
 - **关键建议**：无 P0/P1。
 
 ### 🧭 流程官（流程审查 — 本次新增维度）
@@ -78,7 +78,7 @@
 | 3 | ✅ 已解决 | 发布流程 | `docs/data-backup-restore.md` | 回滚/灾备路径已文档化：`SettingsView` 数据管理 → 全量备份与恢复 → 导入备份（覆盖策略=回滚到备份时点）；含灾备演练 Runbook、冲突策略语义、明文密钥拒绝导出等安全护栏说明 | 流程官 |
 | 4 | 🟡 P2 | 性能/构建 | `vite.config.ts` + `src/core/model-file-adapter.ts` | 打包 `lib` chunk **6 MB**（gzip 2.1 MB，疑 onnxruntime-web）、`token-counter` 983 KB，首屏体积大 | 对 onnxruntime-web / tokenizer 做按需动态加载或 manualChunks 拆分；可参考 `p11-scroll-fps.mjs` 建立性能基线 | 质量门神 |
 | 5 | ✅ 已解决 | 性能/交互 | `src/components/chat/ChatMain.vue` | 长对话**已启用双向窗口虚拟化**（P2-11）：DOM 2100→200（-90.5%），连续滚动 57fps，内存 -45%（5000 条基准 `p11-scroll-fps.mjs`） | 维持窗口化渲染；超大对话可后续按需升级 vue-virtual-scroller | 设计师 / P2-11 |
-| 6 | 🟡 P2 | 交互空态 | `src/views/ChatView.vue` | 空对话主区无引导/示例提示（`01-chat.png` 截图显示大面积留白） | 空态显示「选择角色或新建对话」引导卡 + 示例 prompt | 设计师 |
+| 6 | ✅ 已解决 | 交互空态 | `src/components/chat/ChatMain.vue` | 空对话主区已新增空态引导卡：角色名标题 + 描述 + 4 个示例 prompt（pill 样式，点击填入输入框），light/dark 双主题验证通过 | 复用 i18n 文案（`chat.emptyTitle`/`chat.emptyDesc`/`chat.emptyHint`/`chat.examplePrompts`）防硬编码中文；示例 prompt 用角色扮演场景（自我介绍/世界观/闲聊/剧情推进） | 设计师 |
 | 7 | ✅ 已解决 | UI 验证 | `ui-shots/themes/light` + `ui-shots/themes/midnight` | 已用 `scripts/ui-shot.mjs`（THEME 参数）生成 light/midnight 各 15 张路由截图（共 30 张，文件大小正常）；设置页 Tab 展开段在切主题场景超时（确定性 FAIL，脚本已 try-catch 容错），不影响路由级主题验证，深色基线已含 `04-settings-tab0-5` 作参考 | 设计师 |
 | 8 | ✅ 已解决 | 工程卫生 | `.gitignore` + `eslint.config.js` | `dist-qa/` 已加入 `.gitignore`（build outputs 区）与 `eslint.config.js` ignores（`dist-qa/**`）；`npm run lint` 实测 0 errors（dist-qa 不再污染） | 维持忽略；后续临时验证构建可复用 `dist-qa/`，无需清理 | 质量门神 |
 
@@ -93,7 +93,7 @@
 | 3 | Tauri 桌面打包纳入 CI（按 `ci.yml` 注释预留扩展位补 `tauri-action` + 签名密钥） | CI/发布 | P2 | 下个迭代 |
 | 4 | ~~ChatView 长对话启用虚拟列表~~ ✅ **已由 P2-11 完成**（双向窗口虚拟化，DOM 2100→200） | 前端 | ✅ 已完成 | — |
 | 5 | 打包体积拆分（onnxruntime-web / tokenizer 按需加载或 manualChunks） | 架构 | P2 | 下个迭代 |
-| 6 | ChatView 空对话状态增加引导卡 / 示例 prompt | 前端 | P2 | 下个迭代 |
+| 6 | ~~ChatView 空对话状态增加引导卡 / 示例 prompt~~ ✅ **已完成**（`src/components/chat/ChatMain.vue` 空态引导卡 + 示例 prompt，i18n 文案 + 双主题 Playwright 验证） | 前端 | ✅ 已完成 | — |
 | 7 | ~~补齐 light / midnight / OLED Black 主题 UI 截图~~ ✅ **已完成**（`scripts/ui-shot.mjs` THEME 参数生成 light/midnight 各 15 张路由截图；OLED Black 留待下次） | QA | ✅ 已完成 | — |
 | 8 | ~~E2E 纳入 CI 默认门禁~~ ✅ **已完成**（`e2e` job）；~~文档化回滚流程~~ ✅ **已完成**（`docs/data-backup-restore.md`） | 产品/CI | ✅ 全部完成 | — |
 
@@ -109,9 +109,9 @@
 | P2-9 CSP 盘点 | 报告未单列 P2（安全维度仅"保留开放"） | ✅ 已闭环 | `tauri.conf.json` + `capabilities/default.json` + `P2-9-csp-whitelist-report.md` | 决策保留"任意自定义端点"开放定位（产品核心卖点）；`validate_endpoint` 禁 link-local/私网、CSP 禁 http 明文、市场 sha256+https 校验等边界已覆盖 |
 | P2-6 UI 冒烟 | 修复图像生成页引导缺失 + 设置页描述截断 | ✅ 已闭环 | `src/views/ImageGeneratorView.vue` + `src/views/SettingsView.vue` | ImageGeneratorView 未配置时显示 `config-warning` 红色引导横幅 + "去设置"按钮；SettingsView `settings-nav-item-desc` 改 2 行 line-clamp（注释标注 P2-6 UI 修复） |
 
-**重要区分**：报告 P2-#6（「ChatView 空对话无引导卡」）与 P2-6 UI 冒烟修复的「图像生成页引导缺失」是**不同**事项——后者落点 ImageGeneratorView，前者指 ChatView 空对话态，**仍未做**，保留为 P2，不可误关。
+**重要区分**：报告 P2-#6（「ChatView 空对话无引导卡」）与 P2-6 UI 冒烟修复的「图像生成页引导缺失」是**不同**事项——后者落点 ImageGeneratorView 已于本报告初稿后闭环（见 📝 回填记录 P2-6 UI 冒烟）；前者指 ChatView 空对话态，**已于本次回填闭环**（空态引导卡 + 示例 prompt），不可与后者混为一谈。
 
-**计数修正**：原报告 P2 计数 8 → 关闭 #5、#8、#2、#3、#7 后剩 **3**（#1/#4/#6）。P2-9 与 P2-6-image 属报告外已闭环关联工作，不计入原 8 项；#8 dist-qa 忽略、#2 E2E 入 CI、#3 回滚文档化、#7 主题截图均已于本回填补齐。
+**计数修正**：原报告 P2 计数 8 → 关闭 #5、#8、#2、#3、#7、#6 后剩 **2**（#1/#4）。P2-9 与 P2-6-image 属报告外已闭环关联工作，不计入原 8 项；#8 dist-qa 忽略、#2 E2E 入 CI、#3 回滚文档化、#7 主题截图、#6 空对话引导卡均已于本回填补齐。
 
 ## ⚠️ 待完善 / 已知局限
 
@@ -139,6 +139,7 @@
 | P2-11 长对话虚拟化压测 | ✅ DOM 2100→200（-90.5%），连续滚动 57fps，内存 -45%（5000 条） | ChatMain.vue 双向窗口 |
 | P2-9 CSP 盘点 | ✅ 决策保留开放定位（任意 OpenAI 兼容端点），SSRF/明文传输/市场校验边界已覆盖 | P2-9-csp-whitelist-report.md |
 | P2-6 UI 冒烟修复 | ✅ ImageGeneratorView 配置引导横幅 + SettingsView 描述 2 行 line-clamp | 见源文件注释 |
+| P2-#6 空对话引导卡 | ✅ `src/components/chat/ChatMain.vue` 空态引导卡：角色名标题 + 描述 + 4 示例 prompt（点击填入输入框）；`typecheck`/`i18n:strict`/`vite build`/`lint` 全通过；light/dark 双主题 Playwright 验证（选中空消息角色 lyra，卡片可见、chip 填入生效） | i18n 文案 `chat.emptyTitle`/`chat.emptyDesc`/`chat.emptyHint`/`chat.examplePrompts` 防硬编码中文 |
 | E2E（Playwright）本地验证 | ✅ **10/10 spec 全绿**（msedge + 端口 5174） | e2e/ 下 6 文件：theme-flow / worldbook-flow / character-crud / chat-flow / theme-visual / contrast-axe；onboarding 跳过 + mock SSE 对话流式回复；已纳入 CI `e2e` job |
 | 回滚/灾备路径文档化 | ✅ `docs/data-backup-restore.md` | 覆盖导出(加密/明文密钥拒绝)/导入(覆盖=回滚)/冲突策略/灾备 Runbook/跨设备迁移/审计；导入路径经代码审计确认可用（backup-service.ts / backup.ts / SettingsView.vue）|
 | 主题截图(light/midnight) | ✅ `scripts/ui-shot.mjs`（THEME 参数）生成 `ui-shots/themes/light` + `ui-shots/themes/midnight` 各 15 张路由截图（共 30 张，文件 33–98KB 正常非空白）；设置页 Tab 展开段在切主题场景确定性超时（脚本 try-catch 容错，不影响路由级主题验证） | 深色基线 \`ui-shots/\` 已含 \`04-settings-tab0-5\` 作 OLED 参考；OLED Black 截图仍待补 |
