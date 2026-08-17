@@ -135,7 +135,9 @@ export class IndexedDBAdapter implements StorageAdapter {
   // ── 角色卡 CRUD ──
 
   async saveCharacter(card: CharacterCard): Promise<void> {
-    await this.wrap(this.store(STORE_CHARACTERS, 'readwrite').put(card));
+    // Vue 响应式 Proxy 不能 structured clone, 统一 JSON 解包(同 saveSnapshot/saveLorebook 模式)
+    const plain = JSON.parse(JSON.stringify(card)) as CharacterCard;
+    await this.wrap(this.store(STORE_CHARACTERS, 'readwrite').put(plain));
   }
 
   async loadCharacter(id: string): Promise<CharacterCard | null> {
@@ -154,7 +156,8 @@ export class IndexedDBAdapter implements StorageAdapter {
   // ── 对话 CRUD ──
 
   async saveChat(chat: Chat): Promise<void> {
-    await this.wrap(this.store(STORE_CHATS, 'readwrite').put(chat));
+    const plain = JSON.parse(JSON.stringify(chat)) as Chat;
+    await this.wrap(this.store(STORE_CHATS, 'readwrite').put(plain));
   }
 
   async loadChat(id: string): Promise<Chat | null> {
@@ -174,9 +177,8 @@ export class IndexedDBAdapter implements StorageAdapter {
   // ── 设置 ──
 
   async saveSettings(settings: AppSettings): Promise<void> {
-    await this.wrap(
-      this.store(STORE_SETTINGS, 'readwrite').put({ key: SETTINGS_KEY, ...settings })
-    );
+    const plain = JSON.parse(JSON.stringify({ key: SETTINGS_KEY, ...settings }));
+    await this.wrap(this.store(STORE_SETTINGS, 'readwrite').put(plain));
   }
 
   async loadSettings(): Promise<Partial<AppSettings>> {
@@ -216,7 +218,8 @@ export class IndexedDBAdapter implements StorageAdapter {
   // ── 群聊 CRUD (F10) ──
 
   async saveGroupChat(group: GroupChat): Promise<void> {
-    await this.wrap(this.store(STORE_GROUPS, 'readwrite').put(group));
+    const plain = JSON.parse(JSON.stringify(group)) as GroupChat;
+    await this.wrap(this.store(STORE_GROUPS, 'readwrite').put(plain));
   }
 
   async loadGroupChat(id: string): Promise<GroupChat | null> {
@@ -238,7 +241,8 @@ export class IndexedDBAdapter implements StorageAdapter {
   // ── Persona CRUD (F07) ──
 
   async savePersona(persona: Persona): Promise<void> {
-    await this.wrap(this.store(STORE_PERSONAS, 'readwrite').put(persona));
+    const plain = JSON.parse(JSON.stringify(persona)) as Persona;
+    await this.wrap(this.store(STORE_PERSONAS, 'readwrite').put(plain));
   }
 
   async loadPersona(id: string): Promise<Persona | null> {
@@ -260,7 +264,8 @@ export class IndexedDBAdapter implements StorageAdapter {
   // ── DataBank 文档 CRUD (F09) ──
 
   async saveDocument(doc: DataBankDocument): Promise<void> {
-    await this.wrap(this.store(STORE_DOCUMENTS, 'readwrite').put(doc));
+    const plain = JSON.parse(JSON.stringify(doc)) as DataBankDocument;
+    await this.wrap(this.store(STORE_DOCUMENTS, 'readwrite').put(plain));
   }
 
   async loadDocument(id: string): Promise<DataBankDocument | null> {
@@ -303,7 +308,8 @@ export class IndexedDBAdapter implements StorageAdapter {
   // ── Story CRUD (F16) ──
 
   async saveStory(story: StoryAnalysisResult): Promise<void> {
-    await this.wrap(this.store(STORE_STORIES, 'readwrite').put(story));
+    const plain = JSON.parse(JSON.stringify(story)) as StoryAnalysisResult;
+    await this.wrap(this.store(STORE_STORIES, 'readwrite').put(plain));
   }
 
   async loadStory(id: string): Promise<StoryAnalysisResult | null> {
