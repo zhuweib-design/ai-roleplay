@@ -964,13 +964,83 @@ watch(
 
 </template>
 <style scoped>
+/* ── 标准 section 容器（从 SettingsView.vue 复制，因 scoped 不穿透子组件） ── */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+}
+
 .section-hint {
   font-size: 12px;
   color: var(--muted-foreground);
   margin: 0;
 }
 
-/* ── 主题选择 ── */
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--destructive);
+  margin: 0;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.data-mgmt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  background: var(--card-elevated);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+.data-mgmt-btn:hover:not(:disabled) {
+  background: var(--card);
+  border-color: var(--secondary);
+}
+
+.data-mgmt-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── 云端/本地切换 tabs（从 SettingsView.vue 复制，因 scoped 不穿透子组件） ── */
 .theme-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
