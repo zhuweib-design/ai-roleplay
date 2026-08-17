@@ -130,3 +130,11 @@
 | 11 | 🟡 P2 | 长对话虚拟化 | **Phase 1-6 全部完成**：自研双向窗口（ChatMain `[windowStart,windowEnd]` + 顶/底 spacer + 高度估算/缓存 + 双向锚定 + windowLoading 防重入 + 回到底部按钮）；**改造后 DOM 恒 200 气泡（-90.5%）、连续滚动 57fps、内存 92→51MB（-45%）**；全量 2574/2574 + typecheck/lint/i18n/build 全绿；e2e 9/10（本环境受限，chat-flow 待发布机复核）（计划：`P2-11-virtualization-plan.md`）| ✅ 已修复 |
 
 **升级注记（同批次）**：构建工具链升级 `vite 5.4.21 → 8.2.1`、`vitest 2.1.9 → 4.1.10`、`@vitest/coverage-v8 2.1.9 → 4.1.10`，`npm audit` **0 漏洞**（此前残留 2 critical / 1 high / 3 moderate 全部消除）。vitest@4 的 v8 覆盖率统计口径统一（修复 Windows 盘符大小写重复误报），实测基线 statements 78.99 / branches 74.05 / functions 81.26 / lines 80.22，`vitest.config.ts` 阈值按实测留余量调整（statements/functions/lines 78%、branches 73%），`vitest.config.ts` 的 `__dirname` 改为 `import.meta.dirname`（适配 vite 未来默认 native config loader）。
+
+**用户反馈修复（发布后，2026-08-16/17，提交 9f12196 + 02a5b9e）**：
+
+| 反馈 | 根因 | 修复 | 状态 |
+|---|---|---|---|
+| 保存世界书失败：`could not be cloned` | `indexeddb-adapter.saveLorebook` 直接 `put(Vue Proxy)`，structured clone 不支持 | `JSON.parse(JSON.stringify())` 解包（同 `saveSnapshot` 模式）；`tauri-fs-adapter.saveLorebook` 同步防御 | ✅ 已修复 |
+| 中英文切换后部分区域不切换（NavRail/设置 Tab/主题/字号预览/Toast 等）| `SettingsView` 3 处 setup 阶段 `t(...)` 一次性构造静态数组（`settingsCategories`/`themeOptions`/`fontSizeOptions`）不响应 `localeRef` | 全部改 `computed`；验证截图 `ui-shots/lang-{1-zh,2-en,3-back-zh}.png`（切英文全响应、切回中文无残留）| ✅ 已修复 |
+| 版本管理页（CharacterVersionView）样式与设置页不一致 + Tab 语言不响应 | TABS setup 一次性 `t()`；卡片 padding 16px/radius-md 与设置页 20px/radius-lg 不一致 | TABS 改 `computed`；settings-section/merge-form/diff-form/diff-result/branch-card 圆角统一 `radius-lg`、padding 对齐设置页；section-title 改 `font-display 16px`；验证 `ui-shots/cv-{zh,en}.png` | ✅ 已修复 |
