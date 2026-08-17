@@ -51,13 +51,14 @@ onMounted(() => {
 // ── Tab ──
 type TabKey = 'history' | 'branches' | 'diff' | 'merge' | 'settings';
 const activeTab = ref<TabKey>('history');
-const TABS: Array<{ key: TabKey; label: string }> = [
+// P2-6: computed 包裹使 t() 响应 locale 变化(切中英文时 Tab 标签同步更新)
+const TABS = computed<Array<{ key: TabKey; label: string }>>(() => [
   { key: 'history', label: t('cv.tabHistory') },
   { key: 'branches', label: t('cv.tabBranches') },
   { key: 'diff', label: t('cv.tabDiff') },
   { key: 'merge', label: t('cv.tabMerge') },
   { key: 'settings', label: t('cv.tabSettings') },
-];
+]);
 
 // ── Toast ──
 const toastOpen = ref(false);
@@ -1451,11 +1452,12 @@ function goBack(): void {
   gap: 10px;
 }
 
+/* P2-6: 对齐设置页卡片圆角 */
 .branch-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
   transition: border-color 0.15s;
 }
 
@@ -1508,7 +1510,7 @@ function goBack(): void {
   font-family: var(--font-mono, monospace);
 }
 
-/* Diff form */
+/* Diff form(P2-6: 对齐设置页卡片观感) */
 .diff-form {
   display: flex;
   gap: 12px;
@@ -1517,8 +1519,8 @@ function goBack(): void {
   margin-bottom: 16px;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
 }
 
 .diff-arrow {
@@ -1527,11 +1529,12 @@ function goBack(): void {
   padding-bottom: 8px;
 }
 
+/* Diff result(P2-6: 对齐设置页卡片观感) */
 .diff-result {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  padding: 20px;
 }
 
 .diff-summary {
@@ -1624,17 +1627,18 @@ function goBack(): void {
   overflow-y: auto;
 }
 
-/* Merge form */
+/* Merge form(P2-6: 对齐设置页卡片) */
 .merge-form {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 16px;
+  border-radius: var(--radius-lg);
+  padding: 20px;
 }
 
 .section-title {
   margin: 0 0 8px;
-  font-size: 15px;
+  font-family: var(--font-display);
+  font-size: 16px;
   font-weight: 600;
   color: var(--foreground);
 }
@@ -1730,12 +1734,12 @@ function goBack(): void {
   margin-left: auto;
 }
 
-/* Settings sections */
+/* Settings sections(P2-6: 对齐设置页卡片: padding 20px + radius-lg) */
 .settings-section {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 16px;
+  border-radius: var(--radius-lg);
+  padding: 20px;
   margin-bottom: 16px;
 }
 
