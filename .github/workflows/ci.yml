@@ -57,6 +57,40 @@ jobs:
           path: coverage/
           retention-days: 7
 
-# 后续可扩展（需额外密钥/资源, 本次未纳入默认门禁）:
-# 1. Tauri 桌面构建: 用 tauri-apps/tauri-action, 需 TAURI_SIGNING_PRIVATE_KEY 等签名密钥
-# 2. E2E: playwright test, 需先 npx playwright install --with-deps 下载浏览器二进制
+  # E2E 门禁（已纳入默认门禁）: Playwright 真实浏览器跑 e2e/ 下 6 个 spec
+  # - 本地 Windows 用系统 Edge(channel: msedge, 免下载); CI(ubuntu) 自动切自带 chromium + --with-deps
+  # - playwright.config.ts 在 CI 下切 chromium 分支, 避免 Linux 无系统 Edge 而报错
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+# 后续可扩展（需额外密钥/资源）:
+# - Tauri 桌面构建: 用 tauri-apps/tauri-action, 需 TAURI_SIGNING_PRIVATE_KEY 等签名密钥

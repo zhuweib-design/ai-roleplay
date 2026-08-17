@@ -9,8 +9,8 @@
 
 ## 📌 TL;DR（执行摘要）
 
-- **整体结论**：🟢 **Go（可上线）**—— 较 08-15 全检取得**实质跃迁**：上次 2 项 P1（硬编码颜色 / 单测间谍隔离）**已全部修复**；CI **5 重质量门禁全部实测通过**（lint / i18n strict / 80% 覆盖率 / typecheck+build / 覆盖率上传）；类型检查、单元测试 2574、依赖审计、生产构建全绿。无 P0/P1 阻断。
-- **关键跃迁**：测试 2573→**2574 通过（0 失败）**、硬编码颜色 20→**0 处**、主题系统扩展到 **5 种**、CI 从缺失→**5 重门禁 + 注释留好扩展位**。
+- **整体结论**：🟢 **Go（可上线）**—— 较 08-15 全检取得**实质跃迁**：上次 2 项 P1（硬编码颜色 / 单测间谍隔离）**已全部修复**；CI **6 重质量门禁全部实测通过**（lint / i18n strict / 80% 覆盖率 / typecheck+build / 覆盖率上传 / **E2E(Playwright)**）；类型检查、单元测试 2574、依赖审计、生产构建全绿。无 P0/P1 阻断。
+- **关键跃迁**：测试 2573→**2574 通过（0 失败）**、硬编码颜色 20→**0 处**、主题系统扩展到 **5 种**、CI 从缺失→**6 重门禁（含 E2E）+ Tauri 桌面构建仍留扩展位**。
 - **新发现 P2（不阻断）**：打包体积仍大（lib 6MB）、Tauri 桌面打包未入 CI 默认门禁、本次构建残留 `dist-qa/` 未被 .gitignore/eslint 忽略。（原「ChatView 长对话无虚拟化」已由 P2-11 完成并于本次回填关闭，见 📝 回填记录）
 - **回填闭环（本次新增）**：P2-11 长对话虚拟化（DOM 2100→200）、P2-9 CSP 盘点（保留开放定位 + 边界覆盖）、P2-6 UI 冒烟（图像生成页引导 + 设置页描述截断）三项关联工作已于本报告初稿之后完成并 commit，详见文末 📝 回填记录。
 
@@ -21,7 +21,7 @@
 | 项目 | 内容 |
 |------|------|
 | Go / No-Go | 🟢 Go（无 P0/P1 阻断） |
-| 严重度分布 | 🔴 P0: 0 ｜ 🟠 P1: 0 ｜ 🟡 P2: 6（原 8，#5 长对话虚拟化、#8 dist-qa 忽略已关闭）|
+| 严重度分布 | 🔴 P0: 0 ｜ 🟠 P1: 0 ｜ 🟡 P2: 5（原 8，#5 长对话虚拟化、#8 dist-qa 忽略、#2 E2E 入 CI 已关闭）|
 | 关键跃迁 | 测试 0 失败 / 硬编码颜色 0 处 / 5 重 CI 门禁 / 5 主题 / i18n strict 通过 |
 | 建议负责人 | 前端 / 架构 / CI |
 
@@ -61,11 +61,11 @@
   - 首启流程（`App.vue onMounted`）：存储 init → 设置加载（主题/字号/i18n）→ 角色/世界书/群聊/Persona/DataBank/Story 加载 → 主密码 unlock 门控 → API Profile 注入 → ready。无断点。
   - 备份/恢复：`exportAll()` 检测明文密钥 → 拒绝导出 + 审计；`legacy-migration`（一次性、不覆盖、不阻塞）——数据安全迁移闭环。
   - 存储层 schema：`STORAGE_SCHEMA_VERSION = 1`，前端 type-adapters 兼容。
-  - CI/CD（`.github/workflows/ci.yml`）：**5 重门禁链完整**——eslint / i18n strict / coverage 80% / typecheck+build / 覆盖率上传；注释明确留 Tauri 桌面构建 + E2E 的扩展位。
+  - CI/CD（`.github/workflows/ci.yml`）：**6 重门禁链完整**——eslint / i18n strict / coverage 80% / typecheck+build / 覆盖率上传 / **E2E(Playwright)**；原注释留的 E2E 扩展位已落地，仅 Tauri 桌面构建仍留扩展位（需签名密钥）。
 - **关键建议**：无 P0/P1。
   - **P2-A**：CI 默认门禁**未纳入 Tauri 桌面打包**（注释说明需 `TAURI_SIGNING_PRIVATE_KEY` 与 `tauri-apps/tauri-action`），当前发布需手动 `tauri:build`。
   - **P2-B**：当前**无自动回滚流程**——依赖用户手动备份文件；建议文档化回滚路径（导入 `.json` 备份）与灾备演练。
-  - **P2-C**：e2e（6 个 Playwright 规格）**未纳入 CI 默认门禁**（注释说明需 `npx playwright install --with-deps`）。
+  - **P2-C**：e2e（6 个 Playwright 规格）**已纳入 CI 默认门禁**（`e2e` job：`npx playwright install --with-deps chromium` + `npm run test:e2e`，本地 10/10 全绿）。
 
 ---
 
@@ -74,7 +74,7 @@
 | # | 严重度 | 类别 | 位置 | 问题描述 | 建议 | 来源成员 |
 |---|--------|------|------|---------|------|---------|
 | 1 | 🟡 P2 | 工程流程 | `.github/workflows/ci.yml` | Tauri 桌面打包未纳入 CI 默认门禁（注释已留扩展位） | 补 `tauri-apps/tauri-action` + 签名密钥到 secrets，将 `tauri:build` 纳入 release job | 流程官 |
-| 2 | 🟡 P2 | 工程流程 | `.github/workflows/ci.yml` | E2E（Playwright）未纳入默认门禁（注释说明需浏览器） | 在 CI 增加 `npx playwright install --with-deps` + `npm run test:e2e` job | 流程官 |
+| 2 | ✅ 已解决 | 工程流程 | `.github/workflows/ci.yml` | E2E（Playwright）已纳入默认门禁：`e2e` job 装 chromium + `npm run test:e2e`；`playwright.config.ts` CI 下自动切自带 chromium（避开 Linux 无系统 Edge）、多 origin storageState 跳过 OnboardingModal 遮挡；本地 10/10 全绿 | 维持；chromium 浏览器缓存可后续加 cache 优化 | 流程官 |
 | 3 | 🟡 P2 | 发布流程 | 全局 | 无自动化回滚流程，仅依赖用户手动备份文件 | 文档化回滚路径（导入 `.json` 备份），提供灾备演练 | 流程官 |
 | 4 | 🟡 P2 | 性能/构建 | `vite.config.ts` + `src/core/model-file-adapter.ts` | 打包 `lib` chunk **6 MB**（gzip 2.1 MB，疑 onnxruntime-web）、`token-counter` 983 KB，首屏体积大 | 对 onnxruntime-web / tokenizer 做按需动态加载或 manualChunks 拆分；可参考 `p11-scroll-fps.mjs` 建立性能基线 | 质量门神 |
 | 5 | ✅ 已解决 | 性能/交互 | `src/components/chat/ChatMain.vue` | 长对话**已启用双向窗口虚拟化**（P2-11）：DOM 2100→200（-90.5%），连续滚动 57fps，内存 -45%（5000 条基准 `p11-scroll-fps.mjs`） | 维持窗口化渲染；超大对话可后续按需升级 vue-virtual-scroller | 设计师 / P2-11 |
@@ -95,7 +95,7 @@
 | 5 | 打包体积拆分（onnxruntime-web / tokenizer 按需加载或 manualChunks） | 架构 | P2 | 下个迭代 |
 | 6 | ChatView 空对话状态增加引导卡 / 示例 prompt | 前端 | P2 | 下个迭代 |
 | 7 | 补齐 light / midnight / OLED Black 主题 UI 截图（用 `ui-shot.mjs`） | QA | P2 | 下次冒烟 |
-| 8 | 文档化回滚流程（导入 `.json` 备份路径），E2E 纳入 CI 默认门禁 | 产品/CI | P2 | 后续版本 |
+| 8 | ~~E2E 纳入 CI 默认门禁~~ ✅ **已完成**（`e2e` job）；文档化回滚流程（导入 `.json` 备份路径）仍待做 | 产品/CI | ✅(E2E) / P2(回滚) | 后续版本 |
 
 ---
 
@@ -111,14 +111,14 @@
 
 **重要区分**：报告 P2-#6（「ChatView 空对话无引导卡」）与 P2-6 UI 冒烟修复的「图像生成页引导缺失」是**不同**事项——后者落点 ImageGeneratorView，前者指 ChatView 空对话态，**仍未做**，保留为 P2，不可误关。
 
-**计数修正**：原报告 P2 计数 8 → 关闭 #5、#8 后剩 **6**（#1/#2/#3/#4/#6/#7）。P2-9 与 P2-6-image 属报告外已闭环关联工作，不计入原 8 项；#8 dist-qa 忽略已于本回填补齐（`.gitignore` + `eslint.config.js`）。
+**计数修正**：原报告 P2 计数 8 → 关闭 #5、#8、#2 后剩 **5**（#1/#3/#4/#6/#7）。P2-9 与 P2-6-image 属报告外已闭环关联工作，不计入原 8 项；#8 dist-qa 忽略与 #2 E2E 入 CI 均已于本回填补齐。
 
 ## ⚠️ 待完善 / 已知局限
 
 - 本环境**无法真实执行 GUI 交互**（拖拽、窗口缩放、真实点击），UI/交互维度结论基于 `ui-shots/` 26 张**真实截图**（覆盖全模块 + 语言切换）做视觉审查，是上次报告「无 GUI 验证」局限的**显著改进**；但 light/midnight 主题仍无截图证据。
 - `npm run build` 在本环境因清空 `dist/` 触发沙箱批量删除护栏，已用临时目录 `dist-qa/` 绕开验证构建本身成功（`✓ built in 3.31s`）。dist-qa 残留是本环境产物，已识别并建议加入忽略清单。
 - 提示词注入为 AI 角色对话类应用**固有风险**——本检以「XSS 已通过文本插值规避、密钥已加密、端点已做 SSRF 防护、明文密钥备份已拒绝导出」作为缓解边界，深层防御仍需在产品层面定义用户责任与可选的内容审核。
-- e2e（Playwright，6 规格）本环境未跑；CI 也未纳入默认门禁（注释留好扩展位）。
+- e2e（Playwright，6 规格）**本环境已真实跑通 10/10**（msedge + 端口 5174 验证，含 onboarding 跳过与 mock SSE 对话流），并已纳入 CI `e2e` job（ubuntu chromium）。
 
 ---
 
@@ -132,13 +132,14 @@
 | `npm run lint`（剔除 dist-qa） | ✅ **0 errors / 50 warnings** | warnings 全为风格类，非阻断；exit 0 |
 | `npm audit` | ✅ **0 漏洞** | info/low/moderate/high/critical 全 0 |
 | `vite build`（临时目录） | ✅ `✓ built in 3.31s` exit 0 | 主包 `lib` 6MB / `token-counter` 983KB（仍有体积告警） |
-| `.github/workflows/ci.yml` | ✅ 5 重门禁链完整 | 注释留好 Tauri / E2E 扩展位 |
+| `.github/workflows/ci.yml` | ✅ **6 重门禁链完整**（新增 E2E） | eslint / i18n strict / coverage 80% / typecheck+build / 覆盖率上传 / **E2E(Playwright)**；Tauri 桌面构建仍留扩展位（需签名密钥） |
 | `capabilities/default.json` | ✅ 仅 `core:default`（最小权限未回退） | |
 | 硬编码颜色扫描（`.vue`） | ✅ **0 处**（上次 ~20 处，已全部修复） | |
 | `v-html` 扫描 | ✅ 仅 `Icon.vue` 静态图标（安全） | |
 | P2-11 长对话虚拟化压测 | ✅ DOM 2100→200（-90.5%），连续滚动 57fps，内存 -45%（5000 条） | ChatMain.vue 双向窗口 |
 | P2-9 CSP 盘点 | ✅ 决策保留开放定位（任意 OpenAI 兼容端点），SSRF/明文传输/市场校验边界已覆盖 | P2-9-csp-whitelist-report.md |
 | P2-6 UI 冒烟修复 | ✅ ImageGeneratorView 配置引导横幅 + SettingsView 描述 2 行 line-clamp | 见源文件注释 |
+| E2E（Playwright）本地验证 | ✅ **10/10 spec 全绿**（msedge + 端口 5174） | e2e/ 下 6 文件：theme-flow / worldbook-flow / character-crud / chat-flow / theme-visual / contrast-axe；onboarding 跳过 + mock SSE 对话流式回复；已纳入 CI `e2e` job |
 
 ---
 

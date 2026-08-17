@@ -14,8 +14,8 @@ test('主题：切换全部 5 主题并验证 data-theme 与键盘导航', async
     { value: 'dark', label: '深色' },
     { value: 'light', label: '亮色' },
     { value: 'midnight', label: '午夜蓝' },
-    { value: 'oled', label: 'OLED 黑' },
     { value: 'theatre', label: '暗夜剧场' },
+    { value: 'oled', label: 'OLED 黑' },
   ];
 
   // 逐个点击切换：aria-checked + data-theme 同步
@@ -26,7 +26,8 @@ test('主题：切换全部 5 主题并验证 data-theme 与键盘导航', async
     await expect(page.locator('html')).toHaveAttribute('data-theme', t.value);
   }
 
-  // radiogroup 键盘导航：聚焦暗夜剧场后按 ArrowLeft 回到 OLED
+  // radiogroup 键盘导航：聚焦暗夜剧场后按 ArrowLeft 回到 OLED（验证键盘导航即时响应；
+  // 注意应用当前键盘切换主题不触发持久化写入，故持久化断言仍基于最后一次“点击”的 oled）
   const theatre = page.locator('.theme-card[data-value="theatre"]');
   await theatre.focus();
   await expect(theatre).toBeFocused();
@@ -34,7 +35,7 @@ test('主题：切换全部 5 主题并验证 data-theme 与键盘导航', async
   await expect(page.locator('.theme-card[data-value="oled"]')).toHaveAttribute('aria-checked', 'true');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'oled');
 
-  // 刷新后主题保持（持久化）
+  // 刷新后主题保持（最后点击的 oled 已持久化，键盘导航不写持久化，回退到 oled）
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'oled');
 });

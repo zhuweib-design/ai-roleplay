@@ -36,7 +36,7 @@ test('配置 API → 新建角色 → 对话流式回复', async ({ page }) => {
   await page.getByRole('button', { name: '新增 API 配置' }).click();
   await expect(page.getByRole('dialog', { name: '新增 API 配置' })).toBeVisible();
   await page.locator('#p-name').fill('E2E 模型');
-  await page.locator('#p-baseurl').fill('http://localhost:5173/mock');
+  await page.locator('#p-baseurl').fill(`http://localhost:${process.env.E2E_PORT ?? '5173'}/mock`);
   await page.locator('#p-model').fill('gpt-4o');
   await page.locator('#p-apikey').fill('test-key');
   await page.getByRole('button', { name: '创建', exact: true }).click();
