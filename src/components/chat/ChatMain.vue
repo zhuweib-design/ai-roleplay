@@ -565,7 +565,7 @@ function startWithExample(text: string) {
       <div class="chat-title">
         <Avatar :character="char" :size="24" />
         <span class="chat-name truncate">{{ char.name }}</span>
-        <span class="model-badge">{{ settings.activeProfile?.model ?? char.model }}</span>
+        <span class="model-badge" :class="{ 'not-configured': !settings.activeProfile }">{{ settings.activeProfile?.model ?? t('chat.modelNotConfigured') }}</span>
       </div>
 
       <div class="chat-token" aria-hidden="true">
@@ -898,6 +898,11 @@ function startWithExample(text: string) {
   font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.model-badge.not-configured {
+  background: color-mix(in srgb, var(--destructive) 12%, transparent);
+  color: color-mix(in srgb, var(--destructive) 78%, var(--foreground));
 }
 
 /* 前缀缓存命中率徽标 */

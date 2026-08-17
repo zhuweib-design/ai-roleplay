@@ -1824,6 +1824,38 @@ select.field-input {
   background: color-mix(in srgb, var(--tk-red-500, #ef4444) 12%, transparent);
 }
 
+/* ── 云端/本地切换 tabs（从 SettingsView.vue 复制，因 scoped 不穿透子组件） ── */
+.model-mgmt-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  background: var(--video-bg);
+  border-radius: var(--radius-md);
+}
+
+.model-mgmt-tabs .bg-source-tab {
+  flex: 1;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: calc(var(--radius-md) - 2px);
+  transition: all 0.15s;
+}
+
+.model-mgmt-tabs .bg-source-tab.active {
+  background: var(--card);
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.model-mgmt-tabs .bg-source-tab:focus-visible {
+  outline: 2px solid var(--tk-cyan-500);
+  outline-offset: 2px;
+}
+
 /* ── 窄屏：侧边栏转为顶部横向分类栏 ── */
 @media (max-width: 760px) {
   .settings-view {

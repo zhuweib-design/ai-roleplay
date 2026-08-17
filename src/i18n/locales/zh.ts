@@ -213,6 +213,7 @@ export default {
   'chat.quickReplyAria': '快捷回复按钮',
   'chat.conversationTitle': '与 {name} 的对话',
   'chat.toolbarGroup': '快捷回复按钮组',
+  'chat.modelNotConfigured': '未配置',
 
   // ── 空对话引导（P2-#6） ──
   'chat.emptyStateTitle': '开始与 {name} 的对话',

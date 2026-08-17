@@ -89,12 +89,14 @@ export const useLocalModelStore = defineStore('localModel', () => {
 
   // ── 计算属性 ──
 
-  /** 所有注册模型（含状态） */
+  /** 已下载/可用的本地模型（过滤掉未下载的预设注册项，仅读真实数据） */
   const models = computed<Array<LocalModelMeta & { status: ModelStatus }>>(() => {
-    return listRegisteredModels().map((m) => ({
-      ...m,
-      status: modelStatuses.value.get(m.id) ?? 'not-downloaded',
-    }));
+    return listRegisteredModels()
+      .map((m) => ({
+        ...m,
+        status: modelStatuses.value.get(m.id) ?? 'not-downloaded',
+      }))
+      .filter((m) => m.status !== 'not-downloaded');
   });
 
   /** 当前已加载模型元数据 */

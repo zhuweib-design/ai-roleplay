@@ -213,6 +213,7 @@ const en: Record<MessageKey, string> = {
   'chat.quickReplyAria': 'Quick replies',
   'chat.conversationTitle': 'Chat with {name}',
   'chat.toolbarGroup': 'Quick reply buttons',
+  'chat.modelNotConfigured': 'Not configured',
 
   // ── empty conversation guide (P2-#6) ──
   'chat.emptyStateTitle': 'Start a conversation with {name}',
