@@ -4,7 +4,10 @@ import { chromium } from '@playwright/test';
 import fs from 'node:fs';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5174';
-const OUT = 'ui-shots';
+// THEME: 指定主题生成对应截图（如 THEME=light / THEME=midnight）。
+// 省略时沿用默认主题，输出到 ui-shots/ 根（维持 P2-6 深色基线行为）。
+const THEME = process.env.THEME;
+const OUT = THEME ? `ui-shots/themes/${THEME}` : 'ui-shots';
 const VIEWPORT = { width: 1280, height: 800 };
 
 const routes = [
@@ -35,6 +38,24 @@ try {
   await page.evaluate(() => {
     try { localStorage.setItem('ai-roleplay:onboarding-done', '1'); } catch { /* ignore */ }
   });
+
+  // 指定主题：进入设置页点击对应主题卡片（点击会持久化 settings.theme，后续路由加载均应用）
+  if (THEME) {
+    try {
+      await page.goto(`${BASE}/settings`, { waitUntil: 'networkidle', timeout: 15000 });
+      await page.waitForTimeout(600);
+      const card = page.locator(`.theme-card[data-value="${THEME}"]`);
+      if (await card.count() > 0) {
+        await card.click();
+        await page.waitForTimeout(400);
+        console.log(`[theme] switched -> ${THEME}`);
+      } else {
+        console.log(`[theme] WARN: 未找到主题卡片 data-value="${THEME}"，沿用默认`);
+      }
+    } catch (err) {
+      console.log(`[theme] FAIL: ${err.message.split('\n')[0]}`);
+    }
+  }
 
   for (const r of routes) {
     try {
