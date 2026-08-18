@@ -152,6 +152,13 @@ export default defineConfig({
     sourcemap: !isTauriEnv, // Tauri 生产构建不要 sourcemap
     // Tauri 期望资源使用相对路径
     ...(isTauriEnv ? { assetsDir: 'assets' } : {}),
+    // 首屏体积优化：onnxruntime-web 仅本地向量嵌入使用（默认关闭），
+    // 不预加载其 chunk（ort.bundle.min），改为首次使用本地嵌入时按需加载，
+    // 避免 ~107KB(gzip) 占首屏。web-llm/gpt-tokenizer 已在 lib 懒加载 chunk，无需处理。
+    modulePreload: {
+      resolveDependencies: (_srcFileName, deps) =>
+        deps.filter((dep) => !/ort\.bundle\.min.*\.js$/.test(dep)),
+    },
   },
   // 测试环境配置保持不变
   test: {

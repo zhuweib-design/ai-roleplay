@@ -15,6 +15,8 @@ export default [
       'dist-i18n-check/**',
       'dist-p13-check/**',
       'dist-qa/**',
+      'dist-measure/**',
+      'dist-opt*/**',
       'dist-electron/**',
       'coverage/**',
       'coverage-ci/**',

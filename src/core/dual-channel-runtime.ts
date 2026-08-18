@@ -19,7 +19,6 @@ import {
   selectVectorModel,
   type VectorModelId,
 } from './vector-model-manager';
-import { OnnxEmbeddingProvider } from './onnx-embedding-provider';
 import { createModelFileAdapter } from './model-file-adapter';
 // i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
@@ -116,7 +115,7 @@ export class VectorRagRuntime {
     if (choice) {
       try {
         if (await this.adapter.exists(choice)) {
-          return this.getLocalProvider(choice);
+          return await this.getLocalProvider(choice);
         }
       } catch {
         /* 探测失败走 manager */
@@ -130,8 +129,8 @@ export class VectorRagRuntime {
     const preferred = selectVectorModel(undefined, channel);
     try {
       const installed = await this.adapter.listInstalled();
-      if (installed.includes(preferred)) return this.getLocalProvider(preferred);
-      if (installed.length > 0) return this.getLocalProvider(installed[0]);
+      if (installed.includes(preferred)) return await this.getLocalProvider(preferred);
+      if (installed.length > 0) return await this.getLocalProvider(installed[0]);
     } catch {
       /* 无本地模型,走 manager */
     }
@@ -140,9 +139,14 @@ export class VectorRagRuntime {
       : this.manager.providerForStatic();
   }
 
-  /** 本地 ONNX provider 缓存复用(双通道共享同模型时只加载一次) */
-  private getLocalProvider(modelId: VectorModelId): EmbeddingProvider {
+  /**
+   * 本地 ONNX provider 缓存复用(双通道共享同模型时只加载一次)
+   * 按需动态导入 onnx-embedding-provider(其内部再动态 import onnxruntime-web)，
+   * 避免 onnxruntime-web 被预加载进首屏(仅本地向量嵌入时才需要)
+   */
+  private async getLocalProvider(modelId: VectorModelId): Promise<EmbeddingProvider> {
     if (!this.localOnnxProvider) {
+      const { OnnxEmbeddingProvider } = await import('./onnx-embedding-provider');
       this.localOnnxProvider = new OnnxEmbeddingProvider({
         modelId,
         adapter: this.adapter,
