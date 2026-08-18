@@ -139,7 +139,68 @@ jobs:
           path: src-tauri/target/release/ai-roleplay
           retention-days: 7
 
-# 后续可扩展（需额外密钥/资源）:
-# - 正式发布: 用 tauri-apps/tauri-action, 需在 Secrets 配置 TAURI_SIGNING_PRIVATE_KEY /
-#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD 与代码签名证书, 并改用 windows-latest / macos-latest
-#   matrix 构建 msi/nsis/app 安装包（tauri.conf.json bundle.targets 已含三者）
+  # 正式发布（签名安装包）— ② CI 的深化闭环
+  # 启用前需在仓库 Secrets 配置：
+  #   TAURI_SIGNING_PRIVATE_KEY / TAURI_SIGNING_PRIVATE_KEY_PASSWORD（Tauri 更新签名，必需）
+  #   WINDOWS_CERT_BASE64 / WINDOWS_CERT_PASSWORD（Windows 代码签名证书，可选；未配则出未签名 msi/nsis）
+  # 仅在打 tag（v*）或手动 workflow_dispatch 时触发，不接入日常 push/PR，避免污染主门禁；
+  # Secrets 缺失时该 job 会被 if 条件跳过（日常流程零影响）
+  tauri-release:
+    name: Tauri Release (signed installers)
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+    needs: [quality-gates, e2e]
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: '--target x86_64-pc-windows-msvc'
+          - platform: macos-latest
+            args: '--target aarch64-apple-darwin'
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build (src-tauri)
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+
+      # Windows 代码签名（可选）：Secrets 配置 WINDOWS_CERT_BASE64 / WINDOWS_CERT_PASSWORD 后，
+      # 取消注释还原 .pfx 供 tauri-action 读取 CSC_LINK / CSC_KEY_PASSWORD；未配置则跳过
+      # - name: Restore Windows code-signing cert
+      #   if: ${{ runner.os == 'Windows' }}
+      #   shell: bash
+      #   env:
+      #     WINDOWS_CERT_BASE64: ${{ secrets.WINDOWS_CERT_BASE64 }}
+      #     WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+      #   run: |
+      #     echo "$WINDOWS_CERT_BASE64" | base64 -d > "$RUNNER_TEMP/cert.pfx"
+
+      - name: Build & release (tauri-action)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'AI 酒馆 ${{ github.ref_name }}'
+          releaseBody: 'Automated release — see assets to download and install.'
+          prerelease: false
+          args: ${{ matrix.args }}
