@@ -248,6 +248,107 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* ── 标准 section 容器/标题（对齐设置其他页面，避免 scoped 不穿透导致无样式） ── */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+}
+.section-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+/* ── 表单字段（输入框/选择框，对齐模型管理/扩展页标准） ── */
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.field-input {
+  height: 36px;
+  padding: 0 12px;
+  background: var(--video-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  width: 100%;
+}
+select.field-input {
+  height: 36px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23AEB2C0' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+.field-input:focus-visible {
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--secondary) 20%, transparent);
+}
+.field-input.has-error {
+  border-color: var(--destructive);
+}
+.field-hint {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+/* ── 主操作按钮（对齐设置页 add-btn 标准） ── */
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  color: var(--on-media);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.add-btn:hover {
+  background: var(--destructive);
+  border-color: var(--destructive);
+}
+.add-btn:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+/* ── 布局 ── */
 .field-row {
   display: flex;
   gap: 12px;
@@ -263,15 +364,23 @@ onMounted(() => {
   gap: 6px;
   font-size: 13px;
 }
+.toggle-wrap input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--secondary);
+  cursor: pointer;
+}
 .install-box {
   margin-top: 14px;
   padding: 12px;
-  border: 1px dashed var(--border, #333);
-  border-radius: 8px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
 }
 .box-title {
   margin: 0 0 6px;
   font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
 }
 .install-msg {
   margin-left: 10px;
@@ -289,7 +398,7 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   padding: 6px 0;
-  border-bottom: 1px dashed var(--border, #333);
+  border-bottom: 1px dashed var(--border);
 }
 .installed-info {
   flex: 1;
@@ -304,16 +413,16 @@ onMounted(() => {
   white-space: nowrap;
 }
 .installed-meta {
-  color: var(--muted-foreground, #999);
+  color: var(--muted-foreground);
   font-size: 12px;
 }
 .mini-btn {
   padding: 2px 10px;
   font-size: 12px;
-  border: 1px solid var(--border, #444);
-  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--surface-secondary, #222);
-  color: var(--foreground, #eee);
+  color: var(--foreground);
   cursor: pointer;
 }
 .mini-btn:disabled {
@@ -322,9 +431,13 @@ onMounted(() => {
 }
 .remote-box {
   margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
 }
 .remote-box summary {
   cursor: pointer;
   font-weight: 500;
+  color: var(--foreground);
 }
 </style>
