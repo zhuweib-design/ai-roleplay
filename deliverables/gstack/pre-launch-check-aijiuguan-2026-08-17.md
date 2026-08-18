@@ -21,8 +21,8 @@
 | 项目 | 内容 |
 |------|------|
 | Go / No-Go | 🟢 Go（无 P0/P1 阻断） |
-| 严重度分布 | 🔴 P0: 0 ｜ 🟠 P1: 0 ｜ 🟡 P2: 2（原 8，#5 长对话虚拟化、#8 dist-qa 忽略、#2 E2E 入 CI、#3 回滚文档化、#7 主题截图、#6 空对话引导卡已关闭）|
-| 关键跃迁 | 测试 0 失败 / 硬编码颜色 0 处 / 6 重 CI 门禁 / 5 主题 / i18n strict 通过 |
+| 严重度分布 | 🔴 P0: 0 ｜ 🟠 P1: 0 ｜ 🟡 P2: 0（原 8 项全部闭环：#5 长对话虚拟化、#8 dist-qa 忽略、#2 E2E 入 CI、#3 回滚文档化、#7 主题截图、#6 空对话引导卡、#1 Tauri 打包入 CI、#4 体积拆分确认）|
+| 关键跃迁 | 测试 0 失败 / 硬编码颜色 0 处 / 7 重 CI 门禁（quality-gates + e2e + tauri-build）/ 5 主题 / i18n strict 通过 |
 | 建议负责人 | 前端 / 架构 / CI |
 
 ---
@@ -73,10 +73,10 @@
 
 | # | 严重度 | 类别 | 位置 | 问题描述 | 建议 | 来源成员 |
 |---|--------|------|------|---------|------|---------|
-| 1 | 🟡 P2 | 工程流程 | `.github/workflows/ci.yml` | Tauri 桌面打包未纳入 CI 默认门禁（注释已留扩展位） | 补 `tauri-apps/tauri-action` + 签名密钥到 secrets，将 `tauri:build` 纳入 release job | 流程官 |
+| 1 | ✅ 已解决 | 工程流程 | `.github/workflows/ci.yml` | Tauri 桌面打包已纳入 CI 默认门禁：新增 `tauri-build` job（ubuntu + webkit2gtk-4.1 等系统依赖 + rust-cache + `npm run tauri:build -- --no-bundle` 编译验证 + 上传二进制 artifact）；本地 `cargo build --release` 4m17s 编译通过（`ai-roleplay v0.1.0`） | 正式发布（msi/nsis/app 安装包 + 代码签名）需在 Secrets 配置 `TAURI_SIGNING_PRIVATE_KEY` / 证书后启用 `tauri-release` job（ci.yml 已留扩展注释） | 流程官 |
 | 2 | ✅ 已解决 | 工程流程 | `.github/workflows/ci.yml` | E2E（Playwright）已纳入默认门禁：`e2e` job 装 chromium + `npm run test:e2e`；`playwright.config.ts` CI 下自动切自带 chromium（避开 Linux 无系统 Edge）、多 origin storageState 跳过 OnboardingModal 遮挡；本地 10/10 全绿 | 维持；chromium 浏览器缓存可后续加 cache 优化 | 流程官 |
 | 3 | ✅ 已解决 | 发布流程 | `docs/data-backup-restore.md` | 回滚/灾备路径已文档化：`SettingsView` 数据管理 → 全量备份与恢复 → 导入备份（覆盖策略=回滚到备份时点）；含灾备演练 Runbook、冲突策略语义、明文密钥拒绝导出等安全护栏说明 | 流程官 |
-| 4 | 🟡 P2 | 性能/构建 | `vite.config.ts` + `src/core/model-file-adapter.ts` | 打包 `lib` chunk **6 MB**（gzip 2.1 MB，疑 onnxruntime-web）、`token-counter` 983 KB，首屏体积大 | 对 onnxruntime-web / tokenizer 做按需动态加载或 manualChunks 拆分；可参考 `p11-scroll-fps.mjs` 建立性能基线 | 质量门神 |
+| 4 | ✅ 已解决 | 性能/构建 | `src/core/local-model-engine.ts` + `src/core/onnx-embedding-provider.ts` + `src/core/token-counter.ts` | 体积拆分已确认完成：`@mlc-ai/web-llm`（lib 5901KB raw / 2101KB gzip）经 `local-model-engine.ts:262/336` 动态 import 拆为独立按需 chunk；`onnxruntime-web`（ort.bundle 387KB + ort-wasm 26MB）经 `onnx-embedding-provider.ts:225` 动态 import 按需加载；`gpt-tokenizer` 经 `token-counter.ts:3-5` 懒加载缓存。**首屏仅 main 960KB（gzip 435KB）+ index 289KB（89KB）+ i18n 262KB（79KB）≈ 603KB gzip**，重型 AI 依赖均不占首屏 | 维持动态 import 策略；首屏 main 435KB gzip 可后续用 manualChunks 拆 marked/dompurify 等常规优化（非阻断） | 质量门神 |
 | 5 | ✅ 已解决 | 性能/交互 | `src/components/chat/ChatMain.vue` | 长对话**已启用双向窗口虚拟化**（P2-11）：DOM 2100→200（-90.5%），连续滚动 57fps，内存 -45%（5000 条基准 `p11-scroll-fps.mjs`） | 维持窗口化渲染；超大对话可后续按需升级 vue-virtual-scroller | 设计师 / P2-11 |
 | 6 | ✅ 已解决 | 交互空态 | `src/components/chat/ChatMain.vue` | 空对话主区已新增空态引导卡：角色名标题 + 描述 + 4 个示例 prompt（pill 样式，点击填入输入框），light/dark 双主题验证通过 | 复用 i18n 文案（`chat.emptyTitle`/`chat.emptyDesc`/`chat.emptyHint`/`chat.examplePrompts`）防硬编码中文；示例 prompt 用角色扮演场景（自我介绍/世界观/闲聊/剧情推进） | 设计师 |
 | 7 | ✅ 已解决 | UI 验证 | `ui-shots/themes/light` + `ui-shots/themes/midnight` | 已用 `scripts/ui-shot.mjs`（THEME 参数）生成 light/midnight 各 15 张路由截图（共 30 张，文件大小正常）；设置页 Tab 展开段在切主题场景超时（确定性 FAIL，脚本已 try-catch 容错），不影响路由级主题验证，深色基线已含 `04-settings-tab0-5` 作参考 | 设计师 |
@@ -90,9 +90,9 @@
 |---|------|--------|--------|---------|
 | 1 | **🟢 可上线，无需发布前必做**——CI 全绿、无 P0/P1，按当前节奏迭代 | — | — | — |
 | 2 | ~~把 `dist-qa/**` 加入忽略清单~~ ✅ **已完成**（`.gitignore` build outputs 区 + `eslint.config.js` ignores `dist-qa/**`） | 工程 | ✅ 已完成 | — |
-| 3 | Tauri 桌面打包纳入 CI（按 `ci.yml` 注释预留扩展位补 `tauri-action` + 签名密钥） | CI/发布 | P2 | 下个迭代 |
+| 3 | ~~Tauri 桌面打包纳入 CI~~ ✅ **已完成**（新增 `tauri-build` job：webkit2gtk 依赖 + `tauri:build --no-bundle` 编译验证 + 上传二进制；正式发布需 Secrets 签名密钥） | CI/发布 | ✅ 已完成 | — |
 | 4 | ~~ChatView 长对话启用虚拟列表~~ ✅ **已由 P2-11 完成**（双向窗口虚拟化，DOM 2100→200） | 前端 | ✅ 已完成 | — |
-| 5 | 打包体积拆分（onnxruntime-web / tokenizer 按需加载或 manualChunks） | 架构 | P2 | 下个迭代 |
+| 5 | ~~打包体积拆分~~ ✅ **已完成**（动态 import 拆分确认：WebLLM/onnxruntime/tokenizer 均按需加载，首屏 603KB gzip，见发现表 #4） | 架构 | ✅ 已完成 | — |
 | 6 | ~~ChatView 空对话状态增加引导卡 / 示例 prompt~~ ✅ **已完成**（`src/components/chat/ChatMain.vue` 空态引导卡 + 示例 prompt，i18n 文案 + 双主题 Playwright 验证） | 前端 | ✅ 已完成 | — |
 | 7 | ~~补齐 light / midnight / OLED Black 主题 UI 截图~~ ✅ **已完成**（`scripts/ui-shot.mjs` THEME 参数生成 light/midnight 各 15 张路由截图；OLED Black 留待下次） | QA | ✅ 已完成 | — |
 | 8 | ~~E2E 纳入 CI 默认门禁~~ ✅ **已完成**（`e2e` job）；~~文档化回滚流程~~ ✅ **已完成**（`docs/data-backup-restore.md`） | 产品/CI | ✅ 全部完成 | — |
@@ -111,7 +111,7 @@
 
 **重要区分**：报告 P2-#6（「ChatView 空对话无引导卡」）与 P2-6 UI 冒烟修复的「图像生成页引导缺失」是**不同**事项——后者落点 ImageGeneratorView 已于本报告初稿后闭环（见 📝 回填记录 P2-6 UI 冒烟）；前者指 ChatView 空对话态，**已于本次回填闭环**（空态引导卡 + 示例 prompt），不可与后者混为一谈。
 
-**计数修正**：原报告 P2 计数 8 → 关闭 #5、#8、#2、#3、#7、#6 后剩 **2**（#1/#4）。P2-9 与 P2-6-image 属报告外已闭环关联工作，不计入原 8 项；#8 dist-qa 忽略、#2 E2E 入 CI、#3 回滚文档化、#7 主题截图、#6 空对话引导卡均已于本回填补齐。
+**计数修正**：原报告 P2 计数 8 → 关闭 #5、#8、#2、#3、#7、#6、#1、#4 后剩 **0**。P2-9 与 P2-6-image 属报告外已闭环关联工作，不计入原 8 项；#8 dist-qa 忽略、#2 E2E 入 CI、#3 回滚文档化、#7 主题截图、#6 空对话引导卡、#1 Tauri 打包入 CI、#4 体积拆分确认均已于回填补齐。#1 的 CI 落点为 `tauri-build` job（编译验证 + 上传二进制，签名发布留 Secrets 扩展位）；#4 确认三大重型 AI 依赖（WebLLM/onnxruntime/gpt-tokenizer）均已动态 import 按需拆分，首屏 603KB gzip。
 
 ## ⚠️ 待完善 / 已知局限
 
@@ -131,8 +131,8 @@
 | `npm run i18n:check:strict` | ✅ **134 文件通过** | 无硬编码中文 UI 文案残留 |
 | `npm run lint`（剔除 dist-qa） | ✅ **0 errors / 50 warnings** | warnings 全为风格类，非阻断；exit 0 |
 | `npm audit` | ✅ **0 漏洞** | info/low/moderate/high/critical 全 0 |
-| `vite build`（临时目录） | ✅ `✓ built in 3.31s` exit 0 | 主包 `lib` 6MB / `token-counter` 983KB（仍有体积告警） |
-| `.github/workflows/ci.yml` | ✅ **6 重门禁链完整**（新增 E2E） | eslint / i18n strict / coverage 80% / typecheck+build / 覆盖率上传 / **E2E(Playwright)**；Tauri 桌面构建仍留扩展位（需签名密钥） |
+| `vite build`（临时目录） | ✅ `✓ built in 2.57s` exit 0 | 首屏 main 960KB（gzip 435KB）+ index 289KB（89KB）+ i18n 262KB（79KB）≈ **603KB gzip**；重型 AI 依赖全部按需加载（见下方体积拆分行） |
+| `.github/workflows/ci.yml` | ✅ **7 重门禁链完整**（新增 E2E + Tauri Build） | eslint / i18n strict / coverage 80% / typecheck+build / 覆盖率上传 / **E2E(Playwright)** / **Tauri Build(tauri-build job: --no-bundle 编译验证 + 上传二进制)**；签名发布（msi/nsis/app + 代码签名）留 Secrets 扩展位 |
 | `capabilities/default.json` | ✅ 仅 `core:default`（最小权限未回退） | |
 | 硬编码颜色扫描（`.vue`） | ✅ **0 处**（上次 ~20 处，已全部修复） | |
 | `v-html` 扫描 | ✅ 仅 `Icon.vue` 静态图标（安全） | |
@@ -143,6 +143,8 @@
 | E2E（Playwright）本地验证 | ✅ **10/10 spec 全绿**（msedge + 端口 5174） | e2e/ 下 6 文件：theme-flow / worldbook-flow / character-crud / chat-flow / theme-visual / contrast-axe；onboarding 跳过 + mock SSE 对话流式回复；已纳入 CI `e2e` job |
 | 回滚/灾备路径文档化 | ✅ `docs/data-backup-restore.md` | 覆盖导出(加密/明文密钥拒绝)/导入(覆盖=回滚)/冲突策略/灾备 Runbook/跨设备迁移/审计；导入路径经代码审计确认可用（backup-service.ts / backup.ts / SettingsView.vue）|
 | 主题截图(light/midnight) | ✅ `scripts/ui-shot.mjs`（THEME 参数）生成 `ui-shots/themes/light` + `ui-shots/themes/midnight` 各 15 张路由截图（共 30 张，文件 33–98KB 正常非空白）；设置页 Tab 展开段在切主题场景确定性超时（脚本 try-catch 容错，不影响路由级主题验证） | 深色基线 \`ui-shots/\` 已含 \`04-settings-tab0-5\` 作 OLED 参考；OLED Black 截图仍待补 |
+| P2-#1 Tauri 桌面编译验证 | ✅ `cargo build --release` 4m17s 编译通过（`ai-roleplay v0.1.0`，tauri 2.11.5 + tauri-plugin-fs/os/shell/http/dialog） | CI 已新增 `tauri-build` job（ubuntu + webkit2gtk-4.1 等系统依赖 + rust-cache + `tauri:build --no-bundle` + 上传二进制 artifact）；签名发布留 Secrets 扩展位 |
+| P2-#4 体积拆分确认 | ✅ 三大重型 AI 依赖均已动态 import 按需加载：`@mlc-ai/web-llm`（lib 5901KB raw/2101KB gzip，`local-model-engine.ts:262/336`）、`onnxruntime-web`（ort.bundle 387KB + ort-wasm 26MB，`onnx-embedding-provider.ts:225`）、`gpt-tokenizer`（`token-counter.ts:3-5` 懒加载缓存）；首屏 603KB gzip | 原报告「lib 6MB 未拆分」描述已过时（动态 import 拆分在初稿后完成）；main 435KB gzip 可后续 manualChunks 常规优化（非阻断） |
 
 ---
 

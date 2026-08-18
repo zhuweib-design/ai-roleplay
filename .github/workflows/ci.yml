@@ -92,5 +92,54 @@ jobs:
             test-results/
           retention-days: 7
 
+  # Tauri 桌面构建门禁（P2-#1 已纳入默认门禁）
+  # - 验证桌面端 release 二进制可编译（--no-bundle：Linux runner 无法构建 tauri.conf.json 的
+  #   msi/nsis/app 目标，且 CI 无签名密钥，故仅做编译验证并上传二进制 artifact）
+  # - 正式发布（Windows/macOS 安装包 + 代码签名）需在仓库 Secrets 配置
+  #   TAURI_SIGNING_PRIVATE_KEY / TAURI_SIGNING_PRIVATE_KEY_PASSWORD / 代码签名证书，
+  #   然后启用下方注释的 tauri-release job（tauri-apps/tauri-action）
+  tauri-build:
+    name: Tauri Build (desktop binary)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Tauri v2 Linux 构建依赖（webkit2gtk-4.1 等）
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build (src-tauri)
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+
+      - name: Tauri build (--no-bundle)
+        run: npm run tauri:build -- --no-bundle
+
+      - name: Upload desktop binary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-linux-binary
+          path: src-tauri/target/release/ai-roleplay
+          retention-days: 7
+
 # 后续可扩展（需额外密钥/资源）:
-# - Tauri 桌面构建: 用 tauri-apps/tauri-action, 需 TAURI_SIGNING_PRIVATE_KEY 等签名密钥
+# - 正式发布: 用 tauri-apps/tauri-action, 需在 Secrets 配置 TAURI_SIGNING_PRIVATE_KEY /
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD 与代码签名证书, 并改用 windows-latest / macos-latest
+#   matrix 构建 msi/nsis/app 安装包（tauri.conf.json bundle.targets 已含三者）
