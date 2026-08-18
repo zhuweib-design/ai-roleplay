@@ -1336,16 +1336,20 @@ watch(
 
 /* ── 需求3：模型管理面板 ── */
 
+/* 模型分类分组：卡片式容器（对齐外观页「界面自定义」.ui-custom-block 风格） */
 .model-category-group {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .model-category-group:first-of-type {
   margin-top: 0;
-  padding-top: 0;
-  border-top: none;
 }
 
 .category-group-title {
@@ -1355,7 +1359,7 @@ watch(
   font-size: 14px;
   font-weight: 600;
   color: var(--foreground);
-  margin: 0 0 4px 0;
+  margin: 0;
 }
 
 .category-count {
@@ -1377,12 +1381,12 @@ watch(
 .category-desc {
   font-size: 12px;
   color: var(--muted-foreground);
-  margin: 0 0 8px 0;
-  line-height: 1.4;
+  margin: 0;
+  line-height: 1.5;
 }
 
 .model-mgmt-list {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .profile-item.is-primary {
