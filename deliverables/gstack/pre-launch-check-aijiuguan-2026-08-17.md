@@ -51,7 +51,7 @@
 ### 🎨 设计师（UI 视觉 + 交互体验）
 - **核心判断（UI）**：**基于 26 张 `ui-shots/` 真实截图做视觉审查**——上次报告的 P1「硬编码颜色」**全部修复**（0 处匹配）。主题系统扩展到 **5 种**：Dark / Light / Midnight / OLED Black / Dark Theatre。设计令牌（`tokens.css` + `themes.css`）应用正确，无障碍标签齐全。
   - 截图亮点（`01-chat.png`、`lang-2-en.png`、`04-settings-tab1.png`）：三栏布局合理、品牌色一致、Toast 反馈到位、Live preview 字号、5 主题卡片预览。
-  - 局限：`ui-shots/` 基线为**深色主题**（26 张）；light/midnight 已用 `scripts/ui-shot.mjs`（THEME 参数）补齐各 15 张路由截图（见发现表 #7），仅 OLED Black 仍待后续补（深色基线已含 `04-settings-tab0-5` 作参考）。
+  - 局限：`ui-shots/` 基线为**深色主题**（26 张）；light/midnight/OLED Black 均已用 `scripts/ui-shot.mjs`（THEME 参数）补齐各 21 张路由+设置Tab截图（见发现表 #7 + 2026-08-19 补充），三种主题截图覆盖完整。
 - **核心判断（交互）**：i18n 中英文切换**完整响应**（上次报告的「中英文切换响应不全」已修复，提交 `9f12196`）；拖拽/输入/工具按钮/快捷键提示（Shift+Enter 换行）/主密码门控/Toast 反馈到位。
   - 空态引导：ChatView 空对话主区已新增**空态引导卡**（P2-#6 已关闭），含角色名标题、描述与 4 个示例 prompt（点击填入输入框）；长对话虚拟化已由 P2-11 完成（DOM 2100→200，见 📝 回填记录），该项不再计为缺陷。
 - **关键建议**：无 P0/P1。
@@ -94,7 +94,7 @@
 | 4 | ~~ChatView 长对话启用虚拟列表~~ ✅ **已由 P2-11 完成**（双向窗口虚拟化，DOM 2100→200） | 前端 | ✅ 已完成 | — |
 | 5 | ~~打包体积拆分~~ ✅ **已完成**（动态 import 拆分确认：WebLLM/onnxruntime/tokenizer 均按需加载，首屏 603KB gzip，见发现表 #4） | 架构 | ✅ 已完成 | — |
 | 6 | ~~ChatView 空对话状态增加引导卡 / 示例 prompt~~ ✅ **已完成**（`src/components/chat/ChatMain.vue` 空态引导卡 + 示例 prompt，i18n 文案 + 双主题 Playwright 验证） | 前端 | ✅ 已完成 | — |
-| 7 | ~~补齐 light / midnight / OLED Black 主题 UI 截图~~ ✅ **已完成**（`scripts/ui-shot.mjs` THEME 参数生成 light/midnight 各 15 张路由截图；OLED Black 留待下次） | QA | ✅ 已完成 | — |
+| 7 | ~~补齐 light / midnight / OLED Black 主题 UI 截图~~ ✅ **已完成**（`scripts/ui-shot.mjs` THEME 参数生成 light/midnight/oled 各 21 张路由+设置Tab截图，OLED Black 于 2026-08-19 补齐） | QA | ✅ 已完成 | — |
 | 8 | ~~E2E 纳入 CI 默认门禁~~ ✅ **已完成**（`e2e` job）；~~文档化回滚流程~~ ✅ **已完成**（`docs/data-backup-restore.md`） | 产品/CI | ✅ 全部完成 | — |
 | 9 | **首屏体积优化** ✅ **已完成**（2026-08-18）：onnxruntime-web 退出首屏预加载，modulepreload 集 215KB→109KB gzip（−106KB / −50%），本地向量嵌入时按需加载 | 架构 | ✅ 已完成 | — |
 | 10 | **② CI 深化：签名发布 job** ✅ **已完成**（2026-08-18）：`tauri-release` job 落地（tauri-apps/tauri-action，windows/macos 矩阵，tag/workflow_dispatch 触发），日常 push/PR 经 `if` 条件跳过、零影响；正式出包需在仓库 Secrets 配置 `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`（必需）与 Windows 代码签名证书（可选） | CI/发布 | ✅ 已完成 | — |
@@ -143,7 +143,7 @@
 
 ## ⚠️ 待完善 / 已知局限
 
-- 本环境**无法真实执行 GUI 交互**（拖拽、窗口缩放、真实点击），UI/交互维度结论基于 `ui-shots/` 26 张**真实截图**（覆盖全模块 + 语言切换）做视觉审查，是上次报告「无 GUI 验证」局限的**显著改进**；light/midnight 主题截图已由 `scripts/ui-shot.mjs`（THEME 参数）补齐（各 15 张路由级截图），仅 OLED Black 仍待补（深色基线已含 `04-settings-tab0-5` 参考）。
+- 本环境**无法真实执行 GUI 交互**（拖拽、窗口缩放、真实点击），UI/交互维度结论基于 `ui-shots/` 26 张**真实截图**（覆盖全模块 + 语言切换）做视觉审查，是上次报告「无 GUI 验证」局限的**显著改进**；light/midnight/OLED Black 三种主题截图均已由 `scripts/ui-shot.mjs`（THEME 参数）补齐（各 21 张路由+设置Tab截图，OLED Black 于 2026-08-19 补齐，纯黑背景渲染正常、对比度可读）。
 - `npm run build` 在本环境因清空 `dist/` 触发沙箱批量删除护栏，已用临时目录 `dist-qa/` 绕开验证构建本身成功（`✓ built in 3.31s`）。dist-qa 残留是本环境产物，已识别并加入忽略清单（`.gitignore` + `eslint.config.js`）。（2026-08-18 补充：`dist-measure/`、`dist-opt*/` 同为本环境分析构建产物，已一并加入忽略，避免 lint 误扫打包产物）
 - 提示词注入为 AI 角色对话类应用**固有风险**——本检以「XSS 已通过文本插值规避、密钥已加密、端点已做 SSRF 防护、明文密钥备份已拒绝导出」作为缓解边界，深层防御仍需在产品层面定义用户责任与可选的内容审核。
 - e2e（Playwright，6 规格）**本环境已真实跑通 10/10**（msedge + 端口 5174 验证，含 onboarding 跳过与 mock SSE 对话流），并已纳入 CI `e2e` job（ubuntu chromium）。
@@ -170,7 +170,7 @@
 | P2-#6 空对话引导卡 | ✅ `src/components/chat/ChatMain.vue` 空态引导卡：角色名标题 + 描述 + 4 示例 prompt（点击填入输入框）；`typecheck`/`i18n:strict`/`vite build`/`lint` 全通过；light/dark 双主题 Playwright 验证（选中空消息角色 lyra，卡片可见、chip 填入生效） | i18n 文案 `chat.emptyTitle`/`chat.emptyDesc`/`chat.emptyHint`/`chat.examplePrompts` 防硬编码中文 |
 | E2E（Playwright）本地验证 | ✅ **10/10 spec 全绿**（msedge + 端口 5174） | e2e/ 下 6 文件：theme-flow / worldbook-flow / character-crud / chat-flow / theme-visual / contrast-axe；onboarding 跳过 + mock SSE 对话流式回复；已纳入 CI `e2e` job |
 | 回滚/灾备路径文档化 | ✅ `docs/data-backup-restore.md` | 覆盖导出(加密/明文密钥拒绝)/导入(覆盖=回滚)/冲突策略/灾备 Runbook/跨设备迁移/审计；导入路径经代码审计确认可用（backup-service.ts / backup.ts / SettingsView.vue）|
-| 主题截图(light/midnight) | ✅ `scripts/ui-shot.mjs`（THEME 参数）生成 `ui-shots/themes/light` + `ui-shots/themes/midnight` 各 15 张路由截图（共 30 张，文件 33–98KB 正常非空白）；设置页 Tab 展开段在切主题场景确定性超时（脚本 try-catch 容错，不影响路由级主题验证） | 深色基线 \`ui-shots/\` 已含 \`04-settings-tab0-5\` 作 OLED 参考；OLED Black 截图仍待补 |
+| 主题截图(light/midnight/oled) | ✅ `scripts/ui-shot.mjs`（THEME 参数）生成 `ui-shots/themes/light` + `ui-shots/themes/midnight` + `ui-shots/themes/oled` 各 21 张路由+设置Tab截图（共 63 张，文件 33–103KB 正常非空白）；OLED Black 纯黑背景渲染正常、对比度可读（2026-08-19 补齐）；设置页 Tab 展开段在切主题场景偶发超时（脚本 try-catch 容错，不影响路由级主题验证） | 三种主题截图覆盖完整，Dark Theatre 未单独出图（与 Dark 共用深色基线） |
 | P2-#1 Tauri 桌面编译验证 | ✅ `cargo build --release` 4m17s 编译通过（`ai-roleplay v0.1.0`，tauri 2.11.5 + tauri-plugin-fs/os/shell/http/dialog） | CI 已新增 `tauri-build` job（ubuntu + webkit2gtk-4.1 等系统依赖 + rust-cache + `tauri:build --no-bundle` + 上传二进制 artifact）；签名发布已落地 `tauri-release` job（需 Secrets 出包） |
 | ② CI 深化：tauri-release 签名发布 job | ✅ YAML 校验通过（pyyaml 解析 jobs=[quality-gates,e2e,tauri-build,tauri-release]）；`if` 条件 `workflow_dispatch \|\| tag v*`、needs=[quality-gates,e2e]、matrix=windows/macos；日常 push/PR 不触发、主门禁零影响 | 正式出包需在仓库 Secrets 配 `TAURI_SIGNING_PRIVATE_KEY`/`_PASSWORD`（必需）+ Windows 代码签名证书（可选 `WINDOWS_CERT_BASE64`/`_PASSWORD`） |
 | P2-#4 体积拆分确认 | ✅ 三大重型 AI 依赖均已动态 import 按需加载：`@mlc-ai/web-llm`（lib 5901KB raw/2101KB gzip，`local-model-engine.ts:262/336`）、`onnxruntime-web`（ort.bundle 387KB + ort-wasm 26MB，`onnx-embedding-provider.ts:225`）、`gpt-tokenizer`（`token-counter.ts:3-5` 懒加载缓存）；首屏 modulepreload 集 215KB→109KB gzip | 原报告「lib 6MB 未拆分」描述已过时（web-llm/gpt-tokenizer 已在 `lib` 懒加载 chunk，非首屏）；marked/dompurify 为死代码（仅测试引用、生产零引用，tree-shaking 已剔除，拆分收益 0）；真实首屏浪费为 onnxruntime 被预加载，已于 2026-08-18 修复（`resolveDependencies` 排除 `ort.bundle.min`，modulepreload 集 −106KB gzip）；main 446KB gzip 为应用核心代码，维持不变 |
