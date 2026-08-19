@@ -128,6 +128,19 @@
 - 修复：`OnnxEmbeddingProvider` 改 `await import()`（仅本地嵌入调用时加载），并在 `vite.config.ts` 用 `build.modulePreload.resolveDependencies` 精准排除 `ort.bundle.min` 的预加载。
 - 结果：首屏 modulepreload 集 215KB → 109KB gzip（**−106KB / −50%**），onnxruntime 改为首次本地向量嵌入时按需加载；typecheck / i18n:strict / lint(0 errors) / 向量相关单测(34/34) 全绿。
 
+## 🏁 T-14 工程基线收尾（2026-08-19 全闭环）
+
+> 按 T-14 工程基线收尾序列（①缺陷登记 → ②CI → ⑤type-aware → ⑥npm audit）逐项实跑验证，四项全部闭环，无阻断项。
+
+| # | 工程基线项 | 状态 | 实证（2026-08-19 实跑） |
+|---|-----------|------|------------------------|
+| ① | 缺陷登记（P0-P3） | ✅ 闭环 | 由 pre-launch 全检报告 P2 8 项闭环覆盖（commit `3ec8ede`） |
+| ② | GitHub Actions CI | ✅ 闭环 | 7 重门禁 + `tauri-release` 签名发布 job 已落地（commit `f0c6f8b`）；`YAML` 校验 `jobs=[quality-gates,e2e,tauri-build,tauri-release]` |
+| ⑤ | type-aware | ✅ 闭环 | eslint type-aware 规则（`no-floating-promises`/`await-thenable`）已提升 error 并清理 33 处告警（commit `41097dd`+`2201c02`）；`npm run lint` **0 errors**（规则激活）、`vue-tsc --noEmit` 0 错误；tsconfig `strict`/`noUnusedLocals`/`noUnusedParameters` 全开 |
+| ⑥ | npm audit | ✅ 闭环 | `npm audit` → **found 0 vulnerabilities**（info/low/moderate/high/critical 全 0） |
+
+**结论**：T-14 工程基线四项全部闭环。若后续需更强类型护栏，可评估 tsconfig `noUncheckedIndexedAccess` 或 eslint `no-misused-promises`（注释曾因 Vue `@click` 误报暂未启用），但二者会触及 6 万行存量代码、非阻断，需单独排期，不在本次收尾范围。
+
 ## ⚠️ 待完善 / 已知局限
 
 - 本环境**无法真实执行 GUI 交互**（拖拽、窗口缩放、真实点击），UI/交互维度结论基于 `ui-shots/` 26 张**真实截图**（覆盖全模块 + 语言切换）做视觉审查，是上次报告「无 GUI 验证」局限的**显著改进**；light/midnight 主题截图已由 `scripts/ui-shot.mjs`（THEME 参数）补齐（各 15 张路由级截图），仅 OLED Black 仍待补（深色基线已含 `04-settings-tab0-5` 参考）。
