@@ -9,6 +9,7 @@ dist-p13-check/
 dist-qa/
 dist-measure/
 dist-opt*/
+dist-lib-eval*/
 out/
 src-tauri/target/
 src-tauri/gen/schemas/

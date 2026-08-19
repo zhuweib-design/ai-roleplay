@@ -154,10 +154,20 @@ export default defineConfig({
     ...(isTauriEnv ? { assetsDir: 'assets' } : {}),
     // 首屏体积优化：onnxruntime-web 仅本地向量嵌入使用（默认关闭），
     // 不预加载其 chunk（ort.bundle.min），改为首次使用本地嵌入时按需加载，
-    // 避免 ~107KB(gzip) 占首屏。web-llm/gpt-tokenizer 已在 lib 懒加载 chunk，无需处理。
+    // 避免 ~107KB(gzip) 占首屏。web-llm/gpt-tokenizer 已拆为独立懒加载 chunk（见 rollupOptions）。
     modulePreload: {
       resolveDependencies: (_srcFileName, deps) =>
         deps.filter((dep) => !/ort\.bundle\.min.*\.js$/.test(dep)),
+    },
+    rollupOptions: {
+      output: {
+        // 懒加载 chunk 拆分：web-llm 与 gpt-tokenizer 独立 chunk
+        // Token 计数场景只需 gpt-tokenizer(~100KB)，不需 web-llm 运行时(2MB)
+        manualChunks(id) {
+          if (id.includes('@mlc-ai/web-llm')) return 'web-llm';
+          if (id.includes('gpt-tokenizer')) return 'gpt-tokenizer';
+        },
+      },
     },
   },
   // 测试环境配置保持不变
