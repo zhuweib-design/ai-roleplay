@@ -214,15 +214,13 @@ export class TauriOpenAIClient implements ApiClient {
     // 中止信号处理
     let aborted = false;
     if (request.signal) {
-      request.signal.addEventListener('abort', async () => {
+      request.signal.addEventListener('abort', () => {
         aborted = true;
-        try {
-          await TauriOpenAIClient.invoke<boolean>('cancel_chat_stream', {
-            channel,
-          });
-        } catch {
-          // 忽略取消失败的错误
-        }
+        TauriOpenAIClient.invoke<boolean>('cancel_chat_stream', {
+          channel,
+        }).catch(() => {
+          /* 忽略取消失败的错误 */
+        });
       });
     }
 

@@ -135,7 +135,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('dragenter', onDragEnter);
   window.removeEventListener('dragleave', onDragLeave);
   window.removeEventListener('dragover', onDragOver);
-  window.removeEventListener('drop', onDrop);
+  window.removeEventListener('drop', (e) => void onDrop(e));
 });
 
 onMounted(async () => {
@@ -145,7 +145,7 @@ onMounted(async () => {
   window.addEventListener('dragenter', onDragEnter);
   window.addEventListener('dragleave', onDragLeave);
   window.addEventListener('dragover', onDragOver);
-  window.addEventListener('drop', onDrop);
+  window.addEventListener('drop', (e) => void onDrop(e));
   // 通过工厂方法获取存储适配器
   // - Tauri 环境 → TauriFSAdapter（本地文件系统）
   // - 浏览器环境 → IndexedDBAdapter（IndexedDB）

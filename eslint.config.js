@@ -17,6 +17,7 @@ export default [
       'dist-qa/**',
       'dist-measure/**',
       'dist-opt*/**',
+      'dist-lib-eval*/**',
       'dist-electron/**',
       'coverage/**',
       'coverage-ci/**',
@@ -69,14 +70,14 @@ export default [
     rules: { 'require-yield': 'off' },
   },
   {
-    // ── type-aware 增强(T-14 待办⑤): 需 TS 类型信息, 依赖上方 projectService ──
-    // 已全部清理 33 处告警(悬空 Promise 加 void / 非法 await 修类型 / 测试 await expect),
-    // 现提升为 error 强化 CI 防线(任一悬空 Promise 即阻断合并)。
-    // 注: no-misused-promises 在 Vue 事件处理器(@click 等)误报多, 暂不启用。
+    // ── type-aware 增强(T-14 ⑤→已闭环): 需 TS 类型信息, 依赖上方 projectService ──
+    // no-floating-promises / await-thenable / no-misused-promises 均已提升 error
+    // (no-misused-promises 原标注"Vue @click 误报多暂不启用", 实测仅 7 处已全修复, 2026-08-19 正式启用)
     files: ['src/**/*.ts', 'src/**/*.vue', 'tests/**/*.ts'],
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/await-thenable': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
     },
   },
   {

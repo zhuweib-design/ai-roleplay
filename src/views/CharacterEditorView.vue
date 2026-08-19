@@ -243,7 +243,7 @@ onMounted(() => {
     if (!found) {
       // 角色不存在，返回列表
       showToast('error', t('charEdit.notFound'));
-      setTimeout(() => router.replace({ name: 'character-list' }), 800);
+      setTimeout(() => void router.replace({ name: 'character-list' }), 800);
       return;
     }
     loadCharacter(found);
@@ -328,7 +328,7 @@ function executeDelete() {
   characterStore.deleteCharacter(props.id);
   deleteModalOpen.value = false;
   showToast('success', t('charEdit.deleted', { name }));
-  setTimeout(() => router.replace({ name: 'character-list' }), 600);
+  setTimeout(() => void router.replace({ name: 'character-list' }), 600);
 }
 
 // ── 头像上传（base64 dataURL） ──
@@ -460,7 +460,7 @@ function handleSave() {
     const ok = characterStore.updateCharacter(props.id, buildPatch());
     if (ok) {
       showToast('success', t('charEdit.saved'));
-      setTimeout(() => router.replace({ name: 'character-list' }), 600);
+      setTimeout(() => void router.replace({ name: 'character-list' }), 600);
     } else {
       showToast('error', t('charEdit.saveFailed'));
     }
@@ -469,7 +469,7 @@ function handleSave() {
     const newId = characterStore.createCharacter();
     characterStore.updateCharacter(newId, buildPatch());
     showToast('success', t('charEdit.created'));
-    setTimeout(() => router.replace({ name: 'character-list' }), 600);
+    setTimeout(() => void router.replace({ name: 'character-list' }), 600);
   }
 }
 
