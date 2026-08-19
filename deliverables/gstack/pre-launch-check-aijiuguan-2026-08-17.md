@@ -98,6 +98,9 @@
 | 8 | ~~E2E 纳入 CI 默认门禁~~ ✅ **已完成**（`e2e` job）；~~文档化回滚流程~~ ✅ **已完成**（`docs/data-backup-restore.md`） | 产品/CI | ✅ 全部完成 | — |
 | 9 | **首屏体积优化** ✅ **已完成**（2026-08-18）：onnxruntime-web 退出首屏预加载，modulepreload 集 215KB→109KB gzip（−106KB / −50%），本地向量嵌入时按需加载 | 架构 | ✅ 已完成 | — |
 | 10 | **② CI 深化：签名发布 job** ✅ **已完成**（2026-08-18）：`tauri-release` job 落地（tauri-apps/tauri-action，windows/macos 矩阵，tag/workflow_dispatch 触发），日常 push/PR 经 `if` 条件跳过、零影响；正式出包需在仓库 Secrets 配置 `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`（必需）与 Windows 代码签名证书（可选） | CI/发布 | ✅ 已完成 | — |
+| 11 | **② 懒加载 chunk 按依赖拆分** ✅ **已完成**（2026-08-19，commit `ee22d86`）：`vite.config.ts` `rollupOptions.output.manualChunks` 将 `@mlc-ai/web-llm`（5.76MB raw/2.08MB gzip）与 `gpt-tokenizer`（960KB raw/436KB gzip）拆为独立 chunk；Token 计数场景装载量 2.1MB→436KB（−77%），首屏 modulepreload 不含二者 | 架构 | ✅ 已完成 | — |
+| 12 | **③ 启用 no-misused-promises 类型护栏** ✅ **已完成**（2026-08-19，commit `bbcfa7e`）：实测仅 7 处 Promise 泄漏（App.vue 2 + tauri-openai-client.ts 1 + CharacterEditorView.vue 4）已全部 `void`/`catch` 修复，eslint 正式启用 `no-misused-promises` 为 error；`npm run lint` 0 errors、typecheck 0 错误 | 前端 | ✅ 已完成 | — |
+| 13 | **④ Dark Theatre 主题单独出图** ✅ **已完成**（2026-08-19，commit `eaf9ceb`）：`ui-shots/themes/theatre/` 由 `scripts/ui-shot.mjs`（THEME=theatre）生成 21 张路由+设置Tab 截图（暖棕深色调，区别于 OLED 纯黑 / Midnight 深蓝），5 主题截图覆盖完整 | QA | ✅ 已完成 | — |
 
 ---
 
@@ -136,10 +139,10 @@
 |---|-----------|------|------------------------|
 | ① | 缺陷登记（P0-P3） | ✅ 闭环 | 由 pre-launch 全检报告 P2 8 项闭环覆盖（commit `3ec8ede`） |
 | ② | GitHub Actions CI | ✅ 闭环 | 7 重门禁 + `tauri-release` 签名发布 job 已落地（commit `f0c6f8b`）；`YAML` 校验 `jobs=[quality-gates,e2e,tauri-build,tauri-release]` |
-| ⑤ | type-aware | ✅ 闭环 | eslint type-aware 规则（`no-floating-promises`/`await-thenable`）已提升 error 并清理 33 处告警（commit `41097dd`+`2201c02`）；`npm run lint` **0 errors**（规则激活）、`vue-tsc --noEmit` 0 错误；tsconfig `strict`/`noUnusedLocals`/`noUnusedParameters` 全开 |
+| ⑤ | type-aware | ✅ 闭环 | eslint type-aware 规则（`no-floating-promises`/`await-thenable`/`no-misused-promises`）已提升 error：`no-floating-promises`/`await-thenable` 清理 33 处告警（commit `41097dd`+`2201c02`）；`no-misused-promises` 实测仅 7 处泄漏（App.vue 2 + tauri-openai-client.ts 1 + CharacterEditorView.vue 4）全修复后于 2026-08-19 正式启用（commit `bbcfa7e`）；`npm run lint` **0 errors**（规则激活）、`vue-tsc --noEmit` 0 错误；tsconfig `strict`/`noUnusedLocals`/`noUnusedParameters` 全开 |
 | ⑥ | npm audit | ✅ 闭环 | `npm audit` → **found 0 vulnerabilities**（info/low/moderate/high/critical 全 0） |
 
-**结论**：T-14 工程基线四项全部闭环。若后续需更强类型护栏，可评估 tsconfig `noUncheckedIndexedAccess` 或 eslint `no-misused-promises`（注释曾因 Vue `@click` 误报暂未启用），但二者会触及 6 万行存量代码、非阻断，需单独排期，不在本次收尾范围。
+**结论**：T-14 工程基线四项全部闭环，`no-misused-promises` 已由「暂未启用」升级为 error（7 处泄漏已全修复，commit `bbcfa7e`）。剩余更强护栏 `noUncheckedIndexedAccess`（tsconfig）会触发 915 处 TS2532（226 生产 + 689 测试），统一修复模式 `!`/可选链，约半天工作量、非阻断、需单独排期，不在本次收尾范围。
 
 ## ⚠️ 待完善 / 已知局限
 
@@ -170,11 +173,14 @@
 | P2-#6 空对话引导卡 | ✅ `src/components/chat/ChatMain.vue` 空态引导卡：角色名标题 + 描述 + 4 示例 prompt（点击填入输入框）；`typecheck`/`i18n:strict`/`vite build`/`lint` 全通过；light/dark 双主题 Playwright 验证（选中空消息角色 lyra，卡片可见、chip 填入生效） | i18n 文案 `chat.emptyTitle`/`chat.emptyDesc`/`chat.emptyHint`/`chat.examplePrompts` 防硬编码中文 |
 | E2E（Playwright）本地验证 | ✅ **10/10 spec 全绿**（msedge + 端口 5174） | e2e/ 下 6 文件：theme-flow / worldbook-flow / character-crud / chat-flow / theme-visual / contrast-axe；onboarding 跳过 + mock SSE 对话流式回复；已纳入 CI `e2e` job |
 | 回滚/灾备路径文档化 | ✅ `docs/data-backup-restore.md` | 覆盖导出(加密/明文密钥拒绝)/导入(覆盖=回滚)/冲突策略/灾备 Runbook/跨设备迁移/审计；导入路径经代码审计确认可用（backup-service.ts / backup.ts / SettingsView.vue）|
-| 主题截图(light/midnight/oled) | ✅ `scripts/ui-shot.mjs`（THEME 参数）生成 `ui-shots/themes/light` + `ui-shots/themes/midnight` + `ui-shots/themes/oled` 各 21 张路由+设置Tab截图（共 63 张，文件 33–103KB 正常非空白）；OLED Black 纯黑背景渲染正常、对比度可读（2026-08-19 补齐）；设置页 Tab 展开段在切主题场景偶发超时（脚本 try-catch 容错，不影响路由级主题验证） | 三种主题截图覆盖完整，Dark Theatre 未单独出图（与 Dark 共用深色基线） |
+| 主题截图(light/midnight/oled) | ✅ `scripts/ui-shot.mjs`（THEME 参数）生成 `ui-shots/themes/light` + `ui-shots/themes/midnight` + `ui-shots/themes/oled` 各 21 张路由+设置Tab截图（共 63 张，文件 33–103KB 正常非空白）；OLED Black 纯黑背景渲染正常、对比度可读（2026-08-19 补齐）；设置页 Tab 展开段在切主题场景偶发超时（脚本 try-catch 容错，不影响路由级主题验证） | 三种主题截图覆盖完整；Dark Theatre 已于 2026-08-19 单独出图（见行动清单 #13 / `ui-shots/themes/theatre/` 21 张，暖棕深色调区别于 OLED 纯黑 / Midnight 深蓝），5 主题截图覆盖完整 |
 | P2-#1 Tauri 桌面编译验证 | ✅ `cargo build --release` 4m17s 编译通过（`ai-roleplay v0.1.0`，tauri 2.11.5 + tauri-plugin-fs/os/shell/http/dialog） | CI 已新增 `tauri-build` job（ubuntu + webkit2gtk-4.1 等系统依赖 + rust-cache + `tauri:build --no-bundle` + 上传二进制 artifact）；签名发布已落地 `tauri-release` job（需 Secrets 出包） |
 | ② CI 深化：tauri-release 签名发布 job | ✅ YAML 校验通过（pyyaml 解析 jobs=[quality-gates,e2e,tauri-build,tauri-release]）；`if` 条件 `workflow_dispatch \|\| tag v*`、needs=[quality-gates,e2e]、matrix=windows/macos；日常 push/PR 不触发、主门禁零影响 | 正式出包需在仓库 Secrets 配 `TAURI_SIGNING_PRIVATE_KEY`/`_PASSWORD`（必需）+ Windows 代码签名证书（可选 `WINDOWS_CERT_BASE64`/`_PASSWORD`） |
 | P2-#4 体积拆分确认 | ✅ 三大重型 AI 依赖均已动态 import 按需加载：`@mlc-ai/web-llm`（lib 5901KB raw/2101KB gzip，`local-model-engine.ts:262/336`）、`onnxruntime-web`（ort.bundle 387KB + ort-wasm 26MB，`onnx-embedding-provider.ts:225`）、`gpt-tokenizer`（`token-counter.ts:3-5` 懒加载缓存）；首屏 modulepreload 集 215KB→109KB gzip | 原报告「lib 6MB 未拆分」描述已过时（web-llm/gpt-tokenizer 已在 `lib` 懒加载 chunk，非首屏）；marked/dompurify 为死代码（仅测试引用、生产零引用，tree-shaking 已剔除，拆分收益 0）；真实首屏浪费为 onnxruntime 被预加载，已于 2026-08-18 修复（`resolveDependencies` 排除 `ort.bundle.min`，modulepreload 集 −106KB gzip）；main 446KB gzip 为应用核心代码，维持不变 |
 | 首屏体积优化（2026-08-18） | ✅ onnxruntime-web 退出首屏 modulepreload：集 215KB→109KB gzip（−106KB / −50%）；typecheck / i18n:strict / lint(0 errors) / 向量相关单测(34/34) 全绿 | `vite.config.ts` modulePreload.resolveDependencies 排除 `ort.bundle.min` + `src/core/dual-channel-runtime.ts` 将 `OnnxEmbeddingProvider` 改 `await import()`；marked/dompurify 确认死代码(不在包内)、web-llm/gpt-tokenizer 已在 `lib` 懒加载 chunk |
+| ② 懒加载 chunk 拆分（2026-08-19） | ✅ `rollupOptions.output.manualChunks` 将 `@mlc-ai/web-llm`（5.76MB raw/2.08MB gzip）与 `gpt-tokenizer`（960KB raw/436KB gzip）拆为独立 chunk；Token 计数场景装载 2.1MB→436KB（−77%）；首屏 modulepreload 不含二者；typecheck 0 错误、lint(0 errors) 全绿 | `vite.config.ts` manualChunks（注意 Vite 8 rolldown 须置于 `build.rollupOptions.output.manualChunks`，置于 `build.manualChunks` 顶层时函数不被调用）；`.gitignore`/`eslint.config.js` 加 `dist-lib-eval*/` 忽略本环境评测构建产物（commit `ee22d86`） |
+| ③ no-misused-promises 启用（2026-08-19） | ✅ eslint type-aware 块正式启用 `no-misused-promises` 为 error；实测仅 7 处 Promise 泄漏（App.vue 2 + tauri-openai-client.ts 1 + CharacterEditorView.vue 4）已全部 `void`/`catch` 修复；`npm run lint` 0 errors、typecheck 0 错误 | `eslint.config.js` + `src/App.vue`/`src/api/tauri-openai-client.ts`/`src/views/CharacterEditorView.vue`（commit `bbcfa7e`）；注：`noUncheckedIndexedAccess` 仍待排期（915 处 TS2532，约半天工作量，非阻断） |
+| ④ Dark Theatre 主题截图（2026-08-19） | ✅ `scripts/ui-shot.mjs`（THEME=theatre）生成 `ui-shots/themes/theatre/` 21 张路由+设置Tab 截图；暖棕深色调区别于 OLED 纯黑 / Midnight 深蓝，「暗夜剧场」卡片选中态正确；5 主题截图覆盖完整 | 文件大小正常非空白；设置页 Tab 展开段在切主题场景偶发超时（脚本 try-catch 容错，不影响路由级验证），commit `eaf9ceb` |
 
 ---
 
