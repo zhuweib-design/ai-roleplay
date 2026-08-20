@@ -203,4 +203,5 @@ jobs:
           releaseName: 'AI 酒馆 ${{ github.ref_name }}'
           releaseBody: 'Automated release — see assets to download and install.'
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.args }}

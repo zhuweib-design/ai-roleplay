@@ -87,9 +87,9 @@ describe('SettingsView 设置分类侧边栏 + 本地模型统一管理', () => 
     const { wrapper } = await mountSettings();
 
     const items = wrapper.findAll('.settings-nav-item');
-    expect(items.length).toBe(6);
+    expect(items.length).toBe(7);
     const labels = items.map((b) => b.text());
-    for (const label of ['外观', '模型', '扩展', '个人', '数据', '安全']) {
+    for (const label of ['外观', '模型', '扩展', '个人', '数据', '安全', '关于']) {
       expect(labels.some((t) => t.includes(label))).toBe(true);
     }
 

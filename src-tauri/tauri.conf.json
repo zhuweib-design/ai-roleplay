@@ -68,5 +68,14 @@
     }
   },
   "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/zhuweib-design/ai-roleplay/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ3MkY3NkZCMUYxNDIyNkYKUldSdkloUWYrM1l2UjBFRGdGblp6NlB6aVZiZFpMMjI5SWRlVEsyVlIyNlQvUU1nc2FvU3JxdzQK",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

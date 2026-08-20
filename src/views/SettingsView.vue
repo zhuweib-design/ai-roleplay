@@ -15,8 +15,9 @@
  * - 删除前确认（Modal）
  * - 错误通过 Toast role=alert 反馈
  */
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
+import { isTauriEnv } from '@/core/model-file-adapter';
 import Icon from '@/components/common/Icon.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
@@ -132,7 +133,7 @@ function handleThemeKeydown(e: KeyboardEvent, currentIndex: number): void {
 // ── 设置分类（浮动侧边栏：相同类型配置归同一大类别） ──
 import type { IconName } from '@/components/common/icons';
 
-type SettingsCategoryId = 'appearance' | 'model' | 'extension' | 'persona' | 'data' | 'security';
+type SettingsCategoryId = 'appearance' | 'model' | 'extension' | 'persona' | 'data' | 'security' | 'about';
 
 interface SettingsCategory {
   id: SettingsCategoryId;
@@ -148,6 +149,7 @@ const settingsCategories = computed<SettingsCategory[]>(() => [
   { id: 'persona', label: t('settingsView.categoryPersona'), description: t('settingsView.categoryPersonaDesc'), icon: 'user' },
   { id: 'data', label: t('settingsView.categoryData'), description: t('settingsView.categoryDataDesc'), icon: 'database' },
   { id: 'security', label: t('settingsView.categorySecurity'), description: t('settingsView.categorySecurityDesc'), icon: 'lock-keyhole' },
+  { id: 'about', label: t('settingsView.categoryAbout'), description: t('settingsView.categoryAboutDesc'), icon: 'info' },
 ]);
 
 const activeCategory = ref<SettingsCategoryId>('appearance');
@@ -254,6 +256,62 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   toastType.value = type;
   toastMessage.value = message;
   toastOpen.value = true;
+}
+
+// ── About / 自动更新（T-15 updater） ──
+const appVersion = ref('');
+const updateState = ref<'idle' | 'checking' | 'updating' | 'latest' | 'error'>('idle');
+const updateDetail = ref('');
+
+const updateLabel = computed(() => {
+  switch (updateState.value) {
+    case 'checking':
+      return t('settings.updateChecking');
+    case 'updating':
+      return t('settings.updateInstalling');
+    default:
+      return t('settings.updateCheck');
+  }
+});
+
+onMounted(async () => {
+  // 仅 Tauri 运行时存在原生版本信息与更新能力；Web 模式降级隐藏
+  if (!isTauriEnv()) return;
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    appVersion.value = await invoke<string>('get_app_version');
+  } catch {
+    // 版本获取失败不阻塞设置页
+  }
+});
+
+async function handleCheckUpdate() {
+  if (!isTauriEnv()) {
+    showToast('info', t('settings.updateWebUnsupported'));
+    return;
+  }
+  if (updateState.value === 'checking' || updateState.value === 'updating') return;
+  updateState.value = 'checking';
+  updateDetail.value = '';
+  try {
+    const { check } = await import('@tauri-apps/plugin-updater');
+    const update = await check();
+    if (update) {
+      updateState.value = 'updating';
+      showToast('info', t('settings.updateAvailable'));
+      // 下载并安装（Windows 安装完成后由 updater 处理重启）
+      await update.downloadAndInstall();
+      updateState.value = 'idle';
+      showToast('success', t('settings.updateInstalled'));
+    } else {
+      updateState.value = 'latest';
+      showToast('info', t('settings.updateLatest'));
+    }
+  } catch (err) {
+    updateState.value = 'error';
+    updateDetail.value = err instanceof Error ? err.message : String(err);
+    showToast('error', t('settings.updateError'));
+  }
 }
 
 watch(
@@ -2001,6 +2059,49 @@ async function handleExportChatMarkdown() {
       :mode="mpModalMode"
       @success="handleMasterPasswordSuccess"
     />
+    </div>
+
+    <!-- About / 自动更新 -->
+    <div v-show="activeCategory === 'about'">
+      <section
+        class="settings-section data-mgmt-section"
+        aria-labelledby="about-title"
+      >
+        <header class="section-header">
+          <h2 id="about-title" class="section-title">
+            <Icon name="info" :size="16" />
+            <span>{{ t('settingsView.categoryAbout') }}</span>
+          </h2>
+          <p class="section-hint">{{ t('settingsView.categoryAboutDesc') }}</p>
+        </header>
+
+        <div class="data-mgmt-row">
+          <div class="data-mgmt-block">
+            <h3 class="data-mgmt-subtitle">AI 酒馆</h3>
+            <p class="data-mgmt-hint">
+              {{ t('settings.versionLabel') }}：{{ appVersion || '—' }}
+              <span v-if="!isTauriEnv()">（{{ t('settings.updateWebUnsupported') }}）</span>
+            </p>
+            <div class="data-mgmt-actions">
+              <button
+                type="button"
+                class="data-mgmt-btn"
+                :disabled="updateState === 'checking' || updateState === 'updating' || !isTauriEnv()"
+                @click="handleCheckUpdate"
+              >
+                <Icon name="refresh-cw" :size="14" />
+                <span>{{ updateLabel }}</span>
+              </button>
+            </div>
+            <p v-if="updateState === 'latest'" class="data-mgmt-hint" role="status">
+              {{ t('settings.updateLatest') }}
+            </p>
+            <p v-else-if="updateState === 'error'" class="data-mgmt-hint" role="alert">
+              {{ t('settings.updateError') }}<span v-if="updateDetail">：{{ updateDetail }}</span>
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
     </div>
   </main>
