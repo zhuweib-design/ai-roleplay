@@ -1306,6 +1306,7 @@ export default {
   'modelPanel.emptyCategory': '该分类暂无模型，点击「新增」添加。',
   'modelPanel.localHint': '本地模型由浏览器内 WebLLM 推理引擎驱动（需 WebGPU），下载后点击「添加到配置」即可在对话页直接调用，无需 API Key。',
   'modelPanel.localModelsEmpty': '还没有已下载的本地模型。点击上方「检测引擎」确认本机支持 WebGPU 后，在对话页选择「本地·xxx」模型即可首次加载——权重会自动下载，完成后显示在此，可一键加载或加入配置。',
+  'modelPanel.goToLocalModel': '前往本地模型管理页下载',
   'modelPanel.engineStatusIdle': '未检测引擎能力',
   'modelPanel.engineStatusOk': '引擎可用（WebGPU + WebLLM）',
   'modelPanel.engineStatusFail': '引擎不可用',

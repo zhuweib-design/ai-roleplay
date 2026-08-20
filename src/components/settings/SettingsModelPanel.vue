@@ -6,6 +6,7 @@
  * 依赖 settings / chat / localModel 三个 store，不依赖父组件状态。
  */
 import { ref, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useSettingsStore } from '@/stores/settings';
 import { useChatStore } from '@/stores/chat';
 import { useLocalModelStore } from '@/stores/local-model';
@@ -21,6 +22,10 @@ import { t } from '@/i18n';
 const settings = useSettingsStore();
 const chatStore = useChatStore();
 const localModelStore = useLocalModelStore();
+const router = useRouter();
+function goToLocalModel() {
+  void router.push({ name: 'local-model' });
+}
 
 // ── API Profile 管理 ──
 const editModalOpen = ref(false);
@@ -616,7 +621,10 @@ watch(
             </div>
           </li>
         </ul>
-        <p v-else class="empty-hint local-empty">{{ t('modelPanel.localModelsEmpty') }}</p>
+        <p v-else class="empty-hint local-empty">
+          {{ t('modelPanel.localModelsEmpty') }}
+          <button type="button" class="link-btn" @click="goToLocalModel">{{ t('modelPanel.goToLocalModel') }}</button>
+        </p>
       </template>
     </section>
 
@@ -1248,6 +1256,30 @@ watch(
   margin: 0;
   padding: 16px 0;
   text-align: center;
+}
+
+.local-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.local-empty .link-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--primary, #4f8cff);
+  font-size: 13px;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.local-empty .link-btn:hover {
+  background: var(--primary-muted, rgba(128, 128, 128, 0.12));
+  border-color: var(--primary, #4f8cff);
 }
 
 .profile-list {
