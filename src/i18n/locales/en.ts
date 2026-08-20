@@ -1305,6 +1305,7 @@ const en: Record<MessageKey, string> = {
   'modelPanel.currentPrimary': 'Current primary',
   'modelPanel.emptyCategory': 'No models in this category yet. Click "Add" to create one.',
   'modelPanel.localHint': 'Local models are powered by the in-browser WebLLM engine (requires WebGPU). After downloading, click "Add to Config" to use them directly in chat without an API key.',
+  'modelPanel.localModelsEmpty': 'No downloaded local models yet. Click "Detect Engine" above to confirm WebGPU support, then pick a "Local · xxx" model in a chat to load it — weights download automatically on first use and the model appears here, ready to load or add to config.',
   'modelPanel.engineStatusIdle': 'Engine capability not detected',
   'modelPanel.engineStatusOk': 'Engine available (WebGPU + WebLLM)',
   'modelPanel.engineStatusFail': 'Engine unavailable',

@@ -549,7 +549,7 @@ watch(
         </p>
 
         <!-- 本地模型列表 -->
-        <ul class="profile-list model-mgmt-list" role="list">
+        <ul v-if="localModelStore.models.length" class="profile-list model-mgmt-list" role="list">
           <li
             v-for="m in localModelStore.models"
             :key="m.id"
@@ -616,6 +616,7 @@ watch(
             </div>
           </li>
         </ul>
+        <p v-else class="empty-hint local-empty">{{ t('modelPanel.localModelsEmpty') }}</p>
       </template>
     </section>
 

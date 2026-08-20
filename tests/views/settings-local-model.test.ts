@@ -110,6 +110,8 @@ describe('SettingsView 设置分类侧边栏 + 本地模型统一管理', () => 
     await clickMgmtTab(wrapper, '本地模型');
     // 默认无已下载模型 → 本地 tab 列表为空（e770710 语义：仅展示真实已下载）
     expect(wrapper.findAll('.model-mgmt-list .profile-item').length).toBe(0);
+    // 空态引导文案应出现（P2 缺口：未下载模型无入口/空态）
+    expect(wrapper.find('.local-empty').exists()).toBe(true);
     // 注入已下载状态后，本地 tab 渲染全部已下载模型
     await seedDownloadedModels(localModelStore);
     const rows = wrapper.findAll('.model-mgmt-list .profile-item');
