@@ -111,7 +111,7 @@ export const useEventsStore = defineStore('events', () => {
       return false;
     }
 
-    const merged = { ...events.value[idx], ...patch };
+    const merged = { ...events.value[idx]!, ...patch };
     const errors = validateEvent(merged);
     if (errors.length > 0) {
       lastError.value = errors.join('；');
@@ -130,7 +130,7 @@ export const useEventsStore = defineStore('events', () => {
   function deleteEvent(id: string): boolean {
     const idx = events.value.findIndex((e) => e.id === id);
     if (idx < 0) return false;
-    const removed = events.value.splice(idx, 1)[0];
+    const removed = events.value.splice(idx, 1)[0]!;
     lastInfo.value = t('ev.deleted2', { name: removed.name });
     return true;
   }

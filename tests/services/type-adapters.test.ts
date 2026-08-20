@@ -546,10 +546,10 @@ describe('type-adapters — 批量转换', () => {
     const result = uiMsgsToChatMsgs(msgs);
 
     expect(result).toHaveLength(2);
-    expect(result[0].id).toBe('m1');
-    expect(result[1].id).toBe('m2');
-    expect(result[0].timestamp).toBe(new Date(1000).toISOString());
-    expect(result[1].timestamp).toBe(new Date(2000).toISOString());
+    expect(result[0]!.id).toBe('m1');
+    expect(result[1]!.id).toBe('m2');
+    expect(result[0]!.timestamp).toBe(new Date(1000).toISOString());
+    expect(result[1]!.timestamp).toBe(new Date(2000).toISOString());
   });
 
   it('uiMsgsToChatMsgs 空数组应返回空数组', () => {
@@ -618,8 +618,8 @@ describe('type-adapters — worldEntriesToStorage', () => {
     ];
 
     const result = worldEntriesToStorage(entries);
-    result[0].name = '修改后';
+    result[0]!.name = '修改后';
 
-    expect(entries[0].name).toBe('世界1');
+    expect(entries[0]!.name).toBe('世界1');
   });
 });

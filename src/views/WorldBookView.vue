@@ -395,7 +395,7 @@ function triggerFileInput() {
 async function handleFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
-  const file = input.files[0];
+  const file = input.files[0]!;
   await store.importLorebookFile(file);
   input.value = '';
 }

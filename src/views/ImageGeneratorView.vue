@@ -385,15 +385,15 @@ onMounted(async () => {
             <h2 class="section-title">{{ t('imgGen.latestTitle') }}</h2>
             <div v-if="store.galleryImages.length > 0" class="latest-image">
               <img
-                :src="store.galleryImages[0].data"
-                :alt="store.galleryImages[0].params.prompt"
+                :src="store.galleryImages[0]!.data"
+                :alt="store.galleryImages[0]!.params.prompt"
                 class="preview-img"
-                @click="openDetail(store.galleryImages[0])"
+                @click="openDetail(store.galleryImages[0]!)"
               />
-              <p class="preview-prompt">{{ store.galleryImages[0].params.prompt }}</p>
+              <p class="preview-prompt">{{ store.galleryImages[0]!.params.prompt }}</p>
               <p class="preview-meta">
-                {{ formatDuration(store.galleryImages[0].durationMs) }} ·
-                {{ store.galleryImages[0].width }}×{{ store.galleryImages[0].height }}
+                {{ formatDuration(store.galleryImages[0]!.durationMs) }} ·
+                {{ store.galleryImages[0]!.width }}×{{ store.galleryImages[0]!.height }}
               </p>
             </div>
             <div v-else class="empty-preview">

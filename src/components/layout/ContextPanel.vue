@@ -13,7 +13,7 @@ const personaStore = usePersonaStore();
 const lorebookStore = useLorebookStore();
 const chatStore = useChatStore();
 
-const char = computed(() => characterStore.currentCharacter);
+const char = computed(() => characterStore.currentCharacter!);
 
 /** {{user}} 宏字面量（模板内嵌套双花括号会破坏编译，故提为常量） */
 const USER_MACRO = '{{user}}';

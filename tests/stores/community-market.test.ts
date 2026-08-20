@@ -182,7 +182,7 @@ describe('community-market store', () => {
       store.setSortBy('popular');
       const cards = store.filteredCards;
       for (let i = 1; i < cards.length; i++) {
-        expect(cards[i].downloadCount).toBeLessThanOrEqual(cards[i - 1].downloadCount);
+        expect(cards[i]!.downloadCount).toBeLessThanOrEqual(cards[i - 1]!.downloadCount);
       }
     });
 
@@ -190,7 +190,7 @@ describe('community-market store', () => {
       store.setSortBy('rating');
       const cards = store.filteredCards;
       for (let i = 1; i < cards.length; i++) {
-        expect(cards[i].averageRating).toBeLessThanOrEqual(cards[i - 1].averageRating);
+        expect(cards[i]!.averageRating).toBeLessThanOrEqual(cards[i - 1]!.averageRating);
       }
     });
 
@@ -198,7 +198,7 @@ describe('community-market store', () => {
       store.setSortBy('alphabetical');
       const cards = store.filteredCards;
       for (let i = 1; i < cards.length; i++) {
-        expect(cards[i].card.name.localeCompare(cards[i - 1].card.name)).toBeGreaterThanOrEqual(0);
+        expect(cards[i]!.card.name.localeCompare(cards[i - 1]!.card.name)).toBeGreaterThanOrEqual(0);
       }
     });
   });
@@ -304,7 +304,7 @@ describe('community-market store', () => {
       expect(ok).toBe(true);
       const reviews = store.getReviews(cardId);
       expect(reviews.length).toBeGreaterThan(0);
-      expect(reviews[0].comment).toBe('很好的角色卡');
+      expect(reviews[0]!.comment).toBe('很好的角色卡');
     });
 
     it('未登录评论失败', () => {
@@ -355,9 +355,9 @@ describe('community-market store', () => {
       expect(pending.length).toBeGreaterThan(0);
 
       // 解决第一条
-      const ok = store.resolveReport(pending[0].id, 'resolved', '已核查');
+      const ok = store.resolveReport(pending[0]!.id, 'resolved', '已核查');
       expect(ok).toBe(true);
-      const report = store.getReports().find((r) => r.id === pending[0].id);
+      const report = store.getReports().find((r) => r.id === pending[0]!.id);
       expect(report?.status).toBe('resolved');
       expect(report?.resolution).toBe('已核查');
     });

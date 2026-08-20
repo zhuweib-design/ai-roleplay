@@ -10,9 +10,13 @@
 
 pub mod commands;
 pub mod error;
+pub mod shortcut;
 pub mod storage;
+pub mod tray;
 
 use commands::{app_info, chat_stream, fetch_models, fs_commands};
+use tauri::Manager;
+use tray::init_tray;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -27,6 +31,19 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_os::init())
         .setup(|app| {
+            // 初始化系统托盘（桌面端强化）
+            init_tray(app.handle())?;
+
+            // 注册全局快捷键（桌面端强化）
+            shortcut::init(app.handle())?;
+
+            // 拦截主窗口关闭 → 最小化到托盘
+            if let Some(window) = app.get_webview_window("main") {
+                window.clone().on_window_event(move |event| {
+                    tray::handle_window_event(&window, event);
+                });
+            }
+
             // 启动时初始化数据目录结构
             let handle = app.handle();
             let data_dir = storage::get_data_dir(handle)?;

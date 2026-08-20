@@ -28,12 +28,13 @@ tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
 # ── Tauri 核心 ──
-tauri = { version = "2.0", features = ["devtools"] }
+tauri = { version = "2.0", features = ["devtools", "tray-icon"] }
 tauri-plugin-fs = "2.0"
 tauri-plugin-dialog = "2.0"
 tauri-plugin-shell = "2.0"
 tauri-plugin-http = "2.0"
 tauri-plugin-os = "2.0"
+tauri-plugin-global-shortcut = "2.0"
 
 # ── 序列化 ──
 serde = { version = "1.0", features = ["derive"] }

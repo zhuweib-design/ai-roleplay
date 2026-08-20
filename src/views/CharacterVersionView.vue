@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * CharacterVersionView — 角色卡版本管理页面 (模块4)
  *
@@ -44,7 +44,7 @@ onMounted(() => {
   }
   // 自动选中第一个角色
   if (!store.currentCharacterId && characterStore.characters.length > 0) {
-    handleSelectCharacter(characterStore.characters[0].id);
+    handleSelectCharacter(characterStore.characters[0]!.id);
   }
 });
 

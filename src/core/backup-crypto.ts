@@ -28,7 +28,7 @@ export const BACKUP_ENC_PREFIX = `enc:v${BACKUP_ENC_VERSION}:`;
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+    binary += String.fromCharCode(bytes[i]!);
   }
   return btoa(binary);
 }

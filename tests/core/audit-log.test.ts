@@ -27,10 +27,10 @@ describe('audit-log (T-06)', () => {
 
     const list = log.list();
     expect(list).toHaveLength(2);
-    expect(list[0].detail).toBe('明文密钥阻止');
-    expect(list[0].result).toBe('blocked');
-    expect(list[1].detail).toBe('角色 1');
-    expect(typeof list[0].ts).toBe('string');
+    expect(list[0]!.detail).toBe('明文密钥阻止');
+    expect(list[0]!.result).toBe('blocked');
+    expect(list[1]!.detail).toBe('角色 1');
+    expect(typeof list[0]!.ts).toBe('string');
   });
 
   it('持久化:新实例可恢复条目', async () => {
@@ -53,8 +53,8 @@ describe('audit-log (T-06)', () => {
     }
     const list = log.list();
     expect(list).toHaveLength(200);
-    expect(list[0].detail).toBe('条目204'); // 最新在前
-    expect(list[199].detail).toBe('条目5'); // 最早保留
+    expect(list[0]!.detail).toBe('条目204'); // 最新在前
+    expect(list[199]!.detail).toBe('条目5'); // 最早保留
   });
 
   it('clear 清空并移除持久化', async () => {

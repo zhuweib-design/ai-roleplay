@@ -239,7 +239,7 @@ describe('角色属性 V2 导入 (F01.6)', () => {
     };
     const card = importV2Card(v2Json);
     expect(card.attributes!.stats).toHaveLength(1);
-    expect(card.attributes!.stats![0].name).toBe('力量');
+    expect(card.attributes!.stats![0]!.name).toBe('力量');
   });
 
   test('重复属性名只保留第一个', async () => {
@@ -260,7 +260,7 @@ describe('角色属性 V2 导入 (F01.6)', () => {
     };
     const card = importV2Card(v2Json);
     expect(card.attributes!.stats).toHaveLength(1);
-    expect(card.attributes!.stats![0].value).toBe('10');
+    expect(card.attributes!.stats![0]!.value).toBe('10');
   });
 
   test('全空属性时 attributes 为 undefined', async () => {
@@ -290,7 +290,7 @@ describe('角色属性 V2 导入 (F01.6)', () => {
       },
     };
     const card = importV2Card(v2Json);
-    expect(card.attributes!.stats![0].type).toBe('text');
+    expect(card.attributes!.stats![0]!.type).toBe('text');
   });
 });
 
@@ -363,8 +363,8 @@ describe('角色属性提示词注入 (F01.6)', () => {
     const card = makeCard({ attributes: makeAttributes() });
     const result = await buildPrompt(card, emptyHistory, '你好', makeSettings());
 
-    expect(result.messages[0].role).toBe('system');
-    const content = result.messages[0].content;
+    expect(result.messages[0]!.role).toBe('system');
+    const content = result.messages[0]!.content;
     expect(content).toContain('[角色属性]');
     expect(content).toContain('职业：法师');
     expect(content).toContain('等级：5');
@@ -377,7 +377,7 @@ describe('角色属性提示词注入 (F01.6)', () => {
   test('无属性时不注入 [角色属性] 区块', async () => {
     const card = makeCard();
     const result = await buildPrompt(card, emptyHistory, '你好', makeSettings());
-    expect(result.messages[0].content).not.toContain('[角色属性]');
+    expect(result.messages[0]!.content).not.toContain('[角色属性]');
   });
 
   test('仅职业时只注入职业行', async () => {
@@ -385,7 +385,7 @@ describe('角色属性提示词注入 (F01.6)', () => {
       attributes: { profession: '战士' },
     });
     const result = await buildPrompt(card, emptyHistory, '你好', makeSettings());
-    const content = result.messages[0].content;
+    const content = result.messages[0]!.content;
     expect(content).toContain('[角色属性]');
     expect(content).toContain('职业：战士');
     expect(content).not.toContain('等级：');
@@ -398,7 +398,7 @@ describe('角色属性提示词注入 (F01.6)', () => {
       attributes: makeAttributes(),
     });
     const result = await buildPrompt(card, emptyHistory, '你好', makeSettings());
-    const content = result.messages[0].content;
+    const content = result.messages[0]!.content;
     const descIdx = content.indexOf('精灵法师');
     const attrIdx = content.indexOf('[角色属性]');
     expect(descIdx).toBeGreaterThan(-1);

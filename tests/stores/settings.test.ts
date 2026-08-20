@@ -188,10 +188,10 @@ describe('useSettingsStore — F5 单元测试', () => {
       const profile = makeProfile({ id: 'p1', name: '原名', model: 'gpt-4' });
       store.addApiProfile(profile);
       store.updateApiProfile('p1', { name: '新名', apiKey: 'sk-new' });
-      expect(store.apiProfiles[0].name).toBe('新名');
-      expect(store.apiProfiles[0].apiKey).toBe('sk-new');
+      expect(store.apiProfiles[0]!.name).toBe('新名');
+      expect(store.apiProfiles[0]!.apiKey).toBe('sk-new');
       // 未更新的字段保留
-      expect(store.apiProfiles[0].model).toBe('gpt-4');
+      expect(store.apiProfiles[0]!.model).toBe('gpt-4');
     });
 
     it('updateApiProfile 不存在的 id 应静默忽略', () => {
@@ -199,7 +199,7 @@ describe('useSettingsStore — F5 单元测试', () => {
       store.addApiProfile(makeProfile({ id: 'p1' }));
       store.updateApiProfile('nonexistent', { name: 'X' });
       expect(store.apiProfiles).toHaveLength(1);
-      expect(store.apiProfiles[0].name).toBe('测试配置');
+      expect(store.apiProfiles[0]!.name).toBe('测试配置');
     });
 
     it('deleteApiProfile 应从列表中移除', () => {
@@ -208,7 +208,7 @@ describe('useSettingsStore — F5 单元测试', () => {
       store.addApiProfile(makeProfile({ id: 'p2', name: '第二配置' }));
       store.deleteApiProfile('p1');
       expect(store.apiProfiles).toHaveLength(1);
-      expect(store.apiProfiles[0].id).toBe('p2');
+      expect(store.apiProfiles[0]!.id).toBe('p2');
     });
 
     it('deleteApiProfile 删除激活 profile 时自动切换到第一个', () => {
@@ -363,7 +363,7 @@ describe('useSettingsStore — F5 单元测试', () => {
       store.addApiProfile(makeProfile({ id: 'p1', name: '原名' }));
       store.updateApiProfile('p1', { name: '新名' });
       await new Promise((r) => setTimeout(r, 10));
-      expect(mock.saved?.apiProfiles[0].name).toBe('新名');
+      expect(mock.saved?.apiProfiles[0]!.name).toBe('新名');
     });
 
     it('deleteApiProfile 后应自动调用 saveSettings', async () => {
@@ -441,7 +441,7 @@ describe('useSettingsStore — F5 单元测试', () => {
       store.setStorageAdapter(mock);
       await store.loadFromStorage();
       expect(store.apiProfiles).toHaveLength(2);
-      expect(store.apiProfiles[0].id).toBe('p1');
+      expect(store.apiProfiles[0]!.id).toBe('p1');
     });
 
     it('存储有 activeApiProfileId 时应加载激活状态', async () => {
@@ -559,8 +559,8 @@ describe('useSettingsStore — F5 单元测试', () => {
       expect(store2.theme).toBe('midnight');
       expect(store2.fontSize).toBe(18);
       expect(store2.apiProfiles).toHaveLength(2);
-      expect(store2.apiProfiles[0].id).toBe('p1');
-      expect(store2.apiProfiles[1].id).toBe('p2');
+      expect(store2.apiProfiles[0]!.id).toBe('p1');
+      expect(store2.apiProfiles[1]!.id).toBe('p2');
       expect(store2.activeApiProfileId).toBe('p2');
 
       await adapter.close();

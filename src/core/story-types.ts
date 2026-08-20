@@ -14,6 +14,7 @@
 
 /** 分析深度 */
 import { t } from '@/i18n';
+import type { StoryTemplateId } from './story-templates';
 export type AnalysisDepth = 'quick' | 'standard' | 'deep';
 
 /** 分析状态 */
@@ -175,6 +176,8 @@ export interface StoryAnalysisResult {
   sourceFileName: string;
   /** 分析深度 */
   depth: AnalysisDepth;
+  /** 题材模板 ID（T-08 模板库；未选择时缺省，分析按通用模板处理） */
+  templateId?: StoryTemplateId;
   /** 分析状态 */
   status: AnalysisStatus;
   /** 创建时间戳 */
@@ -326,12 +329,14 @@ export function createEmptyResult(
   sourceFileName: string,
   depth: AnalysisDepth,
   textLength: number,
-  chunkCount: number
+  chunkCount: number,
+  templateId?: StoryTemplateId
 ): StoryAnalysisResult {
   return {
     id: generateStoryId(),
     sourceFileName,
     depth,
+    templateId,
     status: 'pending',
     createdAt: Date.now(),
     textLength,

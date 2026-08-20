@@ -200,7 +200,7 @@ describe('OpenAIClient', () => {
         maxTokens: 500,
       });
 
-      const [, init] = spy.mock.calls[0];
+      const [, init] = spy.mock.calls[0]!;
       expect(init?.method).toBe('POST');
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers['Authorization']).toBe('Bearer sk-test-123');
@@ -238,12 +238,12 @@ describe('OpenAIClient', () => {
       const dones = events.filter((e) => e.type === 'done');
 
       expect(deltas.length).toBe(3);
-      expect(deltas[0].delta).toBe('Hello');
-      expect(deltas[1].delta).toBe(' world');
-      expect(deltas[2].delta).toBe('!');
+      expect(deltas[0]!.delta).toBe('Hello');
+      expect(deltas[1]!.delta).toBe(' world');
+      expect(deltas[2]!.delta).toBe('!');
       expect(dones.length).toBe(1);
-      expect(dones[0].fullContent).toBe('Hello world!');
-      expect(dones[0].finishReason).toBe('stop');
+      expect(dones[0]!.fullContent).toBe('Hello world!');
+      expect(dones[0]!.finishReason).toBe('stop');
     });
 
     it('应支持分块切分的 SSE（一个事件跨多个 chunk）', async () => {
@@ -259,7 +259,7 @@ describe('OpenAIClient', () => {
       const events = await collect(client.chatStream({ messages: [], model: 'm' }));
       const deltas = events.filter((e) => e.type === 'delta');
       expect(deltas.length).toBe(1);
-      expect(deltas[0].delta).toBe('Hi');
+      expect(deltas[0]!.delta).toBe('Hi');
       const done = events.find((e) => e.type === 'done');
       expect(done?.fullContent).toBe('Hi');
       expect(done?.finishReason).toBe('stop');
@@ -285,7 +285,7 @@ describe('OpenAIClient', () => {
       const events = await collect(client.chatStream({ messages: [], model: 'm' }));
       const deltas = events.filter((e) => e.type === 'delta');
       expect(deltas.length).toBe(1);
-      expect(deltas[0].delta).toBe('ok');
+      expect(deltas[0]!.delta).toBe('ok');
     });
 
     it('应在流结束时若未收到 [DONE] 也能正常 done', async () => {
@@ -335,7 +335,7 @@ describe('OpenAIClient', () => {
 
       await collect(client.chatStream({ messages: [], model: 'm' }));
 
-      const [, init] = spy.mock.calls[0];
+      const [, init] = spy.mock.calls[0]!;
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers['Accept']).toBe('text/event-stream');
       const body = JSON.parse(init?.body as string);
@@ -409,7 +409,7 @@ describe('OpenAIClient', () => {
 
       await client.chat({ messages: [], model: 'm' });
 
-      const [, init] = spy.mock.calls[0];
+      const [, init] = spy.mock.calls[0]!;
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers['api-key']).toBe('azure-key-123');
       // Authorization 仍应存在
@@ -595,7 +595,7 @@ describe('OpenAIClient 工具调用 (T-02)', () => {
       model: 'gpt-4o',
       tools: [{ type: 'function', function: { name: 'get_var', description: '读变量' } }],
     });
-    const body = JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string) as Record<string, unknown>;
+    const body = JSON.parse((spy.mock.calls[0]![1] as RequestInit).body as string) as Record<string, unknown>;
     expect(body.tools).toEqual([{ type: 'function', function: { name: 'get_var', description: '读变量' } }]);
   });
 
@@ -611,7 +611,7 @@ describe('OpenAIClient 工具调用 (T-02)', () => {
     );
 
     const events = await collect(client.chatStream({ messages: [{ role: 'user', content: 'hi' }], model: 'gpt-4o' }));
-    const done = events[events.length - 1];
+    const done = events[events.length - 1]!;
     expect(done.type).toBe('done');
     expect(done.toolCalls).toEqual([
       {
@@ -634,7 +634,7 @@ describe('OpenAIClient 工具调用 (T-02)', () => {
     );
 
     const events = await collect(client.chatStream({ messages: [], model: 'm' }));
-    const done = events[events.length - 1];
+    const done = events[events.length - 1]!;
     expect(done.toolCalls?.map((t) => t.function.arguments)).toEqual([
       '{"name":"a"}',
       '{"name":"b"}',
@@ -688,7 +688,7 @@ describe('OpenAIClient usage 统计', () => {
     );
 
     const events = await collect(client.chatStream({ messages: [], model: 'm' }));
-    const done = events[events.length - 1];
+    const done = events[events.length - 1]!;
     expect(done.usage).toEqual({
       promptTokens: 100,
       completionTokens: 20,
@@ -704,6 +704,6 @@ describe('OpenAIClient usage 统计', () => {
       mockResponse(makeReadableStream([toSSEStream([deltaChunk('ok')])]))
     );
     const events = await collect(client.chatStream({ messages: [], model: 'm' }));
-    expect(events[events.length - 1].usage).toBeUndefined();
+    expect(events[events.length - 1]!.usage).toBeUndefined();
   });
 });

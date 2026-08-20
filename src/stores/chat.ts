@@ -338,7 +338,7 @@ export const useChatStore = defineStore('chat', () => {
     character.messages.push(aiMsg);
     // Vue 响应性陷阱：push 后数组内存储的是 reactive 代理，直接修改局部原始对象
     // aiMsg 不会触发 DOM 更新（E2E 复现：气泡卡"正在生成…"），需经数组取回引用再修改
-    const liveMsg = character.messages[character.messages.length - 1];
+    const liveMsg = character.messages[character.messages.length - 1]!;
 
     // 4. 转换 UI → 核心类型
     const card = uiCharToCard(character);
@@ -614,7 +614,7 @@ export const useChatStore = defineStore('chat', () => {
     if (isGenerating.value) return;
     const idx = character.messages.findIndex((m) => m.id === msgId);
     if (idx < 0) return;
-    const target = character.messages[idx];
+    const target = character.messages[idx]!;
     if (target.role !== 'assistant') return;
 
     // 取该消息之前的全部消息作为 history
@@ -623,13 +623,13 @@ export const useChatStore = defineStore('chat', () => {
     // 找最后一条用户消息的索引（chat-manager 会把它作为 userMessage 重新加入 prompt）
     let lastUserIdx = -1;
     for (let i = historyBefore.length - 1; i >= 0; i--) {
-      if (historyBefore[i].role === 'user') {
+      if (historyBefore[i]!.role === 'user') {
         lastUserIdx = i;
         break;
       }
     }
     if (lastUserIdx < 0) return; // 历史中无用户消息，无法重新生成
-    const userText = historyBefore[lastUserIdx].content;
+    const userText = historyBefore[lastUserIdx]!.content;
 
     // 重置目标消息
     target.content = '';
@@ -772,8 +772,8 @@ export const useChatStore = defineStore('chat', () => {
       characterId: character.id,
       title: t('chat.conversationTitle', { name: character.name }),
       messages: uiMsgsToChatMsgs(character.messages),
-      createdAt: character.messages[0].timestamp
-        ? new Date(character.messages[0].timestamp as number).toISOString()
+      createdAt: character.messages[0]!.timestamp
+        ? new Date(character.messages[0]!.timestamp as number).toISOString()
         : now,
       updatedAt: now,
     };

@@ -195,7 +195,7 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
       await store.loadFromStorage();
 
       expect(store.stories.length).toBe(1);
-      expect(store.stories[0].sourceFileName).toBe('loaded.txt');
+      expect(store.stories[0]!.sourceFileName).toBe('loaded.txt');
     });
 
     it('加载后自动选中第一个 story', async () => {
@@ -242,7 +242,7 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
       );
       expect(id).not.toBeNull();
       expect(mockAdapter.saveCalls.length).toBeGreaterThan(0);
-      expect(mockAdapter.saveCalls[0].id).toBe(id);
+      expect(mockAdapter.saveCalls[0]!.id).toBe(id);
     });
 
     it('无 adapter 时静默返回', async () => {
@@ -712,7 +712,7 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
 
       store.setSearchQuery('alice');
       expect(store.filteredStories.length).toBe(1);
-      expect(store.filteredStories[0].sourceFileName).toBe('alice.txt');
+      expect(store.filteredStories[0]!.sourceFileName).toBe('alice.txt');
     });
 
     it('空搜索词返回全部', async () => {
@@ -796,10 +796,10 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
 
       const ok = store.setProtagonistFromCharacter(story.id, '艾莉娅');
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist).toBeDefined();
-      expect(store.stories[0].protagonist?.name).toBe('艾莉娅');
-      expect(store.stories[0].protagonist?.source).toBe('existing');
-      expect(store.stories[0].protagonist?.relations).toEqual(char.relationships);
+      expect(store.stories[0]!.protagonist).toBeDefined();
+      expect(store.stories[0]!.protagonist?.name).toBe('艾莉娅');
+      expect(store.stories[0]!.protagonist?.source).toBe('existing');
+      expect(store.stories[0]!.protagonist?.relations).toEqual(char.relationships);
       expect(store.lastInfo).toContain('已设置主角');
     });
 
@@ -840,7 +840,7 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
         'S1'
       );
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist?.startingScene).toBe('S1');
+      expect(store.stories[0]!.protagonist?.startingScene).toBe('S1');
     });
 
     it('起始场景不存在时校验失败', () => {
@@ -880,9 +880,9 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
         relations: [{ target: 'A', relation: '挚友' }],
       });
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist?.source).toBe('custom');
-      expect(store.stories[0].protagonist?.name).toBe('玩家1');
-      expect(store.stories[0].protagonist?.role).toBe('observer');
+      expect(store.stories[0]!.protagonist?.source).toBe('custom');
+      expect(store.stories[0]!.protagonist?.name).toBe('玩家1');
+      expect(store.stories[0]!.protagonist?.role).toBe('observer');
     });
 
     it('名称为空时校验失败', () => {
@@ -912,7 +912,7 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
 
       const ok = store.updateProtagonist(story.id, { description: 'new desc' });
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist?.description).toBe('new desc');
+      expect(store.stories[0]!.protagonist?.description).toBe('new desc');
     });
 
     it('尚未配置主角时返回 false', () => {
@@ -939,11 +939,11 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
       });
       store.stories.push(story);
       store.setProtagonistFromCharacter(story.id, 'A');
-      expect(store.stories[0].protagonist).not.toBeNull();
+      expect(store.stories[0]!.protagonist).not.toBeNull();
 
       const ok = store.clearProtagonist(story.id);
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist).toBeNull();
+      expect(store.stories[0]!.protagonist).toBeNull();
       expect(store.lastInfo).toContain('已清除主角配置');
     });
 
@@ -974,7 +974,7 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
 
       const ok = store.addProtagonistRelation(story.id, 'B', '宿敌');
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist?.relations).toEqual([
+      expect(store.stories[0]!.protagonist?.relations).toEqual([
         { target: 'B', relation: '宿敌' },
       ]);
     });
@@ -998,8 +998,8 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
 
       const ok = store.addProtagonistRelation(story.id, 'B', '宿敌');
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist?.relations).toHaveLength(1);
-      expect(store.stories[0].protagonist?.relations[0].relation).toBe('宿敌');
+      expect(store.stories[0]!.protagonist?.relations).toHaveLength(1);
+      expect(store.stories[0]!.protagonist?.relations[0]!.relation).toBe('宿敌');
     });
 
     it('移除指定关系', () => {
@@ -1024,8 +1024,8 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
 
       const ok = store.removeProtagonistRelation(story.id, 'B');
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist?.relations).toHaveLength(1);
-      expect(store.stories[0].protagonist?.relations[0].target).toBe('C');
+      expect(store.stories[0]!.protagonist?.relations).toHaveLength(1);
+      expect(store.stories[0]!.protagonist?.relations[0]!.target).toBe('C');
     });
 
     it('未配置主角时返回 false', () => {
@@ -1058,7 +1058,7 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
 
       const ok = store.setStartingScene(story.id, 'S2');
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist?.startingScene).toBe('S2');
+      expect(store.stories[0]!.protagonist?.startingScene).toBe('S2');
     });
 
     it('传空字符串清除起始场景', () => {
@@ -1072,11 +1072,11 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
       });
       store.stories.push(story);
       store.setProtagonistFromCharacter(story.id, 'A', 'protagonist', 'S1');
-      expect(store.stories[0].protagonist?.startingScene).toBe('S1');
+      expect(store.stories[0]!.protagonist?.startingScene).toBe('S1');
 
       const ok = store.setStartingScene(story.id, '');
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist?.startingScene).toBeUndefined();
+      expect(store.stories[0]!.protagonist?.startingScene).toBeUndefined();
     });
 
     it('设置不存在的场景时校验失败', () => {
@@ -1111,7 +1111,7 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
 
       const ok = store.setProtagonistPersonaId(story.id, 'persona-1');
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist?.personaId).toBe('persona-1');
+      expect(store.stories[0]!.protagonist?.personaId).toBe('persona-1');
     });
 
     it('清除关联（传 null）', () => {
@@ -1128,7 +1128,7 @@ describe('useStoryStore — F16.1 故事引擎单元测试', () => {
 
       const ok = store.setProtagonistPersonaId(story.id, null);
       expect(ok).toBe(true);
-      expect(store.stories[0].protagonist?.personaId).toBeNull();
+      expect(store.stories[0]!.protagonist?.personaId).toBeNull();
     });
   });
 });

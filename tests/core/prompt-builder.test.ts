@@ -49,13 +49,13 @@ describe('提示词构建引擎 (F03.1)', () => {
     const result = await buildPrompt(card, sampleHistory, userMessage, settings);
 
     // 第一条应该是 system 角色消息
-    expect(result.messages[0].role).toBe('system');
-    expect(result.messages[0].content).toContain('You are a roleplay assistant');
-    expect(result.messages[0].content).toContain('Seraphina');
-    expect(result.messages[0].content).toContain('精灵法师');
+    expect(result.messages[0]!.role).toBe('system');
+    expect(result.messages[0]!.content).toContain('You are a roleplay assistant');
+    expect(result.messages[0]!.content).toContain('Seraphina');
+    expect(result.messages[0]!.content).toContain('精灵法师');
 
     // 最后一条应该是用户消息
-    const lastMsg = result.messages[result.messages.length - 1];
+    const lastMsg = result.messages[result.messages.length - 1]!;
     expect(lastMsg.role).toBe('user');
     expect(lastMsg.content).toBe('你是什么人？');
 
@@ -69,7 +69,7 @@ describe('提示词构建引擎 (F03.1)', () => {
 
     const result = await buildPrompt(card, [], '', settings);
 
-    const systemContent = result.messages[0].content;
+    const systemContent = result.messages[0]!.content;
     expect(systemContent).toContain('勇者在Seraphina的小屋中');
     expect(systemContent).not.toContain('{{user}}');
     expect(systemContent).not.toContain('{{char}}');
@@ -116,7 +116,7 @@ describe('Token 预算裁剪 (F03.2/F03.3)', () => {
     const result = await buildPrompt(card, sampleHistory, '测试', settings);
 
     // 系统消息中仍应包含角色描述
-    const systemContent = result.messages[0].content;
+    const systemContent = result.messages[0]!.content;
     expect(systemContent).toContain('a'.repeat(200));
   });
 

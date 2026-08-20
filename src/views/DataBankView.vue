@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * DataBankView — 数据银行页面 (F09)
  *
@@ -77,14 +77,14 @@ function closeUploadModal() {
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   if (input.files && input.files.length > 0) {
-    selectedFile.value = input.files[0];
+    selectedFile.value = input.files[0]!;
   }
 }
 
 function handleDrop(event: DragEvent) {
   event.preventDefault();
   if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
-    selectedFile.value = event.dataTransfer.files[0];
+    selectedFile.value = event.dataTransfer.files[0]!;
   }
 }
 

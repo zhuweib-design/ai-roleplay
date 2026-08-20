@@ -152,7 +152,7 @@ export function validateProtagonist(
       errors.push(t('proto.relationsLimit', { max: MAX_RELATIONS_COUNT }));
     }
     for (let i = 0; i < config.relations.length; i++) {
-      const rel = config.relations[i];
+      const rel = config.relations[i]!;
       if (!rel.target || rel.target.trim() === '') {
         errors.push(t('proto.relationTargetRequired', { index: i + 1 }));
       }

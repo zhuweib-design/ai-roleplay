@@ -171,7 +171,7 @@ function createTauriMock() {
     const m = cmd.match(/^(save|load|list|delete)_(.+?)_files?$/);
     if (!m) throw new Error(`未知命令: ${cmd}`);
     const action = m[1];
-    const name = m[2];
+    const name = m[2]!;
     const collection = COLLECTIONS[name];
     if (!collection) throw new Error(`未知集合: ${name}`);
 
@@ -190,7 +190,7 @@ function createTauriMock() {
 
     switch (action) {
       case 'save':
-        store.set(key(String(args!.id)), args![PAYLOAD_KEYS[name]]);
+        store.set(key(String(args!.id)), args![PAYLOAD_KEYS[name]!]);
         return null;
       case 'load':
         return store.get(key(String(args!.id))) ?? null;

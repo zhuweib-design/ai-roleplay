@@ -192,7 +192,7 @@ describe('F06.6 Lorebook Store 层级管理', () => {
       const ok = store.setEntryParent(lbId, childId, rootId);
       expect(ok).toBe(true);
 
-      const child = store.lorebooks[0].entries.find((e) => e.id === childId);
+      const child = store.lorebooks[0]!.entries.find((e) => e.id === childId);
       expect(child?.parentId).toBe(rootId);
       expect(child?.hierarchyLevel).toBe(1);
     });
@@ -201,7 +201,7 @@ describe('F06.6 Lorebook Store 层级管理', () => {
       const { lbId, childId } = createHierarchyLorebook(store);
       const ok = store.setEntryParent(lbId, childId, null);
       expect(ok).toBe(true);
-      const child = store.lorebooks[0].entries.find((e) => e.id === childId);
+      const child = store.lorebooks[0]!.entries.find((e) => e.id === childId);
       expect(child?.parentId).toBeNull();
       expect(child?.hierarchyLevel).toBe(0);
     });
@@ -220,8 +220,8 @@ describe('F06.6 Lorebook Store 层级管理', () => {
       const ok = store.setEntryParent(lbId, childId, newRootId);
       expect(ok).toBe(true);
 
-      const child = store.lorebooks[0].entries.find((e) => e.id === childId);
-      const grandchild = store.lorebooks[0].entries.find((e) => e.id === grandchildId);
+      const child = store.lorebooks[0]!.entries.find((e) => e.id === childId);
+      const grandchild = store.lorebooks[0]!.entries.find((e) => e.id === grandchildId);
       expect(child?.parentId).toBe(newRootId);
       expect(child?.hierarchyLevel).toBe(1);
       expect(grandchild?.parentId).toBe(childId);
@@ -242,7 +242,7 @@ describe('F06.6 Lorebook Store 层级管理', () => {
       const { lbId, childId } = createHierarchyLorebook(store);
       const ok = store.moveEntryToLevel(lbId, childId, 0);
       expect(ok).toBe(true);
-      const child = store.lorebooks[0].entries.find((e) => e.id === childId);
+      const child = store.lorebooks[0]!.entries.find((e) => e.id === childId);
       expect(child?.parentId).toBeNull();
       expect(child?.hierarchyLevel).toBe(0);
     });
@@ -295,7 +295,7 @@ describe('F06.6 Lorebook Store 层级管理', () => {
       expect(ok).toBe(true);
 
       // 验证数组顺序
-      const entries = store.lorebooks[0].entries;
+      const entries = store.lorebooks[0]!.entries;
       const c1Idx = entries.findIndex((e) => e.id === child1);
       const c2Idx = entries.findIndex((e) => e.id === child2);
       expect(c2Idx).toBeLessThan(c1Idx);
@@ -323,7 +323,7 @@ describe('F06.6 Lorebook Store 层级管理', () => {
       const ok = store.reorderEntryInLevel(lbId, child1, 'down');
       expect(ok).toBe(true);
 
-      const entries = store.lorebooks[0].entries;
+      const entries = store.lorebooks[0]!.entries;
       const c1Idx = entries.findIndex((e) => e.id === child1);
       const c2Idx = entries.findIndex((e) => e.id === child2);
       expect(c1Idx).toBeGreaterThan(c2Idx);
@@ -366,7 +366,7 @@ describe('F06.6 Lorebook Store 层级管理', () => {
       })!;
 
       store.reorderEntryInLevel(lbId, c2, 'up');
-      const entries = store.lorebooks[0].entries;
+      const entries = store.lorebooks[0]!.entries;
       // insertionOrder 应等于数组索引+1
       entries.forEach((e, i) => {
         expect(e.insertionOrder).toBe(i + 1);
@@ -381,10 +381,10 @@ describe('F06.6 Lorebook Store 层级管理', () => {
 
       // 顶层只有 root
       expect(tree).toHaveLength(1);
-      expect(tree[0].entry.id).toBe(rootId);
+      expect(tree[0]!.entry.id).toBe(rootId);
 
       // root 有两个子节点
-      const root = tree[0];
+      const root = tree[0]!;
       expect(root.children).toHaveLength(2);
       const childIds = root.children.map((c) => c.entry.id).sort();
       expect(childIds).toEqual([childId, siblingId].sort());
@@ -392,7 +392,7 @@ describe('F06.6 Lorebook Store 层级管理', () => {
       // child 有一个孙节点
       const childNode = root.children.find((c) => c.entry.id === childId);
       expect(childNode?.children).toHaveLength(1);
-      expect(childNode?.children[0].entry.id).toBe(grandchildId);
+      expect(childNode?.children[0]!.entry.id).toBe(grandchildId);
 
       // sibling 无子节点
       const siblingNode = root.children.find((c) => c.entry.id === siblingId);
@@ -416,7 +416,7 @@ describe('F06.6 Lorebook Store 层级管理', () => {
       const tree = store.buildEntryTree(lbId);
       // 应有一个顶层节点（孤儿）
       expect(tree).toHaveLength(1);
-      expect(tree[0].entry.id).toBe(orphanId);
+      expect(tree[0]!.entry.id).toBe(orphanId);
     });
   });
 });
@@ -561,7 +561,7 @@ describe('F06.6 Lorebook 导入导出层级兼容', () => {
 
       const lb = store.lorebooks.find((l) => l.id === id)!;
       expect(lb.entries).toHaveLength(1);
-      const entry = lb.entries[0];
+      const entry = lb.entries[0]!;
       expect(entry.hierarchyLevel).toBe(0);
       expect(entry.parentId).toBeNull();
     });
@@ -598,7 +598,7 @@ describe('F06.6 Lorebook 导入导出层级兼容', () => {
       // 实现策略：parentId 非法时完全忽略该条 hierarchy 记录（保持默认顶层）
       expect(id).toBeTruthy();
       const lb = store.lorebooks.find((l) => l.id === id)!;
-      const entry = lb.entries[0];
+      const entry = lb.entries[0]!;
       // 保持默认值（level=0, parentId=null）
       expect(entry.hierarchyLevel).toBe(0);
       expect(entry.parentId).toBeNull();
@@ -635,7 +635,7 @@ describe('F06.6 Lorebook 导入导出层级兼容', () => {
       expect(id).toBeTruthy();
 
       const lb = store.lorebooks.find((l) => l.id === id)!;
-      const entry = lb.entries[0];
+      const entry = lb.entries[0]!;
       // 非法 level 被忽略，保留默认 0
       expect(entry.hierarchyLevel).toBe(0);
       expect(entry.parentId).toBeNull();

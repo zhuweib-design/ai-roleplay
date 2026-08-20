@@ -38,7 +38,7 @@ export function extractJsonString(raw: string): string {
   // 尝试匹配 ```json ... ``` 或 ``` ... ```
   const fenceMatch = str.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) {
-    str = fenceMatch[1].trim();
+    str = fenceMatch[1]!.trim();
   }
 
   // 若仍包含非 JSON 前后缀，尝试截取第一个 { 到最后一个 }
@@ -68,7 +68,7 @@ export function extractJsonArrayString(raw: string): string {
 
   const fenceMatch = str.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) {
-    str = fenceMatch[1].trim();
+    str = fenceMatch[1]!.trim();
   }
 
   // 截取第一个 [ 到最后一个 ]
@@ -163,7 +163,7 @@ export function safeJsonParse<T = unknown>(raw: string): T | null {
   // 去除 markdown 代码块包裹
   const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) {
-    text = codeBlockMatch[1].trim();
+    text = codeBlockMatch[1]!.trim();
   }
 
   // 尝试直接解析

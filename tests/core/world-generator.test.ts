@@ -152,49 +152,49 @@ describe('world-generator (F06.8)', () => {
     test('返回 system + user 两条消息', () => {
       const messages = buildWorldGenerationMessages('fantasy', 'abc123');
       expect(messages).toHaveLength(2);
-      expect(messages[0].role).toBe('system');
-      expect(messages[1].role).toBe('user');
+      expect(messages[0]!.role).toBe('system');
+      expect(messages[1]!.role).toBe('user');
     });
 
     test('包含模板描述', () => {
       const messages = buildWorldGenerationMessages('scifi', 'seed1');
       const meta = getWorldTemplateMeta('scifi');
-      expect(messages[1].content).toContain(meta!.label);
-      expect(messages[1].content).toContain(meta!.description);
+      expect(messages[1]!.content).toContain(meta!.label);
+      expect(messages[1]!.content).toContain(meta!.description);
     });
 
     test('包含种子', () => {
       const messages = buildWorldGenerationMessages('modern', 'uniqueSeed');
-      expect(messages[1].content).toContain('uniqueSeed');
+      expect(messages[1]!.content).toContain('uniqueSeed');
     });
 
     test('包含 JSON 结构示例', () => {
       const messages = buildWorldGenerationMessages('fantasy', 's');
-      expect(messages[1].content).toContain('"world"');
-      expect(messages[1].content).toContain('"regions"');
-      expect(messages[1].content).toContain('"subAreas"');
+      expect(messages[1]!.content).toContain('"world"');
+      expect(messages[1]!.content).toContain('"regions"');
+      expect(messages[1]!.content).toContain('"subAreas"');
     });
 
     test('包含世界类型约束', () => {
       const messages = buildWorldGenerationMessages('fantasy', 's');
-      expect(messages[1].content).toContain('"fantasy"');
+      expect(messages[1]!.content).toContain('"fantasy"');
     });
 
     test('postapoc 模板使用 other 作为世界类型', () => {
       const messages = buildWorldGenerationMessages('postapoc', 's');
-      expect(messages[1].content).toContain('"other"');
+      expect(messages[1]!.content).toContain('"other"');
     });
 
     test('historical 模板使用 historical 作为世界类型', () => {
       const messages = buildWorldGenerationMessages('historical', 's');
-      expect(messages[1].content).toContain('"historical"');
+      expect(messages[1]!.content).toContain('"historical"');
     });
 
     test('包含大区数量约束', () => {
       const messages = buildWorldGenerationMessages('fantasy', 's');
       const meta = getWorldTemplateMeta('fantasy');
-      expect(messages[1].content).toContain(String(meta!.regionCount.min));
-      expect(messages[1].content).toContain(String(meta!.regionCount.max));
+      expect(messages[1]!.content).toContain(String(meta!.regionCount.min));
+      expect(messages[1]!.content).toContain(String(meta!.regionCount.max));
     });
   });
 
@@ -202,13 +202,13 @@ describe('world-generator (F06.8)', () => {
     test('返回 system + user 两条消息', () => {
       const messages = buildWorldExtendMessages([], null, 'seed');
       expect(messages).toHaveLength(2);
-      expect(messages[0].role).toBe('system');
-      expect(messages[1].role).toBe('user');
+      expect(messages[0]!.role).toBe('system');
+      expect(messages[1]!.role).toBe('user');
     });
 
     test('无世界描述时显示未设置提示', () => {
       const messages = buildWorldExtendMessages([], null, 's');
-      expect(messages[1].content).toContain('未设置整体世界描述');
+      expect(messages[1]!.content).toContain('未设置整体世界描述');
     });
 
     test('包含世界描述信息', () => {
@@ -219,9 +219,9 @@ describe('world-generator (F06.8)', () => {
         content: '一个充满魔法的世界',
       });
       const messages = buildWorldExtendMessages([], wd, 's');
-      expect(messages[1].content).toContain('魔法国度');
-      expect(messages[1].content).toContain('魔法/王国');
-      expect(messages[1].content).toContain('一个充满魔法的世界');
+      expect(messages[1]!.content).toContain('魔法国度');
+      expect(messages[1]!.content).toContain('魔法/王国');
+      expect(messages[1]!.content).toContain('一个充满魔法的世界');
     });
 
     test('包含现有条目上下文', () => {
@@ -240,10 +240,10 @@ describe('world-generator (F06.8)', () => {
         }),
       ];
       const messages = buildWorldExtendMessages(entries, null, 's');
-      expect(messages[1].content).toContain('王都');
-      expect(messages[1].content).toContain('魔法学院');
-      expect(messages[1].content).toContain('大区');
-      expect(messages[1].content).toContain('子区域');
+      expect(messages[1]!.content).toContain('王都');
+      expect(messages[1]!.content).toContain('魔法学院');
+      expect(messages[1]!.content).toContain('大区');
+      expect(messages[1]!.content).toContain('子区域');
     });
 
     test('长内容被截断', () => {
@@ -252,20 +252,20 @@ describe('world-generator (F06.8)', () => {
         makeEntry({ title: '长条目', content: longContent }),
       ];
       const messages = buildWorldExtendMessages(entries, null, 's');
-      expect(messages[1].content).toContain('...');
+      expect(messages[1]!.content).toContain('...');
       // 不应包含完整 200 字符长内容
-      expect(messages[1].content).not.toContain(longContent);
+      expect(messages[1]!.content).not.toContain(longContent);
     });
 
     test('包含种子', () => {
       const messages = buildWorldExtendMessages([], null, 'extendSeed');
-      expect(messages[1].content).toContain('extendSeed');
+      expect(messages[1]!.content).toContain('extendSeed');
     });
 
     test('要求返回 JSON 数组', () => {
       const messages = buildWorldExtendMessages([], null, 's');
-      expect(messages[1].content).toContain('[');
-      expect(messages[1].content).toContain(']');
+      expect(messages[1]!.content).toContain('[');
+      expect(messages[1]!.content).toContain(']');
     });
   });
 
@@ -299,9 +299,9 @@ describe('world-generator (F06.8)', () => {
       expect(result!.world.type).toBe('fantasy');
       expect(result!.world.keys).toEqual(['魔法', '王国']);
       expect(result!.regions).toHaveLength(1);
-      expect(result!.regions[0].title).toBe('王都');
-      expect(result!.regions[0].subAreas).toHaveLength(1);
-      expect(result!.regions[0].subAreas[0].title).toBe('皇宫');
+      expect(result!.regions[0]!.title).toBe('王都');
+      expect(result!.regions[0]!.subAreas).toHaveLength(1);
+      expect(result!.regions[0]!.subAreas[0]!.title).toBe('皇宫');
     });
 
     test('解析 markdown 包裹的 JSON', () => {
@@ -397,8 +397,8 @@ describe('world-generator (F06.8)', () => {
       });
       const result = parseGeneratedWorld(raw);
       expect(result).not.toBeNull();
-      expect(result!.regions[0].subAreas).toHaveLength(1);
-      expect(result!.regions[0].subAreas[0].title).toBe('有效子区域');
+      expect(result!.regions[0]!.subAreas).toHaveLength(1);
+      expect(result!.regions[0]!.subAreas[0]!.title).toBe('有效子区域');
     });
 
     test('无效大区被过滤', () => {
@@ -414,7 +414,7 @@ describe('world-generator (F06.8)', () => {
       const result = parseGeneratedWorld(raw);
       expect(result).not.toBeNull();
       expect(result!.regions).toHaveLength(1);
-      expect(result!.regions[0].title).toBe('有效大区');
+      expect(result!.regions[0]!.title).toBe('有效大区');
     });
 
     test('keys 非数组时为空数组', () => {
@@ -425,7 +425,7 @@ describe('world-generator (F06.8)', () => {
       const result = parseGeneratedWorld(raw);
       expect(result).not.toBeNull();
       expect(result!.world.keys).toEqual([]);
-      expect(result!.regions[0].keys).toEqual([]);
+      expect(result!.regions[0]!.keys).toEqual([]);
     });
 
     test('content 非字符串时为空字符串', () => {
@@ -436,7 +436,7 @@ describe('world-generator (F06.8)', () => {
       const result = parseGeneratedWorld(raw);
       expect(result).not.toBeNull();
       expect(result!.world.content).toBe('');
-      expect(result!.regions[0].content).toBe('');
+      expect(result!.regions[0]!.content).toBe('');
     });
 
     test('subAreas 非数组时为空数组', () => {
@@ -446,7 +446,7 @@ describe('world-generator (F06.8)', () => {
       });
       const result = parseGeneratedWorld(raw);
       expect(result).not.toBeNull();
-      expect(result!.regions[0].subAreas).toEqual([]);
+      expect(result!.regions[0]!.subAreas).toEqual([]);
     });
   });
 
@@ -464,8 +464,8 @@ describe('world-generator (F06.8)', () => {
       ]);
       const result = parseExtendedRegions(raw);
       expect(result).toHaveLength(1);
-      expect(result[0].title).toBe('新大区');
-      expect(result[0].subAreas).toHaveLength(1);
+      expect(result[0]!.title).toBe('新大区');
+      expect(result[0]!.subAreas).toHaveLength(1);
     });
 
     test('解析 markdown 包裹的 JSON 数组', () => {
@@ -514,7 +514,7 @@ describe('world-generator (F06.8)', () => {
       ]);
       const result = parseExtendedRegions(raw);
       expect(result).toHaveLength(1);
-      expect(result[0].title).toBe('有效');
+      expect(result[0]!.title).toBe('有效');
     });
 
     test('subAreas 留空时为空数组', () => {
@@ -522,7 +522,7 @@ describe('world-generator (F06.8)', () => {
         { title: '大区', keys: [], content: '', subAreas: [] },
       ]);
       const result = parseExtendedRegions(raw);
-      expect(result[0].subAreas).toEqual([]);
+      expect(result[0]!.subAreas).toEqual([]);
     });
 
     test('subAreas 缺失时为空数组', () => {
@@ -530,7 +530,7 @@ describe('world-generator (F06.8)', () => {
         { title: '大区', keys: [], content: '' },
       ]);
       const result = parseExtendedRegions(raw);
-      expect(result[0].subAreas).toEqual([]);
+      expect(result[0]!.subAreas).toEqual([]);
     });
 
     test('多元素解析', () => {
@@ -546,8 +546,8 @@ describe('world-generator (F06.8)', () => {
       ]);
       const result = parseExtendedRegions(raw);
       expect(result).toHaveLength(3);
-      expect(result[1].subAreas).toHaveLength(1);
-      expect(result[2].subAreas).toHaveLength(2);
+      expect(result[1]!.subAreas).toHaveLength(1);
+      expect(result[2]!.subAreas).toHaveLength(2);
     });
   });
 });

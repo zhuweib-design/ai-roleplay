@@ -47,7 +47,7 @@ describe('applyOutputDiscipline (E-02 L2)', () => {
     ];
     const out = applyOutputDiscipline(msgs, makePipeline({ enabled: true, l2Enabled: true }));
     expect(out.compressedCount).toBe(1);
-    expect(out.messages[1].content).not.toContain('然后');
+    expect(out.messages[1]!.content).not.toContain('然后');
   });
 
   it('对白(引号占比过半)与情绪旁白硬豁免', () => {
@@ -59,8 +59,8 @@ describe('applyOutputDiscipline (E-02 L2)', () => {
     ];
     const out = applyOutputDiscipline(msgs, makePipeline({ enabled: true, l2Enabled: true }));
     expect(out.compressedCount).toBe(0);
-    expect(out.messages[1].content).toBe('“你到底在哪？”她愤怒地质问。');
-    expect(out.messages[2].content).toBe('她的愤怒几乎要溢出眼眶。');
+    expect(out.messages[1]!.content).toBe('“你到底在哪？”她愤怒地质问。');
+    expect(out.messages[2]!.content).toBe('她的愤怒几乎要溢出眼眶。');
   });
 
   it('system 与当前轮 user 豁免(即使像状态旁白)', () => {

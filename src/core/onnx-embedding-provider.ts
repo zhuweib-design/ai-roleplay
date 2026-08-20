@@ -342,11 +342,11 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     const pooled = new Array<number>(hidden).fill(0);
     for (let i = 0; i < this.maxLen; i++) {
       for (let h = 0; h < hidden; h++) {
-        pooled[h] += mask[i] === 1 ? last[i * hidden + h] : 0;
+        pooled[h]! += mask[i] === 1 ? last[i * hidden + h]! : 0;
       }
     }
     const denom = mask.reduce((a, b) => a + b, 0) || 1;
-    for (let h = 0; h < hidden; h++) pooled[h] /= denom;
+    for (let h = 0; h < hidden; h++) pooled[h]! /= denom;
     return this.normalize(pooled);
   }
 

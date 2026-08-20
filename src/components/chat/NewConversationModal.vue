@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * NewConversationModal — 新建对话弹窗 (需求4)
  *
@@ -191,7 +191,7 @@ function confirmCreate() {
       showToast('error', t('newConv.needOne'));
       return;
     }
-    const charId = Array.from(selectedMemberIds.value)[0];
+    const charId = Array.from(selectedMemberIds.value)[0]!;
     characterStore.selectCharacter(charId);
     emit('created-single', charId);
     closeModal();

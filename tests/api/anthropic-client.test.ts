@@ -160,7 +160,7 @@ describe('AnthropicClient', () => {
         mockResponse(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }))
       );
       await client.chat({ messages: [], model: 'm', maxTokens: 128 });
-      const body = JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string) as Record<string, unknown>;
+      const body = JSON.parse((spy.mock.calls[0]![1] as RequestInit).body as string) as Record<string, unknown>;
       expect(body.max_tokens).toBe(128);
     });
 
@@ -330,7 +330,7 @@ describe('AnthropicClient 工具调用 (T-02)', () => {
         },
       ],
     });
-    const body = JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string) as Record<string, unknown>;
+    const body = JSON.parse((spy.mock.calls[0]![1] as RequestInit).body as string) as Record<string, unknown>;
     expect(body.tools).toEqual([
       { name: 'get_var', description: '读变量', input_schema: { type: 'object', properties: {} } },
     ]);
@@ -353,7 +353,7 @@ describe('AnthropicClient 工具调用 (T-02)', () => {
       ],
       model: 'm',
     });
-    const body = JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string) as {
+    const body = JSON.parse((spy.mock.calls[0]![1] as RequestInit).body as string) as {
       messages: Array<{ role: string; content: unknown[] }>;
     };
     expect(body.messages[0]).toEqual({
@@ -363,8 +363,8 @@ describe('AnthropicClient 工具调用 (T-02)', () => {
       ],
     });
     // tool_result(user 角色)与后续 user 文本相邻合并为同一消息
-    expect(body.messages[1].role).toBe('user');
-    expect(body.messages[1].content).toEqual([
+    expect(body.messages[1]!.role).toBe('user');
+    expect(body.messages[1]!.content).toEqual([
       { type: 'tool_result', tool_use_id: 'toolu_1', content: '100' },
       { type: 'text', text: '继续' },
     ]);
@@ -389,7 +389,7 @@ describe('AnthropicClient 工具调用 (T-02)', () => {
     );
 
     const events = await collect(client.chatStream({ messages: [{ role: 'user', content: 'hi' }], model: 'm' }));
-    const done = events[events.length - 1];
+    const done = events[events.length - 1]!;
     expect(done.type).toBe('done');
     expect(done.toolCalls).toEqual([
       {
@@ -421,7 +421,7 @@ describe('AnthropicClient 工具调用 (T-02)', () => {
 
     const events = await collect(client.chatStream({ messages: [], model: 'm' }));
     expect(events[0]).toEqual({ type: 'delta', delta: '稍等' });
-    const done = events[events.length - 1];
+    const done = events[events.length - 1]!;
     expect(done.type).toBe('done');
     expect(done.fullContent).toBe('稍等');
     expect(done.toolCalls).toHaveLength(1);

@@ -124,10 +124,10 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       // 设置主密码触发 persistSettings
       await store.setMasterPassword('my-password');
       // 验证保存到存储的是密文
-      expect(mock.saved?.apiProfiles[0].apiKey).not.toBe('sk-plaintext');
-      expect(isEncrypted(mock.saved!.apiProfiles[0].apiKey)).toBe(true);
+      expect(mock.saved?.apiProfiles[0]!.apiKey).not.toBe('sk-plaintext');
+      expect(isEncrypted(mock.saved!.apiProfiles[0]!.apiKey)).toBe(true);
       // 内存中保留明文
-      expect(store.apiProfiles[0].apiKey).toBe('sk-plaintext');
+      expect(store.apiProfiles[0]!.apiKey).toBe('sk-plaintext');
     });
 
     it('设置主密码后已存在的明文 translationConfig.apiKey 应被加密保存', async () => {
@@ -192,12 +192,12 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       store2.setStorageAdapter(mock2);
       await store2.loadFromStorage();
       // 加载后 apiKey 应为密文
-      expect(isEncrypted(store2.apiProfiles[0].apiKey)).toBe(true);
+      expect(isEncrypted(store2.apiProfiles[0]!.apiKey)).toBe(true);
       // 解锁
       const ok = await store2.unlock('pw');
       expect(ok).toBe(true);
       // 解锁后应为明文
-      expect(store2.apiProfiles[0].apiKey).toBe('sk-secret');
+      expect(store2.apiProfiles[0]!.apiKey).toBe('sk-secret');
     });
 
     it('解锁后主密码仅存内存，不写入 sessionStorage', async () => {
@@ -302,10 +302,10 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       // 修改密码
       await store.changeMasterPassword('old-pw', 'new-pw');
       // 内存中仍是明文
-      expect(store.apiProfiles[0].apiKey).toBe('sk-secret');
+      expect(store.apiProfiles[0]!.apiKey).toBe('sk-secret');
       // 持久化的应为密文（新密码加密）
-      expect(isEncrypted(mock.saved!.apiProfiles[0].apiKey)).toBe(true);
-      expect(mock.saved!.apiProfiles[0].apiKey).not.toBe('sk-secret');
+      expect(isEncrypted(mock.saved!.apiProfiles[0]!.apiKey)).toBe(true);
+      expect(mock.saved!.apiProfiles[0]!.apiKey).not.toBe('sk-secret');
     });
 
     it('修改密码后旧密码无法解密存储数据', async () => {
@@ -359,10 +359,10 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       expect(ok).toBe(false);
       expect(store2.isUnlocked).toBe(false);
       // apiKey 保持密文，手动 unlock 后解密
-      expect(isEncrypted(store2.apiProfiles[0].apiKey ?? '')).toBe(true);
+      expect(isEncrypted(store2.apiProfiles[0]!.apiKey ?? '')).toBe(true);
       const ok2 = await store2.unlock('pw');
       expect(ok2).toBe(true);
-      expect(store2.apiProfiles[0].apiKey).toBe('sk-secret');
+      expect(store2.apiProfiles[0]!.apiKey).toBe('sk-secret');
     });
 
     it('未设置主密码时 restoreSession 应返回 false', async () => {
@@ -384,7 +384,7 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       store.setStorageAdapter(mock);
       store.addApiProfile(makeProfile({ apiKey: 'sk-plaintext' }));
       await new Promise((r) => setTimeout(r, 20));
-      expect(mock.saved?.apiProfiles[0].apiKey).toBe('sk-plaintext');
+      expect(mock.saved?.apiProfiles[0]!.apiKey).toBe('sk-plaintext');
     });
 
     it('设置主密码后 apiKey 应密文保存', async () => {
@@ -393,7 +393,7 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       store.setStorageAdapter(mock);
       store.addApiProfile(makeProfile({ apiKey: 'sk-plaintext' }));
       await store.setMasterPassword('pw');
-      expect(isEncrypted(mock.saved!.apiProfiles[0].apiKey)).toBe(true);
+      expect(isEncrypted(mock.saved!.apiProfiles[0]!.apiKey)).toBe(true);
     });
 
     it('解锁状态下修改 apiKey 应保存为新密文', async () => {
@@ -406,11 +406,11 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       store.updateApiProfile('profile-1', { apiKey: 'sk-new' });
       await new Promise((r) => setTimeout(r, 20));
       // 内存中是明文
-      expect(store.apiProfiles[0].apiKey).toBe('sk-new');
+      expect(store.apiProfiles[0]!.apiKey).toBe('sk-new');
       // 存储中是新密文
-      expect(isEncrypted(mock.saved!.apiProfiles[0].apiKey)).toBe(true);
-      expect(mock.saved!.apiProfiles[0].apiKey).not.toBe('sk-old');
-      expect(mock.saved!.apiProfiles[0].apiKey).not.toBe('sk-new');
+      expect(isEncrypted(mock.saved!.apiProfiles[0]!.apiKey)).toBe(true);
+      expect(mock.saved!.apiProfiles[0]!.apiKey).not.toBe('sk-old');
+      expect(mock.saved!.apiProfiles[0]!.apiKey).not.toBe('sk-new');
     });
 
     it('内存中已是密文的 apiKey 在持久化时不被重复加密', async () => {
@@ -437,10 +437,10 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       store.addApiProfile(makeProfile({ apiKey: 'sk-plaintext' }));
       await store.setMasterPassword('pw');
       // 第一次加密结果
-      const firstEnc = mock.saved!.apiProfiles[0].apiKey;
+      const firstEnc = mock.saved!.apiProfiles[0]!.apiKey;
       // 直接 await persistSettings 触发第二次加密
       await store.persistSettings();
-      const secondEnc = mock.saved!.apiProfiles[0].apiKey;
+      const secondEnc = mock.saved!.apiProfiles[0]!.apiKey;
       expect(isEncrypted(secondEnc)).toBe(true);
       // 由于随机 salt/iv，密文应不同
       expect(secondEnc).not.toBe(firstEnc);
@@ -501,10 +501,10 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       await new Promise((r) => setTimeout(r, 30));
 
       // 验证：内存中明文，存储中密文
-      expect(store1.apiProfiles[0].apiKey).toBe('sk-secret-1');
+      expect(store1.apiProfiles[0]!.apiKey).toBe('sk-secret-1');
       const persisted = await adapter.loadSettings();
-      expect(isEncrypted(persisted.apiProfiles![0].apiKey)).toBe(true);
-      expect(isEncrypted(persisted.apiProfiles![1].apiKey)).toBe(true);
+      expect(isEncrypted(persisted.apiProfiles![0]!.apiKey)).toBe(true);
+      expect(isEncrypted(persisted.apiProfiles![1]!.apiKey)).toBe(true);
 
       // 2. 模拟重启（无 sessionStorage）
       setActivePinia(createPinia());
@@ -516,7 +516,7 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       // 应处于锁定状态：apiKey 仍为密文
       expect(store2.hasMasterPassword).toBe(true);
       expect(store2.isUnlocked).toBe(false);
-      expect(isEncrypted(store2.apiProfiles[0].apiKey)).toBe(true);
+      expect(isEncrypted(store2.apiProfiles[0]!.apiKey)).toBe(true);
 
       // 3. 用错误密码解锁失败
       const wrongOk = await store2.unlock('wrong-pw');
@@ -526,8 +526,8 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       const ok = await store2.unlock('master-pw');
       expect(ok).toBe(true);
       expect(store2.isUnlocked).toBe(true);
-      expect(store2.apiProfiles[0].apiKey).toBe('sk-secret-1');
-      expect(store2.apiProfiles[1].apiKey).toBe('sk-secret-2');
+      expect(store2.apiProfiles[0]!.apiKey).toBe('sk-secret-1');
+      expect(store2.apiProfiles[1]!.apiKey).toBe('sk-secret-2');
 
       await adapter.close();
     }, 15000);
@@ -563,7 +563,7 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       // 新密码可解锁
       const newOk = await store2.unlock('new-pw');
       expect(newOk).toBe(true);
-      expect(store2.apiProfiles[0].apiKey).toBe('sk-secret');
+      expect(store2.apiProfiles[0]!.apiKey).toBe('sk-secret');
 
       await adapter.close();
     }, 20000);
@@ -592,7 +592,7 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       expect(store2.isUnlocked).toBe(false);
       const ok2 = await store2.unlock('session-pw');
       expect(ok2).toBe(true);
-      expect(store2.apiProfiles[0].apiKey).toBe('sk-secret');
+      expect(store2.apiProfiles[0]!.apiKey).toBe('sk-secret');
 
       await adapter.close();
     });
@@ -627,9 +627,9 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       store2.setStorageAdapter(adapter);
       await store2.loadFromStorage();
       await store2.unlock('pw');
-      expect(store2.apiProfiles[0].apiKey).toBe('sk-key-1');
-      expect(store2.apiProfiles[1].apiKey).toBe('sk-key-2');
-      expect(store2.apiProfiles[2].apiKey).toBe('sk-key-3');
+      expect(store2.apiProfiles[0]!.apiKey).toBe('sk-key-1');
+      expect(store2.apiProfiles[1]!.apiKey).toBe('sk-key-2');
+      expect(store2.apiProfiles[2]!.apiKey).toBe('sk-key-3');
 
       await adapter.close();
     }, 15000);
@@ -646,7 +646,7 @@ describe('useSettingsStore — AC20 主密码加密', () => {
       const store = useSettingsStore();
       store.setStorageAdapter(mock);
       await store.loadFromStorage();
-      expect(store.apiProfiles[0].apiKey).toBe('sk-legacy-plaintext');
+      expect(store.apiProfiles[0]!.apiKey).toBe('sk-legacy-plaintext');
       expect(store.hasMasterPassword).toBe(false);
     });
 

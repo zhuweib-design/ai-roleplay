@@ -29,6 +29,7 @@ import type {
   StoryAnalysisResult,
 } from './story-types';
 import { getDepthMeta, createEmptyResult } from './story-types';
+import { getTemplateMeta, type StoryTemplateId } from './story-templates';
 import { safeJsonParse } from './json-utils';
 // i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
@@ -178,18 +179,21 @@ export function buildAnalysisMessages(
   depth: AnalysisDepth,
   chunkIndex: number,
   totalChunks: number,
-  previousContext?: string
+  previousContext?: string,
+  templateId?: StoryTemplateId
 ): Array<{ role: 'system' | 'user'; content: string }> {
   const meta = getDepthMeta(depth);
+  const template = getTemplateMeta(templateId);
   const extractScenes = meta?.extractScenes ?? false;
   const extractEvents = meta?.extractEvents ?? false;
   const extractScript = meta?.extractScript ?? false;
 
   const systemContent = `你是一个专业的小说结构化分析助手。你的任务是从小说文本中提取结构化信息，包括人物、世界设定${extractScenes ? '、场景' : ''}${extractEvents ? '、事件' : ''}${extractScript ? '、故事脚本' : ''}。
+当前作品题材为「${template.styleGuide}」，请按该题材的常见设定与世界观进行理解与提取。
 
 请严格按照 JSON 格式返回分析结果，不要输出任何其他文字或解释。`;
 
-  const fieldsInstruction = buildFieldsInstruction(depth);
+  const fieldsInstruction = buildFieldsInstruction(depth, template);
 
   const userContent = `请分析以下小说文本（第 ${chunkIndex + 1}/${totalChunks} 块）并提取结构化信息。
 
@@ -217,9 +221,18 @@ ${fieldsInstruction}
 
 /**
  * 根据分析深度构建 JSON 字段说明
+ * @param depth 分析深度
+ * @param template 题材模板（用于候选类型提示）
  */
-function buildFieldsInstruction(depth: AnalysisDepth): string {
+function buildFieldsInstruction(depth: AnalysisDepth, template: ReturnType<typeof getTemplateMeta>): string {
   const meta = getDepthMeta(depth);
+  const worldTypeHints = template.worldTypes.length > 0 ? template.worldTypes.join('/') : '其他';
+  const sceneTypeHints = template.sceneTypes.length > 0 ? template.sceneTypes.join('/') : '城市/野外/室内/地下/其他';
+  const eventTypeHints = template.eventTypes.length > 0 ? template.eventTypes.join('/') : '战斗/对话/探索/转折/其他';
+  const archetypeHints = template.characterArchetypes.length > 0
+    ? `（该题材常见原型：${template.characterArchetypes.join('、')}）`
+    : '';
+
   const fields: string[] = [
     '"characters": [',
     '  {',
@@ -231,19 +244,22 @@ function buildFieldsInstruction(depth: AnalysisDepth): string {
     ']',
     '"worldInfo": {',
     '  "name": "世界名称",',
-    '  "type": "世界类型（奇幻/科幻/现代/末日/历史/其他）",',
+    `  "type": "世界类型（${worldTypeHints}）",`,
     '  "description": "世界设定描述（50-200字）",',
     '  "coreSettings": ["核心设定1", "核心设定2"],',
     '  "factions": ["势力1", "势力2"]',
     '}',
   ];
 
+  // 人物原型提示附加到 JSON 说明末尾的注释区
+  const archetypeNote = archetypeHints;
+
   if (meta?.extractScenes) {
     fields.push(
       '"scenes": [',
       '  {',
       '    "name": "场景名",',
-      '    "type": "场景类型（城市/野外/室内/地下等）",',
+      `    "type": "场景类型（${sceneTypeHints}）",`,
       '    "description": "场景描述（30-100字）",',
       '    "parent": "父场景名（可选）"',
       '  }',
@@ -260,7 +276,7 @@ function buildFieldsInstruction(depth: AnalysisDepth): string {
       '    "characters": ["参与人物1", "参与人物2"],',
       '    "scene": "发生场景名（可选）",',
       '    "order": 1,',
-      '    "type": "事件类型（战斗/对话/探索/转折等）"',
+      `    "type": "事件类型（${eventTypeHints}）"`,
       '  }',
       ']'
     );
@@ -280,7 +296,7 @@ function buildFieldsInstruction(depth: AnalysisDepth): string {
     );
   }
 
-  return `{\n${fields.join('\n')}\n}`;
+  return `{\n${fields.join('\n')}\n}${archetypeNote}`;
 }
 
 /**
@@ -291,13 +307,16 @@ export function buildScriptGenerationMessages(
   characters: StoryCharacter[],
   scenes: StoryScene[],
   events: StoryEvent[],
-  worldInfo?: StoryWorldInfo
+  worldInfo?: StoryWorldInfo,
+  templateId?: StoryTemplateId
 ): Array<{ role: 'system' | 'user'; content: string }> {
+  const template = getTemplateMeta(templateId);
   const charSummary = characters.map((c) => `- ${c.name}：${c.description.slice(0, 50)}`).join('\n');
   const sceneSummary = scenes.map((s) => `- ${s.name}（${s.type}）：${s.description.slice(0, 50)}`).join('\n');
   const eventSummary = events.map((e) => `- ${e.name}（${e.type}）：${e.description.slice(0, 50)}`).join('\n');
 
-  const systemContent = `你是一个故事脚本创作助手。基于已有的小说结构化分析结果，生成可执行的故事脚本大纲。请严格按照 JSON 格式返回，不要输出任何其他文字。`;
+  const systemContent = `你是一个故事脚本创作助手。基于已有的小说结构化分析结果，生成可执行的故事脚本大纲。
+当前作品题材为「${template.styleGuide}」，脚本需贴合该题材的叙事风格与世界观。请严格按照 JSON 格式返回，不要输出任何其他文字。`;
 
   const userContent = `基于以下小说结构化分析结果，生成故事脚本。
 

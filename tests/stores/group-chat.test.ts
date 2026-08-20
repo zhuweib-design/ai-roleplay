@@ -107,7 +107,7 @@ describe('group-chat store', () => {
       );
       expect(id).toBeTruthy();
       expect(store.groups).toHaveLength(1);
-      const g = store.groups[0];
+      const g = store.groups[0]!;
       expect(g.name).toBe('测试群聊');
       expect(g.members).toHaveLength(2);
       expect(g.members.map((m) => m.name).sort()).toEqual(['Alice', 'Bob']);
@@ -130,13 +130,13 @@ describe('group-chat store', () => {
           makeCard({ id: 'c2', name: 'Bob' }),
         ]
       );
-      const g = store.groups[0];
+      const g = store.groups[0]!;
       // Math.random=0.5，2 个候选选 index=1 → 'Hi!'
       expect(g.firstMessage).toBe('Hi!');
       expect(g.messages).toHaveLength(1);
-      expect(g.messages[0].role).toBe('assistant');
-      expect(g.messages[0].content).toBe('Hi!');
-      expect(g.messages[0].characterId).toBe('c1'); // 第一个成员
+      expect(g.messages[0]!.role).toBe('assistant');
+      expect(g.messages[0]!.content).toBe('Hi!');
+      expect(g.messages[0]!.characterId).toBe('c1'); // 第一个成员
     });
 
     it('无 alternateGreetings 时使用第一个成员的 firstMessage 兜底', () => {
@@ -148,7 +148,7 @@ describe('group-chat store', () => {
           makeCard({ id: 'c2', name: 'Bob' }),
         ]
       );
-      expect(store.groups[0].firstMessage).toBe('默认问候');
+      expect(store.groups[0]!.firstMessage).toBe('默认问候');
     });
 
     it('显式传入 firstMessage 优先级最高', () => {
@@ -164,7 +164,7 @@ describe('group-chat store', () => {
           makeCard({ id: 'c2' }),
         ]
       );
-      expect(store.groups[0].firstMessage).toBe('自定义首消息');
+      expect(store.groups[0]!.firstMessage).toBe('自定义首消息');
     });
   });
 
@@ -184,7 +184,7 @@ describe('group-chat store', () => {
       const { store, id } = setupGroup();
       const ok = store.addMember(id!, makeCard({ id: 'c3', name: 'Charlie' }));
       expect(ok).toBe(true);
-      const g = store.groups[0];
+      const g = store.groups[0]!;
       expect(g.members).toHaveLength(3);
       expect(g.members.find((m) => m.characterId === 'c3')?.name).toBe('Charlie');
       // 应有 join 事件系统消息
@@ -207,7 +207,7 @@ describe('group-chat store', () => {
       for (let i = 3; i <= 8; i++) {
         store.addMember(id!, makeCard({ id: `c${i}`, name: `Char${i}` }));
       }
-      expect(store.groups[0].members).toHaveLength(8);
+      expect(store.groups[0]!.members).toHaveLength(8);
       // 第 9 个应失败
       const ok = store.addMember(id!, makeCard({ id: 'c9', name: 'Nine' }));
       expect(ok).toBe(false);
@@ -218,7 +218,7 @@ describe('group-chat store', () => {
       const { store, id } = setupGroup();
       const ok = store.removeMember(id!, 'c2');
       expect(ok).toBe(true);
-      const g = store.groups[0];
+      const g = store.groups[0]!;
       expect(g.members).toHaveLength(1);
       expect(g.members.find((m) => m.characterId === 'c2')).toBeUndefined();
       const leaveMsg = g.messages.find((m) => m.eventType === 'leave');
@@ -245,7 +245,7 @@ describe('group-chat store', () => {
 
     it('排除 lastSpeakerId', () => {
       const { store, id } = setupGroup([50, 50]);
-      store.groups[0].lastSpeakerId = 'c1';
+      store.groups[0]!.lastSpeakerId = 'c1';
       const speaker = store.pickNextSpeaker(id!);
       expect(speaker).not.toBeNull();
       expect(speaker!.characterId).toBe('c2'); // 唯一非 c1 候选
@@ -254,7 +254,7 @@ describe('group-chat store', () => {
     it('所有成员都被排除时返回 null', () => {
       const { store, id } = setupGroup([50, 50]);
       // 设置 allowAutoSelect=false 给所有人
-      store.groups[0].members.forEach((m) => (m.allowAutoSelect = false));
+      store.groups[0]!.members.forEach((m) => (m.allowAutoSelect = false));
       const speaker = store.pickNextSpeaker(id!);
       expect(speaker).toBeNull();
     });
@@ -291,7 +291,7 @@ describe('group-chat store', () => {
         { name: '群', memberIds: ['c1', 'c2'] },
         [makeCard({ id: 'c1', name: 'Alice' }), makeCard({ id: 'c2', name: 'Bob' })]
       );
-      const speaker = store.designateSpeaker(store.groups[0].id, 'c2');
+      const speaker = store.designateSpeaker(store.groups[0]!.id, 'c2');
       expect(speaker).not.toBeNull();
       expect(speaker!.name).toBe('Bob');
     });
@@ -302,7 +302,7 @@ describe('group-chat store', () => {
         { name: '群', memberIds: ['c1', 'c2'] },
         [makeCard({ id: 'c1' }), makeCard({ id: 'c2' })]
       );
-      const speaker = store.designateSpeaker(store.groups[0].id, 'nonexistent');
+      const speaker = store.designateSpeaker(store.groups[0]!.id, 'nonexistent');
       expect(speaker).toBeNull();
     });
 
@@ -312,8 +312,8 @@ describe('group-chat store', () => {
         { name: '群', memberIds: ['c1', 'c2'] },
         [makeCard({ id: 'c1' }), makeCard({ id: 'c2' })]
       );
-      store.groups[0].members[1].allowAutoSelect = false;
-      const speaker = store.designateSpeaker(store.groups[0].id, 'c2');
+      store.groups[0]!.members[1]!.allowAutoSelect = false;
+      const speaker = store.designateSpeaker(store.groups[0]!.id, 'c2');
       expect(speaker).toBeNull();
     });
   });
@@ -329,29 +329,29 @@ describe('group-chat store', () => {
         [makeCard({ id: 'c1', name: 'Alice' }), makeCard({ id: 'c2', name: 'Bob' })]
       );
       // createGroup 会用第一个成员的 firstMessage 兜底，这里清空确保从空消息状态开始测试
-      store.groups[0].messages.splice(0);
+      store.groups[0]!.messages.splice(0);
       return { store, id };
     }
 
     it('addUserMessage 添加用户消息', () => {
       const { store, id } = setupEmptyGroup();
       store.addUserMessage(id!, '你好');
-      const g = store.groups[0];
+      const g = store.groups[0]!;
       expect(g.messages).toHaveLength(1);
-      expect(g.messages[0].role).toBe('user');
-      expect(g.messages[0].content).toBe('你好');
-      expect(g.messages[0].eventType).toBe('none');
+      expect(g.messages[0]!.role).toBe('user');
+      expect(g.messages[0]!.content).toBe('你好');
+      expect(g.messages[0]!.eventType).toBe('none');
     });
 
     it('addAssistantMessage 添加 AI 消息并更新 lastSpeakerId', () => {
       const { store, id } = setupEmptyGroup();
       store.addAssistantMessage(id!, 'c1', 'Alice', '回复内容');
-      const g = store.groups[0];
+      const g = store.groups[0]!;
       expect(g.messages).toHaveLength(1);
-      expect(g.messages[0].role).toBe('assistant');
-      expect(g.messages[0].content).toBe('回复内容');
-      expect(g.messages[0].characterId).toBe('c1');
-      expect(g.messages[0].characterName).toBe('Alice');
+      expect(g.messages[0]!.role).toBe('assistant');
+      expect(g.messages[0]!.content).toBe('回复内容');
+      expect(g.messages[0]!.characterId).toBe('c1');
+      expect(g.messages[0]!.characterName).toBe('Alice');
       expect(g.lastSpeakerId).toBe('c1');
     });
 
@@ -360,7 +360,7 @@ describe('group-chat store', () => {
       store.addUserMessage(id!, '你好');
       store.addAssistantMessage(id!, 'c1', 'Alice', '初始');
       store.updateLastAssistantMessage(id!, '更新后的内容');
-      const g = store.groups[0];
+      const g = store.groups[0]!;
       const aiMsg = g.messages.find((m) => m.role === 'assistant');
       expect(aiMsg!.content).toBe('更新后的内容');
     });
@@ -368,7 +368,7 @@ describe('group-chat store', () => {
     it('updateLastAssistantMessage 跳过无 characterId 的消息', () => {
       const { store, id } = setupEmptyGroup();
       // 添加一个无 characterId 的 system 消息
-      store.groups[0].messages.push({
+      store.groups[0]!.messages.push({
         id: 'sys-1',
         role: 'system',
         content: '系统消息',
@@ -379,7 +379,7 @@ describe('group-chat store', () => {
       });
       store.addAssistantMessage(id!, 'c1', 'Alice', 'AI 回复');
       store.updateLastAssistantMessage(id!, '更新内容');
-      const aiMsg = store.groups[0].messages.find((m) => m.role === 'assistant');
+      const aiMsg = store.groups[0]!.messages.find((m) => m.role === 'assistant');
       expect(aiMsg!.content).toBe('更新内容');
     });
   });
@@ -393,9 +393,9 @@ describe('group-chat store', () => {
         { name: '群', memberIds: ['c1', 'c2'], mode: 'natural' },
         [makeCard({ id: 'c1' }), makeCard({ id: 'c2' })]
       );
-      const id = store.groups[0].id;
+      const id = store.groups[0]!.id;
       store.setMode(id, 'designated');
-      expect(store.groups[0].mode).toBe('designated');
+      expect(store.groups[0]!.mode).toBe('designated');
     });
   });
 
@@ -413,7 +413,7 @@ describe('group-chat store', () => {
         [makeCard({ id: 'c1' }), makeCard({ id: 'c3' })]
       );
       // createGroup 用 unshift 插入，groups[0] 是最后创建的"群2"，groups[1] 是"群1"
-      const firstId = store.groups[0].id;
+      const firstId = store.groups[0]!.id;
       store.selectGroup(firstId);
       expect(store.currentGroupId).toBe(firstId);
       expect(store.currentGroup?.name).toBe('群2');
@@ -430,15 +430,15 @@ describe('group-chat store', () => {
         [makeCard({ id: 'c1' }), makeCard({ id: 'c3' })]
       );
       // 防止 Date.now() 在同一毫秒内生成相同 id
-      store.groups[0].id = 'group-test-1';
-      store.groups[1].id = 'group-test-2';
-      const firstId = store.groups[0].id;
+      store.groups[0]!.id = 'group-test-1';
+      store.groups[1]!.id = 'group-test-2';
+      const firstId = store.groups[0]!.id;
       store.selectGroup(firstId);
       store.deleteGroup(firstId);
       expect(store.groups).toHaveLength(1);
       expect(store.groups.find((g) => g.id === firstId)).toBeUndefined();
       // currentGroupId 应切换到剩下的群聊
-      expect(store.currentGroupId).toBe(store.groups[0].id);
+      expect(store.currentGroupId).toBe(store.groups[0]!.id);
     });
   });
 
@@ -450,7 +450,7 @@ describe('group-chat store', () => {
         { name, memberIds: ['c1', 'c2'] },
         [makeCard({ id: 'c1' }), makeCard({ id: 'c2' })]
       );
-      return store.groups[0].id;
+      return store.groups[0]!.id;
     }
 
     it('手动归档后进入只读状态并追加归档消息', () => {
@@ -488,7 +488,7 @@ describe('group-chat store', () => {
           makeCard({ id: 'c2', tags: ['__temporary_npc'] }),
         ]
       );
-      const gid = store.groups[0].id;
+      const gid = store.groups[0]!.id;
       expect(store.removeMember(gid, 'c2')).toBe(true);
       const g = store.groups.find((x) => x.id === gid)!;
       expect(g.lifecycleStatus).toBe('archived');

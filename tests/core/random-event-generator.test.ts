@@ -80,49 +80,49 @@ describe('buildRandomEventMessages', () => {
   test('返回 system + user 两条消息', () => {
     const messages = buildRandomEventMessages(makeParams());
     expect(messages).toHaveLength(2);
-    expect(messages[0].role).toBe('system');
-    expect(messages[1].role).toBe('user');
+    expect(messages[0]!.role).toBe('system');
+    expect(messages[1]!.role).toBe('user');
   });
 
   test('system 消息包含 RPG 事件生成器角色', () => {
     const messages = buildRandomEventMessages(makeParams());
-    expect(messages[0].content).toContain('事件生成器');
+    expect(messages[0]!.content).toContain('事件生成器');
   });
 
   test('user 消息包含场景名称', () => {
     const messages = buildRandomEventMessages(makeParams({ sceneName: '幽暗沼泽' }));
-    expect(messages[1].content).toContain('幽暗沼泽');
+    expect(messages[1]!.content).toContain('幽暗沼泽');
   });
 
   test('user 消息包含世界名称', () => {
     const messages = buildRandomEventMessages(makeParams({ worldName: '泰拉瑞亚' }));
-    expect(messages[1].content).toContain('泰拉瑞亚');
+    expect(messages[1]!.content).toContain('泰拉瑞亚');
   });
 
   test('user 消息包含最近对话', () => {
     const messages = buildRandomEventMessages(
       makeParams({ recentMessages: ['主角说了什么'] })
     );
-    expect(messages[1].content).toContain('主角说了什么');
+    expect(messages[1]!.content).toContain('主角说了什么');
   });
 
   test('user 消息包含已激活事件名（避免冲突）', () => {
     const messages = buildRandomEventMessages(
       makeParams({ activeEventNames: ['已激活事件 X'] })
     );
-    expect(messages[1].content).toContain('已激活事件 X');
+    expect(messages[1]!.content).toContain('已激活事件 X');
   });
 
   test('user 消息要求 JSON 格式返回', () => {
     const messages = buildRandomEventMessages(makeParams());
-    expect(messages[1].content).toMatch(/JSON/i);
+    expect(messages[1]!.content).toMatch(/JSON/i);
   });
 
   test('user 消息包含随机种子', () => {
     const messages = buildRandomEventMessages(
       makeParams({ seed: 'test-seed-12345' })
     );
-    expect(messages[1].content).toContain('test-seed-12345');
+    expect(messages[1]!.content).toContain('test-seed-12345');
   });
 
   test('无场景描述时不报错', () => {
@@ -137,7 +137,7 @@ describe('buildRandomEventMessages', () => {
       makeParams({ activeEventNames: [] })
     );
     // 不应包含【已激活事件】块标记（避免重复提示）
-    expect(messages[1].content).not.toContain('【已激活事件】');
+    expect(messages[1]!.content).not.toContain('【已激活事件】');
   });
 });
 

@@ -146,9 +146,9 @@ describe('SettingsView 设置分类侧边栏 + 本地模型统一管理', () => 
     await flushPromises();
 
     expect(settings.apiProfiles).toHaveLength(1);
-    expect(settings.apiProfiles[0].provider).toBe('local');
-    expect(settings.apiProfiles[0].model).toBe('Qwen2.5-0.5B-Instruct-q4f16_1-MLC');
-    expect(settings.apiProfiles[0].name).toContain('本地·Qwen2.5 0.5B');
+    expect(settings.apiProfiles[0]!.provider).toBe('local');
+    expect(settings.apiProfiles[0]!.model).toBe('Qwen2.5-0.5B-Instruct-q4f16_1-MLC');
+    expect(settings.apiProfiles[0]!.name).toContain('本地·Qwen2.5 0.5B');
 
     // 重复添加不产生新配置
     await wrapper

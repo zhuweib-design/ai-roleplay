@@ -186,23 +186,23 @@ describe('summarizer (F12.4)', () => {
       const messages = makeDialogMessages(5);
       const result = buildSummarizationMessages(messages, null, DEFAULT_SUMMARIZATION_CONFIG);
       expect(result).toHaveLength(2);
-      expect(result[0].role).toBe('system');
-      expect(result[1].role).toBe('user');
+      expect(result[0]!.role).toBe('system');
+      expect(result[1]!.role).toBe('user');
     });
 
     test('无现有摘要时使用"首次生成"Prompt', async () => {
       const messages = makeDialogMessages(5);
       const result = buildSummarizationMessages(messages, null, DEFAULT_SUMMARIZATION_CONFIG);
-      expect(result[1].content).toContain('压缩为摘要');
-      expect(result[1].content).not.toContain('已有摘要');
+      expect(result[1]!.content).toContain('压缩为摘要');
+      expect(result[1]!.content).not.toContain('已有摘要');
     });
 
     test('有现有摘要时使用"增量更新"Prompt', async () => {
       const messages = makeDialogMessages(5);
       const existing = makeSummary({ content: '之前的摘要内容' });
       const result = buildSummarizationMessages(messages, existing, DEFAULT_SUMMARIZATION_CONFIG);
-      expect(result[1].content).toContain('已有摘要');
-      expect(result[1].content).toContain('之前的摘要内容');
+      expect(result[1]!.content).toContain('已有摘要');
+      expect(result[1]!.content).toContain('之前的摘要内容');
     });
 
     test('包含对话内容', async () => {
@@ -211,8 +211,8 @@ describe('summarizer (F12.4)', () => {
         makeMessage('assistant', 'AI 回复内容'),
       ];
       const result = buildSummarizationMessages(messages, null, DEFAULT_SUMMARIZATION_CONFIG);
-      expect(result[1].content).toContain('用户消息内容');
-      expect(result[1].content).toContain('AI 回复内容');
+      expect(result[1]!.content).toContain('用户消息内容');
+      expect(result[1]!.content).toContain('AI 回复内容');
     });
 
     test('包含 maxSummaryTokens 约束', async () => {
@@ -222,7 +222,7 @@ describe('summarizer (F12.4)', () => {
         maxSummaryTokens: 300,
       };
       const result = buildSummarizationMessages(messages, null, config);
-      expect(result[1].content).toContain('300');
+      expect(result[1]!.content).toContain('300');
     });
 
     test('消息角色转换为中文标签', async () => {
@@ -231,8 +231,8 @@ describe('summarizer (F12.4)', () => {
         makeMessage('assistant', '你好'),
       ];
       const result = buildSummarizationMessages(messages, null, DEFAULT_SUMMARIZATION_CONFIG);
-      expect(result[1].content).toContain('用户');
-      expect(result[1].content).toContain('AI');
+      expect(result[1]!.content).toContain('用户');
+      expect(result[1]!.content).toContain('AI');
     });
   });
 
@@ -247,13 +247,13 @@ describe('summarizer (F12.4)', () => {
       const result = injectSummary(messages, summary);
       expect(result).toHaveLength(4);
       // 第一条仍是原 system
-      expect(result[0].content).toBe('系统提示');
+      expect(result[0]!.content).toBe('系统提示');
       // 第二条是注入的摘要
-      expect(result[1].role).toBe('system');
-      expect(result[1].content).toContain('前文摘要');
-      expect(result[1].content).toContain('前文摘要');
+      expect(result[1]!.role).toBe('system');
+      expect(result[1]!.content).toContain('前文摘要');
+      expect(result[1]!.content).toContain('前文摘要');
       // 第三条是原 user
-      expect(result[2].content).toBe('你好');
+      expect(result[2]!.content).toBe('你好');
     });
 
     test('无 system 消息时摘要插入到开头', async () => {
@@ -264,9 +264,9 @@ describe('summarizer (F12.4)', () => {
       const summary = makeSummary({ content: '摘要' });
       const result = injectSummary(messages, summary);
       expect(result).toHaveLength(3);
-      expect(result[0].role).toBe('system');
-      expect(result[0].content).toContain('摘要');
-      expect(result[1].content).toBe('你好');
+      expect(result[0]!.role).toBe('system');
+      expect(result[0]!.content).toContain('摘要');
+      expect(result[1]!.content).toBe('你好');
     });
 
     test('全 system 消息时摘要追加到末尾', async () => {
@@ -276,15 +276,15 @@ describe('summarizer (F12.4)', () => {
       const summary = makeSummary({ content: '摘要' });
       const result = injectSummary(messages, summary);
       expect(result).toHaveLength(2);
-      expect(result[0].content).toBe('系统1');
-      expect(result[1].content).toContain('摘要');
+      expect(result[0]!.content).toBe('系统1');
+      expect(result[1]!.content).toContain('摘要');
     });
 
     test('空消息列表仍可注入', async () => {
       const summary = makeSummary({ content: '摘要' });
       const result = injectSummary([], summary);
       expect(result).toHaveLength(1);
-      expect(result[0].content).toContain('摘要');
+      expect(result[0]!.content).toContain('摘要');
     });
 
     test('注入消息包含【前文摘要】标记', async () => {
@@ -292,7 +292,7 @@ describe('summarizer (F12.4)', () => {
         [makeMessage('user', '你好')],
         makeSummary({ content: '摘要内容' })
       );
-      expect(result[0].content).toContain('【前文摘要】');
+      expect(result[0]!.content).toContain('【前文摘要】');
     });
   });
 
@@ -401,7 +401,7 @@ describe('summarizer (F12.4)', () => {
       };
       await service.summarize(messages, config, null);
 
-      const callArgs = (apiClient.chat as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const callArgs = (apiClient.chat as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(callArgs.model).toBe('gpt-4');
       expect(callArgs.temperature).toBe(0.5);
       expect(callArgs.maxTokens).toBe(400);

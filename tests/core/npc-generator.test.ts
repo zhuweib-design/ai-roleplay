@@ -192,24 +192,24 @@ describe('npc-generator (F10.3)', () => {
     test('返回 system + user 两条消息', () => {
       const messages = buildNpcGenerationMessages(makeParams());
       expect(messages).toHaveLength(2);
-      expect(messages[0].role).toBe('system');
-      expect(messages[1].role).toBe('user');
+      expect(messages[0]!.role).toBe('system');
+      expect(messages[1]!.role).toBe('user');
     });
 
     test('system 内容强调临时 NPC 与群聊互动', () => {
       const messages = buildNpcGenerationMessages(makeParams());
-      expect(messages[0].content).toContain('临时 NPC');
-      expect(messages[0].content).toContain('群聊');
+      expect(messages[0]!.content).toContain('临时 NPC');
+      expect(messages[0]!.content).toContain('群聊');
     });
 
     test('user 内容包含模板标签', () => {
       const messages = buildNpcGenerationMessages(makeParams({ templateId: 'scifi' }));
-      expect(messages[1].content).toContain('科幻');
+      expect(messages[1]!.content).toContain('科幻');
     });
 
     test('user 内容包含种子', () => {
       const messages = buildNpcGenerationMessages(makeParams({ seed: 'uniqueSeed' }));
-      expect(messages[1].content).toContain('uniqueSeed');
+      expect(messages[1]!.content).toContain('uniqueSeed');
     });
 
     test('user 内容包含世界名称', () => {
@@ -218,8 +218,8 @@ describe('npc-generator (F10.3)', () => {
           sceneContext: makeSceneContext({ worldName: '魔法国度' }),
         })
       );
-      expect(messages[1].content).toContain('魔法国度');
-      expect(messages[1].content).toContain('【世界】');
+      expect(messages[1]!.content).toContain('魔法国度');
+      expect(messages[1]!.content).toContain('【世界】');
     });
 
     test('user 内容包含世界类型', () => {
@@ -228,8 +228,8 @@ describe('npc-generator (F10.3)', () => {
           sceneContext: makeSceneContext({ worldType: 'scifi' }),
         })
       );
-      expect(messages[1].content).toContain('【世界类型】');
-      expect(messages[1].content).toContain('scifi');
+      expect(messages[1]!.content).toContain('【世界类型】');
+      expect(messages[1]!.content).toContain('scifi');
     });
 
     test('user 内容包含场景名称', () => {
@@ -238,8 +238,8 @@ describe('npc-generator (F10.3)', () => {
           sceneContext: makeSceneContext({ regionName: '王都', subAreaName: '酒馆' }),
         })
       );
-      expect(messages[1].content).toContain('【场景】王都');
-      expect(messages[1].content).toContain('【子区域】酒馆');
+      expect(messages[1]!.content).toContain('【场景】王都');
+      expect(messages[1]!.content).toContain('【子区域】酒馆');
     });
 
     test('user 内容包含场景描述', () => {
@@ -248,8 +248,8 @@ describe('npc-generator (F10.3)', () => {
           sceneContext: makeSceneContext({ sceneDescription: '一座繁华的贸易城市' }),
         })
       );
-      expect(messages[1].content).toContain('【场景描述】');
-      expect(messages[1].content).toContain('一座繁华的贸易城市');
+      expect(messages[1]!.content).toContain('【场景描述】');
+      expect(messages[1]!.content).toContain('一座繁华的贸易城市');
     });
 
     test('无场景上下文时显示无场景提示', () => {
@@ -264,7 +264,7 @@ describe('npc-generator (F10.3)', () => {
           },
         })
       );
-      expect(messages[1].content).toContain('无场景上下文');
+      expect(messages[1]!.content).toContain('无场景上下文');
     });
 
     test('user 内容包含现有成员名', () => {
@@ -275,10 +275,10 @@ describe('npc-generator (F10.3)', () => {
           }),
         })
       );
-      expect(messages[1].content).toContain('主角');
-      expect(messages[1].content).toContain('法师艾拉');
-      expect(messages[1].content).toContain('战士卡尔');
-      expect(messages[1].content).toContain('避免与上述成员重名');
+      expect(messages[1]!.content).toContain('主角');
+      expect(messages[1]!.content).toContain('法师艾拉');
+      expect(messages[1]!.content).toContain('战士卡尔');
+      expect(messages[1]!.content).toContain('避免与上述成员重名');
     });
 
     test('无现有成员时显示暂无成员', () => {
@@ -287,24 +287,24 @@ describe('npc-generator (F10.3)', () => {
           groupContext: makeGroupContext({ existingMemberNames: [] }),
         })
       );
-      expect(messages[1].content).toContain('暂无成员');
+      expect(messages[1]!.content).toContain('暂无成员');
     });
 
     test('user 内容包含 JSON 结构示例', () => {
       const messages = buildNpcGenerationMessages(makeParams());
-      expect(messages[1].content).toContain('"name"');
-      expect(messages[1].content).toContain('"description"');
-      expect(messages[1].content).toContain('"personality"');
-      expect(messages[1].content).toContain('"scenario"');
-      expect(messages[1].content).toContain('"firstMessage"');
-      expect(messages[1].content).toContain('"tags"');
-      expect(messages[1].content).toContain('"attributes"');
+      expect(messages[1]!.content).toContain('"name"');
+      expect(messages[1]!.content).toContain('"description"');
+      expect(messages[1]!.content).toContain('"personality"');
+      expect(messages[1]!.content).toContain('"scenario"');
+      expect(messages[1]!.content).toContain('"firstMessage"');
+      expect(messages[1]!.content).toContain('"tags"');
+      expect(messages[1]!.content).toContain('"attributes"');
     });
 
     test('user 内容包含属性示例', () => {
       const messages = buildNpcGenerationMessages(makeParams({ templateId: 'fantasy' }));
       // fantasy 模板包含 "力量" 属性示例
-      expect(messages[1].content).toContain('力量');
+      expect(messages[1]!.content).toContain('力量');
     });
 
     test('不传 seed 时自动生成种子', () => {
@@ -314,17 +314,17 @@ describe('npc-generator (F10.3)', () => {
         groupContext: makeGroupContext(),
       });
       // 应包含【随机种子】标签，种子值非空
-      expect(messages[1].content).toContain('【随机种子】');
+      expect(messages[1]!.content).toContain('【随机种子】');
       // 提取种子值并验证非空
-      const seedMatch = messages[1].content.match(/【随机种子】(\S+)/);
+      const seedMatch = messages[1]!.content.match(/【随机种子】(\S+)/);
       expect(seedMatch).not.toBeNull();
-      expect(seedMatch![1].length).toBeGreaterThan(0);
+      expect(seedMatch![1]!.length).toBeGreaterThan(0);
     });
 
     test('强调只返回 JSON 不使用 markdown', () => {
       const messages = buildNpcGenerationMessages(makeParams());
-      expect(messages[1].content).toContain('不要 markdown');
-      expect(messages[1].content).toContain('只返回 JSON');
+      expect(messages[1]!.content).toContain('不要 markdown');
+      expect(messages[1]!.content).toContain('只返回 JSON');
     });
   });
 

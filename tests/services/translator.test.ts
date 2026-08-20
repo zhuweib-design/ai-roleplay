@@ -164,11 +164,11 @@ describe('translator (F12.3)', () => {
 
       // 验证 fetch 调用参数
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      const callUrl = fetchMock.mock.calls[0][0];
+      const callUrl = fetchMock.mock.calls[0]![0];
       expect(callUrl).toContain('translation.googleapis.com');
       // 密钥走请求头而非 URL query（防泄漏到访问日志）
       expect(callUrl).not.toContain('key=');
-      const callHeaders = fetchMock.mock.calls[0][1]?.headers ?? {};
+      const callHeaders = fetchMock.mock.calls[0]![1]?.headers ?? {};
       expect(callHeaders['x-goog-api-key']).toBe('test-api-key');
     });
 
@@ -253,8 +253,8 @@ describe('translator (F12.3)', () => {
 
       expect(results).toHaveLength(3);
       expect(callCount).toBe(3);
-      expect(results[0].translatedText).toBe('translation-1');
-      expect(results[1].translatedText).toBe('translation-2');
+      expect(results[0]!.translatedText).toBe('translation-1');
+      expect(results[1]!.translatedText).toBe('translation-2');
     });
 
     test('translateBatch 空数组返回空数组', async () => {
@@ -289,9 +289,9 @@ describe('translator (F12.3)', () => {
       const translator = createTranslator(makeConfig());
       const results = await translator!.translateBatch(['a', 'b', 'c']);
       expect(results).toHaveLength(3);
-      expect(results[0].translatedText).toBe('ok');
-      expect(results[1].translatedText).toContain('翻译失败');
-      expect(results[2].translatedText).toBe('ok');
+      expect(results[0]!.translatedText).toBe('ok');
+      expect(results[1]!.translatedText).toContain('翻译失败');
+      expect(results[2]!.translatedText).toBe('ok');
     });
   });
 
@@ -316,7 +316,7 @@ describe('translator (F12.3)', () => {
 
       // 验证 fetch 调用
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      const [url, init] = fetchMock.mock.calls[0];
+      const [url, init] = fetchMock.mock.calls[0]!;
       // Free 账户端点
       expect(url).toContain('api-free.deepl.com');
       // Authorization header
@@ -335,7 +335,7 @@ describe('translator (F12.3)', () => {
       );
       await translator!.translate('test');
 
-      const callUrl = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const callUrl = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(callUrl).toContain('api.deepl.com');
       expect(callUrl).not.toContain('api-free');
     });
@@ -353,7 +353,7 @@ describe('translator (F12.3)', () => {
       );
       await translator!.translate('test');
 
-      const callUrl = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const callUrl = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(callUrl).toBe('https://custom.deepl.com/translate');
     });
 
@@ -368,7 +368,7 @@ describe('translator (F12.3)', () => {
       );
       await translator!.translate('test');
 
-      const init = fetchMock.mock.calls[0][1] as RequestInit;
+      const init = fetchMock.mock.calls[0]![1] as RequestInit;
       const body = init.body as string;
       // auto 模式下不包含 source_lang 参数
       expect(body).not.toContain('source_lang');

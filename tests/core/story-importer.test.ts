@@ -166,7 +166,7 @@ class MockLorebookPort implements LorebookImportPort {
     this.updatedEntries.push({ id: entryId, patch });
     const idx = this.entries.findIndex((e) => e.id === entryId);
     if (idx >= 0) {
-      this.entries[idx] = { ...this.entries[idx], ...patch };
+      this.entries[idx]! = { ...this.entries[idx]!, ...patch };
     }
     return true;
   }
@@ -382,8 +382,8 @@ describe('story-importer (F16.2)', () => {
       const story = makeStory();
       const results = importWorld(story, 'lb-1', lbPort, 'add');
       expect(results).toHaveLength(1);
-      expect(results[0].success).toBe(true);
-      expect(results[0].type).toBe('lorebook');
+      expect(results[0]!.success).toBe(true);
+      expect(results[0]!.type).toBe('lorebook');
       expect(lbPort.worldUpdated).toBe(true);
       expect(lbPort.worldDescription?.name).toBe('艾尔多拉');
     });
@@ -398,8 +398,8 @@ describe('story-importer (F16.2)', () => {
       const story = makeStory();
       const results = importWorld(story, 'lb-1', lbPort, 'add');
       expect(results).toHaveLength(1);
-      expect(results[0].success).toBe(false);
-      expect(results[0].error).toContain('add 策略');
+      expect(results[0]!.success).toBe(false);
+      expect(results[0]!.error).toContain('add 策略');
     });
 
     test('overwrite 策略：覆盖已有世界描述', () => {
@@ -411,7 +411,7 @@ describe('story-importer (F16.2)', () => {
       };
       const story = makeStory();
       const results = importWorld(story, 'lb-1', lbPort, 'overwrite');
-      expect(results[0].success).toBe(true);
+      expect(results[0]!.success).toBe(true);
       expect(lbPort.worldDescription?.name).toBe('艾尔多拉');
     });
 
@@ -424,7 +424,7 @@ describe('story-importer (F16.2)', () => {
       };
       const story = makeStory();
       const results = importWorld(story, 'lb-1', lbPort, 'merge');
-      expect(results[0].success).toBe(true);
+      expect(results[0]!.success).toBe(true);
       expect(lbPort.worldDescription?.content).toContain('旧描述');
       expect(lbPort.worldDescription?.content).toContain('充满魔法');
       expect(lbPort.worldDescription?.keys).toContain('旧关键字');
@@ -543,7 +543,7 @@ describe('story-importer (F16.2)', () => {
       const story = makeStory();
       const results = importCharacters(story, charPort, 'add');
       expect(results).toHaveLength(1);
-      expect(results[0].success).toBe(true);
+      expect(results[0]!.success).toBe(true);
       expect(charPort.created).toHaveLength(1);
       expect(charPort.updated).toHaveLength(1);
     });
@@ -552,24 +552,24 @@ describe('story-importer (F16.2)', () => {
       charPort.existing.push({ id: 'existing-char', name: '艾莉娅' });
       const story = makeStory();
       const results = importCharacters(story, charPort, 'add');
-      expect(results[0].success).toBe(false);
-      expect(results[0].error).toContain('add 策略');
+      expect(results[0]!.success).toBe(false);
+      expect(results[0]!.error).toContain('add 策略');
     });
 
     test('overwrite 策略：覆盖已有角色', () => {
       charPort.existing.push({ id: 'existing-char', name: '艾莉娅' });
       const story = makeStory();
       const results = importCharacters(story, charPort, 'overwrite');
-      expect(results[0].success).toBe(true);
+      expect(results[0]!.success).toBe(true);
       expect(charPort.updated).toHaveLength(1);
-      expect(charPort.updated[0].id).toBe('existing-char');
+      expect(charPort.updated[0]!.id).toBe('existing-char');
     });
 
     test('merge 策略：追加描述', () => {
       charPort.existing.push({ id: 'existing-char', name: '艾莉娅' });
       const story = makeStory();
       const results = importCharacters(story, charPort, 'merge');
-      expect(results[0].success).toBe(true);
+      expect(results[0]!.success).toBe(true);
       expect(charPort.updated).toHaveLength(1);
     });
 
@@ -595,9 +595,9 @@ describe('story-importer (F16.2)', () => {
       const story = makeStory();
       const results = importEvents(story, 'lb-1', evtPort, 'add');
       expect(results).toHaveLength(1);
-      expect(results[0].success).toBe(true);
+      expect(results[0]!.success).toBe(true);
       expect(evtPort.created).toHaveLength(1);
-      expect(evtPort.created[0].lbId).toBe('lb-1');
+      expect(evtPort.created[0]!.lbId).toBe('lb-1');
     });
 
     test('add 策略：已有同名事件时跳过', () => {
@@ -619,7 +619,7 @@ describe('story-importer (F16.2)', () => {
       });
       const story = makeStory();
       const results = importEvents(story, 'lb-1', evtPort, 'add');
-      expect(results[0].success).toBe(false);
+      expect(results[0]!.success).toBe(false);
     });
 
     test('overwrite 策略：更新已有事件', () => {
@@ -641,7 +641,7 @@ describe('story-importer (F16.2)', () => {
       });
       const story = makeStory();
       const results = importEvents(story, 'lb-1', evtPort, 'overwrite');
-      expect(results[0].success).toBe(true);
+      expect(results[0]!.success).toBe(true);
       expect(evtPort.updated).toHaveLength(1);
     });
   });

@@ -152,9 +152,9 @@ describe('配置持久化与 compressMessages (E-04 二期)', () => {
       p,
       { entities: ['星陨之剑'] }
     );
-    expect(outcome.messages[0].content).toBe(long); // system 未动
-    expect(outcome.messages[1].content.length).toBeLessThan(long.length); // 已压缩
-    expect(outcome.messages[2].content).toBe(long); // 当前轮未动
+    expect(outcome.messages[0]!.content).toBe(long); // system 未动
+    expect(outcome.messages[1]!.content.length).toBeLessThan(long.length); // 已压缩
+    expect(outcome.messages[2]!.content).toBe(long); // 当前轮未动
     expect(outcome.compressedCount).toBe(1);
     expect(MIN_COMPRESS_LENGTH).toBeGreaterThan(0);
   });
@@ -164,6 +164,6 @@ describe('配置持久化与 compressMessages (E-04 二期)', () => {
     const msg = [{ role: 'user', content: 'x'.repeat(500) }];
     const outcome = compressMessages(msg, p);
     expect(outcome.compressedCount).toBe(0);
-    expect(outcome.messages[0].content).toBe('x'.repeat(500));
+    expect(outcome.messages[0]!.content).toBe('x'.repeat(500));
   });
 });

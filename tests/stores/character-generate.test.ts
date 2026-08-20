@@ -104,8 +104,8 @@ describe('角色随机生成 store action (F01.7)', () => {
     const generated = store.characters.find((c) => c.id === id);
 
     expect(generated!.messages).toHaveLength(1);
-    expect(generated!.messages[0].role).toBe('assistant');
-    expect(generated!.messages[0].content).toContain('你醒了');
+    expect(generated!.messages[0]!.role).toBe('assistant');
+    expect(generated!.messages[0]!.content).toContain('你醒了');
   });
 
   it('生成中 isGeneratingCharacter 为 true，完成后为 false', async () => {
@@ -133,7 +133,7 @@ describe('角色随机生成 store action (F01.7)', () => {
     await store.generateRandomCharacter('scifi');
 
     expect(mockChat).toHaveBeenCalledTimes(1);
-    const request = mockChat.mock.calls[0][0];
+    const request = mockChat.mock.calls[0]![0];
     expect(request.temperature).toBe(1.0);
     expect(request.maxTokens).toBe(1500);
     expect(request.model).toBe('gpt-4o');

@@ -194,7 +194,7 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
 
       expect(id).not.toBeNull();
       expect(store.documents).toHaveLength(1);
-      const doc = store.documents[0];
+      const doc = store.documents[0]!;
       expect(doc.id).toBe(id);
       expect(doc.name).toBe('story.txt');
       expect(doc.scope).toBe('global');
@@ -203,7 +203,7 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
       expect(store.lastInfo).toContain('已上传文档');
       // 持久化被调用
       expect(mock.saveCalls).toHaveLength(1);
-      expect(mock.saveCalls[0].id).toBe(id);
+      expect(mock.saveCalls[0]!.id).toBe(id);
     });
 
     it('成功创建 MD 文档', async () => {
@@ -215,7 +215,7 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
       const id = await store.createDocumentFromFile(file, 'global');
 
       expect(id).not.toBeNull();
-      expect(store.documents[0].name).toBe('note.md');
+      expect(store.documents[0]!.name).toBe('note.md');
     });
 
     it('创建 character 作用域文档并绑定 characterId', async () => {
@@ -226,7 +226,7 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
       const id = await store.createDocumentFromFile(file, 'character', 'char-001');
 
       expect(id).not.toBeNull();
-      const doc = store.documents[0];
+      const doc = store.documents[0]!;
       expect(doc.scope).toBe('character');
       expect(doc.characterId).toBe('char-001');
     });
@@ -239,7 +239,7 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
       const id = await store.createDocumentFromFile(file, 'chat', undefined, 'chat-002');
 
       expect(id).not.toBeNull();
-      const doc = store.documents[0];
+      const doc = store.documents[0]!;
       expect(doc.scope).toBe('chat');
       expect(doc.chatId).toBe('chat-002');
     });
@@ -404,7 +404,7 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
 
       const result = store.retrieveForChat(['勇者的冒险故事'], 'global');
       expect(result.length).toBeGreaterThan(0);
-      expect(result[0].chunk.content).toContain('勇者');
+      expect(result[0]!.chunk.content).toContain('勇者');
     });
 
     it('retrieveAndBuildContext 返回注入文本', () => {

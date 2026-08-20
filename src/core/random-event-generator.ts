@@ -739,10 +739,10 @@ export function selectTemplateByWeight(
   candidates: RandomEventTemplate[]
 ): RandomEventTemplate | null {
   if (candidates.length === 0) return null;
-  if (candidates.length === 1) return candidates[0];
+  if (candidates.length === 1) return candidates[0]!;
 
   const totalWeight = candidates.reduce((sum, c) => sum + Math.max(0, c.weight), 0);
-  if (totalWeight <= 0) return candidates[0];
+  if (totalWeight <= 0) return candidates[0]!;
 
   let roll = Math.random() * totalWeight;
   for (const c of candidates) {
@@ -750,7 +750,7 @@ export function selectTemplateByWeight(
     if (roll <= 0) return c;
   }
 
-  return candidates[candidates.length - 1];
+  return candidates[candidates.length - 1]!;
 }
 
 // ── 模板感知的 Prompt 构建 ──

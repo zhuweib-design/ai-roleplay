@@ -120,8 +120,8 @@ function onKeydown(e: KeyboardEvent): void {
   let next = activeIndex.value;
   for (let i = 0; i < n; i++) {
     next = (next + dir + n) % n;
-    if (!allTabs.value[next].disabled) {
-      selectTab(allTabs.value[next]);
+    if (!allTabs.value[next]!.disabled) {
+      selectTab(allTabs.value[next]!);
       // 移动焦点到激活 Tab
       const el = tablistRef.value?.querySelector<HTMLElement>(
         `[data-tab-index="${next}"]`

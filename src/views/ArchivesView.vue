@@ -120,7 +120,7 @@ function memberInitial(name: string): string {
 /** 获取群聊的最后一条消息预览 */
 function lastMessagePreview(g: GroupChat): string {
   if (g.messages.length === 0) return t('archives.noMessages');
-  const last = g.messages[g.messages.length - 1];
+  const last = g.messages[g.messages.length - 1]!;
   const prefix = last.role === 'user' ? t('archives.me') : last.characterName ? `${last.characterName}：` : '';
   const content = last.content.length > 50 ? last.content.slice(0, 50) + '...' : last.content;
   return prefix + content;

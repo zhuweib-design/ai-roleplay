@@ -317,7 +317,7 @@ describe('backup-service — F13 单元测试', () => {
 
       expect(result.characters.overwritten).toBe(1);
       expect(result.characters.added).toBe(0);
-      expect(adapter.characters[0].name).toBe('NewName');
+      expect(adapter.characters[0]!.name).toBe('NewName');
     });
   });
 
@@ -333,7 +333,7 @@ describe('backup-service — F13 单元测试', () => {
       });
 
       expect(result.characters.skipped).toBe(1);
-      expect(adapter.characters[0].name).toBe('OldName'); // 保留原数据
+      expect(adapter.characters[0]!.name).toBe('OldName'); // 保留原数据
     });
   });
 

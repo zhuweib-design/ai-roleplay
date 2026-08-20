@@ -3,6 +3,7 @@ node_modules/
 
 # Build outputs
 dist/
+dist.bak/
 dist-electron/
 dist-i18n-check/
 dist-p13-check/
@@ -16,6 +17,7 @@ src-tauri/gen/schemas/
 
 # Test artifacts
 test-results/
+test-results.bak/
 test-results-*/
 e2e-results-*/
 playwright-report/
@@ -37,6 +39,9 @@ model/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Dev documentation screenshots (not needed to build/run)
+ui-shots/
 
 # OS / editor
 .DS_Store

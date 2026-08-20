@@ -130,7 +130,7 @@ export const useCharacterStore = defineStore('character', () => {
           return ui;
         });
         if (characters.value.length > 0 && !characters.value.find((c) => c.id === currentCharacterId.value)) {
-          currentCharacterId.value = characters.value[0].id;
+          currentCharacterId.value = characters.value[0]!.id;
         }
       } else {
         // 首次启动：将 mock 数据写入存储

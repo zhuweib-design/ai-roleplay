@@ -189,7 +189,7 @@ function triggerFileInput() {
 async function handleFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
-  const file = input.files[0];
+  const file = input.files[0]!;
   const id = await characterStore.importV2File(file);
   if (id) {
     showToast('success', t('characters.imported', { name: characterStore.characters.find((c) => c.id === id)?.name ?? '' }));
@@ -202,7 +202,7 @@ async function handleDrop(e: DragEvent) {
   e.preventDefault();
   isDragging.value = false;
   if (!e.dataTransfer || e.dataTransfer.files.length === 0) return;
-  const file = e.dataTransfer.files[0];
+  const file = e.dataTransfer.files[0]!;
   if (!file.name.endsWith('.json') && file.type !== 'application/json') {
     showToast('error', t('characters.dropJsonOnly'));
     return;

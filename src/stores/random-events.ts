@@ -104,8 +104,8 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
       lastError.value = errors.join('；');
       return false;
     }
-    templates.value[idx] = updateRandomEventTemplate(templates.value[idx], patch);
-    lastInfo.value = t('re.tplUpdated', { name: templates.value[idx].name });
+    templates.value[idx] = updateRandomEventTemplate(templates.value[idx]!, patch);
+    lastInfo.value = t('re.tplUpdated', { name: templates.value[idx]!.name });
     return true;
   }
 
@@ -115,7 +115,7 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
   function deleteTemplate(id: string): boolean {
     const idx = templates.value.findIndex((t) => t.id === id);
     if (idx < 0) return false;
-    const removed = templates.value.splice(idx, 1)[0];
+    const removed = templates.value.splice(idx, 1)[0]!;
     lastInfo.value = t('re.tplDeleted', { name: removed.name });
     return true;
   }
@@ -290,11 +290,11 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
       lastError.value = t('re.resultNotFound');
       return false;
     }
-    results.value[idx] = applyFeedbackToResult(results.value[idx], feedback, note);
+    results.value[idx] = applyFeedbackToResult(results.value[idx]!, feedback, note);
 
     // 若关联模板，根据反馈调整模板概率
-    if (results.value[idx].templateId) {
-      const tpl = templates.value.find((t) => t.id === results.value[idx].templateId);
+    if (results.value[idx]!.templateId) {
+      const tpl = templates.value.find((t) => t.id === results.value[idx]!.templateId);
       if (tpl) {
         const newProb = adjustProbabilityByFeedback(
           tpl,

@@ -68,13 +68,13 @@ function openNewConversation() {
 
         <!-- 历史对话列表（仅展示；多会话切换 PRD 无要求，未实现） -->
         <div
-          v-if="characterStore.currentCharacter.conversations.length"
+          v-if="characterStore.currentCharacter?.conversations.length"
           class="conv-list"
           role="list"
           :aria-label="t('charList.convHistory')"
         >
           <div
-            v-for="conv in characterStore.currentCharacter.conversations"
+            v-for="conv in characterStore.currentCharacter?.conversations"
             :key="conv.id"
             class="conv-row"
             role="listitem"

@@ -483,7 +483,7 @@ describe('character-version store', () => {
       expect(store.headVersion!.snapshot.name).toBe('dev-v1');
 
       // 回滚到 main-v3（合并前的 main HEAD）
-      const mainV3 = store.history[1]; // history[0]=合并提交, history[1]=main-v3
+      const mainV3 = store.history[1]!; // history[0]=合并提交, history[1]=main-v3
       expect(mainV3).toBeDefined();
       store.rollbackTo(mainV3.id, '回滚到合并前');
       expect(store.headVersion!.snapshot.name).toBe('main-v3');

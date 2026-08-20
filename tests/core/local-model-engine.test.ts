@@ -31,14 +31,14 @@ describe('模型注册表', () => {
 
     it('返回的是副本（不影响原数组）', () => {
       const models = listRegisteredModels();
-      models.push(models[0]);
+      models.push(models[0]!);
       expect(listRegisteredModels().length).toBe(MODEL_REGISTRY.length);
     });
   });
 
   describe('findModel', () => {
     it('按 ID 查找存在的模型', () => {
-      const first = MODEL_REGISTRY[0];
+      const first = MODEL_REGISTRY[0]!;
       const found = findModel(first.id);
       expect(found).not.toBeNull();
       expect(found?.id).toBe(first.id);
@@ -86,7 +86,7 @@ describe('模型注册表', () => {
 
 describe('checkModelUpdate', () => {
   it('存在模型返回版本信息', () => {
-    const first = MODEL_REGISTRY[0];
+    const first = MODEL_REGISTRY[0]!;
     const update = checkModelUpdate(first.id);
     expect(update.currentVersion).toBe(first.version);
     expect(update.latestVersion).toBe(first.version);
@@ -211,7 +211,7 @@ describe('模型元数据完整性', () => {
 // ── P2-3 补完：WebLLM 成功路径（mock 模块，无需 GPU）──
 
 describe('LocalModelEngine 加载与推理成功路径（P2-3）', () => {
-  const MODEL_ID = MODEL_REGISTRY[0].id;
+  const MODEL_ID = MODEL_REGISTRY[0]!.id;
 
   /** 构造 mock WebLLM 引擎：chat.completion.create 返回可控 async iterable */
   function makeMockWebLLM(deltas: string[]) {
@@ -254,7 +254,7 @@ describe('LocalModelEngine 加载与推理成功路径（P2-3）', () => {
     expect(engine.isLoaded).toBe(true);
     expect(engine.currentModelId).toBe(MODEL_ID);
     expect(progress.length).toBeGreaterThan(0);
-    expect(progress[progress.length - 1]).toBe(1);
+    expect(progress[progress.length - 1]!).toBe(1);
   });
 
   it('infer 流式拼接内容并记录指标', async () => {
@@ -276,8 +276,8 @@ describe('LocalModelEngine 加载与推理成功路径（P2-3）', () => {
     expect(deltas).toEqual(['你', '好', '！']);
     const metrics = engine.getMetricsHistory();
     expect(metrics.length).toBeGreaterThan(0);
-    expect(metrics[metrics.length - 1].outputTokens).toBe(3);
-    expect(metrics[metrics.length - 1].totalMs).toBeGreaterThanOrEqual(0);
+    expect(metrics[metrics.length - 1]!.outputTokens).toBe(3);
+    expect(metrics[metrics.length - 1]!.totalMs).toBeGreaterThanOrEqual(0);
   });
 
   it('infer 未加载模型时抛错（回归保护）', async () => {

@@ -495,7 +495,7 @@ describe('selectCandidateTemplates', () => {
     ];
     const result = selectCandidateTemplates(templates, '森林', null, [], now);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('1');
+    expect(result[0]!.id).toBe('1');
   });
 
   test('排除场景不适配', () => {
@@ -513,7 +513,7 @@ describe('selectCandidateTemplates', () => {
     ];
     const result = selectCandidateTemplates(templates, '森林', null, [], now);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('1');
+    expect(result[0]!.id).toBe('1');
   });
 
   test('场景排除类别过滤', () => {
@@ -524,7 +524,7 @@ describe('selectCandidateTemplates', () => {
     const scene = makeSceneConfig({ excludedCategories: ['combat'] });
     const result = selectCandidateTemplates(templates, '森林', scene, [], now);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('2');
+    expect(result[0]!.id).toBe('2');
   });
 
   test('场景 allowedCategories 非空时仅允许指定类别', () => {
@@ -547,7 +547,7 @@ describe('selectCandidateTemplates', () => {
     const scene = makeSceneConfig({ maxSeverity: 'moderate' });
     const result = selectCandidateTemplates(templates, '森林', scene, [], now);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('1');
+    expect(result[0]!.id).toBe('1');
   });
 
   test('触发关键词未匹配被过滤', () => {
@@ -558,7 +558,7 @@ describe('selectCandidateTemplates', () => {
     // 消息不包含 "魔法"
     const result = selectCandidateTemplates(templates, '森林', null, ['下雨了'], now);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('2');
+    expect(result[0]!.id).toBe('2');
   });
 
   test('触发关键词匹配通过', () => {
@@ -580,7 +580,7 @@ describe('selectCandidateTemplates', () => {
     ];
     const result = selectCandidateTemplates(templates, '森林', null, [], now);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('2');
+    expect(result[0]!.id).toBe('2');
   });
 
   test('达到最大触发次数被过滤', () => {
@@ -614,7 +614,7 @@ describe('selectCandidateTemplates', () => {
     const scene = makeSceneConfig({ maxSeverity: 'moderate', allowedCategories: ['encounter'] });
     const result = selectCandidateTemplates(templates, '森林', scene, ['他走进来'], now);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('d');
+    expect(result[0]!.id).toBe('d');
   });
 });
 
@@ -678,8 +678,8 @@ describe('buildTemplateAwareMessages', () => {
       null
     );
     expect(messages).toHaveLength(2);
-    expect(messages[0].role).toBe('system');
-    expect(messages[1].role).toBe('user');
+    expect(messages[0]!.role).toBe('system');
+    expect(messages[1]!.role).toBe('user');
   });
 
   test('有模板时包含模板名与描述', () => {
@@ -696,11 +696,11 @@ describe('buildTemplateAwareMessages', () => {
       },
       tpl
     );
-    expect(messages[0].content).toContain('事件生成器');
-    expect(messages[1].content).toContain('神秘访客模板');
-    expect(messages[1].content).toContain('披斗篷的访客出现');
-    expect(messages[1].content).toContain('偶遇 NPC');
-    expect(messages[1].content).toContain('中等');
+    expect(messages[0]!.content).toContain('事件生成器');
+    expect(messages[1]!.content).toContain('神秘访客模板');
+    expect(messages[1]!.content).toContain('披斗篷的访客出现');
+    expect(messages[1]!.content).toContain('偶遇 NPC');
+    expect(messages[1]!.content).toContain('中等');
   });
 
   test('包含 JSON 返回要求', () => {
@@ -709,7 +709,7 @@ describe('buildTemplateAwareMessages', () => {
       { sceneName: '酒馆', recentMessages: [] },
       tpl
     );
-    expect(messages[1].content).toMatch(/JSON/);
+    expect(messages[1]!.content).toMatch(/JSON/);
   });
 });
 

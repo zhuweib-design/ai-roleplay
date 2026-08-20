@@ -116,8 +116,8 @@ describe('RAG 关键词检索器 (F09.2)', () => {
       ]);
       const results = retrieveChunks([doc], ['魔法'], 3);
       expect(results).toHaveLength(3);
-      expect(results[0].score).toBeGreaterThanOrEqual(results[1].score);
-      expect(results[1].score).toBeGreaterThanOrEqual(results[2].score);
+      expect(results[0]!.score).toBeGreaterThanOrEqual(results[1]!.score);
+      expect(results[1]!.score).toBeGreaterThanOrEqual(results[2]!.score);
     });
 
     test('限制最大结果数', () => {
@@ -135,9 +135,9 @@ describe('RAG 关键词检索器 (F09.2)', () => {
     test('matchedKeywords 包含命中的关键词', () => {
       const doc = makeDocument('d1', '文档', ['魔法与剑']);
       const results = retrieveChunks([doc], ['魔法', '剑', '盾']);
-      expect(results[0].matchedKeywords).toContain('魔法');
-      expect(results[0].matchedKeywords).toContain('剑');
-      expect(results[0].matchedKeywords).not.toContain('盾');
+      expect(results[0]!.matchedKeywords).toContain('魔法');
+      expect(results[0]!.matchedKeywords).toContain('剑');
+      expect(results[0]!.matchedKeywords).not.toContain('盾');
     });
 
     test('多个文档混合检索', () => {
@@ -153,10 +153,10 @@ describe('RAG 关键词检索器 (F09.2)', () => {
     test('结果包含文档元数据', () => {
       const doc = makeDocument('d1', '测试文档', ['匹配内容']);
       const results = retrieveChunks([doc], ['匹配']);
-      expect(results[0].documentId).toBe('d1');
-      expect(results[0].documentName).toBe('测试文档');
-      expect(results[0].chunk).toBeDefined();
-      expect(results[0].score).toBeGreaterThan(0);
+      expect(results[0]!.documentId).toBe('d1');
+      expect(results[0]!.documentName).toBe('测试文档');
+      expect(results[0]!.chunk).toBeDefined();
+      expect(results[0]!.score).toBeGreaterThan(0);
     });
   });
 
@@ -171,7 +171,7 @@ describe('RAG 关键词检索器 (F09.2)', () => {
         ['我想学习火球术魔法']
       );
       expect(results.length).toBeGreaterThan(0);
-      expect(results[0].chunk.content).toContain('火球术');
+      expect(results[0]!.chunk.content).toContain('火球术');
     });
 
     test('无文档时返回空', () => {
@@ -228,7 +228,7 @@ describe('RAG 关键词检索器 (F09.2)', () => {
       const third = retrieveRelevantChunks([updated], messages);
       expect(third).not.toBe(first);
       // 新文档内容可被检索到
-      expect(third[0].chunk.content).toContain('修订版');
+      expect(third[0]!.chunk.content).toContain('修订版');
     });
   });
 

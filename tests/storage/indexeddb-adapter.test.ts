@@ -191,7 +191,7 @@ describe('IndexedDBAdapter — 对话 CRUD', () => {
     expect(loaded!.id).toBe('chat-1');
     expect(loaded!.characterId).toBe('char-1');
     expect(loaded!.messages).toHaveLength(1);
-    expect(loaded!.messages[0].content).toBe('你好');
+    expect(loaded!.messages[0]!.content).toBe('你好');
   });
 
   test('loadChat() 不存在时返回 null', async () => {
@@ -330,7 +330,7 @@ describe('IndexedDBAdapter — 数据完整性', () => {
     await adapter.saveChat(chat);
 
     const loaded = await adapter.loadChat(chat.id);
-    expect(loaded!.messages[0].swipes).toEqual(['回复1', '回复2', '回复3']);
-    expect(loaded!.messages[0].swipeIndex).toBe(1);
+    expect(loaded!.messages[0]!.swipes).toEqual(['回复1', '回复2', '回复3']);
+    expect(loaded!.messages[0]!.swipeIndex).toBe(1);
   });
 });

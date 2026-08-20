@@ -29,7 +29,7 @@ function makeCtx(overrides: Partial<SlashCommandContext> = {}): SlashCommandCont
 function mockRandom(values: number[]) {
   let idx = 0;
   vi.spyOn(Math, 'random').mockImplementation(() => {
-    const v = values[idx % values.length];
+    const v = values[idx % values.length]!;
     idx++;
     return v;
   });
@@ -71,16 +71,16 @@ describe('parsePipeline', () => {
   test('单条命令无管道', () => {
     const result = parsePipeline('/roll 1d20');
     expect(result.commands).toHaveLength(1);
-    expect(result.commands[0].name).toBe('roll');
-    expect(result.commands[0].args).toEqual(['1d20']);
+    expect(result.commands[0]!.name).toBe('roll');
+    expect(result.commands[0]!.args).toEqual(['1d20']);
     expect(result.blockPipeAfter).toEqual([false]);
   });
 
   test('两条命令用 | 分隔', () => {
     const result = parsePipeline('/roll 1d20 | /echo {{pipe}}');
     expect(result.commands).toHaveLength(2);
-    expect(result.commands[0].name).toBe('roll');
-    expect(result.commands[1].name).toBe('echo');
+    expect(result.commands[0]!.name).toBe('roll');
+    expect(result.commands[1]!.name).toBe('echo');
     expect(result.blockPipeAfter).toEqual([false, false]);
   });
 
@@ -99,44 +99,44 @@ describe('parsePipeline', () => {
   test('引号内的 | 不作为分隔符', () => {
     const result = parsePipeline('/echo "a | b" | /echo next');
     expect(result.commands).toHaveLength(2);
-    expect(result.commands[0].name).toBe('echo');
-    expect(result.commands[1].name).toBe('echo');
+    expect(result.commands[0]!.name).toBe('echo');
+    expect(result.commands[1]!.name).toBe('echo');
   });
 
   test('单引号内的 | 不作为分隔符', () => {
     const result = parsePipeline("/echo 'x | y' | /echo next");
     expect(result.commands).toHaveLength(2);
-    expect(result.commands[1].name).toBe('echo');
+    expect(result.commands[1]!.name).toBe('echo');
   });
 
   test('空段被过滤', () => {
     const result = parsePipeline('/roll | | /echo hi');
     expect(result.commands).toHaveLength(2);
-    expect(result.commands[0].name).toBe('roll');
-    expect(result.commands[1].name).toBe('echo');
+    expect(result.commands[0]!.name).toBe('roll');
+    expect(result.commands[1]!.name).toBe('echo');
   });
 
   test('首尾空格被 trim', () => {
     const result = parsePipeline('  /echo hello  ');
     expect(result.commands).toHaveLength(1);
-    expect(result.commands[0].name).toBe('echo');
-    expect(result.commands[0].args).toEqual(['hello']);
+    expect(result.commands[0]!.name).toBe('echo');
+    expect(result.commands[0]!.args).toEqual(['hello']);
   });
 
   test('末尾 | 后无命令时不过滤已有命令', () => {
     const result = parsePipeline('/echo hi |');
     expect(result.commands).toHaveLength(1);
-    expect(result.commands[0].name).toBe('echo');
+    expect(result.commands[0]!.name).toBe('echo');
   });
 
   test('命令名转小写', () => {
     const result = parsePipeline('/ROLL 1d20');
-    expect(result.commands[0].name).toBe('roll');
+    expect(result.commands[0]!.name).toBe('roll');
   });
 
   test('混合大小写命令名转小写', () => {
     const result = parsePipeline('/RoLl 1d6');
-    expect(result.commands[0].name).toBe('roll');
+    expect(result.commands[0]!.name).toBe('roll');
   });
 });
 
@@ -1038,8 +1038,8 @@ describe('内置命令 /event', () => {
     expect(result.success).toBe(true);
     expect(result.message).toContain('黎明追击');
     // 验证状态已变更
-    expect(evCtx.events[0].state).toBe('active');
-    expect(evCtx.events[0].triggerCount).toBe(1);
+    expect(evCtx.events[0]!.state).toBe('active');
+    expect(evCtx.events[0]!.triggerCount).toBe(1);
   });
 
   test('trigger 按名称触发事件', () => {
@@ -1076,7 +1076,7 @@ describe('内置命令 /event', () => {
     const result = getBuiltinCommands().find((c) => c.name === 'event')!.execute(['complete', 'evt-2'], '', ctx);
     expect(result.success).toBe(true);
     expect(result.message).toContain('黄昏密会');
-    expect(evCtx.events[1].state).toBe('completed');
+    expect(evCtx.events[1]!.state).toBe('completed');
   });
 
   test('complete 非 active 事件返回失败', () => {

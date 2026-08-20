@@ -130,7 +130,7 @@ export class VectorRagRuntime {
     try {
       const installed = await this.adapter.listInstalled();
       if (installed.includes(preferred)) return await this.getLocalProvider(preferred);
-      if (installed.length > 0) return await this.getLocalProvider(installed[0]);
+      if (installed.length > 0) return await this.getLocalProvider(installed[0]!);
     } catch {
       /* 无本地模型,走 manager */
     }

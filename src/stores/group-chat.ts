@@ -78,7 +78,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
       const list = await storageAdapter.loadGroupChats();
       groups.value = list;
       if (list.length > 0 && !currentGroupId.value) {
-        currentGroupId.value = list[0].id;
+        currentGroupId.value = list[0]!.id;
       }
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityGroup'), error: err instanceof Error ? err.message : String(err) });
@@ -238,11 +238,11 @@ export const useGroupChatStore = defineStore('groupChat', () => {
         }
       });
       if (candidates.length > 0) {
-        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+        const pick = candidates[Math.floor(Math.random() * candidates.length)]!;
         firstMessage = pick.text;
       } else if (members.length > 0) {
         // 兜底：使用第一个成员的 firstMessage
-        const card = characters.find((c) => c.id === members[0].characterId);
+        const card = characters.find((c) => c.id === members[0]!.characterId);
         firstMessage = card?.firstMessage ?? '';
       }
     }
@@ -303,7 +303,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
   function deleteGroup(id: string): void {
     const idx = groups.value.findIndex((g) => g.id === id);
     if (idx < 0) return;
-    const removed = groups.value.splice(idx, 1)[0];
+    const removed = groups.value.splice(idx, 1)[0]!;
     void deleteFromStorage(id);
     lastInfo.value = t('group.deleted', { name: removed.name });
     if (currentGroupId.value === id) {
@@ -387,7 +387,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     const idx = g.members.findIndex((m) => m.characterId === characterId);
     if (idx < 0) return false;
 
-    const removed = g.members.splice(idx, 1)[0];
+    const removed = g.members.splice(idx, 1)[0]!;
     const now = new Date().toISOString();
 
     g.messages.push({
@@ -514,7 +514,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
       const all = g.members.filter((m) => m.allowAutoSelect);
       if (all.length === 0) return null;
       // 唯一选择只能是上一位发言者
-      return all[0];
+      return all[0]!;
     }
 
     // 按健谈度加权随机选择
@@ -525,10 +525,10 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     const total = weights.reduce((s, w) => s + w, 0);
     let r = Math.random() * total;
     for (let i = 0; i < candidates.length; i++) {
-      r -= weights[i];
-      if (r <= 0) return candidates[i];
+      r -= weights[i]!;
+      if (r <= 0) return candidates[i]!;
     }
-    return candidates[candidates.length - 1];
+    return candidates[candidates.length - 1]!;
   }
 
   /**
@@ -617,7 +617,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
 
     // 从末尾向前找最近的 assistant 消息
     for (let i = g.messages.length - 1; i >= 0; i--) {
-      const msg = g.messages[i];
+      const msg = g.messages[i]!;
       if (msg.role === 'assistant' && msg.characterId) {
         msg.content = content;
         void persistGroup(groupId);

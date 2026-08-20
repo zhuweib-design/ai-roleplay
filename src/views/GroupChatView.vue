@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * GroupChatView — 群聊管理页 (W5 · F10.1-F10.2)
  *
@@ -211,7 +211,7 @@ function confirmDeleteGroup() {
 async function handleStImport(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
-  const file = input.files[0];
+  const file = input.files[0]!;
   input.value = '';
   const knownIds = characterStore.characters.map((c) => c.id);
   const id = await groupStore.importGroupFromStFile(file, knownIds);

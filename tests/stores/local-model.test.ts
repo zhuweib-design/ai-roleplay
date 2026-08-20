@@ -67,13 +67,13 @@ describe('local-model store (模块2)', () => {
       expect(store.models).toEqual([]);
 
       // 注入一个已下载状态后，models 应仅含该模型且带 status
-      const firstId = listRegisteredModels()[0].id;
+      const firstId = listRegisteredModels()[0]!.id;
       // Pinia setup store 解包 ref：store.modelStatuses 已是 Map 本身（无 .value）
       store.modelStatuses.set(firstId, 'ready');
       expect(store.models.length).toBe(1);
       expect(store.models[0]).toHaveProperty('status');
-      expect(store.models[0].status).toBe('ready');
-      expect(store.models[0].id).toBe(firstId);
+      expect(store.models[0]!.status).toBe('ready');
+      expect(store.models[0]!.id).toBe(firstId);
     });
 
     it('loadedModel 在未加载时为 null', () => {

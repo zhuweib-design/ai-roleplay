@@ -183,16 +183,16 @@ describe('角色卡查询与筛选', () => {
     engine.publishCard(makeCard({ name: 'Seraphina' }), userId);
     engine.publishCard(makeCard({ name: 'Kael', id: 'card2' }), userId);
     engine.setModerationStatus(
-      Array.from(engine.listCards({ approvedOnly: false }).map((c) => c.marketId))[0],
+      Array.from(engine.listCards({ approvedOnly: false }).map((c) => c.marketId))[0]!,
       'approved'
     );
     engine.setModerationStatus(
-      Array.from(engine.listCards({ approvedOnly: false }).map((c) => c.marketId))[1],
+      Array.from(engine.listCards({ approvedOnly: false }).map((c) => c.marketId))[1]!,
       'approved'
     );
     const results = engine.listCards({ search: 'Sera' });
     expect(results).toHaveLength(1);
-    expect(results[0].card.name).toBe('Seraphina');
+    expect(results[0]!.card.name).toBe('Seraphina');
   });
 
   test('搜索关键词匹配描述', () => {
@@ -202,7 +202,7 @@ describe('角色卡查询与筛选', () => {
       userId
     );
     engine.setModerationStatus(
-      Array.from(engine.listCards({ approvedOnly: false }))[0].marketId,
+      Array.from(engine.listCards({ approvedOnly: false }))[0]!.marketId,
       'approved'
     );
     const results = engine.listCards({ search: '精灵' });
@@ -224,7 +224,7 @@ describe('角色卡查询与筛选', () => {
     }
     const results = engine.listCards({ tags: ['奇幻'] });
     expect(results).toHaveLength(1);
-    expect(results[0].card.name).toBe('A');
+    expect(results[0]!.card.name).toBe('A');
   });
 
   test('分类筛选', () => {
@@ -236,7 +236,7 @@ describe('角色卡查询与筛选', () => {
     }
     const results = engine.listCards({ categories: ['奇幻'] });
     expect(results).toHaveLength(1);
-    expect(results[0].card.name).toBe('A');
+    expect(results[0]!.card.name).toBe('A');
   });
 
   test('最低评分筛选', () => {
@@ -251,7 +251,7 @@ describe('角色卡查询与筛选', () => {
     engine.addReview(id2, userId, 2, '差评');
     const results = engine.listCards({ minRating: 4 });
     expect(results).toHaveLength(1);
-    expect(results[0].card.name).toBe('High');
+    expect(results[0]!.card.name).toBe('High');
   });
 
   test('仅精选筛选', () => {
@@ -263,7 +263,7 @@ describe('角色卡查询与筛选', () => {
     engine.setFeatured(id1, true);
     const results = engine.listCards({ featuredOnly: true });
     expect(results).toHaveLength(1);
-    expect(results[0].card.name).toBe('Featured');
+    expect(results[0]!.card.name).toBe('Featured');
   });
 
   test('作者筛选', () => {
@@ -277,7 +277,7 @@ describe('角色卡查询与筛选', () => {
     }
     const results = engine.listCards({ authorId: user1.id });
     expect(results).toHaveLength(1);
-    expect(results[0].card.name).toBe('AliceCard');
+    expect(results[0]!.card.name).toBe('AliceCard');
   });
 });
 
@@ -296,7 +296,7 @@ describe('排序', () => {
       engine.downloadCard(id1, user.id);
     }
     const results = engine.listCards({}, 'popular');
-    expect(results[0].card.name).toBe('Popular');
+    expect(results[0]!.card.name).toBe('Popular');
   });
 
   test('按评分排序', () => {
@@ -309,7 +309,7 @@ describe('排序', () => {
     engine.addReview(id1, user.id, 5, '好');
     engine.addReview(id2, user.id, 2, '差');
     const results = engine.listCards({}, 'rating');
-    expect(results[0].card.name).toBe('High');
+    expect(results[0]!.card.name).toBe('High');
   });
 
   test('按名称排序', () => {
@@ -321,8 +321,8 @@ describe('排序', () => {
       engine.setModerationStatus(c.marketId, 'approved');
     }
     const results = engine.listCards({}, 'alphabetical');
-    expect(results[0].card.name).toBe('Apple');
-    expect(results[1].card.name).toBe('Zebra');
+    expect(results[0]!.card.name).toBe('Apple');
+    expect(results[1]!.card.name).toBe('Zebra');
   });
 });
 
@@ -439,7 +439,7 @@ describe('评论与评分', () => {
     const reviews = engine.getReviews(marketId);
     expect(reviews).toHaveLength(2);
     // 最新在前
-    expect(reviews[0].comment).toBe('第二条');
+    expect(reviews[0]!.comment).toBe('第二条');
   });
 
   test('likeReview 增加点赞数', () => {
@@ -447,7 +447,7 @@ describe('评论与评分', () => {
     const marketId = engine.publishCard(makeCard(), userId);
     const review = engine.addReview(marketId, userId, 5, '好');
     engine.likeReview(review.id);
-    expect(engine.getReviews(marketId)[0].likes).toBe(1);
+    expect(engine.getReviews(marketId)[0]!.likes).toBe(1);
   });
 });
 
@@ -478,7 +478,7 @@ describe('举报', () => {
     const marketId = engine.publishCard(makeCard(), userId);
     const report = engine.reportCard(marketId, userId, 'spam', '举报');
     engine.resolveReport(report.id, 'resolved', '已处理');
-    const updated = engine.getReports()[0];
+    const updated = engine.getReports()[0]!;
     expect(updated.status).toBe('resolved');
     expect(updated.resolution).toBe('已处理');
   });
@@ -496,7 +496,7 @@ describe('推荐算法', () => {
     });
     expect(recs.length).toBeLessThanOrEqual(3);
     for (let i = 1; i < recs.length; i++) {
-      expect(recs[i].score).toBeLessThanOrEqual(recs[i - 1].score);
+      expect(recs[i]!.score).toBeLessThanOrEqual(recs[i - 1]!.score);
     }
   });
 
@@ -504,7 +504,7 @@ describe('推荐算法', () => {
     const engine = createMockEngine();
     const user = engine.login('RecoUser');
     const allCards = engine.listCards({ approvedOnly: false });
-    const firstCardId = allCards[0].marketId;
+    const firstCardId = allCards[0]!.marketId;
     engine.downloadCard(firstCardId, user.id);
     const recs = engine.getRecommendations({
       excludeIds: [firstCardId],
@@ -518,7 +518,7 @@ describe('推荐算法', () => {
     engine.login('RecoUser');
     const recs = engine.getRecommendations({ limit: 1 });
     if (recs.length > 0) {
-      const r = recs[0].reasons;
+      const r = recs[0]!.reasons;
       expect(r.tagMatch).toBeGreaterThanOrEqual(0);
       expect(r.tagMatch).toBeLessThanOrEqual(1);
       expect(r.rating).toBeGreaterThanOrEqual(0);
@@ -583,11 +583,11 @@ describe('统计信息', () => {
     engine.publishCard(makeCard({ name: 'Card1' }), user.id);
     engine.publishCard(makeCard({ name: 'Card2', id: 'c2' }), user.id);
     engine.setModerationStatus(
-      engine.listCards({ approvedOnly: false })[0].marketId,
+      engine.listCards({ approvedOnly: false })[0]!.marketId,
       'approved'
     );
     engine.downloadCard(
-      engine.listCards({ approvedOnly: false })[0].marketId,
+      engine.listCards({ approvedOnly: false })[0]!.marketId,
       user.id
     );
 
@@ -632,7 +632,7 @@ describe('序列化', () => {
 
     // 加载后旧数据被清空，只剩 JSON 中的 'Old' 用户
     expect(engine2.listUsers()).toHaveLength(1);
-    expect(engine2.listUsers()[0].name).toBe('Old');
+    expect(engine2.listUsers()[0]!.name).toBe('Old');
   });
 });
 

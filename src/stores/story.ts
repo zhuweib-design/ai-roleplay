@@ -15,6 +15,7 @@ import {
   getDepthMeta,
   createEmptyResult,
 } from '@core/story-types';
+import type { StoryTemplateId } from '@core/story-templates';
 import {
   createProtagonistFromCharacter,
   createNewProtagonist,
@@ -150,7 +151,7 @@ export const useStoryStore = defineStore('story', () => {
       const list = await storageAdapter.loadStories();
       stories.value = list;
       if (list.length > 0 && !currentStoryId.value) {
-        currentStoryId.value = list[0].id;
+        currentStoryId.value = list[0]!.id;
       }
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityStory'), error: err instanceof Error ? err.message : String(err) });
@@ -204,11 +205,13 @@ export const useStoryStore = defineStore('story', () => {
    *
    * @param file 上传的文本文件（.txt/.md）
    * @param depth 分析深度
+   * @param templateId 题材模板 ID（T-08 模板库，缺省 generic）
    * @returns 故事 ID，失败返回 null
    */
   async function createStoryFromFile(
     file: File,
-    depth: AnalysisDepth
+    depth: AnalysisDepth,
+    templateId: StoryTemplateId = 'generic'
   ): Promise<string | null> {
     lastError.value = null;
     lastInfo.value = null;
@@ -246,7 +249,7 @@ export const useStoryStore = defineStore('story', () => {
       }
 
       // 5. 创建 pending 结果
-      const story = createEmptyResult(file.name, depth, text.length, chunks.length);
+      const story = createEmptyResult(file.name, depth, text.length, chunks.length, templateId);
 
       stories.value.unshift(story);
       currentStoryId.value = story.id;
@@ -365,11 +368,12 @@ export const useStoryStore = defineStore('story', () => {
           : undefined;
 
         const messages = buildAnalysisMessages(
-          chunks[i],
+          chunks[i]!,
           story.depth,
           i,
           chunks.length,
-          previousContext
+          previousContext,
+          story.templateId
         );
 
         try {
@@ -429,7 +433,8 @@ export const useStoryStore = defineStore('story', () => {
             merged.characters,
             merged.scenes,
             merged.events,
-            merged.worldInfo
+            merged.worldInfo,
+            story.templateId
           );
           const scriptRaw = await apiClient.chat({
             messages: scriptMessages,
@@ -517,7 +522,7 @@ export const useStoryStore = defineStore('story', () => {
   async function deleteStory(id: string): Promise<void> {
     const idx = stories.value.findIndex((s) => s.id === id);
     if (idx < 0) return;
-    const removed = stories.value.splice(idx, 1)[0];
+    const removed = stories.value.splice(idx, 1)[0]!;
     await deleteFromStorage(id);
     if (currentStoryId.value === id) {
       currentStoryId.value = stories.value[0]?.id ?? null;

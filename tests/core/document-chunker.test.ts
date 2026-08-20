@@ -111,19 +111,19 @@ describe('文档分块器 (F09.1)', () => {
       const rawChunks = ['内容一', '内容二', '内容三'];
       const chunks = await buildChunks('doc-1', rawChunks);
       expect(chunks).toHaveLength(3);
-      expect(chunks[0].id).toBe('doc-1-0');
-      expect(chunks[1].id).toBe('doc-1-1');
-      expect(chunks[2].id).toBe('doc-1-2');
-      expect(chunks[0].documentId).toBe('doc-1');
-      expect(chunks[0].index).toBe(0);
-      expect(chunks[1].index).toBe(1);
+      expect(chunks[0]!.id).toBe('doc-1-0');
+      expect(chunks[1]!.id).toBe('doc-1-1');
+      expect(chunks[2]!.id).toBe('doc-1-2');
+      expect(chunks[0]!.documentId).toBe('doc-1');
+      expect(chunks[0]!.index).toBe(0);
+      expect(chunks[1]!.index).toBe(1);
     });
 
     test('包含 token 计数', async () => {
       const rawChunks = ['Hello world', '你好世界'];
       const chunks = await buildChunks('doc-1', rawChunks);
-      expect(chunks[0].tokenCount).toBeGreaterThan(0);
-      expect(chunks[1].tokenCount).toBeGreaterThan(0);
+      expect(chunks[0]!.tokenCount).toBeGreaterThan(0);
+      expect(chunks[1]!.tokenCount).toBeGreaterThan(0);
     });
 
     test('空数组返回空', async () => {
@@ -134,8 +134,8 @@ describe('文档分块器 (F09.1)', () => {
     test('content 正确映射', async () => {
       const rawChunks = ['内容 A', '内容 B'];
       const chunks = await buildChunks('doc-1', rawChunks);
-      expect(chunks[0].content).toBe('内容 A');
-      expect(chunks[1].content).toBe('内容 B');
+      expect(chunks[0]!.content).toBe('内容 A');
+      expect(chunks[1]!.content).toBe('内容 B');
     });
   });
 });

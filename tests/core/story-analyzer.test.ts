@@ -189,53 +189,80 @@ describe('story-analyzer (F16.1)', () => {
     test('返回 system + user 两条消息', () => {
       const messages = buildAnalysisMessages('文本', 'standard', 0, 3);
       expect(messages.length).toBe(2);
-      expect(messages[0].role).toBe('system');
-      expect(messages[1].role).toBe('user');
+      expect(messages[0]!.role).toBe('system');
+      expect(messages[1]!.role).toBe('user');
     });
 
     test('system 消息包含结构化分析说明', () => {
       const messages = buildAnalysisMessages('文本', 'standard', 0, 1);
-      expect(messages[0].content).toContain('结构化分析');
+      expect(messages[0]!.content).toContain('结构化分析');
     });
 
     test('user 消息包含分块索引信息', () => {
       const messages = buildAnalysisMessages('文本', 'standard', 2, 5);
-      expect(messages[1].content).toContain('第 3/5 块');
+      expect(messages[1]!.content).toContain('第 3/5 块');
     });
 
     test('user 消息包含待分析文本', () => {
       const text = '这是一段测试文本';
       const messages = buildAnalysisMessages(text, 'standard', 0, 1);
-      expect(messages[1].content).toContain(text);
+      expect(messages[1]!.content).toContain(text);
     });
 
     test('quick 模式不包含场景字段说明', () => {
       const messages = buildAnalysisMessages('文本', 'quick', 0, 1);
       // quick 模式不提取场景，但 Prompt 仍包含 worldInfo
-      expect(messages[1].content).toContain('worldInfo');
-      expect(messages[1].content).not.toContain('"scenes"');
+      expect(messages[1]!.content).toContain('worldInfo');
+      expect(messages[1]!.content).not.toContain('"scenes"');
     });
 
     test('standard 模式包含场景和事件字段', () => {
       const messages = buildAnalysisMessages('文本', 'standard', 0, 1);
-      expect(messages[1].content).toContain('"scenes"');
-      expect(messages[1].content).toContain('"events"');
+      expect(messages[1]!.content).toContain('"scenes"');
+      expect(messages[1]!.content).toContain('"events"');
     });
 
     test('deep 模式包含脚本字段', () => {
       const messages = buildAnalysisMessages('文本', 'deep', 0, 1);
-      expect(messages[1].content).toContain('"scripts"');
+      expect(messages[1]!.content).toContain('"scripts"');
     });
 
     test('包含前序内容摘要', () => {
       const ctx = '已出现人物：艾莉娅';
       const messages = buildAnalysisMessages('文本', 'standard', 1, 2, ctx);
-      expect(messages[1].content).toContain(ctx);
+      expect(messages[1]!.content).toContain(ctx);
     });
 
     test('无前序摘要时不包含摘要段落', () => {
       const messages = buildAnalysisMessages('文本', 'standard', 0, 1);
-      expect(messages[1].content).not.toContain('【前序内容摘要】');
+      expect(messages[1]!.content).not.toContain('【前序内容摘要】');
+    });
+
+    test('指定题材模板时注入该题材世界类型候选', () => {
+      const messages = buildAnalysisMessages('文本', 'standard', 0, 1, undefined, 'fantasy');
+      // 奇幻模板的世界类型候选被注入
+      expect(messages[1]!.content).toContain('剑与魔法');
+      expect(messages[1]!.content).toContain('史诗奇幻');
+    });
+
+    test('指定题材模板时 system 消息包含题材风格引导', () => {
+      const messages = buildAnalysisMessages('文本', 'standard', 0, 1, undefined, 'apocalypse');
+      expect(messages[0]!.content).toContain('当前作品题材为');
+      expect(messages[0]!.content).toContain('丧尸末日');
+    });
+
+    test('未指定模板时回退通用模板（保留默认世界类型）', () => {
+      const messages = buildAnalysisMessages('文本', 'standard', 0, 1);
+      expect(messages[1]!.content).toContain('奇幻');
+      expect(messages[1]!.content).toContain('科幻');
+    });
+
+    test('场景类型候选随题材模板变化', () => {
+      const fantasy = buildAnalysisMessages('文本', 'standard', 0, 1, undefined, 'fantasy');
+      expect(fantasy[1]!.content).toContain('地下城');
+
+      const modern = buildAnalysisMessages('文本', 'standard', 0, 1, undefined, 'modern');
+      expect(modern[1]!.content).toContain('咖啡馆');
     });
   });
 
@@ -262,7 +289,7 @@ describe('story-analyzer (F16.1)', () => {
       const result = parseChunkResult(raw, 0);
       expect(result.chunkIndex).toBe(0);
       expect(result.characters.length).toBe(1);
-      expect(result.characters[0].name).toBe('艾莉娅');
+      expect(result.characters[0]!.name).toBe('艾莉娅');
       expect(result.scenes.length).toBe(1);
       expect(result.events.length).toBe(1);
       expect(result.worldInfo?.name).toBe('艾泽兰');
@@ -273,7 +300,7 @@ describe('story-analyzer (F16.1)', () => {
       const result = parseChunkResult(raw, 1);
       expect(result.chunkIndex).toBe(1);
       expect(result.characters.length).toBe(1);
-      expect(result.characters[0].name).toBe('测试');
+      expect(result.characters[0]!.name).toBe('测试');
     });
 
     test('解析无 markdown 标记的 ``` 包裹', () => {
@@ -286,7 +313,7 @@ describe('story-analyzer (F16.1)', () => {
       const raw = '好的，以下是分析结果：\n{"characters":[{"name":"人物","description":""}],"scenes":[],"events":[]}\n以上是结果。';
       const result = parseChunkResult(raw, 0);
       expect(result.characters.length).toBe(1);
-      expect(result.characters[0].name).toBe('人物');
+      expect(result.characters[0]!.name).toBe('人物');
     });
 
     test('解析尾逗号容错', () => {
@@ -322,19 +349,19 @@ describe('story-analyzer (F16.1)', () => {
     test('人物字段缺省时使用默认值', () => {
       const raw = '{"characters":[{"name":"无名"}],"scenes":[],"events":[]}';
       const result = parseChunkResult(raw, 0);
-      expect(result.characters[0].description).toBe('');
+      expect(result.characters[0]!.description).toBe('');
     });
 
     test('事件 characters 字段缺失时为空数组', () => {
       const raw = '{"events":[{"name":"事件","description":"","order":1,"type":"其他"}]}';
       const result = parseChunkResult(raw, 0);
-      expect(result.events[0].characters).toEqual([]);
+      expect(result.events[0]!.characters).toEqual([]);
     });
 
     test('场景 type 缺省时为"未知"', () => {
       const raw = '{"scenes":[{"name":"场景","description":""}]}';
       const result = parseChunkResult(raw, 0);
-      expect(result.scenes[0].type).toBe('未知');
+      expect(result.scenes[0]!.type).toBe('未知');
     });
 
     test('解析人物别名和关系', () => {
@@ -353,8 +380,8 @@ describe('story-analyzer (F16.1)', () => {
         events: [],
       });
       const result = parseChunkResult(raw, 0);
-      expect(result.characters[0].aliases).toEqual(['小艾', '艾尔']);
-      expect(result.characters[0].relationships?.[0].target).toBe('勇者');
+      expect(result.characters[0]!.aliases).toEqual(['小艾', '艾尔']);
+      expect(result.characters[0]!.relationships?.[0]!.target).toBe('勇者');
     });
   });
 
@@ -374,7 +401,7 @@ describe('story-analyzer (F16.1)', () => {
       const chunk = makeChunkResult();
       const merged = mergeResults([chunk], 'standard');
       expect(merged.characters.length).toBe(1);
-      expect(merged.characters[0].name).toBe('艾莉娅');
+      expect(merged.characters[0]!.name).toBe('艾莉娅');
     });
 
     test('人物按名称去重', () => {
@@ -388,7 +415,7 @@ describe('story-analyzer (F16.1)', () => {
       const merged = mergeResults([chunk1, chunk2], 'standard');
       expect(merged.characters.length).toBe(1);
       // 取较长的描述
-      expect(merged.characters[0].description).toBe('更长的描述内容');
+      expect(merged.characters[0]!.description).toBe('更长的描述内容');
     });
 
     test('人物名称大小写不敏感去重', () => {
@@ -412,8 +439,8 @@ describe('story-analyzer (F16.1)', () => {
         characters: [makeCharacter({ name: '艾莉娅', aliases: ['艾尔'] })],
       });
       const merged = mergeResults([chunk1, chunk2], 'standard');
-      expect(merged.characters[0].aliases).toContain('小艾');
-      expect(merged.characters[0].aliases).toContain('艾尔');
+      expect(merged.characters[0]!.aliases).toContain('小艾');
+      expect(merged.characters[0]!.aliases).toContain('艾尔');
     });
 
     test('合并人物关系', () => {
@@ -435,7 +462,7 @@ describe('story-analyzer (F16.1)', () => {
         ],
       });
       const merged = mergeResults([chunk1, chunk2], 'standard');
-      expect(merged.characters[0].relationships?.length).toBe(2);
+      expect(merged.characters[0]!.relationships?.length).toBe(2);
     });
 
     test('场景按名称去重', () => {
@@ -461,8 +488,8 @@ describe('story-analyzer (F16.1)', () => {
       const merged = mergeResults([chunk1, chunk2], 'standard');
       expect(merged.events.length).toBe(2);
       // 重新排序
-      expect(merged.events[0].order).toBe(1);
-      expect(merged.events[1].order).toBe(2);
+      expect(merged.events[0]!.order).toBe(1);
+      expect(merged.events[1]!.order).toBe(2);
     });
 
     test('取第一个非空世界信息', () => {
@@ -614,42 +641,48 @@ describe('story-analyzer (F16.1)', () => {
         makeWorldInfo()
       );
       expect(messages.length).toBe(2);
-      expect(messages[0].role).toBe('system');
-      expect(messages[1].role).toBe('user');
+      expect(messages[0]!.role).toBe('system');
+      expect(messages[1]!.role).toBe('user');
     });
 
     test('user 消息包含世界设定', () => {
       const world = makeWorldInfo({ name: '测试世界' });
       const messages = buildScriptGenerationMessages([], [], [], world);
-      expect(messages[1].content).toContain('测试世界');
+      expect(messages[1]!.content).toContain('测试世界');
     });
 
     test('user 消息包含人物摘要', () => {
       const chars = [makeCharacter({ name: '艾莉娅', description: '精灵法师描述' })];
       const messages = buildScriptGenerationMessages(chars, [], [], undefined);
-      expect(messages[1].content).toContain('艾莉娅');
+      expect(messages[1]!.content).toContain('艾莉娅');
     });
 
     test('user 消息包含场景摘要', () => {
       const scenes = [makeScene({ name: '王都' })];
       const messages = buildScriptGenerationMessages([], scenes, [], undefined);
-      expect(messages[1].content).toContain('王都');
+      expect(messages[1]!.content).toContain('王都');
     });
 
     test('user 消息包含事件摘要', () => {
       const events = [makeEvent({ name: '决战' })];
       const messages = buildScriptGenerationMessages([], [], events, undefined);
-      expect(messages[1].content).toContain('决战');
+      expect(messages[1]!.content).toContain('决战');
     });
 
     test('无世界信息时显示"无"', () => {
       const messages = buildScriptGenerationMessages([], [], [], undefined);
-      expect(messages[1].content).toContain('无');
+      expect(messages[1]!.content).toContain('无');
     });
 
     test('system 消息说明任务', () => {
       const messages = buildScriptGenerationMessages([], [], [], undefined);
-      expect(messages[0].content).toContain('故事脚本');
+      expect(messages[0]!.content).toContain('故事脚本');
+    });
+
+    test('指定题材模板时 system 消息注入题材风格引导', () => {
+      const messages = buildScriptGenerationMessages([], [], [], undefined, 'sci-fi');
+      expect(messages[0]!.content).toContain('当前作品题材为');
+      expect(messages[0]!.content).toContain('赛博朋克');
     });
   });
 
@@ -670,8 +703,8 @@ describe('story-analyzer (F16.1)', () => {
       });
       const scripts = parseScriptResult(raw);
       expect(scripts.length).toBe(1);
-      expect(scripts[0].name).toBe('主线');
-      expect(scripts[0].type).toBe('main');
+      expect(scripts[0]!.name).toBe('主线');
+      expect(scripts[0]!.type).toBe('main');
     });
 
     test('解析数组格式', () => {
@@ -686,7 +719,7 @@ describe('story-analyzer (F16.1)', () => {
       ]);
       const scripts = parseScriptResult(raw);
       expect(scripts.length).toBe(1);
-      expect(scripts[0].type).toBe('side');
+      expect(scripts[0]!.type).toBe('side');
     });
 
     test('无效 JSON 返回空数组', () => {
@@ -701,7 +734,7 @@ describe('story-analyzer (F16.1)', () => {
       const raw = '```json\n{"scripts":[{"name":"测试","content":"","type":"main","characters":[],"scenes":[]}]}\n```';
       const scripts = parseScriptResult(raw);
       expect(scripts.length).toBe(1);
-      expect(scripts[0].name).toBe('测试');
+      expect(scripts[0]!.name).toBe('测试');
     });
 
     test('无效 type 字段默认为 main', () => {
@@ -711,7 +744,7 @@ describe('story-analyzer (F16.1)', () => {
         ],
       });
       const scripts = parseScriptResult(raw);
-      expect(scripts[0].type).toBe('main');
+      expect(scripts[0]!.type).toBe('main');
     });
 
     test('background 类型保留', () => {
@@ -721,7 +754,7 @@ describe('story-analyzer (F16.1)', () => {
         ],
       });
       const scripts = parseScriptResult(raw);
-      expect(scripts[0].type).toBe('background');
+      expect(scripts[0]!.type).toBe('background');
     });
 
     test('过滤无 name 的项', () => {
@@ -733,7 +766,7 @@ describe('story-analyzer (F16.1)', () => {
       });
       const scripts = parseScriptResult(raw);
       expect(scripts.length).toBe(1);
-      expect(scripts[0].name).toBe('有效');
+      expect(scripts[0]!.name).toBe('有效');
     });
   });
 

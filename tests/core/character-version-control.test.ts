@@ -140,9 +140,9 @@ describe('CharacterRepository.initialize', () => {
 
     const branches = repo.listBranches();
     expect(branches).toHaveLength(1);
-    expect(branches[0].name).toBe('main');
-    expect(branches[0].isDefault).toBe(true);
-    expect(branches[0].headId).not.toBeNull();
+    expect(branches[0]!.name).toBe('main');
+    expect(branches[0]!.isDefault).toBe(true);
+    expect(branches[0]!.headId).not.toBeNull();
   });
 
   test('初始提交的 parentId 为 null', () => {
@@ -160,7 +160,7 @@ describe('CharacterRepository.initialize', () => {
     // 仍会 commit 一个新版本，但 main 分支保持
     const branches = repo.listBranches();
     expect(branches).toHaveLength(1);
-    expect(branches[0].name).toBe('main');
+    expect(branches[0]!.name).toBe('main');
     // head 应该已经是新提交
     expect(repo.getHead()!.id).not.toBe(headBefore);
   });
@@ -311,9 +311,9 @@ describe('CharacterRepository.getBranchHistory', () => {
 
     const history = repo.getBranchHistory('main');
     expect(history).toHaveLength(3);
-    expect(history[0].id).toBe(v3.id);
-    expect(history[1].id).toBe(v2.id);
-    expect(history[2].id).toBe(v1.id);
+    expect(history[0]!.id).toBe(v3.id);
+    expect(history[1]!.id).toBe(v2.id);
+    expect(history[2]!.id).toBe(v1.id);
   });
 
   test('分支不存在的空数组', () => {
@@ -331,7 +331,7 @@ describe('CharacterRepository.getBranchHistory', () => {
     const devHistory = repo.getBranchHistory('dev');
     expect(mainHistory).toHaveLength(1);
     expect(devHistory).toHaveLength(2);
-    expect(devHistory[0].branch).toBe('dev');
+    expect(devHistory[0]!.branch).toBe('dev');
   });
 });
 
@@ -677,7 +677,7 @@ describe('CharacterRepository.releaseAllLocks', () => {
     repo.acquireLock('tags', AUTHOR_B);
     repo.releaseAllLocks(AUTHOR_A);
     expect(repo.activeLocks).toHaveLength(1);
-    expect(repo.activeLocks[0].holder.name).toBe('Bob');
+    expect(repo.activeLocks[0]!.holder.name).toBe('Bob');
   });
 });
 

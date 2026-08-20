@@ -49,7 +49,7 @@ function parseKey(rawKey: string): { type: 'regex'; regex: RegExp } | { type: 't
   const regexMatch = trimmed.match(/^\/(.+)\/([gimsuy]*)$/);
   if (regexMatch) {
     try {
-      const regex = new RegExp(regexMatch[1], regexMatch[2]);
+      const regex = new RegExp(regexMatch[1]!, regexMatch[2]);
       return { type: 'regex', regex };
     } catch {
       // 正则解析失败，降级为普通文本
@@ -293,7 +293,7 @@ function applyGroupFilter(activated: ActivatedEntry[]): ActivatedEntry[] {
     if (available.length === 0) continue;
 
     // 简单随机选取（PRD 提到"默认按随机权重"，这里使用 Math.random）
-    const pick = available[Math.floor(Math.random() * available.length)];
+    const pick = available[Math.floor(Math.random() * available.length)]!;
     result.push(pick);
     processed.add(pick.entry.id);
   }

@@ -191,7 +191,7 @@ export const usePersonaStore = defineStore('persona', () => {
     }
     const idx = personas.value.findIndex((p) => p.id === id);
     if (idx < 0) return;
-    const removed = personas.value.splice(idx, 1)[0];
+    const removed = personas.value.splice(idx, 1)[0]!;
     void deleteFromStorage(id);
 
     // 若删除的是当前激活，切换到第一个

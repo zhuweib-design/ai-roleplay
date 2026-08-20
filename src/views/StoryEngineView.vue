@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * StoryEngineView — 故事引擎页面 (F16.1)
  *
@@ -27,6 +27,7 @@ import { useLorebookStore } from '@/stores/lorebook';
 import { useCharacterStore } from '@/stores/character';
 import { CHARACTER_TEMPLATES, type CharacterTemplateId } from '@core/character-generator';
 import { buildSourceContext } from '@core/story-analyzer';
+import { STORY_TEMPLATES, type StoryTemplateId } from '@core/story-templates';
 import Icon from '@/components/common/Icon.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
@@ -119,6 +120,7 @@ async function handleQuickSetup() {
 // ── UI 状态 ──
 const uploadModalOpen = ref(false);
 const selectedDepth = ref<AnalysisDepth>('standard');
+const selectedTemplate = ref<StoryTemplateId>('generic');
 const selectedFile = ref<File | null>(null);
 const fileText = ref<string>(''); // 保留上传的文本用于分析
 const deleteTargetId = ref<string | null>(null);
@@ -290,6 +292,7 @@ function openUploadModal() {
     return;
   }
   selectedDepth.value = 'standard';
+  selectedTemplate.value = 'generic';
   selectedFile.value = null;
   fileText.value = '';
   uploadModalOpen.value = true;
@@ -307,14 +310,14 @@ function closeUploadModal() {
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   if (input.files && input.files.length > 0) {
-    void loadFileContent(input.files[0]);
+    void loadFileContent(input.files[0]!);
   }
 }
 
 function handleDrop(event: DragEvent) {
   event.preventDefault();
   if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
-    void loadFileContent(event.dataTransfer.files[0]);
+    void loadFileContent(event.dataTransfer.files[0]!);
   }
 }
 
@@ -357,7 +360,8 @@ async function handleUpload() {
 
   const id = await store.createStoryFromFile(
     selectedFile.value,
-    selectedDepth.value
+    selectedDepth.value,
+    selectedTemplate.value
   );
 
   if (id) {
@@ -701,7 +705,7 @@ function handleSaveProtagonist() {
   const errors = validateProtagonist(draft, protagonistTargetStory.value ?? undefined);
   if (errors.length > 0) {
     protagonistFormErrors.value = errors;
-    showToast('error', t('story.validateFailed', { error: errors[0] }));
+    showToast('error', t('story.validateFailed', { error: errors[0]! }));
     return;
   }
   protagonistFormErrors.value = [];
@@ -1333,6 +1337,30 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                 <div class="depth-token">
                   {{ t('story.depthToken', { min: depth.tokenEstimate.min, max: depth.tokenEstimate.max }) }}
                 </div>
+              </div>
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- 题材模板选择 -->
+        <fieldset class="depth-fieldset">
+          <legend class="depth-legend">{{ t('storyTemplate.legend') }}</legend>
+          <div class="template-options" role="radiogroup" :aria-label="t('storyTemplate.legend')">
+            <label
+              v-for="tmpl in STORY_TEMPLATES"
+              :key="tmpl.id"
+              class="template-option"
+              :class="{ active: selectedTemplate === tmpl.id }"
+            >
+              <input
+                type="radio"
+                name="template"
+                :value="tmpl.id"
+                v-model="selectedTemplate"
+              />
+              <div class="template-info">
+                <div class="template-label">{{ tmpl.name }}</div>
+                <div class="template-desc">{{ tmpl.description }}</div>
               </div>
             </label>
           </div>
@@ -2422,6 +2450,57 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   font-size: 11px;
   color: var(--on-surface-variant);
   margin-top: 2px;
+}
+
+/* 题材模板选择 */
+.template-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.template-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+
+.template-option:hover {
+  background: var(--card-elevated);
+}
+
+.template-option.active {
+  border-color: var(--primary);
+  background: var(--card-elevated);
+}
+
+.template-option input[type="radio"] {
+  margin-top: 2px;
+  accent-color: var(--primary);
+}
+
+.template-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.template-desc {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+  margin-top: 2px;
+  line-height: 1.4;
 }
 
 /* 拖拽区 */

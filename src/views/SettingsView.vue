@@ -118,11 +118,11 @@ function handleThemeKeydown(e: KeyboardEvent, currentIndex: number): void {
   }
   e.preventDefault();
   if (nextIndex !== null) {
-    selectTheme(themeOptions.value[nextIndex].value);
+    selectTheme(themeOptions.value[nextIndex]!.value);
     // 将焦点移到新选中的按钮
     void nextTick(() => {
       const target = document.querySelector<HTMLElement>(
-        `.theme-card[data-value="${themeOptions.value[nextIndex!].value}"]`
+        `.theme-card[data-value="${themeOptions.value[nextIndex!]!.value}"]`
       );
       target?.focus();
     });
@@ -184,7 +184,7 @@ function handleCategoryKeydown(e: KeyboardEvent, currentIndex: number): void {
   }
   e.preventDefault();
   if (nextIndex !== null) {
-    selectCategory(settingsCategories.value[nextIndex].id);
+    selectCategory(settingsCategories.value[nextIndex]!.id);
     void nextTick(() => {
       document.querySelectorAll<HTMLElement>('.settings-nav-item')[nextIndex!]?.focus();
     });
@@ -235,10 +235,10 @@ function handleFontSizeKeydown(e: KeyboardEvent, currentIndex: number): void {
   }
   e.preventDefault();
   if (nextIndex !== null) {
-    selectFontSize(fontSizeOptions.value[nextIndex].value);
+    selectFontSize(fontSizeOptions.value[nextIndex]!.value);
     void nextTick(() => {
       const target = document.querySelector<HTMLElement>(
-        `.fontsize-card[data-value="${fontSizeOptions.value[nextIndex!].value}"]`
+        `.fontsize-card[data-value="${fontSizeOptions.value[nextIndex!]!.value}"]`
       );
       target?.focus();
     });
@@ -329,7 +329,7 @@ const bgPreviewStyle = computed(() => {
 async function handleBgFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
-  const file = input.files[0];
+  const file = input.files[0]!;
   // 限制 5MB
   if (file.size > 5 * 1024 * 1024) {
     showToast('error', t('settingsView.bgTooLarge'));
@@ -577,7 +577,7 @@ function triggerBackupImport() {
 async function handleBackupFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
-  const file = input.files[0];
+  const file = input.files[0]!;
   input.value = '';
 
   dataManageLoading.value = true;
@@ -626,7 +626,7 @@ function handleImportQuickReplies() {
 async function handleQuickReplyFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
-  const file = input.files[0];
+  const file = input.files[0]!;
   input.value = '';
   try {
     const added = await settings.importQuickRepliesSt(file);
@@ -791,7 +791,7 @@ async function handleExportChatMarkdown() {
     }
 
     // 取最新的对话
-    const latestChat = chats[0];
+    const latestChat = chats[0]!;
     const userName = personaStore.activeUserName;
     downloadChatMarkdown(latestChat, char.name, userName);
     showToast('success', t('settingsView.mdExported', { name: char.name }));

@@ -65,7 +65,7 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
       const id = store.addQuickReply(btn);
       expect(id).toBe('qr-1');
       expect(store.quickReplies).toHaveLength(1);
-      expect(store.quickReplies[0].label).toBe('掷骰');
+      expect(store.quickReplies[0]!.label).toBe('掷骰');
     });
 
     it('添加多个按钮保持顺序', () => {
@@ -89,8 +89,8 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
     it('更新按钮字段', () => {
       store.addQuickReply(makeButton({ id: 'qr-1', label: '原标签', script: '/echo hi' }));
       store.updateQuickReply('qr-1', { label: '新标签', script: '/roll 2d6' });
-      expect(store.quickReplies[0].label).toBe('新标签');
-      expect(store.quickReplies[0].script).toBe('/roll 2d6');
+      expect(store.quickReplies[0]!.label).toBe('新标签');
+      expect(store.quickReplies[0]!.script).toBe('/roll 2d6');
     });
 
     it('部分更新不覆盖其他字段', () => {
@@ -98,9 +98,9 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
         makeButton({ id: 'qr-1', label: '标签', script: '/echo hi', group: 'g1' })
       );
       store.updateQuickReply('qr-1', { label: '新标签' });
-      expect(store.quickReplies[0].label).toBe('新标签');
-      expect(store.quickReplies[0].script).toBe('/echo hi');
-      expect(store.quickReplies[0].group).toBe('g1');
+      expect(store.quickReplies[0]!.label).toBe('新标签');
+      expect(store.quickReplies[0]!.script).toBe('/echo hi');
+      expect(store.quickReplies[0]!.group).toBe('g1');
     });
 
     it('更新不存在的 id 不报错', () => {
@@ -124,7 +124,7 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
       store.addQuickReply(makeButton({ id: 'qr-2', label: 'B' }));
       store.deleteQuickReply('qr-1');
       expect(store.quickReplies).toHaveLength(1);
-      expect(store.quickReplies[0].id).toBe('qr-2');
+      expect(store.quickReplies[0]!.id).toBe('qr-2');
     });
 
     it('删除不存在的 id 不报错', () => {
@@ -257,7 +257,7 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
       store.addQuickReply(makeButton({ id: 'qr-1', label: 'A' }));
       await store.persistSettings();
       expect(mockAdapter.saved?.quickReplies).toHaveLength(1);
-      expect(mockAdapter.saved?.quickReplies[0].label).toBe('A');
+      expect(mockAdapter.saved?.quickReplies[0]!.label).toBe('A');
     });
 
     it('加载时恢复 quickReplies', async () => {
@@ -271,9 +271,9 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
       };
       await store.loadFromStorage();
       expect(store.quickReplies).toHaveLength(2);
-      expect(store.quickReplies[0].label).toBe('加载A');
-      expect(store.quickReplies[1].group).toBe('g1');
-      expect(store.quickReplies[1].autoSend).toBe(false);
+      expect(store.quickReplies[0]!.label).toBe('加载A');
+      expect(store.quickReplies[1]!.group).toBe('g1');
+      expect(store.quickReplies[1]!.autoSend).toBe(false);
     });
 
     it('无 quickReplies 数据时保持空数组', async () => {
@@ -304,11 +304,11 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
 
       // 读取
       expect(store.quickReplies).toHaveLength(1);
-      expect(store.quickReplies[0].label).toBe('掷骰子');
+      expect(store.quickReplies[0]!.label).toBe('掷骰子');
 
       // 更新
       store.updateQuickReply(tpl.id, { script: '/roll 1d20' });
-      expect(store.quickReplies[0].script).toBe('/roll 1d20');
+      expect(store.quickReplies[0]!.script).toBe('/roll 1d20');
 
       // 删除
       store.deleteQuickReply(tpl.id);
@@ -334,7 +334,7 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
       store.addQuickReply(
         makeButton({ id: 'qr-1', label: '编辑', script: '/echo hi', autoSend: false })
       );
-      expect(store.quickReplies[0].autoSend).toBe(false);
+      expect(store.quickReplies[0]!.autoSend).toBe(false);
     });
   });
 });

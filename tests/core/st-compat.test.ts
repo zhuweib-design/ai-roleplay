@@ -73,9 +73,9 @@ describe('st-compat 群聊导出 (T-07)', () => {
       is_name: true,
       mes: '我们出发吧',
     });
-    expect(st.messages[1].is_user).toBe(true);
-    expect(st.messages[0].mesId).toBe(0);
-    expect(st.messages[1].mesId).toBe(1);
+    expect(st.messages[1]!.is_user).toBe(true);
+    expect(st.messages[0]!.mesId).toBe(0);
+    expect(st.messages[1]!.mesId).toBe(1);
   });
 
   it('导出 JSON 文本可被 JSON.parse 还原', () => {
@@ -93,7 +93,7 @@ describe('st-compat 群聊导出 (T-07)', () => {
         ],
       })
     );
-    expect(st.members[0]).not.toHaveProperty('talkativeness');
+    expect(st.members[0]!).not.toHaveProperty('talkativeness');
     expect(st).not.toHaveProperty('mode');
   });
 });
@@ -149,8 +149,8 @@ describe('st-compat 群聊导入 (T-07)', () => {
       characterName: '战士',
       swipes: ['第一版', '第二版'],
     });
-    expect(chat.messages[1].role).toBe('user');
-    expect(chat.messages[0].id).not.toBe(chat.messages[1].id);
+    expect(chat.messages[1]!.role).toBe('user');
+    expect(chat.messages[0]!.id).not.toBe(chat.messages[1]!.id);
   });
 
   it('缺 name 字段抛错', () => {
@@ -164,7 +164,7 @@ describe('st-compat 群聊导入 (T-07)', () => {
       messages: [{ mes: '有效' }, {}, { mes: '也是有效' }],
     });
     expect(chat.members).toHaveLength(1);
-    expect(chat.members[0].characterId).toBe('ok');
+    expect(chat.members[0]!.characterId).toBe('ok');
     expect(chat.messages).toHaveLength(2);
     expect(chat.messages.map((m) => m.content)).toEqual(['有效', '也是有效']);
   });
@@ -203,8 +203,8 @@ describe('st-compat Quick Reply 互导 (T-07)', () => {
       autoSend: false,
     });
     // 非法字段回退默认
-    expect(buttons[1].id).toMatch(/^qr-/);
-    expect(buttons[1].label).toMatch(/^按钮/);
+    expect(buttons[1]!.id).toMatch(/^qr-/);
+    expect(buttons[1]!.label).toMatch(/^按钮/);
   });
 
   it('非数组输入抛错', () => {

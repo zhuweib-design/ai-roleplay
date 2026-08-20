@@ -341,7 +341,7 @@ function triggerAvatarUpload() {
 function handleAvatarSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
-  const file = input.files[0];
+  const file = input.files[0]!;
   // 限制 1MB
   if (file.size > 1024 * 1024) {
     showToast('error', t('charEdit.avatarTooLarge'));

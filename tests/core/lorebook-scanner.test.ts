@@ -77,8 +77,8 @@ describe('lorebook-scanner', () => {
       ]);
       const activated = scanLorebooks([lb], makeCtx(['无关消息']));
       expect(activated).toHaveLength(1);
-      expect(activated[0].entry.id).toBe('c1');
-      expect(activated[0].matchedKeys).toEqual([]);
+      expect(activated[0]!.entry.id).toBe('c1');
+      expect(activated[0]!.matchedKeys).toEqual([]);
     });
 
     it('keyword 策略：无关键词则不激活', () => {
@@ -95,8 +95,8 @@ describe('lorebook-scanner', () => {
       ]);
       const activated = scanLorebooks([lb], makeCtx(['使用魔法攻击']));
       expect(activated).toHaveLength(1);
-      expect(activated[0].entry.id).toBe('k2');
-      expect(activated[0].matchedKeys).toEqual(['魔法']);
+      expect(activated[0]!.entry.id).toBe('k2');
+      expect(activated[0]!.matchedKeys).toEqual(['魔法']);
     });
 
     it('probability 策略：关键词命中后按概率决定（random=0.5, p=60 命中）', () => {
@@ -250,7 +250,7 @@ describe('lorebook-scanner', () => {
       ]);
       const activated = scanLorebooks([lb], makeCtx(['']));
       expect(activated).toHaveLength(1);
-      expect(activated[0].entry.id).toBe('d2');
+      expect(activated[0]!.entry.id).toBe('d2');
     });
   });
 
@@ -266,7 +266,7 @@ describe('lorebook-scanner', () => {
       // Math.random = 0.5，3 个候选中选取 index = floor(0.5 * 3) = 1
       const activated = scanLorebooks([lb], makeCtx(['']));
       expect(activated).toHaveLength(1);
-      expect(activated[0].entry.id).toBe('g2');
+      expect(activated[0]!.entry.id).toBe('g2');
     });
 
     it('无 group 的条目直接保留', () => {
@@ -328,7 +328,7 @@ describe('lorebook-scanner', () => {
       const lb = makeLorebook([makeEntry({ id: 'n1', strategy: 'constant' })]);
       lb.name = '自定义名称';
       const activated = scanLorebooks([lb], makeCtx(['']));
-      expect(activated[0].lorebookName).toBe('自定义名称');
+      expect(activated[0]!.lorebookName).toBe('自定义名称');
     });
   });
 
@@ -345,7 +345,7 @@ describe('lorebook-scanner', () => {
         makeCtx(['你好'], '种族：精灵族')
       );
       expect(activated).toHaveLength(1);
-      expect(activated[0].entry.id).toBe('at1');
+      expect(activated[0]!.entry.id).toBe('at1');
     });
   });
 

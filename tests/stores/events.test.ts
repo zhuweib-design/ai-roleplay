@@ -654,7 +654,7 @@ describe('events store (F17.1)', () => {
       store.createEvent('lb-2', 'scene-1', '王都');
 
       expect(store.getEventsByScene('scene-1')).toHaveLength(1);
-      expect(store.getEventsByScene('scene-1')[0].lorebookId).toBe('lb-1');
+      expect(store.getEventsByScene('scene-1')[0]!.lorebookId).toBe('lb-1');
     });
 
     it('currentLorebookId 为 null 时返回空', () => {
@@ -735,7 +735,7 @@ describe('events store (F17.1)', () => {
 
       const active = store.getActiveEvents();
       expect(active).toHaveLength(1);
-      expect(active[0].id).toBe(id1);
+      expect(active[0]!.id).toBe(id1);
     });
 
     it('不返回 pending 事件', () => {
@@ -985,8 +985,8 @@ describe('events store (F17.1)', () => {
 
       // 触发部分事件
       const scene1Events = store.getEventsByScene('scene-1');
-      store.triggerEvent(scene1Events[0].id);
-      store.triggerEvent(scene1Events[1].id);
+      store.triggerEvent(scene1Events[0]!.id);
+      store.triggerEvent(scene1Events[1]!.id);
 
       expect(store.getActiveEvents()).toHaveLength(2);
       expect(store.getTriggerableEvents()).toHaveLength(4); // 剩余 4 个 pending

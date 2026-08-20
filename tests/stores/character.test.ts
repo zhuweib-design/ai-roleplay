@@ -90,7 +90,7 @@ describe('useCharacterStore — E5 单元测试', () => {
     it('currentCharacter 应返回当前激活角色', () => {
       const store = useCharacterStore();
       expect(store.currentCharacter).toBeDefined();
-      expect(store.currentCharacter.id).toBe(store.currentCharacterId);
+      expect(store.currentCharacter!.id).toBe(store.currentCharacterId);
     });
   });
 
@@ -104,16 +104,16 @@ describe('useCharacterStore — E5 单元测试', () => {
     it('按名称过滤应正常工作', () => {
       const store = useCharacterStore();
       // 取一个已知角色名作为关键词
-      const firstName = store.characters[0].name;
+      const firstName = store.characters[0]!.name;
       store.setSearchQuery(firstName);
       expect(store.filteredCharacters.some((c) => c.name === firstName)).toBe(true);
     });
 
     it('按标签过滤应正常工作', () => {
       const store = useCharacterStore();
-      const firstTags = store.characters[0].tags;
+      const firstTags = store.characters[0]!.tags;
       if (firstTags.length > 0) {
-        store.setSearchQuery(firstTags[0]);
+        store.setSearchQuery(firstTags[0]!);
         expect(store.filteredCharacters.length).toBeGreaterThan(0);
       }
     });
@@ -127,7 +127,7 @@ describe('useCharacterStore — E5 单元测试', () => {
     it('favorites 应只包含 favorite=true 的角色', () => {
       const store = useCharacterStore();
       // 手动构造一个 favorite
-      const char = store.characters[0];
+      const char = store.characters[0]!;
       const oldFav = char.favorite;
       char.favorite = true;
       expect(store.favorites.every((c) => c.favorite)).toBe(true);
@@ -172,7 +172,7 @@ describe('useCharacterStore — E5 单元测试', () => {
 
     it('selectCharacter 应更新 currentCharacterId', () => {
       const store = useCharacterStore();
-      const target = store.characters[0];
+      const target = store.characters[0]!;
       store.selectCharacter(target.id);
       expect(store.currentCharacterId).toBe(target.id);
     });
@@ -255,7 +255,7 @@ describe('useCharacterStore — E5 单元测试', () => {
       const char = store.characters.find((c) => c.id === newId)!;
       char.worldEntries = [{ id: 'w1', name: '世界观 1', enabled: true }];
       store.toggleWorldEntry(newId, 'w1');
-      expect(char.worldEntries[0].enabled).toBe(false);
+      expect(char.worldEntries[0]!.enabled).toBe(false);
     });
   });
 

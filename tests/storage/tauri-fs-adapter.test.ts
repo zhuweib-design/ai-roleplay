@@ -130,7 +130,7 @@ describe('TauriFSAdapter', () => {
       const result = await adapter.loadCharacters();
       expect(result).toEqual(mockCards);
       expect(invokeMock).toHaveBeenCalled();
-      expect(invokeMock.mock.calls[0][0]).toBe('list_character_files');
+      expect(invokeMock.mock.calls[0]![0]).toBe('list_character_files');
     });
 
     it('loadCharacters 在 Rust 返回 null 时降级为空数组', async () => {
@@ -245,7 +245,7 @@ describe('TauriFSAdapter', () => {
       const result = await adapter.loadSettings();
       expect(result).toEqual(mockSettings);
       expect(invokeMock).toHaveBeenCalled();
-      expect(invokeMock.mock.calls[0][0]).toBe('load_settings_file');
+      expect(invokeMock.mock.calls[0]![0]).toBe('load_settings_file');
     });
   });
 });

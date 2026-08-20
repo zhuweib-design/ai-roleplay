@@ -73,7 +73,7 @@ describe('prompt-builder · Lorebook 集成', () => {
     const built = await buildPrompt(card, [], '你好', settings);
     expect(built.activatedEntries).toBeUndefined();
     // 第一条应是 system
-    expect(built.messages[0].role).toBe('system');
+    expect(built.messages[0]!.role).toBe('system');
   });
 
   it('空 lorebooks 数组不注入条目', async () => {
@@ -101,7 +101,7 @@ describe('prompt-builder · Lorebook 集成', () => {
     ]);
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
     expect(built.activatedEntries).toHaveLength(1);
-    expect(built.activatedEntries![0].entry.id).toBe('e1');
+    expect(built.activatedEntries![0]!.entry.id).toBe('e1');
   });
 
   it('beforeCharDefs 条目拼接到系统提示词前（角色定义前）', async () => {
@@ -122,7 +122,7 @@ describe('prompt-builder · Lorebook 集成', () => {
       },
     ]);
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
     // BEFORE_CONTENT 应在 "Name: Alice" 之前
     const beforeIdx = systemContent.indexOf('BEFORE_CONTENT');
     const nameIdx = systemContent.indexOf('Name: Alice');
@@ -148,7 +148,7 @@ describe('prompt-builder · Lorebook 集成', () => {
       },
     ]);
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
     const afterIdx = systemContent.indexOf('AFTER_CONTENT');
     const nameIdx = systemContent.indexOf('Name: Alice');
     expect(afterIdx).toBeGreaterThan(nameIdx);
@@ -225,9 +225,9 @@ describe('prompt-builder · Lorebook 集成', () => {
     const built = await buildPrompt(makeCard(), history, '继续', settings, { lorebooks: [lb] });
 
     expect(built.activatedEntries).toHaveLength(1);
-    expect(built.activatedEntries![0].entry.id).toBe('k1');
+    expect(built.activatedEntries![0]!.entry.id).toBe('k1');
     // 系统消息中应包含 "魔法条目" 但不包含 "剑条目"
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
     expect(systemContent).toContain('魔法条目');
     expect(systemContent).not.toContain('剑条目');
   });
@@ -287,7 +287,7 @@ describe('prompt-builder · Lorebook 集成', () => {
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
     expect(built.activatedEntries).toHaveLength(1);
     // 只有一个条目内容出现在 system 中
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
     const hasG1 = systemContent.includes('G1_CONTENT');
     const hasG2 = systemContent.includes('G2_CONTENT');
     expect(hasG1 || hasG2).toBe(true);
@@ -330,7 +330,7 @@ describe('prompt-builder · Lorebook 集成', () => {
 
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb1, lb2] });
     expect(built.activatedEntries).toHaveLength(2);
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
     expect(systemContent).toContain('LB1_CONTENT');
     expect(systemContent).toContain('LB2_CONTENT');
   });
@@ -349,7 +349,7 @@ describe('prompt-builder · F06.7 整体世界描述', () => {
     };
 
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
 
     // 应包含世界描述内容
     expect(systemContent).toContain('这是一个充满魔法与古老王国的世界。');
@@ -367,7 +367,7 @@ describe('prompt-builder · F06.7 整体世界描述', () => {
     };
 
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
 
     expect(systemContent).toContain('[World Type: scifi]');
     expect(systemContent).toContain('未来世界描述。');
@@ -398,7 +398,7 @@ describe('prompt-builder · F06.7 整体世界描述', () => {
     };
 
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
 
     // 世界描述应在 BEFORE_ENTRY 之前
     const worldIdx = systemContent.indexOf('WORLD_DESC_CONTENT');
@@ -417,7 +417,7 @@ describe('prompt-builder · F06.7 整体世界描述', () => {
     };
 
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
 
     const worldIdx = systemContent.indexOf('HISTORICAL_WORLD');
     const nameIdx = systemContent.indexOf('Name: Alice');
@@ -443,7 +443,7 @@ describe('prompt-builder · F06.7 整体世界描述', () => {
     };
 
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb1, lb2] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
 
     expect(systemContent).toContain('WORLD_ONE_CONTENT');
     expect(systemContent).toContain('WORLD_TWO_CONTENT');
@@ -463,7 +463,7 @@ describe('prompt-builder · F06.7 整体世界描述', () => {
     };
 
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
 
     // 不应包含 header
     expect(systemContent).not.toContain('[World: 空世界');
@@ -474,7 +474,7 @@ describe('prompt-builder · F06.7 整体世界描述', () => {
     lb.worldDescription = null;
 
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
 
     expect(systemContent).not.toContain('[World:');
     expect(systemContent).not.toContain('[World Type:');
@@ -484,7 +484,7 @@ describe('prompt-builder · F06.7 整体世界描述', () => {
     const lb = makeLorebook([]); // worldDescription 未设置
 
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
 
     expect(systemContent).not.toContain('[World:');
   });
@@ -514,7 +514,7 @@ describe('prompt-builder · F06.7 整体世界描述', () => {
     };
 
     const built = await buildPrompt(makeCard(), [], '你好', settings, { lorebooks: [lb] });
-    const systemContent = built.messages[0].content;
+    const systemContent = built.messages[0]!.content;
 
     expect(systemContent).toContain('WORLD_CONTENT');
     expect(systemContent).toContain('ENTRY_CONTENT');

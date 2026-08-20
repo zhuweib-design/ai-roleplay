@@ -268,7 +268,7 @@ describe('ImageGallery', () => {
     gallery.add(createMockImage('img-1'));
     gallery.add(createMockImage('img-2'));
     const list = gallery.list();
-    expect(list[0].id).toBe('img-2');
+    expect(list[0]!.id).toBe('img-2');
   });
 
   it('delete 删除指定图像', () => {
@@ -297,7 +297,7 @@ describe('ImageGallery', () => {
     gallery.add(createMockImage('img-2', 'a dog'));
     const results = gallery.search('cat');
     expect(results.length).toBe(1);
-    expect(results[0].id).toBe('img-1');
+    expect(results[0]!.id).toBe('img-1');
   });
 
   it('filterByStyle 按风格筛选', () => {

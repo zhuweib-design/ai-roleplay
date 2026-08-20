@@ -66,38 +66,38 @@ describe('生成 Prompt 构建 (F01.7)', () => {
   test('返回 system + user 两条消息', () => {
     const messages = buildGenerationMessages('fantasy', 'abc12345');
     expect(messages).toHaveLength(2);
-    expect(messages[0].role).toBe('system');
-    expect(messages[1].role).toBe('user');
+    expect(messages[0]!.role).toBe('system');
+    expect(messages[1]!.role).toBe('user');
   });
 
   test('系统消息定义角色创作助手', () => {
     const messages = buildGenerationMessages('fantasy', 'abc12345');
-    expect(messages[0].content).toContain('角色创作助手');
-    expect(messages[0].content).toContain('JSON');
+    expect(messages[0]!.content).toContain('角色创作助手');
+    expect(messages[0]!.content).toContain('JSON');
   });
 
   test('用户消息包含模板标签', () => {
     const messages = buildGenerationMessages('scifi', 'seed123');
-    expect(messages[1].content).toContain('科幻');
+    expect(messages[1]!.content).toContain('科幻');
   });
 
   test('用户消息包含随机种子', () => {
     const messages = buildGenerationMessages('modern', 'myseed99');
-    expect(messages[1].content).toContain('myseed99');
+    expect(messages[1]!.content).toContain('myseed99');
   });
 
   test('用户消息要求纯 JSON 返回', () => {
     const messages = buildGenerationMessages('fantasy', 'abc12345');
-    expect(messages[1].content).toContain('JSON');
-    expect(messages[1].content).toContain('不要');
+    expect(messages[1]!.content).toContain('JSON');
+    expect(messages[1]!.content).toContain('不要');
   });
 
   test('不同模板生成不同的 stats 示例', () => {
     const fantasy = buildGenerationMessages('fantasy', 'seed');
     const postapoc = buildGenerationMessages('postapoc', 'seed');
     // 奇幻模板应包含"力量"，末日模板应包含"生存"
-    expect(fantasy[1].content).toContain('力量');
-    expect(postapoc[1].content).toContain('生存');
+    expect(fantasy[1]!.content).toContain('力量');
+    expect(postapoc[1]!.content).toContain('生存');
   });
 });
 
@@ -187,7 +187,7 @@ describe('生成结果解析 - 合法输入 (F01.7)', () => {
       },
     });
     const result = parseGeneratedCharacter(json);
-    expect(result!.attributes!.stats![0].value).toBe('15');
+    expect(result!.attributes!.stats![0]!.value).toBe('15');
   });
 });
 
@@ -256,7 +256,7 @@ describe('生成结果解析 - 边界处理 (F01.7)', () => {
       },
     });
     const result = parseGeneratedCharacter(json);
-    expect(result!.attributes!.stats![0].type).toBe('text');
+    expect(result!.attributes!.stats![0]!.type).toBe('text');
   });
 
   test('非法 level（字符串非数字）被忽略', () => {
@@ -281,7 +281,7 @@ describe('生成结果解析 - 边界处理 (F01.7)', () => {
     });
     const result = parseGeneratedCharacter(json);
     expect(result!.attributes!.stats).toHaveLength(1);
-    expect(result!.attributes!.stats![0].value).toBe('10');
+    expect(result!.attributes!.stats![0]!.value).toBe('10');
   });
 
   test('全空属性返回 undefined', () => {

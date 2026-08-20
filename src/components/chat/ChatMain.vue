@@ -76,7 +76,7 @@ function handleApiErrorClose() {
 const textarea = ref<HTMLTextAreaElement | null>(null);
 const msgArea = ref<HTMLElement | null>(null);
 
-const char = computed(() => characterStore.currentCharacter);
+const char = computed(() => characterStore.currentCharacter!);
 
 // ── P2-11 性能：双向窗口化渲染(替代 P1-9 尾部窗口) ──
 // 只渲染可见区间 [windowStart, windowEnd) 附近消息(恒 ≤ 2×RENDER_WINDOW),
@@ -371,7 +371,7 @@ function handleExportChat() {
     characterId: char.value.id,
     title: t('chat.conversationTitle', { name: char.value.name }),
     messages: uiMsgsToChatMsgs(msgs),
-    createdAt: new Date(msgs[0].timestamp).toISOString(),
+    createdAt: new Date(msgs[0]!.timestamp).toISOString(),
     updatedAt: new Date().toISOString(),
   };
   downloadChatMarkdown(chat, char.value.name, personaStore.activeUserName);

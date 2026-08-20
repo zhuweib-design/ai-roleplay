@@ -117,7 +117,7 @@ describe('createNewProtagonist', () => {
 describe('validateProtagonist', () => {
   it('合法配置返回空数组', () => {
     const story = makeStory();
-    const config = createProtagonistFromCharacter(story.characters[0]);
+    const config = createProtagonistFromCharacter(story.characters[0]!);
     expect(validateProtagonist(config, story)).toEqual([]);
   });
 
@@ -282,7 +282,7 @@ describe('addRelation', () => {
     const initial = [{ target: '李雷', relation: '挚友' }];
     const result = addRelation(initial, '李雷', '宿敌');
     expect(result).toHaveLength(1);
-    expect(result[0].relation).toBe('宿敌');
+    expect(result[0]!.relation).toBe('宿敌');
   });
 
   it('不修改原数组', () => {
@@ -300,7 +300,7 @@ describe('removeRelation', () => {
     ];
     const result = removeRelation(initial, '李雷');
     expect(result).toHaveLength(1);
-    expect(result[0].target).toBe('韩梅梅');
+    expect(result[0]!.target).toBe('韩梅梅');
   });
 
   it('target 不存在时返回等效数组', () => {

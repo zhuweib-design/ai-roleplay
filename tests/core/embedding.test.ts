@@ -42,7 +42,7 @@ describe('VectorStore', () => {
 
     const hits = store.query({ dim: 2, values: [1, 0] }, 2);
     expect(hits.map((h) => h.entry.id)).toEqual(['a', 'b']);
-    expect(hits[0].score).toBeGreaterThan(hits[1].score);
+    expect(hits[0]!.score).toBeGreaterThan(hits[1]!.score);
 
     store.remove('a');
     expect(store.size()).toBe(2);
@@ -105,8 +105,8 @@ describe('DualChannelRetriever (双通道)', () => {
     await r.addStatic({ id: 'w-block-2', text: '矮人山脉的矿藏分布与锻造工艺', meta: { scope: 'world', title: '矮人山脉' } });
 
     const hits = await r.retrieve({ query: '精灵王国' });
-    expect(hits[0].entry.id).toBe('w-block-1');
-    expect(hits[0].entry.meta.title).toBe('精灵王国');
-    expect(hits[0].score).toBeGreaterThan(hits[1].score);
+    expect(hits[0]!.entry.id).toBe('w-block-1');
+    expect(hits[0]!.entry.meta.title).toBe('精灵王国');
+    expect(hits[0]!.score).toBeGreaterThan(hits[1]!.score);
   });
 });

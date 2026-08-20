@@ -91,15 +91,15 @@ describe('usePersonaStore — F07 单元测试', () => {
       const id = store.createPersona({ name: '勇者', description: '冒险者' });
       expect(id).toBeTruthy();
       expect(store.personas).toHaveLength(1);
-      expect(store.personas[0].name).toBe('勇者');
-      expect(store.personas[0].description).toBe('冒险者');
+      expect(store.personas[0]!.name).toBe('勇者');
+      expect(store.personas[0]!.description).toBe('冒险者');
     });
 
     it('未提供 name 时使用默认值 "新身份"', () => {
       const store = usePersonaStore();
       const id = store.createPersona();
       expect(id).toBeTruthy();
-      expect(store.personas[0].name).toBe('新身份');
+      expect(store.personas[0]!.name).toBe('新身份');
     });
 
     it('name 为空字符串时验证失败返回空字符串', () => {
@@ -132,7 +132,7 @@ describe('usePersonaStore — F07 单元测试', () => {
       const id = store.createPersona({ name: '原名' });
       const ok = store.updatePersona(id, { name: '新名' });
       expect(ok).toBe(true);
-      expect(store.personas[0].name).toBe('新名');
+      expect(store.personas[0]!.name).toBe('新名');
     });
 
     it('更新描述成功', () => {
@@ -140,7 +140,7 @@ describe('usePersonaStore — F07 单元测试', () => {
       const id = store.createPersona({ name: 'Test' });
       const ok = store.updatePersona(id, { description: '新描述' });
       expect(ok).toBe(true);
-      expect(store.personas[0].description).toBe('新描述');
+      expect(store.personas[0]!.description).toBe('新描述');
     });
 
     it('id 不存在返回 false', () => {
@@ -175,7 +175,7 @@ describe('usePersonaStore — F07 单元测试', () => {
       store.createPersona({ name: '唯一' });
       expect(store.personas).toHaveLength(1);
 
-      store.deletePersona(store.personas[0].id);
+      store.deletePersona(store.personas[0]!.id);
       expect(store.personas).toHaveLength(1);
       expect(store.lastError).toContain('至少保留 1 个 Persona');
     });
@@ -236,7 +236,7 @@ describe('usePersonaStore — F07 单元测试', () => {
 
       await store.loadFromStorage();
       expect(store.personas).toHaveLength(1);
-      expect(store.personas[0].name).toBe('加载1');
+      expect(store.personas[0]!.name).toBe('加载1');
     });
 
     it('存储为空时自动创建默认 "User" Persona 并激活', async () => {
@@ -247,8 +247,8 @@ describe('usePersonaStore — F07 单元测试', () => {
 
       await store.loadFromStorage();
       expect(store.personas).toHaveLength(1);
-      expect(store.personas[0].name).toBe('User');
-      expect(settings.activePersonaId).toBe(store.personas[0].id);
+      expect(store.personas[0]!.name).toBe('User');
+      expect(settings.activePersonaId).toBe(store.personas[0]!.id);
     });
   });
 
@@ -259,7 +259,7 @@ describe('usePersonaStore — F07 单元测试', () => {
       store.createPersona({ name: '战士' });
       store.setSearchQuery('魔法');
       expect(store.filteredPersonas).toHaveLength(1);
-      expect(store.filteredPersonas[0].name).toBe('魔法师');
+      expect(store.filteredPersonas[0]!.name).toBe('魔法师');
     });
 
     it('按描述过滤', () => {
@@ -268,7 +268,7 @@ describe('usePersonaStore — F07 单元测试', () => {
       store.createPersona({ name: 'B', description: '聪明的法师' });
       store.setSearchQuery('法师');
       expect(store.filteredPersonas).toHaveLength(1);
-      expect(store.filteredPersonas[0].name).toBe('B');
+      expect(store.filteredPersonas[0]!.name).toBe('B');
     });
 
     it('空搜索词返回全部', () => {

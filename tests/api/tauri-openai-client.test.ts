@@ -238,10 +238,10 @@ describe('TauriOpenAIClient', () => {
       const doneEvents = events.filter((e) => e.type === 'done');
 
       expect(deltaEvents).toHaveLength(2);
-      expect(deltaEvents[0].delta).toBe('Hello');
-      expect(deltaEvents[1].delta).toBe(' World');
+      expect(deltaEvents[0]!.delta).toBe('Hello');
+      expect(deltaEvents[1]!.delta).toBe(' World');
       expect(doneEvents).toHaveLength(1);
-      expect(doneEvents[0].fullContent).toBe('Hello World');
+      expect(doneEvents[0]!.fullContent).toBe('Hello World');
     });
 
     it('错误事件后 yield error 并结束', async () => {
@@ -274,7 +274,7 @@ describe('TauriOpenAIClient', () => {
 
       const errorEvents = events.filter((e) => e.type === 'error');
       expect(errorEvents).toHaveLength(1);
-      expect(errorEvents[0].error).toBe('API 限流');
+      expect(errorEvents[0]!.error).toBe('API 限流');
     });
 
     it('Rust 端 invoke 抛错时也能正常处理', async () => {

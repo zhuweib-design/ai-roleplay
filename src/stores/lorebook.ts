@@ -118,7 +118,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
       const list = await storageAdapter.loadLorebooks();
       lorebooks.value = list;
       if (list.length > 0 && !currentLorebookId.value) {
-        currentLorebookId.value = list[0].id;
+        currentLorebookId.value = list[0]!.id;
       }
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityWorldbook'), error: err instanceof Error ? err.message : String(err) });
@@ -262,7 +262,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
   function deleteLorebook(id: string): void {
     const idx = lorebooks.value.findIndex((l) => l.id === id);
     if (idx < 0) return;
-    const removed = lorebooks.value.splice(idx, 1)[0];
+    const removed = lorebooks.value.splice(idx, 1)[0]!;
     void deleteFromStorage(id);
     lastInfo.value = t('lb.deleted', { name: removed.name });
     if (currentLorebookId.value === id) {
@@ -410,7 +410,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     const insertIdx = position === 'before' ? toIdx : toIdx + 1;
     // 移除后若 fromIdx < toIdx，toIdx 已下移 1
     const finalIdx = fromIdx < toIdx ? insertIdx - 1 : insertIdx;
-    lb.entries.splice(finalIdx, 0, moved);
+    lb.entries.splice(finalIdx, 0, moved!);
 
     // 重排 insertionOrder
     lb.entries.forEach((e, i) => {
@@ -662,7 +662,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
       direction === 'up' ? currentIdx - 1 : currentIdx + 1;
     if (targetIdx < 0 || targetIdx >= siblings.length) return false;
 
-    const target = siblings[targetIdx];
+    const target = siblings[targetIdx]!;
     // 交换两个条目在 entries 数组中的位置
     const entryArrayIdx = lb.entries.findIndex((e) => e.id === entryId);
     const targetArrayIdx = lb.entries.findIndex((e) => e.id === target.id);
@@ -670,8 +670,8 @@ export const useLorebookStore = defineStore('lorebook', () => {
 
     // 交换位置
     [lb.entries[entryArrayIdx], lb.entries[targetArrayIdx]] = [
-      lb.entries[targetArrayIdx],
-      lb.entries[entryArrayIdx],
+      lb.entries[targetArrayIdx]!,
+      lb.entries[entryArrayIdx]!,
     ];
 
     // 重新计算 insertionOrder（按数组顺序）

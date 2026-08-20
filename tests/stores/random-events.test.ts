@@ -53,7 +53,7 @@ describe('random-events store', () => {
       expect(id).toBeTruthy();
       expect(id).toMatch(/^tpl-/);
       expect(store.templates).toHaveLength(1);
-      expect(store.templates[0].name).toBe('神秘访客');
+      expect(store.templates[0]!.name).toBe('神秘访客');
     });
 
     it('createTemplate 名称校验失败返回 null', () => {
@@ -127,7 +127,7 @@ describe('random-events store', () => {
       const id2 = store.createTemplate(tplInput({ name: 'B' }));
       store.toggleTemplate(id2!, false);
       expect(store.enabledTemplates).toHaveLength(1);
-      expect(store.enabledTemplates[0].name).toBe('A');
+      expect(store.enabledTemplates[0]!.name).toBe('A');
     });
   });
 
@@ -290,7 +290,7 @@ describe('random-events store', () => {
       });
       store.recordResult(result);
       expect(store.results).toHaveLength(1);
-      expect(store.results[0].id).toBe(result.id);
+      expect(store.results[0]!.id).toBe(result.id);
     });
 
     it('记录结果更新模板 triggerCount 与 lastTriggeredAt', () => {
@@ -349,7 +349,7 @@ describe('random-events store', () => {
       store.recordResult(result);
       const ok = store.applyFeedback(result.id, 'positive');
       expect(ok).toBe(true);
-      expect(store.results[0].feedback).toBe('positive');
+      expect(store.results[0]!.feedback).toBe('positive');
     });
 
     it('应用反馈后调整模板概率', () => {
@@ -387,8 +387,8 @@ describe('random-events store', () => {
       });
       store.recordResult(result);
       store.applyFeedback(result.id, 'negative', '太频繁');
-      expect(store.results[0].feedback).toBe('negative');
-      expect(store.results[0].note).toBe('太频繁');
+      expect(store.results[0]!.feedback).toBe('negative');
+      expect(store.results[0]!.note).toBe('太频繁');
     });
   });
 

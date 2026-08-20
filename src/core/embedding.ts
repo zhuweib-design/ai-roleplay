@@ -42,9 +42,11 @@ export function cosineSimilarity(a: EmbeddingVector, b: EmbeddingVector): number
   let normA = 0;
   let normB = 0;
   for (let i = 0; i < a.dim; i++) {
-    dot += a.values[i] * b.values[i];
-    normA += a.values[i] * a.values[i];
-    normB += b.values[i] * b.values[i];
+    const av = a.values[i]!;
+    const bv = b.values[i]!;
+    dot += av * bv;
+    normA += av * av;
+    normB += bv * bv;
   }
   if (normA === 0 || normB === 0) return 0;
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
@@ -181,11 +183,11 @@ export class MockEmbeddingProvider implements EmbeddingProvider {
     const values = new Array<number>(this.dim).fill(0);
     const chars = Array.from(text);
     for (let i = 0; i < chars.length; i++) {
-      const code = chars[i].charCodeAt(0);
+      const code = chars[i]!.charCodeAt(0);
       // 字符码哈希到两个相邻桶,带位置加权
       const idx = code % this.dim;
-      values[idx] += 1 + (i % 3) * 0.1;
-      values[(idx + 1) % this.dim] += 0.3;
+      values[idx]! += 1 + (i % 3) * 0.1;
+      values[(idx + 1) % this.dim]! += 0.3;
     }
     // L2 归一化
     let norm = 0;

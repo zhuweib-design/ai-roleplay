@@ -122,7 +122,7 @@ export class MemoryStore {
       kind: fact.kind,
       body: fact.body,
       revision,
-      createdAt: this.facts.get(fact.id)!.snapshots[0].updatedAt,
+      createdAt: this.facts.get(fact.id)!.snapshots[0]!.updatedAt,
       updatedAt: now,
     };
   }
@@ -141,7 +141,7 @@ export class MemoryStore {
       kind: history.kind,
       body: snap.body,
       revision: snap.revision,
-      createdAt: history.snapshots[0].updatedAt,
+      createdAt: history.snapshots[0]!.updatedAt,
       updatedAt: snap.updatedAt,
     };
   }

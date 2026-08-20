@@ -259,11 +259,11 @@ export function parseCommand(segment: string): ParsedCommand {
   if (current) tokens.push(current);
 
   // 第一个 token 必须以 / 开头
-  if (tokens.length === 0 || !tokens[0].startsWith('/')) {
+  if (tokens.length === 0 || !tokens[0]!.startsWith('/')) {
     return { name: '', args: [], raw: text };
   }
 
-  const name = tokens[0].slice(1).toLowerCase();
+  const name = tokens[0]!.slice(1).toLowerCase();
   const args = tokens.slice(1);
   return { name, args, raw: text };
 }
@@ -279,8 +279,8 @@ export function parseCommand(segment: string): ParsedCommand {
 export function parseDiceExpression(expr: string): { count: number; faces: number } | null {
   const match = /^(\d+)d(\d+)$/i.exec(expr.trim());
   if (!match) return null;
-  const count = parseInt(match[1], 10);
-  const faces = parseInt(match[2], 10);
+  const count = parseInt(match[1]!, 10);
+  const faces = parseInt(match[2]!, 10);
   if (count < 1 || count > 100) return null;
   if (faces < 2 || faces > 1000) return null;
   return { count, faces };
@@ -354,7 +354,7 @@ export function getBuiltinCommands(): BuiltInCommand[] {
         if (args.length === 0) {
           return { success: false, message: '用法：/roll NdM（如 /roll 2d6）' };
         }
-        const parsed = parseDiceExpression(args[0]);
+        const parsed = parseDiceExpression(args[0]!);
         if (!parsed) {
           return { success: false, message: `无效的骰子表达式：${args[0]}（格式 NdM，如 2d6）` };
         }
@@ -435,7 +435,7 @@ export function getBuiltinCommands(): BuiltInCommand[] {
         if (args.length < 1) {
           return { success: false, message: '用法：/setvar <变量名> [值]' };
         }
-        const name = args[0];
+        const name = args[0]!;
         const value = args.slice(1).join(' ');
         ctx.localVariables[name] = value;
         return { success: true, pipe: value };
@@ -449,7 +449,7 @@ export function getBuiltinCommands(): BuiltInCommand[] {
         if (args.length < 1) {
           return { success: false, message: '用法：/getvar <变量名>' };
         }
-        const name = args[0];
+        const name = args[0]!;
         const value = ctx.localVariables[name] ?? ctx.globalVariables[name] ?? '';
         return { success: true, pipe: value };
       },
@@ -462,7 +462,7 @@ export function getBuiltinCommands(): BuiltInCommand[] {
         if (args.length < 1) {
           return { success: false, message: '用法：/delay <毫秒数>' };
         }
-        const ms = parseInt(args[0], 10);
+        const ms = parseInt(args[0]!, 10);
         if (Number.isNaN(ms) || ms < 0 || ms > 60000) {
           return {
             success: false,
@@ -537,7 +537,7 @@ export function getBuiltinCommands(): BuiltInCommand[] {
             if (args.length < 2) {
               return { success: false, message: '用法：/time set <数值>' };
             }
-            const value = parseInt(args[1], 10);
+            const value = parseInt(args[1]!, 10);
             if (Number.isNaN(value) || value < 0) {
               return { success: false, message: `无效的时间值：${args[1]}` };
             }
@@ -636,7 +636,7 @@ export function getBuiltinCommands(): BuiltInCommand[] {
                 message: `📊 事件状态汇总（共 ${events.length} 个）：${parts.join('，')}`,
               };
             }
-            const target = args[1];
+            const target = args[1]!;
             const evt = evCtx.findEvent(target);
             if (!evt) {
               return { success: false, message: `找不到事件：${target}` };
@@ -655,7 +655,7 @@ export function getBuiltinCommands(): BuiltInCommand[] {
                 message: `用法：/event ${sub} <id|名称>`,
               };
             }
-            const target = args[1];
+            const target = args[1]!;
             const evt = evCtx.findEvent(target);
             if (!evt) {
               return { success: false, message: `找不到事件：${target}` };
@@ -727,7 +727,7 @@ function applyMacrosToArgs(
     // setvar 可能修改了 mergedVars，回写到 ctx.localVariables（保持局部优先）
     for (const key of Object.keys(mergedVars)) {
       if (!(key in ctx.globalVariables)) {
-        ctx.localVariables[key] = mergedVars[key];
+        ctx.localVariables[key] = mergedVars[key]!;
       }
     }
     return result;
@@ -779,8 +779,8 @@ export async function executePipeline(
   let shouldAbort = false;
 
   for (let i = 0; i < pipeline.commands.length; i++) {
-    const parsed = pipeline.commands[i];
-    const block = pipeline.blockPipeAfter[i];
+    const parsed = pipeline.commands[i]!;
+    const block = pipeline.blockPipeAfter[i]!;
 
     // 查找命令：先查扩展（优先），再查内置
     const isExtra = extraMap.has(parsed.name);

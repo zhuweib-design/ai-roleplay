@@ -860,13 +860,13 @@ function setPathValue(obj: unknown, path: string, value: unknown): void {
   let current: Record<string, unknown> = obj as Record<string, unknown>;
 
   for (let i = 0; i < parts.length - 1; i++) {
-    const part = parts[i];
+    const part = parts[i]!;
     if (current[part] === undefined || current[part] === null) {
       current[part] = {};
     }
     current = current[part] as Record<string, unknown>;
   }
-  current[parts[parts.length - 1]] = value;
+  current[parts[parts.length - 1]!] = value;
 }
 
 // ── 顶层引擎：管理多个角色卡仓库 ──

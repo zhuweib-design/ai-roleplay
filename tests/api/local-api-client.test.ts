@@ -83,7 +83,7 @@ describe('LocalApiClient 流式 (T-04)', () => {
       { type: 'delta', delta: '世' },
       { type: 'delta', delta: '界' },
     ]);
-    const done = events[events.length - 1];
+    const done = events[events.length - 1]!;
     expect(done.type).toBe('done');
     expect(done.fullContent).toBe('你好世界');
   });

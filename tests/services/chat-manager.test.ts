@@ -182,8 +182,8 @@ describe('ChatManager', () => {
       );
 
       expect(promptInfos.length).toBe(1);
-      expect(promptInfos[0].tokenCount).toBeGreaterThan(0);
-      expect(promptInfos[0].messageCount).toBeGreaterThanOrEqual(2); // system + user
+      expect(promptInfos[0]!.tokenCount).toBeGreaterThan(0);
+      expect(promptInfos[0]!.messageCount).toBeGreaterThanOrEqual(2); // system + user
     });
 
     it('应忽略空 delta 事件', async () => {
@@ -390,14 +390,14 @@ describe('ChatManager', () => {
       });
 
       expect(requests.length).toBe(1);
-      const msgs = requests[0].messages;
+      const msgs = requests[0]!.messages;
       // 第一条应是 system，包含 systemPrompt + 角色定义
-      expect(msgs[0].role).toBe('system');
-      expect(msgs[0].content).toContain('You are a roleplay assistant.');
-      expect(msgs[0].content).toContain('Alice');
+      expect(msgs[0]!.role).toBe('system');
+      expect(msgs[0]!.content).toContain('You are a roleplay assistant.');
+      expect(msgs[0]!.content).toContain('Alice');
       // 最后一条应是 user
-      expect(msgs[msgs.length - 1].role).toBe('user');
-      expect(msgs[msgs.length - 1].content).toBe('继续');
+      expect(msgs[msgs.length - 1]!.role).toBe('user');
+      expect(msgs[msgs.length - 1]!.content).toBe('继续');
       // 中间应包含历史
       expect(msgs.some((m: ApiMessage) => m.content === '你好')).toBe(true);
       expect(msgs.some((m: ApiMessage) => m.content === '你好啊')).toBe(true);
@@ -425,7 +425,7 @@ describe('ChatManager', () => {
         { onPromptBuilt: (info) => promptInfos.push(info) }
       );
 
-      expect(promptInfos[0].trimmed).toBe(true);
+      expect(promptInfos[0]!.trimmed).toBe(true);
     });
 
     it('应支持 characterNote 深度注入', async () => {
@@ -499,9 +499,9 @@ describe('ChatManager', () => {
         overrides: { model: 'claude-3-5', temperature: 1.2, maxTokens: 2048 },
       });
 
-      expect(requests[0].model).toBe('claude-3-5');
-      expect(requests[0].temperature).toBe(1.2);
-      expect(requests[0].maxTokens).toBe(2048);
+      expect(requests[0]!.model).toBe('claude-3-5');
+      expect(requests[0]!.temperature).toBe(1.2);
+      expect(requests[0]!.maxTokens).toBe(2048);
     });
   });
 
@@ -603,7 +603,7 @@ describe('ChatManager', () => {
       });
 
       expect(requests.length).toBe(1);
-      const msgs = requests[0].messages;
+      const msgs = requests[0]!.messages;
       // 状态性旁白被精简(删除"然后")
       const assistantMsg = msgs.find((m) => m.role === 'assistant');
       expect(assistantMsg?.content).not.toContain('然后');
@@ -639,7 +639,7 @@ describe('ChatManager', () => {
       });
 
       expect(requests.length).toBe(1);
-      const systemMsg = requests[0].messages.find((m) => m.role === 'system');
+      const systemMsg = requests[0]!.messages.find((m) => m.role === 'system');
       expect(systemMsg?.content).toContain('测试角色设定');
       expect(systemMsg?.content).toContain('平静');
     });
@@ -692,7 +692,7 @@ describe('ChatManager', () => {
         userMessage: '你好',
       });
 
-      const systemMsg = requests[0].messages.find((m) => m.role === 'system');
+      const systemMsg = requests[0]!.messages.find((m) => m.role === 'system');
       expect(systemMsg?.content).not.toContain('当前情绪状态');
       expect(systemMsg?.content).not.toContain('输出纪律');
     });
@@ -776,7 +776,7 @@ function makeScriptedApiClient(scripts: ChatStreamEvent[][]): ApiClient & { call
       return '';
     },
     async *chatStream(): ChatStream {
-      const script = scripts[Math.min(calls, scripts.length - 1)];
+      const script = scripts[Math.min(calls, scripts.length - 1)]!;
       calls++;
       for (const ev of script) yield ev;
     },
@@ -861,7 +861,7 @@ describe('ChatManager 工具调用循环 (T-02)', () => {
     await manager.sendMessage({ card: makeCard(), history: [], userMessage: 'hi' });
 
     expect(requests.length).toBe(2);
-    const messages = requests[1].messages;
+    const messages = requests[1]!.messages;
     const assistantMsg = messages.find((m) => m.role === 'assistant' && m.toolCalls);
     expect(assistantMsg?.toolCalls).toEqual([
       { id: 'call_9', type: 'function', function: { name: 'set_var', arguments: '{"name":"x","value":"1"}' } },

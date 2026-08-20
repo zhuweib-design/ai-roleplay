@@ -427,7 +427,7 @@ describe('scanTriggers', () => {
     const ctx = makeContext({ recentMessages: ['故事结束了'] });
     const result = scanTriggers([evt], ctx);
     expect(result.completed).toHaveLength(1);
-    expect(result.completed[0].id).toBe(evt.id);
+    expect(result.completed[0]!.id).toBe(evt.id);
   });
 
   test('完成条件 manualOnly 跳过自动完成', () => {
@@ -447,8 +447,8 @@ describe('scanTriggers', () => {
     });
     const result = scanTriggers([evt], makeContext());
     expect(result.skipped.length).toBeGreaterThan(0);
-    expect(result.skipped[0].eventName).toBe(evt.name);
-    expect(result.skipped[0].reason).toContain('手动');
+    expect(result.skipped[0]!.eventName).toBe(evt.name);
+    expect(result.skipped[0]!.reason).toContain('手动');
   });
 });
 

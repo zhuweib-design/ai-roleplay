@@ -355,7 +355,7 @@ export const useSettingsStore = defineStore('settings', () => {
   function getPrimaryModel(category: ModelCategory): ApiProfile | null {
     const list = getModelsByCategory(category);
     if (list.length === 0) return null;
-    return list.find((p) => p.isPrimary) ?? list[0];
+    return list.find((p) => p.isPrimary) ?? list[0]!;
   }
 
   /**
@@ -521,7 +521,7 @@ export const useSettingsStore = defineStore('settings', () => {
     const target = idx + direction;
     if (target < 0 || target >= quickReplies.value.length) return;
     const list = quickReplies.value;
-    [list[idx], list[target]] = [list[target], list[idx]];
+    [list[idx]!, list[target]!] = [list[target]!, list[idx]!];
     void persistSettings();
   }
 

@@ -142,11 +142,11 @@ describe('useChatStore — D4 集成', () => {
       await chatStore.sendMessage(char, '你好');
 
       expect(char.messages).toHaveLength(2);
-      expect(char.messages[0].role).toBe('user');
-      expect(char.messages[0].content).toBe('你好');
-      expect(char.messages[1].role).toBe('assistant');
-      expect(char.messages[1].generating).toBe(false);
-      expect(char.messages[1].content).toContain('未配置 API Profile');
+      expect(char.messages[0]!.role).toBe('user');
+      expect(char.messages[0]!.content).toBe('你好');
+      expect(char.messages[1]!.role).toBe('assistant');
+      expect(char.messages[1]!.generating).toBe(false);
+      expect(char.messages[1]!.content).toContain('未配置 API Profile');
       expect(chatStore.lastError).not.toBeNull();
     });
 
@@ -177,11 +177,11 @@ describe('useChatStore — D4 集成', () => {
 
       expect(spy).toHaveBeenCalled();
       expect(char.messages).toHaveLength(2);
-      expect(char.messages[0].role).toBe('user');
-      expect(char.messages[0].content).toBe('你好');
-      expect(char.messages[1].role).toBe('assistant');
-      expect(char.messages[1].generating).toBe(false);
-      expect(char.messages[1].content).toBe('你好！');
+      expect(char.messages[0]!.role).toBe('user');
+      expect(char.messages[0]!.content).toBe('你好');
+      expect(char.messages[1]!.role).toBe('assistant');
+      expect(char.messages[1]!.generating).toBe(false);
+      expect(char.messages[1]!.content).toBe('你好！');
       expect(chatStore.isGenerating).toBe(false);
     });
 
@@ -269,7 +269,7 @@ describe('useChatStore — D4 集成', () => {
       );
       const char2 = makeCharacter();
       await chatStore.sendMessage(char2, '再发');
-      const calledUrl = fetchSpy.mock.calls[0][0] as string;
+      const calledUrl = fetchSpy.mock.calls[0]![0] as string;
       expect(calledUrl).toContain('new.example.com');
     });
 
@@ -284,7 +284,7 @@ describe('useChatStore — D4 集成', () => {
       const char = makeCharacter();
       await chatStore.sendMessage(char, '你好');
 
-      expect(char.messages[1].content).toContain('生成失败');
+      expect(char.messages[1]!.content).toContain('生成失败');
       expect(chatStore.lastError).not.toBeNull();
       expect(chatStore.lastError?.type).toBe('api');
       expect(chatStore.isGenerating).toBe(false);
@@ -363,7 +363,7 @@ describe('useChatStore — D4 集成', () => {
       chatStore.deleteMessage(char, 'm1');
 
       expect(char.messages).toHaveLength(1);
-      expect(char.messages[0].id).toBe('m2');
+      expect(char.messages[0]!.id).toBe('m2');
 
       await adapter.close();
     });
@@ -425,10 +425,10 @@ describe('useChatStore — D4 集成', () => {
       expect(loaded).not.toBeNull();
       expect(loaded!.characterId).toBe('persist-char');
       expect(loaded!.messages).toHaveLength(2);
-      expect(loaded!.messages[0].role).toBe('user');
-      expect(loaded!.messages[0].content).toBe('你好');
-      expect(loaded!.messages[1].role).toBe('assistant');
-      expect(loaded!.messages[1].content).toBe('你好呀！');
+      expect(loaded!.messages[0]!.role).toBe('user');
+      expect(loaded!.messages[0]!.content).toBe('你好');
+      expect(loaded!.messages[1]!.role).toBe('assistant');
+      expect(loaded!.messages[1]!.content).toBe('你好呀！');
 
       await adapter.close();
     });
@@ -472,10 +472,10 @@ describe('useChatStore — D4 集成', () => {
       await chatStore.loadChatHistory(char);
 
       expect(char.messages).toHaveLength(2);
-      expect(char.messages[0].id).toBe('old-m1');
-      expect(char.messages[0].content).toBe('历史用户消息');
-      expect(typeof char.messages[0].timestamp).toBe('number');
-      expect(char.messages[1].id).toBe('old-m2');
+      expect(char.messages[0]!.id).toBe('old-m1');
+      expect(char.messages[0]!.content).toBe('历史用户消息');
+      expect(typeof char.messages[0]!.timestamp).toBe('number');
+      expect(char.messages[1]!.id).toBe('old-m2');
 
       await adapter.close();
     });
@@ -535,7 +535,7 @@ describe('useChatStore — D4 集成', () => {
 
       // system 消息应被过滤
       expect(char.messages).toHaveLength(1);
-      expect(char.messages[0].id).toBe('u-1');
+      expect(char.messages[0]!.id).toBe('u-1');
 
       await adapter.close();
     });
@@ -561,9 +561,9 @@ describe('useChatStore — D4 集成', () => {
 
       // a1 内容应被替换为新回复
       expect(char.messages).toHaveLength(2);
-      expect(char.messages[1].id).toBe('a1');
-      expect(char.messages[1].content).toBe('重新生成的回复');
-      expect(char.messages[1].generating).toBe(false);
+      expect(char.messages[1]!.id).toBe('a1');
+      expect(char.messages[1]!.content).toBe('重新生成的回复');
+      expect(char.messages[1]!.generating).toBe(false);
     });
 
     it('重新生成非 assistant 消息应被忽略', async () => {
@@ -576,7 +576,7 @@ describe('useChatStore — D4 集成', () => {
 
       await chatStore.regenerateMessage(char, 'u1');
 
-      expect(char.messages[0].content).toBe('问题');
+      expect(char.messages[0]!.content).toBe('问题');
     });
 
     it('重新生成不存在的消息 id 应被忽略', async () => {
@@ -589,7 +589,7 @@ describe('useChatStore — D4 集成', () => {
 
       await chatStore.regenerateMessage(char, 'nonexistent');
 
-      expect(char.messages[0].content).toBe('原');
+      expect(char.messages[0]!.content).toBe('原');
     });
 
     it('历史中无用户消息时无法重新生成', async () => {
@@ -602,7 +602,7 @@ describe('useChatStore — D4 集成', () => {
 
       await chatStore.regenerateMessage(char, 'a1');
 
-      expect(char.messages[0].content).toBe('原');
+      expect(char.messages[0]!.content).toBe('原');
     });
   });
 });
