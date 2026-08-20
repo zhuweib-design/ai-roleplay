@@ -11,6 +11,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useLocalModelStore } from '../../src/stores/local-model';
+import { listRegisteredModels } from '../../src/core/local-model-engine';
 
 describe('local-model store (模块2)', () => {
   beforeEach(() => {
@@ -60,11 +61,19 @@ describe('local-model store (模块2)', () => {
   });
 
   describe('计算属性', () => {
-    it('models 返回注册表中的模型（带状态）', () => {
+    it('models 仅含已下载模型并携带 status 字段', () => {
       const store = useLocalModelStore();
-      expect(store.models.length).toBeGreaterThan(0);
+      // 默认无下载：not-downloaded 被过滤 → 空数组（e770710 语义：仅展示真实已下载）
+      expect(store.models).toEqual([]);
+
+      // 注入一个已下载状态后，models 应仅含该模型且带 status
+      const firstId = listRegisteredModels()[0].id;
+      // Pinia setup store 解包 ref：store.modelStatuses 已是 Map 本身（无 .value）
+      store.modelStatuses.set(firstId, 'ready');
+      expect(store.models.length).toBe(1);
       expect(store.models[0]).toHaveProperty('status');
-      expect(store.models[0].status).toBe('not-downloaded');
+      expect(store.models[0].status).toBe('ready');
+      expect(store.models[0].id).toBe(firstId);
     });
 
     it('loadedModel 在未加载时为 null', () => {

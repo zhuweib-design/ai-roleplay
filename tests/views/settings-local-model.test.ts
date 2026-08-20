@@ -16,6 +16,7 @@ import { createRouter, createMemoryHistory } from 'vue-router';
 import SettingsView from '@/views/SettingsView.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { useLocalModelStore } from '@/stores/local-model';
+import { listRegisteredModels } from '@/core/local-model-engine';
 
 function createTestRouter() {
   return createRouter({
@@ -47,6 +48,14 @@ async function mountSettings() {
 }
 
 type SettingsFixture = Awaited<ReturnType<typeof mountSettings>>;
+
+/** 向 localModelStore 注入全部已下载状态，使 models 渲染注册表模型（e770710 语义：仅已下载） */
+async function seedDownloadedModels(localModelStore: SettingsFixture['localModelStore']) {
+  for (const m of listRegisteredModels()) {
+    localModelStore.modelStatuses.set(m.id, 'ready');
+  }
+  await flushPromises();
+}
 
 /** 点击浮动侧边栏中的分类 */
 async function clickCategory(wrapper: SettingsFixture['wrapper'], label: string) {
@@ -99,6 +108,10 @@ describe('SettingsView 设置分类侧边栏 + 本地模型统一管理', () => 
     expect(wrapper.find('.model-mgmt-tabs').text()).toContain('本地模型');
 
     await clickMgmtTab(wrapper, '本地模型');
+    // 默认无已下载模型 → 本地 tab 列表为空（e770710 语义：仅展示真实已下载）
+    expect(wrapper.findAll('.model-mgmt-list .profile-item').length).toBe(0);
+    // 注入已下载状态后，本地 tab 渲染全部已下载模型
+    await seedDownloadedModels(localModelStore);
     const rows = wrapper.findAll('.model-mgmt-list .profile-item');
     expect(rows.length).toBe(localModelStore.models.length);
     expect(rows.length).toBe(5);
@@ -112,6 +125,7 @@ describe('SettingsView 设置分类侧边栏 + 本地模型统一管理', () => 
     expect(localModelStore.isAvailable).toBe(false);
     await clickCategory(wrapper, '模型');
     await clickMgmtTab(wrapper, '本地模型');
+    await seedDownloadedModels(localModelStore);
 
     const loadBtn = wrapper.find('[aria-label="加载本地模型 Qwen2.5 0.5B"]');
     expect(loadBtn.exists()).toBe(true);
@@ -119,9 +133,10 @@ describe('SettingsView 设置分类侧边栏 + 本地模型统一管理', () => 
   });
 
   it('添加到配置 → 生成 provider=local 的 ApiProfile（重复添加去重）', async () => {
-    const { wrapper, settings } = await mountSettings();
+    const { wrapper, settings, localModelStore } = await mountSettings();
     await clickCategory(wrapper, '模型');
     await clickMgmtTab(wrapper, '本地模型');
+    await seedDownloadedModels(localModelStore);
 
     await wrapper
       .find('[aria-label="将本地模型 Qwen2.5 0.5B 添加到模型配置"]')
