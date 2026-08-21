@@ -26,7 +26,7 @@ import {
  *
  * 不负责：
  * - 提示词注入（由 prompt-builder 集成）
- * - 向量嵌入（F09.3 后续实现）
+ * - 向量嵌入（由 core/onnx-embedding-provider + core/dual-channel-runtime 承担，含自定义向量模型）
  */
 export const useDataBankStore = defineStore('data-bank', () => {
   // ── 状态 ──
