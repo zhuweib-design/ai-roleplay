@@ -857,6 +857,13 @@ function auditResultClass(r: string): string {
   return r === 'ok' ? 'audit-ok' : r === 'blocked' ? 'audit-blocked' : 'audit-error';
 }
 
+/** 审计结果徽标文本（i18n） */
+function auditResultLabel(r: string): string {
+  if (r === 'ok') return t('settingsView.auditResultOk');
+  if (r === 'blocked') return t('settingsView.auditResultBlocked');
+  return t('settingsView.auditResultFailed');
+}
+
 // ── T-12: 资料档案(Profile)管理 ──
 
 const currentProfileId = ref(getActiveProfileId());
@@ -1620,7 +1627,7 @@ async function handleExportChatMarkdown() {
       <header class="section-header">
         <h2 id="persona-section-title" class="section-title">
           <Icon name="user" :size="18" aria-hidden="true" />
-          <span>Persona 用户身份</span>
+          <span>{{ t('settingsView.personaTitle') }}</span>
         </h2>
         <button
           type="button"
@@ -1628,12 +1635,12 @@ async function handleExportChatMarkdown() {
           @click="openPersonaCreate"
         >
           <Icon name="plus" :size="14" />
-          <span>新建</span>
+          <span>{{ t('settingsView.personaCreate') }}</span>
         </button>
       </header>
       <p class="section-hint">
-        当前身份：<strong>{{ personaStore.activeUserName }}</strong>
-        · 对话中 <code v-pre>{{user}}</code> 宏将替换为该名称
+        {{ t('settingsView.personaCurrentLabel') }}<strong>{{ personaStore.activeUserName }}</strong>
+        {{ t('settingsView.personaMacroHint') }}
       </p>
       <ul v-if="personaStore.personas.length" class="profile-list" role="list">
         <li
@@ -1646,40 +1653,40 @@ async function handleExportChatMarkdown() {
             type="button"
             class="profile-info"
             :aria-pressed="p.id === settings.activePersonaId"
-            :aria-label="`激活 Persona ${p.name}`"
+            :aria-label="t('settingsView.personaActivateAria', { name: p.name })"
             @click="personaStore.setActivePersona(p.id)"
           >
             <div class="profile-name">
               {{ p.name }}
-              <span v-if="p.id === settings.activePersonaId" class="badge-active" aria-label="当前激活">激活</span>
+              <span v-if="p.id === settings.activePersonaId" class="badge-active" :aria-label="t('common.active')">{{ t('settingsView.personaActiveBadge') }}</span>
             </div>
-            <div class="profile-baseurl">{{ p.description || '无描述' }}</div>
+            <div class="profile-baseurl">{{ p.description || t('settingsView.personaNoDesc') }}</div>
           </button>
           <div class="profile-actions">
             <button
               type="button"
               class="action-btn"
-              :aria-label="`编辑 Persona ${p.name}`"
+              :aria-label="t('settingsView.personaEditAria', { name: p.name })"
               @click="openPersonaEdit(p)"
             >
               <Icon name="pencil" :size="12" />
-              <span>编辑</span>
+              <span>{{ t('common.edit') }}</span>
             </button>
             <button
               type="button"
               class="action-btn delete"
               :disabled="personaStore.personas.length <= 1"
               :aria-disabled="personaStore.personas.length <= 1"
-              :aria-label="`删除 Persona ${p.name}`"
+              :aria-label="t('settingsView.personaDeleteAria', { name: p.name })"
               @click="confirmDeletePersona(p)"
             >
               <Icon name="trash-2" :size="12" />
-              <span>删除</span>
+              <span>{{ t('common.delete') }}</span>
             </button>
           </div>
         </li>
       </ul>
-      <p v-else class="empty-hint">尚无 Persona，应用会自动创建默认 "User"</p>
+      <p v-else class="empty-hint">{{ t('settingsView.personaEmpty') }}</p>
     </section>
 
 
@@ -1687,13 +1694,13 @@ async function handleExportChatMarkdown() {
     <!-- Persona 编辑/新建 Modal (F07) -->
     <Modal
       v-model="personaModalOpen"
-      :title="personaEditMode === 'create' ? '新建 Persona' : '编辑 Persona'"
-      aria-label="Persona 表单"
+      :title="personaEditMode === 'create' ? t('settingsView.personaCreateTitle') : t('settingsView.personaEditTitle')"
+      :aria-label="t('settingsView.personaFormAria')"
     >
       <form class="profile-form" novalidate @submit.prevent="savePersona">
         <div class="form-field">
           <label for="persona-name" class="field-label">
-            名称 <span class="required">*</span>
+            {{ t('settingsView.personaName') }} <span class="required">*</span>
           </label>
           <input
             id="persona-name"
@@ -1704,28 +1711,28 @@ async function handleExportChatMarkdown() {
             :aria-invalid="!!personaErrors.name"
             :aria-describedby="personaErrors.name ? 'err-persona-name' : undefined"
             :maxlength="30"
-            placeholder="如：勇者艾伦"
+            :placeholder="t('settingsView.personaNamePlaceholder')"
             autocomplete="off"
           />
           <p v-if="personaErrors.name" id="err-persona-name" class="field-error" role="alert">
             <Icon name="alert-triangle" :size="12" />
             <span>{{ personaErrors.name }}</span>
           </p>
-          <p class="field-hint">1-30 字符，将作为 <code v-pre>{{user}}</code> 宏替换值</p>
+          <p class="field-hint">{{ t('settingsView.personaNameHint') }}<code v-pre>{{user}}</code>{{ t('settingsView.personaNameHint2') }}</p>
         </div>
 
         <div class="form-field">
-          <label for="persona-desc" class="field-label">描述（外貌/性格/背景）</label>
+          <label for="persona-desc" class="field-label">{{ t('settingsView.personaDescLabel') }}</label>
           <textarea
             id="persona-desc"
             v-model="personaForm.description"
             class="field-input field-textarea"
             rows="5"
-            placeholder="描述这个 Persona 的外貌、性格、背景等。建议 500 字以内。"
+            :placeholder="t('settingsView.personaDescPlaceholder')"
             aria-describedby="persona-desc-hint"
           />
           <p id="persona-desc-hint" class="field-hint">
-            建议 500 字以内，将注入提示词作为用户身份描述
+            {{ t('settingsView.personaDescHint') }}
           </p>
         </div>
       </form>
@@ -1735,7 +1742,7 @@ async function handleExportChatMarkdown() {
           class="modal-btn modal-cancel"
           @click="personaModalOpen = false"
         >
-          取消
+          {{ t('common.cancel') }}
         </button>
         <button
           type="button"
@@ -1745,7 +1752,7 @@ async function handleExportChatMarkdown() {
           @click="savePersona"
         >
           <Icon name="save" :size="14" />
-          <span>{{ personaEditMode === 'create' ? '创建' : '保存' }}</span>
+          <span>{{ personaEditMode === 'create' ? t('settingsView.personaCreateAction') : t('common.save') }}</span>
         </button>
       </template>
     </Modal>
@@ -1753,14 +1760,14 @@ async function handleExportChatMarkdown() {
     <!-- Persona 删除确认 -->
     <Modal
       v-model="personaDeleteModalOpen"
-      title="确认删除"
-      aria-label="删除 Persona 确认"
+      :title="t('settingsView.personaDeleteConfirmTitle')"
+      :aria-label="t('settingsView.personaDeleteConfirmAria')"
     >
       <p v-if="personaDeleteTarget">
-        确定要删除 Persona「<strong>{{ personaDeleteTarget.name }}</strong>」吗？
+        {{ t('settingsView.personaDeleteConfirmBody', { name: personaDeleteTarget.name }) }}
       </p>
       <p class="delete-warning">
-        删除后无法恢复。若删除的是当前激活身份，将自动切换到第一个 Persona。
+        {{ t('settingsView.personaDeleteWarning') }}
       </p>
       <template #footer>
         <button
@@ -1768,14 +1775,14 @@ async function handleExportChatMarkdown() {
           class="modal-btn modal-cancel"
           @click="personaDeleteModalOpen = false"
         >
-          取消
+          {{ t('common.cancel') }}
         </button>
         <button
           type="button"
           class="modal-btn modal-confirm"
           @click="executeDeletePersona"
         >
-          删除
+          {{ t('common.delete') }}
         </button>
       </template>
     </Modal>
@@ -1793,17 +1800,17 @@ async function handleExportChatMarkdown() {
       <header class="section-header">
         <h2 id="data-mgmt-title" class="section-title">
           <Icon name="download" :size="16" />
-          <span>数据管理</span>
+          <span>{{ t('settingsView.dataMgmtTitle') }}</span>
         </h2>
-        <p class="section-hint">备份、恢复、导出角色卡与对话</p>
+        <p class="section-hint">{{ t('settingsView.dataMgmtDesc') }}</p>
       </header>
 
       <!-- T-07: SillyTavern Quick Reply 互导 -->
       <div class="data-mgmt-row">
         <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">快捷回复互导（SillyTavern）</h3>
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.qrSection') }}</h3>
           <p class="data-mgmt-hint">
-            将快捷回复按钮导出为 SillyTavern Quick Reply JSON，或从 ST 文件导入（同名自动去重）。
+            {{ t('settingsView.qrSectionDesc') }}
           </p>
           <div class="data-mgmt-actions">
             <button
@@ -1812,7 +1819,7 @@ async function handleExportChatMarkdown() {
               @click="handleExportQuickReplies"
             >
               <Icon name="download" :size="14" />
-              <span>导出快捷回复</span>
+              <span>{{ t('settingsView.qrExport') }}</span>
             </button>
             <button
               type="button"
@@ -1820,7 +1827,7 @@ async function handleExportChatMarkdown() {
               @click="handleImportQuickReplies"
             >
               <Icon name="upload" :size="14" />
-              <span>导入快捷回复</span>
+              <span>{{ t('settingsView.qrImport') }}</span>
             </button>
             <input
               ref="quickReplyFileInput"
@@ -1836,10 +1843,10 @@ async function handleExportChatMarkdown() {
       <!-- T-12: 资料档案(Profile) -->
       <div class="data-mgmt-row">
         <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">资料档案(Profile)</h3>
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.profileSection') }}</h3>
           <p class="data-mgmt-hint">
-            当前档案:<strong>{{ currentProfileId }}</strong>。
-            切换档案后数据相互隔离(Web 模式按档案分库);切换需重启应用生效。
+            {{ t('settingsView.profileCurrent') }}<strong>{{ currentProfileId }}</strong>。
+            {{ t('settingsView.profileCurrentDesc') }}
           </p>
           <div class="data-mgmt-actions">
             <label class="profile-create">
@@ -1847,8 +1854,8 @@ async function handleExportChatMarkdown() {
                 v-model="newProfileName"
                 type="text"
                 class="profile-input"
-                placeholder="新档案名(字母/数字/_-)"
-                :aria-label="'新资料档案名称'"
+                :placeholder="t('settingsView.profileNamePlaceholder')"
+                :aria-label="t('settingsView.profileNameAria')"
               />
               <button
                 type="button"
@@ -1856,7 +1863,7 @@ async function handleExportChatMarkdown() {
                 @click="handleCreateProfile"
               >
                 <Icon name="plus" :size="14" />
-                <span>创建并切换</span>
+                <span>{{ t('settingsView.profileCreateAndSwitch') }}</span>
               </button>
             </label>
             <button
@@ -1866,7 +1873,7 @@ async function handleExportChatMarkdown() {
               @click="handleResetProfile"
             >
               <Icon name="arrow-left" :size="14" />
-              <span>切回默认档案</span>
+              <span>{{ t('settingsView.profileResetAction') }}</span>
             </button>
           </div>
         </div>
@@ -1875,10 +1882,10 @@ async function handleExportChatMarkdown() {
       <!-- E-04 二期: 嵌入优化开关 -->
       <div class="data-mgmt-row">
         <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">嵌入优化(实验)</h3>
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.optSection') }}</h3>
           <p class="data-mgmt-hint">
-            三层中间件优化:上下文结构(L0)/输出纪律(L2)/内容压缩(L1)。
-            <strong>默认全部关闭</strong>,开启后重启应用生效;所有路径 fail-open,失败自动回退原文。
+            {{ t('settingsView.optSectionDesc') }}
+            <strong>{{ t('settingsView.optDefaultOff') }}</strong>{{ t('settingsView.optSectionDesc2') }}
           </p>
           <div class="opt-switches">
             <label class="form-row">
@@ -1887,7 +1894,7 @@ async function handleExportChatMarkdown() {
                 :checked="optimizationConfig.enabled"
                 @change="toggleOptimization('enabled', ($event.target as HTMLInputElement).checked)"
               />
-              <span>总开关(实验性)</span>
+              <span>{{ t('settingsView.optMasterSwitch') }}</span>
             </label>
             <label class="form-row">
               <input
@@ -1896,7 +1903,7 @@ async function handleExportChatMarkdown() {
                 :disabled="!optimizationConfig.enabled"
                 @change="toggleOptimization('l0Enabled', ($event.target as HTMLInputElement).checked)"
               />
-              <span>L0 上下文结构(前缀稳定)</span>
+              <span>{{ t('settingsView.optL0') }}</span>
             </label>
             <label class="form-row">
               <input
@@ -1905,7 +1912,7 @@ async function handleExportChatMarkdown() {
                 :disabled="!optimizationConfig.enabled"
                 @change="toggleOptimization('l2Enabled', ($event.target as HTMLInputElement).checked)"
               />
-              <span>L2 输出纪律(旁白精简)</span>
+              <span>{{ t('settingsView.optL2') }}</span>
             </label>
             <label class="form-row">
               <input
@@ -1914,7 +1921,7 @@ async function handleExportChatMarkdown() {
                 :disabled="!optimizationConfig.enabled"
                 @change="toggleOptimization('l1Enabled', ($event.target as HTMLInputElement).checked)"
               />
-              <span>L1 内容压缩(长历史)</span>
+              <span>{{ t('settingsView.optL1') }}</span>
             </label>
           </div>
         </div>
@@ -1923,9 +1930,9 @@ async function handleExportChatMarkdown() {
       <!-- T-06: 数据操作审计日志 -->
       <div class="data-mgmt-row">
         <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">数据操作审计日志</h3>
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.auditSection') }}</h3>
           <p class="data-mgmt-hint">
-            记录备份导入/导出、角色卡与对话导出等敏感操作（仅摘要，不含内容数据；最多保留 200 条）。
+            {{ t('settingsView.auditSectionDesc') }}
           </p>
           <div class="data-mgmt-actions">
             <button
@@ -1934,7 +1941,7 @@ async function handleExportChatMarkdown() {
               @click="auditModalOpen = true"
             >
               <Icon name="clock" :size="14" />
-              <span>查看审计日志</span>
+              <span>{{ t('settingsView.auditView') }}</span>
             </button>
             <button
               type="button"
@@ -1942,7 +1949,7 @@ async function handleExportChatMarkdown() {
               @click="handleExportAuditLog"
             >
               <Icon name="download" :size="14" />
-              <span>导出审计 JSON</span>
+              <span>{{ t('settingsView.auditExport') }}</span>
             </button>
             <button
               type="button"
@@ -1950,7 +1957,7 @@ async function handleExportChatMarkdown() {
               @click="handleClearAuditLog"
             >
               <Icon name="trash-2" :size="14" />
-              <span>清空日志</span>
+              <span>{{ t('settingsView.auditClear') }}</span>
             </button>
           </div>
         </div>
@@ -1959,9 +1966,9 @@ async function handleExportChatMarkdown() {
       <!-- 全量备份 -->
       <div class="data-mgmt-row">
         <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">全量备份与恢复</h3>
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.backupSection') }}</h3>
           <p class="data-mgmt-hint">
-            将所有角色卡、对话、世界书、群聊、Persona 和设置导出为单一 JSON 文件，便于跨设备迁移。
+            {{ t('settingsView.backupSectionDesc') }}
           </p>
           <div class="data-mgmt-actions">
             <button
@@ -1971,7 +1978,7 @@ async function handleExportChatMarkdown() {
               @click="handleExportBackup"
             >
               <Icon name="download" :size="14" />
-              <span>导出备份</span>
+              <span>{{ t('settingsView.backupExport') }}</span>
             </button>
             <button
               type="button"
@@ -1980,7 +1987,7 @@ async function handleExportChatMarkdown() {
               @click="triggerBackupImport"
             >
               <Icon name="upload" :size="14" />
-              <span>导入备份</span>
+              <span>{{ t('settingsView.backupImport') }}</span>
             </button>
             <input
               ref="backupFileInput"
@@ -1994,8 +2001,8 @@ async function handleExportChatMarkdown() {
           </div>
 
           <!-- 冲突策略 -->
-          <div class="conflict-strategy" role="radiogroup" aria-label="冲突处理策略">
-            <span class="strategy-label">冲突策略：</span>
+          <div class="conflict-strategy" role="radiogroup" :aria-label="t('settingsView.conflictStrategyAria')">
+            <span class="strategy-label">{{ t('settingsView.conflictStrategy') }}</span>
             <label class="strategy-option">
               <input
                 type="radio"
@@ -2003,7 +2010,7 @@ async function handleExportChatMarkdown() {
                 value="overwrite"
                 v-model="conflictStrategy"
               />
-              <span>覆盖</span>
+              <span>{{ t('settingsView.conflictOverwrite') }}</span>
             </label>
             <label class="strategy-option">
               <input
@@ -2012,7 +2019,7 @@ async function handleExportChatMarkdown() {
                 value="skip"
                 v-model="conflictStrategy"
               />
-              <span>跳过</span>
+              <span>{{ t('settingsView.conflictSkip') }}</span>
             </label>
             <label class="strategy-option">
               <input
@@ -2021,7 +2028,7 @@ async function handleExportChatMarkdown() {
                 value="merge"
                 v-model="conflictStrategy"
               />
-              <span>合并</span>
+              <span>{{ t('settingsView.conflictMerge') }}</span>
             </label>
           </div>
         </div>
@@ -2030,19 +2037,19 @@ async function handleExportChatMarkdown() {
       <!-- 角色卡 PNG 导出 -->
       <div class="data-mgmt-row">
         <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">导出角色卡 PNG</h3>
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.pngExportSection') }}</h3>
           <p class="data-mgmt-hint">
-            将角色卡嵌入 PNG 文件（SillyTavern 兼容格式），可作为图像分享。
+            {{ t('settingsView.pngExportDesc') }}
           </p>
           <div class="data-mgmt-actions">
             <label class="data-mgmt-select-label">
-              <span class="visually-hidden">选择角色</span>
+              <span class="visually-hidden">{{ t('settingsView.selectChar') }}</span>
               <select
                 v-model="exportCharId"
                 class="tk-input data-mgmt-select"
-                aria-label="选择要导出 PNG 的角色"
+                :aria-label="t('settingsView.selectCharPngAria')"
               >
-                <option value="">请选择角色…</option>
+                <option value="">{{ t('settingsView.selectCharPlaceholder') }}</option>
                 <option
                   v-for="c in exportCharList"
                   :key="c.id"
@@ -2059,7 +2066,7 @@ async function handleExportChatMarkdown() {
               @click="handleExportCharacterPng"
             >
               <Icon name="image" :size="14" />
-              <span>导出 PNG</span>
+              <span>{{ t('settingsView.exportPng') }}</span>
             </button>
           </div>
         </div>
@@ -2068,19 +2075,19 @@ async function handleExportChatMarkdown() {
       <!-- 对话 Markdown 导出 -->
       <div class="data-mgmt-row">
         <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">导出对话 Markdown</h3>
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.mdExportSection') }}</h3>
           <p class="data-mgmt-hint">
-            将指定角色的最新对话导出为 Markdown 文档。
+            {{ t('settingsView.mdExportDesc') }}
           </p>
           <div class="data-mgmt-actions">
             <label class="data-mgmt-select-label">
-              <span class="visually-hidden">选择角色</span>
+              <span class="visually-hidden">{{ t('settingsView.selectChar') }}</span>
               <select
                 v-model="exportChatCharId"
                 class="tk-input data-mgmt-select"
-                aria-label="选择要导出对话的角色"
+                :aria-label="t('settingsView.selectCharMdAria')"
               >
-                <option value="">请选择角色…</option>
+                <option value="">{{ t('settingsView.selectCharPlaceholder') }}</option>
                 <option
                   v-for="c in exportChatCharList"
                   :key="c.id"
@@ -2097,7 +2104,7 @@ async function handleExportChatMarkdown() {
               @click="handleExportChatMarkdown"
             >
               <Icon name="file" :size="14" />
-              <span>导出 Markdown</span>
+              <span>{{ t('settingsView.exportMd') }}</span>
             </button>
           </div>
         </div>
@@ -2107,55 +2114,55 @@ async function handleExportChatMarkdown() {
     <!-- 导入结果 Modal -->
     <Modal
       v-model="importResultModalOpen"
-      title="导入结果"
+      :title="t('settingsView.importResultTitle')"
     >
       <div v-if="lastImportResult" class="import-result">
-        <p class="result-summary">导入完成，统计如下：</p>
+        <p class="result-summary">{{ t('settingsView.importResultSummary') }}</p>
         <ul class="result-list">
           <li>
-            <span class="result-key">角色卡</span>
+            <span class="result-key">{{ t('settingsView.importKeyCharacters') }}</span>
             <span class="result-value">
-              新增 {{ lastImportResult.characters.added }} ·
-              覆盖 {{ lastImportResult.characters.overwritten }} ·
-              跳过 {{ lastImportResult.characters.skipped }}
+              {{ t('settingsView.importAdded', { n: lastImportResult.characters.added }) }} ·
+              {{ t('settingsView.importOverwritten', { n: lastImportResult.characters.overwritten }) }} ·
+              {{ t('settingsView.importSkipped', { n: lastImportResult.characters.skipped }) }}
             </span>
           </li>
           <li>
-            <span class="result-key">对话</span>
+            <span class="result-key">{{ t('settingsView.importKeyChats') }}</span>
             <span class="result-value">
-              新增 {{ lastImportResult.chats.added }} ·
-              覆盖 {{ lastImportResult.chats.overwritten }} ·
-              跳过 {{ lastImportResult.chats.skipped }}
+              {{ t('settingsView.importAdded', { n: lastImportResult.chats.added }) }} ·
+              {{ t('settingsView.importOverwritten', { n: lastImportResult.chats.overwritten }) }} ·
+              {{ t('settingsView.importSkipped', { n: lastImportResult.chats.skipped }) }}
             </span>
           </li>
           <li>
-            <span class="result-key">世界书</span>
+            <span class="result-key">{{ t('settingsView.importKeyLorebooks') }}</span>
             <span class="result-value">
-              新增 {{ lastImportResult.lorebooks.added }} ·
-              覆盖 {{ lastImportResult.lorebooks.overwritten }} ·
-              跳过 {{ lastImportResult.lorebooks.skipped }}
+              {{ t('settingsView.importAdded', { n: lastImportResult.lorebooks.added }) }} ·
+              {{ t('settingsView.importOverwritten', { n: lastImportResult.lorebooks.overwritten }) }} ·
+              {{ t('settingsView.importSkipped', { n: lastImportResult.lorebooks.skipped }) }}
             </span>
           </li>
           <li>
-            <span class="result-key">群聊</span>
+            <span class="result-key">{{ t('settingsView.importKeyGroups') }}</span>
             <span class="result-value">
-              新增 {{ lastImportResult.groupChats.added }} ·
-              覆盖 {{ lastImportResult.groupChats.overwritten }} ·
-              跳过 {{ lastImportResult.groupChats.skipped }}
+              {{ t('settingsView.importAdded', { n: lastImportResult.groupChats.added }) }} ·
+              {{ t('settingsView.importOverwritten', { n: lastImportResult.groupChats.overwritten }) }} ·
+              {{ t('settingsView.importSkipped', { n: lastImportResult.groupChats.skipped }) }}
             </span>
           </li>
           <li>
-            <span class="result-key">Persona</span>
+            <span class="result-key">{{ t('settingsView.importKeyPersonas') }}</span>
             <span class="result-value">
-              新增 {{ lastImportResult.personas.added }} ·
-              覆盖 {{ lastImportResult.personas.overwritten }} ·
-              跳过 {{ lastImportResult.personas.skipped }}
+              {{ t('settingsView.importAdded', { n: lastImportResult.personas.added }) }} ·
+              {{ t('settingsView.importOverwritten', { n: lastImportResult.personas.overwritten }) }} ·
+              {{ t('settingsView.importSkipped', { n: lastImportResult.personas.skipped }) }}
             </span>
           </li>
           <li>
-            <span class="result-key">设置</span>
+            <span class="result-key">{{ t('settingsView.importKeySettings') }}</span>
             <span class="result-value">
-              {{ lastImportResult.settingsUpdated ? '已更新' : '未变更' }}
+              {{ lastImportResult.settingsUpdated ? t('settingsView.importUpdated') : t('settingsView.importUnchanged') }}
             </span>
           </li>
         </ul>
@@ -2165,7 +2172,7 @@ async function handleExportChatMarkdown() {
           role="alert"
         >
           <Icon name="alert-triangle" :size="14" />
-          <span>有 {{ lastImportResult.errors.length }} 条错误：</span>
+          <span>{{ t('settingsView.importErrors', { n: lastImportResult.errors.length }) }}</span>
         </p>
         <ul v-if="lastImportResult.errors.length > 0" class="error-list">
           <li v-for="(err, idx) in lastImportResult.errors" :key="idx">
@@ -2179,15 +2186,15 @@ async function handleExportChatMarkdown() {
           class="modal-btn modal-confirm"
           @click="importResultModalOpen = false"
         >
-          关闭
+          {{ t('common.close') }}
         </button>
       </template>
     </Modal>
 
     <!-- T-06: 审计日志查看 -->
-    <Modal v-model="auditModalOpen" title="数据操作审计日志">
+    <Modal v-model="auditModalOpen" :title="t('settingsView.auditLogSectionSortTitle')">
       <div class="audit-log-body">
-        <p v-if="auditEntries.length === 0" class="audit-empty">暂无审计记录</p>
+        <p v-if="auditEntries.length === 0" class="audit-empty">{{ t('settingsView.auditEmpty') }}</p>
         <ul v-else class="audit-list">
           <li
             v-for="entry in auditEntries"
@@ -2198,7 +2205,7 @@ async function handleExportChatMarkdown() {
             <span class="audit-action">{{ AUDIT_ACTION_LABELS[entry.action] ?? entry.action }}</span>
             <span class="audit-detail">{{ entry.detail }}</span>
             <span class="audit-result" :class="auditResultClass(entry.result)">
-              {{ entry.result === 'ok' ? '成功' : entry.result === 'blocked' ? '阻止' : '失败' }}
+              {{ auditResultLabel(entry.result) }}
             </span>
           </li>
         </ul>
@@ -2209,7 +2216,7 @@ async function handleExportChatMarkdown() {
           class="modal-btn modal-confirm"
           @click="auditModalOpen = false"
         >
-          关闭
+          {{ t('common.close') }}
         </button>
       </template>
     </Modal>

@@ -56,6 +56,40 @@ button { font-family: inherit; }
   background-color: currentColor;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   触屏 & 滚动安全（P3-1）
+   - touch-action: manipulation：双击缩放延迟消除（仅按钮/链接/输入）
+   - tap-highlight：显式隐藏 webkit 高亮，避免突兀亮块
+   - overscroll-behavior: contain：抽屉/弹层/滚动区滚动不“穿透”触发
+     父级（body）滚动/回弹，避免模态背后内容滚动
+   ═══════════════════════════════════════════════════════════════ */
+button,
+a,
+select,
+input,
+textarea,
+[role='button'],
+[role='radio'],
+[role='tab'] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 弹层 / 抽屉 / 独立滚动容器：滚动边界不穿透 body */
+.modal-overlay,
+.modal-dialog,
+.drawer,
+.character-list-scroll,
+.context-panel-scroll,
+.chat-messages,
+.settings-body,
+.nav-rail,
+.settings-nav,
+.audit-log-body,
+.tk-scroll {
+  overscroll-behavior: contain;
+}
+
 /* 动画 */
 @keyframes msg-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .msg-enter { animation: msg-enter 0.25s ease-out; }

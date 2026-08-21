@@ -387,6 +387,8 @@ onMounted(async () => {
               <img
                 :src="store.galleryImages[0]!.data"
                 :alt="store.galleryImages[0]!.params.prompt"
+                :width="store.galleryImages[0]!.width"
+                :height="store.galleryImages[0]!.height"
                 class="preview-img"
                 @click="openDetail(store.galleryImages[0]!)"
               />
@@ -447,6 +449,8 @@ onMounted(async () => {
             <img
               :src="img.data"
               :alt="img.params.prompt"
+              :width="img.width"
+              :height="img.height"
               class="gallery-img"
               loading="lazy"
               @click="openDetail(img)"
@@ -540,7 +544,7 @@ onMounted(async () => {
     <!-- 图像详情 Modal -->
     <Modal :model-value="detailOpen" :title="t('imgGen.detailTitle')" @update:model-value="detailOpen = $event">
       <div v-if="detailImage" class="detail-content">
-        <img :src="detailImage.data" :alt="detailImage.params.prompt" class="detail-img" />
+        <img :src="detailImage.data" :alt="detailImage.params.prompt" :width="detailImage.width" :height="detailImage.height" class="detail-img" />
         <dl class="detail-meta">
           <div><dt>{{ t('imgGen.detailPrompt') }}</dt><dd>{{ detailImage.params.prompt }}</dd></div>
           <div v-if="detailImage.params.negativePrompt">
