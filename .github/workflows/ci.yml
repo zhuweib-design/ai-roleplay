@@ -171,6 +171,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 签名 Secrets 显式校验：缺失即 fail（避免静默产出的未签名包 + 缺失 latest.json）
+      - name: Verify signing secrets configured
+        shell: bash
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ] || [ -z "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]; then
+            echo "::error::TAURI_SIGNING_PRIVATE_KEY / TAURI_SIGNING_PRIVATE_KEY_PASSWORD 未配置。请在 Settings > Secrets > Actions 添加后再重新发布。"
+            exit 1
+          fi
+          echo "::notice::签名 Secrets 已配置, 将生成签名安装包与 latest.json"
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
