@@ -1,20 +1,53 @@
-# AI 酒馆
+<div align="center">
 
-基于 SillyTavern 架构的 AI 角色扮演聊天应用，提供多模型对话、角色卡管理、世界书、群聊、故事引擎与社区市场。支持 **Web 降级运行** 与 **Tauri 2.0 原生桌面封装**（含自动更新）。
+# 🍺 AI 酒馆
 
-## 功能亮点
+**基于 SillyTavern 架构的 AI 角色扮演聊天应用：多模型对话 · 角色卡 · 世界书 · 群聊 · 故事引擎 · 社区市场 · 自定义主题 · 自定义向量模型 RAG**
 
-- **多模型对话**：OpenAI / Anthropic 等多 profile 配置，支持流式生成、重新生成、翻译、TTS 朗读与自动摘要
-- **自定义向量模型 + RAG**：用户可上传 ZIP 或登记本地磁盘目录添加自定义向量模型，用于双通道（动态记忆 / 静态世界设定）语义检索；模型按需动态加载 ONNX 推理
-- **自定义主题**：上传背景图片，自动提取主色调并聚类为 5–6 个主题色，自动匹配组件配色（含深/浅主题与"暗夜剧场"字体）
-- **世界书 / Lorebook**：关键词门控激活，与设定注入联动
-- **角色卡与群聊**：角色卡导入、Persona、群聊成员/发言顺序、随机 NPC 生成
-- **故事引擎**：剧本结构分析、主角身份配置、时间推进、随机事件
-- **社区市场**：基于 GitHub 仓库索引的模板 / 角色卡 / 世界书下载，含哈希校验与离线回退
-- **扩展系统**：沙箱执行、按需权限授予（默认拒绝），社区扩展默认不自动执行
-- **桌面强化（Tauri）**：系统托盘、全局快捷键（Ctrl+Alt+Space 唤出）、拖拽导入、断网提示、自动更新
+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.2.0)
+[![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6.svg)]()
+[![Tauri 2](https://img.shields.io/badge/Tauri-2.0-24c8db.svg)]()
 
-## 快速开始
+</div>
+
+---
+
+## 📑 目录
+
+- [项目介绍](#-项目介绍)
+- [✨ 特性](#-特性)
+- [🖼️ 预览](#-预览)
+- [🚀 快速开始](#-快速开始)
+- [⚙️ 技术栈](#-技术栈)
+- [🛣️ 路线图](#-路线图)
+- [🤝 贡献](#-贡献)
+- [📄 许可证](#-许可证)
+- [更多](#-更多)
+
+## 💡 项目介绍
+
+> AI 酒馆是一款 AI 角色扮演聊天应用，让你与自建角色对话、管理世界设定、组织多人群聊，并通过故事引擎推进剧本。既可**在浏览器降级运行**，也可用 **Tauri 2 原生桌面封装**（含系统托盘、全局快捷键与自动更新）。
+
+## ✨ 特性
+
+| 特性 | 解决的问题 |
+| --- | --- |
+| **多模型对话** | OpenAI / Anthropic 等多 profile，流式生成、重新生成、翻译、TTS、自动摘要 |
+| **自定义向量模型 + RAG** | 上传 ZIP 或登记本地目录添加自定义向量模型，驱动「动态记忆 / 静态世界设定」语义检索 |
+| **自定义主题** | 上传背景图自动提取主色调（k-means 聚类）并匹配组件配色，含深/浅主题与"暗夜剧场"字体 |
+| **世界书 / Lorebook** | 关键词门控激活，设定随语境自动注入 |
+| **角色卡与群聊** | 角色卡导入、Persona、群聊成员/发言顺序、随机 NPC |
+| **故事引擎** | 剧本结构分析、主角配置、时间推进、随机事件 |
+| **社区市场** | 基于 GitHub 索引的模板 / 角色卡 / 世界书下载，含哈希校验与离线回退 |
+| **扩展系统** | 沙箱执行、按需权限（默认拒绝），社区扩展默认不自动执行 |
+| **桌面强化** | 系统托盘、全局快捷键（`Ctrl+Alt+Space`）、拖拽导入、断网提示、自动更新 |
+
+## 🖼️ 预览
+
+<!-- 截图/演示图待补充：请在此粘贴应用截图或录制 GIF，勿放置无效图片链接。 -->
+
+## 🚀 快速开始
 
 ```bash
 # 安装依赖
@@ -23,29 +56,40 @@ npm install
 # 前端开发（Web 降级运行）
 npm run dev
 
-# 原生桌面开发
+# 原生桌面开发（Tauri）
 npm run tauri:dev
 
 # 构建前端产物
 npm run build
 ```
 
-## 本地开发门禁
+### 本地开发门禁
 
-仓库内所有命令与 CI 对齐，提交前在本机跑通：
+仓库内命令与 CI 对齐，提交前在本机跑通：
 
 ```bash
-npm run lint        # ESLint（0 error）
-npm run typecheck   # vue-tsc --noEmit
-npm run test        # Vitest 单测
-npm run test:coverage  # 覆盖率（statements ≥78 / branches ≥73）
-npm run i18n:check:strict # i18n 严格扫描（硬编码文案拦截）
-npm run tauri:build # Tauri 桌面端构建验证
+npm run lint          # ESLint（0 error）
+npm run typecheck     # vue-tsc --noEmit
+npm run test          # Vitest 单测
+npm run test:coverage # 覆盖率（statements ≥78 / branches ≥73）
+npm run i18n:check:strict # i18n 严格扫描
+npm run a11y:contrast # 无障碍对比度（≥ AA 4.5:1）
+npm run tauri:build   # 桌面端构建验证
 ```
 
-> CI（`.github/workflows/ci.yml`）串联 lint → i18n → coverage/build → Playwright e2e → Tauri 构建；打 `v*` tag 或手动触发时产出签名安装包。
+> CI（`.github/workflows/ci.yml`）串联 lint → i18n → coverage/build → 对比度 → Playwright e2e → Tauri 构建；打 `v*` tag 或手动触发时产出签名安装包。
 
-## 目录结构（要点）
+## ⚙️ 技术栈
+
+| 层 | 技术 |
+| --- | --- |
+| 前端 | Vue 3 · TypeScript · Vite · Vue Router · Pinia |
+| 桌面 | Tauri 2.0（原生封装 + Web 降级） |
+| 本地模型 | onnxruntime-web（向量嵌入） · WebLLM（本地大模型引擎） |
+| 安全 / 渲染 | DOMPurify（XSS 净化） · gpt-tokenizer（token 计数） · marked（Markdown） · fflate（ZIP） |
+| 质量 / 测试 | Vitest · Playwright · axe-core · ESLint |
+
+### 目录结构（要点）
 
 ```
 src/core/            核心逻辑（RAG、嵌入、主题提取、市场索引、扩展加载…）
@@ -54,61 +98,55 @@ src/components/      组件（聊天、设置、通用 Modal/Icon…）
 src/views/           页面视图
 src/i18n/locales/    zh / en 国际化
 src-tauri/           Tauri 原生壳（托盘、快捷键、updater、capabilities/ACL）
-tests/               Vitest 单测（与 src 同构）
+tests/               单测 / 无障碍 / E2E
 ```
 
-## 隐私与安全
+## 🛣️ 路线图
 
-- 客户端采用最小权限：capabilities 仅授予 `core:default` + `updater:default`，未启用 `fs/shell/http/dialog/os` 插件
+- [x] **0.2.0** — 自定义向量模型 + RAG、自定义主题、自动更新、社区市场、系统托盘/快捷键（已发布）
+- [ ] **v1.0.0** — 首个稳定版本（规划）
+- [ ] **RAG 增强** — 更多预置嵌入模型、检索性能基准（规划）
+- [ ] **无障碍** — 自定义主题运行时对比度预检（规划）
+
+## 🤝 贡献
+
+当前仓库暂未提供 `CONTRIBUTING.md`。欢迎：发现 Bug 请开 [Issue]()；如参与开发，请 `Fork → 特性分支 → PR`。涉及较大改动或新功能，建议先开 Issue 讨论再动手。
+
+## 📄 许可证
+
+> ⚠️ 本仓库当前**未附带 LICENSE 文件，保留所有权利**。在授权条款明确前，请勿用于商业或发行用途。
+
+## 📚 更多
+
+- [隐私与安全](#-隐私与安全)
+- [发布指引 / 自动更新](#-发布指引)
+
+### 隐私与安全
+
+- 客户端最小权限：capabilities 仅授予 `core:default` + `updater:default`，未启用 `fs/shell/http/dialog/os` 插件
 - CSP 收紧：`script-src 'self'` 禁内联脚本，`freezePrototype` 开启
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储
 - 自动更新签名公钥内置于 `tauri.conf.json`，私钥存放于仓库 Secrets，不进入二进制
 
-## 发布指引
+### 发布指引
 
-本应用为 Tauri 2 桌面应用，发布 = 打语义化版本 tag，由 GitHub Actions 的 `tauri-release` job 产出**签名安装包**并推送到 GitHub Releases，同时生成 `latest.json` 供应用内自动更新消费。前端 Web 版随 tag 一并发布到 Releases assets。
+本应用为 Tauri 2 桌面应用，发布 = 打语义化版本 tag，由 GitHub Actions 的 `tauri-release` job 产出**签名安装包**并推送到 GitHub Releases，同时生成 `latest.json` 供应用内自动更新消费。
 
-### 一、前置条件（首个发布一次性配置）
-
-在仓库 **Settings → Secrets and variables → Actions** 配置以下密钥：
+**前置条件（首个发布一次性配置）**：在 `Settings → Secrets → Actions` 配置：
 
 | Secret | 用途 | 是否必需 |
 | --- | --- | --- |
-| `TAURI_SIGNING_PRIVATE_KEY` | Tauri 更新签名私钥（PEM） | **必需** |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 私钥密码 | **必需** |
-| `WINDOWS_CERT_BASE64` / `WINDOWS_CERT_PASSWORD` | Windows 代码签名证书（base64 + 密码） | 可选（未配则出未签名 msi/nsis） |
+| `TAURI_SIGNING_PRIVATE_KEY` | Tauri 更新签名私钥（PEM） | 必需 |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 私钥密码 | 必需 |
+| `WINDOWS_CERT_BASE64` / `WINDOWS_CERT_PASSWORD` | Windows 代码签名证书 | 可选（未配则出未签名包） |
 
-> 签名私钥**不得进入仓库或二进制**；`src-tauri/tauri.conf.json` 仅内置对应公钥。
+**发版步骤**：
 
-### 二、每次发版步骤
+1. 确认 `package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock` 版本号一致；`CHANGELOG.md` 记录本版变更；本地门禁全绿。
+2. `git tag vX.Y.Z && git push origin vX.Y.Z`
+3. CI 依次执行 `quality-gates → e2e → tauri-build`，全绿后在 tag 触发 `tauri-release`，产出安装包 + `latest.json`。
+4. 发布后在应用内「检查更新」验证签名升级。
 
-1. **版本一致性**：`package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock` 四处版本号必须一致（建议 `git grep 旧版本号` 核对无遗漏）。
-2. **CHANGELOG**：在 `CHANGELOG.md` 顶部 `[Unreleased]` 下方新增本版条目，归类该版的 `新增 / 强化 / 变更 / 修复 / 安全`。
-3. **本地门禁全绿**（与 CI 同构）：
-   ```bash
-   npm run lint && npm run typecheck \
-   && npm run test && npm run i18n:check:strict && npm run a11y:contrast
-   ```
-4. **打 tag 并推送**（以 `0.2.0` 为例）：
-   ```bash
-   git commit ...  # 确保版本/CHANGELOG 先提交
-   git tag v0.2.0
-   git push origin v0.2.0
-   ```
-5. **CI 流水线**：推送后 CI 依次执行 `quality-gates`（lint/i18n/coverage/build + 新增对比度门禁）→ `e2e`（Playwright）→ `tauri-build`；全绿后在 tag 上触发 `tauri-release`，产出签名安装包并生成 `latest.json`。
-6. **发布后验证**：
-   - Actions 页确认 `tauri-release` 成功、Releases assets 含安装包与 `latest.json`；
-   - 在已安装的应用内点「检查更新」，应能发现新版本并走签名更新；
-   - Windows 未配代码签名证书时会提示“未知发布者”，属预期（仅影响安装体验，不影响更新机制）。
+**自动更新机制**：`tauri.conf.json` 的 updater 指向 GitHub Releases `latest.json`（内嵌签名公钥）。**单点依赖** GitHub，无镜像降级源；不可达时更新失败有可见提示，不影响既有版本运行。
 
-### 三、自动更新机制
-
-- `src-tauri/tauri.conf.json` → `plugins.updater` 指向 `releases/latest/download/latest.json`，内嵌签名公钥。
-- 客户端内置「检查更新」（设置页），新版本存在时 `downloadAndInstall()`，重启后生效（Windows 安装完成后自动处理重启）。
-- **单点依赖**：当前主更新源为 GitHub Releases，无镜像降级源；若 GitHub 不可达，更新检查与安装会失败并有可见提示（不影响既有版本运行）。
-
-### 四、回滚与风险
-
-- **回滚**：重新发一个修复版本并打新 tag 覆盖 `latest`，应用内更新即可回归；不建议删除已发布 tag。设 `prerelease: false`，正式版才触发更新。
-- **版本策略**：遵循语义化版本；功能/破坏变更提升 `MINOR`，缺陷修复提升 `PATCH`，首个稳定发布从 `1.0.0` 起（当前 `0.2.0` 为 dev 里程碑）。
-- **发布即唯一改动源**：tag 触发必然重跑整条 CI，无跳过路径——保证产物由 `tauri-release` 从干净环境生成。
+**回滚**：发布修复版本并打新 tag 覆盖 `latest` 即可回归；不建议删除已发布 tag。
