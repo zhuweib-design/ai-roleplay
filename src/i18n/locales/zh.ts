@@ -571,6 +571,7 @@ export default {
   'userModel.desc': '上传 ZIP 压缩包或从本地磁盘路径登记自定义向量模型，一次一个可多次添加，名称不可重复。',
   'userModel.nameLabel': '模型名称',
   'userModel.namePlaceholder': '留空则用文件名/目录名',
+  'userModel.customTag': '自定义',
   'userModel.uploadZip': '上传 ZIP',
   'userModel.uploadZipAria': '上传向量模型 ZIP 压缩包',
   'userModel.pickDir': '选择目录',

@@ -15,7 +15,7 @@ import {
 import { usePersonaStore } from './persona';
 import { useEventsStore } from './events';
 import { buildChatSessionContext, collectLorebooksForCharacter } from './chat-context';
-import { buildVectorRagInjection } from '@/core/dual-channel-runtime';
+import { buildVectorRagInjection, getRagDynamicModel, getRagStaticModel } from '@/core/dual-channel-runtime';
 import {
   buildRandomEventMessages,
   parseGeneratedRandomEvent,
@@ -366,7 +366,8 @@ export const useChatStore = defineStore('chat', () => {
     // 双通道向量检索注入（默认关；只进 ragContext 动态段，不碰 standing 前缀）
     const vectorRag = await buildVectorRagInjection(
       text,
-      (ctx.lorebooks?.length ?? 0) > 0
+      (ctx.lorebooks?.length ?? 0) > 0,
+      { dynamicModel: getRagDynamicModel(), staticModel: getRagStaticModel() }
     );
     if (vectorRag.text) {
       ctx.ragContext = ctx.ragContext ? `${ctx.ragContext}\n${vectorRag.text}` : vectorRag.text;
@@ -657,7 +658,8 @@ export const useChatStore = defineStore('chat', () => {
     // 双通道向量检索注入（默认关；fail-open 不阻断重新生成）
     const vectorRag = await buildVectorRagInjection(
       userText,
-      (ctx.lorebooks?.length ?? 0) > 0
+      (ctx.lorebooks?.length ?? 0) > 0,
+      { dynamicModel: getRagDynamicModel(), staticModel: getRagStaticModel() }
     );
     if (vectorRag.text) {
       ctx.ragContext = ctx.ragContext ? `${ctx.ragContext}\n${vectorRag.text}` : vectorRag.text;

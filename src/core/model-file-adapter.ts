@@ -20,14 +20,19 @@ export function isTauriEnv(): boolean {
 
 const DB_NAME = 'ai-roleplay-models';
 const STORE = 'files';
+/** 与 vector-model-storage 共享同一 DB 与升级版本(避免同库版本锁导致的高版本 open 挂起) */
+const META_STORE = 'user-model-meta';
 
 /** IndexedDB 工具(Web 适配器用) */
 export function openModelDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
+    const req = indexedDB.open(DB_NAME, 2);
     req.onupgradeneeded = () => {
       if (!req.result.objectStoreNames.contains(STORE)) {
         req.result.createObjectStore(STORE);
+      }
+      if (!req.result.objectStoreNames.contains(META_STORE)) {
+        req.result.createObjectStore(META_STORE);
       }
     };
     req.onsuccess = () => resolve(req.result);

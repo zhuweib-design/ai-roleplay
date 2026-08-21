@@ -571,6 +571,7 @@ const en: Record<MessageKey, string> = {
   'userModel.desc': 'Upload a ZIP archive or register a custom vector model from a local disk path. One at a time, addable repeatedly; names must be unique.',
   'userModel.nameLabel': 'Model Name',
   'userModel.namePlaceholder': 'Leave blank to use file/folder name',
+  'userModel.customTag': 'custom',
   'userModel.uploadZip': 'Upload ZIP',
   'userModel.uploadZipAria': 'Upload a vector model ZIP archive',
   'userModel.pickDir': 'Choose Folder',

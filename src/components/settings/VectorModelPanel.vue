@@ -6,11 +6,15 @@
  * - 本地模型安装:选文件夹 → 复制到 model/<id>/
  * - 线上服务器引用字段(预留)
  */
-import { ref, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import Icon from '@/components/common/Icon.vue';
 import {
   isVectorRagEnabled,
   setVectorRagEnabled,
+  getRagDynamicModel,
+  setRagDynamicModel,
+  getRagStaticModel,
+  setRagStaticModel,
 } from '@/core/dual-channel-runtime';
 import {
   VECTOR_MODELS,
@@ -25,8 +29,8 @@ import type { ScannedModelCandidate } from '@/core/vector-model-install';
 import { t } from '@/i18n';
 
 const ENABLED = ref(false);
-const dynamicModel = ref<'auto' | VectorModelId>('auto');
-const staticModel = ref<'auto' | VectorModelId>('auto');
+const dynamicModel = ref<string>('auto');
+const staticModel = ref<string>('auto');
 const installed = ref<VectorModelId[]>([]);
 const installing = ref(false);
 const installMsg = ref('');
@@ -72,14 +76,21 @@ const remote = ref({
   dim: 1024,
 });
 
-const modelOptions: Array<{ value: 'auto' | VectorModelId; label: string }> = [
-  { value: 'auto', label: t('vector.autoLabel') },
-  { value: 'bge-small-zh-v1.5-int8-onnx', label: t('vector.modelOptionSmall') },
-  { value: 'bge-large-zh-v1.5-int8-onnx', label: t('vector.modelOptionLarge') },
-  { value: 'gte-large-zh-int8-onnx', label: t('vector.modelOptionGte') },
-  { value: 'bge-large-zh-v1.5', label: t('vector.modelOptionBgeLarge') },
-  { value: 'bge-small-zh-v1.5', label: t('vector.modelOptionBgeSmall') },
-];
+const modelOptions = computed(() => {
+  const preset: Array<{ value: string; label: string }> = [
+    { value: 'auto', label: t('vector.autoLabel') },
+    { value: 'bge-small-zh-v1.5-int8-onnx', label: t('vector.modelOptionSmall') },
+    { value: 'bge-large-zh-v1.5-int8-onnx', label: t('vector.modelOptionLarge') },
+    { value: 'gte-large-zh-int8-onnx', label: t('vector.modelOptionGte') },
+    { value: 'bge-large-zh-v1.5', label: t('vector.modelOptionBgeLarge') },
+    { value: 'bge-small-zh-v1.5', label: t('vector.modelOptionBgeSmall') },
+  ];
+  // 追加用户自定义模型(用于 RAG 动态/静态层选择)
+  for (const m of userStore.models) {
+    preset.push({ value: m.id, label: `${m.name}（${t('userModel.customTag')}）` });
+  }
+  return preset;
+});
 
 async function refreshInstalled() {
   installed.value = await createModelFileAdapter().listInstalled();
@@ -239,12 +250,18 @@ async function handleDeleteUserModel(id: string) {
 
 onMounted(() => {
   ENABLED.value = isVectorRagEnabled();
+  dynamicModel.value = getRagDynamicModel();
+  staticModel.value = getRagStaticModel();
   void refreshInstalled();
   // 自定义模型:加载元数据 + Tauri 预扫描
   void userStore.load();
   void refreshScanned();
   loadRemote();
 });
+
+// 持久化 RAG 模型选择(供对话检索读取)
+watch(dynamicModel, (v) => setRagDynamicModel(v));
+watch(staticModel, (v) => setRagStaticModel(v));
 </script>
 
 <template>

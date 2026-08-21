@@ -20,9 +20,13 @@ import {
   type VectorModelId,
 } from './vector-model-manager';
 import { createModelFileAdapter } from './model-file-adapter';
+import { UserModelFileAdapter } from './user-model-bridge';
+import { isUserVectorModelId, findOnnxFile } from './vector-model-install';
 // i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 const ENABLE_KEY = 'aijiuguan.vectorRagEnabled';
+const DYN_MODEL_KEY = 'aijiuguan.ragDynamicModel';
+const STA_MODEL_KEY = 'aijiuguan.ragStaticModel';
 
 export function isVectorRagEnabled(): boolean {
   try {
@@ -41,16 +45,48 @@ export function setVectorRagEnabled(on: boolean): void {
   }
 }
 
+/** RAG 动态层模型选择(持久化;'auto' 或 模型 id,支持自定义) */
+export function getRagDynamicModel(): string {
+  try {
+    return localStorage.getItem(DYN_MODEL_KEY) ?? 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+export function setRagDynamicModel(id: string): void {
+  try {
+    localStorage.setItem(DYN_MODEL_KEY, id);
+  } catch {
+    /* 静默 */
+  }
+}
+
+/** RAG 静态层模型选择(持久化) */
+export function getRagStaticModel(): string {
+  try {
+    return localStorage.getItem(STA_MODEL_KEY) ?? 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+export function setRagStaticModel(id: string): void {
+  try {
+    localStorage.setItem(STA_MODEL_KEY, id);
+  } catch {
+    /* 静默 */
+  }
+}
+
 /** 时间衰减:1 小时后权重 ~37%,24 小时后 ~2% */
 function decay(ageMs: number): number {
   return Math.exp(-ageMs / 3_600_000);
 }
 
 export interface VectorRagOptions {
-  /** 动态层模型显式选择(默认由 selectVectorModel 决定:浏览器 bge-small) */
-  dynamicModel?: VectorModelId;
-  /** 静态层模型显式选择 */
-  staticModel?: VectorModelId;
+  /** 动态层模型显式选择(默认由 selectVectorModel 决定:浏览器 bge-small);支持用户自定义模型 id */
+  dynamicModel?: string;
+  /** 静态层模型显式选择;支持用户自定义模型 id */
+  staticModel?: string;
   /** 每轮动态检索条数(默认 3) */
   dynamicTopK?: number;
   /** 静态检索条数(默认 3) */
@@ -78,10 +114,12 @@ export class VectorRagRuntime {
   readonly dynamicStore = new VectorStore();
   readonly staticStore = new VectorStore();
   private readonly manager: VectorModelManager;
-  private dynamicProvider: EmbeddingProvider | null = null;
-  private staticProvider: EmbeddingProvider | null = null;
-  private localOnnxProvider: EmbeddingProvider | null = null;
-  private readonly opts: Required<Pick<VectorRagOptions, 'dynamicTopK' | 'staticTopK' | 'minScore'>>;
+  /** 按模型 id 缓存的本地 ONNX provider(支持预置与用户自定义) */
+  private readonly onnxProviders = new Map<string, EmbeddingProvider>();
+  private readonly opts: Required<Pick<VectorRagOptions, 'dynamicTopK' | 'staticTopK' | 'minScore'>> & {
+    dynamicModel?: string;
+    staticModel?: string;
+  };
   private readonly adapter = createModelFileAdapter();
 
   private constructor(opts: VectorRagOptions) {
@@ -89,6 +127,8 @@ export class VectorRagRuntime {
       dynamicTopK: opts.dynamicTopK ?? 3,
       staticTopK: opts.staticTopK ?? 3,
       minScore: opts.minScore ?? 0.3,
+      dynamicModel: opts.dynamicModel,
+      staticModel: opts.staticModel,
     };
     this.manager = VectorModelManager.defaultFactory();
   }
@@ -111,18 +151,22 @@ export class VectorRagRuntime {
    * 2. 显式选择 → VectorModelManager(远程配置/mock)
    * 3. mock 兜底
    */
-  private async resolveProvider(channel: 'dynamic' | 'static', choice?: VectorModelId): Promise<EmbeddingProvider> {
+  private async resolveProvider(channel: 'dynamic' | 'static', choice?: string): Promise<EmbeddingProvider> {
     if (choice) {
+      // 用户自定义模型:直接用桥接适配器
+      if (isUserVectorModelId(choice)) {
+        return await this.getLocalProvider(choice);
+      }
       try {
-        if (await this.adapter.exists(choice)) {
+        if (await this.adapter.exists(choice as VectorModelId)) {
           return await this.getLocalProvider(choice);
         }
       } catch {
         /* 探测失败走 manager */
       }
       return channel === 'dynamic'
-        ? this.manager.providerForDynamic(choice)
-        : this.manager.providerForStatic(choice);
+        ? this.manager.providerForDynamic(choice as VectorModelId)
+        : this.manager.providerForStatic(choice as VectorModelId);
     }
 
     // 自动:本地已装模型优先(浏览器自动选 bge-small 等)
@@ -134,50 +178,70 @@ export class VectorRagRuntime {
     } catch {
       /* 无本地模型,走 manager */
     }
+    // 无预置则尝试用户自定义模型(桥接 IndexedDB)
+    try {
+      const userAdapter = new UserModelFileAdapter();
+      const userInstalled = await userAdapter.listInstalled();
+      if (userInstalled.length > 0) return await this.getLocalProvider(userInstalled[0]!);
+    } catch {
+      /* 用户模型访问失败,走 manager */
+    }
     return channel === 'dynamic'
       ? this.manager.providerForDynamic()
       : this.manager.providerForStatic();
   }
 
   /**
-   * 本地 ONNX provider 缓存复用(双通道共享同模型时只加载一次)
+   * 本地 ONNX provider 缓存复用(按模型 id 缓存,支持用户自定义模型)
    * 按需动态导入 onnx-embedding-provider(其内部再动态 import onnxruntime-web)，
    * 避免 onnxruntime-web 被预加载进首屏(仅本地向量嵌入时才需要)
    */
-  private async getLocalProvider(modelId: VectorModelId): Promise<EmbeddingProvider> {
-    if (!this.localOnnxProvider) {
-      const { OnnxEmbeddingProvider } = await import('./onnx-embedding-provider');
-      this.localOnnxProvider = new OnnxEmbeddingProvider({
-        modelId,
-        adapter: this.adapter,
-      });
-    }
-    return this.localOnnxProvider;
+  private async getLocalProvider(modelId: string): Promise<EmbeddingProvider> {
+    const cached = this.onnxProviders.get(modelId);
+    if (cached) return cached;
+    const { OnnxEmbeddingProvider } = await import('./onnx-embedding-provider');
+    const provider = new OnnxEmbeddingProvider({
+      modelId: modelId as VectorModelId,
+      // 用户自定义 → 桥接 IndexedDB;预置 → 项目目录适配器
+      adapter: isUserVectorModelId(modelId) ? new UserModelFileAdapter() : this.adapter,
+      // 自定义模型按实际 onnx 文件名推理(避免硬编码 model.onnx 探测失败)
+      onnxFile: await this.resolveOnnxFileName(modelId),
+    });
+    this.onnxProviders.set(modelId, provider);
+    return provider;
   }
 
-  private async getDynamicProvider(choice?: VectorModelId): Promise<EmbeddingProvider> {
-    if (!this.dynamicProvider) {
-      this.dynamicProvider = await this.resolveProvider('dynamic', choice);
+  /** 自定义模型:从元数据求实际 onnx 权重文件名(上传/登记时按原始名存储) */
+  private async resolveOnnxFileName(modelId: string): Promise<string | undefined> {
+    if (!isUserVectorModelId(modelId)) return undefined;
+    try {
+      const { loadUserModelMeta } = await import('./vector-model-storage');
+      const meta = await loadUserModelMeta();
+      const m = meta.find((x) => x.id === modelId);
+      if (!m || !m.files) return undefined;
+      return findOnnxFile(m.files);
+    } catch {
+      return undefined;
     }
-    return this.dynamicProvider;
   }
 
-  private async getStaticProvider(choice?: VectorModelId): Promise<EmbeddingProvider> {
-    if (!this.staticProvider) {
-      this.staticProvider = await this.resolveProvider('static', choice);
-    }
-    return this.staticProvider;
+  private async getDynamicProvider(choice?: string): Promise<EmbeddingProvider> {
+    return this.resolveProvider('dynamic', choice ?? this.opts.dynamicModel);
+  }
+
+  private async getStaticProvider(choice?: string): Promise<EmbeddingProvider> {
+    return this.resolveProvider('static', choice ?? this.opts.staticModel);
   }
 
   /** 写动态库(记忆/情绪;meta.timestamp 供衰减) */
-  async addDynamic(entry: Omit<VectorEntry, 'vector'>, providerChoice?: VectorModelId): Promise<void> {
+  async addDynamic(entry: Omit<VectorEntry, 'vector'>, providerChoice?: string): Promise<void> {
     const provider = await this.getDynamicProvider(providerChoice);
     const vector = await provider.embed(entry.text);
     this.dynamicStore.add({ ...entry, vector });
   }
 
   /** 写静态库(世界设定/角色设定) */
-  async addStatic(entry: Omit<VectorEntry, 'vector'>, providerChoice?: VectorModelId): Promise<void> {
+  async addStatic(entry: Omit<VectorEntry, 'vector'>, providerChoice?: string): Promise<void> {
     const provider = await this.getStaticProvider(providerChoice);
     const vector = await provider.embed(entry.text);
     this.staticStore.add({ ...entry, vector });
