@@ -12,7 +12,7 @@
 
 [package]
 name = "ai-roleplay"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI 角色扮演与多模型对话平台 — 桌面应用"
 authors = ["AI Roleplay Team"]
 edition = "2021"

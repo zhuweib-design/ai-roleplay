@@ -1,6 +1,6 @@
 {
   "name": "ai-roleplay",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AI 角色扮演与多模型对话平台 — Tauri 2.0 原生封装 + Web 降级",
   "type": "module",
   "scripts": {
