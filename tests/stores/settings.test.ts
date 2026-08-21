@@ -130,6 +130,58 @@ describe('useSettingsStore — F5 单元测试', () => {
         expect(document.documentElement.getAttribute('data-theme')).toBe(t);
       }
     });
+
+    // ── F08.4 自定义主题 ──
+
+    it('setCustomTheme 应应用并切换到 custom 主题', () => {
+      const store = useSettingsStore();
+      store.setCustomTheme({
+        background: 'data:image/png;base64,xxx',
+        palette: ['#786af3', '#7d69f4', '#7367f3'],
+        paletteRatios: [0.4, 0.35, 0.25],
+        avgLuminance: 0.2,
+        tokens: {},
+      });
+      expect(store.theme).toBe('custom');
+      expect(document.documentElement.getAttribute('data-theme')).toBe('custom');
+      // 应注入 custom-theme <style>
+      const styleEl = document.getElementById('custom-theme');
+      expect(styleEl).not.toBeNull();
+      expect(styleEl!.textContent).toContain(':root[data-theme="custom"]');
+    });
+
+    it('setCustomTheme 以 palette 重新生成 tokens（自愈历史缺陷数据）', () => {
+      const store = useSettingsStore();
+      // 模拟旧版缺陷数据：tokens 中 primary 为纯黑
+      store.setCustomTheme({
+        background: '',
+        palette: ['#786af3', '#7d69f4'],
+        paletteRatios: [0.6, 0.4],
+        avgLuminance: 0.2,
+        tokens: { primary: '#000000' },
+      });
+      expect(store.customTheme).not.toBeNull();
+      // tokens 应被重新生成：primary 不再是纯黑
+      const primary = store.customTheme!.tokens.primary!;
+      expect(primary.toLowerCase()).not.toBe('#000000');
+      expect(primary).toMatch(/^#[0-9a-f]{6}$/);
+      // background 为空的合法值也应保留
+      expect(store.customTheme!.palette).toHaveLength(2);
+    });
+
+    it('clearCustomTheme 应清除主题与注入样式', () => {
+      const store = useSettingsStore();
+      store.setCustomTheme({
+        background: '',
+        palette: ['#786af3'],
+        paletteRatios: [1],
+        avgLuminance: 0.2,
+        tokens: {},
+      });
+      store.clearCustomTheme();
+      expect(store.customTheme).toBeNull();
+      expect(document.getElementById('custom-theme')).toBeNull();
+    });
   });
 
   // ── 字号设置 ──

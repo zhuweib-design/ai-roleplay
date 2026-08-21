@@ -7,7 +7,9 @@ import type {
   BubbleStyle,
   QuickReplyButton,
   ModelCategory,
+  CustomTheme,
 } from '@/types';
+import { buildCustomThemeCss, generateThemeTokens, type ThemeTokens } from '@/core/theme-extractor';
 import type { StorageAdapter } from '../storage/storage-adapter';
 import {
   DEFAULT_TTS_CONFIG,
@@ -71,6 +73,9 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // F08.3 自定义 CSS 代码（默认空）
   const customCss = ref<string>('');
+
+  // F08.4 自定义主题（默认无）
+  const customTheme = ref<CustomTheme | null>(null);
 
   // F12.2 TTS 配置（默认禁用）
   const ttsConfig = ref<TTSConfig>({ ...DEFAULT_TTS_CONFIG });
@@ -417,6 +422,46 @@ export const useSettingsStore = defineStore('settings', () => {
     void persistSettings();
   }
 
+  // ── F08.4 自定义主题 ──
+
+  /**
+   * 设置自定义主题（背景图 + 提取主色 + 组件变量）并立即应用
+   * 应用后自动切换到 custom 主题
+   */
+  function setCustomTheme(ct: CustomTheme): void {
+    customTheme.value = normalizeCustomTheme(ct);
+    applyCustomTheme(customTheme.value);
+    setTheme('custom');
+  }
+
+  /** 清除自定义主题（不自动切换回默认主题） */
+  function clearCustomTheme(): void {
+    customTheme.value = null;
+    applyCustomTheme(null);
+    void persistSettings();
+  }
+
+  /**
+   * 将自定义主题变量注入到 <style id="custom-theme">（覆盖 tokens.css 默认值）
+   * 以 palette 为唯一数据源：始终根据主色板重新生成 tokens，
+   * 自愈历史版本（如曾生成 --primary: #000000 的旧数据）。
+   */
+  function applyCustomTheme(ct: CustomTheme | null): void {
+    if (typeof document === 'undefined') return;
+    let styleEl = document.getElementById('custom-theme') as HTMLStyleElement | null;
+    if (!ct) {
+      if (styleEl?.parentNode) styleEl.parentNode.removeChild(styleEl);
+      return;
+    }
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'custom-theme';
+      document.head.appendChild(styleEl);
+    }
+    const fresh = normalizeCustomTheme(ct);
+    styleEl.textContent = buildCustomThemeCss(fresh.tokens as ThemeTokens, fresh.background || undefined);
+  }
+
   // ── F12.2 TTS / F12.3 翻译 / F12.4 自动摘要 配置 ──
 
   /** 设置 TTS 配置（F12.2） */
@@ -638,6 +683,12 @@ export const useSettingsStore = defineStore('settings', () => {
           customCss.value = saved.customCss;
           applyCustomCss(saved.customCss);
         }
+        // F08.4 加载自定义主题并注入（仅当主题为 custom 时生效）
+        if (saved.customTheme && typeof saved.customTheme === 'object') {
+          const ct = saved.customTheme as CustomTheme;
+          customTheme.value = normalizeCustomTheme(ct);
+          applyCustomTheme(customTheme.value);
+        }
         // F12.2 加载 TTS 配置
         if (saved.ttsConfig && typeof saved.ttsConfig === 'object') {
           ttsConfig.value = { ...DEFAULT_TTS_CONFIG, ...saved.ttsConfig };
@@ -664,6 +715,9 @@ export const useSettingsStore = defineStore('settings', () => {
         if (typeof saved.masterPasswordVerifier !== 'undefined') {
           masterPasswordVerifier.value = saved.masterPasswordVerifier;
         }
+        // 末尾重断言 data-theme：customTheme 注入后再次同步 DOM 与 store，
+        // 避免异步启动时序导致 data-theme 回退为默认（刷新后自定义主题失效）
+        setTheme(theme.value);
       } else {
         // 首次启动：写入默认设置
         await persistSettings();
@@ -728,6 +782,16 @@ export const useSettingsStore = defineStore('settings', () => {
         chatBackground: toRaw(chatBackground.value),
         bubbleStyle: toRaw(bubbleStyle.value),
         customCss: customCss.value,
+        // F08.4 自定义主题持久化
+        customTheme: customTheme.value
+          ? {
+              background: customTheme.value.background,
+              palette: [...customTheme.value.palette],
+              paletteRatios: [...customTheme.value.paletteRatios],
+              avgLuminance: customTheme.value.avgLuminance,
+              tokens: { ...customTheme.value.tokens },
+            }
+          : null,
         // F12.2/F12.3/F12.4 配置持久化
         ttsConfig: toRaw(ttsConfig.value),
         translationConfig: translationToSave,
@@ -771,6 +835,7 @@ export const useSettingsStore = defineStore('settings', () => {
     chatBackground,
     bubbleStyle,
     customCss,
+    customTheme,
     // F12.2/F12.3/F12.4 配置
     ttsConfig,
     translationConfig,
@@ -807,6 +872,10 @@ export const useSettingsStore = defineStore('settings', () => {
     setCustomCss,
     resetCustomCss,
     applyCustomCss,
+    // F08.4 自定义主题
+    setCustomTheme,
+    clearCustomTheme,
+    applyCustomTheme,
     // F12.2/F12.3/F12.4 配置
     setTtsConfig,
     setTranslationConfig,
@@ -858,4 +927,52 @@ function generateQuickReplyId(): string {
     return crypto.randomUUID();
   }
   return `qr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
+ * 归一化自定义主题：以 palette 为唯一数据源，重新生成 tokens。
+ * - 兼容旧数据缺 avgLuminance 字段
+ * - 自愈历史缺陷数据（如 --primary: #000000）
+ */
+function normalizeCustomTheme(ct: CustomTheme): CustomTheme {
+  const palette = Array.isArray(ct.palette) ? ct.palette.filter((c) => typeof c === 'string') : [];
+  const paletteRatios = Array.isArray(ct.paletteRatios) ? ct.paletteRatios : [];
+  // 空色板时回退默认深色主题令牌
+  if (palette.length === 0) {
+    return {
+      background: ct.background ?? '',
+      palette,
+      paletteRatios,
+      avgLuminance: typeof ct.avgLuminance === 'number' ? ct.avgLuminance : 0.5,
+      tokens: { ...(ct.tokens ?? {}) },
+    };
+  }
+  const avgLuminance =
+    typeof ct.avgLuminance === 'number'
+      ? ct.avgLuminance
+      : // 旧数据缺 avgLuminance：按主色平均亮度近似
+        palette.reduce((sum, hex) => sum + luminanceOfHex(hex), 0) / palette.length;
+  const tokens = generateThemeTokens({ colors: palette, ratios: paletteRatios, avgLuminance });
+  return {
+    background: ct.background ?? '',
+    palette,
+    paletteRatios,
+    avgLuminance,
+    tokens,
+  };
+}
+
+/** 计算 hex 色的相对亮度（0-1），供旧数据缺 avgLuminance 时近似 */
+function luminanceOfHex(hex: string): number {
+  const h = hex.replace(/^#/, '');
+  if (h.length !== 6) return 0.5;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  if ([r, g, b].some((v) => Number.isNaN(v))) return 0.5;
+  const lin = (v: number) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }

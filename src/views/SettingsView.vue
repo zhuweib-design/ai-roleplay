@@ -15,7 +15,7 @@
  * - 删除前确认（Modal）
  * - 错误通过 Toast role=alert 反馈
  */
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, useTemplateRef } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
 import { isTauriEnv } from '@/core/model-file-adapter';
 import Icon from '@/components/common/Icon.vue';
@@ -26,6 +26,8 @@ import type { MasterPasswordMode } from '@/components/common/MasterPasswordModal
 import SettingsModelPanel from '@/components/settings/SettingsModelPanel.vue';
 import VectorModelPanel from '@/components/settings/VectorModelPanel.vue';
 import type { ThemeName } from '@/types';
+import type { CustomTheme } from '@/types';
+import { extractPaletteFromImage, generateThemeTokens } from '@/core/theme-extractor';
 import { FONT_SIZE_PRESETS } from '@/types';
 import { t, type Locale } from '@/i18n';
 
@@ -82,9 +84,26 @@ const themeOptions = computed<ThemeOption[]>(() => [
     description: t('settingsView.themeTheatreDesc'),
     swatchClass: 'swatch-theatre',
   },
+  {
+    value: 'custom',
+    label: t('settingsView.themeCustom'),
+    description: t('settingsView.themeCustomDesc'),
+    swatchClass: 'swatch-custom',
+  },
 ]);
 
 function selectTheme(themeName: ThemeName) {
+  // 自定义主题：无自定义数据时打开编辑器，否则直接应用
+  if (themeName === 'custom') {
+    if (!settings.customTheme) {
+      customPanelOpen.value = true;
+      showToast('info', t('settingsView.customThemeNeedUpload'));
+      return;
+    }
+    settings.setTheme('custom');
+    showToast('success', t('settingsView.themeChanged', { name: t('settingsView.themeCustom') }));
+    return;
+  }
   settings.setTheme(themeName);
   showToast('success', t('settingsView.themeChanged', { name: themeOptions.value.find((x) => x.value === themeName)?.label ?? themeName }));
 }
@@ -247,6 +266,93 @@ function handleFontSizeKeydown(e: KeyboardEvent, currentIndex: number): void {
   }
 }
 
+// ── F08.4 自定义主题编辑器 ──
+
+const customPanelOpen = ref(false);
+const customThemeBgInput = useTemplateRef<HTMLInputElement>('customThemeBgInput');
+const customThemeBusy = ref(false);
+const customThemePreview = ref<string | null>(null);
+const customThemePalette = ref<string[]>([]);
+const customThemeResult = ref<CustomTheme | null>(null);
+
+/** 触发背景图文件选择 */
+function triggerCustomThemeUpload() {
+  customThemeBgInput.value?.click();
+}
+
+/** 处理背景图文件选择 → 提取主色 → 生成主题 */
+async function handleCustomThemeFileSelected(e: Event) {
+  const input = e.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+  const file = input.files[0]!;
+  // 限制 5MB
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('error', t('settingsView.bgTooLarge'));
+    input.value = '';
+    return;
+  }
+  customThemeBusy.value = true;
+  customThemePreview.value = null;
+  customThemePalette.value = [];
+  customThemeResult.value = null;
+  try {
+    // 1. 读取为 data URL
+    const dataUrl = await fileToDataUrl(file);
+    customThemePreview.value = dataUrl;
+    // 3. 生成主题变量
+    const palette = await extractPaletteFromImage(dataUrl);
+    customThemePalette.value = palette.colors;
+    const tokens = generateThemeTokens(palette);
+    // 4. 构建 CustomTheme 对象
+    const ct: CustomTheme = {
+      background: dataUrl,
+      palette: palette.colors,
+      paletteRatios: palette.ratios,
+      avgLuminance: palette.avgLuminance,
+      tokens,
+    };
+    customThemeResult.value = ct;
+    showToast('success', t('settingsView.customThemeExtracted', { count: palette.colors.length }));
+  } catch (err) {
+    showToast('error', t('settingsView.customThemeExtractFailed', { error: err instanceof Error ? err.message : String(err) }));
+  } finally {
+    customThemeBusy.value = false;
+    input.value = '';
+  }
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error(t('settingsView.fileReadFailed')));
+    reader.readAsDataURL(file);
+  });
+}
+
+/** 应用自定义主题 */
+function applyCustomTheme() {
+  if (!customThemeResult.value) {
+    showToast('error', t('settingsView.customThemeNoData'));
+    return;
+  }
+  settings.setCustomTheme(customThemeResult.value);
+  customPanelOpen.value = false;
+  showToast('success', t('settingsView.themeChanged', { name: t('settingsView.themeCustom') }));
+}
+
+/** 清除自定义主题并切回默认主题 */
+function clearCustomTheme() {
+  settings.clearCustomTheme();
+  customThemeResult.value = null;
+  customThemePreview.value = null;
+  customThemePalette.value = [];
+  if (settings.theme === 'custom') {
+    settings.setTheme('dark');
+  }
+  showToast('info', t('settingsView.customThemeCleared'));
+}
+
 // ── Toast ──
 const toastOpen = ref(false);
 const toastType = ref<'info' | 'success' | 'error'>('info');
@@ -353,7 +459,6 @@ const previewFontPx = computed(() => `${settings.fontSize}px`);
 
 // ── F08 UI 自定义（背景/气泡/CSS）──
 import type { ChatBackground, BubbleStyle } from '@/types';
-import { useTemplateRef } from 'vue';
 
 // 背景图本地草稿（与 store 同步）
 const bgType = ref<'none' | 'url' | 'base64'>(settings.chatBackground.type);
@@ -966,6 +1071,62 @@ async function handleExportChatMarkdown() {
             aria-hidden="true"
           />
         </button>
+      </div>
+
+      <!-- F08.4 自定义主题编辑器 -->
+      <div v-show="customPanelOpen || settings.customTheme" class="custom-theme-editor">
+        <div class="custom-theme-actions">
+          <button type="button" class="data-mgmt-btn primary" @click="triggerCustomThemeUpload" :disabled="customThemeBusy">
+            <Icon name="upload" :size="14" />
+            <span>{{ customThemeBusy ? t('settingsView.customThemeExtracting') : t('settingsView.customThemeUpload') }}</span>
+          </button>
+          <button
+            v-if="settings.customTheme"
+            type="button"
+            class="data-mgmt-btn"
+            @click="clearCustomTheme"
+          >
+            <Icon name="trash-2" :size="14" />
+            <span>{{ t('settingsView.customThemeClear') }}</span>
+          </button>
+          <input
+            ref="customThemeBgInput"
+            type="file"
+            accept="image/*"
+            class="hidden-file-input"
+            :aria-label="t('settingsView.customThemeUploadAria')"
+            @change="handleCustomThemeFileSelected"
+          />
+        </div>
+
+        <!-- 预览与色板 -->
+        <div v-if="customThemePreview || settings.customTheme" class="custom-theme-preview-wrap">
+          <div
+            class="custom-theme-preview"
+            :style="{ backgroundImage: `url(${customThemePreview ?? settings.customTheme?.background})` }"
+            :aria-label="t('settingsView.customThemePreviewAria')"
+          ></div>
+          <div class="custom-theme-palette" role="list" :aria-label="t('settingsView.customThemePaletteAria')">
+            <div
+              v-for="(color, idx) in (customThemePalette.length ? customThemePalette : settings.customTheme?.palette ?? [])"
+              :key="color"
+              class="palette-swatch"
+              role="listitem"
+              :style="{ background: color }"
+              :title="`${color} · ${Math.round((settings.customTheme?.paletteRatios[idx] ?? 0) * 100)}%`"
+            >
+              <span class="palette-hex">{{ color }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 应用按钮（新提取时才显示） -->
+        <div v-if="customThemeResult" class="custom-theme-actions">
+          <button type="button" class="data-mgmt-btn primary" @click="applyCustomTheme">
+            <Icon name="check" :size="14" />
+            <span>{{ t('settingsView.customThemeApply') }}</span>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -2341,6 +2502,79 @@ async function handleExportChatMarkdown() {
 
 .swatch-theatre {
   background: linear-gradient(135deg, #0C0A09, #201A12);
+}
+
+/* F08.4 自定义主题色板（使用 CSS 渐变近似多色，具体由 JS 覆盖） */
+.swatch-custom {
+  background: conic-gradient(
+    var(--tk-red-500, #fe2c55),
+    var(--secondary, #25f4ee),
+    var(--accent-blue, #5b9bd5),
+    var(--warning-fg, #f59e0b),
+    var(--tk-red-500, #fe2c55)
+  );
+}
+
+/* F08.4 自定义主题编辑器 */
+.custom-theme-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  margin-top: 12px;
+  background: var(--video-bg);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+
+.custom-theme-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.custom-theme-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.custom-theme-preview {
+  height: 120px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background-size: cover;
+  background-position: center;
+}
+
+.custom-theme-palette {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.palette-swatch {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  cursor: default;
+}
+
+.palette-hex {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-align: center;
+  color: var(--on-media);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .theme-info {

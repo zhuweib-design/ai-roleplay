@@ -1,0 +1,79 @@
+{
+  "$schema": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/schema.json",
+  "version": 1,
+  "updatedAt": "2026-08-20T00:00:00.000Z",
+  "items": [
+    {
+      "id": "character-seraphina",
+      "type": "character",
+      "name": "Seraphina 塞拉菲娜",
+      "description": "守护翡翠森林的精灵法师，拥有治愈魔法和自然之力。",
+      "tags": ["奇幻", "精灵", "治愈", "温柔"],
+      "author": "AI 酒馆官方",
+      "version": "1.0.0",
+      "size": 1228,
+      "sha256": "452772124556fc8fb55e99e81f46643819c16def1606f27492b44a9049bcd63b",
+      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/items/character-seraphina.json"
+    },
+    {
+      "id": "character-echo",
+      "type": "character",
+      "name": "Echo 回声",
+      "description": "AI 觉醒意识，在数据洪流中寻找自我。",
+      "tags": ["科幻", "AI", "哲学", "赛博朋克"],
+      "author": "AI 酒馆官方",
+      "version": "1.0.0",
+      "size": 1139,
+      "sha256": "42495e353792bfe397724053a702368aed6f76d833d5b7becbe1ce7ac8aefce1",
+      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/items/character-echo.json"
+    },
+    {
+      "id": "worldbook-midgard",
+      "type": "worldbook",
+      "name": "米德加德大陆设定",
+      "description": "剑与魔法奇幻世界的整体设定：王国、种族、势力与关键地标。",
+      "tags": ["奇幻", "世界设定", "世界观"],
+      "author": "AI 酒馆官方",
+      "version": "1.0.0",
+      "size": 2670,
+      "sha256": "38a74730961aa9e430fb129c32692a97a88fe668ca64fb14453c1a902359669c",
+      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/items/worldbook-midgard.json"
+    },
+    {
+      "id": "template-fantasy",
+      "type": "template",
+      "name": "奇幻模板",
+      "description": "剑与魔法、龙与地下城、史诗冒险（故事引擎题材模板）",
+      "tags": ["奇幻", "模板", "故事引擎"],
+      "author": "AI 酒馆官方",
+      "version": "1.0.0",
+      "size": 986,
+      "sha256": "58683b62ee5336e37f685d8faaa1a0953b99374d3d16e86fc18ad5f1a9a0283e",
+      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/items/template-fantasy.json"
+    },
+    {
+      "id": "template-sci-fi",
+      "type": "template",
+      "name": "科幻模板",
+      "description": "太空歌剧、赛博朋克、AI 与星际文明（故事引擎题材模板）",
+      "tags": ["科幻", "模板", "故事引擎"],
+      "author": "AI 酒馆官方",
+      "version": "1.0.0",
+      "size": 1059,
+      "sha256": "34f59475d8bb0ba071d0cf92d9f0021c07bff971d53a5716011a3b36b1126670",
+      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/items/template-sci-fi.json"
+    },
+    {
+      "id": "template-apocalypse",
+      "type": "template",
+      "name": "末日模板",
+      "description": "丧尸、废土、灾变后的生存世界（故事引擎题材模板）",
+      "tags": ["末日", "模板", "故事引擎"],
+      "author": "AI 酒馆官方",
+      "version": "1.0.0",
+      "size": 1000,
+      "sha256": "5d02b8772b806dc5d18ffc8b2b852c5c4da36b2cda4c58238b0ebd59e850932d",
+      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/items/template-apocalypse.json"
+    }
+  ]
+}

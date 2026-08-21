@@ -27,6 +27,9 @@ coverage-ci/
 # Local model / large data
 model/
 
+# Tauri updater signing keys (private key MUST NOT be committed)
+src-tauri/keys/*.key
+
 # Reasonix workspace state
 .reasonix/attachments/
 .reasonix/reports/
@@ -42,6 +45,18 @@ yarn-error.log*
 
 # Dev documentation screenshots (not needed to build/run)
 ui-shots/
+
+# AI 相关记录 / 开发文档（已移交，不再跟踪）
+.reasonix/
+deliverables/
+docs/
+AI酒馆开发计划文档.md
+AI酒馆项目嵌入优化方案开发文档.md
+public/ai-roleplay-dev-plan.html
+public/sillytavern-vs-airoleplay.html
+
+# 临时测试图（仅本地验证用）
+test-gradient.jpg
 
 # OS / editor
 .DS_Store

@@ -1,0 +1,2 @@
+# 市场条目/清单保持 LF 行尾，确保 SHA-256 哈希与 raw.githubusercontent.com 内容字节一致
+market/**/*.json text eol=lf

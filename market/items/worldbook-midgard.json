@@ -1,0 +1,67 @@
+{
+  "id": "worldbook-midgard",
+  "name": "米德加德大陆设定",
+  "description": "剑与魔法奇幻世界的整体设定：王国、种族、势力与关键地标。",
+  "type": "worldbook",
+  "tags": ["奇幻", "世界设定", "世界观"],
+  "author": "AI 酒馆官方",
+  "version": "1.0.0",
+  "content": {
+    "id": "market_worldbook_midgard",
+    "name": "米德加德大陆设定",
+    "description": "剑与魔法奇幻世界的整体设定：王国、种族、势力与关键地标。",
+    "scope": "global",
+    "createdAt": "2026-08-20T00:00:00.000Z",
+    "updatedAt": "2026-08-20T00:00:00.000Z",
+    "entries": [
+      {
+        "id": "midgard_world",
+        "title": "世界概览",
+        "keys": ["米德加德", "Midgard", "大陆"],
+        "content": "米德加德是一片由五国割据、精灵森林与矮人山脉环绕的大陆。魔法源于贯穿地脉的「源流」，法师通过冥想引导源流施法。上古战争后，龙族退居北方冰原，其遗迹散落各地成为冒险者竞相探索的宝藏。",
+        "strategy": "constant",
+        "probability": 100,
+        "insertionOrder": 100,
+        "insertionPosition": "beforeCharDefs",
+        "depth": 0,
+        "group": "",
+        "enabled": true,
+        "logic": "AND_ANY",
+        "hierarchyLevel": 0,
+        "parentId": null
+      },
+      {
+        "id": "midgard_elf",
+        "title": "精灵族",
+        "keys": ["精灵", "elf", "Elf", "翡翠森林"],
+        "content": "精灵族聚居翡翠森林，寿命千年，擅长自然魔法与箭术。精灵视森林为生命之源，对外来者警惕但友善。现任守护者是精灵法师塞拉菲娜。",
+        "strategy": "keyword",
+        "probability": 100,
+        "insertionOrder": 80,
+        "insertionPosition": "afterCharDefs",
+        "depth": 0,
+        "group": "",
+        "enabled": true,
+        "logic": "AND_ANY",
+        "hierarchyLevel": 1,
+        "parentId": "midgard_world"
+      },
+      {
+        "id": "midgard_kingdom",
+        "title": "王都亚兰",
+        "keys": ["亚兰", "王都", "Arlan", "国王"],
+        "content": "亚兰是米德加德最大的人类王国首都，城墙由白岩砌成。王庭近年在追查上古遗迹中的龙血兵器下落，宫廷气氛紧张。冒险者公会的总部设在王都，发布各类悬赏任务。",
+        "strategy": "keyword",
+        "probability": 100,
+        "insertionOrder": 70,
+        "insertionPosition": "afterCharDefs",
+        "depth": 0,
+        "group": "",
+        "enabled": true,
+        "logic": "AND_ANY",
+        "hierarchyLevel": 1,
+        "parentId": "midgard_world"
+      }
+    ]
+  }
+}

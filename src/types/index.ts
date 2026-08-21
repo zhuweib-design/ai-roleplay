@@ -119,13 +119,32 @@ export const MODEL_CATEGORIES: readonly ModelCategoryMeta[] = [
   { value: 'embedding', label: t('types.catEmbedding'), description: t('types.catEmbeddingDesc') },
 ] as const;
 
-/** 主题名：深色（默认）/ 亮色 / 午夜蓝 / OLED 黑 / 暗夜剧场 */
-export type ThemeName = 'dark' | 'light' | 'midnight' | 'oled' | 'theatre';
+/** 主题名：深色（默认）/ 亮色 / 午夜蓝 / OLED 黑 / 暗夜剧场 / 自定义（图片提取） */
+export type ThemeName = 'dark' | 'light' | 'midnight' | 'oled' | 'theatre' | 'custom';
 
 /** 字号档位：12 / 14 / 16 / 18 */
 export type FontSizePreset = 12 | 14 | 16 | 18;
 
 export const FONT_SIZE_PRESETS: readonly FontSizePreset[] = [12, 14, 16, 18] as const;
+
+/**
+ * 自定义主题 (F08.4)
+ * - 通过上传背景图片，k-means 聚类提取主色，自动生成整套组件色
+ * - 背景图同时作为全局应用背景展示（叠加暗色遮罩保证可读性）
+ * - palette 为唯一数据源；tokens 为派生的组件变量（加载时会按需重新生成）
+ */
+export interface CustomTheme {
+  /** 背景图片（data URL，base64 内联；空表示无背景图） */
+  background: string;
+  /** 提取的主色板（hex 列表，按占比降序，长度 ≤6） */
+  palette: string[];
+  /** 各主色占比（0-1，与 palette 一一对应） */
+  paletteRatios: number[];
+  /** 全图平均相对亮度（0 黑 ~ 1 白），用于判断深浅基调 */
+  avgLuminance: number;
+  /** 生成的组件 CSS 变量（不含 -- 前缀的键 → css 值） */
+  tokens: Record<string, string>;
+}
 
 export const THEME_PRESETS: readonly ThemeName[] = ['dark', 'light', 'midnight', 'oled', 'theatre'] as const;
 
@@ -169,6 +188,8 @@ export interface AppSettings {
   bubbleStyle: BubbleStyle;
   /** F08.3 新增：自定义 CSS 代码（v1.1，注入到页面 <style>） */
   customCss: string;
+  /** F08.4 新增：自定义主题（背景图 + 提取主色 + 生成的组件变量） */
+  customTheme?: CustomTheme | null;
   /** F12.2 新增：TTS 语音朗读配置（v1.1） */
   ttsConfig: import('@services/tts-service').TTSConfig;
   /** F12.3 新增：消息翻译配置（v1.1） */

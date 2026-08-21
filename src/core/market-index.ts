@@ -1,173 +1,205 @@
 /**
- * 社区市场 v1 索引 (T-11)
+ * 社区市场远程索引引擎 (G8 / T-11)
  *
- * 市场 v1 采用「GitHub 仓库索引」形态(无后端):
- * - 一个 JSON 清单文件列出可下载项(角色卡/世界书/模板)
- * - 每项含直链 url + sha256 哈希,安装时校验完整性
- * - 清单格式版本化,校验器拒绝未知字段与非法条目
+ * 将「社区市场」从本地 Mock 升级为 GitHub 仓库索引：
+ * - 从 GitHub 仓库拉取 JSON 清单（market/index.json）
+ * - 清单列出可下载条目：角色卡 / 世界书 / 故事题材模板
+ * - 直链下载条目内容并校验 SHA-256，哈希不符拒绝安装
  *
- * 设计:
- * - validateMarketIndex:解析并校验清单(幂等,返回条目列表或错误)
- * - verifyFileHash:Web Crypto SHA-256 校验下载文件(防篡改/损坏)
+ * 网络依赖：
+ * - 仅在用户主动进入远程市场并触发加载时请求网络
+ * - 离线/失败时回退本地 Mock 市场，不影响既有功能
  */
 
-/** 清单格式版本 */
-import { t } from '@/i18n';
+// i18n-ignore-start  // 模型面/数据结构内容，非 UI 文案
 
-
-export const MARKET_INDEX_VERSION = 1;
-
-/** 可下载项类型 */
-export type MarketIndexItemType = 'character' | 'lorebook' | 'template';
+/** 条目类型 */
+export type MarketItemType = 'character' | 'worldbook' | 'template';
 
 /** 清单条目 */
 export interface MarketIndexItem {
-  /** 全局唯一 ID(推荐 UUID) */
+  /** 条目 ID（唯一） */
   id: string;
-  /** 类型 */
-  type: MarketIndexItemType;
+  /** 条目类型 */
+  type: MarketItemType;
   /** 显示名称 */
   name: string;
-  /** 版本号(semver) */
-  version: string;
+  /** 描述 */
+  description: string;
+  /** 标签 */
+  tags: string[];
   /** 作者 */
   author: string;
-  /** 一句话描述 */
-  description?: string;
-  /** 文件直链(https) */
-  url: string;
-  /** SHA-256 十六进制(小写) */
-  sha256: string;
-  /** 文件大小(字节) */
+  /** 版本号 */
+  version: string;
+  /** 内容字节数 */
   size: number;
-  /** 分类标签 */
-  tags?: string[];
-  /** 更新时间(ISO) */
-  updatedAt: string;
+  /** SHA-256（十六进制小写） */
+  sha256: string;
+  /** 内容直链 */
+  url: string;
 }
 
-/** 清单文件结构 */
-export interface MarketIndexFile {
+/** 市场清单 */
+export interface MarketIndexManifest {
+  /** 清单版本 */
   version: number;
-  /** 仓库名(用于展示) */
-  name: string;
+  /** 更新时间（ISO 8601） */
+  updatedAt: string;
+  /** 条目列表 */
   items: MarketIndexItem[];
 }
 
-/** 校验结果 */
-export interface MarketIndexResult {
-  ok: boolean;
-  items: MarketIndexItem[];
-  errors: string[];
+/** 下载的条目内容（安装时使用） */
+export interface DownloadedMarketItem {
+  /** 对应清单条目 */
+  item: MarketIndexItem;
+  /** 校验通过的原始文本 */
+  rawText: string;
+  /** 解析后的内容对象 */
+  content: unknown;
 }
 
-/** 校验单个条目,返回错误信息数组(空=合法) */
-export function validateMarketItem(item: unknown, idx: number): string[] {
-  const errors: string[] = [];
-  if (typeof item !== 'object' || item === null) {
-    return [t('mktIndex.entryNotObject', { idx })];
-  }
-  const it = item as Partial<MarketIndexItem>;
+/** 默认清单地址（本仓库） */
+export const DEFAULT_MARKET_INDEX_URL =
+  'https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/index.json';
 
-  if (typeof it.id !== 'string' || it.id.length === 0) {
-    errors.push(t('mktIndex.entryMissingId', { idx }));
-  }
-  if (it.type !== 'character' && it.type !== 'lorebook' && it.type !== 'template') {
-    errors.push(t('mktIndex.entryTypeInvalid', { idx, type: String(it.type) }));
-  }
-  if (typeof it.name !== 'string' || it.name.length === 0) {
-    errors.push(t('mktIndex.entryMissingName', { idx }));
-  }
-  if (typeof it.version !== 'string' || !/^\d+\.\d+\.\d+/.test(it.version)) {
-    errors.push(t('mktIndex.entryVersionInvalid', { idx, version: String(it.version) }));
-  }
-  if (typeof it.author !== 'string' || it.author.length === 0) {
-    errors.push(t('mktIndex.entryMissingAuthor', { idx }));
-  }
-  if (typeof it.url !== 'string' || !/^https:\/\//.test(it.url)) {
-    errors.push(t('mktIndex.entryUrlInvalid', { idx }));
-  }
-  if (typeof it.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(it.sha256)) {
-    errors.push(t('mktIndex.entryShaInvalid', { idx }));
-  }
-  if (typeof it.size !== 'number' || it.size <= 0 || !Number.isFinite(it.size)) {
-    errors.push(t('mktIndex.entrySizeInvalid', { idx }));
-  }
-  if (it.updatedAt !== undefined && typeof it.updatedAt !== 'string') {
-    errors.push(t('mktIndex.entryUpdatedAtInvalid', { idx }));
-  }
-  return errors;
+/** 清单大小上限（512KB，防御异常清单） */
+export const MAX_MANIFEST_BYTES = 512 * 1024;
+/** 条目内容大小上限（4MB，防御超大条目） */
+export const MAX_ITEM_BYTES = 4 * 1024 * 1024;
+
+// ── 纯函数：清单解析（可单测） ──
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+
+function isString(v: unknown): v is string {
+  return typeof v === 'string';
 }
 
 /**
- * 解析并校验市场索引 JSON
- *
- * @param json 任意 JSON(通常来自 fetch 清单 URL)
- * @returns 校验结果;失败时 items 为空,errors 含全部错误
+ * 解析并校验市场清单文本
+ * @returns 合法清单；结构非法时返回 null
  */
-export function validateMarketIndex(json: unknown): MarketIndexResult {
-  const errors: string[] = [];
-
-  if (typeof json !== 'object' || json === null || Array.isArray(json)) {
-    return { ok: false, items: [], errors: [t('mktIndex.manifestNotObject')] };
+export function parseMarketIndex(rawText: string): MarketIndexManifest | null {
+  let data: unknown;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    return null;
   }
-  const file = json as Partial<MarketIndexFile>;
-
-  if (file.version !== MARKET_INDEX_VERSION) {
-    errors.push(t('mktIndex.manifestVersionUnsupported', { version: String(file.version), supported: MARKET_INDEX_VERSION }));
-  }
-  if (typeof file.name !== 'string' || file.name.length === 0) {
-    errors.push(t('mktIndex.manifestMissingName'));
-  }
-  if (!Array.isArray(file.items)) {
-    errors.push(t('mktIndex.manifestMissingItems'));
-  }
+  if (!isRecord(data)) return null;
+  if (typeof data.version !== 'number' || !isString(data.updatedAt)) return null;
+  if (!Array.isArray(data.items)) return null;
 
   const items: MarketIndexItem[] = [];
-  const seenIds = new Set<string>();
-  if (Array.isArray(file.items)) {
-    file.items.forEach((item, idx) => {
-      const itemErrors = validateMarketItem(item, idx);
-      if (itemErrors.length > 0) {
-        errors.push(...itemErrors);
-        return;
-      }
-      const it = item as MarketIndexItem;
-      if (seenIds.has(it.id)) {
-        errors.push(t('mktIndex.entryIdDuplicate', { idx, id: it.id }));
-        return;
-      }
-      seenIds.add(it.id);
-      items.push(it);
-    });
+  for (const rawItem of data.items) {
+    if (!isRecord(rawItem)) return null;
+    const item: MarketIndexItem = {
+      id: isString(rawItem.id) ? rawItem.id : '',
+      type: isString(rawItem.type) && ['character', 'worldbook', 'template'].includes(rawItem.type)
+        ? (rawItem.type as MarketItemType)
+        : 'character',
+      name: isString(rawItem.name) ? rawItem.name : '',
+      description: isString(rawItem.description) ? rawItem.description : '',
+      tags: Array.isArray(rawItem.tags) ? rawItem.tags.filter(isString) : [],
+      author: isString(rawItem.author) ? rawItem.author : '',
+      version: isString(rawItem.version) ? rawItem.version : '',
+      size: typeof rawItem.size === 'number' ? rawItem.size : 0,
+      sha256: isString(rawItem.sha256) ? rawItem.sha256.toLowerCase() : '',
+      url: isString(rawItem.url) ? rawItem.url : '',
+    };
+    // 必填字段缺失 → 整清单非法
+    if (!item.id || !item.sha256 || !item.url) return null;
+    items.push(item);
   }
 
-  return { ok: errors.length === 0, items, errors };
+  return { version: data.version, updatedAt: data.updatedAt, items };
+}
+
+// ── 网络层 ──
+
+/** 拉取清单（带大小上限） */
+export async function fetchMarketIndex(
+  url: string = DEFAULT_MARKET_INDEX_URL
+): Promise<MarketIndexManifest | null> {
+  const text = await fetchText(url, MAX_MANIFEST_BYTES);
+  return parseMarketIndex(text);
 }
 
 /**
- * 计算文件 SHA-256(十六进制小写)
- * 用于安装前校验下载内容与清单哈希一致
+ * 下载条目内容并校验 SHA-256
+ * @returns 校验通过的下载内容；哈希不符或解析失败返回 null
  */
-export async function sha256Hex(data: ArrayBuffer | Uint8Array): Promise<string> {
-  const buffer =
-    data instanceof Uint8Array ? (data.buffer as ArrayBuffer).slice(data.byteOffset, data.byteOffset + data.byteLength) : data;
-  const digest = await crypto.subtle.digest('SHA-256', buffer);
-  return Array.from(new Uint8Array(digest))
+export async function downloadMarketItem(
+  item: MarketIndexItem
+): Promise<DownloadedMarketItem | null> {
+  const rawText = await fetchText(item.url, MAX_ITEM_BYTES);
+  const expectedHex = item.sha256.toLowerCase();
+  if (expectedHex) {
+    const ok = await verifySha256Hex(new TextEncoder().encode(rawText), expectedHex);
+    if (!ok) return null;
+  }
+  let content: unknown;
+  try {
+    content = JSON.parse(rawText);
+  } catch {
+    return null;
+  }
+  return { item, rawText, content };
+}
+
+/** 读取文本并限制字节数；超限或请求失败抛错 */
+async function fetchText(url: string, maxBytes: number): Promise<string> {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  const buf = await res.arrayBuffer();
+  if (buf.byteLength > maxBytes) {
+    throw new Error('content too large');
+  }
+  return new TextDecoder().decode(buf);
+}
+
+// ── SHA-256 校验 ──
+
+/**
+ * 校验字节序列的 SHA-256 是否等于期望值（十六进制小写）
+ */
+export async function verifySha256Hex(
+  bytes: Uint8Array,
+  expectedHex: string
+): Promise<boolean> {
+  if (!globalThis.crypto?.subtle) return false;
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes as BufferSource);
+  const hex = Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
+  return hex === expectedHex.toLowerCase();
 }
 
-/**
- * 校验下载内容与清单条目哈希一致
- * @returns true=一致;false=不匹配或输入非法
- */
-export async function verifyMarketItemHash(
-  item: Pick<MarketIndexItem, 'sha256'>,
-  data: ArrayBuffer | Uint8Array
-): Promise<boolean> {
-  if (!/^[0-9a-f]{64}$/.test(item.sha256)) return false;
-  const actual = await sha256Hex(data);
-  return actual === item.sha256;
+// ── 内容类型解析 ──
+
+/** 条目内容为角色卡时解析为 CharacterCard 兼容对象 */
+export function parseCharacterItem(content: unknown): Record<string, unknown> | null {
+  if (!isRecord(content) || !isString(content.name)) return null;
+  return content as Record<string, unknown>;
 }
 
+/** 条目内容为世界书时解析为 Lorebook 兼容对象 */
+export function parseWorldbookItem(content: unknown): Record<string, unknown> | null {
+  if (!isRecord(content) || !isString(content.name) || !Array.isArray(content.entries)) {
+    return null;
+  }
+  return content as Record<string, unknown>;
+}
+
+/** 条目内容为故事模板时解析为模板对象 */
+export function parseTemplateItem(content: unknown): Record<string, unknown> | null {
+  if (!isRecord(content) || !isString(content.id) || !isString(content.name)) return null;
+  return content as Record<string, unknown>;
+}
+// i18n-ignore-end
