@@ -5,7 +5,8 @@
 /* 应用外壳 */
 .app-shell {
   display: flex;
-  width: 100vw;
+  /* 用 100% 而非 100vw：100vw 会含垂直滚动条宽度导致横向溢出 ~14px */
+  width: 100%;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;

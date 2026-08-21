@@ -1000,7 +1000,7 @@ async function handleExportChatMarkdown() {
           >
             <Icon :name="cat.icon" :size="15" aria-hidden="true" />
             <span class="settings-nav-item-label">{{ cat.label }}</span>
-            <span class="settings-nav-item-desc">{{ cat.description }}</span>
+            <span class="settings-nav-item-desc" role="tooltip" :hidden="activeCategory === cat.id">{{ cat.description }}</span>
           </button>
         </div>
       </div>
@@ -2324,7 +2324,7 @@ async function handleExportChatMarkdown() {
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
-  overflow-y: auto;
+  overflow: visible;
   align-self: flex-start;
   position: sticky;
   top: 16px;
@@ -2348,6 +2348,7 @@ async function handleExportChatMarkdown() {
 }
 
 .settings-nav-item {
+  position: relative;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -2373,18 +2374,34 @@ async function handleExportChatMarkdown() {
   color: inherit;
 }
 
+/* 侧边栏描述小字 → hover 气泡（默认隐藏，向下浮层显示） */
 .settings-nav-item-desc {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  /* P2-6 UI 修复: 描述改为 2 行 line-clamp, 避免单行 nowrap 截断丢失信息(原 "云端/本地模型与 API..." 被无声裁切) */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  text-align: right;
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: calc(100% + 6px);
+  z-index: 30;
+  padding: 6px 9px;
   font-size: 11px;
+  line-height: 1.5;
   color: var(--muted-foreground);
+  background: var(--card-elevated, var(--card));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-elevated);
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+  pointer-events: none;
+}
+
+.settings-nav-item:hover .settings-nav-item-desc,
+.settings-nav-item:focus-visible .settings-nav-item-desc {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .settings-nav-item:hover {
@@ -2410,7 +2427,7 @@ async function handleExportChatMarkdown() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   padding: 24px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -2444,7 +2461,7 @@ async function handleExportChatMarkdown() {
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   padding: 20px;
   background: var(--card);
   border: 1px solid var(--border);

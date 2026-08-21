@@ -45,8 +45,17 @@ function handleKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   updateIsMobile();
+  // 移动端初始收起上下文面板，避免 `overlay-mask` 常驻拦截点击
+  if (isMobile.value) {
+    characterStore.closeAllDrawers();
+  }
   window.addEventListener('resize', updateIsMobile);
   window.addEventListener('keydown', handleKeydown);
+});
+
+// 视口切换时同步：回到桌面展开面板，缩到移动收起，避免遮罩残留
+watch(isMobile, (mobile) => {
+  if (mobile) characterStore.closeAllDrawers();
 });
 
 onBeforeUnmount(() => {
