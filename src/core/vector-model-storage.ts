@@ -100,12 +100,23 @@ export async function readUserModelFile(id: string, fileName: string): Promise<A
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => resolve(undefined);
   });
-  if (value instanceof File) return value.arrayBuffer();
-  if (value instanceof Blob) return value.arrayBuffer();
-  if (value instanceof Uint8Array) {
-    return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
+  // 用 toStringTag / 能力检测识别，避免 structured-clone 跨 realm 时 instanceof 失效
+  // （fake-indexeddb / 原生 webview 会返回另一 realm 的同名类型，instanceof 匹配为 false）
+  const tag = Object.prototype.toString.call(value);
+  // Blob / File：优先能力检测，跨 realm 实例仍有可调用的 arrayBuffer()
+  if (value && typeof value === 'object' && typeof (value as Blob).arrayBuffer === 'function') {
+    return (value as Blob).arrayBuffer();
   }
   if (value instanceof ArrayBuffer) return value;
+  // Uint8Array / 其它 TypedArray 视图：ArrayBuffer.isView 不依赖 realm；
+  // 用逐元素拷贝规避跨 realm 下 buffer/byteOffset 属性的不可靠性
+  if (ArrayBuffer.isView(value)) {
+    const view = value as Uint8Array;
+    const out = new Uint8Array(view.byteLength);
+    out.set(view);
+    return out.buffer;
+  }
+  if (tag === '[object ArrayBuffer]') return value as ArrayBuffer;
   // i18n-ignore-start  // 运行时错误消息(非 UI 文案)
   throw new Error(`文件未找到: ${fileName}`);
   // i18n-ignore-end
