@@ -53,23 +53,26 @@ function handleKeydown(e: KeyboardEvent) {
     return;
   }
   if (e.key === 'Tab' && dialogRef.value) {
-    // 焦点陷阱：在对话框可聚焦元素间循环
-    const focusable = dialogRef.value.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    // 焦点陷阱：严格在对话框可聚焦元素间循环（WCAG 2.1.2）。
+    // 总是拦截默认 Tab 行为并手动推进/回绕，防止焦点逃逸到背景
+    // （当末尾按钮 disabled 或焦点位于中间元素时，原实现会漏判而逃逸）。
+    const focusable = Array.from(
+      dialogRef.value.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
     );
     if (focusable.length === 0) return;
     const first = focusable[0]!;
     const last = focusable[focusable.length - 1]!;
+    const active = document.activeElement as HTMLElement | null;
+    const idx = active ? focusable.indexOf(active) : -1;
+    e.preventDefault();
     if (e.shiftKey) {
-      if (document.activeElement === first || !dialogRef.value.contains(document.activeElement)) {
-        e.preventDefault();
-        last.focus();
-      }
+      if (idx <= 0) last.focus();
+      else focusable[idx - 1]!.focus();
     } else {
-      if (document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
+      if (idx === -1 || idx >= focusable.length - 1) first.focus();
+      else focusable[idx + 1]!.focus();
     }
   }
 }
