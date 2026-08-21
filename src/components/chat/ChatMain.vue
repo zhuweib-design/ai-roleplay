@@ -382,9 +382,13 @@ function handleExportChat() {
 
 function handleMessageAction(msgId: string, action: string) {
   switch (action) {
-    case 'copy':
-      chatStore.copyMessage(char.value.messages.find((m) => m.id === msgId)!);
+    case 'copy': {
+      const msg = char.value.messages.find((m) => m.id === msgId);
+      // 竞态兜底：消息可能已被并发删除，find 无果时跳过访问，避免裸 TypeError（copy 本为静默能力）
+      if (!msg) break;
+      chatStore.copyMessage(msg);
       break;
+    }
     case 'delete':
       chatStore.deleteMessage(char.value, msgId);
       break;
