@@ -1,5 +1,7 @@
 <div align="center">
 
+<p><b><a href="README.md">简体中文</a> · <a href="README-EN.md">English</a></b></p>
+
 # 🍺 AI 酒馆
 
 **基于 SillyTavern 架构的 AI 角色扮演聊天应用：多模型对话 · 角色卡 · 世界书 · 群聊 · 故事引擎 · 社区市场 · 自定义主题 · 自定义向量模型 RAG**
@@ -145,7 +147,6 @@ tests/               单测 / 无障碍 / E2E
 ## 📚 更多
 
 - [隐私与安全](#-隐私与安全)
-- [发布指引 / 自动更新](#-发布指引)
 
 ### 隐私与安全
 
@@ -153,26 +154,3 @@ tests/               单测 / 无障碍 / E2E
 - CSP 收紧：`script-src 'self'` 禁内联脚本，`freezePrototype` 开启
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储
 - 自动更新签名公钥内置于 `tauri.conf.json`，私钥存放于仓库 Secrets，不进入二进制
-
-### 发布指引
-
-本应用为 Tauri 2 桌面应用，发布 = 打语义化版本 tag，由 GitHub Actions 的 `tauri-release` job 产出**签名安装包**并推送到 GitHub Releases，同时生成 `latest.json` 供应用内自动更新消费。
-
-**前置条件（首个发布一次性配置）**：在 `Settings → Secrets → Actions` 配置：
-
-| Secret | 用途 | 是否必需 |
-| --- | --- | --- |
-| `TAURI_SIGNING_PRIVATE_KEY` | Tauri 更新签名私钥（PEM） | 必需 |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 私钥密码 | 必需 |
-| `WINDOWS_CERT_BASE64` / `WINDOWS_CERT_PASSWORD` | Windows 代码签名证书 | 可选（未配则出未签名包） |
-
-**发版步骤**：
-
-1. 确认 `package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock` 版本号一致；`CHANGELOG.md` 记录本版变更；本地门禁全绿。
-2. `git tag vX.Y.Z && git push origin vX.Y.Z`
-3. CI 依次执行 `quality-gates → e2e → tauri-build`，全绿后在 tag 触发 `tauri-release`，产出安装包 + `latest.json`。
-4. 发布后在应用内「检查更新」验证签名升级。
-
-**自动更新机制**：`tauri.conf.json` 的 updater 指向 GitHub Releases `latest.json`（内嵌签名公钥）。**单点依赖** GitHub，无镜像降级源；不可达时更新失败有可见提示，不影响既有版本运行。
-
-**回滚**：发布修复版本并打新 tag 覆盖 `latest` 即可回归；不建议删除已发布 tag。
