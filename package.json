@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "a11y:contrast": "node scripts/check-contrast.mjs",
     "i18n:check": "node scripts/i18n-scan.mjs",
     "i18n:check:strict": "node scripts/i18n-scan.mjs --strict",
     "typecheck": "vue-tsc --noEmit",
