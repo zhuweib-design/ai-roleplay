@@ -110,7 +110,7 @@ tests/               单测 / 无障碍 / E2E
 
 ## 🤝 贡献
 
-当前仓库暂未提供 `CONTRIBUTING.md`。欢迎：发现 Bug 请开 [Issue]()；如参与开发，请 `Fork → 特性分支 → PR`。涉及较大改动或新功能，建议先开 Issue 讨论再动手。
+欢迎为 AI 酒馆做贡献。详见 [CONTRIBUTING.md](CONTRIBUTING.md)（含对核心开源技术的致谢）。基本流程：`Fork → 特性分支 → PR`；涉及较大改动或新功能，建议先开 Issue 讨论再动手。
 
 ## 📄 许可证
 
