@@ -43,7 +43,9 @@ class NodeFileAdapter implements ModelFileAdapter {
   }
 }
 
-describe('真实模型验证(model/ 目录)', () => {
+// 真实模型验证依赖本地已下载的 model/ 权重目录(大文件不入库)。
+// CI 等无该目录的环境应整体跳过而不是因 ENOENT 失败。
+describe.skipIf(!fs.existsSync(MODEL_ROOT))('真实模型验证(model/ 目录)', () => {
   it('模型目录包含三个 onnx 模型目录', () => {
     const installed = fs.readdirSync(MODEL_ROOT);
     expect(installed).toContain('bge-large-zh-v1.5-int8-onnx');
