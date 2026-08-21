@@ -840,7 +840,7 @@ onMounted(async () => {
   color: var(--muted-foreground);
   cursor: pointer;
   font-size: 12px;
-  transition: all .15s ease;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
 .filter-chip.active {

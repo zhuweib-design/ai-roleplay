@@ -825,7 +825,7 @@ onMounted(async () => {
   cursor: pointer;
   font-size: 12px;
   text-align: center;
-  transition: all .15s ease;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
 .style-chip.active {

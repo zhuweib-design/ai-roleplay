@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * RandomEventsView — 随机事件管理页面 (F17.3, v1.1 新增)
  *
@@ -1240,7 +1240,7 @@ function formatCooldown(ms: number): string {
   color: var(--muted-foreground);
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .feedback-btn:hover {

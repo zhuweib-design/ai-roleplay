@@ -1949,7 +1949,7 @@ select.field-input {
   font-size: 13px;
   cursor: pointer;
   border-radius: calc(var(--radius-md) - 2px);
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .model-mgmt-tabs .bg-source-tab.active {

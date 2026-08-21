@@ -826,9 +826,15 @@ function handleExportAuditLog() {
   }
 }
 
-/** 清空审计日志 */
+/** 清空审计日志（P1-3：改用应用内确认 Modal，替代原生 confirm） */
+const auditClearConfirmOpen = ref(false);
+
 function handleClearAuditLog() {
-  if (!window.confirm(t('settingsView.auditClearConfirm'))) return;
+  auditClearConfirmOpen.value = true;
+}
+
+function confirmClearAuditLog() {
+  auditClearConfirmOpen.value = false;
   auditLogger.clear();
   showToast('success', t('settingsView.auditCleared'));
 }
@@ -2208,6 +2214,27 @@ async function handleExportChatMarkdown() {
       </template>
     </Modal>
 
+    <!-- P1-3：清空审计日志确认（替代原生 confirm） -->
+    <Modal v-model="auditClearConfirmOpen" :title="t('settingsView.auditClearConfirmTitle')">
+      <p>{{ t('settingsView.auditClearConfirm') }}</p>
+      <template #footer>
+        <button
+          type="button"
+          class="modal-btn modal-cancel"
+          @click="auditClearConfirmOpen = false"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="modal-btn modal-confirm"
+          @click="confirmClearAuditLog"
+        >
+          {{ t('common.confirm') }}
+        </button>
+      </template>
+    </Modal>
+
     <Toast
       v-model="toastOpen"
       :type="toastType"
@@ -3324,7 +3351,7 @@ select.field-input {
   font-size: 13px;
   cursor: pointer;
   border-radius: calc(var(--radius-md) - 2px);
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 .bg-source-tab.active {
@@ -3411,7 +3438,7 @@ select.field-input {
   padding: 8px 12px;
   max-width: 70%;
   font-size: 13px;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-radius 0.15s, border-color 0.15s, opacity 0.15s;
 }
 
 .bubble-preview-item.user-bubble {

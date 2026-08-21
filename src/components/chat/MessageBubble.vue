@@ -25,7 +25,7 @@ const assistantActions: MsgAction[] = [
   { key: 'speak', icon: 'volume-2', label: t('bubble.speak') },
   { key: 'translate', icon: 'globe', label: t('bubble.translate') },
   { key: 'regenerate', icon: 'refresh-cw', label: t('bubble.regenerate') },
-  { key: 'branch', icon: 'git-branch', label: t('bubble.branch') },
+  // 注：原「分支」操作为未实现占位（点击弹出"演示"），已移除入口
   { key: 'delete', icon: 'trash-2', label: t('bubble.delete'), danger: true },
 ];
 </script>
@@ -169,6 +169,13 @@ const assistantActions: MsgAction[] = [
 .msg-wrap:hover .msg-toolbar,
 .msg-wrap:focus-within .msg-toolbar {
   opacity: 1;
+}
+
+/* 触屏设备无 hover：操作栏常显，保证编辑/复制等操作可达（WCAG + 移动端体验） */
+@media (hover: none) {
+  .msg-toolbar {
+    opacity: 1;
+  }
 }
 
 .msg-toolbar-btn {

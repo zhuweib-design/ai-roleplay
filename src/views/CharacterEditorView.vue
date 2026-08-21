@@ -473,13 +473,19 @@ function handleSave() {
   }
 }
 
-// ── 取消（带未保存确认） ──
+// ── 取消（带未保存确认，P1-3 改用应用内 Modal 替代原生 confirm） ──
+const unsavedConfirmOpen = ref(false);
+
 function handleCancel() {
   if (isDirty.value && canSave.value) {
-    if (!window.confirm(t('charEdit.unsaved'))) {
-      return;
-    }
+    unsavedConfirmOpen.value = true;
+    return;
   }
+  router.back();
+}
+
+function confirmLeaveEditor() {
+  unsavedConfirmOpen.value = false;
   router.back();
 }
 
@@ -1157,6 +1163,27 @@ function handleExport() {
           @click="executeDelete"
         >
           {{ t('charEdit.delete') }}
+        </button>
+      </template>
+    </Modal>
+
+    <!-- P1-3：取消编辑时未保存确认（替代原生 confirm） -->
+    <Modal v-model="unsavedConfirmOpen" :title="t('charEdit.unsavedTitle')">
+      <p>{{ t('charEdit.unsaved') }}</p>
+      <template #footer>
+        <button
+          type="button"
+          class="modal-btn modal-cancel"
+          @click="unsavedConfirmOpen = false"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="modal-btn modal-confirm"
+          @click="confirmLeaveEditor"
+        >
+          {{ t('common.confirm') }}
         </button>
       </template>
     </Modal>
@@ -2007,7 +2034,7 @@ function handleExport() {
   color: var(--muted-foreground);
   font-size: 0.85em;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
   flex-shrink: 0;
 }
 

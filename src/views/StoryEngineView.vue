@@ -2966,7 +2966,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: all .15s ease;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
 .char-set-protagonist-btn:hover:not(:disabled) {

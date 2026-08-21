@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * CommunityMarketView — 角色卡社区市场页面 (模块5)
  *
@@ -954,7 +954,7 @@ function ratingStars(rating: number): string {
   color: var(--muted-foreground);
   font-size: 0.8125rem;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .sort-btn.active {
@@ -985,7 +985,7 @@ function ratingStars(rating: number): string {
   color: var(--muted-foreground);
   font-size: 0.75rem;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .chip.active {
@@ -1347,7 +1347,7 @@ function ratingStars(rating: number): string {
   border-radius: 0.5rem;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .btn-sm {

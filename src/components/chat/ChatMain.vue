@@ -13,8 +13,8 @@ import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import MessageBubble from './MessageBubble.vue';
 import Toast from '@/components/common/Toast.vue';
+import Modal from '@/components/common/Modal.vue';
 import ApiErrorModal from '@/components/common/ApiErrorModal.vue';
-import type { IconName } from '@/components/common/icons';
 import type { QuickReplyButton } from '@/types';
 // F12.2 TTS / F12.3 翻译
 import { ttsService, isTTSSupported } from '@services/tts-service';
@@ -392,19 +392,15 @@ function handleMessageAction(msgId: string, action: string) {
       void chatStore.regenerateMessage(char.value, msgId);
       break;
     case 'edit': {
+      // P1-3：改用应用内 Modal 编辑，替代原生 window.prompt
       const msg = char.value.messages.find((m) => m.id === msgId);
       if (msg) {
-        const newText = window.prompt(t('chat.editMessage'), msg.content);
-        if (newText !== null) {
-          chatStore.editMessage(msg, newText);
-          chatStore.persistAfterEdit(char.value);
-        }
+        editTarget.value = msg;
+        editDraft.value = msg.content;
+        editModalOpen.value = true;
       }
       break;
     }
-    case 'branch':
-      window.alert(t('chat.branchDemo'));
-      break;
     case 'speak': {
       // F12.2 TTS 朗读
       const msg = char.value.messages.find((m) => m.id === msgId);
@@ -422,6 +418,23 @@ function handleMessageAction(msgId: string, action: string) {
       break;
     }
   }
+}
+
+// ── P1-3：消息编辑 Modal（替代原生 prompt） ──
+const editModalOpen = ref(false);
+const editTarget = ref<import('@/types').UIMessage | null>(null);
+const editDraft = ref('');
+
+function confirmEditMessage() {
+  const msg = editTarget.value;
+  if (!msg) return;
+  const newText = editDraft.value.trim();
+  if (newText && newText !== msg.content) {
+    chatStore.editMessage(msg, newText);
+    chatStore.persistAfterEdit(char.value);
+  }
+  editModalOpen.value = false;
+  editTarget.value = null;
 }
 
 // ── F12.2 TTS 朗读 ──
@@ -485,17 +498,8 @@ async function translateMessage(msg: { id: string; content: string }) {
   }
 }
 
-const toolButtons: Array<{ icon: IconName; label: string }> = [
-  { icon: 'plus', label: t('chat.attachFile') },
-  { icon: 'bookmark-simple', label: t('chat.reference') },
-  { icon: 'share-fat', label: t('chat.image') },
-  { icon: 'music-notes', label: t('chat.voice') },
-];
-
-function handleToolClick(label: string) {
-  // Vue 模板无法直接访问 window，需通过方法调用
-  window.alert(t('chat.featurePending', { feature: label }));
-}
+// 注：原「附件/引用/图片/语音」四个工具栏按钮为未实现占位（点击弹出"功能开发中"），
+// 已移除入口，避免误导用户；后续实现对应能力后再恢复。
 
 // ── F11.3 Quick Reply ──
 
@@ -751,18 +755,6 @@ function startWithExample(text: string) {
         />
         <span id="chat-input-hint" class="sr-only">{{ t('chat.inputHint') }}</span>
         <div class="composer-toolbar">
-          <div class="composer-actions">
-            <button
-              v-for="tb in toolButtons"
-              :key="tb.label"
-              type="button"
-              class="composer-btn"
-              :aria-label="tb.label"
-              @click="handleToolClick(tb.label)"
-            >
-              <Icon :name="tb.icon" :size="18" />
-            </button>
-          </div>
           <button
             type="button"
             class="send-btn-primary"
@@ -790,10 +782,81 @@ function startWithExample(text: string) {
       @retry="handleApiErrorRetry"
       @update:model-value="(v) => { if (!v) handleApiErrorClose(); }"
     />
+
+    <!-- P1-3：消息编辑 Modal（替代原生 prompt） -->
+    <Modal v-model="editModalOpen" :title="t('chat.editMessage')">
+      <div class="edit-message-body">
+        <textarea
+          v-model="editDraft"
+          class="edit-message-input"
+          rows="6"
+          :aria-label="t('chat.editMessage')"
+          spellcheck="false"
+        ></textarea>
+      </div>
+      <template #footer>
+        <button type="button" class="modal-btn modal-cancel" @click="editModalOpen = false">
+          {{ t('common.cancel') }}
+        </button>
+        <button type="button" class="modal-btn modal-save" @click="confirmEditMessage">
+          {{ t('common.save') }}
+        </button>
+      </template>
+    </Modal>
   </main>
 </template>
 
 <style scoped>
+/* P1-3：消息编辑 Modal 样式 */
+.edit-message-body {
+  width: 100%;
+  min-width: 0;
+}
+
+.edit-message-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--foreground);
+  background: var(--video-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  outline: none;
+  resize: vertical;
+  font-family: var(--font-sans);
+  box-sizing: border-box;
+}
+
+.edit-message-input:focus-visible {
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--secondary) 20%, transparent);
+}
+
+.modal-cancel,
+.modal-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.modal-cancel {
+  background: var(--card-elevated);
+  color: var(--foreground);
+}
+
+.modal-save {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-media);
+}
+
 /* F08.2 背景遮罩层（覆盖在背景图上，保证文字可读性） */
 .chat-bg-overlay {
   position: absolute;

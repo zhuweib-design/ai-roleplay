@@ -185,4 +185,21 @@
   --danger-fg: var(--error-fg);
   --danger-bg: rgba(239, 68, 68, 0.10);
   --danger-border: rgba(239, 68, 68, 0.30);
+
+  /* ═══════════════════════════════════════════════════════════════
+     遗留别名（P1-1 · 接入主题系统）
+     以下变量在旧组件中被引用但此前未定义，会回退到硬编码色，
+     导致浅色/OLED/theatre 等主题下失真。这里全部映射到规范令牌，
+     使其随主题自动切换。
+     ═══════════════════════════════════════════════════════════════ */
+  /* 表面层级（旧别名） */
+  --surface-secondary: var(--card-elevated);
+  /* 文本层级（旧别名） */
+  --text-primary: var(--foreground);
+  --text-secondary: var(--muted-foreground);
+  /* 状态色旧别名（不带 -fg 后缀的非正规引用） */
+  --green: var(--success-fg);
+  --cyan: var(--secondary);
+  --danger: var(--error-fg);
+  --warning: var(--warning-fg);
 }

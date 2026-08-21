@@ -701,7 +701,7 @@ watch(
   border: 2px solid var(--border);
   color: transparent;
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .check-icon.checked {
