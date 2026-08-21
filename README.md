@@ -64,20 +64,51 @@ tests/               Vitest 单测（与 src 同构）
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储
 - 自动更新签名公钥内置于 `tauri.conf.json`，私钥存放于仓库 Secrets，不进入二进制
 
-## 发布流程
+## 发布指引
 
-发布签名安装包由 GitHub Actions 的 `tauri-release` job 承担，打 `v*` tag（或手动 `workflow_dispatch`）时触发，产出会推送 GitHub Releases 并生成 `latest.json` 供自动更新消费。
+本应用为 Tauri 2 桌面应用，发布 = 打语义化版本 tag，由 GitHub Actions 的 `tauri-release` job 产出**签名安装包**并推送到 GitHub Releases，同时生成 `latest.json` 供应用内自动更新消费。前端 Web 版随 tag 一并发布到 Releases assets。
 
-**发布前置（为首个发布一次性配置）**
-在仓库 Settings → Secrets 配置以下密钥后，`v0.2.0` 等 tag 才能产出可更新的签名安装包：
+### 一、前置条件（首个发布一次性配置）
+
+在仓库 **Settings → Secrets and variables → Actions** 配置以下密钥：
 
 | Secret | 用途 | 是否必需 |
 | --- | --- | --- |
-| `TAURI_SIGNING_PRIVATE_KEY` | Tauri 更新签名私钥 | 必需 |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 私钥密码 | 必需 |
-| `WINDOWS_CERT_BASE64` / `WINDOWS_CERT_PASSWORD` | Windows 代码签名证书 | 可选（未配则出未签名 msi/nsis） |
+| `TAURI_SIGNING_PRIVATE_KEY` | Tauri 更新签名私钥（PEM） | **必需** |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 私钥密码 | **必需** |
+| `WINDOWS_CERT_BASE64` / `WINDOWS_CERT_PASSWORD` | Windows 代码签名证书（base64 + 密码） | 可选（未配则出未签名 msi/nsis） |
 
-**发版步骤**
-1. 确认 `package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock` 版本号一致；在 `CHANGELOG.md` 记录本版变更。
-2. 打 tag 并推送：`git tag v0.2.0 && git push origin v0.2.0`
-3. CI 依次通过 `quality-gates` → `e2e` → `tauri-build` 后执行 `tauri-release`；在 Actions 页确认安装包与 `latest.json` 生成成功。
+> 签名私钥**不得进入仓库或二进制**；`src-tauri/tauri.conf.json` 仅内置对应公钥。
+
+### 二、每次发版步骤
+
+1. **版本一致性**：`package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock` 四处版本号必须一致（建议 `git grep 旧版本号` 核对无遗漏）。
+2. **CHANGELOG**：在 `CHANGELOG.md` 顶部 `[Unreleased]` 下方新增本版条目，归类该版的 `新增 / 强化 / 变更 / 修复 / 安全`。
+3. **本地门禁全绿**（与 CI 同构）：
+   ```bash
+   npm run lint && npm run typecheck \
+   && npm run test && npm run i18n:check:strict && npm run a11y:contrast
+   ```
+4. **打 tag 并推送**（以 `0.2.0` 为例）：
+   ```bash
+   git commit ...  # 确保版本/CHANGELOG 先提交
+   git tag v0.2.0
+   git push origin v0.2.0
+   ```
+5. **CI 流水线**：推送后 CI 依次执行 `quality-gates`（lint/i18n/coverage/build + 新增对比度门禁）→ `e2e`（Playwright）→ `tauri-build`；全绿后在 tag 上触发 `tauri-release`，产出签名安装包并生成 `latest.json`。
+6. **发布后验证**：
+   - Actions 页确认 `tauri-release` 成功、Releases assets 含安装包与 `latest.json`；
+   - 在已安装的应用内点「检查更新」，应能发现新版本并走签名更新；
+   - Windows 未配代码签名证书时会提示“未知发布者”，属预期（仅影响安装体验，不影响更新机制）。
+
+### 三、自动更新机制
+
+- `src-tauri/tauri.conf.json` → `plugins.updater` 指向 `releases/latest/download/latest.json`，内嵌签名公钥。
+- 客户端内置「检查更新」（设置页），新版本存在时 `downloadAndInstall()`，重启后生效（Windows 安装完成后自动处理重启）。
+- **单点依赖**：当前主更新源为 GitHub Releases，无镜像降级源；若 GitHub 不可达，更新检查与安装会失败并有可见提示（不影响既有版本运行）。
+
+### 四、回滚与风险
+
+- **回滚**：重新发一个修复版本并打新 tag 覆盖 `latest`，应用内更新即可回归；不建议删除已发布 tag。设 `prerelease: false`，正式版才触发更新。
+- **版本策略**：遵循语义化版本；功能/破坏变更提升 `MINOR`，缺陷修复提升 `PATCH`，首个稳定发布从 `1.0.0` 起（当前 `0.2.0` 为 dev 里程碑）。
+- **发布即唯一改动源**：tag 触发必然重跑整条 CI，无跳过路径——保证产物由 `tauri-release` 从干净环境生成。
