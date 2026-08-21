@@ -39,23 +39,7 @@
 
 **适用场景**：沉淀长期世界观的角色扮演玩家 · 隐私优先、希望离线对话的用户 · 研究与探索 RAG 语义记忆在角色扮演应用中落地的人。
 
-> 核心能力、技术栈、安全与发布细节详见下方各节。
-
----
-
-### Introduction (English)
-
-> AI 酒馆 (AI Tavern) is an AI role-playing chat app: chat with your own characters, build world settings, run multi-character group chats, and drive the plot with a story engine. It runs in the browser and also ships as a native Tauri 2 desktop app (system tray, global shortcuts, drag-and-drop import, auto-update).
-
-Built for role-playing and narrative creation, **AI 酒馆** focuses on more than just "generating a reply" — it provides a coherent, character-first storytelling workflow: from a single character's personality and opener, to turn scheduling across a group chat, to story-arc progression.
-
-- **Story-first, not Q&A**: a keyword-gated Lorebook keeps world settings alive and injects them into context for long-term consistency; the story engine handles script structure, protagonist setup, time progression, and random events.
-- **Deeply customizable**: upload a background image to auto-extract a theme palette, or add your own vector model via ZIP / local folder, with RAG semantic retrieval surfacing relevant memory into context.
-- **Privacy & local-first**: run local models offline through WebLLM without an API key; API keys are encrypted at rest and the master password is never stored locally.
-
-**Use cases**: role-players building long-running world sagas · privacy-focused users who prefer offline chat · developers exploring RAG-style semantic memory in character-driven apps.
-
-> See Features, Tech Stack, Security, and Release below.
+> 核心能力、技术栈、安全详见下方各节。
 
 ## ✨ 特性
 
