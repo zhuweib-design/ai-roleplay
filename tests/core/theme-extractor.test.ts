@@ -151,6 +151,82 @@ describe('generateThemeTokens', () => {
   it('空色板返回空 tokens', () => {
     expect(generateThemeTokens({ colors: [], ratios: [], avgLuminance: 0.5 })).toEqual({});
   });
+
+  // ── 极端色用例（评审 B：极端色偏低/偏高亮度仍保证对比度） ──
+  it('极端黑（纯黑图片）→ 前景/主按钮对比度仍达标', () => {
+    const palette = {
+      colors: ['#000000', '#050505', '#0a0a0a', '#000000', '#020202', '#010101'],
+      ratios: [0.5, 0.2, 0.1, 0.1, 0.05, 0.05],
+      avgLuminance: 0.004,
+    };
+    const tokens = generateThemeTokens(palette);
+    const bg = hexToRgb(tokens.background!);
+    const fg = hexToRgb(tokens.foreground!);
+    // 深色主题：背景黑、前景白
+    expect(luminance(bg)).toBeLessThan(0.05);
+    expect(luminance(fg)).toBeGreaterThan(0.9);
+    expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
+    // 主按钮与按钮文字
+    const primary = hexToRgb(tokens.primary!);
+    const onPrimary = hexToRgb(tokens['on-primary']!);
+    expect(contrastRatio(primary, onPrimary)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('极端白（纯白图片）→ 前景/主按钮对比度仍达标', () => {
+    const palette = {
+      colors: ['#ffffff', '#fafafa', '#f5f5f5', '#ffffff', '#fdfdfd', '#f2f2f2'],
+      ratios: [0.5, 0.2, 0.1, 0.1, 0.05, 0.05],
+      avgLuminance: 0.99,
+    };
+    const tokens = generateThemeTokens(palette);
+    const bg = hexToRgb(tokens.background!);
+    const fg = hexToRgb(tokens.foreground!);
+    expect(luminance(bg)).toBeGreaterThan(0.95);
+    expect(luminance(fg)).toBeLessThan(0.05);
+    expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
+    const primary = hexToRgb(tokens.primary!);
+    const onPrimary = hexToRgb(tokens['on-primary']!);
+    expect(contrastRatio(primary, onPrimary)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('极端高饱和色（纯红/纯黄/纯蓝分别作主色）→ 前景对比度仍达标', () => {
+    const cases = [
+      { colors: ['#ff0000', '#cc0000', '#990000', '#660000', '#330000', '#000000'], avgLuminance: 0.28 }, // 纯红
+      { colors: ['#ffff00', '#ffee00', '#ffdd00', '#ffcc00', '#ffbb00', '#ffaa00'], avgLuminance: 0.72 }, // 纯黄
+      { colors: ['#0000ff', '#0000cc', '#000099', '#000066', '#000033', '#000000'], avgLuminance: 0.06 }, // 纯蓝
+    ];
+    for (const c of cases) {
+      const tokens = generateThemeTokens({
+        colors: c.colors,
+        ratios: [0.5, 0.2, 0.1, 0.1, 0.05, 0.05],
+        avgLuminance: c.avgLuminance,
+      });
+      const bg = hexToRgb(tokens.background!);
+      const fg = hexToRgb(tokens.foreground!);
+      expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
+      // muted-foreground 亦需相对背景达标（正文级小字 ≥4.5:1）
+      const muted = hexToRgb(tokens['muted-foreground']!);
+      expect(contrastRatio(muted, bg)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('极端低饱和（灰阶图）→ 前景/边框/主按钮对比度仍达标', () => {
+    const palette = {
+      colors: ['#1a1a1a', '#2a2a2a', '#3a3a3a', '#4a4a4a', '#5a5a5a', '#6a6a6a'],
+      ratios: [0.5, 0.2, 0.1, 0.1, 0.05, 0.05],
+      avgLuminance: 0.08,
+    };
+    const tokens = generateThemeTokens(palette);
+    const bg = hexToRgb(tokens.background!);
+    const fg = hexToRgb(tokens.foreground!);
+    expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
+    // 边框需 ≥3:1（非文字界面元素）
+    const border = hexToRgb(tokens.border!);
+    expect(contrastRatio(border, bg)).toBeGreaterThanOrEqual(3);
+    const primary = hexToRgb(tokens.primary!);
+    const onPrimary = hexToRgb(tokens['on-primary']!);
+    expect(contrastRatio(primary, onPrimary)).toBeGreaterThanOrEqual(4.5);
+  });
 });
 
 describe('序列化', () => {
