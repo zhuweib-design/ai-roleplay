@@ -502,7 +502,8 @@ function goBack(): void {
                   <Icon name="eye" :size="14" aria-hidden="true" />
                   {{ t('cv.view') }}
                 </button>
-                <button type="button"
+                <button
+type="button"
                   v-if="idx > 0"
                   class="icon-btn"
                   :aria-label="t('cv.rollbackAria')"
@@ -511,7 +512,8 @@ function goBack(): void {
                   <Icon name="refresh-cw" :size="14" aria-hidden="true" />
                   {{ t('cv.rollback') }}
                 </button>
-                <button type="button"
+                <button
+type="button"
                   v-if="idx > 0"
                   class="icon-btn"
                   :aria-label="t('cv.compareHeadAria')"

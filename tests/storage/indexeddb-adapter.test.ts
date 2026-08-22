@@ -307,11 +307,11 @@ describe('IndexedDBAdapter — 数据完整性', () => {
   });
 
   test('角色卡未知字段保留', async () => {
-    const card = makeCharacter({ customField: '自定义值' } as any);
+    const card = makeCharacter({ customField: '自定义值' } as unknown as Parameters<typeof makeCharacter>[0]);
     await adapter.saveCharacter(card);
 
     const loaded = await adapter.loadCharacter(card.id);
-    expect((loaded as any)!.customField).toBe('自定义值');
+    expect((loaded as unknown as Record<string, unknown>)!.customField).toBe('自定义值');
   });
 
   test('对话消息含 swipes 完整保留', async () => {

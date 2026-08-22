@@ -450,7 +450,9 @@ watch(
           :aria-selected="modelMgmtTab === 'cloud'"
           :class="{ active: modelMgmtTab === 'cloud' }"
           @click="modelMgmtTab = 'cloud'"
-        >{{ t('modelPanel.tabCloud') }}</button>
+        >
+{{ t('modelPanel.tabCloud') }}
+</button>
         <button
           type="button"
           class="bg-source-tab"
@@ -458,7 +460,9 @@ watch(
           :aria-selected="modelMgmtTab === 'local'"
           :class="{ active: modelMgmtTab === 'local' }"
           @click="modelMgmtTab = 'local'"
-        >{{ t('modelPanel.tabLocal') }}</button>
+        >
+{{ t('modelPanel.tabLocal') }}
+</button>
       </div>
 
       <!-- 云端：按分类分组 + 主模型设置 -->
@@ -969,8 +973,6 @@ watch(
         </button>
       </template>
     </Modal>
-
-
 </template>
 <style scoped>
 /* ── 标准 section 容器（从 SettingsView.vue 复制，因 scoped 不穿透子组件） ── */

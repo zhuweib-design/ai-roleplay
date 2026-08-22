@@ -12,6 +12,7 @@
  */
 import type { EmbeddingProvider, EmbeddingVector } from './embedding';
 import type { ModelFileAdapter } from './vector-model-source';
+// i18n-ignore-start  // 模型内部错误提示(运行时异常), 非 UI 文案(待翻译)
 import type { VectorModelId } from './vector-model-manager';
 
 /** 分词钩子:text → token ids(BERT 系词表尺寸由模型决定) */
@@ -207,7 +208,7 @@ export interface OnnxEmbeddingConfig {
 
 export class OnnxEmbeddingProvider implements EmbeddingProvider {
   readonly name = 'onnx';
-  private session: any = null;
+  private session: import('onnxruntime-web').InferenceSession | null = null;
   private readonly maxLen: number;
   private readonly config: OnnxEmbeddingConfig;
 
@@ -221,7 +222,7 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
   }
 
   /** 动态加载 onnxruntime(避免静态 import 在非浏览器环境崩溃) */
-  private async loadRuntime(): Promise<any> {
+  private async loadRuntime(): Promise<typeof import('onnxruntime-web')> {
     const ort = await import('onnxruntime-web');
     if (this.session) return ort;
     // 探测权重文件名:model.onnx → model_int8.onnx(int8 导出命名)
@@ -236,7 +237,7 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     this.inputNames = (this.session.inputNames as string[]) ?? null;
     // 探测输出维度并回填
     if (!this.resolvedDim) {
-      const meta = this.session.inputMetadata as Record<string, { shape?: number[] }>;
+      const meta = this.session.inputMetadata as unknown as Record<string, { shape?: number[] }>;
       const inputShape = meta?.input_ids?.shape;
       if (Array.isArray(inputShape)) {
         // [1, seq, hidden] 或 [seq, hidden]
@@ -325,7 +326,7 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     const ort = await this.loadRuntime();
     const tok = await this.tokenizer;
     const { ids, mask } = this.tokenizeWith(tok, text);
-    const feeds: Record<string, unknown> = {
+    const feeds: Record<string, import('onnxruntime-web').Tensor> = {
       input_ids: new ort.Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, this.maxLen]),
       attention_mask: new ort.Tensor('int64', BigInt64Array.from(mask.map(BigInt)), [1, this.maxLen]),
     };
@@ -333,11 +334,23 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     if (this.inputNames?.includes('token_type_ids')) {
       feeds.token_type_ids = new ort.Tensor('int64', new BigInt64Array(this.maxLen), [1, this.maxLen]);
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    if (!this.session) {
+      // i18n-ignore 模型内部错误提示, 非 UI 文案
+      throw new Error(`模型会话未初始化: ${this.config.modelId}`);
+    }
     const outputs = await this.session.run(feeds);
     // last_hidden_state: [1, seq, hidden] → mean pooling
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const last = outputs[this.session.outputNames[0]].data as Float32Array;
+    const outName = this.session.outputNames[0];
+    if (!outName) {
+      // i18n-ignore 模型内部错误提示, 非 UI 文案
+      throw new Error(`模型无输出: ${this.config.modelId}`);
+    }
+    const out = outputs[outName];
+    if (!out) {
+      // i18n-ignore 模型内部错误提示, 非 UI 文案
+      throw new Error(`模型输出缺失: ${this.config.modelId} (${outName})`);
+    }
+    const last = out.data as Float32Array;
     const hidden = last.length / this.maxLen;
     const pooled = new Array<number>(hidden).fill(0);
     for (let i = 0; i < this.maxLen; i++) {
@@ -356,3 +369,4 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     return out;
   }
 }
+// i18n-ignore-end

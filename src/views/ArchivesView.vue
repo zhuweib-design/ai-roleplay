@@ -309,7 +309,8 @@ function goToGroupChat() {
         <Icon name="bookmark-simple" :size="48" />
         <p v-if="groupStore.groups.length === 0">{{ t('archives.emptyNoData') }}</p>
         <p v-else>{{ t('archives.emptyNoMatch') }}</p>
-        <button type="button"
+        <button
+type="button"
           v-if="groupStore.groups.length > 0"
           class="link-btn"
           @click="clearFilters"

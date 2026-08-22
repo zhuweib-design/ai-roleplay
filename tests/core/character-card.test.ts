@@ -90,8 +90,9 @@ describe('角色卡 V2 导入 (F01.2)', () => {
       },
     };
     const card = importV2Card(v2WithExtra);
-    expect((card as any).custom_field).toBe('保留这个字段');
-    expect((card as any).another_unknown).toBe(42);
+    const cardAny = card as unknown as Record<string, unknown>;
+    expect(cardAny.custom_field).toBe('保留这个字段');
+    expect(cardAny.another_unknown).toBe(42);
   });
 
   test('忽略 __proto__ 键防原型污染（P2-5）', () => {
@@ -102,9 +103,11 @@ describe('角色卡 V2 导入 (F01.2)', () => {
         '"first_mes":"","mes_example":"","__proto__":{"polluted":true}}}'
     );
     const card = importV2Card(malicious);
-    expect((card as any).polluted).toBeUndefined();
+    const cardAny = card as unknown as Record<string, unknown>;
+    expect(cardAny.polluted).toBeUndefined();
     expect(Object.prototype.hasOwnProperty.call(card, 'polluted')).toBe(false);
-    expect(({} as any).polluted).toBeUndefined();
+    const protoAny = {} as unknown as Record<string, unknown>;
+    expect(protoAny.polluted).toBeUndefined();
   });
 });
 

@@ -1209,7 +1209,9 @@ async function handleExportChatMarkdown() {
             :aria-checked="bgType === 'none'"
             :class="{ active: bgType === 'none' }"
             @click="bgType = 'none'; bgValue = ''"
-          >{{ t('settingsView.bgNone') }}</button>
+          >
+{{ t('settingsView.bgNone') }}
+</button>
           <button
             type="button"
             class="bg-source-tab"
@@ -1217,7 +1219,9 @@ async function handleExportChatMarkdown() {
             :aria-checked="bgType === 'url'"
             :class="{ active: bgType === 'url' }"
             @click="bgType = 'url'"
-          >URL</button>
+          >
+URL
+</button>
           <button
             type="button"
             class="bg-source-tab"
@@ -1225,7 +1229,9 @@ async function handleExportChatMarkdown() {
             :aria-checked="bgType === 'base64'"
             :class="{ active: bgType === 'base64' }"
             @click="triggerBgUpload"
-          >{{ t('settingsView.bgUpload') }}</button>
+          >
+{{ t('settingsView.bgUpload') }}
+</button>
         </div>
 
         <input
@@ -1327,11 +1333,15 @@ async function handleExportChatMarkdown() {
           <div
             class="bubble-preview-item user-bubble"
             :style="{ borderRadius: `${bubbleRadius}px`, opacity: bubbleOpacity }"
-          >{{ t('settingsView.bubbleUserPreview') }}</div>
+          >
+{{ t('settingsView.bubbleUserPreview') }}
+</div>
           <div
             class="bubble-preview-item assistant-bubble"
             :style="{ borderRadius: `${bubbleRadius}px`, opacity: bubbleOpacity }"
-          >{{ t('settingsView.bubbleAiPreview') }}</div>
+          >
+{{ t('settingsView.bubbleAiPreview') }}
+</div>
         </div>
 
         <div class="ui-custom-actions">
@@ -1364,8 +1374,7 @@ async function handleExportChatMarkdown() {
         </div>
       </div>
     </section>
-
-    </div>
+</div>
 
     <!-- P2-7：模型管理面板（wrapper 承载 v-show，组件为多根节点无法直接绑定） -->
     <div v-show="activeCategory === 'model'">
@@ -1533,8 +1542,7 @@ async function handleExportChatMarkdown() {
         </p>
       </div>
     </section>
-
-    </div>
+</div>
 
     <!-- 安全：主密码与加密保护 -->
     <div v-show="activeCategory === 'security'">
@@ -1617,8 +1625,7 @@ async function handleExportChatMarkdown() {
         </template>
       </div>
     </section>
-
-    </div>
+</div>
 
     <!-- 个人：Persona 管理 -->
     <div v-show="activeCategory === 'persona'">
@@ -1786,8 +1793,7 @@ async function handleExportChatMarkdown() {
         </button>
       </template>
     </Modal>
-
-    </div>
+</div>
 
     <!-- 数据：导入 / 导出 / 数据管理 -->
     <div v-show="activeCategory === 'data'">

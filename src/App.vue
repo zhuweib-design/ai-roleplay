@@ -169,14 +169,14 @@ onMounted(async () => {
     characterVersionStore.setStorageAdapter(adapter);
 
     // 控制台输出当前环境（便于诊断）
-    // eslint-disable-next-line no-console
+     
     console.info(`[Storage] 当前环境: ${getStorageEnv()}`);
 
     // 候选5：Tauri 环境提示未实现能力，避免功能静默不可用
     if (TauriFSAdapter.isTauriEnv()) {
       const missing = TauriFSAdapter.getUnimplementedFeatureNames();
       if (missing.length > 0) {
-        // eslint-disable-next-line no-console
+         
         console.warn(`[Storage] 桌面版暂不支持：${missing.join('、')}`);
         platformNotice.value = t('app.desktopUnsupported', { features: missing.join('、') });
       }

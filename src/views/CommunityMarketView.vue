@@ -365,7 +365,8 @@ function ratingStars(rating: number): string {
     </header>
 
     <nav class="tabs" role="tablist" :aria-label="t('market.tabsAria')">
-      <button type="button"
+      <button
+type="button"
         v-for="tab in TABS"
         :key="tab.key"
         role="tab"
@@ -393,7 +394,8 @@ function ratingStars(rating: number): string {
             />
           </div>
           <div class="sort-buttons" role="group" :aria-label="t('market.sortAria')">
-            <button type="button"
+            <button
+type="button"
               v-for="opt in SORT_OPTIONS"
               :key="opt.value"
               :class="['sort-btn', { active: store.sortBy === opt.value }]"
@@ -406,7 +408,8 @@ function ratingStars(rating: number): string {
 
         <div class="filter-bar">
           <div class="filter-chips">
-            <button type="button"
+            <button
+type="button"
               :class="['chip', { active: store.featuredOnly }]"
               @click="store.toggleFeaturedOnly()"
             >
@@ -723,7 +726,8 @@ function ratingStars(rating: number): string {
           <Icon name="alert-triangle" :size="14" />
           {{ t('market.reportBtn') }}
         </button>
-        <button type="button"
+        <button
+type="button"
           :class="['btn', store.isFavorite(selectedCard.marketId) ? 'btn-primary' : 'btn-ghost']"
           @click="handleToggleFavorite(selectedCard.marketId)"
         >

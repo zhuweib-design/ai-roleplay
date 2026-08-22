@@ -689,7 +689,8 @@ function isSystem(msg: { role: string }): boolean {
                   :size="24"
                 />
                 <span class="member-name">{{ member.name }}</span>
-                <button type="button"
+                <button
+type="button"
                   v-if="currentMembers.length > 2"
                   class="member-remove"
                   :aria-label="t('group.removeMember', { name: member.name })"
