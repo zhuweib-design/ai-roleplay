@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable vue/no-v-html -- getIconPath 仅返回固定白名单路径(PATHS: Record<IconName,string>), 不含任何用户输入, v-html 安全 */
 import { getIconPath, type IconName } from './icons';
 
 withDefaults(

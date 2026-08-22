@@ -173,9 +173,11 @@ function onAuthorDepth(e: Event) {
           <span id="ctx-token-title" class="ctx-section-title">{{ t('ctx.tokenTitle') }}</span>
           <span class="ctx-section-value">{{ usedTokens }} / {{ TOTAL_BUDGET }}</span>
         </header>
-        <div class="token-bar" role="progressbar"
+        <div
+class="token-bar" role="progressbar"
           :aria-valuenow="usedTokens" :aria-valuemin="0" :aria-valuemax="TOTAL_BUDGET"
-          :aria-label="t('ctx.tokenUsed', { percent: usedPercent })">
+          :aria-label="t('ctx.tokenUsed', { percent: usedPercent })"
+>
           <div class="token-bar-fill" :style="{ width: `${usedPercent}%` }">
             <div
               v-for="seg in segments"
