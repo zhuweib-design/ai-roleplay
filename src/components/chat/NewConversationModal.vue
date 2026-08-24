@@ -427,7 +427,7 @@ watch(
 .new-conv-modal {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--spacing-md);
   min-height: 320px;
 }
 
@@ -435,7 +435,7 @@ watch(
 .step-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   margin-bottom: 4px;
 }
 
@@ -501,7 +501,7 @@ watch(
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   padding: 20px 12px;
   background: var(--card-elevated);
   border: 2px solid var(--border);

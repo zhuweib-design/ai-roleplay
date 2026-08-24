@@ -1001,7 +1001,7 @@ function startWithExample(text: string) {
 .quick-reply-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--spacing-sm);
   padding: 6px 12px;
   border-bottom: 1px solid var(--border);
   background: var(--card);
@@ -1097,7 +1097,7 @@ function startWithExample(text: string) {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  padding: 24px;
+  padding: var(--spacing-lg);
   text-align: center;
 }
 
@@ -1140,7 +1140,7 @@ function startWithExample(text: string) {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   max-width: 540px;
 }
 
