@@ -14,11 +14,11 @@ import { t } from '@/i18n';
 const route = useRoute();
 
 const tabs: Array<{ name: (typeof MAIN_TABS)[number]; icon: string; label: string }> = [
-  { name: 'chat', icon: 'chat-circle', label: t('router.chat') },
-  { name: 'character-list', icon: 'users', label: t('router.characterList') },
-  { name: 'community-market', icon: 'store', label: t('router.market') },
-  { name: 'worldbook', icon: 'book-open', label: t('router.worldbook') },
-  { name: 'settings', icon: 'gear', label: t('router.settings') },
+  { name: 'chat', icon: 'chat-circle', label: t('mobile.tabChat') },
+  { name: 'character-list', icon: 'users', label: t('mobile.tabChar') },
+  { name: 'community-market', icon: 'store', label: t('mobile.tabMarket') },
+  { name: 'worldbook', icon: 'book-open', label: t('mobile.tabWorldbook') },
+  { name: 'settings', icon: 'gear', label: t('mobile.tabSettings') },
 ];
 </script>
 

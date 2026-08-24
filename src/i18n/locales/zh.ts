@@ -74,6 +74,11 @@ export default {
   'nav.main': '主导航',
   'nav.chatToggle': '切换角色列表',
   'mobile.navAria': '底部导航',
+  'mobile.tabChat': '会话',
+  'mobile.tabChar': '角色',
+  'mobile.tabMarket': '市场',
+  'mobile.tabWorldbook': '世界书',
+  'mobile.tabSettings': '设置',
 
   // ── 应用外壳（App.vue） ──
   'app.name': 'AI 酒馆',
