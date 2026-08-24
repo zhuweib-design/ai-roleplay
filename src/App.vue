@@ -433,5 +433,15 @@ function handleMasterPasswordSuccess() {
   .app-bottom-nav {
     display: block;
   }
+  /* iOS 输入聚焦防放大(font-size<16px 会触发) */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  /* 详情页无底部导航时,主内容底部避开 Home 条 */
+  .app-main {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 </style>
