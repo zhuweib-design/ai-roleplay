@@ -290,7 +290,8 @@ function handleMasterPasswordSuccess() {
     <!-- 全局左侧导航栏（所有页面共享） -->
     <NavRail class="nav-rail-desktop" />
     <!-- 主内容区：由各视图自行渲染（含三栏布局等） -->
-    <main class="app-main">
+    <!-- 移动端主 Tab 页加 has-mobile-nav,内容底部留白避开底部导航 -->
+    <main class="app-main" :class="{ 'has-mobile-nav': showBottomNav }">
       <router-view />
     </main>
     <!-- 移动端底部导航（<640px 显示,主 Tab 页） -->
@@ -442,6 +443,10 @@ function handleMasterPasswordSuccess() {
   /* 详情页无底部导航时,主内容底部避开 Home 条 */
   .app-main {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* 主 Tab 页有底部导航,内容底部额外留白避开 52px 导航条 */
+  .app-main.has-mobile-nav {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
   }
 }
 </style>
