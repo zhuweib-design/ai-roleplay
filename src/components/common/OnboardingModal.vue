@@ -55,7 +55,7 @@ function finish(): void {
 
 <style scoped>
 .onboarding-desc {
-  margin: 0 0 14px;
+  margin: 0 0 var(--spacing-md);
   color: var(--text-body);
   font-size: 13px;
   line-height: 1.6;
