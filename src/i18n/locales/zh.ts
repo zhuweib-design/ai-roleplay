@@ -73,6 +73,7 @@ export default {
   'nav.profile': '个人中心',
   'nav.main': '主导航',
   'nav.chatToggle': '切换角色列表',
+  'mobile.navAria': '底部导航',
 
   // ── 应用外壳（App.vue） ──
   'app.name': 'AI 酒馆',
