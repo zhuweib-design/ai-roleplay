@@ -129,14 +129,22 @@ export async function fetchMarketIndex(
   return parseMarketIndex(text);
 }
 
+/** 下载进度回调（received/total 为字节数，total 未知时为 -1） */
+export type DownloadProgressFn = (
+  received: number,
+  total: number
+) => void;
+
 /**
  * 下载条目内容并校验 SHA-256
+ * @param onProgress 流式进度回调（每读到一块触发；Content-Length 缺失时 total=-1）
  * @returns 校验通过的下载内容；哈希不符或解析失败返回 null
  */
 export async function downloadMarketItem(
-  item: MarketIndexItem
+  item: MarketIndexItem,
+  onProgress?: DownloadProgressFn
 ): Promise<DownloadedMarketItem | null> {
-  const rawText = await fetchText(item.url, MAX_ITEM_BYTES);
+  const rawText = await fetchText(item.url, MAX_ITEM_BYTES, onProgress);
   const expectedHex = item.sha256.toLowerCase();
   if (expectedHex) {
     const ok = await verifySha256Hex(new TextEncoder().encode(rawText), expectedHex);
@@ -151,17 +159,58 @@ export async function downloadMarketItem(
   return { item, rawText, content };
 }
 
-/** 读取文本并限制字节数；超限或请求失败抛错 */
-async function fetchText(url: string, maxBytes: number): Promise<string> {
+/** 读取文本：流式读取并上报进度；限制字节数，超限或请求失败抛错 */
+async function fetchText(
+  url: string,
+  maxBytes: number,
+  onProgress?: DownloadProgressFn
+): Promise<string> {
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
   }
+
+  // 流式读取（支持进度上报）；无响应体流时回退一次性读取
+  if (res.body && typeof res.body.getReader === 'function') {
+    const reader = res.body.getReader();
+    const total = res.headers.get('content-length')
+      ? Number(res.headers.get('content-length'))
+      : -1;
+    const chunks: Uint8Array[] = [];
+    let received = 0;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+        if (received > maxBytes) throw new Error('content too large');
+        onProgress?.(received, total);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    if (chunks.length === 0) return '';
+    return new TextDecoder().decode(concatChunks(chunks));
+  }
+
   const buf = await res.arrayBuffer();
   if (buf.byteLength > maxBytes) {
     throw new Error('content too large');
   }
   return new TextDecoder().decode(buf);
+}
+
+/** 拼接 Uint8Array 块数组 */
+function concatChunks(chunks: Uint8Array[]): Uint8Array {
+  const len = chunks.reduce((n, c) => n + c.length, 0);
+  const out = new Uint8Array(len);
+  let offset = 0;
+  for (const c of chunks) {
+    out.set(c, offset);
+    offset += c.length;
+  }
+  return out;
 }
 
 // ── SHA-256 校验 ──

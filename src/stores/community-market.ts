@@ -35,6 +35,16 @@ import {
   type SerializedMarketData,
 } from '@/core/community-market';
 import type { CharacterCard } from '@/core/character-card';
+import {
+  DEFAULT_MARKET_INDEX_URL,
+  fetchMarketIndex,
+  downloadMarketItem,
+  parseCharacterItem,
+  type MarketIndexItem,
+  type DownloadedMarketItem,
+} from '@/core/market-index';
+import { importV2Card } from '@/core/character-card';
+import { cardToUiChar } from '@/services/type-adapters';
 import { useCharacterStore } from './character';
 import type { StorageAdapter } from '@storage/storage-adapter';
 import { migrateLegacyLocalStorage } from '@storage/legacy-migration';
@@ -93,6 +103,19 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
 
   /** 是否已加载 */
   const loaded = ref(false);
+
+  /** 下载进度：marketId → { received, total, status }（status: downloading/installing/done/failed） */
+  const downloadProgress = ref<Record<
+    string,
+    { received: number; total: number; status: string }
+  >>({});
+
+  /** 远程市场索引条目列表（真实下载源） */
+  const remoteItems = ref<MarketIndexItem[]>([]);
+  /** 远程市场索引加载状态 */
+  const remoteLoading = ref(false);
+  /** 远程市场索引加载错误（null 表示无错） */
+  const remoteError = ref<string | null>(null);
 
   // ── 计算属性 ──
 
@@ -344,6 +367,82 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
   function getDownloadHistory(): MarketTransaction[] {
     if (!currentUser.value) return [];
     return engine.getUserDownloads(currentUser.value.id);
+  }
+
+  // ── 动作：远程市场（T-11 真实下载流） ──
+
+  /** 拉取远程市场索引清单（GitHub） */
+  async function loadRemoteIndex(): Promise<boolean> {
+    remoteLoading.value = true;
+    remoteError.value = null;
+    try {
+      const manifest = await fetchMarketIndex(DEFAULT_MARKET_INDEX_URL);
+      if (!manifest) {
+        remoteError.value = t('market.remoteIndexBroken');
+        return false;
+      }
+      remoteItems.value = manifest.items;
+      return true;
+    } catch (err) {
+      remoteError.value =
+        err instanceof Error ? err.message : t('market.remoteLoadFailed');
+      return false;
+    } finally {
+      remoteLoading.value = false;
+    }
+  }
+
+  /** 从远程市场下载并导入为本地角色卡（带流式进度） */
+  async function installRemoteItem(itemId: string): Promise<boolean> {
+    const item = remoteItems.value.find((i) => i.id === itemId);
+    if (!item) {
+      lastError.value = t('market.remoteItemMissing');
+      return false;
+    }
+    const prog = downloadProgress.value[itemId] ?? { received: 0, total: -1, status: 'downloading' };
+    downloadProgress.value[itemId] = { ...prog, status: 'downloading' };
+    try {
+      const downloaded = await downloadMarketItem(item, (received, total) => {
+        downloadProgress.value[itemId] = { received, total, status: 'downloading' };
+      });
+      if (!downloaded) {
+        downloadProgress.value[itemId] = { ...prog, received: 0, total: -1, status: 'failed' };
+        lastError.value = t('market.remoteVerifyFailed');
+        return false;
+      }
+      downloadProgress.value[itemId] = { received: downloaded.item.size, total: downloaded.item.size, status: 'installing' };
+      await importRemoteAsCharacter(downloaded);
+      downloadProgress.value[itemId] = { received: 0, total: 0, status: 'done' };
+      lastInfo.value = t('market.remoteInstalled', { name: item.name });
+      return true;
+    } catch (err) {
+      downloadProgress.value[itemId] = { ...prog, received: 0, total: -1, status: 'failed' };
+      lastError.value = err instanceof Error ? err.message : String(err);
+      return false;
+    }
+  }
+
+  /** 将远程下载内容（角色卡）导入本地角色库 */
+  async function importRemoteAsCharacter(downloaded: DownloadedMarketItem): Promise<void> {
+    const charStore = useCharacterStore();
+    const raw = parseCharacterItem(downloaded.content);
+    if (!raw) {
+      throw new Error(t('market.remoteBadCharacter'));
+    }
+    let card;
+    try {
+      card = importV2Card(raw);
+      if (!card) throw new Error(t('market.remoteBadCharacter'));
+    } catch {
+      throw new Error(t('market.remoteBadCharacter'));
+    }
+    const ui = cardToUiChar(card);
+    // 避免重名
+    if (charStore.characters.some((c) => c.name === ui.name)) {
+      ui.name = `${ui.name}${t('market.remoteSuffix')}`;
+    }
+    charStore.characters.push(ui);
+    await charStore.persistCharacter(ui.id);
   }
 
   // ── 动作：收藏 ──
@@ -672,6 +771,13 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     downloadCard,
     hasDownloaded,
     getDownloadHistory,
+    // 远程市场（T-11 真实下载流）
+    remoteItems,
+    remoteLoading,
+    remoteError,
+    downloadProgress,
+    loadRemoteIndex,
+    installRemoteItem,
     // 收藏
     isFavorite,
     toggleFavorite,
