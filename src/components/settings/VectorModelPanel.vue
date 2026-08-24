@@ -620,7 +620,7 @@ watch(stopwordFilter, (v) => setStopwordFilterEnabled(v));
 .section-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
@@ -661,7 +661,7 @@ select.field-input {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23AEB2C0' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
-  padding-right: 32px;
+  padding-right: var(--spacing-2xl);
 }
 .field-input:focus-visible {
   border-color: var(--secondary);
@@ -680,7 +680,7 @@ select.field-input {
 .add-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
   height: 30px;
   padding: 0 12px;
   border-radius: var(--radius-md);
@@ -740,7 +740,7 @@ select.field-input {
   font-size: 12px;
 }
 .installed-list {
-  margin: 8px 0 0;
+  margin: var(--spacing-sm) 0 0;
   padding: 0;
   list-style: none;
   font-size: 13px;
@@ -807,7 +807,7 @@ select.field-input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 .user-model-actions {
   align-items: center;
@@ -841,7 +841,7 @@ select.field-input {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 0;
+  padding: var(--spacing-sm) 0;
   border-bottom: 1px dashed var(--border);
 }
 .user-model-item:last-child {
@@ -856,7 +856,7 @@ select.field-input {
 .user-model-name {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -895,7 +895,7 @@ select.field-input {
   white-space: nowrap;
 }
 .box-title.sub {
-  margin-top: 8px;
+  margin-top: var(--spacing-sm);
   font-size: 13px;
   color: var(--muted-foreground);
 }
@@ -924,7 +924,7 @@ select.field-input {
   flex-wrap: wrap;
 }
 .enhance-row.actions {
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 .bench-msg {
   color: var(--green, #9ece6a);

@@ -997,7 +997,7 @@ watch(
 .section-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
@@ -1014,7 +1014,7 @@ watch(
 .field-error {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
   font-size: 12px;
   color: var(--destructive);
   margin: 0;
@@ -1148,7 +1148,7 @@ watch(
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
   padding: 12px;
   background: var(--video-bg);
   border: 2px solid var(--border);
@@ -1187,7 +1187,7 @@ watch(
 .fontsize-sample {
   color: var(--muted-foreground);
   line-height: 1.3;
-  margin-top: 4px;
+  margin-top: var(--spacing-xs);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1230,7 +1230,7 @@ watch(
 .add-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
   height: 30px;
   padding: 0 12px;
   border-radius: var(--radius-md);
@@ -1256,7 +1256,7 @@ watch(
   font-size: 13px;
   color: var(--muted-foreground);
   margin: 0;
-  padding: 16px 0;
+  padding: var(--spacing-md) 0;
   text-align: center;
 }
 
@@ -1273,7 +1273,7 @@ watch(
   background: transparent;
   color: var(--primary, #4f8cff);
   font-size: 13px;
-  padding: 6px 16px;
+  padding: 6px var(--spacing-md);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -1290,7 +1290,7 @@ watch(
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .profile-item {
@@ -1314,13 +1314,13 @@ watch(
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .profile-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   flex-wrap: wrap;
 }
 
@@ -1374,7 +1374,7 @@ watch(
 /* 模型分类分组：卡片式容器（对齐外观页「界面自定义」.ui-custom-block 风格） */
 .model-category-group {
   margin-top: 12px;
-  padding: 16px;
+  padding: var(--spacing-md);
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -1579,7 +1579,7 @@ select.field-input {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23AEB2C0' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
-  padding-right: 32px;
+  padding-right: var(--spacing-2xl);
 }
 
 .field-input:focus-visible {
@@ -1594,7 +1594,7 @@ select.field-input {
 .field-error {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
   font-size: 12px;
   color: var(--destructive);
   margin: 0;
@@ -1611,7 +1611,7 @@ select.field-input {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-sm);
 }
 
 .test-btn {
@@ -1625,7 +1625,7 @@ select.field-input {
 
 .test-result {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
   padding: 10px 12px;
   border-radius: var(--radius-md);
   font-size: 12px;
@@ -1662,7 +1662,7 @@ select.field-input {
 
 .test-result-hints {
   margin: 6px 0 0;
-  padding-left: 16px;
+  padding-left: var(--spacing-md);
   color: var(--muted-foreground);
   display: flex;
   flex-direction: column;
@@ -1793,7 +1793,7 @@ select.field-input {
 }
 
 .delete-warning {
-  margin-top: 8px;
+  margin-top: var(--spacing-sm);
   color: var(--error-fg);
   font-size: 13px;
 }
@@ -1801,7 +1801,7 @@ select.field-input {
 .size-badge {
   display: inline-flex;
   align-items: center;
-  padding: 1px 8px;
+  padding: 1px var(--spacing-sm);
   font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-pill);
@@ -1827,7 +1827,7 @@ select.field-input {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 1px 8px;
+  padding: 1px var(--spacing-sm);
   font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-pill);
@@ -1863,7 +1863,7 @@ select.field-input {
   gap: 12px;
   flex-wrap: wrap;
   padding: 12px 14px;
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-sm);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--card-elevated, var(--card));
@@ -1872,7 +1872,7 @@ select.field-input {
 .local-engine-status {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   font-size: 13px;
   color: var(--foreground);
 }
@@ -1895,8 +1895,8 @@ select.field-input {
 .load-progress {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
 }
 
 .progress-track {
@@ -1936,8 +1936,8 @@ select.field-input {
 /* ── 云端/本地切换 tabs（从 SettingsView.vue 复制，因 scoped 不穿透子组件） ── */
 .model-mgmt-tabs {
   display: flex;
-  gap: 8px;
-  padding: 4px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs);
   background: var(--video-bg);
   border-radius: var(--radius-md);
 }
@@ -1972,7 +1972,7 @@ select.field-input {
   }
   .settings-nav {
     width: auto;
-    margin: 8px;
+    margin: var(--spacing-sm);
     max-height: none;
     position: static;
     overflow-x: auto;
@@ -1991,13 +1991,13 @@ select.field-input {
   .settings-nav-item {
     flex: 0 0 auto;
     width: auto;
-    padding: 8px 12px;
+    padding: var(--spacing-sm) 12px;
   }
   .settings-nav-item-desc {
     display: none;
   }
   .settings-body {
-    padding: 16px;
+    padding: var(--spacing-md);
     max-width: none;
   }
 }
