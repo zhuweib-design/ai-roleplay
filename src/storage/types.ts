@@ -13,6 +13,10 @@ export interface Chat {
   apiProfileId?: string;
   createdAt: string;
   updatedAt: string;
+  /** 会话置顶（优先展示于会话列表顶部） */
+  pinned?: boolean;
+  /** 会话归档（从主会话列表隐藏，归档视图可见） */
+  archived?: boolean;
 }
 
 /**

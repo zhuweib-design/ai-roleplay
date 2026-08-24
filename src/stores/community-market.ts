@@ -55,6 +55,7 @@ import { migrateLegacyLocalStorage } from '@storage/legacy-migration';
 const SNAPSHOT_KEY = 'ai-roleplay:community-market';
 const CURRENT_USER_KEY = 'ai-roleplay:community-current-user';
 const FAVORITES_KEY = 'ai-roleplay:community-favorites';
+const ORIGINS_KEY = 'ai-roleplay:community-installed-origins';
 
 // ── 单例引擎 ──
 
@@ -116,6 +117,9 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
   const remoteLoading = ref(false);
   /** 远程市场索引加载错误（null 表示无错） */
   const remoteError = ref<string | null>(null);
+
+  /** §14.4 更新检查：已装本地角色 → 远程来源（characterId → {itemId, version}） */
+  const installedOrigins = ref<Record<string, { itemId: string; version: string }>>({});
 
   // ── 计算属性 ──
 
@@ -188,6 +192,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     try {
       await storageAdapter.saveSnapshot(CURRENT_USER_KEY, currentUser.value?.id ?? null);
       await storageAdapter.saveSnapshot(FAVORITES_KEY, favorites.value);
+      await storageAdapter.saveSnapshot(ORIGINS_KEY, installedOrigins.value);
     } catch (err) {
       console.error('[community-market] 持久化失败：', err);
     }
@@ -229,6 +234,10 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
       const favs = await storageAdapter.loadSnapshot<string[]>(FAVORITES_KEY);
       if (Array.isArray(favs)) {
         favorites.value = favs;
+      }
+      const origins = await storageAdapter.loadSnapshot<Record<string, { itemId: string; version: string }>>(ORIGINS_KEY);
+      if (origins && typeof origins === 'object') {
+        installedOrigins.value = origins;
       }
     } catch (err) {
       console.error('[community-market] 加载失败：', err);
@@ -422,8 +431,8 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     }
   }
 
-  /** 将远程下载内容（角色卡）导入本地角色库 */
-  async function importRemoteAsCharacter(downloaded: DownloadedMarketItem): Promise<void> {
+  /** 将远程下载内容（角色卡）导入本地角色库，并记录安装来源（§14.4 更新检查） */
+  async function importRemoteAsCharacter(downloaded: DownloadedMarketItem): Promise<string> {
     const charStore = useCharacterStore();
     const raw = parseCharacterItem(downloaded.content);
     if (!raw) {
@@ -443,6 +452,48 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     }
     charStore.characters.push(ui);
     await charStore.persistCharacter(ui.id);
+    // 记录远程安装来源（版本对比基准）
+    installedOrigins.value[ui.id] = {
+      itemId: downloaded.item.id,
+      version: downloaded.item.version,
+    };
+    void persistMeta();
+    return ui.id;
+  }
+
+  /**
+   * §14.4 更新检查：比对已装远程来源与最新清单版本
+   * 返回有可用更新的条目（installVersion 低于 latestVersion）
+   */
+  function getUpdatableInstalls(): {
+    characterId: string;
+    itemId: string;
+    installedVersion: string;
+    latestVersion: string;
+    name: string;
+  }[] {
+    const list: {
+      characterId: string;
+      itemId: string;
+      installedVersion: string;
+      latestVersion: string;
+      name: string;
+    }[] = [];
+    for (const charId of Object.keys(installedOrigins.value)) {
+      const o = installedOrigins.value[charId];
+      if (!o) continue;
+      const latest = remoteItems.value.find((i) => i.id === o.itemId);
+      if (latest && latest.version !== o.version) {
+        list.push({
+          characterId: charId,
+          itemId: latest.id,
+          installedVersion: o.version,
+          latestVersion: latest.version,
+          name: latest.name,
+        });
+      }
+    }
+    return list;
   }
 
   // ── 动作：收藏 ──
@@ -778,6 +829,9 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     downloadProgress,
     loadRemoteIndex,
     installRemoteItem,
+    // §14.4 更新检查
+    installedOrigins,
+    getUpdatableInstalls,
     // 收藏
     isFavorite,
     toggleFavorite,

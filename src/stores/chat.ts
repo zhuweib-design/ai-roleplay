@@ -105,6 +105,12 @@ export const useChatStore = defineStore('chat', () => {
 
   // 第2条：Token 消耗统计（本次会话累计，客户端估算）
   const tokenUsage = ref({ prompt: 0, completion: 0 });
+
+  // ── 多会话（§14.2 历史会话切换/搜索/置顶/归档） ──
+  /** 当前激活会话 id（决定聊天区渲染哪条会话、persistChat 写入哪条） */
+  const activeChatId = ref<string | null>(null);
+  /** 会话索引缓存（移动端会话 Tab / 桌面侧边栏展示；含全部角色，归档由 UI 过滤） */
+  const sessions = ref<Chat[]>([]);
   // 前缀缓存统计(usage 带 cache 拆解时累积)
   const cacheUsage = ref({ hitTokens: 0, missTokens: 0, reported: 0 });
   const totalTokenUsage = computed(() => tokenUsage.value.prompt + tokenUsage.value.completion);
@@ -768,20 +774,30 @@ export const useChatStore = defineStore('chat', () => {
     if (character.messages.length === 0) return;
 
     const now = new Date().toISOString();
-    const chatId = `chat-${character.id}`;
+    // 多会话：写入当前激活会话；无则回落默认会话 id（向后兼容，签名不改单会话）或创建新会话 id
+    const chatId = activeChatId.value ?? `chat-${character.id}`;
+    activeChatId.value = chatId;
+    const existing = sessions.value.find((s) => s.id === chatId);
     const chat: Chat = {
       id: chatId,
       characterId: character.id,
-      title: t('chat.conversationTitle', { name: character.name }),
+      title: existing?.title ?? t('chat.conversationTitle', { name: character.name }),
       messages: uiMsgsToChatMsgs(character.messages),
-      createdAt: character.messages[0]!.timestamp
-        ? new Date(character.messages[0]!.timestamp as number).toISOString()
-        : now,
+      createdAt: existing?.createdAt
+        ?? (character.messages[0]!.timestamp
+          ? new Date(character.messages[0]!.timestamp as number).toISOString()
+          : now),
       updatedAt: now,
+      pinned: existing?.pinned,
+      archived: existing?.archived,
     };
 
     try {
       await storageAdapter.saveChat(chat);
+      // 同步会话索引缓存
+      const idx = sessions.value.findIndex((s) => s.id === chatId);
+      if (idx >= 0) sessions.value[idx] = chat;
+      else sessions.value.push(chat);
     } catch (err) {
       // 持久化失败不应阻塞 UI 流程，记录到 lastError
       lastError.value = {
@@ -912,23 +928,110 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * 从存储层加载历史对话到指定角色
+   * 加载指定会话的历史到当前角色（多会话切换）
+   * @param character 目标角色（活动消息缓冲将被覆盖）
+   * @param chatId 要加载的会话 id；缺省用 activeChatId
    */
-  async function loadChatHistory(character: UICharacter): Promise<void> {
+  async function loadChatHistory(character: UICharacter, chatId?: string): Promise<void> {
     if (!storageAdapter) return;
+    const targetId = chatId ?? activeChatId.value ?? `chat-${character.id}`;
+    if (!targetId) return;
     try {
-      const chat = await storageAdapter.loadChat(`chat-${character.id}`);
+      const chat = await storageAdapter.loadChat(targetId);
       if (chat) {
+        activeChatId.value = chat.id;
         // 用核心消息覆盖 UI 消息（chatMsgsToUiMsgs 自动过滤 system）
         // 延迟 import 避免循环依赖
         const { chatMsgsToUiMsgs } = await import('../services/type-adapters');
         character.messages = chatMsgsToUiMsgs(chat.messages);
+        // 同步会话索引缓存
+        const idx = sessions.value.findIndex((s) => s.id === chat.id);
+        if (idx >= 0) sessions.value[idx] = chat;
+        else sessions.value.push(chat);
       }
     } catch (err) {
       lastError.value = {
         type: 'unknown',
         message: t('chat.loadHistoryFailed', { error: err instanceof Error ? err.message : String(err) }),
       };
+    }
+  }
+
+  // ── 多会话（§14.2）：会话索引 / 新建 / 切换 / 置顶 / 归档 / 删除 / 重命名 ──
+
+  /**
+   * 载入全部会话索引（跨角色）到 sessions 缓存
+   * 用于移动端会话 Tab 的全局会话列表。
+   */
+  async function loadAllSessions(characterIds: string[]): Promise<void> {
+    if (!storageAdapter) return;
+    const all: Chat[] = [];
+    for (const cid of characterIds) {
+      try {
+        const list = await storageAdapter.loadChats(cid);
+        all.push(...list);
+      } catch {
+        /* 单角色加载失败不影响其余 */
+      }
+    }
+    all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    sessions.value = all;
+  }
+
+  /**
+   * 打开指定角色的会话并装配到聊天区
+   */
+  async function openSession(character: UICharacter, chatId: string): Promise<void> {
+    await loadChatHistory(character, chatId);
+  }
+
+  /**
+   * 新建会话：分配唯一会话 id 并清空当前角色消息缓冲（首条消息时 persistChat 才落盘）
+   */
+  function newSession(character: UICharacter): void {
+    activeChatId.value = `chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    character.messages = [];
+  }
+
+  /** 置顶/取消置顶会话 */
+  async function togglePin(chatId: string): Promise<void> {
+    const s = sessions.value.find((x) => x.id === chatId);
+    if (!s) return;
+    s.pinned = !s.pinned;
+    if (storageAdapter) {
+      try { await storageAdapter.saveChat(s); } catch { /* 离线静默 */ }
+    }
+  }
+
+  /** 归档/取消归档会话 */
+  async function toggleArchive(chatId: string): Promise<void> {
+    const s = sessions.value.find((x) => x.id === chatId);
+    if (!s) return;
+    s.archived = !s.archived;
+    if (storageAdapter) {
+      try { await storageAdapter.saveChat(s); } catch { /* 离线静默 */ }
+    }
+  }
+
+  /** 删除会话（存储 + 索引；若为当前激活会话则复位缓冲） */
+  async function deleteSession(character: UICharacter | null, chatId: string): Promise<void> {
+    if (storageAdapter) {
+      try { await storageAdapter.deleteChat(chatId); } catch { /* 离线静默 */ }
+    }
+    sessions.value = sessions.value.filter((s) => s.id !== chatId);
+    if (activeChatId.value === chatId) {
+      activeChatId.value = null;
+      if (character) character.messages = [];
+    }
+  }
+
+  /** 重命名会话标题 */
+  async function renameSession(chatId: string, title: string): Promise<void> {
+    const s = sessions.value.find((x) => x.id === chatId);
+    if (!s) return;
+    s.title = title;
+    if (storageAdapter) {
+      try { await storageAdapter.saveChat(s); } catch { /* 离线静默 */ }
     }
   }
 
@@ -944,6 +1047,9 @@ export const useChatStore = defineStore('chat', () => {
     isGenerating,
     streamingContent,
     lastError,
+    // 多会话（§14.2）
+    activeChatId,
+    sessions,
     // F11.2 当前对话局部变量
     chatVariables,
     // 第2条：Token 消耗统计
@@ -966,6 +1072,14 @@ export const useChatStore = defineStore('chat', () => {
     regenerateMessage,
     persistAfterEdit,
     loadChatHistory,
+    // 多会话（§14.2）
+    loadAllSessions,
+    openSession,
+    newSession,
+    togglePin,
+    toggleArchive,
+    deleteSession,
+    renameSession,
     // 错误管理
     clearLastError,
   };

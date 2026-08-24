@@ -56,6 +56,8 @@ export interface UICharacter {
   gradientTo?: string;
   initial?: string;
   lastActive: string;
+  /** 更新时间戳（毫秒，用于角色列表排序，§14.3；创建/更新时写入） */
+  updatedAt?: number;
   favorite: boolean;
   tags: string[];
   description: string;

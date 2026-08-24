@@ -42,6 +42,8 @@ export const useCharacterStore = defineStore('character', () => {
   const searchQuery = ref('');
   /** 需求1：当前过滤标签（空字符串表示不按标签过滤） */
   const filterTag = ref('');
+  /** §14.3 角色列表排序：updated（最近更新）/ name（名称） */
+  const sortBy = ref<'updated' | 'name'>('updated');
   const panelOpen = ref(true);
   const characterListOpen = ref(false);
   const currentNav = ref<NavKey>('chat');
@@ -66,7 +68,7 @@ export const useCharacterStore = defineStore('character', () => {
   const filteredCharacters = computed(() => {
     const q = searchQuery.value.trim().toLowerCase();
     const tag = filterTag.value.trim().toLowerCase();
-    return characters.value.filter((c) => {
+    const filtered = characters.value.filter((c) => {
       // 搜索：名称或标签包含 q
       const matchesSearch = !q
         || c.name.toLowerCase().includes(q)
@@ -76,6 +78,18 @@ export const useCharacterStore = defineStore('character', () => {
         || c.tags.some((t) => t.toLowerCase() === tag);
       return matchesSearch && matchesTag;
     });
+    // §14.3 排序：最近更新 / 名称
+    const sorted = [...filtered];
+    sorted.sort((a, b) => {
+      if (sortBy.value === 'name') {
+        return a.name.localeCompare(b.name);
+      }
+      // updated：无时间戳（旧数据）排末尾
+      const ta = a.updatedAt ?? 0;
+      const tb = b.updatedAt ?? 0;
+      return tb - ta || a.name.localeCompare(b.name);
+    });
+    return sorted;
   });
 
   /** 需求1：从所有角色中提取去重后的标签列表（按出现频率降序，最多 50 个） */
@@ -183,6 +197,11 @@ export const useCharacterStore = defineStore('character', () => {
     filterTag.value = tag;
   }
 
+  /** §14.3 设置角色列表排序方式 */
+  function setSortBy(sort: 'updated' | 'name') {
+    sortBy.value = sort;
+  }
+
   function togglePanel() {
     panelOpen.value = !panelOpen.value;
   }
@@ -214,6 +233,7 @@ export const useCharacterStore = defineStore('character', () => {
       gradientTo: 'var(--tk-cyan-700)',
       initial: t('char.initial'),
       lastActive: t('char.justNow'),
+      updatedAt: Date.now(),
       favorite: false,
       tags: [t('char.uncategorized')],
       description: t('char.clickToEdit'),
@@ -241,6 +261,7 @@ export const useCharacterStore = defineStore('character', () => {
     const char = characters.value.find((c) => c.id === id);
     if (!char) return false;
     Object.assign(char, patch);
+    char.updatedAt = Date.now();
     char.lastActive = t('char.justNow');
     void persistCharacter(id);
     return true;
@@ -519,6 +540,7 @@ export const useCharacterStore = defineStore('character', () => {
         gradientTo: 'var(--tk-cyan-700)',
         initial: generated.name[0] || '?',
         lastActive: now,
+        updatedAt: Date.now(),
         favorite: false,
         tags: generated.tags.length > 0 ? generated.tags : [t('char.uncategorized')],
         description: generated.description || t('char.noDesc2'),
@@ -563,6 +585,8 @@ export const useCharacterStore = defineStore('character', () => {
     searchQuery,
     /** 需求1：当前过滤标签 */
     filterTag,
+    /** §14.3 角色列表排序方式 */
+    sortBy,
     panelOpen,
     characterListOpen,
     currentNav,
@@ -586,6 +610,8 @@ export const useCharacterStore = defineStore('character', () => {
     setSearchQuery,
     /** 需求1：设置过滤标签 */
     setFilterTag,
+    /** §14.3 设置角色列表排序方式 */
+    setSortBy,
     togglePanel,
     toggleCharacterList,
     closeAllDrawers,

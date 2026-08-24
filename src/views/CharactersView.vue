@@ -341,6 +341,20 @@ function tagsPreview(tags: string[]): string {
       :all-count="characterStore.characters.length"
     />
 
+    <!-- §14.3 排序控制 -->
+    <div class="sort-bar">
+      <label class="sort-label" for="char-sort">{{ t('characters.sortLabel') }}</label>
+      <select
+        id="char-sort"
+        class="sort-select"
+        :value="characterStore.sortBy"
+        @change="characterStore.setSortBy(($event.target as HTMLSelectElement).value as 'updated' | 'name')"
+      >
+        <option value="updated">{{ t('characters.sortUpdated') }}</option>
+        <option value="name">{{ t('characters.sortName') }}</option>
+      </select>
+    </div>
+
     <!-- 角色卡片网格（不使用 main landmark 避免与页面 main 冲突） -->
     <div class="characters-grid tk-scroll">
       <article
@@ -677,6 +691,31 @@ function tagsPreview(tags: string[]): string {
   align-content: start;
   overflow-y: auto;
   padding-right: 4px;
+}
+
+/* §14.3 排序控制条 */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 4px 8px;
+}
+
+.sort-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.sort-select {
+  height: 32px;
+  padding: 0 8px;
+  background: var(--video-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .char-card {

@@ -33,6 +33,13 @@ const router = useRouter();
 const store = useCommunityMarketStore();
 const characterStore = useCharacterStore();
 
+// §14.4 更新检查：有可用更新的已装远程条目
+const updates = computed(() => store.getUpdatableInstalls());
+
+function handleUpdateInstall(itemId: string) {
+  void store.installRemoteItem(itemId);
+}
+
 // ── 启动 ──
 onMounted(() => {
   void store.loadFromDisk();
@@ -402,6 +409,31 @@ type="button"
     <main class="page-content">
       <!-- Tab 1: 市场 -->
       <section v-if="activeTab === 'market'" role="tabpanel" class="tab-panel">
+        <!-- §14.4 更新检查横幅 -->
+        <div v-if="updates.length" class="updates-banner" role="region" :aria-label="t('market.updatesAria')">
+          <div class="updates-title">
+            <Icon name="refresh-cw" :size="16" aria-hidden="true" />
+            <span>{{ t('market.updatesTitle', { count: updates.length }) }}</span>
+          </div>
+          <ul class="updates-list">
+            <li v-for="u in updates" :key="u.itemId" class="updates-item">
+              <span class="updates-name">{{ u.name }}</span>
+              <span class="updates-version">{{ u.installedVersion }} → {{ u.latestVersion }}</span>
+              <button
+                type="button"
+                class="updates-btn"
+                :disabled="store.downloadProgress[u.itemId]?.status === 'downloading' || store.downloadProgress[u.itemId]?.status === 'installing'"
+                @click="handleUpdateInstall(u.itemId)"
+              >
+                {{
+                  store.downloadProgress[u.itemId]?.status === 'downloading' || store.downloadProgress[u.itemId]?.status === 'installing'
+                    ? t('market.updating')
+                    : t('market.update')
+                }}
+              </button>
+            </li>
+          </ul>
+        </div>
         <!-- 远程市场（T-11 真实下载流） -->
         <div class="remote-panel">
           <div class="remote-panel-head">
@@ -992,6 +1024,61 @@ type="button"
   border: 1px dashed var(--border);
   border-radius: 0.5rem;
   background: var(--card);
+}
+
+/* §14.4 更新检查横幅 */
+.updates-banner {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--secondary) 45%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--secondary) 8%, transparent);
+}
+.updates-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--foreground);
+}
+.updates-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.updates-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.updates-name {
+  font-weight: 500;
+  color: var(--foreground);
+  flex: 1;
+  min-width: 120px;
+}
+.updates-version {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+}
+.updates-btn {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--secondary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.updates-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .remote-panel-head {
   display: flex;
