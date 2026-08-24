@@ -8,7 +8,7 @@
  * - DualChannelRetriever:动态每轮 + 静态按需触发(未触发时不查静态库)
  * - 世界设定分块:元数据标题命中优先于正文(需求 1 的检索形态)
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   cosineSimilarity,
   VectorStore,
@@ -16,6 +16,7 @@ import {
   DualChannelRetriever,
   type EmbeddingVector,
 } from '@core/embedding';
+import { setStopwordFilterEnabled } from '@core/stopword-filter';
 
 describe('cosineSimilarity (向量检索)', () => {
   it('相同向量相似度 1,正交向量 0', () => {
@@ -61,6 +62,14 @@ describe('VectorStore', () => {
 });
 
 describe('MockEmbeddingProvider', () => {
+  beforeEach(() => {
+    try {
+      localStorage.removeItem('aijiuguan.stopwordFilterEnabled');
+    } catch {
+      /* 环境无 localStorage */
+    }
+  });
+
   it('语义相似文本相似度显著高于无关文本', async () => {
     const p = new MockEmbeddingProvider();
     const v1 = await p.embed('星陨之剑的封印被解开');
@@ -69,6 +78,17 @@ describe('MockEmbeddingProvider', () => {
     expect(cosineSimilarity(v1, v2)).toBeGreaterThan(0.8);
     expect(cosineSimilarity(v1, v3)).toBeLessThan(cosineSimilarity(v1, v2));
     expect(p.dim).toBe(64);
+  });
+
+  it('停用词开关开启时与关闭时嵌入结果不同', async () => {
+    const p = new MockEmbeddingProvider();
+    setStopwordFilterEnabled(true);
+    const on = await p.embed('国王是好人');
+    setStopwordFilterEnabled(false);
+    const off = await p.embed('国王是好人');
+    // 开启时剔除"是",输入特征不同,向量应显著不同
+    expect(cosineSimilarity(on, off)).toBeLessThan(0.99);
+    setStopwordFilterEnabled(true);
   });
 });
 
