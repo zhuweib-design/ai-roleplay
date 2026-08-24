@@ -131,7 +131,7 @@ export default defineConfig({
     VitePWA({
       disable: isTauriEnv,
       registerType: 'autoUpdate',
-      includeAssets: ['pwa-icon.svg', 'apple-touch-icon.jpg'],
+      includeAssets: ['pwa-icon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'AI 酒馆',
         short_name: 'AI酒馆',
@@ -142,7 +142,9 @@ export default defineConfig({
         theme_color: '#0B0B10',
         background_color: '#0B0B10',
         icons: [
-          // 简单 SVG 占位图标(后续换正式 PNG/设计)
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          // 兼容备选:矢量(SVG, sizes any)
           { src: 'pwa-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
         ],
       },
