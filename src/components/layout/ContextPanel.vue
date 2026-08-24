@@ -4,6 +4,7 @@ import { useCharacterStore } from '@/stores/character';
 import { usePersonaStore } from '@/stores/persona';
 import { useLorebookStore } from '@/stores/lorebook';
 import { useChatStore } from '@/stores/chat';
+import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import { t } from '@/i18n';
@@ -12,8 +13,12 @@ const characterStore = useCharacterStore();
 const personaStore = usePersonaStore();
 const lorebookStore = useLorebookStore();
 const chatStore = useChatStore();
+const settingsStore = useSettingsStore();
 
 const char = computed(() => characterStore.currentCharacter!);
+
+/** 当前实际使用的模型(与发送一致:API Profile 的 model),而非角色卡 model */
+const activeModel = computed(() => settingsStore.activeProfile?.model ?? '');
 
 /** {{user}} 宏字面量（模板内嵌套双花括号会破坏编译，故提为常量） */
 const USER_MACRO = '{{user}}';
@@ -130,7 +135,7 @@ function onAuthorDepth(e: Event) {
           <Avatar :character="char" :size="40" />
           <div class="ctx-char-info">
             <div id="ctx-char-title" class="ctx-char-name">{{ char.name }}</div>
-            <div class="ctx-char-model">{{ char.model }}</div>
+            <div class="ctx-char-model">{{ activeModel || char.model }}</div>
           </div>
         </header>
         <p class="ctx-char-desc">{{ char.description }}</p>
