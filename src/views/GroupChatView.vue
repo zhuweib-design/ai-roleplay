@@ -1955,8 +1955,11 @@ type="button"
   .group-body {
     grid-template-columns: 1fr;
   }
+  /* 窄屏不隐藏群聊列表,堆叠+限高滚动,保留选择能力 */
   .group-list-panel {
-    display: none;
+    display: block;
+    max-height: 42vh;
+    overflow-y: auto;
   }
   .mode-options {
     grid-template-columns: 1fr;
