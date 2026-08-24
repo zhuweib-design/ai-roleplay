@@ -425,7 +425,8 @@ function handleMasterPasswordSuccess() {
    桌面:隐藏底部导航、保留左侧 NavRail
    移动:隐藏 NavRail、显示底部导航(主 Tab 页) */
 .app-bottom-nav {
-  display: none;
+  /* !important 保证桌面始终隐藏,不被 .bottom-nav{display:flex} 覆盖 */
+  display: none !important;
 }
 @media (max-width: 640px) {
   /* 移动端:冷壳改纵向堆叠,主内容在上、底部导航在下(修复 web/pwa 错位) */
@@ -436,11 +437,13 @@ function handleMasterPasswordSuccess() {
   .app-main {
     height: auto;
   }
+  /* !important 确保覆盖 NavRail(.nav-rail) 与 BottomNav(.bottom-nav) 的同特异度 display */
   .nav-rail-desktop {
-    display: none;
+    display: none !important;
   }
   .app-bottom-nav {
-    display: block;
+    /* flex 保留 .bottom-nav 内部 flex-direction:row 的横向5Tab栏 */
+    display: flex !important;
   }
   /* iOS 输入聚焦防放大(font-size<16px 会触发) */
   input,
