@@ -333,7 +333,7 @@ class="token-bar" role="progressbar"
 }
 
 .ctx-section {
-  padding: 16px;
+  padding: var(--spacing-md);
   border-bottom: 1px solid var(--border);
 }
 
@@ -495,7 +495,7 @@ class="token-bar" role="progressbar"
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--spacing-sm);
   padding: 6px 4px;
   border-radius: var(--radius-sm);
 }
@@ -540,7 +540,7 @@ class="token-bar" role="progressbar"
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   margin-top: 10px;
   font-size: 12px;
   color: var(--muted-foreground);

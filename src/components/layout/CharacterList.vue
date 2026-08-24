@@ -185,7 +185,7 @@ function openNewConversation() {
 .char-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   width: 100%;
   padding: 8px;
   border-radius: var(--radius-sm);
@@ -245,7 +245,7 @@ function openNewConversation() {
 .conv-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   width: 100%;
   padding: 6px 8px;
   border-radius: var(--radius-sm);
