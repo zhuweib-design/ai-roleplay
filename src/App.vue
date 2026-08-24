@@ -428,6 +428,14 @@ function handleMasterPasswordSuccess() {
   display: none;
 }
 @media (max-width: 640px) {
+  /* 移动端:冷壳改纵向堆叠,主内容在上、底部导航在下(修复 web/pwa 错位) */
+  .app-shell {
+    flex-direction: column;
+  }
+  /* 纵向堆叠下 main 由 flex:1 分配高度,避免 height:100% 把底部导航挤出被裁 */
+  .app-main {
+    height: auto;
+  }
   .nav-rail-desktop {
     display: none;
   }
