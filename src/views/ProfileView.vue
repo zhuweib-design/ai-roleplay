@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * ProfileView — 个人中心 (需求6)
  *
@@ -680,8 +680,8 @@ function switchPersona(id: string): void {
   font-size: 14px;
 }
 
-/* 响应式：小屏紧凑布局 */
-@media (max-width: 639px) {
+/* 响应式：小屏紧凑布局（统一移动断点 640） */
+@media (max-width: 640px) {
   .profile-view {
     padding: 16px;
   }
