@@ -2542,18 +2542,23 @@ function strategyLabel(s: LorebookStrategy): string {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .worldbook-body {
     grid-template-columns: 1fr;
   }
+  /* 移动端不隐藏列表,改为堆叠+限高滚动,保留选择/新建能力 */
   .lorebook-list-panel {
-    display: none;
+    display: flex;
+    max-height: 38vh;
+    overflow-y: auto;
   }
   .entries-layout {
     grid-template-columns: 1fr;
   }
   .entries-list-panel {
-    display: none;
+    display: flex;
+    max-height: 38vh;
+    overflow-y: auto;
   }
 }
 
