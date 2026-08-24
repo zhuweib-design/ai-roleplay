@@ -16,6 +16,8 @@ import {
   GatewayEmbeddingProvider,
   MockEmbeddingProvider,
 } from './embedding';
+import { getBestEmbeddingModel } from './rag-benchmark';
+import { isUserVectorModelId } from './vector-model-install';
 
 export type VectorModelId =
   | 'bge-large-zh-v1.5'
@@ -84,13 +86,19 @@ export function isBrowserRuntime(): boolean {
 /**
  * 模型选择器:
  * - 用户显式选择 → 尊重选择
- * - 未选择 → 浏览器自动 bge-small-zh-v1.5;桌面按角色默认(gte-large-quant 动态 / bge-large-zh-v1.5 静态)
+ * - 未选择 → 自动择优记录(bestEmbeddingModel)优先;无记录则平台默认
+ *   (浏览器 bge-small;桌面按角色:动态 gte-large / 静态 bge-large)
  */
 export function selectVectorModel(
   userChoice: VectorModelId | undefined,
   role: 'dynamic' | 'static'
 ): VectorModelId {
   if (userChoice) return userChoice;
+  // 择优结果(用户自定义或合法预置模型)作为最高优先级
+  const best = getBestEmbeddingModel();
+  if (best && (isUserVectorModelId(best) || best in VECTOR_MODELS)) {
+    return best as VectorModelId;
+  }
   if (isBrowserRuntime()) {
     // 浏览器端统一降级 bge-small(内存友好)
     return 'bge-small-zh-v1.5';

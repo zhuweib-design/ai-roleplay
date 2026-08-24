@@ -14,6 +14,7 @@ import type { EmbeddingProvider, EmbeddingVector } from './embedding';
 import type { ModelFileAdapter } from './vector-model-source';
 // i18n-ignore-start  // 模型内部错误提示(运行时异常), 非 UI 文案(待翻译)
 import type { VectorModelId } from './vector-model-manager';
+import { filterStopwords } from './stopword-filter';
 
 /** 分词钩子:text → token ids(BERT 系词表尺寸由模型决定) */
 export interface Tokenizer {
@@ -325,7 +326,7 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
   async embed(text: string): Promise<EmbeddingVector> {
     const ort = await this.loadRuntime();
     const tok = await this.tokenizer;
-    const { ids, mask } = this.tokenizeWith(tok, text);
+    const { ids, mask } = this.tokenizeWith(tok, filterStopwords(text));
     const feeds: Record<string, import('onnxruntime-web').Tensor> = {
       input_ids: new ort.Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, this.maxLen]),
       attention_mask: new ort.Tensor('int64', BigInt64Array.from(mask.map(BigInt)), [1, this.maxLen]),

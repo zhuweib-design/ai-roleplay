@@ -15,6 +15,7 @@
  */
 
 import { t } from '@/i18n';
+import { filterStopwords } from './stopword-filter';
 
 // ── 向量与存储 ──
 
@@ -129,13 +130,14 @@ export class GatewayEmbeddingProvider implements EmbeddingProvider {
   }
 
   async embed(text: string): Promise<EmbeddingVector> {
+    const input = filterStopwords(text);
     const res = await fetch(this.config.baseUrl.replace(/\/+$/, ''), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.config.apiKey}`,
       },
-      body: JSON.stringify({ model: this.config.model, input: text }),
+      body: JSON.stringify({ model: this.config.model, input }),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => '');
@@ -158,7 +160,7 @@ export class GatewayEmbeddingProvider implements EmbeddingProvider {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.config.apiKey}`,
       },
-      body: JSON.stringify({ model: this.config.model, input: texts }),
+      body: JSON.stringify({ model: this.config.model, input: texts.map((t) => filterStopwords(t)) }),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => '');
@@ -181,7 +183,7 @@ export class MockEmbeddingProvider implements EmbeddingProvider {
 
   async embed(text: string): Promise<EmbeddingVector> {
     const values = new Array<number>(this.dim).fill(0);
-    const chars = Array.from(text);
+    const chars = Array.from(filterStopwords(text));
     for (let i = 0; i < chars.length; i++) {
       const code = chars[i]!.charCodeAt(0);
       // 字符码哈希到两个相邻桶,带位置加权

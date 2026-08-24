@@ -153,6 +153,27 @@ function handleDownload(marketId: string): void {
   store.downloadCard(marketId);
 }
 
+// ── 远程市场（T-11 真实下载流） ──
+function handleLoadRemote(): void {
+  void store.loadRemoteIndex();
+}
+
+async function handleRemoteInstall(itemId: string): Promise<void> {
+  await store.installRemoteItem(itemId);
+}
+
+function remotePercent(itemId: string): number {
+  const p = store.downloadProgress[itemId];
+  if (!p || p.total <= 0) return 0;
+  return Math.min(100, Math.round((p.received / p.total) * 100));
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 // ── 收藏 ──
 function handleToggleFavorite(marketId: string): void {
   if (!store.isLoggedIn) {
@@ -381,6 +402,54 @@ type="button"
     <main class="page-content">
       <!-- Tab 1: 市场 -->
       <section v-if="activeTab === 'market'" role="tabpanel" class="tab-panel">
+        <!-- 远程市场（T-11 真实下载流） -->
+        <div class="remote-panel">
+          <div class="remote-panel-head">
+            <span class="remote-title">{{ t('market.remoteTitle') }}</span>
+            <button
+              type="button"
+              class="remote-refresh"
+              :disabled="store.remoteLoading"
+              @click="handleLoadRemote"
+            >
+              {{ store.remoteLoading ? t('market.remoteLoading') : t('market.remoteLoad') }}
+            </button>
+          </div>
+          <p v-if="store.remoteError" class="remote-error">{{ store.remoteError }}</p>
+          <ul v-if="store.remoteItems.length > 0" class="remote-list">
+            <li v-for="item in store.remoteItems" :key="item.id" class="remote-item">
+              <div class="remote-item-info">
+                <span class="remote-item-name">{{ item.name }}</span>
+                <span class="remote-item-meta">
+                  {{ item.type }} · v{{ item.version }} · {{ item.author }} · {{ formatBytes(item.size) }}
+                </span>
+                <span v-if="item.description" class="remote-item-desc">{{ item.description }}</span>
+              </div>
+              <div class="remote-item-action">
+                <span v-if="store.downloadProgress[item.id]?.status === 'done'" class="remote-done">
+                  {{ t('market.remoteInstalledOk') }}
+                </span>
+                <template v-else-if="store.downloadProgress[item.id]?.status === 'downloading'">
+                  <div class="remote-progress" role="progressbar" :aria-valuenow="remotePercent(item.id)" :aria-valuemin="0" :aria-valuemax="100" :aria-label="t('market.remoteProgressAria')">
+                    <div class="remote-progress-fill" :style="{ width: remotePercent(item.id) + '%' }"></div>
+                  </div>
+                  <span class="remote-progress-text">{{ remotePercent(item.id) }}%</span>
+                </template>
+                <button
+                  v-else
+                  type="button"
+                  class="remote-install"
+                  :disabled="store.downloadProgress[item.id]?.status === 'installing'"
+                  @click="handleRemoteInstall(item.id)"
+                >
+                  {{ store.downloadProgress[item.id]?.status === 'installing' ? t('market.remoteInstalling') : t('market.download') }}
+                </button>
+              </div>
+            </li>
+          </ul>
+          <p v-else-if="!store.remoteLoading" class="remote-hint">{{ t('market.remoteHint') }}</p>
+        </div>
+
         <div class="toolbar">
           <div class="search-box">
             <Icon name="search" :size="16" />
@@ -915,6 +984,117 @@ type="button"
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
+}
+
+.remote-panel {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+}
+.remote-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.remote-title {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.remote-refresh,
+.remote-install {
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--card-elevated);
+  color: var(--foreground);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.remote-refresh:disabled,
+.remote-install:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.remote-error {
+  color: var(--error);
+  font-size: 0.8rem;
+  margin: 0.25rem 0;
+}
+.remote-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.remote-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+}
+.remote-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.remote-item-name {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.remote-item-meta {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.remote-item-desc {
+  font-size: 0.8rem;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.remote-item-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.remote-progress {
+  width: 120px;
+  height: 0.5rem;
+  background: var(--border);
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+.remote-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.15s ease;
+}
+.remote-progress-text {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  min-width: 2.5rem;
+  text-align: right;
+}
+.remote-done {
+  color: var(--success);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.remote-hint {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  margin: 0.25rem 0;
 }
 
 .toolbar {

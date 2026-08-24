@@ -7,7 +7,7 @@
  * - 真实推理:gte-large-quant(1024 维)与 bge-int8(1024 维)
  * - 语义相似文本 → 高余弦(真实嵌入质量冒烟)
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -17,6 +17,7 @@ import {
 } from '@core/onnx-embedding-provider';
 import type { ModelFileAdapter } from '@core/vector-model-source';
 import { cosineSimilarity } from '@core/embedding';
+import { setStopwordFilterEnabled } from '@core/stopword-filter';
 import type { VectorModelId } from '@core/vector-model-manager';
 
 const MODEL_ROOT = path.resolve(process.cwd(), 'model');
@@ -46,6 +47,9 @@ class NodeFileAdapter implements ModelFileAdapter {
 // 真实模型验证依赖本地已下载的 model/ 权重目录(大文件不入库)。
 // CI 等无该目录的环境应整体跳过而不是因 ENOENT 失败。
 describe.skipIf(!fs.existsSync(MODEL_ROOT))('真实模型验证(model/ 目录)', () => {
+  // 关闭停用词过滤:本组测试测量真实模型的原始语义能力,与停用词模块解耦
+  beforeEach(() => setStopwordFilterEnabled(false));
+  afterEach(() => setStopwordFilterEnabled(true));
   it('模型目录包含三个 onnx 模型目录', () => {
     const installed = fs.readdirSync(MODEL_ROOT);
     expect(installed).toContain('bge-large-zh-v1.5-int8-onnx');
