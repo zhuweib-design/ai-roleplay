@@ -124,13 +124,13 @@ onBeforeUnmount(() => clearTimer());
 <style scoped>
 .toast {
   position: fixed;
-  top: 24px;
-  right: 24px;
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
   z-index: 200;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 12px var(--spacing-md);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--card-elevated);
@@ -172,7 +172,7 @@ onBeforeUnmount(() => clearTimer());
   border: none;
   color: inherit;
   cursor: pointer;
-  padding: 4px;
+  padding: var(--spacing-xs);
   display: inline-flex;
   align-items: center;
   justify-content: center;
