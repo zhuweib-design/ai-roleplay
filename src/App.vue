@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { useRoute } from 'vue-router';
 import { useSettingsStore } from '@/stores/settings';
 import { useChatStore } from '@/stores/chat';
 import { useCharacterStore } from '@/stores/character';
@@ -15,6 +16,8 @@ import { TauriFSAdapter } from '@storage/tauri-fs-adapter';
 import { importCharacterPng } from '@/services/backup-service';
 import { cardToUiChar } from '@/services/type-adapters';
 import NavRail from '@/components/layout/NavRail.vue';
+import BottomNav from '@/components/mobile/BottomNav.vue';
+import { isMainTab } from '@/core/mobile-nav';
 import MasterPasswordModal from '@/components/common/MasterPasswordModal.vue';
 import type { MasterPasswordMode } from '@/components/common/MasterPasswordModal.vue';
 import OnboardingModal from '@/components/common/OnboardingModal.vue';
@@ -31,6 +34,10 @@ const dataBankStore = useDataBankStore();
 const storyStore = useStoryStore();
 const communityMarketStore = useCommunityMarketStore();
 const characterVersionStore = useCharacterVersionStore();
+
+// 移动端底部导航:仅主 Tab 页显示(二级详情页全屏)
+const route = useRoute();
+const showBottomNav = computed(() => isMainTab(route.name as string | undefined));
 
 // AC20 主密码弹窗状态
 const mpModalVisible = ref(false);
@@ -281,11 +288,13 @@ function handleMasterPasswordSuccess() {
       </div>
     </div>
     <!-- 全局左侧导航栏（所有页面共享） -->
-    <NavRail />
+    <NavRail class="nav-rail-desktop" />
     <!-- 主内容区：由各视图自行渲染（含三栏布局等） -->
     <main class="app-main">
       <router-view />
     </main>
+    <!-- 移动端底部导航（<640px 显示,主 Tab 页） -->
+    <BottomNav v-if="showBottomNav" class="app-bottom-nav" />
   </div>
 
   <!-- AC20 主密码弹窗（启动时若需解锁则显示） -->
@@ -409,5 +418,30 @@ function handleMasterPasswordSuccess() {
   background: color-mix(in srgb, currentColor 15%, transparent);
   outline: 2px solid currentColor;
   outline-offset: 2px;
+}
+
+/* ── 移动端(手机/PWA)响应式 ──
+   桌面:隐藏底部导航、保留左侧 NavRail
+   移动:隐藏 NavRail、显示底部导航(主 Tab 页) */
+.app-bottom-nav {
+  display: none;
+}
+@media (max-width: 640px) {
+  .nav-rail-desktop {
+    display: none;
+  }
+  .app-bottom-nav {
+    display: block;
+  }
+  /* iOS 输入聚焦防放大(font-size<16px 会触发) */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  /* 详情页无底部导航时,主内容底部避开 Home 条 */
+  .app-main {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 </style>

@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'node:path';
 import type { Plugin } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -123,7 +124,38 @@ async function handleLocalProxy(req: IncomingMessage, res: ServerResponse): Prom
 }
 
 export default defineConfig({
-  plugins: [vue(), localProxyPlugin()],
+  plugins: [
+    vue(),
+    localProxyPlugin(),
+    // PWA(手机端可安装):仅纯 Web 构建启用;Tauri(file://)禁用 SW
+    VitePWA({
+      disable: isTauriEnv,
+      registerType: 'autoUpdate',
+      includeAssets: ['pwa-icon.svg', 'apple-touch-icon.jpg'],
+      manifest: {
+        name: 'AI 酒馆',
+        short_name: 'AI酒馆',
+        description: 'AI 角色扮演与多模型对话平台',
+        display: 'standalone',
+        start_url: '/',
+        scope: '/',
+        theme_color: '#0B0B10',
+        background_color: '#0B0B10',
+        icons: [
+          // 简单 SVG 占位图标(后续换正式 PNG/设计)
+          { src: 'pwa-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        navigateFallback: '/',
+        // web-llm(6MB)/onnx 等大 chunk 需超默认 2MB 预缓存上限,否则触发 missing-assets
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        // 网关/远端 AI API 不入 SW 缓存(实时对话避免陈旧)
+        runtimeCaching: [],
+      },
+    }),
+  ],
   resolve: {
     alias: [
       // 数组形式（@rollup/plugin-alias 标准）：精确字符串匹配

@@ -73,6 +73,7 @@ const en: Record<MessageKey, string> = {
   'nav.profile': 'Profile',
   'nav.main': 'Main navigation',
   'nav.chatToggle': 'Toggle character list',
+  'mobile.navAria': 'Bottom navigation',
 
   // ── App shell (App.vue) ──
   'app.name': 'AI Tavern',
