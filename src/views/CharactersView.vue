@@ -1037,9 +1037,9 @@ function tagsPreview(tags: string[]): string {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .characters-view {
-    padding: 16px;
+    padding: var(--spacing-md);
   }
 
   .header-btn .btn-label {

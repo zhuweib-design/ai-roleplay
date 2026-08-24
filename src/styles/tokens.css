@@ -114,6 +114,15 @@
   --radius-shell: 32px;
   --radius-pill: 999px;
 
+  /* Spacing · 间距刻度(base 4;触控相邻目标最小 8 >=28;卡片内间距 16) */
+  /* 与 design-system-specification §4.3 对齐;组件增量迁移中,落地前允许保留既有固定间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
   /* Success · 成功状态 */
   --success: #10B981;
   --success-bg: #0E2A22;
