@@ -210,7 +210,7 @@ function handleRetry() {
 .error-detail {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--spacing-md);
 }
 
 .error-header {
@@ -303,7 +303,7 @@ function handleRetry() {
 .error-suggestions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .suggestions-title {
@@ -340,7 +340,7 @@ function handleRetry() {
 /* 按钮样式（与项目其他 Modal 一致） */
 .btn-secondary,
 .btn-primary {
-  padding: 8px 16px;
+  padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 500;

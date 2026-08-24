@@ -341,7 +341,7 @@ function handleKeydown(e: KeyboardEvent) {
 .mpm-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--spacing-md);
 }
 
 .mpm-desc {

@@ -160,7 +160,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   z-index: 100;
-  padding: 16px;
+  padding: var(--spacing-md);
 }
 
 .modal-dialog {
@@ -224,7 +224,7 @@ onBeforeUnmount(() => {
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--spacing-sm);
   padding: 12px 20px;
   border-top: 1px solid var(--border);
 }
