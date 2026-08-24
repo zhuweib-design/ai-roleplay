@@ -16,6 +16,7 @@ import {
   isBrowserRuntime,
   type VectorModelId,
 } from '@core/vector-model-manager';
+import { setBestEmbeddingModel, clearBestEmbeddingModel } from '@core/rag-benchmark';
 import { MockEmbeddingProvider } from '@core/embedding';
 
 describe('VECTOR_MODELS 注册表', () => {
@@ -33,6 +34,11 @@ describe('selectVectorModel (需求 3:自动切换)', () => {
   const original = (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
   beforeEach(() => {
     delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+    try {
+      localStorage.removeItem('aijiuguan.bestEmbeddingModel');
+    } catch {
+      /* 环境无 localStorage */
+    }
   });
   afterEach(() => {
     if (original === undefined) {
@@ -58,6 +64,27 @@ describe('selectVectorModel (需求 3:自动切换)', () => {
   it('用户显式选择优先于自动切换', () => {
     expect(selectVectorModel('gte-large-zh-int8-onnx', 'static')).toBe('gte-large-zh-int8-onnx');
     expect(selectVectorModel('bge-large-zh-v1.5', 'dynamic')).toBe('bge-large-zh-v1.5');
+  });
+
+  it('择优记录作为最高优先级(超越浏览器默认)', () => {
+    setBestEmbeddingModel('bge-large-zh-v1.5', 1, 100);
+    expect(selectVectorModel(undefined, 'dynamic')).toBe('bge-large-zh-v1.5');
+  });
+
+  it('用户显式选择仍优先于择优记录', () => {
+    setBestEmbeddingModel('bge-large-zh-v1.5', 1, 100);
+    expect(selectVectorModel('bge-small-zh-v1.5', 'dynamic')).toBe('bge-small-zh-v1.5');
+  });
+
+  it('择优记录为用户自定义模型 id 时生效', () => {
+    setBestEmbeddingModel('user-123-abc', 0.9, 50);
+    expect(selectVectorModel(undefined, 'dynamic')).toBe('user-123-abc');
+  });
+
+  it('择优记录失效(非法 id)时回退默认', () => {
+    setBestEmbeddingModel('not-a-real-model', 1, 1);
+    expect(selectVectorModel(undefined, 'dynamic')).toBe('bge-small-zh-v1.5');
+    clearBestEmbeddingModel();
   });
 });
 
