@@ -82,7 +82,7 @@ const assistantActions: MsgAction[] = [
 <style scoped>
 .msg-wrap-user {
   align-self: flex-end;
-  margin-top: 8px;
+  margin-top: var(--spacing-sm);
 }
 
 .msg-wrap-assistant {
@@ -93,7 +93,7 @@ const assistantActions: MsgAction[] = [
   max-width: min(70%, 40em);
   width: fit-content;
   border-radius: var(--radius-md);
-  padding: 12px 16px;
+  padding: 12px var(--spacing-md);
   font-size: 14px;
   line-height: 1.7;
   word-wrap: break-word;

@@ -657,7 +657,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   background: var(--surface-2, var(--card-elevated));
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 16px;
+  padding: var(--spacing-md);
   margin-top: 12px;
   display: flex;
   flex-direction: column;
@@ -684,7 +684,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 .events-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   flex-wrap: wrap;
 }
 
@@ -696,7 +696,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 .scene-select {
   width: auto;
   min-width: 200px;
-  padding: 4px 8px;
+  padding: var(--spacing-xs) var(--spacing-sm);
   font-size: 13px;
 }
 
@@ -716,8 +716,8 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 24px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
   color: var(--muted-foreground);
   text-align: center;
 }
@@ -777,9 +777,9 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: var(--spacing-xs);
   width: 100%;
-  padding: 8px 12px;
+  padding: var(--spacing-sm) 12px;
   background: transparent;
   border: none;
   border-left: 3px solid transparent;
@@ -808,7 +808,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 .event-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   font-size: 11px;
 }
 
@@ -839,7 +839,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface-1, var(--bg-default));
-  padding: 16px;
+  padding: var(--spacing-md);
   overflow-y: auto;
   max-height: 600px;
 }
@@ -850,7 +850,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
-  padding-bottom: 8px;
+  padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--border);
 }
 
@@ -869,7 +869,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 .event-editor-grid .form-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .event-editor-grid .form-row-inline {
@@ -910,7 +910,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   flex-direction: row !important;
   align-items: center;
   gap: 12px;
-  padding: 8px 12px;
+  padding: var(--spacing-sm) 12px;
   background: var(--surface-3, var(--card-elevated));
   border-radius: 6px;
 }
@@ -960,7 +960,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   flex-direction: row !important;
   align-items: center;
   justify-content: space-between;
-  margin-top: 4px;
+  margin-top: var(--spacing-xs);
 }
 
 .form-meta {
@@ -973,12 +973,12 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   border: 1px dashed var(--border);
   border-radius: 6px;
   color: var(--muted-foreground);
   font-size: 13px;
-  padding: 32px;
+  padding: var(--spacing-2xl);
 }
 
 @media (max-width: 640px) {

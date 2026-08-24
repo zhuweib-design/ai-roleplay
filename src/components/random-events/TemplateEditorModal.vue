@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * TemplateEditorModal — 随机事件模板编辑器 (F17.3)
  *
@@ -320,14 +320,14 @@ function handleClose(): void {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 16px 20px;
+  padding: var(--spacing-md) 20px;
   overflow-y: auto;
 }
 
 .form-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .form-row label {
@@ -392,7 +392,7 @@ function handleClose(): void {
 
 .errors ul {
   margin: 0;
-  padding-left: 16px;
+  padding-left: var(--spacing-md);
 }
 
 .btn {
