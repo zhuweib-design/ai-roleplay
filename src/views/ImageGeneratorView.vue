@@ -1095,7 +1095,7 @@ onMounted(async () => {
 }
 
 /* 响应式 */
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .generate-layout {
     grid-template-columns: 1fr;
   }

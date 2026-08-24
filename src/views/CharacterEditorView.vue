@@ -1936,7 +1936,7 @@ function handleExport() {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .editor-view {
     padding: 16px;
   }

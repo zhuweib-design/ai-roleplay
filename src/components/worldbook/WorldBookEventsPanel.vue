@@ -981,7 +981,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   padding: 32px;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .events-content {
     grid-template-columns: 1fr;
   }

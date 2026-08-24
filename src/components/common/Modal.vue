@@ -259,7 +259,7 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .modal-dialog {
     max-width: calc(100% - 32px);
   }

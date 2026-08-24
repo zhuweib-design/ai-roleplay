@@ -771,7 +771,7 @@ type="button"
 }
 
 /* 响应式 */
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .page-header {
     padding: 10px 12px;
   }

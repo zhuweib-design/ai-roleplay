@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    responsive.css — 多端响应式适配
-   断点：桌面 >1024 | 平板 768-1024 | 移动 <768
+   断点：桌面 >1024 | 平板 641-1024 | 移动 ≤640
    ═══════════════════════════════════════════════════════════════ */
 
 /* ═══ 桌面默认（>1024px）：四栏完整布局 ═══ */
@@ -9,8 +9,9 @@
   .context-panel.collapsed { width: 0 !important; }
 }
 
-/* ═══ 平板（768-1024px）：上下文面板改为抽屉 ═══ */
-@media (max-width: 1024px) {
+/* ═══ 平板（641-1024px）：上下文面板改为抽屉 ═══
+   · ≤640 的移动极端由下方"移动端"块覆盖（本块仍匹配，仅在顺位靠后被覆盖） */
+@media (min-width: 641px) and (max-width: 1024px) {
   .character-list { width: 240px !important; }
 
   .context-panel {
@@ -27,8 +28,8 @@
   .context-panel.active { transform: translateX(0); }
 }
 
-/* ═══ 移动端（<768px）：单栏 + 抽屉式侧栏 ═══ */
-@media (max-width: 767px) {
+/* ═══ 移动端（≤640px）：单栏 + 抽屉式侧栏 ═══ */
+@media (max-width: 640px) {
   .app-shell {
     position: relative;
   }

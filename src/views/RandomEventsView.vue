@@ -1255,7 +1255,7 @@ function formatCooldown(ms: number): string {
 }
 
 /* 响应式 */
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .page-header {
     padding: 10px 14px;
   }

@@ -257,7 +257,7 @@ function onKeydown(e: KeyboardEvent): void {
   background: color-mix(in srgb, var(--on-accent, #161823) 25%, transparent);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .filter-tab {
     padding: 6px 10px;
     font-size: 12px;

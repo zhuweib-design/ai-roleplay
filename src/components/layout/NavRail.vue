@@ -39,7 +39,7 @@ function handleNav(item: NavItem) {
   characterStore.setNav(item.key);
 
   // 移动端：点击对话按钮切换角色列表
-  if (item.key === 'chat' && window.matchMedia('(max-width: 767px)').matches) {
+  if (item.key === 'chat' && window.matchMedia('(max-width: 640px)').matches) {
     characterStore.toggleCharacterList();
   }
 

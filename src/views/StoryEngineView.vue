@@ -2632,7 +2632,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 }
 
 /* 响应式 */
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .story-grid {
     grid-template-columns: 1fr;
   }

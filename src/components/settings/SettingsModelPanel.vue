@@ -1966,7 +1966,7 @@ select.field-input {
 }
 
 /* ── 窄屏：侧边栏转为顶部横向分类栏 ── */
-@media (max-width: 760px) {
+@media (max-width: 640px) {
   .settings-view {
     flex-direction: column;
   }

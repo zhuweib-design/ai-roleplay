@@ -210,7 +210,7 @@ onBeforeUnmount(() => clearTimer());
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .toast {
     top: 12px;
     right: 12px;

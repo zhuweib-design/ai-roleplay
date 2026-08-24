@@ -1942,7 +1942,7 @@ type="button"
 }
 
 /* Responsive */
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .diff-values,
   .conflict-options,
   .lock-item {
