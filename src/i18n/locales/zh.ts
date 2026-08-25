@@ -258,6 +258,8 @@ export default {
   'charList.unpin': '取消置顶',
   'charList.archive': '归档',
   'charList.delConv': '删除会话',
+  'charList.confirmDel': '确认删除',
+  'charList.cancel': '取消',
   'charList.empty': '未找到匹配的角色',
   'charList.newConv': '新建对话',
 

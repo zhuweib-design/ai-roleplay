@@ -68,7 +68,17 @@ function onTogglePin(chat: Chat) {
 function onToggleArchive(chat: Chat) {
   void chatStore.toggleArchive(chat.id);
 }
-function onDelete(chat: Chat) {
+
+// 删除二次确认（避免误删）
+const confirmDeleteId = ref<string | null>(null);
+function askDelete(chat: Chat) {
+  confirmDeleteId.value = chat.id;
+}
+function cancelDelete() {
+  confirmDeleteId.value = null;
+}
+function confirmDelete(chat: Chat) {
+  confirmDeleteId.value = null;
   void chatStore.deleteSession(current.value ?? null, chat.id);
 }
 </script>
@@ -148,33 +158,53 @@ function onDelete(chat: Chat) {
               <span class="conv-time">{{ conv.updatedAt }}</span>
             </button>
             <span class="conv-actions" :aria-hidden="undefined">
-              <button
-                type="button"
-                class="conv-act-btn"
-                :title="conv.pinned ? t('charList.unpin') : t('charList.pin')"
-                :aria-label="conv.pinned ? t('charList.unpin') : t('charList.pin')"
-                @click="onTogglePin(conv)"
-              >
-                <Icon name="pin" :size="14" />
-              </button>
-              <button
-                type="button"
-                class="conv-act-btn"
-                :title="t('charList.archive')"
-                :aria-label="t('charList.archive')"
-                @click="onToggleArchive(conv)"
-              >
-                <Icon name="archive" :size="14" />
-              </button>
-              <button
-                type="button"
-                class="conv-act-btn danger"
-                :title="t('charList.delConv')"
-                :aria-label="t('charList.delConv')"
-                @click="onDelete(conv)"
-              >
-                <Icon name="trash-2" :size="14" />
-              </button>
+              <template v-if="confirmDeleteId === conv.id">
+                <button
+                  type="button"
+                  class="conv-act-btn danger"
+                  :aria-label="t('charList.confirmDel')"
+                  @click="confirmDelete(conv)"
+                >
+                  <Icon name="check" :size="14" />
+                </button>
+                <button
+                  type="button"
+                  class="conv-act-btn"
+                  :aria-label="t('charList.cancel')"
+                  @click="cancelDelete"
+                >
+                  <Icon name="close" :size="14" />
+                </button>
+              </template>
+              <template v-else>
+                <button
+                  type="button"
+                  class="conv-act-btn"
+                  :title="conv.pinned ? t('charList.unpin') : t('charList.pin')"
+                  :aria-label="conv.pinned ? t('charList.unpin') : t('charList.pin')"
+                  @click="onTogglePin(conv)"
+                >
+                  <Icon name="pin" :size="14" />
+                </button>
+                <button
+                  type="button"
+                  class="conv-act-btn"
+                  :title="t('charList.archive')"
+                  :aria-label="t('charList.archive')"
+                  @click="onToggleArchive(conv)"
+                >
+                  <Icon name="archive" :size="14" />
+                </button>
+                <button
+                  type="button"
+                  class="conv-act-btn danger"
+                  :title="t('charList.delConv')"
+                  :aria-label="t('charList.delConv')"
+                  @click="askDelete(conv)"
+                >
+                  <Icon name="trash-2" :size="14" />
+                </button>
+              </template>
             </span>
           </div>
           <button type="button" class="conv-new-btn" @click="newChat">
@@ -476,5 +506,25 @@ function onDelete(chat: Chat) {
   font-size: 13px;
   cursor: pointer;
   background: none;
+}
+
+/* §10.4 移动端触控目标：会话操作按钮 ≥40px、加大间距避免误触 */
+@media (max-width: 640px) {
+  .conv-act-btn {
+    width: 40px;
+    height: 40px;
+    opacity: 1;
+  }
+  .conv-actions {
+    gap: 6px;
+  }
+  .conv-main-btn {
+    min-height: 40px;
+    padding: 6px 0;
+  }
+  .conv-new-btn {
+    min-height: 40px;
+    font-size: 13px;
+  }
 }
 </style>

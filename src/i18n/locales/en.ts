@@ -258,6 +258,8 @@ const en: Record<MessageKey, string> = {
   'charList.unpin': 'Unpin',
   'charList.archive': 'Archive',
   'charList.delConv': 'Delete conversation',
+  'charList.confirmDel': 'Confirm delete',
+  'charList.cancel': 'Cancel',
   'charList.empty': 'No matching characters',
   'charList.newConv': 'New chat',
 
