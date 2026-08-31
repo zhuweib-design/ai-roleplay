@@ -17,6 +17,7 @@ import type { CharacterCard } from '@/core/character-card';
 import { exportV2Card, importV2Card } from '@/core/character-card';
 import type { Chat } from '@/storage/types';
 import type { AppSettings } from '@/types';
+import type { StoryEvent } from '@/core/event-types';
 import {
   type BackupData,
   type ImportOptions,
@@ -40,8 +41,11 @@ export type { ImportResult } from '@/core/backup';
  * 安全（P2-6）：持久化态中存在明文 API Key 时拒绝导出，
  * 防止备份文件分享/上传导致密钥泄漏。
  */
-export async function exportAll(adapter: StorageAdapter): Promise<BackupData> {
-  const [characters, chats, lorebooks, groupChats, personas, settings] =
+export async function exportAll(
+  adapter: StorageAdapter,
+  extra?: { events?: StoryEvent[] }
+): Promise<BackupData> {
+  const [characters, chats, lorebooks, groupChats, personas, settings, stories] =
     await Promise.all([
       adapter.loadCharacters(),
       loadAllChats(adapter),
@@ -49,6 +53,7 @@ export async function exportAll(adapter: StorageAdapter): Promise<BackupData> {
       adapter.loadGroupChats(),
       adapter.loadPersonas(),
       adapter.loadSettings(),
+      adapter.loadStories(),
     ]);
 
   // 明文 API Key 检查（未设置主密码或解密后未重新持久化时可能出现）
@@ -84,6 +89,8 @@ export async function exportAll(adapter: StorageAdapter): Promise<BackupData> {
     lorebooks,
     groupChats,
     personas,
+    stories,
+    events: extra?.events ?? [],
     settings,
   };
 }
@@ -121,6 +128,7 @@ export async function importBackup(
     lorebooks: { added: 0, skipped: 0, overwritten: 0 },
     groupChats: { added: 0, skipped: 0, overwritten: 0 },
     personas: { added: 0, skipped: 0, overwritten: 0 },
+    stories: { added: 0, skipped: 0, overwritten: 0 },
     settingsUpdated: false,
     errors,
   };
@@ -253,6 +261,35 @@ export async function importBackup(
     }
   }
 
+  // 故事线（F16 故事分析结果）
+  if (options.importStories !== false && data.stories) {
+    for (const story of data.stories) {
+      try {
+        const existing = await adapter.loadStory(story.id);
+        if (existing) {
+          if (strategy === 'skip') {
+            result.stories.skipped++;
+          } else if (strategy === 'overwrite') {
+            await adapter.saveStory(story);
+            result.stories.overwritten++;
+          } else {
+            result.stories.skipped++;
+          }
+        } else {
+          await adapter.saveStory(story);
+          result.stories.added++;
+        }
+      } catch (err) {
+        errors.push(t('backup.storyImportFailed', { id: story.id, error: err instanceof Error ? err.message : String(err) }));
+      }
+    }
+  }
+
+  // 事件（世界书事件/触发器，内存态；随备份带出，交由调用方写回 store）
+  if (data.events) {
+    result.events = data.events;
+  }
+
   // 设置
   if (options.importSettings !== false && data.settings) {
     try {
@@ -270,13 +307,13 @@ export async function importBackup(
   // T-06 审计:导入结果摘要
   const totalAdded =
     result.characters.added + result.chats.added + result.lorebooks.added +
-    result.groupChats.added + result.personas.added;
+    result.groupChats.added + result.personas.added + result.stories.added;
   const totalOverwritten =
     result.characters.overwritten + result.chats.overwritten + result.lorebooks.overwritten +
-    result.groupChats.overwritten + result.personas.overwritten;
+    result.groupChats.overwritten + result.personas.overwritten + result.stories.overwritten;
   const totalSkipped =
     result.characters.skipped + result.chats.skipped + result.lorebooks.skipped +
-    result.groupChats.skipped + result.personas.skipped;
+    result.groupChats.skipped + result.personas.skipped + result.stories.skipped;
   auditLogger.record(
     'backup_import',
     t('backup.importResult', {

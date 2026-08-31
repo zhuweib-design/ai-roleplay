@@ -15,6 +15,8 @@ import type { Lorebook } from './lorebook';
 import type { GroupChat } from './group-chat';
 import type { Chat } from '../storage/types';
 import type { Persona, AppSettings } from '@/types';
+import type { StoryAnalysisResult } from './story-types';
+import type { StoryEvent } from './event-types';
 
 /** 备份格式版本号（不向后兼容时递增） */
 import { t } from '@/i18n';
@@ -46,6 +48,10 @@ export interface BackupData extends BackupMeta {
   groupChats: GroupChat[];
   /** 全部 Persona (F07) */
   personas: Persona[];
+  /** 全部故事分析结果（故事线，F16） */
+  stories?: StoryAnalysisResult[];
+  /** 事件（世界书事件/触发器，F17；运行时内存，随备份带出便于跨端恢复） */
+  events?: StoryEvent[];
   /** 全局设置（部分字段） */
   settings: Partial<AppSettings>;
 }
@@ -70,6 +76,8 @@ export interface ImportOptions {
   importGroupChats?: boolean;
   /** 是否导入 Persona */
   importPersonas?: boolean;
+  /** 是否导入故事线 */
+  importStories?: boolean;
   /** 是否导入设置 */
   importSettings?: boolean;
 }
@@ -81,6 +89,9 @@ export interface ImportResult {
   lorebooks: { added: number; skipped: number; overwritten: number };
   groupChats: { added: number; skipped: number; overwritten: number };
   personas: { added: number; skipped: number; overwritten: number };
+  stories: { added: number; skipped: number; overwritten: number };
+  /** 备份内携带的事件（世界书事件，由调用方写回内存 store） */
+  events?: StoryEvent[];
   settingsUpdated: boolean;
   errors: string[];
 }
@@ -114,6 +125,8 @@ export function validateBackup(data: unknown): string[] {
     'lorebooks',
     'groupChats',
     'personas',
+    'stories',
+    'events',
   ];
   for (const field of arrayFields) {
     if (obj[field] !== undefined && !Array.isArray(obj[field])) {

@@ -25,6 +25,7 @@ import type { Chat } from '../../src/storage/types';
 import type { Lorebook } from '../../src/core/lorebook';
 import type { GroupChat } from '../../src/core/group-chat';
 import type { Persona, AppSettings } from '@/types';
+import type { StoryAnalysisResult } from '../../src/core/story-types';
 
 // ── Mock 存储适配器 ──
 
@@ -34,6 +35,7 @@ class MockStorageAdapter implements Partial<StorageAdapter> {
   public lorebooks: Lorebook[] = [];
   public groupChats: GroupChat[] = [];
   public personas: Persona[] = [];
+  public stories: StoryAnalysisResult[] = [];
   public settingsData: Partial<AppSettings> = {};
 
   // 跟踪调用
@@ -42,6 +44,7 @@ class MockStorageAdapter implements Partial<StorageAdapter> {
   public savedLorebooks: Lorebook[] = [];
   public savedGroupChats: GroupChat[] = [];
   public savedPersonas: Persona[] = [];
+  public savedStories: StoryAnalysisResult[] = [];
   public savedSettings: Partial<AppSettings> | null = null;
 
   async init(): Promise<void> {}
@@ -133,6 +136,22 @@ class MockStorageAdapter implements Partial<StorageAdapter> {
   }
   async deletePersona(id: string): Promise<void> {
     this.personas = this.personas.filter((p) => p.id !== id);
+  }
+
+  async saveStory(s: StoryAnalysisResult): Promise<void> {
+    this.savedStories.push({ ...s });
+    const idx = this.stories.findIndex((x) => x.id === s.id);
+    if (idx >= 0) this.stories[idx] = { ...s };
+    else this.stories.push({ ...s });
+  }
+  async loadStory(id: string): Promise<StoryAnalysisResult | null> {
+    return this.stories.find((s) => s.id === id) ?? null;
+  }
+  async loadStories(): Promise<StoryAnalysisResult[]> {
+    return [...this.stories];
+  }
+  async deleteStory(id: string): Promise<void> {
+    this.stories = this.stories.filter((s) => s.id !== id);
   }
 }
 

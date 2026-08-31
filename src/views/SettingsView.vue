@@ -661,6 +661,8 @@ watch(
 
 // ── F13 数据管理 ──
 import { useCharacterStore } from '@/stores/character';
+import { useEventsStore } from '@/stores/events';
+import { useStoryStore } from '@/stores/story';
 import {
   exportAll,
   importBackup,
@@ -707,7 +709,8 @@ async function handleExportBackup() {
   dataManageLoading.value = true;
   try {
     const adapter = getStorageAdapter();
-    const data = await exportAll(adapter);
+    // F17 事件为内存态：显式带出到备份，随故事线一起导出
+    const data = await exportAll(adapter, { events: useEventsStore().events });
     // 已解锁主密码 → 加密备份文件；未设置 → 明文备份
     const password = settings.isUnlocked ? settings.getSessionMasterPassword() : undefined;
     await downloadBackupFile(data, password);
@@ -759,6 +762,11 @@ async function handleBackupFileSelected(e: Event) {
     // 重新加载所有 store 数据
     await characterStore.loadFromStorage();
     await personaStore.loadFromStorage();
+    await useStoryStore().loadFromStorage();
+    // F17 事件为内存态：从备份恢复回事件 store
+    if (result.events) {
+      useEventsStore().events = result.events;
+    }
   } catch (err) {
     showToast('error', t('settingsView.importFailed', { error: err instanceof Error ? err.message : String(err) }));
   } finally {
@@ -2163,6 +2171,14 @@ URL
               {{ t('settingsView.importAdded', { n: lastImportResult.personas.added }) }} ·
               {{ t('settingsView.importOverwritten', { n: lastImportResult.personas.overwritten }) }} ·
               {{ t('settingsView.importSkipped', { n: lastImportResult.personas.skipped }) }}
+            </span>
+          </li>
+          <li>
+            <span class="result-key">{{ t('settingsView.importKeyStories') }}</span>
+            <span class="result-value">
+              {{ t('settingsView.importAdded', { n: lastImportResult.stories.added }) }} ·
+              {{ t('settingsView.importOverwritten', { n: lastImportResult.stories.overwritten }) }} ·
+              {{ t('settingsView.importSkipped', { n: lastImportResult.stories.skipped }) }}
             </span>
           </li>
           <li>
