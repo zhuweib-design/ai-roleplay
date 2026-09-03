@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import { t } from '@/i18n';
+import type { ApiProfile } from '@/types';
 
 const characterStore = useCharacterStore();
 const personaStore = usePersonaStore();
@@ -17,8 +18,22 @@ const settingsStore = useSettingsStore();
 
 const char = computed(() => characterStore.currentCharacter!);
 
-/** 当前实际使用的模型(与发送一致:API Profile 的 model),而非角色卡 model */
-const activeModel = computed(() => settingsStore.activeProfile?.model ?? '');
+/**
+ * 当前角色实际生效的 API Profile：per-role 绑定优先，否则跟随全局激活 Profile。
+ * 与发送链路(App.vue 在切换角色时 setApiProfile)保持一致，做到显示=发送。
+ */
+const effectiveProfile = computed<ApiProfile | null>(() => {
+  const pid = char.value?.profileId;
+  if (pid) {
+    return settingsStore.apiProfiles.find((p) => p.id === pid) ?? null;
+  }
+  return settingsStore.activeProfile;
+});
+
+/** 实际使用的模型名(与发送一致)；未配置时显示提示文案 */
+const modelLabel = computed(() =>
+  effectiveProfile.value ? effectiveProfile.value.model : t('chat.modelNotConfigured')
+);
 
 /** {{user}} 宏字面量（模板内嵌套双花括号会破坏编译，故提为常量） */
 const USER_MACRO = '{{user}}';
@@ -135,7 +150,7 @@ function onAuthorDepth(e: Event) {
           <Avatar :character="char" :size="40" />
           <div class="ctx-char-info">
             <div id="ctx-char-title" class="ctx-char-name">{{ char.name }}</div>
-            <div class="ctx-char-model">{{ activeModel || char.model }}</div>
+            <div class="ctx-char-model" :class="{ 'not-configured': !effectiveProfile }">{{ modelLabel }}</div>
           </div>
         </header>
         <p class="ctx-char-desc">{{ char.description }}</p>

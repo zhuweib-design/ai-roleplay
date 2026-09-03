@@ -445,6 +445,21 @@ describe('type-adapters — 角色卡 round-trip', () => {
     }) as CharacterCard;
     expect(cardToUiChar(mixed).model).toBe('ext-model');
   });
+
+  it('per-role 模型绑定：profileId 应存入 ext 并 round-trip 保留', () => {
+    const original = makeUIChar({ profileId: 'profile-claude' });
+
+    const card = uiCharToCard(original);
+    expect(card.ext?.profileId).toBe('profile-claude');
+
+    const roundTrip = cardToUiChar(card);
+    expect(roundTrip.profileId).toBe('profile-claude');
+  });
+
+  it('per-role 模型绑定：profileId 为 null/undefined 时不写入 ext（向后兼容）', () => {
+    expect(uiCharToCard(makeUIChar()).ext?.profileId).toBeUndefined();
+    expect(uiCharToCard(makeUIChar({ profileId: null })).ext?.profileId).toBeUndefined();
+  });
 });
 
 describe('type-adapters — uiMsgToChatMsg', () => {

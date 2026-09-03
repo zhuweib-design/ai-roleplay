@@ -238,6 +238,7 @@ export const useCharacterStore = defineStore('character', () => {
       tags: [t('char.uncategorized')],
       description: t('char.clickToEdit'),
       model: 'GPT-4o',
+      profileId: null,
       conversations: [],
       messages: [],
       authorNote: '',

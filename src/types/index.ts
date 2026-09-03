@@ -65,6 +65,8 @@ export interface UICharacter {
   personality?: string;
   scenario?: string;
   model: string;
+  /** 绑定到具体 ApiProfile 的 id；为 null 时跟随全局激活 Profile（per-role 模型绑定） */
+  profileId?: string | null;
   conversations: Conversation[];
   messages: UIMessage[];
   authorNote: string;

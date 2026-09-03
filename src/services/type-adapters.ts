@@ -54,6 +54,7 @@ export function uiCharToCard(ui: UICharacter): CharacterCard {
     // 迭代33：UI 扩展字段收进 ext 命名空间（替代顶层索引签名透传）
     ext: {
       model: ui.model,
+      ...(ui.profileId !== undefined && ui.profileId !== null ? { profileId: ui.profileId } : {}),
       temperature: ui.temperature,
       maxTokens: ui.maxTokens,
       avatarType: ui.avatarType,
@@ -106,6 +107,7 @@ export function cardToUiChar(
     personality: card.personality,
     scenario: card.scenario,
     model: ext?.model ?? (legacy('model') as string | undefined) ?? overrides?.model ?? 'gpt-4o',
+    profileId: ext?.profileId ?? (legacy('profileId') as string | null | undefined) ?? (overrides?.profileId ?? null),
     conversations: overrides?.conversations ?? [],
     messages: overrides?.messages ?? [],
     authorNote: card.characterNote?.text ?? '',

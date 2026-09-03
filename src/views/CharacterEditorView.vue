@@ -19,6 +19,7 @@ import { ref, computed, watch, onMounted, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCharacterStore } from '@/stores/character';
 import { useLorebookStore } from '@/stores/lorebook';
+import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
@@ -35,6 +36,7 @@ const props = defineProps<{
 const router = useRouter();
 const characterStore = useCharacterStore();
 const lorebookStore = useLorebookStore();
+const settingsStore = useSettingsStore();
 
 // ── 需求7：角色与世界书双向绑定 ──
 
@@ -90,6 +92,7 @@ interface FormState {
   gradientTo: string;
   initial: string;
   model: string;
+  profileId: string | null;
   temperature: number;
   maxTokens: number;
   authorNote: string;
@@ -116,6 +119,7 @@ const emptyForm = (): FormState => ({
   gradientTo: 'var(--tk-cyan-700)',
   initial: '',
   model: 'GPT-4o',
+  profileId: null,
   temperature: 1.0,
   maxTokens: 4096,
   authorNote: '',
@@ -219,6 +223,7 @@ function loadCharacter(c: UICharacter) {
     gradientTo: c.gradientTo ?? 'var(--tk-cyan-700)',
     initial: c.initial ?? '',
     model: c.model,
+    profileId: c.profileId ?? null,
     temperature: c.temperature,
     maxTokens: c.maxTokens,
     authorNote: c.authorNote,
@@ -277,6 +282,7 @@ const previewCharacter = computed<UICharacter>(() => ({
   tags: parseTags(form.value.tagsText),
   description: form.value.description || t('charEdit.noDesc'),
   model: form.value.model,
+  profileId: form.value.profileId,
   conversations: [],
   messages: [],
   authorNote: form.value.authorNote,
@@ -441,6 +447,7 @@ function buildPatch(): Partial<UICharacter> {
     gradientTo: form.value.gradientTo,
     initial: form.value.initial || form.value.name[0] || '?',
     model: form.value.model,
+    profileId: form.value.profileId,
     temperature: form.value.temperature,
     maxTokens: form.value.maxTokens,
     authorNote: form.value.authorNote,
@@ -789,6 +796,28 @@ function handleExport() {
         <!-- 模型设置 -->
         <fieldset class="form-section">
           <legend class="section-title">{{ t('charEdit.modelTitle') }}</legend>
+
+          <div class="field">
+            <label for="f-profile" class="field-label">{{ t('charEdit.profileBindLabel') }}</label>
+            <select
+              id="f-profile"
+              class="field-input"
+              :value="form.profileId ?? ''"
+              @change="form.profileId = ($event.target as HTMLSelectElement).value || null"
+            >
+              <option value="">
+                {{ t('charEdit.profileFollowGlobal', { model: settingsStore.activeProfile?.model ?? '—' }) }}
+              </option>
+              <option
+                v-for="p in settingsStore.apiProfiles"
+                :key="p.id"
+                :value="p.id"
+              >
+                {{ p.name }} · {{ p.model }}
+              </option>
+            </select>
+            <p class="field-hint">{{ t('charEdit.profileBindHint') }}</p>
+          </div>
 
           <div class="field">
             <label for="f-temp" class="field-label">

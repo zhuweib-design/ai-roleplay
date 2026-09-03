@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
 import { useSettingsStore } from '@/stores/settings';
 import { useChatStore } from '@/stores/chat';
@@ -242,11 +242,12 @@ onMounted(async () => {
   }
 
   // 注入默认 API Profile（来自 settings store，空时跳过）
+  // per-role 模型绑定：优先应用当前角色绑定的 profile，否则跟随全局激活 Profile
   // AC20 安全：仅在已解锁（或未设置主密码）时注入，避免注入加密的 apiKey
   if (settings.isUnlocked || !settings.hasMasterPassword) {
-    const activeProfile = settings.activeProfile;
-    if (activeProfile) {
-      chatStore.setApiProfile(activeProfile);
+    const profile = resolveCharacterProfile();
+    if (profile) {
+      chatStore.setApiProfile(profile);
     }
   }
 
@@ -256,13 +257,39 @@ onMounted(async () => {
   }
 });
 
-// AC20 主密码弹窗：解锁成功后注入 API Profile
+// AC20 主密码弹窗：解锁成功后注入 API Profile（同样遵循 per-role 绑定）
 function handleMasterPasswordSuccess() {
-  const activeProfile = settings.activeProfile;
-  if (activeProfile) {
-    chatStore.setApiProfile(activeProfile);
+  const profile = resolveCharacterProfile();
+  if (profile) {
+    chatStore.setApiProfile(profile);
   }
 }
+
+/**
+ * 解析当前角色实际应生效的 API Profile：
+ * - 角色绑定了 profileId → 取其绑定的 ApiProfile（per-role 模型绑定）
+ * - 未绑定 → 跟随全局激活 Profile
+ */
+function resolveCharacterProfile() {
+  const c = characterStore.currentCharacter;
+  const pid = c?.profileId;
+  if (pid) {
+    return settings.apiProfiles.find((p) => p.id === pid) ?? null;
+  }
+  return settings.activeProfile;
+}
+
+// 切换角色时同步应用其绑定 Profile（或回退全局），保证显示=发送一致
+watch(
+  () => characterStore.currentCharacterId,
+  () => {
+    if (!(settings.isUnlocked || !settings.hasMasterPassword)) return;
+    const profile = resolveCharacterProfile();
+    if (profile) {
+      chatStore.setApiProfile(profile);
+    }
+  }
+);
 </script>
 
 <template>

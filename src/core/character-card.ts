@@ -59,6 +59,8 @@ export interface ChatMessage {
 export interface CharacterExt {
   /** 默认模型 ID */
   model?: string;
+  /** 绑定的 API Profile id（per-role 模型绑定；null=跟随全局激活 Profile） */
+  profileId?: string | null;
   /** 采样温度 */
   temperature?: number;
   /** 最大生成 Token 数 */
