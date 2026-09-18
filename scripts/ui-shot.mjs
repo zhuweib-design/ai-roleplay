@@ -5,9 +5,12 @@ import fs from 'node:fs';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5174';
 // THEME: 指定主题生成对应截图（如 THEME=light / THEME=midnight）。
-// 省略时沿用默认主题，输出到 ui-shots/ 根（维持 P2-6 深色基线行为）。
+// 省略时沿用默认主题，输出到 docs/assets/screenshots/ 根（维持 P2-6 深色基线行为）。
+// 2026-09-18 目录整理：输出根由 ui-shots/ 迁移至 docs/assets/screenshots/（见 MIGRATION_LOG.md）
 const THEME = process.env.THEME;
-const OUT = THEME ? `ui-shots/themes/${THEME}` : 'ui-shots';
+const OUT = THEME
+  ? `docs/assets/screenshots/themes/${THEME}`
+  : 'docs/assets/screenshots';
 const VIEWPORT = { width: 1280, height: 800 };
 
 const routes = [
