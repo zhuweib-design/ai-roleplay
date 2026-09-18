@@ -31,7 +31,7 @@
 | `.reasonix/`、`.workbuddy/` | AI 工具工作区状态目录 | 保留原位 |
 | `src-tauri/keys/` | Tauri 更新签名密钥 | 保留原位，全程未读取内容 |
 
-**交叉引用勘察**：`docs/` 内 10 个文档存在互引（`mobile-pwa-plan.md` → `docs/mobile-ui-design.md`、`rag-enhancement-plan.md` → `docs/rag-enhancement-design.md`、`design-system-specification.md` → `mobile-ui-design.md` 等），`deliverables/gstack/*.md` 与 `.workbuddy/memory/*.md` 亦引用 `docs/threat-model.md`、`docs/data-backup-restore.md`、`docs/e00-decision.md`。因此**未将 `docs/` 拆分为子目录**，全部文档以 `docs/` 为前缀，引用路径保持有效。
+**交叉引用勘察**：`docs/` 内 10 个文档存在互引（`mobile-pwa-plan.md` → `docs/design/mobile-ui-design.md`、`rag-enhancement-plan.md` → `docs/design/rag-enhancement-design.md`、`design-system-specification.md` → `mobile-ui-design.md` 等），`deliverables/gstack/*.md` 与 `.workbuddy/memory/*.md` 亦引用 `docs/design/threat-model.md`、`docs/dev/data-backup-restore.md`、`docs/design/e00-decision.md`。因此**未将 `docs/` 拆分为子目录**，全部文档以 `docs/` 为前缀，引用路径保持有效。
 
 ---
 
@@ -53,10 +53,10 @@
 
 | # | 原路径 | 新路径 | 迁移原因 | 执行时间 | 潜在风险 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AI酒馆开发计划文档.md` | `docs/AI酒馆开发计划文档.md` | 开发文档，与 `docs/` 下同类文档集中；根目录已由 `.gitignore` 排除该文件 | 13:09:17 | 低。该文件被 `.workbuddy/memory/2026-08-15.md` 按文件名（非路径）提及，不受影响；文件内对 `docs/threat-model.md`、`docs/e00-decision.md` 的引用仍有效 |
-| 2 | `AI酒馆项目嵌入优化方案开发文档.md` | `docs/AI酒馆项目嵌入优化方案开发文档.md` | 设计文档，归入文档目录 | 13:09:17 | 低。被 `docs/e00-decision.md` 按书名号引用（非路径），不受影响 |
-| 3 | `项目文档结构.md` | `docs/项目文档结构.md` | 开发文档（文档分类规范），归入 `docs/` | 13:09:20 | **中**。该文件原为 Git 未跟踪状态（`??`），迁移后落入被忽略的 `docs/`，**将从 `git status` 未跟踪列表中消失**。若后续需要提交它，须先调整 `.gitignore` |
-| 4 | `goal-tracker.md` | `docs/goal-tracker.md` | 修复文档（跨端 28 项缺陷修复台账），归入 `docs/` | 13:09:22 | **中**。同上：原为未跟踪状态，迁移后从 `git status` 消失。该文件是活跃的修复进度台账，若工作流依赖其根目录位置需注意 |
+| 1 | `AI酒馆开发计划文档.md` | `docs/product/AI酒馆开发计划文档.md` | 开发文档，与 `docs/` 下同类文档集中；根目录已由 `.gitignore` 排除该文件 | 13:09:17 | 低。该文件被 `.workbuddy/memory/2026-08-15.md` 按文件名（非路径）提及，不受影响；文件内对 `docs/design/threat-model.md`、`docs/design/e00-decision.md` 的引用仍有效 |
+| 2 | `AI酒馆项目嵌入优化方案开发文档.md` | `docs/design/AI酒馆项目嵌入优化方案开发文档.md` | 设计文档，归入文档目录 | 13:09:17 | 低。被 `docs/design/e00-decision.md` 按书名号引用（非路径），不受影响 |
+| 3 | `项目文档结构.md` | `docs/other/项目文档结构.md` | 开发文档（文档分类规范），归入 `docs/` | 13:09:20 | **中**。该文件原为 Git 未跟踪状态（`??`），迁移后落入被忽略的 `docs/`，**将从 `git status` 未跟踪列表中消失**。若后续需要提交它，须先调整 `.gitignore` |
+| 4 | `goal-tracker.md` | `docs/fixes/goal-tracker.md` | 修复文档（跨端 28 项缺陷修复台账），归入 `docs/` | 13:09:22 | **中**。同上：原为未跟踪状态，迁移后从 `git status` 消失。该文件是活跃的修复进度台账，若工作流依赖其根目录位置需注意 |
 | 5 | `test-gradient.jpg` | `docs/assets/test-gradient.jpg` | 设计验证用图片资源，归入文档资源目录 | 13:09:35 | 低。`.gitignore` 中的 `test-gradient.jpg` 规则不再按新路径匹配，但 `docs/` 已被整体忽略，文件仍处于忽略状态 |
 | 6 | `debug.log` | `artifacts/logs/debug.log` | 运行日志，归入产物归档 | 13:09:17 | 低。`*.log` 规则按文件名匹配，仍有效 |
 
@@ -173,10 +173,10 @@
 tar -xzf artifacts/backup/pre-migration-docs-20260918-130909.tar.gz
 
 # 1) 根目录文档
-mv docs/AI酒馆开发计划文档.md .
-mv docs/AI酒馆项目嵌入优化方案开发文档.md .
-mv docs/项目文档结构.md .
-mv docs/goal-tracker.md .
+mv docs/product/AI酒馆开发计划文档.md .
+mv docs/design/AI酒馆项目嵌入优化方案开发文档.md .
+mv docs/other/项目文档结构.md .
+mv docs/fixes/goal-tracker.md .
 mv docs/assets/test-gradient.jpg .
 mv artifacts/logs/debug.log .
 
@@ -343,6 +343,76 @@ A 档三项（`test-gradient.jpg`、`debug.log`、`dist.bak/`）无备份，属�
 
 - 该回归为**目录迁移的连带影响**，非迁移本身错误；根因是"忽略规则按绝对路径逐条枚举"这一脆弱模式。
 - **建议**：今后 `scripts/*.mjs`、`eslint.config.js` 等配置中的"目录枚举型"规则，在迁移后必须一并回归。迁移后的验证清单应固定包含 `npm run lint`（`quality-gates` 的第 1 步），已在本文件第五节的清单之外补记此要求。
+
+---
+
+## 十一、2026-09-18 17:45 `docs/` 由「扁平」改为五分类子目录
+
+### 11.1 背景与授权
+
+原约定是 **`docs/` 保持扁平、不拆子目录**（理由：`docs/` 内文档互引，`deliverables/gstack/*` 与 `.workbuddy*/memory/*` 也按 `docs/xxx.md` 引用，拆分会打断链接）。
+
+**2026-09-18 用户明确要求**改为按用途分五类，并确认：① 分类按文档用途归类；② 引用只改活跃文件、历史日志保留原路径。本节即该次变更的记录，原「保持扁平」约定随之**废止**（已同步更新项目长期记忆）。
+
+### 11.2 分类规则（目录即分类）
+
+| 目录 | 索引分类 | 文档 |
+| --- | --- | --- |
+| `docs/product/` | 产品文档 | `AI酒馆开发计划文档.md` |
+| `docs/design/` | 设计文档 | `AI酒馆项目嵌入优化方案开发文档.md`、`design-system-specification.md`、`mobile-ui-design.md`、`rag-enhancement-design.md`、`software-design-document.md`、`threat-model.md`、`e00-decision.md` |
+| `docs/dev/` | 开发文档 | `mobile-pwa-plan.md`、`rag-enhancement-plan.md`、`data-backup-restore.md`、`b-type-findings.md` |
+| `docs/fixes/` | 修复文档 | `goal-tracker.md`、`web-sop-review-2026-09-18.md` |
+| `docs/other/` | 其他 | `项目文档结构.md` |
+
+`docs/assets/`（含 `screenshots/`）**未动**，仍属「截图」分类。
+
+**与旧分类的差异**（此前是逐文件人工映射，口径不一致）：
+
+| 文档 | 旧分类 | 新分类 |
+| --- | --- | --- |
+| `AI酒馆开发计划文档.md` | 开发文档 | **产品文档** |
+| `data-backup-restore.md` | 修复文档 | **开发文档**（Runbook 归 dev 更合理） |
+| `web-sop-review-2026-09-18.md` | 开发文档 | **修复文档**（评审报告） |
+| `项目文档结构.md` | 开发文档 | **其他**（文档体系规范） |
+
+### 11.3 引用改写
+
+| 项 | 值 |
+| --- | --- |
+| 改写脚本 | `scripts/_rewrite-doc-paths.mjs`（一次性 codemod，**已删除**） |
+| 改写范围 | **21 个文件 / 118 处引用** |
+| 涉及文件 | `CONTRIBUTING.md`、`README.md`、`MIGRATION_LOG.md`、`deliverables/gstack/*.md`×2、`e2e/backup-restore.spec.ts`、`scripts/csp-guard.mjs`、`scripts/gen-project-index.mjs`、`src/core/{mobile-nav,rag-benchmark,stopword-filter}.ts`，以及 `docs/` 内 15 个文档的互引 |
+| **未改写（有意）** | `.workbuddy/memory/*`、`.workbuddy-ai/memory/*`、`.workbuddy-ai/artifacts/*` —— 属只追加的历史记录，改写等于篡改历史；路径变更以本节留痕追溯 |
+| 无需改写 | `model/*/README.md`（只引用 HuggingFace 外部 URL）、`scripts/ui-shot.mjs`（只引用 `docs/assets/screenshots/`） |
+
+### 11.4 配套变更
+
+| 项 | 内容 |
+| --- | --- |
+| `scripts/gen-project-index.mjs` | 新增 `DOC_DIR_CATEGORY`（**目录即分类**），`classify()` 改为按 `docs/` 子目录推导；删除原逐文件 `DOC_CATEGORY` 的 docs 条目（新增文档放入对应目录即被正确归类，无需再改表）。同步修正 4 条 CURATED 描述里过时的分类前缀，并更新分类汇总的说明文案 |
+| `PROJECT_INDEX.md` | 重新生成：**375 个文件 / 待确认 0** |
+| 项目长期记忆 | `docs/` 约定由「保持扁平」改为「按五类分子目录；引用须用 `docs/<分类>/<文件>` 形式」 |
+
+### 11.5 回滚
+
+```bash
+# 文档与分类目录整体还原（含引用改写前的原文）
+rm -rf docs && cp -r artifacts/backup/docs-pre-category-20260918-1745 docs
+git checkout -- CONTRIBUTING.md README.md MIGRATION_LOG.md e2e/ scripts/ src/core/
+node scripts/gen-project-index.mjs
+```
+
+> 注意：`git checkout --` 会连带回退本次会话其他未提交改动；若只想回退引用改写，应手工把 `docs/<分类>/<文件>` 还原为 `docs/<文件>` 并重新生成索引。
+
+### 11.6 验证
+
+| 验证项 | 结果 |
+| --- | --- |
+| 引用改写复查（脚本自扫描 TARGETS + `docs/**/*.md`） | 通过 —— 活跃文件中已无「未分类的 `docs/<文件名>`」引用 |
+| 裸相对链接扫描（`](xxx.md)` 形式） | 无命中 |
+| 索引分类一致性 | 15 个文档的目录与索引分类**逐条一致** |
+| 索引待确认用途 | 0 |
+| 门禁复跑 | 见下方提交记录 |
 
 ---
 

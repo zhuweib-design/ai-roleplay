@@ -1,7 +1,7 @@
 /**
  * 嵌入模型自动择优 — 内置评测集 + 跑分
  *
- * 设计文档: docs/rag-enhancement-design.md §5
+ * 设计文档: docs/design/rag-enhancement-design.md §5
  *
  * 用法:
  * - 用户在设置页点击「自动择优」→ runEmbeddingBenchmark()

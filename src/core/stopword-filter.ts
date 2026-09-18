@@ -1,7 +1,7 @@
 /**
  * 停用词过滤 — 嵌入前剔除高频虚词,提升检索相似度
  *
- * 设计文档: docs/rag-enhancement-design.md §4
+ * 设计文档: docs/design/rag-enhancement-design.md §4
  *
  * 规则摘要(与设计 §4 一致):
  * - 剔除中英文纯虚词(the/a/的/了 等),保留否定词(不/没/别 等,防语义反转)

@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
  * E2E · 灾备闭环（Web SOP 评审 P1-10）
  *
  * 目的：把「导出备份 → 数据丢失 → 导入还原」这条路径从**仅文档化**
- * （`docs/data-backup-restore.md`）升级为**持续验证**，防止灾备链路静默失效。
+ * （`docs/dev/data-backup-restore.md`）升级为**持续验证**，防止灾备链路静默失效。
  *
  * 覆盖点：
  * 1. 导出备份确实产生可下载文件，且内容含当前数据（格式契约）；

@@ -1,7 +1,7 @@
 /**
  * 手机端底部导航路由辅助
  *
- * 设计文档: docs/mobile-ui-design.md §13
+ * 设计文档: docs/design/mobile-ui-design.md §13
  * - MAIN_TABS:底部导航 5 个主入口
  * - isMainTab:是否为主 Tab
  * - isDetailRoute:二级详细页,移动端应隐藏底部导航(全屏沉浸)

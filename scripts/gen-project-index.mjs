@@ -288,21 +288,21 @@ const CURATED = {
   'tests/setup.ts': 'Vitest 全局测试环境初始化',
   'e2e/storage-state.json': 'E2E 预置 localStorage（跳过新手引导）',
 
-  'docs/design-system-specification.md': '设计文档：设计系统规范（令牌 / 组件 / 移动端）',
-  'docs/software-design-document.md': '设计文档：软件设计说明书',
-  'docs/mobile-ui-design.md': '设计文档：移动端 UI 设计（页面功能明细）',
-  'docs/rag-enhancement-design.md': '设计文档：RAG 增强设计',
-  'docs/e00-decision.md': '设计文档：E-00 嵌入优化形态决策',
-  'docs/threat-model.md': '设计文档：威胁模型（含提示词注入专项）',
-  'docs/AI酒馆项目嵌入优化方案开发文档.md': '设计文档：嵌入优化方案（L0/L1/L2 三层）',
-  'docs/AI酒馆开发计划文档.md': '开发文档：开发计划与任务台账',
-  'docs/项目文档结构.md': '开发文档：项目文档分类规范',
-  'docs/b-type-findings.md': '开发文档：`!` 非空断言治理审计记录',
-  'docs/mobile-pwa-plan.md': '开发文档：手机端 PWA 实现计划',
-  'docs/rag-enhancement-plan.md': '开发文档：RAG 增强实现计划',
-  'docs/data-backup-restore.md': '修复文档：备份恢复与灾备演练 Runbook（P2-#3 修复交付）',
-  'docs/goal-tracker.md': '修复文档：跨端一致性 28 项缺陷修复进度台账',
-  'docs/web-sop-review-2026-09-18.md': '开发文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维）',
+  'docs/design/design-system-specification.md': '设计文档：设计系统规范（令牌 / 组件 / 移动端）',
+  'docs/design/software-design-document.md': '设计文档：软件设计说明书',
+  'docs/design/mobile-ui-design.md': '设计文档：移动端 UI 设计（页面功能明细）',
+  'docs/design/rag-enhancement-design.md': '设计文档：RAG 增强设计',
+  'docs/design/e00-decision.md': '设计文档：E-00 嵌入优化形态决策',
+  'docs/design/threat-model.md': '设计文档：威胁模型（含提示词注入专项）',
+  'docs/design/AI酒馆项目嵌入优化方案开发文档.md': '设计文档：嵌入优化方案（L0/L1/L2 三层）',
+  'docs/product/AI酒馆开发计划文档.md': '产品文档：开发计划与任务台账',
+  'docs/other/项目文档结构.md': '其他：项目文档分类规范',
+  'docs/dev/b-type-findings.md': '开发文档：`!` 非空断言治理审计记录',
+  'docs/dev/mobile-pwa-plan.md': '开发文档：手机端 PWA 实现计划',
+  'docs/dev/rag-enhancement-plan.md': '开发文档：RAG 增强实现计划',
+  'docs/dev/data-backup-restore.md': '开发文档：备份恢复与灾备演练 Runbook（P2-#3 修复交付）',
+  'docs/fixes/goal-tracker.md': '修复文档：跨端一致性 28 项缺陷修复进度台账',
+  'docs/fixes/web-sop-review-2026-09-18.md': '修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维）',
   'docs/assets/test-gradient.jpg': '设计文档：渐变测试图（本地验证用）',
 
   'deliverables/cross-client-review-2026-09-07.md': '修复文档：跨客户端评审报告（28 项缺陷来源）',
@@ -351,21 +351,22 @@ const ROOT_DEV_DOCS = new Set([
   'THIRD_PARTY_NOTICES.md',
 ]);
 
+/**
+ * docs/ 下的分类子目录 → 索引分类。
+ * 2026-09-18 起 docs/ 由「扁平」改为按用途分五类（design/dev/fixes/other/product），
+ * 因此**目录即分类**：新增文档只要放进对应目录即被正确归类，无需再逐文件维护映射。
+ * 归类规则与 MIGRATION_LOG.md 第十一节一致。
+ */
+const DOC_DIR_CATEGORY = {
+  'docs/design/': '设计文档',
+  'docs/dev/': '开发文档',
+  'docs/fixes/': '修复文档',
+  'docs/product/': '产品文档',
+  'docs/other/': '其他',
+};
+
+/** 逐文件覆盖（非 docs/ 分类目录内的例外项） */
 const DOC_CATEGORY = {
-  'docs/design-system-specification.md': '设计文档',
-  'docs/software-design-document.md': '设计文档',
-  'docs/mobile-ui-design.md': '设计文档',
-  'docs/rag-enhancement-design.md': '设计文档',
-  'docs/e00-decision.md': '设计文档',
-  'docs/threat-model.md': '设计文档',
-  'docs/AI酒馆项目嵌入优化方案开发文档.md': '设计文档',
-  'docs/AI酒馆开发计划文档.md': '开发文档',
-  'docs/项目文档结构.md': '开发文档',
-  'docs/b-type-findings.md': '开发文档',
-  'docs/mobile-pwa-plan.md': '开发文档',
-  'docs/rag-enhancement-plan.md': '开发文档',
-  'docs/data-backup-restore.md': '修复文档',
-  'docs/goal-tracker.md': '修复文档',
   'docs/assets/test-gradient.jpg': '设计文档',
   'public/ai-roleplay-dev-plan.html': '开发文档',
   'public/sillytavern-vs-airoleplay.html': '产品文档',
@@ -378,7 +379,13 @@ function classify(rel) {
   if (/\.(test|spec)\.ts$/.test(base)) return '测试';
   if (rel.startsWith('docs/assets/screenshots/')) return '截图';
   if (DOC_CATEGORY[rel]) return DOC_CATEGORY[rel];
-  if (rel.startsWith('docs/')) return '开发文档';
+  if (rel.startsWith('docs/')) {
+    // 目录即分类（见 DOC_DIR_CATEGORY）；docs/ 根下的散落文件归「其他」
+    for (const [dir, cat] of Object.entries(DOC_DIR_CATEGORY)) {
+      if (rel.startsWith(dir)) return cat;
+    }
+    return '其他';
+  }
   if (rel.startsWith('deliverables/')) return '修复文档';
   if (rel.startsWith('.workbuddy/memory/') || rel.startsWith('.workbuddy-ai/memory/')) return 'AI记忆';
   if (rel.startsWith('.reasonix/')) return 'AI记忆';
@@ -629,15 +636,15 @@ function main() {
   const catNote = {
     '程序': 'src/ 前端源码与 src-tauri/src/ Rust 源码、index.html',
     '测试': 'tests/ 单元与组件测试、e2e/ Playwright 场景',
-    '产品文档': '面向产品/竞品的说明材料',
-    '开发文档': '开发计划、实现计划、规范、审计记录',
-    '修复文档': '缺陷评审、上线前检查、修复交付与进度台账',
-    '设计文档': '设计系统、软件设计、移动端设计、威胁模型、决策文档',
+    '产品文档': 'docs/product/ 产品与项目规划材料',
+    '开发文档': 'docs/dev/ 实现计划、Runbook、审计记录',
+    '修复文档': 'docs/fixes/ 缺陷评审、修复交付与进度台账',
+    '设计文档': 'docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档',
     'AI记忆': '.workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论',
     '截图': 'docs/assets/screenshots/ 下 UI 冒烟截图',
     '配置': '构建、CI、Tauri 应用与根级工程配置',
     '脚本': 'scripts/ 门禁、审计与工具脚本',
-    '其他': '静态资源、市场数据、许可证、图标等',
+    '其他': 'docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等',
   };
   let total = 0;
   for (const cat of order) {

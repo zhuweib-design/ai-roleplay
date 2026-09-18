@@ -149,7 +149,7 @@ Content-Security-Policy: frame-ancestors 'none'; report-uri /csp-report
 
 Web 模式数据落在 IndexedDB，与桌面端文件系统不同，可能被浏览器单方面清除：存储压力下驱逐未获持久化授权的源数据；Safari 对长期未访问站点的 7 天清理策略；源配额上限（角色卡 + 对话历史 + 向量缓存增长后可能写入失败）。
 
-应用启动时会自动申请持久化授权，**设置 → 数据 → 数据持久性** 可查看当前状态并重新申请。授权能显著降低风险但无法完全排除（用户手动「清除站点数据」不受限制）。**请定期在 设置 → 数据 导出备份**；灾备流程见 [`docs/data-backup-restore.md`](docs/data-backup-restore.md)。
+应用启动时会自动申请持久化授权，**设置 → 数据 → 数据持久性** 可查看当前状态并重新申请。授权能显著降低风险但无法完全排除（用户手动「清除站点数据」不受限制）。**请定期在 设置 → 数据 导出备份**；灾备流程见 [`docs/dev/data-backup-restore.md`](docs/dev/data-backup-restore.md)。
 
 ### 5. PWA 缓存与更新
 

@@ -17,7 +17,7 @@
  *
  * 边界说明：本守卫是**静态契约**检查，不执行浏览器。运行时违规检查
  *   （真实浏览器监听 securitypolicyviolation）属一次性验证，记录于
- *   docs/web-sop-review-2026-09-18.md，未纳入 CI。
+ *   docs/fixes/web-sop-review-2026-09-18.md，未纳入 CI。
  */
 
 import { readFileSync, existsSync } from 'node:fs';
