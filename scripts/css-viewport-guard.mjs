@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * css-viewport-guard.mjs — 跨端评审 S-8 的 CI 守卫
- * 依据 deliverables/cross-client-review-2026-09-07.md：
+ * 依据 docs/fixes/cross-client-review-2026-09-07.md：
  *   移动端动态视口工具条（地址栏显隐）会导致 100vh 计算高度包含/排除工具条，
  *   出现内容被遮挡或留白。统一改用 100dvh（dynamic viewport height）。
  *

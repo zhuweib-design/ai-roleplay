@@ -305,12 +305,16 @@ const CURATED = {
   'docs/fixes/web-sop-review-2026-09-18.md': '修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维）',
   'docs/assets/test-gradient.jpg': '设计文档：渐变测试图（本地验证用）',
 
-  'deliverables/cross-client-review-2026-09-07.md': '修复文档：跨客户端评审报告（28 项缺陷来源）',
-  'deliverables/gstack/P2-11-virtualization-plan.md': '修复文档：P2-11 列表虚拟化方案',
-  'deliverables/gstack/P2-9-csp-whitelist-report.md': '修复文档：P2-9 CSP 白名单报告',
-  'deliverables/gstack/pre-launch-check-aijiuguan-2026-08-15.md': '修复文档：上线前检查（2026-08-15）',
-  'deliverables/gstack/pre-launch-check-aijiuguan-2026-08-17.md': '修复文档：上线前检查（2026-08-17）',
-  'deliverables/gstack/pre-launch-check-aijiuguan-2026-08-19.md': '修复文档：上线前检查（2026-08-19）',
+  'docs/fixes/cross-client-review-2026-09-07.md': '修复文档：跨客户端评审报告（28 项缺陷来源）',
+  'docs/fixes/pre-launch-check-aijiuguan-2026-08-15.md': '修复文档：上线前全检报告（2026-08-15）',
+  'docs/fixes/pre-launch-check-aijiuguan-2026-08-17.md': '修复文档：6 维度全检报告（2026-08-17）',
+  'docs/fixes/pre-launch-check-aijiuguan-2026-08-19.md': '修复文档：6 维度全检报告（2026-08-19）',
+  'docs/fixes/web-sop-fix-batch1-report.md': '修复文档：Web SOP 修复第一批交付报告（修正失实声明）',
+  'docs/fixes/web-sop-fix-batch2-report.md': '修复文档：Web SOP 修复第二批交付报告（补齐门禁）',
+  'docs/fixes/web-sop-fix-batch3-report.md': '修复文档：Web SOP 修复第三批交付报告（安全与数据保障）',
+  'docs/fixes/web-sop-fix-batch4-report.md': '修复文档：Web SOP 修复第四批交付报告（口径统一与流程固化）',
+  'docs/dev/P2-11-virtualization-plan.md': '开发文档：P2-11 长对话虚拟化分批计划',
+  'docs/design/P2-9-csp-whitelist-report.md': '设计文档：P2-9 CSP / remote 白名单盘点与决策记录',
 
   'public/pwa-icon.svg': 'PWA 图标（矢量）',
   'public/pwa-192x192.png': 'PWA 图标 192×192',
@@ -386,7 +390,9 @@ function classify(rel) {
     }
     return '其他';
   }
-  if (rel.startsWith('deliverables/')) return '修复文档';
+  // 注：原 `deliverables/` 分支已移除 —— 该目录 2026-09-18 归档进 docs/ 后废止
+  // （评审报告类 → docs/fixes/、计划类 → docs/dev/、决策记录类 → docs/design/）。
+  // 若见新文件落在 docs/ 根目录，说明未按「目录即分类」规则放置，会被归入「其他」。
   if (rel.startsWith('.workbuddy/memory/') || rel.startsWith('.workbuddy-ai/memory/')) return 'AI记忆';
   if (rel.startsWith('.reasonix/')) return 'AI记忆';
   if (rel.startsWith('scripts/')) return '脚本';

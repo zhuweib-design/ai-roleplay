@@ -416,4 +416,77 @@ node scripts/gen-project-index.mjs
 
 ---
 
+## 十二、2026-09-18 18:00 `deliverables/` 归档进 `docs/`，并整改工具默认落盘目录
+
+### 12.1 背景与授权
+
+用户指示：「**`deliverables` 下的文档也要整理到 `docs`**」，并追加一条项目约定：
+
+> **专家 / 技能 / 工作流自带的默认落盘路径不得凌驾于项目归档规则。**
+
+后者直接命中一处既有违规：本会话产出的 4 份修复报告此前落在 **`.workbuddy-ai/artifacts/`**（工具默认输出目录），而非项目规则要求的 `docs/`。本次一并整改。
+
+### 12.2 迁移明细（`deliverables/` → `docs/`，6 项）
+
+| 原路径 | 新路径 | 归类依据 |
+| --- | --- | --- |
+| `deliverables/cross-client-review-2026-09-07.md` | `docs/fixes/` | 跨端缺陷评审报告 |
+| `deliverables/gstack/pre-launch-check-aijiuguan-2026-08-15.md` | `docs/fixes/` | 上线前全检报告 |
+| `deliverables/gstack/pre-launch-check-aijiuguan-2026-08-17.md` | `docs/fixes/` | 6 维度全检报告 |
+| `deliverables/gstack/pre-launch-check-aijiuguan-2026-08-19.md` | `docs/fixes/` | 6 维度全检报告 |
+| `deliverables/gstack/P2-11-virtualization-plan.md` | `docs/dev/` | 实现计划（同 mobile-pwa-plan / rag-enhancement-plan） |
+| `deliverables/gstack/P2-9-csp-whitelist-report.md` | `docs/design/` | 决策记录（同 e00-decision） |
+
+`deliverables/`（含 `gstack/` 子目录）已清空并移除；`gstack/` 这一层未保留 —— 新规则是「目录即分类」，再嵌套一层会破坏该规则，且 6 个文件名本身已足够自描述。
+
+### 12.3 工具默认落盘目录整改（4 项）
+
+| 原路径（工具默认） | 新路径（项目规则） |
+| --- | --- |
+| `.workbuddy-ai/artifacts/web-sop-fix-batch1-report.md` | `docs/fixes/web-sop-fix-batch1-report.md` |
+| `.workbuddy-ai/artifacts/web-sop-fix-batch2-report.md` | `docs/fixes/web-sop-fix-batch2-report.md` |
+| `.workbuddy-ai/artifacts/web-sop-fix-batch3-report.md` | `docs/fixes/web-sop-fix-batch3-report.md` |
+| `.workbuddy-ai/artifacts/web-sop-fix-batch4-report.md` | `docs/fixes/web-sop-fix-batch4-report.md` |
+
+`.workbuddy-ai/artifacts/` 已移除。**`.workbuddy-ai/memory/` 保留原位** —— 项目索引本就把 AI 记忆单列一类（`AI记忆`），符合归档规则，不属违规。
+
+### 12.4 引用改写
+
+| 项 | 值 |
+| --- | --- |
+| 改写脚本 | `scripts/_rewrite-deliverable-paths.mjs`（一次性 codemod，**已删除**） |
+| 改写范围 | **8 个文件 / 24 处引用** |
+| 涉及文件 | `docs/fixes/goal-tracker.md`、`docs/fixes/web-sop-review-2026-09-18.md`、`docs/fixes/web-sop-fix-batch1~4-report.md`、`scripts/breakpoint-guard.mjs`、`scripts/css-viewport-guard.mjs` |
+| 补漏说明 | 4 份 batch 报告**上一轮被有意排除在引用改写之外**（当时还在工具目录），移入 `docs/` 后其内部 17 处旧 `docs/` 路径一并修正 |
+| **未改写（有意）** | `.workbuddy/memory/*`、`.workbuddy-ai/memory/*`（历史日志）；**本文件第一~十一节中出现的 `deliverables/...` 路径为当时的真实记录，不追溯改写** |
+
+### 12.5 配套变更
+
+| 项 | 内容 |
+| --- | --- |
+| `scripts/gen-project-index.mjs` | 删除 6 条 `deliverables/*` CURATED 条目并改为新路径；新增 10 条（6 个迁移文件 + 4 份 batch 报告）用途说明；**移除已废止的 `deliverables/` 分类分支**并加注释说明 |
+| `.gitignore` | 删除 `deliverables/` 规则（目录已废止） |
+| `PROJECT_INDEX.md` | 重新生成：**379 个文件 / 待确认 0**；25 个文档目录与分类逐条一致 |
+| 项目长期记忆 | 新增约定「**归档规则优先于工具默认路径**」；文档约定补充 `deliverables/` 已废止 |
+
+### 12.6 回滚
+
+```bash
+cp -r artifacts/backup/deliverables-pre-move-20260918-1756 deliverables
+cp -r artifacts/backup/wb-artifacts-pre-move-20260918-1756 .workbuddy-ai/artifacts
+git checkout -- scripts/ .gitignore
+node scripts/gen-project-index.mjs
+```
+
+### 12.7 验证
+
+| 验证项 | 结果 |
+| --- | --- |
+| 引用改写复查（脚本自扫描 docs/ 全部 md + 2 个门禁脚本） | 通过 —— 无旧路径残留 |
+| 索引分类一致性 | 25 个文档的目录与索引分类**逐条一致** |
+| 索引待确认用途 | 0 |
+| `deliverables/`、`.workbuddy-ai/artifacts/` | 均已移除 |
+
+---
+
 *本文件由目录整理任务生成，与 `PROJECT_INDEX.md` 配套使用。索引可通过 `node scripts/gen-project-index.mjs` 重新生成；目录结构再次变更时，请在本文件追加新批次记录。*

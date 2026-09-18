@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-18 17:47（本地时区）
+- **生成时间**：2026-09-18 17:58（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v0.2.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：375 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：0 个
+- **收录文件**：379 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：0 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -19,9 +19,7 @@ ai-roleplay/
   - `memory/`  — 9 个文件
 - `.workbuddy-ai/`  — 2 个文件
   - `memory/`  — 2 个文件
-- `deliverables/`  — 6 个文件
-  - `gstack/`  — 5 个文件
-- `docs/`  — 125 个文件
+- `docs/`  — 135 个文件
   - `assets/`  — 110 个文件
     - `screenshots/`  — 110 个文件
       - `themes/`  — 84 个文件
@@ -29,9 +27,9 @@ ai-roleplay/
         - `midnight/`  — 21 个文件
         - `oled/`  — 21 个文件
         - `theatre/`  — 21 个文件
-  - `design/`  — 7 个文件
-  - `dev/`  — 4 个文件
-  - `fixes/`  — 2 个文件
+  - `design/`  — 8 个文件
+  - `dev/`  — 5 个文件
+  - `fixes/`  — 10 个文件
   - `other/`  — 1 个文件
   - `product/`  — 1 个文件
 - `e2e/`  — 10 个文件
@@ -173,7 +171,7 @@ ai-roleplay/
 | `src/core/macro.ts` | ts | 程序 | 宏变量替换（{{char}} / {{user}} 等） | 已跟踪 |  |
 | `src/core/market-index.ts` | ts | 程序 | 社区市场索引解析 | 已跟踪 |  |
 | `src/core/memory-store.ts` | ts | 程序 | 长期记忆存储 | 已跟踪 |  |
-| `src/core/mobile-nav.ts` | ts | 程序 | 移动端导航状态管理 | 已修改 |  |
+| `src/core/mobile-nav.ts` | ts | 程序 | 移动端导航状态管理 | 已跟踪 |  |
 | `src/core/model-file-adapter.ts` | ts | 程序 | 模型文件读写适配（AppData/model 目录） | 已跟踪 |  |
 | `src/core/npc-generator.ts` | ts | 程序 | NPC 生成 | 已跟踪 |  |
 | `src/core/onnx-embedding-provider.ts` | ts | 程序 | ONNX Runtime Web 嵌入提供方 | 已跟踪 |  |
@@ -181,13 +179,13 @@ ai-roleplay/
 | `src/core/output-discipline.ts` | ts | 程序 | 输出纪律约束（L2） | 已跟踪 |  |
 | `src/core/prompt-builder.ts` | ts | 程序 | 提示词组装（角色 / 世界书 / 记忆拼接） | 已跟踪 |  |
 | `src/core/protagonist.ts` | ts | 程序 | 主角设定管理 | 已跟踪 |  |
-| `src/core/rag-benchmark.ts` | ts | 程序 | RAG 检索质量基准测试 | 已修改 |  |
+| `src/core/rag-benchmark.ts` | ts | 程序 | RAG 检索质量基准测试 | 已跟踪 |  |
 | `src/core/rag-retriever.ts` | ts | 程序 | RAG 检索器：向量召回与上下文注入 | 已跟踪 |  |
 | `src/core/random-event-generator.ts` | ts | 程序 | 随机事件生成 | 已跟踪 |  |
 | `src/core/sanitize.ts` | ts | 程序 | HTML 净化（DOMPurify 封装，防 XSS） | 已跟踪 |  |
 | `src/core/slash-command.ts` | ts | 程序 | 斜杠命令解析与执行 | 已跟踪 |  |
 | `src/core/st-compat.ts` | ts | 程序 | SillyTavern 数据格式兼容层 | 已跟踪 |  |
-| `src/core/stopword-filter.ts` | ts | 程序 | 停用词过滤（RAG 增强） | 已修改 |  |
+| `src/core/stopword-filter.ts` | ts | 程序 | 停用词过滤（RAG 增强） | 已跟踪 |  |
 | `src/core/storage-persistence.ts` | ts | 程序 | Web/PWA 持久化授权（navigator.storage.persist，降低 IndexedDB 被驱逐风险） | 已跟踪 |  |
 | `src/core/story-analyzer.ts` | ts | 程序 | 剧情分析器 | 已跟踪 |  |
 | `src/core/story-importer.ts` | ts | 程序 | 剧情导入器 | 已跟踪 |  |
@@ -275,7 +273,7 @@ ai-roleplay/
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `e2e/backup-restore.spec.ts` | ts | 测试 | E2E 测试：backup-restore 场景 | 已修改 |  |
+| `e2e/backup-restore.spec.ts` | ts | 测试 | E2E 测试：backup-restore 场景 | 已跟踪 |  |
 | `e2e/character-crud.spec.ts` | ts | 测试 | E2E 测试：character-crud 场景 | 已跟踪 |  |
 | `e2e/chat-flow.spec.ts` | ts | 测试 | E2E 测试：chat-flow 场景 | 已跟踪 |  |
 | `e2e/contrast-axe.spec.ts` | ts | 测试 | E2E 测试：contrast-axe 场景 | 已跟踪 |  |
@@ -395,39 +393,43 @@ ai-roleplay/
 | `docs/product/AI酒馆开发计划文档.md` | md | 产品文档 | 产品文档：开发计划与任务台账 | 已忽略 |  |
 | `public/sillytavern-vs-airoleplay.html` | html | 产品文档 | 静态页：SillyTavern vs ai-roleplay 系统化对比报告 | 已忽略 |  |
 
-### 2.4 开发文档（10）
+### 2.4 开发文档（11）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
-| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已修改 |  |
+| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
 | `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已跟踪 |  |
-| `README.md` | md | 开发文档 | 项目主说明（中文） | 已修改 |  |
+| `README.md` | md | 开发文档 | 项目主说明（中文） | 已跟踪 |  |
 | `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已跟踪 |  |
+| `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已忽略 |  |
 | `docs/dev/b-type-findings.md` | md | 开发文档 | 开发文档：`!` 非空断言治理审计记录 | 已忽略 |  |
 | `docs/dev/data-backup-restore.md` | md | 开发文档 | 开发文档：备份恢复与灾备演练 Runbook（P2-#3 修复交付） | 已忽略 |  |
 | `docs/dev/mobile-pwa-plan.md` | md | 开发文档 | 开发文档：手机端 PWA 实现计划 | 已忽略 |  |
 | `docs/dev/rag-enhancement-plan.md` | md | 开发文档 | 开发文档：RAG 增强实现计划 | 已忽略 |  |
 | `public/ai-roleplay-dev-plan.html` | html | 开发文档 | 开发文档（静态页）：AI 酒馆开发计划 | 已忽略 |  |
 
-### 2.5 修复文档（8）
+### 2.5 修复文档（10）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `deliverables/cross-client-review-2026-09-07.md` | md | 修复文档 | 修复文档：跨客户端评审报告（28 项缺陷来源） | 已忽略 |  |
-| `deliverables/gstack/P2-11-virtualization-plan.md` | md | 修复文档 | 修复文档：P2-11 列表虚拟化方案 | 已忽略 |  |
-| `deliverables/gstack/P2-9-csp-whitelist-report.md` | md | 修复文档 | 修复文档：P2-9 CSP 白名单报告 | 已忽略 |  |
-| `deliverables/gstack/pre-launch-check-aijiuguan-2026-08-15.md` | md | 修复文档 | 修复文档：上线前检查（2026-08-15） | 已忽略 |  |
-| `deliverables/gstack/pre-launch-check-aijiuguan-2026-08-17.md` | md | 修复文档 | 修复文档：上线前检查（2026-08-17） | 已忽略 |  |
-| `deliverables/gstack/pre-launch-check-aijiuguan-2026-08-19.md` | md | 修复文档 | 修复文档：上线前检查（2026-08-19） | 已忽略 |  |
+| `docs/fixes/cross-client-review-2026-09-07.md` | md | 修复文档 | 修复文档：跨客户端评审报告（28 项缺陷来源） | 已忽略 |  |
 | `docs/fixes/goal-tracker.md` | md | 修复文档 | 修复文档：跨端一致性 28 项缺陷修复进度台账 | 已忽略 |  |
+| `docs/fixes/pre-launch-check-aijiuguan-2026-08-15.md` | md | 修复文档 | 修复文档：上线前全检报告（2026-08-15） | 已忽略 |  |
+| `docs/fixes/pre-launch-check-aijiuguan-2026-08-17.md` | md | 修复文档 | 修复文档：6 维度全检报告（2026-08-17） | 已忽略 |  |
+| `docs/fixes/pre-launch-check-aijiuguan-2026-08-19.md` | md | 修复文档 | 修复文档：6 维度全检报告（2026-08-19） | 已忽略 |  |
+| `docs/fixes/web-sop-fix-batch1-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第一批交付报告（修正失实声明） | 已忽略 |  |
+| `docs/fixes/web-sop-fix-batch2-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第二批交付报告（补齐门禁） | 已忽略 |  |
+| `docs/fixes/web-sop-fix-batch3-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第三批交付报告（安全与数据保障） | 已忽略 |  |
+| `docs/fixes/web-sop-fix-batch4-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第四批交付报告（口径统一与流程固化） | 已忽略 |  |
 | `docs/fixes/web-sop-review-2026-09-18.md` | md | 修复文档 | 修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维） | 已忽略 |  |
 
-### 2.6 设计文档（7）
+### 2.6 设计文档（8）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `docs/design/AI酒馆项目嵌入优化方案开发文档.md` | md | 设计文档 | 设计文档：嵌入优化方案（L0/L1/L2 三层） | 已忽略 |  |
+| `docs/design/P2-9-csp-whitelist-report.md` | md | 设计文档 | 设计文档：P2-9 CSP / remote 白名单盘点与决策记录 | 已忽略 |  |
 | `docs/design/design-system-specification.md` | md | 设计文档 | 设计文档：设计系统规范（令牌 / 组件 / 移动端） | 已忽略 |  |
 | `docs/design/e00-decision.md` | md | 设计文档 | 设计文档：E-00 嵌入优化形态决策 | 已忽略 |  |
 | `docs/design/mobile-ui-design.md` | md | 设计文档 | 设计文档：移动端 UI 设计（页面功能明细） | 已忽略 |  |
@@ -483,12 +485,12 @@ ai-roleplay/
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `scripts/breakpoint-guard.mjs` | mjs | 脚本 | 门禁：禁止野断点、断点数值 L1/L4 同步校验 | 已跟踪 |  |
+| `scripts/breakpoint-guard.mjs` | mjs | 脚本 | 门禁：禁止野断点、断点数值 L1/L4 同步校验 | 已修改 |  |
 | `scripts/check-contrast.mjs` | mjs | 脚本 | 门禁：5 套主题关键色对对比度 ≥ AA | 已跟踪 |  |
 | `scripts/contrast-audit.mjs` | mjs | 脚本 | 审计：对比度全量扫描报告 | 已跟踪 |  |
 | `scripts/csp-audit.mjs` | mjs | 脚本 | 工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用） | 已跟踪 |  |
-| `scripts/csp-guard.mjs` | mjs | 脚本 | 门禁：Web 端 CSP 契约校验（构建产物含 CSP、关键指令齐备、script-src 未被削弱） | 已修改 |  |
-| `scripts/css-viewport-guard.mjs` | mjs | 脚本 | 门禁：CSS 视口单位使用校验 | 已跟踪 |  |
+| `scripts/csp-guard.mjs` | mjs | 脚本 | 门禁：Web 端 CSP 契约校验（构建产物含 CSP、关键指令齐备、script-src 未被削弱） | 已跟踪 |  |
+| `scripts/css-viewport-guard.mjs` | mjs | 脚本 | 门禁：CSS 视口单位使用校验 | 已修改 |  |
 | `scripts/gen-project-index.mjs` | mjs | 脚本 | 工具：生成本索引文件 | 已修改 |  |
 | `scripts/generate-pwa-icons.mjs` | mjs | 脚本 | 工具：由 icon-source.png 生成 PWA 图标到 public/ | 已跟踪 |  |
 | `scripts/hover-guard.mjs` | mjs | 脚本 | 门禁：禁止未按 (hover: hover) 分流的 :hover，防触屏 tap 后 hover 粘滞 | 已跟踪 |  |
@@ -503,8 +505,8 @@ ai-roleplay/
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `LICENSE` | (无扩展名) | 其他 | Apache-2.0 许可证全文 | 已跟踪 |  |
-| `MIGRATION_LOG.md` | md | 其他 | 目录整理迁移日志 | 已修改 |  |
-| `PROJECT_INDEX.md` | md | 其他 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已修改 | 索引文件（不递归展开） |
+| `MIGRATION_LOG.md` | md | 其他 | 目录整理迁移日志 | 已跟踪 |  |
+| `PROJECT_INDEX.md` | md | 其他 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已跟踪 | 索引文件（不递归展开） |
 | `docs/other/项目文档结构.md` | md | 其他 | 其他：项目文档分类规范 | 已忽略 |  |
 | `icon-source.png` | png | 其他 | 应用图标设计源图（生成 PWA / Tauri 图标用） | 已跟踪 |  |
 | `market/cards/seraphina.json` | json | 其他 | 社区市场示例：角色卡数据 | 已跟踪 |  |
@@ -530,15 +532,15 @@ ai-roleplay/
 | 程序 | 173 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 112 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 2 | docs/product/ 产品与项目规划材料 |
-| 开发文档 | 10 | docs/dev/ 实现计划、Runbook、审计记录 |
-| 修复文档 | 8 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
-| 设计文档 | 7 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
+| 开发文档 | 11 | docs/dev/ 实现计划、Runbook、审计记录 |
+| 修复文档 | 10 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
+| 设计文档 | 8 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
 | AI记忆 | 11 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
 | 截图 | 1 | docs/assets/screenshots/ 下 UI 冒烟截图 |
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 14 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 20 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **375** | 与「收录文件」数一致 |
+| **合计** | **379** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

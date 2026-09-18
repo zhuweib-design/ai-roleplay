@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * breakpoint-guard.mjs — 跨端评审 S-10 的 CI 守卫
- * 依据 deliverables/cross-client-review-2026-09-07.md 第 8.2 节配套约束：
+ * 依据 docs/fixes/cross-client-review-2026-09-07.md 第 8.2 节配套约束：
  *   1. 断点数字只出现在 L1（src/styles/tokens-responsive.css）。
  *      除该文件外，任何 @media 里的 width/height 数字若不在规范允许集内即失败。
  *   2. window.matchMedia 只出现在 L4（src/core/viewport.ts）。
