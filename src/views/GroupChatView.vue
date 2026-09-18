@@ -1152,8 +1152,10 @@ type="button"
   border-color: var(--primary);
 }
 
-.header-btn.new-btn:hover {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .header-btn.new-btn:hover {
+    opacity: 0.9;
+  }
 }
 
 .group-body {
@@ -1260,8 +1262,10 @@ type="button"
   transition: background-color 0.15s;
 }
 
-.group-item:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .group-item:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .group-item.active {
@@ -1338,8 +1342,10 @@ type="button"
   cursor: pointer;
 }
 
-.primary-btn:hover {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .primary-btn:hover {
+    opacity: 0.9;
+  }
 }
 
 .group-content {
@@ -1389,8 +1395,10 @@ type="button"
   cursor: pointer;
 }
 
-.action-btn:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .action-btn.delete {
@@ -1398,9 +1406,11 @@ type="button"
   border-color: var(--error);
 }
 
-.action-btn.delete:hover {
-  background: var(--error);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.delete:hover {
+    background: var(--error);
+    color: var(--on-accent);
+  }
 }
 
 /* F10.3 生成随机 NPC 按钮 */
@@ -1409,9 +1419,11 @@ type="button"
   border-color: var(--accent-orange);
 }
 
-.action-btn.generate-npc:hover:not(:disabled) {
-  background: var(--accent-orange);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.generate-npc:hover:not(:disabled) {
+    background: var(--accent-orange);
+    color: var(--on-accent);
+  }
 }
 
 .action-btn.generate-npc:disabled {
@@ -1425,9 +1437,11 @@ type="button"
   border-color: var(--border, #3a3d52);
 }
 
-.action-btn.archive-btn:hover {
-  background: var(--card-elevated);
-  color: var(--foreground, #f5f5f7);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.archive-btn:hover {
+    background: var(--card-elevated);
+    color: var(--foreground, #f5f5f7);
+  }
 }
 
 .action-btn.restore-btn {
@@ -1435,9 +1449,11 @@ type="button"
   border-color: var(--accent-blue);
 }
 
-.action-btn.restore-btn:hover {
-  background: var(--accent-blue);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.restore-btn:hover {
+    background: var(--accent-blue);
+    color: var(--on-accent);
+  }
 }
 
 /* 群聊列表中的归档标记 */
@@ -1503,8 +1519,10 @@ type="button"
   transition: border-color 0.15s, background 0.15s;
 }
 
-.npc-template-card:hover {
-  border-color: var(--accent-orange);
+@media (hover: hover) and (pointer: fine) {
+  .npc-template-card:hover {
+    border-color: var(--accent-orange);
+  }
 }
 
 .npc-template-card.selected {
@@ -1604,9 +1622,11 @@ type="button"
   padding: 0;
 }
 
-.member-remove:hover {
-  background: var(--error);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .member-remove:hover {
+    background: var(--error);
+    color: var(--on-accent);
+  }
 }
 
 /* 模式切换 */
@@ -1757,8 +1777,10 @@ type="button"
   align-self: flex-end;
 }
 
-.send-btn:hover:not(:disabled) {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .send-btn:hover:not(:disabled) {
+    opacity: 0.9;
+  }
 }
 
 .send-btn:disabled {
@@ -1796,8 +1818,10 @@ type="button"
   font-size: 12px;
 }
 
-.mention-item:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .mention-item:hover {
+    background: var(--card-elevated);
+  }
 }
 
 /* 创建群聊表单 */
@@ -1909,8 +1933,10 @@ type="button"
   border-bottom: none;
 }
 
-.char-pick:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .char-pick:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .char-pick.selected {

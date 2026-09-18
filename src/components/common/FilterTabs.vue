@@ -213,9 +213,11 @@ function onKeydown(e: KeyboardEvent): void {
   white-space: nowrap;
 }
 
-.filter-tab:hover:not(.disabled) {
-  background: color-mix(in srgb, var(--muted-foreground, #999) 10%, transparent);
-  color: var(--foreground, #fff);
+@media (hover: hover) and (pointer: fine) {
+  .filter-tab:hover:not(.disabled) {
+    background: color-mix(in srgb, var(--muted-foreground, #999) 10%, transparent);
+    color: var(--foreground, #fff);
+  }
 }
 
 .filter-tab:focus-visible {

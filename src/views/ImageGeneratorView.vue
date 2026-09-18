@@ -761,8 +761,10 @@ onMounted(async () => {
   transition: background-color 0.15s ease;
 }
 
-.config-warning-btn:hover {
-  background: color-mix(in srgb, var(--primary) 88%, var(--foreground));
+@media (hover: hover) and (pointer: fine) {
+  .config-warning-btn:hover {
+    background: color-mix(in srgb, var(--primary) 88%, var(--foreground));
+  }
 }
 
 .params-section {
@@ -1021,12 +1023,16 @@ onMounted(async () => {
   display: inline-flex;
 }
 
-.icon-btn:hover {
-  background: rgba(255,255,255,0.3);
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover {
+    background: rgba(255,255,255,0.3);
+  }
 }
 
-.icon-btn.danger:hover {
-  background: var(--danger, #ef4444);
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn.danger:hover {
+    background: var(--danger, #ef4444);
+  }
 }
 
 /* 设置表单 */

@@ -31,7 +31,7 @@ import {
   reencryptApiKey,
 } from '@core/api-key-crypto';
 import { exportQuickRepliesToStJson, importQuickRepliesFromSt } from '@core/st-compat';
-import { setLocale as setI18nLocale, t as i18nT, type Locale } from '@/i18n';
+import { setLocale as setI18nLocale, t as i18nT, detectLocale, type Locale } from '@/i18n';
 
 /**
  * Settings Store (Phase F)
@@ -656,6 +656,14 @@ export const useSettingsStore = defineStore('settings', () => {
           saved.fontSize !== undefined ||
           (Array.isArray(saved.apiProfiles) && saved.apiProfiles.length > 0) ||
           saved.activeApiProfileId !== undefined);
+      // P2-3：首访按浏览器语言兜底。此处先探测，若下方存在持久化语言则会被覆盖，
+      // 因此「用户显式选择」始终优先，浏览器语言只作未选择时的默认值。
+      const detected = detectLocale();
+      if (detected !== locale.value) {
+        locale.value = detected;
+        setI18nLocale(detected);
+      }
+
       if (hasSavedData) {
         if (saved.theme) setTheme(saved.theme);
         if (typeof saved.fontSize === 'number') setFontSize(saved.fontSize);

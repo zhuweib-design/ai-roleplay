@@ -367,9 +367,11 @@ function switchPersona(id: string): void {
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
 }
 
-.profile-back-btn:hover {
-  background: var(--background);
-  border-color: var(--muted-foreground);
+@media (hover: hover) and (pointer: fine) {
+  .profile-back-btn:hover {
+    background: var(--background);
+    border-color: var(--muted-foreground);
+  }
 }
 
 .profile-back-btn:active {
@@ -634,9 +636,11 @@ function switchPersona(id: string): void {
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
 }
 
-.action-btn:hover:not(:disabled) {
-  background: var(--background);
-  border-color: var(--muted-foreground);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn:hover:not(:disabled) {
+    background: var(--background);
+    border-color: var(--muted-foreground);
+  }
 }
 
 .action-btn:active:not(:disabled) {
@@ -659,9 +663,11 @@ function switchPersona(id: string): void {
   color: var(--on-accent);
 }
 
-.action-btn.primary:hover:not(:disabled) {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.primary:hover:not(:disabled) {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 
 /* 身份列表 */
@@ -702,8 +708,10 @@ function switchPersona(id: string): void {
   font-family: var(--font-sans);
 }
 
-.profile-info:hover {
-  background: var(--background);
+@media (hover: hover) and (pointer: fine) {
+  .profile-info:hover {
+    background: var(--background);
+  }
 }
 
 .profile-info:focus-visible {

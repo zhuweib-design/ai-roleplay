@@ -59,3 +59,19 @@ export function getLocale(): Locale {
 export function initLocale(locale: Locale): void {
   setLocale(locale);
 }
+
+/**
+ * 按浏览器语言推断界面语言（P2-3，**仅作首访兜底**）
+ *
+ * - 取值顺序：`navigator.languages[0]` → `navigator.language`
+ * - `zh*` → zh；`en*` → en；其余一律回退 zh（当前仅提供这两种语言）
+ * - **不得覆盖用户的持久化选择**：调用方须先探测，再让持久化值覆盖它
+ */
+export function detectLocale(): Locale {
+  if (typeof navigator === 'undefined') return 'zh';
+  const raw = navigator.languages?.[0] ?? navigator.language ?? '';
+  const lang = raw.toLowerCase();
+  if (lang.startsWith('zh')) return 'zh';
+  if (lang.startsWith('en')) return 'en';
+  return 'zh';
+}

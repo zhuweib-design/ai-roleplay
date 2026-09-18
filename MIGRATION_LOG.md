@@ -135,6 +135,7 @@
 | C4 | `PROJECT_INDEX.md` | 新增 | 项目索引，由 C3 生成 | 13:17:51 | 低。新文件，处于未跟踪状态 |
 | C5 | `MIGRATION_LOG.md` | 新增 | 本文件 | — | 低。新文件，处于未跟踪状态 |
 | C6 | `artifacts/backup/pre-migration-docs-20260918-130909.tar.gz` | 新增 | 迁移前文档回滚备份 | 13:09:10 | 低。位于被忽略目录内 |
+| C7 | `eslint.config.js` | 修改 | 忽略列表收敛：删除已失效的 `dist-i18n-check/**`、`dist-p13-check/**`、`dist-qa/**`、`dist-measure/**`、`dist-opt*/**`、`dist-lib-eval*/**`、`dist-electron/**`、`coverage-ci/**`（这些目录已迁入 `artifacts/` 或本就不存在），改为单条 `artifacts/**`；并补 `.workbuddy-ai/**` | 2026-09-18 14:50 | **低**。属**回归修复**，详见第十节 |
 
 ---
 
@@ -311,6 +312,37 @@ npm run test:e2e         # 重建 test-results/
 ```
 
 A 档三项（`test-gradient.jpg`、`debug.log`、`dist.bak/`）无备份，属确认无价值后删除。
+
+---
+
+## 十、2026-09-18 14:50 回归修复：`npm run lint` 被迁移打断
+
+### 10.1 问题
+
+目录整理（第三～六批次）把 17 个 `dist-*`、`coverage-ci/` 等一次性构建快照移入 `artifacts/`，但 `eslint.config.js` 的 `ignores` 仍按**旧根路径**逐条列出（`dist-opt*/**`、`dist-qa/**`、`coverage-ci/**` 等）。路径失效后 eslint 开始扫描 `artifacts/` 下的已编译 bundle，`npm run lint` 报出 **78233 errors / 2 warnings**，即 `quality-gates` 的第 1 道门禁被打断。
+
+**为何未被当场发现**：迁移后的验证记录（第五节）只覆盖 `i18n:check:strict` / `check:breakpoints` / `build` / `test`，**未包含 `npm run lint`**；而第五节第 5 行的 `git status | grep -c artifacts = 0` 只证明"归档目录不泄漏进 Git"，与 eslint 无关。这是验证清单的一处缺口。
+
+### 10.2 修复
+
+| 项 | 内容 |
+| --- | --- |
+| 文件 | `eslint.config.js` |
+| 变更 | `ignores` 收敛为 `node_modules/**`、`dist/**`、`coverage/**`、**`artifacts/**`**、`src-tauri/target/**`、`.workbuddy/**`、**`.workbuddy-ai/**`**、`out/**` |
+| 删除的失效规则 | `dist-i18n-check/**`、`dist-p13-check/**`、`dist-qa/**`、`dist-measure/**`、`dist-opt*/**`、`dist-lib-eval*/**`、`dist-electron/**`、`coverage-ci/**` |
+| 删除依据 | 已核验：`package.json`、`scripts/*.mjs`、`.github/workflows/*.yml` 中**无任何**对这些目录的产出引用；`dist-electron/` 目录本就不存在（遗留自早期 Electron 方案） |
+| 保留的硬依赖规则 | `dist/**`（Vite 默认 outDir）、`coverage/**`（Vitest 默认 reportsDirectory）仍留在根目录，故保留 |
+
+### 10.3 验证
+
+| 验证项 | 命令 | 结果 | 时间 |
+| --- | --- | --- | --- |
+| 代码风格门禁 | `npm run lint` | 通过 — **0 error**（2 个 `vue/first-attribute-linebreak` warning 属 `CharacterList.vue:110-111` 既有问题，非阻断） | 14:53 |
+
+### 10.4 结论与建议
+
+- 该回归为**目录迁移的连带影响**，非迁移本身错误；根因是"忽略规则按绝对路径逐条枚举"这一脆弱模式。
+- **建议**：今后 `scripts/*.mjs`、`eslint.config.js` 等配置中的"目录枚举型"规则，在迁移后必须一并回归。迁移后的验证清单应固定包含 `npm run lint`（`quality-gates` 的第 1 步），已在本文件第五节的清单之外补记此要求。
 
 ---
 

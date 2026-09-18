@@ -1007,8 +1007,10 @@ type="button"
   transition: color 0.15s, border-color 0.15s;
 }
 
-.tab:hover {
-  color: var(--text);
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    color: var(--text);
+  }
 }
 
 .tab.active {
@@ -1285,7 +1287,14 @@ type="button"
   outline: none;
 }
 
-.market-card:hover,
+@media (hover: hover) and (pointer: fine) {
+  .market-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* focus-visible 分支不加 hover 守卫：键盘可达性不受设备 hover 能力影响 */
 .market-card:focus-visible {
   border-color: var(--primary);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -1636,8 +1645,10 @@ type="button"
   border-color: var(--primary);
 }
 
-.btn-primary:hover {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
 }
 
 .btn-ghost {
@@ -1646,8 +1657,10 @@ type="button"
   border-color: var(--border);
 }
 
-.btn-ghost:hover {
-  background: var(--background);
+@media (hover: hover) and (pointer: fine) {
+  .btn-ghost:hover {
+    background: var(--background);
+  }
 }
 
 .header-btn {
@@ -1665,8 +1678,10 @@ type="button"
   transition: background 0.15s, border-color 0.15s;
 }
 
-.header-btn:hover {
-  background: var(--background);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover {
+    background: var(--background);
+  }
 }
 
 .header-btn:focus-visible {

@@ -12,17 +12,14 @@ export default [
     ignores: [
       'node_modules/**',
       'dist/**',
-      'dist-i18n-check/**',
-      'dist-p13-check/**',
-      'dist-qa/**',
-      'dist-measure/**',
-      'dist-opt*/**',
-      'dist-lib-eval*/**',
-      'dist-electron/**',
       'coverage/**',
-      'coverage-ci/**',
+      // 2026-09-18 目录整理：历史 dist-*/coverage-ci 等一次性快照已统一归入 artifacts/
+      // （原 dist-i18n-check / dist-p13-check / dist-qa / dist-measure / dist-opt* /
+      //  dist-lib-eval* / coverage-ci 等逐条规则一并收敛为本条，见 MIGRATION_LOG.md）
+      'artifacts/**',
       'src-tauri/target/**',
       '.workbuddy/**',
+      '.workbuddy-ai/**',
       'out/**',
     ],
   },

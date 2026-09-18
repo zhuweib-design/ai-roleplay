@@ -726,8 +726,10 @@ function formatCooldown(ms: number): string {
   transition: background 0.15s;
 }
 
-.header-btn:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .header-btn.primary {
@@ -736,8 +738,10 @@ function formatCooldown(ms: number): string {
   border-color: var(--primary);
 }
 
-.header-btn.primary:hover {
-  filter: brightness(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn.primary:hover {
+    filter: brightness(1.1);
+  }
 }
 
 /* Tabs */
@@ -763,8 +767,10 @@ function formatCooldown(ms: number): string {
   transition: color 0.15s, border-color 0.15s;
 }
 
-.tab:hover {
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    color: var(--foreground);
+  }
 }
 
 .tab.active {
@@ -833,8 +839,10 @@ function formatCooldown(ms: number): string {
   transition: background 0.15s;
 }
 
-.btn:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .btn.primary {
@@ -843,8 +851,10 @@ function formatCooldown(ms: number): string {
   border-color: var(--primary);
 }
 
-.btn.primary:hover {
-  filter: brightness(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .btn.primary:hover {
+    filter: brightness(1.1);
+  }
 }
 
 .btn.danger-outline {
@@ -852,8 +862,10 @@ function formatCooldown(ms: number): string {
   border-color: var(--danger-border);
 }
 
-.btn.danger-outline:hover {
-  background: var(--danger-bg);
+@media (hover: hover) and (pointer: fine) {
+  .btn.danger-outline:hover {
+    background: var(--danger-bg);
+  }
 }
 
 /* 模板列表 */
@@ -878,9 +890,11 @@ function formatCooldown(ms: number): string {
   transition: border-color 0.15s;
 }
 
-.template-card:hover,
-.scene-card:hover {
-  border-color: var(--primary-fg, var(--primary));
+@media (hover: hover) and (pointer: fine) {
+  .template-card:hover,
+  .scene-card:hover {
+    border-color: var(--primary-fg, var(--primary));
+  }
 }
 
 .template-card.disabled,
@@ -969,14 +983,18 @@ function formatCooldown(ms: number): string {
   transition: background 0.15s, color 0.15s;
 }
 
-.icon-btn:hover {
-  background: var(--card-elevated);
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover {
+    background: var(--card-elevated);
+    color: var(--foreground);
+  }
 }
 
-.icon-btn.danger:hover {
-  color: var(--danger-fg);
-  background: var(--danger-bg);
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn.danger:hover {
+    color: var(--danger-fg);
+    background: var(--danger-bg);
+  }
 }
 
 .card-desc {
@@ -1247,9 +1265,11 @@ function formatCooldown(ms: number): string {
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.feedback-btn:hover {
-  background: var(--card-elevated);
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .feedback-btn:hover {
+    background: var(--card-elevated);
+    color: var(--foreground);
+  }
 }
 
 .feedback-btn.active {

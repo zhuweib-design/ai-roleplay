@@ -557,9 +557,11 @@ function getCharacterName(id?: string): string {
   transition: background-color 0.15s, border-color 0.15s;
 }
 
-.header-btn:hover {
-  background: var(--card-elevated);
-  border-color: var(--border);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover {
+    background: var(--card-elevated);
+    border-color: var(--border);
+  }
 }
 
 .header-btn.back {
@@ -573,8 +575,10 @@ function getCharacterName(id?: string): string {
   border-color: var(--primary);
 }
 
-.header-btn.upload-btn:hover {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .header-btn.upload-btn:hover {
+    opacity: 0.9;
+  }
 }
 
 /* 搜索栏 */
@@ -685,8 +689,10 @@ function getCharacterName(id?: string): string {
   transition: border-color 0.15s;
 }
 
-.doc-card:hover {
-  border-color: var(--border);
+@media (hover: hover) and (pointer: fine) {
+  .doc-card:hover {
+    border-color: var(--border);
+  }
 }
 
 .card-header {
@@ -738,8 +744,10 @@ function getCharacterName(id?: string): string {
   flex-shrink: 0;
 }
 
-.card-expand:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .card-expand:hover {
+    background: var(--card-elevated);
+  }
 }
 
 /* 分块预览 */
@@ -811,9 +819,11 @@ function getCharacterName(id?: string): string {
   transition: background-color 0.15s, color 0.15s;
 }
 
-.delete-btn:hover {
-  background: color-mix(in srgb, var(--error) 10%, transparent);
-  color: var(--error);
+@media (hover: hover) and (pointer: fine) {
+  .delete-btn:hover {
+    background: color-mix(in srgb, var(--error) 10%, transparent);
+    color: var(--error);
+  }
 }
 
 /* 上传 Modal */
@@ -902,9 +912,11 @@ function getCharacterName(id?: string): string {
   position: relative;
 }
 
-.drop-zone:hover {
-  border-color: var(--secondary);
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .drop-zone:hover {
+    border-color: var(--secondary);
+    background: var(--card-elevated);
+  }
 }
 
 .drop-zone.active {
@@ -955,8 +967,10 @@ function getCharacterName(id?: string): string {
   transition: background-color 0.15s;
 }
 
-.modal-btn:hover:not(:disabled) {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .modal-btn:hover:not(:disabled) {
+    background: var(--card-elevated);
+  }
 }
 
 .modal-btn:disabled {

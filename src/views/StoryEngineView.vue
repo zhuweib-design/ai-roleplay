@@ -1829,9 +1829,11 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   transition: background .15s ease, border-color .15s ease;
 }
 
-.header-btn:hover:not(:disabled) {
-  background: var(--card-elevated);
-  border-color: var(--primary);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover:not(:disabled) {
+    background: var(--card-elevated);
+    border-color: var(--primary);
+  }
 }
 
 .header-btn:disabled {
@@ -1916,10 +1918,12 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   cursor: pointer;
 }
 
-.cancel-btn:hover {
-  background: var(--error-bg, rgba(220, 38, 38, 0.1));
-  border-color: var(--error);
-  color: var(--error);
+@media (hover: hover) and (pointer: fine) {
+  .cancel-btn:hover {
+    background: var(--error-bg, rgba(220, 38, 38, 0.1));
+    border-color: var(--error);
+    color: var(--error);
+  }
 }
 
 .progress-bar {
@@ -2002,8 +2006,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   transition: border-color .15s ease;
 }
 
-.story-card:hover {
-  border-color: var(--primary);
+@media (hover: hover) and (pointer: fine) {
+  .story-card:hover {
+    border-color: var(--primary);
+  }
 }
 
 .story-card.status-failed {
@@ -2083,8 +2089,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   border-radius: var(--radius-sm);
 }
 
-.card-expand:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .card-expand:hover {
+    background: var(--card-elevated);
+  }
 }
 
 /* 详情展开 */
@@ -2357,9 +2365,11 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   cursor: pointer;
 }
 
-.card-btn:hover:not(:disabled) {
-  background: var(--card-elevated);
-  border-color: var(--primary);
+@media (hover: hover) and (pointer: fine) {
+  .card-btn:hover:not(:disabled) {
+    background: var(--card-elevated);
+    border-color: var(--primary);
+  }
 }
 
 .card-btn:disabled {
@@ -2367,16 +2377,20 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   cursor: not-allowed;
 }
 
-.delete-btn:hover:not(:disabled) {
-  background: var(--error-bg, rgba(220, 38, 38, 0.1));
-  border-color: var(--error);
-  color: var(--error);
+@media (hover: hover) and (pointer: fine) {
+  .delete-btn:hover:not(:disabled) {
+    background: var(--error-bg, rgba(220, 38, 38, 0.1));
+    border-color: var(--error);
+    color: var(--error);
+  }
 }
 
-.analyze-btn:hover:not(:disabled) {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: var(--tag-green);
-  color: var(--tag-green);
+@media (hover: hover) and (pointer: fine) {
+  .analyze-btn:hover:not(:disabled) {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: var(--tag-green);
+    color: var(--tag-green);
+  }
 }
 
 /* Modal 内部样式 */
@@ -2419,8 +2433,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   transition: border-color .15s ease, background .15s ease;
 }
 
-.depth-option:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .depth-option:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .depth-option.active {
@@ -2475,8 +2491,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   transition: border-color .15s ease, background .15s ease;
 }
 
-.template-option:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .template-option:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .template-option.active {
@@ -2522,7 +2540,14 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   outline: none;
 }
 
-.drop-zone:hover,
+@media (hover: hover) and (pointer: fine) {
+  .drop-zone:hover {
+    border-color: var(--primary);
+    background: var(--card-elevated);
+  }
+}
+
+/* focus-visible 分支不加 hover 守卫：键盘可达性不受设备 hover 能力影响 */
 .drop-zone:focus-visible {
   border-color: var(--primary);
   background: var(--card-elevated);
@@ -2596,8 +2621,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   transition: background .15s ease, border-color .15s ease;
 }
 
-.btn:hover:not(:disabled) {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) {
+    background: var(--card-elevated);
+  }
 }
 
 .btn:disabled {
@@ -2611,8 +2638,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   border-color: var(--primary);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover, var(--primary));
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover, var(--primary));
+  }
 }
 
 .btn-secondary {
@@ -2625,8 +2654,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   border-color: var(--error);
 }
 
-.btn-danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--error) 75%, #000);
+@media (hover: hover) and (pointer: fine) {
+  .btn-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--error) 75%, #000);
+  }
 }
 
 .confirm-text {
@@ -2698,9 +2729,11 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   transition: border-color 0.15s, background-color 0.15s;
 }
 
-.category-option:hover:not(.disabled) {
-  border-color: var(--secondary);
-  background: color-mix(in srgb, var(--secondary) 8%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .category-option:hover:not(.disabled) {
+    border-color: var(--secondary);
+    background: color-mix(in srgb, var(--secondary) 8%, transparent);
+  }
 }
 
 .category-option.disabled {
@@ -2862,8 +2895,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   color: var(--secondary);
 }
 
-.card-btn.import-btn:hover {
-  background: color-mix(in srgb, var(--secondary) 12%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .card-btn.import-btn:hover {
+    background: color-mix(in srgb, var(--secondary) 12%, transparent);
+  }
 }
 
 /* F16.3 主角按钮（卡片操作区） */
@@ -2871,8 +2906,10 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   color: var(--primary-fg, #3b82f6);
 }
 
-.card-btn.protagonist-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .card-btn.protagonist-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+  }
 }
 
 /* F16.4 故事时间配置 */
@@ -2973,10 +3010,12 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
-.char-set-protagonist-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-  border-color: var(--primary);
-  color: var(--primary-fg, #3b82f6);
+@media (hover: hover) and (pointer: fine) {
+  .char-set-protagonist-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    border-color: var(--primary);
+    color: var(--primary-fg, #3b82f6);
+  }
 }
 
 .char-set-protagonist-btn:disabled {
@@ -3187,9 +3226,11 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   border-radius: var(--radius-sm);
 }
 
-.rel-remove-btn:hover {
-  background: color-mix(in srgb, var(--error-fg, #f87171) 12%, transparent);
-  color: var(--error-fg, #f87171);
+@media (hover: hover) and (pointer: fine) {
+  .rel-remove-btn:hover {
+    background: color-mix(in srgb, var(--error-fg, #f87171) 12%, transparent);
+    color: var(--error-fg, #f87171);
+  }
 }
 
 .relation-add-form {

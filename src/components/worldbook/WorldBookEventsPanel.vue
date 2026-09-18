@@ -789,8 +789,10 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   font-size: 13px;
 }
 
-.event-item:hover {
-  background: var(--hover, rgba(255, 255, 255, 0.05));
+@media (hover: hover) and (pointer: fine) {
+  .event-item:hover {
+    background: var(--hover, rgba(255, 255, 255, 0.05));
+  }
 }
 
 .event-item.active {
@@ -925,35 +927,43 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   color: var(--success);
   border-color: var(--success);
 }
-.action-btn.trigger:hover:not(:disabled) {
-  background: var(--success);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.trigger:hover:not(:disabled) {
+    background: var(--success);
+    color: var(--on-accent);
+  }
 }
 
 .action-btn.complete {
   color: var(--tag-blue);
   border-color: var(--tag-blue);
 }
-.action-btn.complete:hover:not(:disabled) {
-  background: var(--tag-blue);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.complete:hover:not(:disabled) {
+    background: var(--tag-blue);
+    color: var(--on-accent);
+  }
 }
 
 .action-btn.reset {
   color: var(--muted-foreground);
   border-color: var(--border);
 }
-.action-btn.reset:hover:not(:disabled) {
-  background: var(--hover, rgba(255, 255, 255, 0.05));
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.reset:hover:not(:disabled) {
+    background: var(--hover, rgba(255, 255, 255, 0.05));
+  }
 }
 
 .action-btn.fail {
   color: var(--error);
   border-color: var(--error);
 }
-.action-btn.fail:hover:not(:disabled) {
-  background: var(--error);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.fail:hover:not(:disabled) {
+    background: var(--error);
+    color: var(--on-accent);
+  }
 }
 
 .form-row-actions {

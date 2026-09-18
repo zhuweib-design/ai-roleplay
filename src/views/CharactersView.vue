@@ -656,9 +656,11 @@ function tagsPreview(tags: string[]): string {
   transition: background-color .15s ease, border-color .15s ease, color .15s ease;
 }
 
-.header-btn:hover {
-  border-color: var(--secondary);
-  color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover {
+    border-color: var(--secondary);
+    color: var(--secondary);
+  }
 }
 
 .header-btn.back {
@@ -677,10 +679,12 @@ function tagsPreview(tags: string[]): string {
   color: var(--on-media);
 }
 
-.new-btn:hover {
-  background: var(--destructive);
-  border-color: var(--destructive);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .new-btn:hover {
+    background: var(--destructive);
+    border-color: var(--destructive);
+    color: var(--on-accent);
+  }
 }
 
 .hidden-file-input {
@@ -735,7 +739,14 @@ function tagsPreview(tags: string[]): string {
   outline: none;
 }
 
-.char-card:hover,
+@media (hover: hover) and (pointer: fine) {
+  .char-card:hover {
+    border-color: var(--secondary);
+    background: var(--card-elevated);
+  }
+}
+
+/* focus-visible 分支不加 hover 守卫：键盘可达性不受设备 hover 能力影响 */
 .char-card:focus-visible {
   border-color: var(--secondary);
   background: var(--card-elevated);
@@ -768,9 +779,11 @@ function tagsPreview(tags: string[]): string {
   transition: color .15s ease, background-color .15s ease;
 }
 
-.favorite-btn:hover {
-  color: var(--primary-fg);
-  background: color-mix(in srgb, var(--primary) 8%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .favorite-btn:hover {
+    color: var(--primary-fg);
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+  }
 }
 
 .favorite-btn.active {
@@ -849,9 +862,11 @@ function tagsPreview(tags: string[]): string {
   transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
-.action-btn:hover {
-  background: var(--card-elevated);
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn:hover {
+    background: var(--card-elevated);
+    color: var(--foreground);
+  }
 }
 
 .action-btn:focus-visible {
@@ -859,9 +874,11 @@ function tagsPreview(tags: string[]): string {
   outline-offset: 2px;
 }
 
-.action-btn.delete:hover {
-  border-color: var(--destructive);
-  color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.delete:hover {
+    border-color: var(--destructive);
+    color: var(--destructive);
+  }
 }
 
 .action-btn:disabled {
@@ -934,8 +951,10 @@ function tagsPreview(tags: string[]): string {
   outline-offset: 2px;
 }
 
-.modal-cancel:hover {
-  background: var(--video-bg);
+@media (hover: hover) and (pointer: fine) {
+  .modal-cancel:hover {
+    background: var(--video-bg);
+  }
 }
 
 .modal-confirm {
@@ -944,9 +963,11 @@ function tagsPreview(tags: string[]): string {
   color: var(--on-accent);
 }
 
-.modal-confirm:hover {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .modal-confirm:hover {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 
 /* F01.7 随机生成 */
@@ -956,9 +977,11 @@ function tagsPreview(tags: string[]): string {
   color: var(--secondary);
 }
 
-.generate-btn:hover:not(:disabled) {
-  background: var(--secondary);
-  color: var(--on-media);
+@media (hover: hover) and (pointer: fine) {
+  .generate-btn:hover:not(:disabled) {
+    background: var(--secondary);
+    color: var(--on-media);
+  }
 }
 
 .generate-btn:disabled {
@@ -1005,9 +1028,11 @@ function tagsPreview(tags: string[]): string {
   transition: border-color .15s ease, background-color .15s ease;
 }
 
-.template-card:hover:not(:disabled) {
-  border-color: var(--secondary);
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .template-card:hover:not(:disabled) {
+    border-color: var(--secondary);
+    background: var(--card-elevated);
+  }
 }
 
 .template-card:focus-visible {
@@ -1065,8 +1090,10 @@ function tagsPreview(tags: string[]): string {
   color: var(--on-media);
 }
 
-.modal-generate:hover:not(:disabled) {
-  filter: brightness(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .modal-generate:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
 }
 
 .modal-generate:disabled {

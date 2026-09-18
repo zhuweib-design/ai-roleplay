@@ -36,7 +36,9 @@ button { font-family: inherit; }
 .tk-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
 .tk-scroll::-webkit-scrollbar-track { background: transparent; }
 .tk-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-pill); }
-.tk-scroll::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--foreground) 30%, var(--border)); }
+@media (hover: hover) and (pointer: fine) {
+  .tk-scroll::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--foreground) 30%, var(--border)); }
+}
 .tk-scroll { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -99,15 +101,25 @@ textarea,
 
 /* 悬停工具类 */
 .hover-surface { transition: background-color .15s ease, color .15s ease, border-color .15s ease, filter .15s ease; }
-.hover-surface:hover { background: color-mix(in srgb, var(--foreground) 6%, transparent); }
+@media (hover: hover) and (pointer: fine) {
+  .hover-surface:hover { background: color-mix(in srgb, var(--foreground) 6%, transparent); }
+}
 .hover-fg { transition: color .15s ease; }
-.hover-fg:hover { color: var(--foreground); }
+@media (hover: hover) and (pointer: fine) {
+  .hover-fg:hover { color: var(--foreground); }
+}
 .hover-cyan { transition: color .15s ease, border-color .15s ease; }
-.hover-cyan:hover { color: var(--secondary); border-color: var(--secondary); }
+@media (hover: hover) and (pointer: fine) {
+  .hover-cyan:hover { color: var(--secondary); border-color: var(--secondary); }
+}
 .hover-red { transition: color .15s ease; }
-.hover-red:hover { color: var(--primary); }
+@media (hover: hover) and (pointer: fine) {
+  .hover-red:hover { color: var(--primary); }
+}
 .hover-bright { transition: filter .15s ease; }
-.hover-bright:hover { filter: brightness(1.12); }
+@media (hover: hover) and (pointer: fine) {
+  .hover-bright:hover { filter: brightness(1.12); }
+}
 
 /* 输入框焦点：边框变色 + 外发光环（深色主题清晰可见，WCAG 2.4.7）
    注意：不设 outline:none —— 由下方全局 :focus-visible outline(var(--ring)) 兜底，

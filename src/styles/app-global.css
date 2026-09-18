@@ -107,7 +107,15 @@
   cursor: pointer;
 }
 
-.notice-dismiss:hover,
+@media (hover: hover) and (pointer: fine) {
+  .notice-dismiss:hover {
+    background: color-mix(in srgb, currentColor 15%, transparent);
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+/* focus-visible 分支不加 hover 守卫：键盘可达性不受设备 hover 能力影响 */
 .notice-dismiss:focus-visible {
   background: color-mix(in srgb, currentColor 15%, transparent);
   outline: 2px solid currentColor;

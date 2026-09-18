@@ -12,6 +12,7 @@ import { useStoryStore } from '@/stores/story';
 import { useCommunityMarketStore } from '@/stores/community-market';
 import { useCharacterVersionStore } from '@/stores/character-version';
 import { getStorageAdapter, getStorageEnv } from '@storage/storage-factory';
+import { initStoragePersistence } from '@/core/storage-persistence';
 import { TauriFSAdapter } from '@storage/tauri-fs-adapter';
 import { importCharacterPng } from '@/services/backup-service';
 import { cardToUiChar } from '@/services/type-adapters';
@@ -185,6 +186,14 @@ onMounted(async () => {
      
     console.info(`[Storage] 当前环境: ${getStorageEnv()}`);
 
+    // P1-10：Web / PWA 端申请 IndexedDB 持久化授权，降低浏览器在存储压力下驱逐数据的风险。
+    // 仅 Web 需要（Tauri 走本地文件系统，无此概念）；非阻塞，失败不阻断启动。
+    if (getStorageEnv() === 'web') {
+      void initStoragePersistence().then((state) => {
+        console.info(`[Storage] 持久化授权: ${state}`);
+      });
+    }
+
     // 候选5：Tauri 环境提示未实现能力，避免功能静默不可用
     if (TauriFSAdapter.isTauriEnv()) {
       const missing = TauriFSAdapter.getUnimplementedFeatureNames();
@@ -327,7 +336,7 @@ watch(
     <main class="app-main" :class="{ 'has-mobile-nav': showBottomNav }">
       <router-view />
     </main>
-    <!-- 移动端底部导航（<640px 显示,主 Tab 页） -->
+    <!-- 移动端底部导航（≤640px 显示,主 Tab 页；断点口径以 src/core/viewport.ts 为唯一来源） -->
     <BottomNav v-if="showBottomNav" class="app-bottom-nav" />
   </div>
 

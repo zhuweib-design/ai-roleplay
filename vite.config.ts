@@ -60,6 +60,61 @@ function localProxyPlugin(): Plugin {
   };
 }
 
+// ── Web 端 CSP（Web SOP 评审 P0-2）──
+// 此前仓库唯一的 CSP 定义在 src-tauri/tauri.conf.json（**桌面端**），Web 端完全没有，
+// 导致 Web 端 XSS 只有 DOMPurify 一层防线，无纵深防御。
+//
+// 注入策略：仅「生产构建 + 非 Tauri」时向 index.html 注入 CSP meta。
+// - Tauri 构建不注入：桌面端 CSP 由 tauri.conf.json 统一管控，此处注入会与之叠加
+// - dev 不注入（apply: 'build'）：HMR 需要内联脚本与 ws 连接，注入会直接打断开发
+//
+// 允许清单的每一条都对应实际能力需求（勿随意收紧）：
+// - 'wasm-unsafe-eval'：onnxruntime-web / WebLLM 需编译 WebAssembly
+// - worker-src blob:：onnxruntime-web 的多线程/proxy worker 由 blob URL 创建
+// - style-src 'unsafe-inline'：Vue 运行时样式注入与内联 style 属性
+// - fonts.googleapis.com / fonts.gstatic.com：现有外链字体（P2-2 建议后续自托管以去掉该放行）
+// - connect-src https:：用户自定义模型端点（https）与本地模型下载
+//
+// 已知限制：frame-ancestors / report-uri / sandbox 在 meta 形式下会被浏览器**忽略**，
+// 如需这三项必须在托管侧配置响应头（见 README「Web 端已知限制」）。
+export const WEB_CSP_DIRECTIVES = [
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'",
+  "worker-src 'self' blob:",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' data: blob:",
+  "connect-src 'self' https:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-src 'none'",
+] as const;
+
+export const WEB_CSP_CONTENT = WEB_CSP_DIRECTIVES.join('; ');
+
+function webCspPlugin(): Plugin {
+  return {
+    name: 'web-csp',
+    apply: 'build',
+    transformIndexHtml(html) {
+      // 桌面端不注入（CSP 由 tauri.conf.json 定义）
+      if (isTauriEnv) return html;
+      return {
+        html,
+        tags: [
+          {
+            tag: 'meta',
+            attrs: { 'http-equiv': 'Content-Security-Policy', content: WEB_CSP_CONTENT },
+            injectTo: 'head-prepend',
+          },
+        ],
+      };
+    },
+  };
+}
+
 async function handleLocalProxy(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     // connect 的 use(prefix, fn) 会剥掉挂载前缀并保留前导斜杠，此处兼容两种形态
@@ -127,6 +182,8 @@ export default defineConfig({
   plugins: [
     vue(),
     localProxyPlugin(),
+    // Web 端 CSP（仅生产构建 + 非 Tauri，见上方 webCspPlugin 注释）
+    webCspPlugin(),
     // PWA(手机端可安装):仅纯 Web 构建启用;Tauri(file://)禁用 SW
     VitePWA({
       disable: isTauriEnv,

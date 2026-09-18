@@ -166,7 +166,14 @@ const assistantActions: MsgAction[] = [
   transition: opacity 0.15s ease;
 }
 
-.msg-wrap:hover .msg-toolbar,
+/* I-5（P2-5）：hover 分支按设备能力分流，避免触屏 tap 后操作栏粘滞 */
+@media (hover: hover) and (pointer: fine) {
+  .msg-wrap:hover .msg-toolbar {
+    opacity: 1;
+  }
+}
+
+/* 键盘聚焦分支不加 hover 守卫：触屏外接键盘时同样需要可见 */
 .msg-wrap:focus-within .msg-toolbar {
   opacity: 1;
 }
@@ -192,8 +199,10 @@ const assistantActions: MsgAction[] = [
   transition: color 0.15s ease;
 }
 
-.msg-toolbar-btn:hover {
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .msg-toolbar-btn:hover {
+    color: var(--foreground);
+  }
 }
 
 .msg-toolbar-btn:focus-visible {
@@ -201,7 +210,9 @@ const assistantActions: MsgAction[] = [
   outline-offset: 1px;
 }
 
-.msg-toolbar-btn.danger:hover {
-  color: var(--primary-fg);
+@media (hover: hover) and (pointer: fine) {
+  .msg-toolbar-btn.danger:hover {
+    color: var(--primary-fg);
+  }
 }
 </style>

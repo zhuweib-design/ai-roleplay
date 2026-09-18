@@ -355,8 +355,10 @@ function handleRetry() {
   color: var(--foreground);
 }
 
-.btn-secondary:hover {
-  background: color-mix(in srgb, var(--foreground) 8%, var(--card-elevated));
+@media (hover: hover) and (pointer: fine) {
+  .btn-secondary:hover {
+    background: color-mix(in srgb, var(--foreground) 8%, var(--card-elevated));
+  }
 }
 
 .btn-secondary:focus-visible,
@@ -371,7 +373,9 @@ function handleRetry() {
   color: var(--on-accent);
 }
 
-.btn-primary:hover {
-  filter: brightness(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    filter: brightness(1.1);
+  }
 }
 </style>

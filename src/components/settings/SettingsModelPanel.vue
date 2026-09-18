@@ -1041,9 +1041,11 @@ watch(
   transition: background-color .15s ease, border-color .15s ease;
 }
 
-.data-mgmt-btn:hover:not(:disabled) {
-  background: var(--card);
-  border-color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .data-mgmt-btn:hover:not(:disabled) {
+    background: var(--card);
+    border-color: var(--secondary);
+  }
 }
 
 .data-mgmt-btn:disabled {
@@ -1071,8 +1073,10 @@ watch(
   transition: border-color .15s ease, background-color .15s ease;
 }
 
-.theme-card:hover {
-  border-color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .theme-card:hover {
+    border-color: var(--secondary);
+  }
 }
 
 .theme-card:focus-visible {
@@ -1158,8 +1162,10 @@ watch(
   transition: border-color .15s ease, background-color .15s ease;
 }
 
-.fontsize-card:hover {
-  border-color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .fontsize-card:hover {
+    border-color: var(--secondary);
+  }
 }
 
 .fontsize-card:focus-visible {
@@ -1242,9 +1248,11 @@ watch(
   transition: background-color .15s ease, border-color .15s ease;
 }
 
-.add-btn:hover {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .add-btn:hover {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 
 .add-btn:focus-visible {
@@ -1279,9 +1287,11 @@ watch(
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.local-empty .link-btn:hover {
-  background: var(--primary-muted, rgba(128, 128, 128, 0.12));
-  border-color: var(--primary, #4f8cff);
+@media (hover: hover) and (pointer: fine) {
+  .local-empty .link-btn:hover {
+    background: var(--primary-muted, rgba(128, 128, 128, 0.12));
+    border-color: var(--primary, #4f8cff);
+  }
 }
 
 .profile-list {
@@ -1456,10 +1466,12 @@ watch(
   border-color: var(--warning-border);
 }
 
-.action-btn.set-primary:hover {
-  background: var(--warning-bg);
-  border-color: var(--warning-fg);
-  color: var(--warning-fg);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.set-primary:hover {
+    background: var(--warning-bg);
+    border-color: var(--warning-fg);
+    color: var(--warning-fg);
+  }
 }
 
 .profile-meta {
@@ -1505,9 +1517,11 @@ watch(
   transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
-.action-btn:hover {
-  background: var(--card);
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn:hover {
+    background: var(--card);
+    color: var(--foreground);
+  }
 }
 
 .action-btn:focus-visible {
@@ -1521,9 +1535,11 @@ watch(
   color: var(--on-accent);
 }
 
-.action-btn.activate:hover {
-  background: var(--tk-cyan-600);
-  border-color: var(--tk-cyan-600);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.activate:hover {
+    background: var(--tk-cyan-600);
+    border-color: var(--tk-cyan-600);
+  }
 }
 
 .action-btn.deactivate {
@@ -1531,9 +1547,11 @@ watch(
   color: var(--muted-foreground);
 }
 
-.action-btn.delete:hover {
-  border-color: var(--destructive);
-  color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.delete:hover {
+    border-color: var(--destructive);
+    color: var(--destructive);
+  }
 }
 
 /* ── 表单 ── */
@@ -1730,9 +1748,11 @@ select.field-input {
   border-radius: var(--radius-sm);
 }
 
-.toggle-visibility:hover {
-  color: var(--foreground);
-  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .toggle-visibility:hover {
+    color: var(--foreground);
+    background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  }
 }
 
 .toggle-visibility:focus-visible {
@@ -1761,8 +1781,10 @@ select.field-input {
   outline-offset: 2px;
 }
 
-.modal-cancel:hover {
-  background: var(--video-bg);
+@media (hover: hover) and (pointer: fine) {
+  .modal-cancel:hover {
+    background: var(--video-bg);
+  }
 }
 
 .modal-save {
@@ -1771,9 +1793,11 @@ select.field-input {
   color: var(--on-media);
 }
 
-.modal-save:hover:not(:disabled) {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .modal-save:hover:not(:disabled) {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 
 .modal-save:disabled {
@@ -1787,9 +1811,11 @@ select.field-input {
   color: var(--on-accent);
 }
 
-.modal-confirm:hover {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .modal-confirm:hover {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 
 .delete-warning {
@@ -1929,8 +1955,10 @@ select.field-input {
   border-color: color-mix(in srgb, var(--tk-red-500, #ef4444) 45%, transparent);
 }
 
-.action-btn.danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--tk-red-500, #ef4444) 12%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--tk-red-500, #ef4444) 12%, transparent);
+  }
 }
 
 /* ── 云端/本地切换 tabs（从 SettingsView.vue 复制，因 scoped 不穿透子组件） ── */

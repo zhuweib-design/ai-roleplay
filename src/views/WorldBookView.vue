@@ -1639,9 +1639,11 @@ function strategyLabel(s: LorebookStrategy): string {
   transition: background-color 0.15s, border-color 0.15s;
 }
 
-.header-btn:hover {
-  background: var(--card-elevated);
-  border-color: var(--border);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover {
+    background: var(--card-elevated);
+    border-color: var(--border);
+  }
 }
 
 .header-btn.back {
@@ -1655,8 +1657,10 @@ function strategyLabel(s: LorebookStrategy): string {
   border-color: var(--primary);
 }
 
-.header-btn.new-btn:hover {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .header-btn.new-btn:hover {
+    opacity: 0.9;
+  }
 }
 
 .header-btn.generate-btn {
@@ -1665,8 +1669,10 @@ function strategyLabel(s: LorebookStrategy): string {
   border-color: var(--accent-orange);
 }
 
-.header-btn.generate-btn:hover:not(:disabled) {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .header-btn.generate-btn:hover:not(:disabled) {
+    opacity: 0.9;
+  }
 }
 
 .header-btn.generate-btn:disabled,
@@ -1749,8 +1755,10 @@ function strategyLabel(s: LorebookStrategy): string {
   padding: 0;
 }
 
-.link-btn:hover {
-  color: var(--primary-fg);
+@media (hover: hover) and (pointer: fine) {
+  .link-btn:hover {
+    color: var(--primary-fg);
+  }
 }
 
 .lorebook-item {
@@ -1768,8 +1776,10 @@ function strategyLabel(s: LorebookStrategy): string {
   transition: background-color 0.15s;
 }
 
-.lorebook-item:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .lorebook-item:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .lorebook-item.active {
@@ -1846,8 +1856,10 @@ function strategyLabel(s: LorebookStrategy): string {
   cursor: pointer;
 }
 
-.primary-btn:hover {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .primary-btn:hover {
+    opacity: 0.9;
+  }
 }
 
 .editor-content {
@@ -1970,8 +1982,10 @@ function strategyLabel(s: LorebookStrategy): string {
   transition: border-color 0.15s;
 }
 
-.bound-char-item:hover {
-  border-color: var(--primary);
+@media (hover: hover) and (pointer: fine) {
+  .bound-char-item:hover {
+    border-color: var(--primary);
+  }
 }
 
 .bound-char-name {
@@ -2099,8 +2113,10 @@ function strategyLabel(s: LorebookStrategy): string {
   cursor: pointer;
 }
 
-.action-btn:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .action-btn.delete {
@@ -2108,9 +2124,11 @@ function strategyLabel(s: LorebookStrategy): string {
   border-color: var(--error);
 }
 
-.action-btn.delete:hover {
-  background: var(--error);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.delete:hover {
+    background: var(--error);
+    color: var(--on-accent);
+  }
 }
 
 .action-btn.extend {
@@ -2118,9 +2136,11 @@ function strategyLabel(s: LorebookStrategy): string {
   border-color: var(--accent-orange);
 }
 
-.action-btn.extend:hover:not(:disabled) {
-  background: var(--accent-orange);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.extend:hover:not(:disabled) {
+    background: var(--accent-orange);
+    color: var(--on-accent);
+  }
 }
 
 .entries-header {
@@ -2157,9 +2177,11 @@ function strategyLabel(s: LorebookStrategy): string {
   transition: background-color 0.15s, color 0.15s;
 }
 
-.tree-action-btn:hover {
-  background: var(--card-elevated);
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .tree-action-btn:hover {
+    background: var(--card-elevated);
+    color: var(--foreground);
+  }
 }
 
 .add-entry-btn {
@@ -2175,8 +2197,10 @@ function strategyLabel(s: LorebookStrategy): string {
   cursor: pointer;
 }
 
-.add-entry-btn:hover {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .add-entry-btn:hover {
+    opacity: 0.9;
+  }
 }
 
 .entries-list {
@@ -2214,8 +2238,10 @@ function strategyLabel(s: LorebookStrategy): string {
   transition: background-color 0.15s, border-color 0.15s;
 }
 
-.entry-item:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .entry-item:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .entry-item.active {
@@ -2265,9 +2291,11 @@ function strategyLabel(s: LorebookStrategy): string {
   padding: 0;
 }
 
-.expand-toggle:hover {
-  background: var(--background);
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .expand-toggle:hover {
+    background: var(--background);
+    color: var(--foreground);
+  }
 }
 
 .expand-toggle:focus-visible {
@@ -2335,8 +2363,10 @@ function strategyLabel(s: LorebookStrategy): string {
   color: var(--secondary);
 }
 
-.entry-toggle:hover {
-  background: var(--background);
+@media (hover: hover) and (pointer: fine) {
+  .entry-toggle:hover {
+    background: var(--background);
+  }
 }
 
 .entry-content {
@@ -2600,8 +2630,10 @@ function strategyLabel(s: LorebookStrategy): string {
   transition: border-color 0.15s, background 0.15s;
 }
 
-.template-card:hover {
-  border-color: var(--accent-orange);
+@media (hover: hover) and (pointer: fine) {
+  .template-card:hover {
+    border-color: var(--accent-orange);
+  }
 }
 
 .template-card.active {

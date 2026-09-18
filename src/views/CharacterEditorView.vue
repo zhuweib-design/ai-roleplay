@@ -1282,9 +1282,11 @@ function handleExport() {
   transition: background-color .15s ease, border-color .15s ease, color .15s ease;
 }
 
-.header-btn:hover {
-  border-color: var(--secondary);
-  color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover {
+    border-color: var(--secondary);
+    color: var(--secondary);
+  }
 }
 
 .header-btn:focus-visible {
@@ -1298,10 +1300,12 @@ function handleExport() {
   color: var(--on-media);
 }
 
-.header-btn.save:hover:not(:disabled) {
-  background: var(--destructive);
-  border-color: var(--destructive);
-  color: var(--on-accent);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn.save:hover:not(:disabled) {
+    background: var(--destructive);
+    border-color: var(--destructive);
+    color: var(--on-accent);
+  }
 }
 
 .header-btn.save:disabled {
@@ -1309,9 +1313,11 @@ function handleExport() {
   cursor: not-allowed;
 }
 
-.header-btn.delete:hover {
-  border-color: var(--destructive);
-  color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn.delete:hover {
+    border-color: var(--destructive);
+    color: var(--destructive);
+  }
 }
 
 .header-btn.back {
@@ -1509,9 +1515,11 @@ function handleExport() {
   transition: border-color .15s ease, transform .15s ease;
 }
 
-.preset-swatch:hover {
-  border-color: var(--secondary);
-  transform: scale(1.05);
+@media (hover: hover) and (pointer: fine) {
+  .preset-swatch:hover {
+    border-color: var(--secondary);
+    transform: scale(1.05);
+  }
 }
 
 .preset-swatch:focus-visible {
@@ -1554,9 +1562,11 @@ function handleExport() {
   transition: border-color .15s ease, color .15s ease;
 }
 
-.upload-btn:hover {
-  border-color: var(--secondary);
-  color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .upload-btn:hover {
+    border-color: var(--secondary);
+    color: var(--secondary);
+  }
 }
 
 .upload-btn:focus-visible {
@@ -1598,8 +1608,10 @@ function handleExport() {
   color: var(--foreground);
 }
 
-.footer-btn.cancel:hover {
-  background: var(--video-bg);
+@media (hover: hover) and (pointer: fine) {
+  .footer-btn.cancel:hover {
+    background: var(--video-bg);
+  }
 }
 
 .footer-btn.save {
@@ -1608,9 +1620,11 @@ function handleExport() {
   color: var(--on-media);
 }
 
-.footer-btn.save:hover:not(:disabled) {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .footer-btn.save:hover:not(:disabled) {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 
 .footer-btn.save:disabled {
@@ -1732,8 +1746,10 @@ function handleExport() {
   outline-offset: 2px;
 }
 
-.modal-cancel:hover {
-  background: var(--video-bg);
+@media (hover: hover) and (pointer: fine) {
+  .modal-cancel:hover {
+    background: var(--video-bg);
+  }
 }
 
 .modal-confirm {
@@ -1742,9 +1758,11 @@ function handleExport() {
   color: var(--on-accent);
 }
 
-.modal-confirm:hover {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .modal-confirm:hover {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 
 .delete-warning {
@@ -1834,8 +1852,10 @@ function handleExport() {
   transition: color .15s ease;
 }
 
-.collapse-toggle:hover {
-  color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .collapse-toggle:hover {
+    color: var(--secondary);
+  }
 }
 
 .collapse-toggle:focus-visible {
@@ -1879,9 +1899,11 @@ function handleExport() {
   transition: border-color .15s ease, color .15s ease;
 }
 
-.add-stat-btn:hover {
-  border-color: var(--secondary);
-  color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .add-stat-btn:hover {
+    border-color: var(--secondary);
+    color: var(--secondary);
+  }
 }
 
 .add-stat-btn:focus-visible {
@@ -1949,9 +1971,11 @@ function handleExport() {
   transition: border-color .15s ease, color .15s ease;
 }
 
-.stat-remove:hover {
-  border-color: var(--destructive);
-  color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .stat-remove:hover {
+    border-color: var(--destructive);
+    color: var(--destructive);
+  }
 }
 
 .stat-remove:focus-visible {
@@ -2014,8 +2038,10 @@ function handleExport() {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    @media (hover: hover) and (pointer: fine) {
   .preset-swatch:hover {
-    transform: none;
+      transform: none;
+    }
   }
 }
 
@@ -2039,8 +2065,10 @@ function handleExport() {
   transition: border-color 0.15s;
 }
 
-.wb-bind-item:hover {
-  border-color: var(--primary);
+@media (hover: hover) and (pointer: fine) {
+  .wb-bind-item:hover {
+    border-color: var(--primary);
+  }
 }
 
 .wb-bind-info {
@@ -2079,9 +2107,11 @@ function handleExport() {
   flex-shrink: 0;
 }
 
-.wb-unbind-btn:hover {
-  border-color: var(--destructive);
-  color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .wb-unbind-btn:hover {
+    border-color: var(--destructive);
+    color: var(--destructive);
+  }
 }
 
 .wb-unbind-btn:focus-visible {
@@ -2129,8 +2159,10 @@ function handleExport() {
   flex-shrink: 0;
 }
 
-.wb-bind-btn:hover:not(:disabled) {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .wb-bind-btn:hover:not(:disabled) {
+    opacity: 0.9;
+  }
 }
 
 .wb-bind-btn:disabled {

@@ -202,9 +202,11 @@ onBeforeUnmount(() => {
   transition: color .15s ease, background-color .15s ease;
 }
 
-.modal-close:hover {
-  color: var(--foreground);
-  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .modal-close:hover {
+    color: var(--foreground);
+    background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  }
 }
 
 .modal-close:focus-visible {

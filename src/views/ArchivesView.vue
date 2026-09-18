@@ -431,8 +431,10 @@ type="button"
   transition: background 0.15s;
 }
 
-.header-btn:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .header-count {
@@ -524,8 +526,10 @@ type="button"
   cursor: pointer;
 }
 
-.clear-btn:hover {
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .clear-btn:hover {
+    color: var(--foreground);
+  }
 }
 
 /* 记录列表 */
@@ -557,8 +561,10 @@ type="button"
   transition: border-color 0.15s, transform 0.1s;
 }
 
-.archive-item:hover {
-  border-color: var(--accent-blue);
+@media (hover: hover) and (pointer: fine) {
+  .archive-item:hover {
+    border-color: var(--accent-blue);
+  }
 }
 
 .archive-item:active {

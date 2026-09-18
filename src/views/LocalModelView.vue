@@ -692,8 +692,10 @@ onMounted(async () => {
   transition: background-color .15s ease;
 }
 
-.header-btn:hover:not(:disabled) {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover:not(:disabled) {
+    background: var(--card-elevated);
+  }
 }
 
 .header-btn:disabled {
@@ -795,8 +797,10 @@ onMounted(async () => {
   transition: color .15s ease, border-color .15s ease;
 }
 
-.tab:hover {
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    color: var(--foreground);
+  }
 }
 
 .tab.active {
@@ -1001,8 +1005,10 @@ onMounted(async () => {
   transition: background-color .15s ease;
 }
 
-.btn:hover:not(:disabled) {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) {
+    background: var(--card-elevated);
+  }
 }
 
 .btn:disabled {
@@ -1022,8 +1028,10 @@ onMounted(async () => {
   border-color: var(--danger, #ef4444);
 }
 
-.btn.danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger, #ef4444) 10%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .btn.danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger, #ef4444) 10%, transparent);
+  }
 }
 
 /* 统计卡片 */

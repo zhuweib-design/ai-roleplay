@@ -181,9 +181,11 @@ onBeforeUnmount(() => clearTimer());
   transition: opacity .15s ease, background-color .15s ease;
 }
 
-.toast-close:hover {
-  opacity: 1;
-  background: color-mix(in srgb, currentColor 8%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .toast-close:hover {
+    opacity: 1;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+  }
 }
 
 .toast-close:focus-visible {

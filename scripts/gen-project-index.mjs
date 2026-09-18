@@ -174,6 +174,7 @@ const CURATED = {
   'src/core/output-discipline.ts': '输出纪律约束（L2）',
   'src/core/mobile-nav.ts': '移动端导航状态管理',
   'src/core/viewport.ts': '视口/断点唯一来源（matchMedia 仅允许出现在此文件）',
+  'src/core/storage-persistence.ts': 'Web/PWA 持久化授权（navigator.storage.persist，降低 IndexedDB 被驱逐风险）',
   'src/core/benchmark.ts': '性能基准测量',
   'src/core/user-model-bridge.ts': '用户自备模型桥接',
 
@@ -271,6 +272,10 @@ const CURATED = {
 
   'scripts/breakpoint-guard.mjs': '门禁：禁止野断点、断点数值 L1/L4 同步校验',
   'scripts/css-viewport-guard.mjs': '门禁：CSS 视口单位使用校验',
+  'scripts/csp-guard.mjs': '门禁：Web 端 CSP 契约校验（构建产物含 CSP、关键指令齐备、script-src 未被削弱）',
+  'scripts/csp-audit.mjs': '工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用）',
+  'scripts/hover-guard.mjs': '门禁：禁止未按 (hover: hover) 分流的 :hover，防触屏 tap 后 hover 粘滞',
+  'scripts/important-guard.mjs': '门禁：!important 棘轮守卫（基线锁定，只许降不许升）',
   'scripts/check-contrast.mjs': '门禁：5 套主题关键色对对比度 ≥ AA',
   'scripts/contrast-audit.mjs': '审计：对比度全量扫描报告',
   'scripts/i18n-scan.mjs': '门禁：硬编码中文 UI 文案扫描（strict 模式）',
@@ -297,6 +302,7 @@ const CURATED = {
   'docs/rag-enhancement-plan.md': '开发文档：RAG 增强实现计划',
   'docs/data-backup-restore.md': '修复文档：备份恢复与灾备演练 Runbook（P2-#3 修复交付）',
   'docs/goal-tracker.md': '修复文档：跨端一致性 28 项缺陷修复进度台账',
+  'docs/web-sop-review-2026-09-18.md': '开发文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维）',
   'docs/assets/test-gradient.jpg': '设计文档：渐变测试图（本地验证用）',
 
   'deliverables/cross-client-review-2026-09-07.md': '修复文档：跨客户端评审报告（28 项缺陷来源）',

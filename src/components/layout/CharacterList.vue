@@ -481,13 +481,17 @@ function onDrawerTouchEnd(e: TouchEvent) {
   opacity: 0.55;
 }
 
-.conv-act-btn:hover {
-  color: var(--foreground);
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .conv-act-btn:hover {
+    color: var(--foreground);
+    opacity: 1;
+  }
 }
 
-.conv-act-btn.danger:hover {
-  color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .conv-act-btn.danger:hover {
+    color: var(--destructive);
+  }
 }
 
 .conv-new-btn {
@@ -505,9 +509,11 @@ function onDrawerTouchEnd(e: TouchEvent) {
   cursor: pointer;
 }
 
-.conv-new-btn:hover {
-  color: var(--foreground);
-  border-color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .conv-new-btn:hover {
+    color: var(--foreground);
+    border-color: var(--secondary);
+  }
 }
 
 .char-empty {
@@ -532,22 +538,22 @@ function onDrawerTouchEnd(e: TouchEvent) {
   background: none;
 }
 
-/* §10.4 移动端触控目标：会话操作按钮 ≥40px、加大间距避免误触 */
+/* §10.4 移动端触控目标：会话操作按钮 ≥44px（--touch-min）、加大间距避免误触 */
 @media (max-width: 640px) {
   .conv-act-btn {
-    width: 40px;
-    height: 40px;
+    width: var(--touch-min);
+    height: var(--touch-min);
     opacity: 1;
   }
   .conv-actions {
     gap: 6px;
   }
   .conv-main-btn {
-    min-height: 40px;
+    min-height: var(--touch-min);
     padding: 6px 0;
   }
   .conv-new-btn {
-    min-height: 40px;
+    min-height: var(--touch-min);
     font-size: 13px;
   }
 }

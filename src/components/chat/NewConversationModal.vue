@@ -511,9 +511,11 @@ watch(
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.type-card:hover {
-  border-color: var(--secondary);
-  background: var(--background);
+@media (hover: hover) and (pointer: fine) {
+  .type-card:hover {
+    border-color: var(--secondary);
+    background: var(--background);
+  }
 }
 
 .type-card:focus-visible {
@@ -652,9 +654,11 @@ watch(
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.char-select-row:hover {
-  border-color: var(--secondary);
-  background: var(--background);
+@media (hover: hover) and (pointer: fine) {
+  .char-select-row:hover {
+    border-color: var(--secondary);
+    background: var(--background);
+  }
 }
 
 .char-select-row:focus-visible {
@@ -744,8 +748,10 @@ watch(
   cursor: not-allowed;
 }
 
-.modal-cancel:hover:not(:disabled) {
-  background: var(--video-bg);
+@media (hover: hover) and (pointer: fine) {
+  .modal-cancel:hover:not(:disabled) {
+    background: var(--video-bg);
+  }
 }
 
 .modal-next,
@@ -755,10 +761,12 @@ watch(
   color: var(--on-accent);
 }
 
-.modal-next:hover:not(:disabled),
-.modal-confirm:hover:not(:disabled) {
-  background: var(--tk-red-600);
-  border-color: var(--tk-red-600);
+@media (hover: hover) and (pointer: fine) {
+  .modal-next:hover:not(:disabled),
+  .modal-confirm:hover:not(:disabled) {
+    background: var(--tk-red-600);
+    border-color: var(--tk-red-600);
+  }
 }
 
 .modal-back {

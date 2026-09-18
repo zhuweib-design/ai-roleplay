@@ -709,9 +709,11 @@ select.field-input {
   cursor: pointer;
   transition: background-color .15s ease, border-color .15s ease;
 }
-.add-btn:hover {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .add-btn:hover {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 .add-btn:focus-visible {
   outline: 2px solid var(--secondary);
@@ -835,8 +837,10 @@ select.field-input {
   border-color: var(--border);
   color: var(--foreground);
 }
-.add-btn.secondary:hover {
-  background: var(--video-bg);
+@media (hover: hover) and (pointer: fine) {
+  .add-btn.secondary:hover {
+    background: var(--video-bg);
+  }
 }
 .hidden-input {
   position: absolute;
@@ -921,8 +925,10 @@ select.field-input {
   color: var(--destructive);
   border-color: color-mix(in srgb, var(--destructive) 45%, transparent);
 }
-.mini-btn.danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--destructive) 12%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .mini-btn.danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--destructive) 12%, transparent);
+  }
 }
 
 /* ── RAG 增强:自动择优 + 停用词 ── */

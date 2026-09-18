@@ -7,6 +7,10 @@ on:
       - 'v*'
   pull_request:
     branches: [master, main]
+  # 手动触发（P1-4 修复）：使 tauri-release 的 `workflow_dispatch` 分支可达。
+  # 注意：手动触发时 github.ref_name 为分支名，tauri-action 会以该名称建 release/tag，
+  # 故「产出签名安装包」的手动入口应配合 tag 使用；日常只用于按需重跑门禁。
+  workflow_dispatch:
 
 # 同一分支的重复推送取消旧运行，节省算力
 concurrency:
@@ -45,19 +49,38 @@ jobs:
       - name: Breakpoint guard (check:breakpoints)
         run: npm run check:breakpoints
 
+      # 动态视口守卫（S-8）：禁止裸 100vh（须 100vh + 100dvh 双写），防 iOS 动态视口工具条遮挡
+      - name: Viewport guard (check:viewport)
+        run: npm run check:viewport
+
+      # 触屏 hover 守卫（I-5 / P2-5）：禁止未按 (hover: hover) and (pointer: fine) 分流的 :hover，
+      # 防止触屏 tap 后 hover 态粘滞
+      - name: Hover guard (check:hover)
+        run: npm run check:hover
+
+      # !important 棘轮守卫（S-1 / P2-4）：存量基线锁定，只许降不许升
+      - name: Important guard (check:important)
+        run: npm run check:important
+
       # 无障碍对比度门禁：静态核验 5 个内置主题的关键色对 ≥ AA(4.5:1)
       # （axe 在 jsdom 无法计算颜色对比度, 故由 check-contrast.mjs 单独校验; axe 的 ARIA/语义规则已并入 test:coverage）
       - name: Contrast audit (a11y:contrast)
         run: npm run a11y:contrast
 
-      # 覆盖率门禁：vitest v8 provider, 80% 阈值未达标则非零退出
-      # 注：Linux 路径大小写一致, 无 Windows 本地盘符重复误报, 80% 门禁正常生效
-      - name: Test + coverage gate (80%)
+      # 覆盖率门禁：vitest v8 provider，阈值定义在 vitest.config.ts
+      # （statements 78 / branches 73 / functions 78 / lines 78），未达标则非零退出
+      # 注：Linux 路径大小写一致, 无 Windows 本地盘符重复误报, 门禁正常生效
+      - name: Test + coverage gate (78/73/78/78)
         run: npm run test:coverage
 
       # 构建门禁：vue-tsc 类型检查 + vite 生产构建
       - name: Build (typecheck + vite build)
         run: npm run build
+
+      # Web 端 CSP 契约守卫（P0-2）：校验构建产物含 CSP meta、关键指令齐备、
+      # script-src 未被 unsafe-eval/unsafe-inline 削弱、无内联 script。必须在 Build 之后。
+      - name: CSP guard (check:csp)
+        run: npm run check:csp
 
       # 持久化覆盖率报告供人工查看（不影响门禁结果）
       - name: Upload coverage report

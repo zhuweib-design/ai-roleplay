@@ -1092,8 +1092,10 @@ type="button"
   transition: background 0.15s;
 }
 
-.header-btn:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .header-btn.primary {
@@ -1102,8 +1104,10 @@ type="button"
   border-color: var(--primary);
 }
 
-.header-btn.primary:hover {
-  filter: brightness(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn.primary:hover {
+    filter: brightness(1.1);
+  }
 }
 
 .header-field {
@@ -1147,8 +1151,10 @@ type="button"
   transition: color 0.15s, border-color 0.15s;
 }
 
-.tab:hover {
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    color: var(--foreground);
+  }
 }
 
 .tab.active {
@@ -1228,8 +1234,10 @@ type="button"
   transition: background 0.15s;
 }
 
-.btn:hover {
-  background: var(--card-elevated);
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    background: var(--card-elevated);
+  }
 }
 
 .btn:disabled {
@@ -1243,8 +1251,10 @@ type="button"
   border-color: var(--primary);
 }
 
-.btn.primary:hover:not(:disabled) {
-  filter: brightness(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .btn.primary:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
 }
 
 .btn.danger-outline {
@@ -1252,8 +1262,10 @@ type="button"
   border-color: var(--danger-border);
 }
 
-.btn.danger-outline:hover:not(:disabled) {
-  background: var(--danger-bg);
+@media (hover: hover) and (pointer: fine) {
+  .btn.danger-outline:hover:not(:disabled) {
+    background: var(--danger-bg);
+  }
 }
 
 .icon-btn {
@@ -1270,14 +1282,18 @@ type="button"
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.icon-btn:hover {
-  background: var(--card-elevated);
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover {
+    background: var(--card-elevated);
+    color: var(--foreground);
+  }
 }
 
-.icon-btn.danger:hover {
-  color: var(--danger-fg);
-  background: var(--danger-bg);
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn.danger:hover {
+    color: var(--danger-fg);
+    background: var(--danger-bg);
+  }
 }
 
 /* Badges */

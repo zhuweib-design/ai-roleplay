@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import 'fake-indexeddb/auto';
 import { useSettingsStore } from '../../src/stores/settings';
 import { IndexedDBAdapter } from '@storage/indexeddb-adapter';
+import { initLocale } from '@/i18n';
 import type { AppSettings, ApiProfile, ThemeName } from '@/types';
 
 // ── 测试夹具 ──
@@ -57,6 +58,9 @@ class MockStorageAdapter {
 describe('useSettingsStore — F5 单元测试', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    // 固定界面语言为 zh：用例断言的是中文错误文案，而 P2-3 起 loadFromStorage 会按
+    // navigator.language 兜底（jsdom 默认 en-US），不固定会让断言依赖宿主环境语言。
+    initLocale('zh');
     // 重置 document 属性（jsdom 中 <html data-theme> 与 font-size 可能跨用例残留）
     if (typeof document !== 'undefined') {
       document.documentElement.removeAttribute('data-theme');
@@ -447,6 +451,40 @@ describe('useSettingsStore — F5 单元测试', () => {
     it('无 storageAdapter 时静默忽略（不抛错）', async () => {
       const store = useSettingsStore();
       await expect(store.loadFromStorage()).resolves.toBeUndefined();
+    });
+
+    // ── P2-3：首访按浏览器语言兜底，持久化值优先 ──
+
+    it('首访（无持久化语言）时按 navigator.language 兜底为 en', async () => {
+      const originalLang = Object.getOwnPropertyDescriptor(navigator, 'language');
+      Object.defineProperty(navigator, 'language', { configurable: true, value: 'en-US' });
+      try {
+        const mock = new MockStorageAdapter();
+        mock.loadData = {}; // 首次启动，无 locale
+        const store = useSettingsStore();
+        store.setStorageAdapter(mock);
+        await store.loadFromStorage();
+        expect(store.locale).toBe('en');
+      } finally {
+        if (originalLang) Object.defineProperty(navigator, 'language', originalLang);
+        else Reflect.deleteProperty(navigator, 'language');
+      }
+    });
+
+    it('持久化的语言选择优先于浏览器语言（不被覆盖）', async () => {
+      const originalLang = Object.getOwnPropertyDescriptor(navigator, 'language');
+      Object.defineProperty(navigator, 'language', { configurable: true, value: 'en-US' });
+      try {
+        const mock = new MockStorageAdapter();
+        mock.loadData = { theme: 'dark', locale: 'zh' }; // 用户此前显式选了中文
+        const store = useSettingsStore();
+        store.setStorageAdapter(mock);
+        await store.loadFromStorage();
+        expect(store.locale).toBe('zh');
+      } finally {
+        if (originalLang) Object.defineProperty(navigator, 'language', originalLang);
+        else Reflect.deleteProperty(navigator, 'language');
+      }
     });
 
     it('存储为空时保留默认值并写入默认设置', async () => {

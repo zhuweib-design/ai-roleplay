@@ -912,9 +912,11 @@ function startWithExample(text: string) {
   transition: opacity 0.15s ease;
 }
 
-.jump-bottom-btn:hover {
-  background: color-mix(in srgb, var(--primary) 14%, var(--card-elevated));
-  color: var(--primary-fg);
+@media (hover: hover) and (pointer: fine) {
+  .jump-bottom-btn:hover {
+    background: color-mix(in srgb, var(--primary) 14%, var(--card-elevated));
+    color: var(--primary-fg);
+  }
 }
 
 .jump-bottom-btn:focus-visible {
@@ -1045,9 +1047,11 @@ function startWithExample(text: string) {
   white-space: nowrap;
 }
 
-.qr-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--secondary) 18%, transparent);
-  border-color: color-mix(in srgb, var(--secondary) 35%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .qr-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--secondary) 18%, transparent);
+    border-color: color-mix(in srgb, var(--secondary) 35%, transparent);
+  }
 }
 
 .qr-btn:disabled {
@@ -1086,9 +1090,11 @@ function startWithExample(text: string) {
   font-size: 12px;
   cursor: pointer;
 }
-.load-older-btn:hover {
-  border-color: var(--ring);
-  color: var(--text-primary);
+@media (hover: hover) and (pointer: fine) {
+  .load-older-btn:hover {
+    border-color: var(--ring);
+    color: var(--text-primary);
+  }
 }
 .load-older-btn:focus-visible {
   outline: 2px solid var(--ring);
@@ -1164,10 +1170,12 @@ function startWithExample(text: string) {
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
 
-.example-chip:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--primary) 12%, var(--card));
-  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
-  color: var(--primary-fg);
+@media (hover: hover) and (pointer: fine) {
+  .example-chip:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary) 12%, var(--card));
+    border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    color: var(--primary-fg);
+  }
 }
 
 .example-chip:active:not(:disabled) {

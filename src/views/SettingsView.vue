@@ -701,6 +701,44 @@ const backupFileInput = useTemplateRef<HTMLInputElement>('backupFileInput');
 
 // 当前激活的 storageAdapter（复用全局单例，App.vue 启动时已初始化）
 import { getStorageAdapter, getStorageCapability } from '@/storage';
+// P1-10：Web / PWA 持久化授权状态（Tauri 走文件系统，显示「不适用」）
+import { persistState, refreshStoragePersistence, requestPersistentStorage } from '@/core/storage-persistence';
+
+const persistLabel = computed(() => {
+  switch (persistState.value) {
+    case 'granted':
+      return t('settingsView.persistGranted');
+    case 'denied':
+      return t('settingsView.persistDenied');
+    case 'unsupported':
+      return t('settingsView.persistUnsupported');
+    default:
+      return t('settingsView.persistUnknown');
+  }
+});
+
+const persistHint = computed(() =>
+  persistState.value === 'granted'
+    ? t('settingsView.persistGrantedHint')
+    : t('settingsView.persistDeniedHint'),
+);
+
+const persistBusy = ref(false);
+
+/** 重新申请持久化授权（浏览器不弹窗，按参与度启发式判定；失败不阻断） */
+async function handleRequestPersist(): Promise<void> {
+  persistBusy.value = true;
+  try {
+    persistState.value = await requestPersistentStorage();
+  } finally {
+    persistBusy.value = false;
+  }
+}
+
+// 进入设置页时刷新一次（只读查询，不重复申请）
+onMounted(() => {
+  void refreshStoragePersistence();
+});
 
 const exportCharList = computed(() => characterStore.characters);
 const exportChatCharList = computed(() => characterStore.characters);
@@ -1926,6 +1964,29 @@ URL
         </div>
       </div>
 
+      <!-- P1-10: Web / PWA 数据持久性（IndexedDB 驱逐风险） -->
+      <div class="data-mgmt-row">
+        <div class="data-mgmt-block">
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.persistSection') }}</h3>
+          <p class="data-mgmt-hint">{{ t('settingsView.persistDesc') }}</p>
+          <p class="data-mgmt-hint persist-state" role="status">
+            {{ t('settingsView.persistStateLabel') }}<strong>{{ persistLabel }}</strong>
+          </p>
+          <p class="data-mgmt-hint">{{ persistHint }}</p>
+          <div class="data-mgmt-actions">
+            <button
+              type="button"
+              class="data-mgmt-btn"
+              :disabled="persistBusy || persistState === 'unsupported'"
+              @click="handleRequestPersist"
+            >
+              <Icon name="refresh-cw" :size="14" />
+              <span>{{ t('settingsView.persistRetry') }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- E-04 二期: 嵌入优化开关 -->
       <div class="data-mgmt-row">
         <div class="data-mgmt-block">
@@ -2453,7 +2514,15 @@ URL
   pointer-events: none;
 }
 
-.settings-nav-item:hover .settings-nav-item-desc,
+@media (hover: hover) and (pointer: fine) {
+  .settings-nav-item:hover .settings-nav-item-desc {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+}
+
+/* focus-visible 分支不加 hover 守卫：键盘可达性不受设备 hover 能力影响 */
 .settings-nav-item:focus-visible .settings-nav-item-desc {
   opacity: 1;
   visibility: visible;
@@ -2468,9 +2537,11 @@ URL
   }
 }
 
-.settings-nav-item:hover {
-  background: var(--card-elevated, var(--card));
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .settings-nav-item:hover {
+    background: var(--card-elevated, var(--card));
+    color: var(--foreground);
+  }
 }
 
 .settings-nav-item:focus-visible {
@@ -2577,8 +2648,10 @@ URL
   transition: border-color .15s ease, background-color .15s ease;
 }
 
-.theme-card:hover {
-  border-color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .theme-card:hover {
+    border-color: var(--secondary);
+  }
 }
 
 .theme-card:focus-visible {
@@ -2737,8 +2810,10 @@ URL
   transition: border-color .15s ease, background-color .15s ease;
 }
 
-.fontsize-card:hover {
-  border-color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .fontsize-card:hover {
+    border-color: var(--secondary);
+  }
 }
 
 .fontsize-card:focus-visible {
@@ -2821,9 +2896,11 @@ URL
   transition: background-color .15s ease, border-color .15s ease;
 }
 
-.add-btn:hover {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .add-btn:hover {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 
 .add-btn:focus-visible {
@@ -3007,10 +3084,12 @@ URL
   border-color: var(--warning-border);
 }
 
-.action-btn.set-primary:hover {
-  background: var(--warning-bg);
-  border-color: var(--warning-fg);
-  color: var(--warning-fg);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.set-primary:hover {
+    background: var(--warning-bg);
+    border-color: var(--warning-fg);
+    color: var(--warning-fg);
+  }
 }
 
 .profile-meta {
@@ -3056,9 +3135,11 @@ URL
   transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
-.action-btn:hover {
-  background: var(--card);
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn:hover {
+    background: var(--card);
+    color: var(--foreground);
+  }
 }
 
 .action-btn:focus-visible {
@@ -3072,9 +3153,11 @@ URL
   color: var(--on-accent);
 }
 
-.action-btn.activate:hover {
-  background: var(--tk-cyan-600);
-  border-color: var(--tk-cyan-600);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.activate:hover {
+    background: var(--tk-cyan-600);
+    border-color: var(--tk-cyan-600);
+  }
 }
 
 .action-btn.deactivate {
@@ -3082,9 +3165,11 @@ URL
   color: var(--muted-foreground);
 }
 
-.action-btn.delete:hover {
-  border-color: var(--destructive);
-  color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.delete:hover {
+    border-color: var(--destructive);
+    color: var(--destructive);
+  }
 }
 
 /* ── 表单 ── */
@@ -3281,9 +3366,11 @@ select.field-input {
   border-radius: var(--radius-sm);
 }
 
-.toggle-visibility:hover {
-  color: var(--foreground);
-  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .toggle-visibility:hover {
+    color: var(--foreground);
+    background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  }
 }
 
 .toggle-visibility:focus-visible {
@@ -3312,8 +3399,10 @@ select.field-input {
   outline-offset: 2px;
 }
 
-.modal-cancel:hover {
-  background: var(--video-bg);
+@media (hover: hover) and (pointer: fine) {
+  .modal-cancel:hover {
+    background: var(--video-bg);
+  }
 }
 
 .modal-save {
@@ -3322,9 +3411,11 @@ select.field-input {
   color: var(--on-media);
 }
 
-.modal-save:hover:not(:disabled) {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .modal-save:hover:not(:disabled) {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 
 .modal-save:disabled {
@@ -3338,9 +3429,11 @@ select.field-input {
   color: var(--on-accent);
 }
 
-.modal-confirm:hover {
-  background: var(--destructive);
-  border-color: var(--destructive);
+@media (hover: hover) and (pointer: fine) {
+  .modal-confirm:hover {
+    background: var(--destructive);
+    border-color: var(--destructive);
+  }
 }
 
 .delete-warning {
@@ -3616,6 +3709,16 @@ select.field-input {
   font-size: 12px;
 }
 
+/* P1-10：持久化授权状态行 */
+.persist-state {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 12px;
+}
+
 .data-mgmt-actions {
   display: flex;
   align-items: center;
@@ -3638,9 +3741,11 @@ select.field-input {
   transition: background-color 0.15s, border-color 0.15s;
 }
 
-.data-mgmt-btn:hover:not(:disabled) {
-  background: var(--card-elevated);
-  border-color: var(--tk-cyan-500);
+@media (hover: hover) and (pointer: fine) {
+  .data-mgmt-btn:hover:not(:disabled) {
+    background: var(--card-elevated);
+    border-color: var(--tk-cyan-500);
+  }
 }
 
 .data-mgmt-btn:disabled {
@@ -4035,8 +4140,10 @@ select.field-input {
   border-color: color-mix(in srgb, var(--tk-red-500, #ef4444) 45%, transparent);
 }
 
-.action-btn.danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--tk-red-500, #ef4444) 12%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .action-btn.danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--tk-red-500, #ef4444) 12%, transparent);
+  }
 }
 
 /* ── 窄屏：侧边栏转为顶部横向分类栏 ── */

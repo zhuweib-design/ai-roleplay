@@ -417,8 +417,10 @@ function handleKeydown(e: KeyboardEvent) {
   justify-content: center;
 }
 
-.mpm-toggle:hover {
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .mpm-toggle:hover {
+    color: var(--foreground);
+  }
 }
 
 .mpm-toggle:focus-visible {
@@ -472,9 +474,11 @@ function handleKeydown(e: KeyboardEvent) {
   color: var(--muted-foreground);
 }
 
-.mpm-cancel:hover {
-  background: color-mix(in srgb, var(--foreground) 5%, transparent);
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  .mpm-cancel:hover {
+    background: color-mix(in srgb, var(--foreground) 5%, transparent);
+    color: var(--foreground);
+  }
 }
 
 .mpm-cancel:focus-visible {
@@ -487,8 +491,10 @@ function handleKeydown(e: KeyboardEvent) {
   color: var(--on-accent);
 }
 
-.mpm-submit:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--secondary) 90%, white);
+@media (hover: hover) and (pointer: fine) {
+  .mpm-submit:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--secondary) 90%, white);
+  }
 }
 
 .mpm-submit:disabled {
