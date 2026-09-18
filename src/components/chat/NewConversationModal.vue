@@ -766,7 +766,7 @@ watch(
 }
 
 /* 响应式 */
-@media (max-width: 539px) {
+@media (max-width: 640px) {
   .type-cards {
     grid-template-columns: 1fr;
   }

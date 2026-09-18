@@ -188,6 +188,7 @@ export default {
   'chat.exportChat': '导出对话',
   'chat.exportChatTitle': '导出对话为 Markdown',
   'chat.togglePanel': '切换上下文面板',
+  'chat.closeSidebar': '关闭侧边栏',
   'chat.messagesAria': '对话消息历史',
   'chat.loadOlder': '加载更早消息（还有 {count} 条）',
   'chat.jumpToBottomAria': '回到底部（查看最新消息）',
@@ -372,6 +373,8 @@ export default {
   'profile.aria': '个人中心',
   'profile.title': '个人中心',
   'profile.subtitle': '管理你的昵称与身份信息',
+  'profile.back': '返回',
+  'profile.backAria': '返回上一页',
   'profile.noPersona': '尚未创建身份，请前往设置页初始化 Persona。',
   'profile.currentIdentity': '当前身份',
   'profile.edit': '编辑',
@@ -396,6 +399,10 @@ export default {
   'persona.nameRequired': 'Persona 名称不能为空',
   'persona.nameTooLong': 'Persona 名称不能超过 {max} 字符',
   'persona.descTooLong': 'Persona 描述不应过长（建议 {max} 字符内）',
+
+  // ── 图片选择器（F-5：拍照 / 相册双入口） ──
+  'picker.camera': '拍照',
+  'picker.album': '从相册选择',
 
   // ── 对话记录（ArchivesView） ──
   'archives.backAria': '返回对话页',
@@ -551,6 +558,8 @@ export default {
   'vector.installing': '安装中…',
   'vector.pickFolder': '选择模型文件夹',
   'vector.installedList': '已安装模型',
+  'vector.dirPickUnsupported': '当前设备不支持「选择文件夹」安装，请改用 zip 压缩包上传',
+  'vector.dirPickHint': '当前浏览器不支持选择文件夹安装本地模型；请在下方「用户自定义模型」用 zip 压缩包上传。',
   'vector.browserSafe': '浏览器可用',
   'vector.desktop': '桌面',
   'vector.dynamicLayer': '动态层',
@@ -2017,6 +2026,7 @@ export default {
   'settingsView.profileSection': '资料档案(Profile)',
   'settingsView.profileCurrent': '当前档案:',
   'settingsView.profileCurrentDesc': '切换档案后数据相互隔离(Web 模式按档案分库);切换需重启应用生效。',
+  'settingsView.profileSingleNotice': '桌面端为单档案模式：切换档案不会隔离数据（仅 Web 模式按档案分库隔离）。',
   'settingsView.profileNamePlaceholder': '新档案名(字母/数字/_-)',
   'settingsView.profileNameAria': '新资料档案名称',
   'settingsView.profileCreateAndSwitch': '创建并切换',
@@ -2525,6 +2535,13 @@ export default {
   'char.cmdFailed': '（命令执行失败）',
   'chat.persistFailed': '持久化失败：{error}',
   'chat.loadHistoryFailed': '加载历史失败：{error}',
+  'chat.errCors': '跨域请求被浏览器拦截（CORS）。请确认接口已允许跨域，或改用桌面客户端（Tauri）发起请求。',
+  'chat.errTauriApi': '本地桌面请求失败（HTTP {status}）。请检查地址与本地服务是否可用。',
+  'chat.errTauriNet': '本地桌面网络异常：{error}',
+  'chat.errLocal': '本地模型推理失败：{error}',
+  'chat.errApi': '接口返回错误（HTTP {status}）。请检查密钥与配额。',
+  'chat.errNet': '网络连接异常，请检查网络后重试。',
+  'chat.errUnknown': '生成失败：{error}',
 
   // ── market store 补充 ──
   'mkt.downloadOk': '下载成功',

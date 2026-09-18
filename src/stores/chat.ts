@@ -4,6 +4,7 @@ import { ref, computed } from 'vue';
 import type { UIMessage, UICharacter, ApiProfile } from '@/types';
 import type { CharacterCard } from '@/core/character-card';
 import { ChatManager, classifyChatError, type ChatManagerConfig } from '../services/chat-manager';
+import { chatErrorI18n } from '../services/chat-error';
 import { createApiClient } from '../api';
 import { ApiError, type ApiErrorKind } from '../api/types';
 import type { StorageAdapter } from '../storage/storage-adapter';
@@ -453,7 +454,8 @@ export const useChatStore = defineStore('chat', () => {
             if (type === 'aborted') {
               if (!liveMsg.content) liveMsg.content = t('char.stoppedGen2');
             } else {
-              liveMsg.content = t('char.genFailed3', { error: err.message });
+              const msg = chatErrorI18n(err);
+              liveMsg.content = t(msg.key, msg.params);
             }
             lastError.value = toLastErrorRecord(err, type);
             streamingContent.value = '';
@@ -722,7 +724,8 @@ export const useChatStore = defineStore('chat', () => {
             if (type === 'aborted') {
               if (!target.content) target.content = t('char.stoppedGen2');
             } else {
-              target.content = t('char.genFailed3', { error: err.message });
+              const msg = chatErrorI18n(err);
+              target.content = t(msg.key, msg.params);
             }
             lastError.value = toLastErrorRecord(err, type);
             streamingContent.value = '';
@@ -799,7 +802,9 @@ export const useChatStore = defineStore('chat', () => {
       if (idx >= 0) sessions.value[idx] = chat;
       else sessions.value.push(chat);
     } catch (err) {
-      // 持久化失败不应阻塞 UI 流程，记录到 lastError
+      // F-2 审查结论：持久化失败「非阻塞 + 记录 lastError」策略保留。
+      // lastError 由全局错误横幅呈现给用户（非静默吞掉），且不影响已生成内容的显示；
+      // 不在此抛错或阻断 UI，避免一次存储异常导致整轮对话不可见。
       lastError.value = {
         type: 'unknown',
         message: t('chat.persistFailed', { error: err instanceof Error ? err.message : String(err) }),

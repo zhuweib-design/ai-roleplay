@@ -141,27 +141,29 @@ describe('useCharacterStore — E5 单元测试', () => {
   });
 
   describe('抽屉与导航状态', () => {
-    it('togglePanel 应切换 panelOpen', () => {
+    it('togglePanel 应切换 panelExpanded（桌面视口默认）', () => {
       const store = useCharacterStore();
-      const before = store.panelOpen;
+      const before = store.panelExpanded;
       store.togglePanel();
-      expect(store.panelOpen).toBe(!before);
+      expect(store.panelExpanded).toBe(!before);
     });
 
-    it('toggleCharacterList 应切换 characterListOpen', () => {
+    it('toggleCharacterList 应切换 characterDrawerOpen', () => {
       const store = useCharacterStore();
-      const before = store.characterListOpen;
+      const before = store.characterDrawerOpen;
       store.toggleCharacterList();
-      expect(store.characterListOpen).toBe(!before);
+      expect(store.characterDrawerOpen).toBe(!before);
     });
 
-    it('closeAllDrawers 应同时关闭 panelOpen 与 characterListOpen', () => {
+    it('closeAllDrawers 应关闭两个抽屉（contextDrawerOpen 与 characterDrawerOpen），且不影响桌面 panelExpanded', () => {
       const store = useCharacterStore();
-      store.panelOpen = true;
-      store.characterListOpen = true;
+      store.panelExpanded = true;
+      store.contextDrawerOpen = true;
+      store.characterDrawerOpen = true;
       store.closeAllDrawers();
-      expect(store.panelOpen).toBe(false);
-      expect(store.characterListOpen).toBe(false);
+      expect(store.contextDrawerOpen).toBe(false);
+      expect(store.characterDrawerOpen).toBe(false);
+      expect(store.panelExpanded).toBe(true);
     });
 
     it('setNav 应更新 currentNav', () => {

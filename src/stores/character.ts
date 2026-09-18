@@ -14,6 +14,7 @@ import {
   validateCharacterCard,
 } from '../core/character-card';
 import { useSettingsStore } from './settings';
+import { isCompact } from '@/core/viewport';
 import { createApiClient } from '../api';
 import {
   buildGenerationMessages,
@@ -44,8 +45,13 @@ export const useCharacterStore = defineStore('character', () => {
   const filterTag = ref('');
   /** §14.3 角色列表排序：updated（最近更新）/ name（名称） */
   const sortBy = ref<'updated' | 'name'>('updated');
-  const panelOpen = ref(true);
-  const characterListOpen = ref(false);
+  // I-1（2026-09-16）：拆分单一 panelOpen 双语义布尔为三个语义清晰的状态：
+  // - panelExpanded      桌面（≥1025）上下文面板是否展开（docked 四栏之一）
+  // - contextDrawerOpen  移动/平板（≤1024）上下文抽屉是否打开
+  // - characterDrawerOpen 角色列表抽屉是否打开（重命名自 characterListOpen）
+  const panelExpanded = ref(true);
+  const contextDrawerOpen = ref(false);
+  const characterDrawerOpen = ref(false);
   const currentNav = ref<NavKey>('chat');
 
   // 注入的存储适配器（运行时由 App.vue 设置）
@@ -202,17 +208,25 @@ export const useCharacterStore = defineStore('character', () => {
     sortBy.value = sort;
   }
 
+  // I-1：togglePanel 按当前视口翻转对应语义状态：
+  // 桌面翻转 panelExpanded（docked 面板展开/收起），移动/平板翻转 contextDrawerOpen（抽屉开/关）。
   function togglePanel() {
-    panelOpen.value = !panelOpen.value;
+    if (isCompact.value) {
+      contextDrawerOpen.value = !contextDrawerOpen.value;
+    } else {
+      panelExpanded.value = !panelExpanded.value;
+    }
   }
 
   function toggleCharacterList() {
-    characterListOpen.value = !characterListOpen.value;
+    characterDrawerOpen.value = !characterDrawerOpen.value;
   }
 
+  // 关闭全部抽屉（仅移动/平板调用，见 ChatView）：清两个抽屉态，
+  // 不影响桌面 panelExpanded（桌面面板常驻，且本函数不会被桌面路径调用）。
   function closeAllDrawers() {
-    characterListOpen.value = false;
-    panelOpen.value = false;
+    characterDrawerOpen.value = false;
+    contextDrawerOpen.value = false;
   }
 
   function setNav(key: NavKey) {
@@ -588,8 +602,9 @@ export const useCharacterStore = defineStore('character', () => {
     filterTag,
     /** §14.3 角色列表排序方式 */
     sortBy,
-    panelOpen,
-    characterListOpen,
+    panelExpanded,
+    contextDrawerOpen,
+    characterDrawerOpen,
     currentNav,
     lastError,
     lastInfo,

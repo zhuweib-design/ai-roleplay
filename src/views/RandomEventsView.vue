@@ -216,7 +216,11 @@ function clearResults(): void {
 
 // ── 返回 ──
 function goBack(): void {
-  void router.push({ name: 'chat' });
+  if (window.history.state?.back) {
+    void router.back();
+  } else {
+    void router.push({ name: 'chat' });
+  }
 }
 
 // ── 辅助 ──

@@ -38,7 +38,7 @@ const installMsg = ref('');
 const remoteOpen = ref(false);
 const testingModel = ref<VectorModelId | null>(null);
 const smokeResult = ref<Record<string, string>>({});
-const showToast = (t: 'success' | 'error', msg: string) => {
+const showToast = (t: 'info' | 'success' | 'error', msg: string) => {
   window.dispatchEvent(
     new CustomEvent('app-toast', { detail: { type: t, message: msg } })
   );
@@ -97,6 +97,12 @@ async function refreshInstalled() {
   installed.value = await createModelFileAdapter().listInstalled();
 }
 
+/** F-3：能力探测 —— 目录选择(webkitdirectory)在部分移动端浏览器不可用。
+ *  不依赖 isMobile / 环境判断决定功能可用性，而是探测真实能力；
+ *  缺失能力时提供替代路径（zip 上传，见「用户自定义模型」）或直接说明不可用。 */
+const canPickDirectory =
+  typeof HTMLInputElement !== 'undefined' && 'webkitdirectory' in HTMLInputElement.prototype;
+
 /** Web:目录选择(File System Access);Tauri:系统目录对话框 */
 async function pickAndInstall() {
   installing.value = true;
@@ -110,7 +116,7 @@ async function pickAndInstall() {
       // 由 model.onnx 所在文件夹名推断模型 id(或要求用户先选目标模型)
       const files = await adapter.importFromDir('bge-small-zh-v1.5', dir);
       installMsg.value = t('vector.copied', { files: files.join(', ') });
-    } else {
+    } else if (canPickDirectory) {
       const input = document.createElement('input');
       input.type = 'file';
       input.webkitdirectory = true;
@@ -121,6 +127,11 @@ async function pickAndInstall() {
         installMsg.value = t('vector.copiedFiles', { count: saved.length });
       };
       input.click();
+    } else {
+      // 能力缺失（如移动端 iOS Safari 无 webkitdirectory）：不静默失败，给出替代路径
+      showToast('info', t('vector.dirPickUnsupported'));
+      installMsg.value = t('vector.dirPickHint');
+      return;
     }
     await refreshInstalled();
     showToast('success', t('vector.installDone'));
@@ -416,6 +427,7 @@ watch(stopwordFilter, (v) => setStopwordFilterEnabled(v));
         {{ t('vector.installHint') }}
       </p>
       <button
+        v-if="isTauriEnv() || canPickDirectory"
         type="button"
         class="add-btn"
         :disabled="installing"
@@ -423,6 +435,7 @@ watch(stopwordFilter, (v) => setStopwordFilterEnabled(v));
       >
         {{ installing ? t('vector.installing') : t('vector.pickFolder') }}
       </button>
+      <p v-else class="field-hint dir-pick-hint">{{ t('vector.dirPickHint') }}</p>
       <span v-if="installMsg" class="install-msg">{{ installMsg }}</span>
       <ul v-if="installed.length" class="installed-list" :aria-label="t('vector.installedList')">
         <li v-for="id in installed" :key="id" class="installed-item">
@@ -674,6 +687,11 @@ select.field-input {
   font-size: 11px;
   color: var(--muted-foreground);
   margin: 0;
+}
+.dir-pick-hint {
+  color: var(--warning, #e0af68);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 /* ── 主操作按钮（对齐设置页 add-btn 标准） ── */

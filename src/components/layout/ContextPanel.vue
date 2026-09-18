@@ -119,6 +119,29 @@ function onAuthorDepth(e: Event) {
   const v = Number((e.target as HTMLInputElement).value);
   characterStore.updateCharacter(char.value.id, { authorDepth: v });
 }
+
+// I-8：触屏横向滑动关闭抽屉（右抽屉：向左滑 >60px 关闭）
+let ctxTouchStartX = 0;
+let ctxTouchStartY = 0;
+let ctxSwipeHoriz = false;
+function onCtxTouchStart(e: TouchEvent) {
+  if (!characterStore.contextDrawerOpen) return;
+  ctxTouchStartX = e.touches[0]!.clientX;
+  ctxTouchStartY = e.touches[0]!.clientY;
+  ctxSwipeHoriz = false;
+}
+function onCtxTouchMove(e: TouchEvent) {
+  if (!characterStore.contextDrawerOpen) return;
+  const dx = e.touches[0]!.clientX - ctxTouchStartX;
+  const dy = e.touches[0]!.clientY - ctxTouchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 12) ctxSwipeHoriz = true;
+}
+function onCtxTouchEnd(e: TouchEvent) {
+  if (!characterStore.contextDrawerOpen) return;
+  const dx = e.changedTouches[0]!.clientX - ctxTouchStartX;
+  if (ctxSwipeHoriz && dx < -60) characterStore.closeAllDrawers();
+  ctxSwipeHoriz = false;
+}
 </script>
 
 <template>
@@ -126,15 +149,18 @@ function onAuthorDepth(e: Event) {
     id="context-drawer"
     tabindex="-1"
     class="context-panel"
-    :class="{ active: characterStore.panelOpen }"
+    :class="{ active: characterStore.contextDrawerOpen, collapsed: !characterStore.panelExpanded }"
     :aria-label="t('ctx.aria')"
+    @touchstart="onCtxTouchStart"
+    @touchmove="onCtxTouchMove"
+    @touchend="onCtxTouchEnd"
   >
     <!-- 顶栏 -->
     <header class="ctx-header">
       <span class="ctx-title">{{ t('ctx.title') }}</span>
       <button
         type="button"
-        class="mobile-menu-btn ctx-close"
+        class="mobile-menu-btn ctx-close client-compact-only"
         :aria-label="t('ctx.closePanel')"
         @click="characterStore.togglePanel()"
       >
@@ -568,10 +594,6 @@ class="token-bar" role="progressbar"
   text-align: right;
 }
 
-.mobile-menu-btn {
-  display: none;
-}
-
 /* F07 Persona 切换区域 */
 .ctx-persona-select-label {
   display: block;
@@ -630,9 +652,4 @@ class="token-bar" role="progressbar"
   border: 0;
 }
 
-@media (max-width: 1024px) {
-  .mobile-menu-btn {
-    display: inline-flex;
-  }
-}
 </style>

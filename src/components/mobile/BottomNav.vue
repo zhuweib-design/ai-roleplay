@@ -48,7 +48,7 @@ const tabs: Array<{ name: (typeof MAIN_TABS)[number]; icon: string; label: strin
   border-top: 1px solid var(--border);
   /* 底部安全区垫高,避开 iOS Home 条 */
   padding-bottom: env(safe-area-inset-bottom, 0);
-  z-index: 50;
+  z-index: var(--z-bottom-nav);
 }
 .bottom-nav-item {
   flex: 1;

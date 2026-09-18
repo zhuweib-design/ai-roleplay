@@ -63,7 +63,11 @@ const filteredModels = computed(() => {
 
 // ── 操作 ──
 function goBack() {
-  void router.push({ name: 'chat' });
+  if (window.history.state?.back) {
+    void router.back();
+  } else {
+    void router.push({ name: 'chat' });
+  }
 }
 
 async function handleDetect() {

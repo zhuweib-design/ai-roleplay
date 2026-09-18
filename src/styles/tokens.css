@@ -123,6 +123,22 @@
   --spacing-xl: 32px;
   --spacing-2xl: 48px;
 
+  /* Z-index · 层级令牌（S-4：抽屉 > 遮罩 > 底部导航；Modal/Toast 居顶）
+     - 顺序：nav-rail < bottom-nav < overlay-mask < drawer < modal < toast < notice */
+  --z-nav-rail: 30;
+  --z-bottom-nav: 40;
+  --z-overlay-mask: 60;
+  --z-drawer: 70;
+  --z-modal: 100;
+  --z-toast: 200;
+  --z-notice: 9999;
+
+  /* Touch · 最小触控目标（I-11：移动端可点元素 ≥44×44 CSS px）*/
+  --touch-min: 44px;
+
+  /* Mobile nav · 底部导航高度唯一来源（S-2：归一四处高度口径；S-3 与 .app-main 留白对齐）*/
+  --mobile-nav-h: 56px;
+
   /* Success · 成功状态 */
   --success: #10B981;
   --success-bg: #0E2A22;

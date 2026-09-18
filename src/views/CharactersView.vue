@@ -84,7 +84,11 @@ watch(
 
 /** 返回对话页 */
 function goBack() {
-  void router.push({ name: 'chat' });
+  if (window.history.state?.back) {
+    void router.back();
+  } else {
+    void router.push({ name: 'chat' });
+  }
 }
 
 function goToEditor(id?: string) {

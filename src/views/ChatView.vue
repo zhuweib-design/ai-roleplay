@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useCharacterStore } from '@/stores/character';
+import { useViewport } from '@/core/viewport';
+import { useScrollLock } from '@/composables/useScrollLock';
+import { t } from '@/i18n';
 import CharacterList from '@/components/layout/CharacterList.vue';
 import ChatMain from '@/components/chat/ChatMain.vue';
 import ContextPanel from '@/components/layout/ContextPanel.vue';
@@ -9,20 +12,21 @@ const characterStore = useCharacterStore();
 
 // 任意抽屉打开时显示遮罩（移动端）
 const overlayActive = computed(
-  () => characterStore.characterListOpen || characterStore.panelOpen
+  () => characterStore.characterDrawerOpen || characterStore.contextDrawerOpen
 );
 
-// 移动端判定：inert 与焦点管理仅在抽屉布局（<1025px）下生效
-const isMobile = ref(false);
-function updateIsMobile() {
-  isMobile.value = window.matchMedia('(max-width: 1024px)').matches;
-}
+// I-8：抽屉打开时锁定 body 滚动，避免背景穿透（与 Modal 同源 useScrollLock）
+useScrollLock(overlayActive);
+
+// 非桌面判定（≤1024px）：inert 与焦点管理仅在抽屉布局下生效。
+// S-10：统一为 useViewport().isCompact，消除「1024(TS) 与 640(CSS)」双真源冲突（G-5）。
+const { isCompact } = useViewport();
 
 // 抽屉打开时把焦点移入抽屉；关闭时焦点回到主内容区（WCAG 2.4.3，不丢失焦点）
 watch(overlayActive, (active) => {
-  if (!isMobile.value) return;
+  if (!isCompact.value) return;
   if (active) {
-    const targetId = characterStore.characterListOpen
+    const targetId = characterStore.characterDrawerOpen
       ? 'character-drawer'
       : 'context-drawer';
     document.getElementById(targetId)?.focus();
@@ -36,30 +40,31 @@ function handleOverlayClick() {
   characterStore.closeAllDrawers();
 }
 
-// ESC 关闭抽屉（无障碍）
+// ESC 关闭抽屉（无障碍）—— I-3：仅移动端（<1025px）生效，避免桌面宽度下误收起上下文面板
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && overlayActive.value) {
+  if (e.key === 'Escape' && overlayActive.value && isCompact.value) {
     characterStore.closeAllDrawers();
   }
 }
 
 onMounted(() => {
-  updateIsMobile();
-  // 移动端初始收起上下文面板，避免 `overlay-mask` 常驻拦截点击
-  if (isMobile.value) {
+  // 非桌面初始收起上下文面板，避免 `overlay-mask` 常驻拦截点击
+  if (isCompact.value) {
     characterStore.closeAllDrawers();
   }
-  window.addEventListener('resize', updateIsMobile);
   window.addEventListener('keydown', handleKeydown);
 });
 
-// 视口切换时同步：回到桌面展开面板，缩到移动收起，避免遮罩残留
-watch(isMobile, (mobile) => {
-  if (mobile) characterStore.closeAllDrawers();
+// 视口切换时同步：缩到移动收起全部抽屉；回到桌面展开上下文面板，避免遮罩残留或面板卡在收起态
+watch(isCompact, (mobile) => {
+  if (mobile) {
+    characterStore.closeAllDrawers();
+  } else {
+    characterStore.panelExpanded = true;
+  }
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateIsMobile);
   window.removeEventListener('keydown', handleKeydown);
 });
 </script>
@@ -67,20 +72,24 @@ onBeforeUnmount(() => {
 <template>
   <div class="chat-shell">
     <!-- 角色列表侧栏（移动端为左抽屉；右侧面板打开时 inert 防焦点逃逸） -->
-    <CharacterList :inert="characterStore.panelOpen && isMobile ? true : undefined" />
+    <CharacterList :inert="characterStore.contextDrawerOpen && isCompact ? true : undefined" />
 
     <!-- 聊天主区（任一抽屉打开时 inert） -->
-    <ChatMain :inert="overlayActive && isMobile ? true : undefined" />
+    <ChatMain :inert="overlayActive && isCompact ? true : undefined" />
 
     <!-- 右侧上下文面板（移动端为右抽屉；左侧抽屉打开时 inert） -->
-    <ContextPanel :inert="characterStore.characterListOpen && isMobile ? true : undefined" />
+    <ContextPanel :inert="characterStore.characterDrawerOpen && isCompact ? true : undefined" />
 
-    <!-- 移动端遮罩（纯视觉，焦点管理由上方 inert 负责） -->
+    <!-- 移动端遮罩：I-12 键盘可达关闭（role=button + Enter/Space 关闭，ESC 由 handleKeydown 统一处理） -->
     <div
       class="overlay-mask"
       :class="{ active: overlayActive }"
-      aria-hidden="true"
+      role="button"
+      :aria-label="t('chat.closeSidebar')"
+      tabindex="0"
       @click="handleOverlayClick"
+      @keydown.enter.prevent="handleOverlayClick"
+      @keydown.space.prevent="handleOverlayClick"
     />
   </div>
 </template>

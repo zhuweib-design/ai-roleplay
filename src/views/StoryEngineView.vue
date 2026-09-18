@@ -277,7 +277,11 @@ const progressPercent = computed(() => {
 // ── 方法 ──
 
 function goBack() {
-  void router.push({ name: 'chat' });
+  if (window.history.state?.back) {
+    void router.back();
+  } else {
+    void router.push({ name: 'chat' });
+  }
 }
 
 function showToast(type: 'info' | 'success' | 'error', message: string) {
@@ -3221,7 +3225,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   padding-left: 16px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .category-grid {
     grid-template-columns: repeat(2, 1fr);
   }

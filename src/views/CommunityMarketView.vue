@@ -345,7 +345,11 @@ const favoriteCards = computed(() => store.getFavoriteCards());
 
 // ── 辅助 ──
 function goBack(): void {
-  void router.push('/chat');
+  if (window.history.state?.back) {
+    void router.back();
+  } else {
+    void router.push('/chat');
+  }
 }
 
 function formatDate(iso: string): string {

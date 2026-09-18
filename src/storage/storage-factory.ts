@@ -85,3 +85,23 @@ export function resetStorageAdapter(): void {
 export function getStorageEnv(): 'tauri' | 'web' {
   return TauriFSAdapter.isTauriEnv() ? 'tauri' : 'web';
 }
+
+/**
+ * 存储能力描述（F-4 跨端契约一致性）
+ * - Web 环境：multiProfile=true（IndexedDB 按 active-profile 分库隔离）
+ * - Tauri 环境：multiProfile=false（桌面端单 profile，切换 profile 不隔离数据）
+ */
+export interface StorageCapability {
+  adapter: StorageAdapter;
+  /** 是否支持多 profile 数据隔离 */
+  multiProfile: boolean;
+}
+
+/**
+ * 返回存储能力描述（F-4 跨端契约一致性）。
+ * 注意：getStorageAdapter() 仍返回 StorageAdapter 实例以兼容既有调用方；
+ *      需要能力位（如 UI 标注"单 profile"）时改用本函数。
+ */
+export function getStorageCapability(): StorageCapability {
+  return { adapter: getStorageAdapter(), multiProfile: getStorageEnv() === 'web' };
+}

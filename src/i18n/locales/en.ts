@@ -188,6 +188,7 @@ const en: Record<MessageKey, string> = {
   'chat.exportChat': 'Export chat',
   'chat.exportChatTitle': 'Export chat as Markdown',
   'chat.togglePanel': 'Toggle context panel',
+  'chat.closeSidebar': 'Close sidebar',
   'chat.messagesAria': 'Chat message history',
   'chat.loadOlder': 'Load earlier messages ({count} more)',
   'chat.jumpToBottomAria': 'Jump to bottom (view latest messages)',
@@ -372,6 +373,8 @@ const en: Record<MessageKey, string> = {
   'profile.aria': 'Profile',
   'profile.title': 'Profile',
   'profile.subtitle': 'Manage your nickname and identity',
+  'profile.back': 'Back',
+  'profile.backAria': 'Go back to previous page',
   'profile.noPersona': 'No identity yet. Initialize a Persona in Settings first.',
   'profile.currentIdentity': 'Current Identity',
   'profile.edit': 'Edit',
@@ -396,6 +399,10 @@ const en: Record<MessageKey, string> = {
   'persona.nameRequired': 'Persona name cannot be empty',
   'persona.nameTooLong': 'Persona name cannot exceed {max} characters',
   'persona.descTooLong': 'Persona description is too long (keep within {max} characters)',
+
+  // ── Image picker (F-5: camera / album dual entry) ──
+  'picker.camera': 'Take photo',
+  'picker.album': 'Choose from album',
 
   // ── Chat archives (ArchivesView) ──
   'archives.backAria': 'Back to chat',
@@ -551,6 +558,8 @@ const en: Record<MessageKey, string> = {
   'vector.installing': 'Installing…',
   'vector.pickFolder': 'Select Model Folder',
   'vector.installedList': 'Installed models',
+  'vector.dirPickUnsupported': 'Folder picking is unavailable on this device. Use a zip archive upload instead.',
+  'vector.dirPickHint': 'This browser does not support folder picking for local model install. Use a zip archive upload in the "User Custom Models" section below.',
   'vector.browserSafe': 'Browser',
   'vector.desktop': 'Desktop',
   'vector.dynamicLayer': 'Dynamic layer',
@@ -2017,6 +2026,7 @@ const en: Record<MessageKey, string> = {
   'settingsView.profileSection': 'Profile',
   'settingsView.profileCurrent': 'Current profile: ',
   'settingsView.profileCurrentDesc': 'Switching profile isolates data (per-profile DB in web mode); requires restart.',
+  'settingsView.profileSingleNotice': 'Desktop is single-profile: switching profiles does NOT isolate data (per-profile databases apply to Web mode only).',
   'settingsView.profileNamePlaceholder': 'New profile name (a-z/0-9/_-)',
   'settingsView.profileNameAria': 'New profile name',
   'settingsView.profileCreateAndSwitch': 'Create & switch',
@@ -2525,6 +2535,13 @@ const en: Record<MessageKey, string> = {
   'char.cmdFailed': ' (command failed)',
   'chat.persistFailed': 'Persistence failed: {error}',
   'chat.loadHistoryFailed': 'Failed to load history: {error}',
+  'chat.errCors': 'Cross-origin request blocked by the browser (CORS). Allow CORS on the endpoint, or use the desktop client (Tauri) instead.',
+  'chat.errTauriApi': 'Local desktop request failed (HTTP {status}). Check the address and whether the local service is available.',
+  'chat.errTauriNet': 'Local desktop network error: {error}',
+  'chat.errLocal': 'Local model inference failed: {error}',
+  'chat.errApi': 'API returned an error (HTTP {status}). Check your key and quota.',
+  'chat.errNet': 'Network error. Check your connection and try again.',
+  'chat.errUnknown': 'Generation failed: {error}',
 
   // ── Market store extra ──
   'mkt.downloadOk': 'Downloaded successfully',

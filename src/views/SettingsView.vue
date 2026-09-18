@@ -275,9 +275,11 @@ const customThemePreview = ref<string | null>(null);
 const customThemePalette = ref<string[]>([]);
 const customThemeResult = ref<CustomTheme | null>(null);
 
-/** 触发背景图文件选择 */
-function triggerCustomThemeUpload() {
-  customThemeBgInput.value?.click();
+/** 触发背景图文件选择（F-5：拍照 / 相册双入口） */
+const customThemeCapture = ref<'environment' | undefined>(undefined);
+function openCustomThemePicker(mode: 'camera' | 'album') {
+  customThemeCapture.value = mode === 'camera' ? 'environment' : undefined;
+  void nextTick(() => customThemeBgInput.value?.click());
 }
 
 /** 处理背景图文件选择 → 提取主色 → 生成主题 */
@@ -509,9 +511,11 @@ async function handleBgFileSelected(e: Event) {
   reader.readAsDataURL(file);
 }
 
-/** 触发背景图文件选择 */
-function triggerBgUpload() {
-  bgFileInput.value?.click();
+/** 触发背景图文件选择（F-5：拍照 / 相册双入口） */
+const bgCapture = ref<'environment' | undefined>(undefined);
+function openBgPicker(mode: 'camera' | 'album') {
+  bgCapture.value = mode === 'camera' ? 'environment' : undefined;
+  void nextTick(() => bgFileInput.value?.click());
 }
 
 /** 应用背景设置到 store */
@@ -696,7 +700,7 @@ const exportChatCharId = ref<string>('');
 const backupFileInput = useTemplateRef<HTMLInputElement>('backupFileInput');
 
 // 当前激活的 storageAdapter（复用全局单例，App.vue 启动时已初始化）
-import { getStorageAdapter } from '@/storage';
+import { getStorageAdapter, getStorageCapability } from '@/storage';
 
 const exportCharList = computed(() => characterStore.characters);
 const exportChatCharList = computed(() => characterStore.characters);
@@ -876,6 +880,9 @@ function auditResultLabel(r: string): string {
 
 const currentProfileId = ref(getActiveProfileId());
 const newProfileName = ref('');
+
+// F-4: 存储能力位——Tauri 桌面端为单 profile，切换档案不隔离数据（仅 Web 按库名隔离）
+const storageMultiProfile = getStorageCapability().multiProfile;
 
 /** 创建并切换新 profile */
 function handleCreateProfile() {
@@ -1097,9 +1104,12 @@ async function handleExportChatMarkdown() {
       <!-- F08.4 自定义主题编辑器 -->
       <div v-show="customPanelOpen || settings.customTheme" class="custom-theme-editor">
         <div class="custom-theme-actions">
-          <button type="button" class="data-mgmt-btn primary" @click="triggerCustomThemeUpload" :disabled="customThemeBusy">
-            <Icon name="upload" :size="14" />
-            <span>{{ customThemeBusy ? t('settingsView.customThemeExtracting') : t('settingsView.customThemeUpload') }}</span>
+          <button type="button" class="data-mgmt-btn primary" @click="openCustomThemePicker('camera')" :disabled="customThemeBusy">
+            <span>{{ t('picker.camera') }}</span>
+          </button>
+          <button type="button" class="data-mgmt-btn primary" @click="openCustomThemePicker('album')" :disabled="customThemeBusy">
+            <Icon name="image" :size="14" />
+            <span>{{ t('picker.album') }}</span>
           </button>
           <button
             v-if="settings.customTheme"
@@ -1114,6 +1124,7 @@ async function handleExportChatMarkdown() {
             ref="customThemeBgInput"
             type="file"
             accept="image/*"
+            :capture="customThemeCapture"
             class="hidden-file-input"
             :aria-label="t('settingsView.customThemeUploadAria')"
             @change="handleCustomThemeFileSelected"
@@ -1236,9 +1247,19 @@ URL
             role="radio"
             :aria-checked="bgType === 'base64'"
             :class="{ active: bgType === 'base64' }"
-            @click="triggerBgUpload"
+            @click="openBgPicker('album')"
           >
-{{ t('settingsView.bgUpload') }}
+{{ t('picker.album') }}
+</button>
+          <button
+            type="button"
+            class="bg-source-tab"
+            role="radio"
+            :aria-checked="false"
+            :class="{ active: false }"
+            @click="openBgPicker('camera')"
+          >
+{{ t('picker.camera') }}
 </button>
         </div>
 
@@ -1246,6 +1267,7 @@ URL
           ref="bgFileInput"
           type="file"
           accept="image/*"
+          :capture="bgCapture"
           class="hidden-file-input"
           :aria-label="t('settingsView.bgUploadAria')"
           @change="handleBgFileSelected"
@@ -1862,6 +1884,13 @@ URL
             {{ t('settingsView.profileCurrent') }}<strong>{{ currentProfileId }}</strong>。
             {{ t('settingsView.profileCurrentDesc') }}
           </p>
+          <p
+            v-if="!storageMultiProfile"
+            class="data-mgmt-hint profile-single-notice"
+            role="note"
+          >
+            {{ t('settingsView.profileSingleNotice') }}
+          </p>
           <div class="data-mgmt-actions">
             <label class="profile-create">
               <input
@@ -1870,10 +1899,13 @@ URL
                 class="profile-input"
                 :placeholder="t('settingsView.profileNamePlaceholder')"
                 :aria-label="t('settingsView.profileNameAria')"
+                :disabled="!storageMultiProfile"
               />
               <button
                 type="button"
                 class="data-mgmt-btn"
+                :disabled="!storageMultiProfile"
+                :title="storageMultiProfile ? '' : t('settingsView.profileSingleNotice')"
                 @click="handleCreateProfile"
               >
                 <Icon name="plus" :size="14" />
@@ -1881,9 +1913,10 @@ URL
               </button>
             </label>
             <button
-              v-if="currentProfileId !== DEFAULT_PROFILE"
+              v-if="currentProfileId !== DEFAULT_PROFILE && storageMultiProfile"
               type="button"
               class="data-mgmt-btn"
+              :disabled="!storageMultiProfile"
               @click="handleResetProfile"
             >
               <Icon name="arrow-left" :size="14" />
@@ -2351,6 +2384,7 @@ URL
   position: sticky;
   top: 16px;
   max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
   z-index: 5;
 }
 
@@ -2424,6 +2458,14 @@ URL
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+}
+/* I-5（2026-09-16）：触屏 tap 不触发 focus-visible，设置项描述常显，保证说明文本可达 */
+@media (hover: none) {
+  .settings-nav-item-desc {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
 }
 
 .settings-nav-item:hover {
@@ -3562,6 +3604,16 @@ select.field-input {
   font-size: 12px;
   color: var(--muted-foreground);
   line-height: 1.5;
+}
+
+.profile-single-notice {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--warning-border, var(--border));
+  background: var(--warning-bg, color-mix(in srgb, #f59e0b 12%, transparent));
+  color: var(--warning-fg, var(--foreground));
+  font-size: 12px;
 }
 
 .data-mgmt-actions {

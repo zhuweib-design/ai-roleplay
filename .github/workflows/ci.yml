@@ -41,6 +41,10 @@ jobs:
       - name: i18n check (strict)
         run: npm run i18n:check:strict
 
+      # 跨端断点单一来源门禁（S-10）：禁止野断点数字、禁止 matchMedia 出现在 viewport.ts 外、L1/L4 数值同步
+      - name: Breakpoint guard (check:breakpoints)
+        run: npm run check:breakpoints
+
       # 无障碍对比度门禁：静态核验 5 个内置主题的关键色对 ≥ AA(4.5:1)
       # （axe 在 jsdom 无法计算颜色对比度, 故由 check-contrast.mjs 单独校验; axe 的 ARIA/语义规则已并入 test:coverage）
       - name: Contrast audit (a11y:contrast)

@@ -20,6 +20,7 @@ import type { QuickReplyButton } from '@/types';
 import { ttsService, isTTSSupported } from '@services/tts-service';
 import { translateText, TranslationError } from '@services/translator';
 import { t } from '@/i18n';
+import { useViewport } from '@/core/viewport';
 
 const router = useRouter();
 const characterStore = useCharacterStore();
@@ -28,6 +29,12 @@ const settings = useSettingsStore();
 const personaStore = usePersonaStore();
 // F16.4 故事时间（用于顶栏显示）
 const storyStore = useStoryStore();
+// I-1：aria-expanded 随视口反映正确的面板状态（桌面 panelExpanded / 移动平板 contextDrawerOpen）
+const { isCompact } = useViewport();
+
+// I-14：承接 ChatView 传入的 inert，仅作用于聊天内容区与输入区，
+// 顶栏的 panel-toggle-btn 保持可交互（打开上下文面板后仍能二次点击关闭）
+const props = defineProps<{ inert?: boolean }>();
 
 // F12.3 消息翻译结果（按消息 id 缓存译文）
 const messageTranslations = ref<Record<string, string>>({});
@@ -348,6 +355,8 @@ function handleSend() {
 
 function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Enter' && !e.shiftKey) {
+    // I-6：IME 组词中（中文拼音/日文假名/韩文）按回车不发送；组词完成后再按回车正常发送
+    if (e.isComposing || e.keyCode === 229) return;
     e.preventDefault();
     handleSend();
   }
@@ -563,7 +572,7 @@ function startWithExample(text: string) {
     <header class="chat-header">
       <button
         type="button"
-        class="mobile-menu-btn"
+        class="mobile-menu-btn client-compact-only"
         :aria-label="t('chat.openCharList')"
         @click="characterStore.toggleCharacterList()"
       >
@@ -620,7 +629,7 @@ function startWithExample(text: string) {
           type="button"
           class="hover-surface panel-toggle-btn"
           :aria-label="t('chat.togglePanel')"
-          :aria-expanded="characterStore.panelOpen"
+          :aria-expanded="isCompact ? characterStore.contextDrawerOpen : characterStore.panelExpanded"
           @click="characterStore.togglePanel()"
         >
           <Icon name="panel-right" :size="20" />
@@ -715,8 +724,8 @@ function startWithExample(text: string) {
       </button>
     </div>
 
-    <!-- 输入区 -->
-    <footer class="chat-footer">
+    <!-- 输入区（I-14：上下文面板打开时 inert，避免焦点逃逸；顶栏 toggle 不受影响） -->
+    <footer class="chat-footer" :inert="props.inert ? true : undefined">
       <!-- F11.3 Quick Reply 按钮组 -->
       <div
         v-if="quickReplyGroups.length > 0"
@@ -927,7 +936,6 @@ function startWithExample(text: string) {
   border: none;
   color: var(--muted-foreground);
   cursor: pointer;
-  display: flex;
   align-items: center;
   justify-content: center;
 }

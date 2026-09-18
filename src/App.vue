@@ -23,6 +23,7 @@ import type { MasterPasswordMode } from '@/components/common/MasterPasswordModal
 import OnboardingModal from '@/components/common/OnboardingModal.vue';
 import { shouldShowOnboarding } from '@/utils/onboarding';
 import { t } from '@/i18n';
+import { useViewport } from '@/core/viewport';
 
 const settings = useSettingsStore();
 const chatStore = useChatStore();
@@ -38,6 +39,11 @@ const characterVersionStore = useCharacterVersionStore();
 // 移动端底部导航:仅主 Tab 页显示(二级详情页全屏)
 const route = useRoute();
 const showBottomNav = computed(() => isMainTab(route.name as string | undefined));
+
+// S-1（2026-09-16）：移动端(≤640)真卸载 NavRail，改由 BottomNav 承载；
+// 避免与 BottomNav 双高亮（I-4）。S-10：端判定统一由 useViewport() 提供（L4 唯一来源），
+// 消除组件内 window.matchMedia 脏判断（G-4）。桌面/平板(>640)保留 NavRail。
+const { isMobile } = useViewport();
 
 // AC20 主密码弹窗状态
 const mpModalVisible = ref(false);
@@ -315,7 +321,7 @@ watch(
       </div>
     </div>
     <!-- 全局左侧导航栏（所有页面共享） -->
-    <NavRail class="nav-rail-desktop" />
+    <NavRail v-if="!isMobile" class="nav-rail-desktop" />
     <!-- 主内容区：由各视图自行渲染（含三栏布局等） -->
     <!-- 移动端主 Tab 页加 has-mobile-nav,内容底部留白避开底部导航 -->
     <main class="app-main" :class="{ 'has-mobile-nav': showBottomNav }">
@@ -337,154 +343,3 @@ watch(
   <OnboardingModal v-model="onboardingOpen" />
 </template>
 
-<style>
-/* Skip link：默认隐藏，获得焦点时显示 */
-.skip-link {
-  position: fixed;
-  top: 8px;
-  left: 8px;
-  z-index: 9999;
-  padding: 8px 14px;
-  background: var(--secondary);
-  color: var(--on-accent);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transform: translateY(-150%);
-  transition: transform .15s ease;
-}
-
-.skip-link:focus {
-  transform: translateY(0);
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-}
-
-/* 候选5：桌面版未实现功能提示横幅 */
-.platform-notice {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  justify-content: space-between;
-  padding: 8px 16px;
-  background: var(--warning-bg, #3a2f1e);
-  color: var(--warning-fg, #f0c674);
-  border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-  font-size: 13px;
-}
-
-.platform-notice .notice-dismiss {
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 2px 6px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-/* T-15: 断网提示条(复用提示条样式,换色) */
-.offline-notice {
-  background: color-mix(in srgb, var(--warning, #e0af68) 15%, var(--card));
-  border-color: color-mix(in srgb, var(--warning, #e0af68) 40%, transparent);
-}
-
-.offline-notice .notice-dismiss {
-  display: none;
-}
-
-/* T-15: 拖拽导入覆盖层 */
-.drag-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
-  border: 3px dashed var(--accent-blue);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.drag-overlay-box {
-  padding: 24px 48px;
-  border-radius: 16px;
-  background: var(--card);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  text-align: center;
-}
-
-.drag-overlay-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--accent-blue);
-}
-
-.drag-overlay-hint {
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--muted-foreground);
-}
-
-.notice-dismiss {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: inherit;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.notice-dismiss:hover,
-.notice-dismiss:focus-visible {
-  background: color-mix(in srgb, currentColor 15%, transparent);
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
-}
-
-/* ── 移动端(手机/PWA)响应式 ──
-   桌面:隐藏底部导航、保留左侧 NavRail
-   移动:隐藏 NavRail、显示底部导航(主 Tab 页) */
-.app-bottom-nav {
-  /* !important 保证桌面始终隐藏,不被 .bottom-nav{display:flex} 覆盖 */
-  display: none !important;
-}
-@media (max-width: 640px) {
-  /* 移动端:冷壳改纵向堆叠,主内容在上、底部导航在下(修复 web/pwa 错位) */
-  .app-shell {
-    flex-direction: column;
-  }
-  /* 纵向堆叠下 main 由 flex:1 分配高度,避免 height:100% 把底部导航挤出被裁 */
-  .app-main {
-    height: auto;
-  }
-  /* !important 确保覆盖 NavRail(.nav-rail) 与 BottomNav(.bottom-nav) 的同特异度 display */
-  .nav-rail-desktop {
-    display: none !important;
-  }
-  .app-bottom-nav {
-    /* flex 保留 .bottom-nav 内部 flex-direction:row 的横向5Tab栏 */
-    display: flex !important;
-  }
-  /* iOS 输入聚焦防放大(font-size<16px 会触发) */
-  input,
-  textarea,
-  select {
-    font-size: 16px;
-  }
-  /* 详情页无底部导航时,主内容底部避开 Home 条 */
-  .app-main {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  /* 主 Tab 页有底部导航,内容底部额外留白避开 52px 导航条 */
-  .app-main.has-mobile-nav {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom));
-  }
-}
-</style>

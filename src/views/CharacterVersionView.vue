@@ -379,7 +379,11 @@ function shortMessage(message: string, max = 50): string {
 
 // ── 返回 ──
 function goBack(): void {
-  void router.push({ name: 'chat' });
+  if (window.history.state?.back) {
+    void router.back();
+  } else {
+    void router.push({ name: 'chat' });
+  }
 }
 </script>
 

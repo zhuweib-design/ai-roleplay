@@ -411,7 +411,7 @@ function handleClose(): void {
   border-color: var(--primary);
 }
 
-@media (max-width: 567px) {
+@media (max-width: 640px) {
   .form-grid-2 {
     grid-template-columns: 1fr;
   }

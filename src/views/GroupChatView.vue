@@ -50,7 +50,11 @@ const router = useRouter();
 
 /** 返回对话页 */
 function goBack() {
-  void router.push({ name: 'chat' });
+  if (window.history.state?.back) {
+    void router.back();
+  } else {
+    void router.push({ name: 'chat' });
+  }
 }
 
 // ── UI 状态 ──
@@ -1951,7 +1955,7 @@ type="button"
 }
 
 /* 响应式 */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .group-body {
     grid-template-columns: 1fr;
   }

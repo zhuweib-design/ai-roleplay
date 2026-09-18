@@ -5,6 +5,7 @@ import './styles/themes.css';
 import './styles/base.css';
 import './styles/layout.css';
 import './styles/responsive.css';
+import './styles/app-global.css';
 
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';

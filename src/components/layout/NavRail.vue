@@ -5,9 +5,11 @@ import Icon from '@/components/common/Icon.vue';
 import type { IconName } from '@/components/common/icons';
 import type { NavKey } from '@/types';
 import { t, type MessageKey } from '@/i18n';
+import { useViewport } from '@/core/viewport';
 
 const router = useRouter();
 const characterStore = useCharacterStore();
+const { isMobile } = useViewport();
 
 interface NavItem {
   key: NavKey;
@@ -38,13 +40,14 @@ const profileItem: NavItem = { key: 'profile', labelKey: 'nav.profile', icon: 'u
 function handleNav(item: NavItem) {
   characterStore.setNav(item.key);
 
-  // 移动端：点击对话按钮切换角色列表
-  if (item.key === 'chat' && window.matchMedia('(max-width: 640px)').matches) {
+  // 移动端：点击对话按钮切换角色列表（端判定统一由 useViewport().isMobile 提供，S-10）
+  if (item.key === 'chat' && isMobile.value) {
     characterStore.toggleCharacterList();
   }
 
   if (item.route) {
-    void router.push(item.route);
+    // I-9: 捕获重复导航（点击当前项）产生的 NavigationDuplicated rejection，避免未处理 Promise rejection
+    router.push(item.route).catch(() => {});
   }
 }
 

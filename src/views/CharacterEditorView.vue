@@ -15,7 +15,7 @@
  * - 错误提示使用 aria-invalid + aria-describedby
  * - 保存按钮在表单未通过验证时禁用并提示原因
  */
-import { ref, computed, watch, onMounted, useTemplateRef } from 'vue';
+import { ref, computed, watch, onMounted, nextTick, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCharacterStore } from '@/stores/character';
 import { useLorebookStore } from '@/stores/lorebook';
@@ -340,8 +340,11 @@ function executeDelete() {
 // ── 头像上传（base64 dataURL） ──
 const avatarInput = useTemplateRef<HTMLInputElement>('avatarInput');
 
-function triggerAvatarUpload() {
-  avatarInput.value?.click();
+// F-5: 头像上传提供「拍照」(capture) 与「从相册选择」双入口
+const avatarCapture = ref<'environment' | undefined>(undefined);
+function openAvatarPicker(mode: 'camera' | 'album') {
+  avatarCapture.value = mode === 'camera' ? 'environment' : undefined;
+  void nextTick(() => avatarInput.value?.click());
 }
 
 function handleAvatarSelected(e: Event) {
@@ -761,15 +764,23 @@ function handleExport() {
               <button
                 type="button"
                 class="upload-btn"
-                @click="triggerAvatarUpload"
+                @click="openAvatarPicker('camera')"
               >
-                <Icon name="upload" :size="14" />
-                <span>{{ t('charEdit.uploadLocal') }}</span>
+                <span>{{ t('picker.camera') }}</span>
+              </button>
+              <button
+                type="button"
+                class="upload-btn"
+                @click="openAvatarPicker('album')"
+              >
+                <Icon name="image" :size="14" />
+                <span>{{ t('picker.album') }}</span>
               </button>
               <input
                 ref="avatarInput"
                 type="file"
                 accept="image/*"
+                :capture="avatarCapture"
                 class="hidden-file-input"
                 aria-hidden="true"
                 tabindex="-1"
@@ -1625,6 +1636,7 @@ function handleExport() {
   flex-direction: column;
   gap: 12px;
   max-height: calc(100vh - 120px);
+  max-height: calc(100dvh - 120px);
   overflow-y: auto;
 }
 
@@ -1954,7 +1966,7 @@ function handleExport() {
 }
 
 /* 响应式 */
-@media (max-width: 1023px) {
+@media (max-width: 1024px) {
   .editor-body {
     grid-template-columns: 1fr;
   }

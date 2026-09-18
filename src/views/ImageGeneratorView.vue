@@ -98,7 +98,11 @@ const clearAllOpen = ref(false);
 
 // ── 操作 ──
 function goBack() {
-  void router.push({ name: 'chat' });
+  if (window.history.state?.back) {
+    void router.back();
+  } else {
+    void router.push({ name: 'chat' });
+  }
 }
 
 /** P2-6 UI 修复: 未配置时引导用户前往设置添加模型 */
@@ -979,8 +983,16 @@ onMounted(async () => {
   transition: opacity .2s ease;
 }
 
-.gallery-item:hover .gallery-overlay {
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .gallery-item:hover .gallery-overlay {
+    opacity: 1;
+  }
+}
+/* I-5（2026-09-16）：触屏无 hover，画廊操作遮罩常显，保证下载/查看等操作可达 */
+@media (hover: none) {
+  .gallery-overlay {
+    opacity: 1;
+  }
 }
 
 .gallery-prompt {

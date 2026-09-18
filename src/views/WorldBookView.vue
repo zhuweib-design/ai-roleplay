@@ -85,7 +85,11 @@ const filterScope = computed({
 
 /** 返回对话页 */
 function goBack() {
-  void router.push({ name: 'chat' });
+  if (window.history.state?.back) {
+    void router.back();
+  } else {
+    void router.push({ name: 'chat' });
+  }
 }
 
 // ── UI 状态 ──
@@ -2529,7 +2533,7 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 /* 响应式 */
-@media (max-width: 1100px) {
+@media (max-width: 1024px) {
   .worldbook-body {
     grid-template-columns: 220px 1fr;
   }
@@ -2647,7 +2651,7 @@ function strategyLabel(s: LorebookStrategy): string {
   font-size: 13px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .template-grid {
     grid-template-columns: 1fr;
   }

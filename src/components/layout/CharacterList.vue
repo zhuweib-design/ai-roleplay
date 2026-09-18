@@ -81,10 +81,34 @@ function confirmDelete(chat: Chat) {
   confirmDeleteId.value = null;
   void chatStore.deleteSession(current.value ?? null, chat.id);
 }
+
+// I-8：触屏横向滑动关闭抽屉（左抽屉：向右滑 >60px 关闭）
+let touchStartX = 0;
+let touchStartY = 0;
+let swipeHoriz = false;
+function onDrawerTouchStart(e: TouchEvent) {
+  if (!characterStore.characterDrawerOpen) return;
+  touchStartX = e.touches[0]!.clientX;
+  touchStartY = e.touches[0]!.clientY;
+  swipeHoriz = false;
+}
+function onDrawerTouchMove(e: TouchEvent) {
+  if (!characterStore.characterDrawerOpen) return;
+  const dx = e.touches[0]!.clientX - touchStartX;
+  const dy = e.touches[0]!.clientY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 12) swipeHoriz = true;
+}
+function onDrawerTouchEnd(e: TouchEvent) {
+  if (!characterStore.characterDrawerOpen) return;
+  const dx = e.changedTouches[0]!.clientX - touchStartX;
+  if (swipeHoriz && dx > 60) characterStore.closeAllDrawers();
+  swipeHoriz = false;
+}
 </script>
 
 <template>
-  <aside id="character-drawer" tabindex="-1" class="character-list" :class="{ active: characterStore.characterListOpen }" :aria-label="t('charList.aria')">
+  <aside id="character-drawer" tabindex="-1" class="character-list" :class="{ active: characterStore.characterDrawerOpen }" :aria-label="t('charList.aria')"
+    @touchstart="onDrawerTouchStart" @touchmove="onDrawerTouchMove" @touchend="onDrawerTouchEnd">
     <!-- 搜索区 -->
     <div class="character-search" style="position: relative">
       <span class="search-icon" aria-hidden="true">
@@ -100,7 +124,7 @@ function confirmDelete(chat: Chat) {
       />
       <button
         type="button"
-        class="mobile-menu-btn char-close-btn"
+        class="mobile-menu-btn char-close-btn client-compact-only"
         :aria-label="t('charList.close')"
         @click="characterStore.closeAllDrawers()"
       >

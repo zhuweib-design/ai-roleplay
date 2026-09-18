@@ -126,7 +126,7 @@ onBeforeUnmount(() => clearTimer());
   position: fixed;
   top: var(--spacing-lg);
   right: var(--spacing-lg);
-  z-index: 200;
+  z-index: var(--z-toast);
   display: flex;
   align-items: center;
   gap: 12px;

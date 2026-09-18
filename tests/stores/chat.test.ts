@@ -284,7 +284,9 @@ describe('useChatStore — D4 集成', () => {
       const char = makeCharacter();
       await chatStore.sendMessage(char, '你好');
 
-      expect(char.messages[1]!.content).toContain('生成失败');
+      // F-1：API 错误经文案矩阵渲染为 transport 感知提示（浏览器 + api → chat.errApi，含 HTTP 状态）
+      expect(char.messages[1]!.content).toContain('接口返回错误');
+      expect(char.messages[1]!.content).toContain('401');
       expect(chatStore.lastError).not.toBeNull();
       expect(chatStore.lastError?.type).toBe('api');
       expect(chatStore.isGenerating).toBe(false);

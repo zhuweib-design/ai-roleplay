@@ -9,10 +9,24 @@
   .context-panel.collapsed { width: 0 !important; }
 }
 
-/* ═══ 平板（641-1024px）：上下文面板改为抽屉 ═══
-   · ≤640 的移动极端由下方"移动端"块覆盖（本块仍匹配，仅在顺位靠后被覆盖） */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .character-list { width: 240px !important; }
+/* ═══ 抽屉布局（≤1024px：平板 + 移动端形态一致） ═══
+   S-7（2026-09-17）：合并原平板(641-1024)与移动(≤640)两档抽屉规则，
+   transition 只写一次（此前移动端 .context-panel 漏写 transition，滑动无动画）。 */
+@media (max-width: 1024px) {
+  /* S-6（2026-09-16）：平板 CharacterList 统一抽屉化，与移动端一致；
+     消除「平板 docked 侧栏 + 遮罩/inert 抽屉机制」打架。桌面(>1024)仍由 layout.css docked 四栏。 */
+  .character-list {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 280px !important;
+    height: 100%;
+    z-index: var(--z-drawer);
+    transform: translateX(-100%);
+    transition: transform .3s cubic-bezier(.2,.8,.2,1);
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.4);
+  }
+  .character-list.active { transform: translateX(0); }
 
   .context-panel {
     position: fixed !important;
@@ -20,7 +34,7 @@
     right: 0;
     width: 320px !important;
     height: 100%;
-    z-index: 50;
+    z-index: var(--z-drawer);
     box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
     transform: translateX(100%);
     transition: transform .3s cubic-bezier(.2,.8,.2,1);
@@ -28,75 +42,18 @@
   .context-panel.active { transform: translateX(0); }
 }
 
-/* ═══ 移动端（≤640px）：单栏 + 抽屉式侧栏 ═══ */
+/* ═══ 移动端（≤640px）：单栏 + 抽屉式侧栏（移动专属规则；抽屉形态由上方 ≤1024 块承载） ═══ */
 @media (max-width: 640px) {
   .app-shell {
     position: relative;
   }
 
-  /* 主内容区在底部 Tab 上方，预留 64px 避免被遮挡 */
-  .app-main {
-    padding-bottom: 64px;
-  }
+  /* S-3（2026-09-16）：删除此处 .app-main 的 64px 留白（第三套冲突口径）；
+     移动端 .app-main 底部留白统一由 App.vue ≤640 媒体查询的两条规则承载（见 App.vue）。 */
 
-  /* 导航栏 -> 底部 Tab */
-  .nav-rail {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: auto;
-    width: 100% !important;
-    height: 64px;
-    flex-direction: row !important;
-    justify-content: space-around;
-    padding: 8px 0;
-    border-right: none;
-    border-top: 1px solid var(--border);
-    z-index: 30;
-  }
-  .nav-item {
-    height: 48px;
-    border-left: none !important;
-    border-bottom: 3px solid transparent;
-    flex: 1;
-    margin-top: 0;
-  }
-  .nav-item.active {
-    border-left: none !important;
-    border-bottom: 3px solid var(--secondary);
-  }
-  .nav-item.settings { margin-top: 0; }
-  .nav-label { font-size: 10px; }
+  /* S-1（2026-09-16）：删除原 .nav-rail 移动端底部化方案（与 BottomNav 并存的死规则）。
+     导航栏切换改由 App.vue 的 <NavRail v-if="!isMobile"> 真卸载承载，桌面/平板显示 NavRail，移动端显示 BottomNav。 */
 
-  /* 角色列表 -> 左侧抽屉 */
-  .character-list {
-    position: fixed !important;
-    top: 0;
-    left: 0;
-    width: 280px !important;
-    height: 100%;
-    z-index: 50;
-    transform: translateX(-100%);
-    transition: transform .3s cubic-bezier(.2,.8,.2,1);
-    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.4);
-  }
-  .character-list.active { transform: translateX(0); }
-
-  /* 上下文面板 -> 右侧抽屉 */
-  .context-panel {
-    position: fixed !important;
-    top: 0;
-    right: 0;
-    width: 320px !important;
-    height: 100%;
-    z-index: 50;
-    transform: translateX(100%);
-    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
-  }
-  .context-panel.active { transform: translateX(0); }
-
-  .mobile-menu-btn { display: inline-flex !important; }
   .desktop-only { display: none !important; }
 
   .msg-bubble { max-width: min(88%, 40em) !important; }
@@ -119,11 +76,29 @@
   .msg-bubble { max-width: min(92%, 40em) !important; }
 }
 
-/* 桌面隐藏移动菜单按钮 */
-.mobile-menu-btn { display: none; }
+/* 端形态工具类（L2）：统一各组件跨端显隐，消除 scoped @media 甩尾（S-5）
+   仅在特定形态显示；抽屉开关按钮统一用 .client-compact-only（≤1024，移动+平板），
+   与 CSS 三档断点（640/1024/1025）对齐。规范断点数字只出现在 tokens-responsive.css。 */
+.client-mobile-only,
+.client-tablet-only,
+.client-desktop-only,
+.client-compact-only {
+  display: none;
+}
+@media (max-width: 640px) {
+  .client-mobile-only { display: inline-flex; }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .client-tablet-only { display: inline-flex; }
+}
+@media (min-width: 1025px) {
+  .client-desktop-only { display: inline-flex; }
+}
+@media (max-width: 1024px) {
+  .client-compact-only { display: inline-flex; }
+}
 
-/* 横屏移动端 */
+/* 横屏移动端：底部导航为 sticky,主内容预留高度避免被遮挡（S-1 删除 NavRail 横屏旧规则后保留此兜底） */
 @media (max-height: 480px) and (orientation: landscape) and (max-width: 900px) {
-  .nav-rail { height: 56px !important; }
   .chat-main { padding-bottom: 56px; }
 }

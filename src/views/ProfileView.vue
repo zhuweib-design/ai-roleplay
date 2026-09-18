@@ -14,6 +14,7 @@
  * - 键盘可达（Tab 顺序：编辑 → 保存 → 取消）
  */
 import { ref, computed, watch, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import { usePersonaStore, MAX_PERSONA_NAME_LENGTH, MAX_PERSONA_DESCRIPTION_LENGTH, validatePersona } from '@/stores/persona';
 import Icon from '@/components/common/Icon.vue';
 import { t } from '@/i18n';
@@ -22,6 +23,16 @@ import { t } from '@/i18n';
 const USER_MACRO = '{{user}}';
 
 const personaStore = usePersonaStore();
+const router = useRouter();
+
+// I-10：返回优先 router.back()，尊重浏览器/系统返回栈；无历史时回退到对话页
+function goBack(): void {
+  if (window.history.state?.back) {
+    void router.back();
+  } else {
+    void router.push({ name: 'chat' });
+  }
+}
 
 // ── 编辑状态 ──
 const isEditing = ref(false);
@@ -163,6 +174,16 @@ function switchPersona(id: string): void {
   <main id="main-content" class="profile-view tk-scroll" :aria-label="t('profile.aria')" tabindex="-1">
     <!-- 头部 -->
     <header class="profile-header">
+      <!-- I-10：移动端无独立返回入口，补返回按钮（桌面亦可用，优先 router.back） -->
+      <button
+        type="button"
+        class="profile-back-btn"
+        :aria-label="t('profile.backAria')"
+        @click="goBack"
+      >
+        <Icon name="arrow-left" :size="18" aria-hidden="true" />
+        <span>{{ t('profile.back') }}</span>
+      </button>
       <h1 class="profile-title">
         <Icon name="user" :size="22" aria-hidden="true" />
         <span>{{ t('profile.title') }}</span>
@@ -326,6 +347,38 @@ function switchPersona(id: string): void {
 
 .profile-header {
   margin-bottom: 24px;
+}
+
+/* I-10：返回按钮（移动端/桌面通用，优先 router.back） */
+.profile-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--card-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+.profile-back-btn:hover {
+  background: var(--background);
+  border-color: var(--muted-foreground);
+}
+
+.profile-back-btn:active {
+  transform: translateY(1px);
+}
+
+.profile-back-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .profile-title {
