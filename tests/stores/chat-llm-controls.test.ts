@@ -289,3 +289,56 @@ describe('chat store — P0-2 思考强度 / P0-3 采样参数下发', () => {
     expect(body.frequency_penalty).toBeUndefined();
   });
 });
+
+// ── T-16：修掉 profile.maxTokens 死代码（角色级 maxTokens 改为可选） ──
+
+describe('chat store — T-16 maxTokens 逐档回落', () => {
+  let originalFetch: typeof globalThis.fetch;
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    originalFetch = globalThis.fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  /** 发一条消息并抓取请求体 */
+  async function captureBody(
+    profile: Partial<ApiProfile>,
+    character: Partial<UICharacter>
+  ): Promise<Record<string, unknown>> {
+    const chatStore = useChatStore();
+    chatStore.setApiProfile(makeApiProfile(profile));
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      makeSSEResponse([{ content: 'ok' }])
+    );
+    await chatStore.sendMessage(makeCharacter(character), 'hi');
+    const body = (spy.mock.calls[0]![1] as RequestInit).body as string;
+    return JSON.parse(body) as Record<string, unknown>;
+  }
+
+  it('角色级未设置时，Profile 级 maxTokens 生效（死代码已修）', async () => {
+    const body = await captureBody({ maxTokens: 1024 }, { maxTokens: undefined });
+    expect(body.max_tokens).toBe(1024);
+  });
+
+  it('角色级已设置时优先于 Profile 级', async () => {
+    const body = await captureBody({ maxTokens: 1024 }, { maxTokens: 2048 });
+    expect(body.max_tokens).toBe(2048);
+  });
+
+  it('两档都未设置时不传 max_tokens（= 供应商默认）', async () => {
+    const body = await captureBody({}, { maxTokens: undefined });
+    expect(body.max_tokens).toBeUndefined();
+  });
+
+  it('角色级 0 / NaN / 负数均按未设置处理（不用魔法数字表示未设置）', async () => {
+    // 合法区间是 1~32768，0 与负数不是合法值 → 回落 Profile 级
+    expect((await captureBody({ maxTokens: 1024 }, { maxTokens: 0 })).max_tokens).toBe(1024);
+    expect((await captureBody({ maxTokens: 1024 }, { maxTokens: -1 })).max_tokens).toBe(1024);
+    expect((await captureBody({ maxTokens: 1024 }, { maxTokens: Number.NaN })).max_tokens).toBe(1024);
+  });
+});

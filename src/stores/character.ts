@@ -258,7 +258,8 @@ export const useCharacterStore = defineStore('character', () => {
       authorNote: '',
       authorDepth: 4,
       temperature: 1.0,
-      maxTokens: 4096,
+      // T-16：不写 maxTokens = 未设置（回落 Profile 级 → 供应商默认）。
+      // 旧实现硬编码 4096，会让角色永远携带一个显式值、无条件覆盖 Profile 级配置。
       worldEntries: [],
       tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
     };

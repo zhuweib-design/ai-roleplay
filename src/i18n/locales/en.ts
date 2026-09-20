@@ -522,6 +522,10 @@ const en: Record<MessageKey, string> = {
   'ctx.temperatureAria': 'Temperature',
   'ctx.maxTokens': 'Max Tokens',
   'ctx.maxTokensAria': 'Max Tokens',
+  // T-16: unset = fall back to the Profile level (never use 0 for "unset")
+  'ctx.maxTokensUnset': 'Not set',
+  'ctx.maxTokensUnsetHint': 'When unset, the current Profile max tokens applies; drag the slider to override for this character',
+  'ctx.maxTokensReset': 'Clear the character-level max tokens setting',
   // P0-2 reasoning effort / P0-3 sampling params (character level)
   'ctx.reasoningEffort': 'Reasoning effort',
   'ctx.reasoningEffortAria': 'Reasoning effort',
@@ -1625,6 +1629,9 @@ const en: Record<MessageKey, string> = {
   'charEdit.temperatureLabel': 'Temperature',
   'charEdit.temperatureHint': 'Higher values are more creative, lower values are more stable',
   'charEdit.maxTokensLabel': 'Max Tokens',
+  'charEdit.maxTokensHint': 'Leave empty to follow the current Profile setting',
+  'charEdit.maxTokensPlaceholder': 'Empty = follow Profile',
+  'charEdit.maxTokensUnset': 'Not set',
   'charEdit.profileBindLabel': 'Bind API Profile',
   'charEdit.profileBindHint': 'Select the model config this character always uses; leave empty to follow the global active Profile',
   'charEdit.profileFollowGlobal': 'Follow global (current: {model})',

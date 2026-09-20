@@ -522,6 +522,10 @@ export default {
   'ctx.temperatureAria': '温度',
   'ctx.maxTokens': '最大 Tokens',
   'ctx.maxTokensAria': '最大 Tokens',
+  // T-16：未设置 = 回落 Profile 级（绝不用 0 表示未设置）
+  'ctx.maxTokensUnset': '未设置',
+  'ctx.maxTokensUnsetHint': '未设置时使用当前 Profile 的最大 Tokens；拖动滑块即为角色单独设置',
+  'ctx.maxTokensReset': '清除角色级最大 Tokens 设置',
   // P0-2 思考强度 / P0-3 采样参数（角色级）
   'ctx.reasoningEffort': '思考强度',
   'ctx.reasoningEffortAria': '思考强度',
@@ -1625,6 +1629,9 @@ export default {
   'charEdit.temperatureLabel': '温度',
   'charEdit.temperatureHint': '数值越高回答越发散，越低越稳定',
   'charEdit.maxTokensLabel': '最大 Tokens',
+  'charEdit.maxTokensHint': '留空则跟随当前 Profile 的设置',
+  'charEdit.maxTokensPlaceholder': '留空跟随 Profile',
+  'charEdit.maxTokensUnset': '未设置',
   'charEdit.profileBindLabel': '绑定 API Profile',
   'charEdit.profileBindHint': '选择该角色固定使用的模型配置；留空则跟随全局激活 Profile',
   'charEdit.profileFollowGlobal': '跟随全局（当前：{model}）',

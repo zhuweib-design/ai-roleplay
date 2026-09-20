@@ -119,9 +119,45 @@ function onTemperature(e: Event) {
   characterStore.updateCharacter(char.value.id, { temperature: v });
 }
 
+/**
+ * T-16：角色级 maxTokens —— 可选字段
+ *
+ * 语义与 P0-3 采样参数完全一致：`undefined` / `null` = 未设置 = 回落
+ * Profile 级 → 不传（供应商默认）。绝不用 0 表示未设置。
+ */
+
+/** 角色级是否显式设置了 maxTokens */
+const isMaxTokensSet = computed(
+  () =>
+    typeof char.value.maxTokens === 'number' &&
+    Number.isFinite(char.value.maxTokens) &&
+    char.value.maxTokens > 0
+);
+
+/**
+ * 实际生效值（角色级 ?? Profile 级 ?? 不传）
+ * 用于滑块位置与数值展示；三者都没有时返回 null（UI 显示"未设置"）
+ */
+const resolvedMaxTokens = computed<number | null>(() => {
+  const charV = char.value.maxTokens;
+  if (typeof charV === 'number' && Number.isFinite(charV) && charV > 0) return charV;
+  const profileV = effectiveProfile.value?.maxTokens;
+  if (typeof profileV === 'number' && Number.isFinite(profileV) && profileV > 0) return profileV;
+  return null;
+});
+
+/** 滑块位置（都未设置时用 4096 中立值，仅作把手位置，不代表已设置） */
+const sliderMaxTokens = computed<number>(() => resolvedMaxTokens.value ?? 4096);
+
 function onMaxTokens(e: Event) {
   const v = Number((e.target as HTMLInputElement).value);
+  if (!Number.isFinite(v)) return;
   characterStore.updateCharacter(char.value.id, { maxTokens: v });
+}
+
+/** 清空角色级覆盖（写 undefined = 回落 Profile 级） */
+function resetMaxTokens(): void {
+  characterStore.updateCharacter(char.value.id, { maxTokens: undefined });
 }
 
 function onAuthorNote(e: Event) {
@@ -552,12 +588,24 @@ class="token-bar" role="progressbar"
             min="256"
             max="8192"
             step="256"
-            :value="char.maxTokens"
+            :value="sliderMaxTokens"
             :aria-label="t('ctx.maxTokensAria')"
             @input="onMaxTokens"
           />
-          <span class="ctx-range-value" aria-hidden="true">{{ char.maxTokens }}</span>
+          <span class="ctx-range-value" aria-hidden="true">
+            {{ isMaxTokensSet ? resolvedMaxTokens : t('ctx.maxTokensUnset') }}
+          </span>
+          <button
+            v-if="isMaxTokensSet"
+            type="button"
+            class="ctx-reset-btn ctx-reset-btn-maxtok"
+            :aria-label="t('ctx.maxTokensReset')"
+            @click="resetMaxTokens"
+          >
+            <Icon name="close" :size="12" />
+          </button>
         </label>
+        <p v-if="!isMaxTokensSet" class="ctx-param-hint">{{ t('ctx.maxTokensUnsetHint') }}</p>
 
         <!-- P0-2 思考强度：capability = none 时整个隐藏（不为统一而暴露无效开关） -->
         <div v-if="reasoningCapability !== 'none'" class="ctx-param-row">

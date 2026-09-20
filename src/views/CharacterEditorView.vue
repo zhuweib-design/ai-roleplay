@@ -94,7 +94,8 @@ interface FormState {
   model: string;
   profileId: string | null;
   temperature: number;
-  maxTokens: number;
+  /** T-16：null = 未设置（回落 Profile 级 → 供应商默认），绝不用 0 表示 */
+  maxTokens: number | null;
   authorNote: string;
   authorDepth: number;
   favorite: boolean;
@@ -121,7 +122,7 @@ const emptyForm = (): FormState => ({
   model: 'GPT-4o',
   profileId: null,
   temperature: 1.0,
-  maxTokens: 4096,
+  maxTokens: null,
   authorNote: '',
   authorDepth: 4,
   favorite: false,
@@ -159,7 +160,11 @@ const errors = computed<Record<string, string>>(() => {
   if (form.value.temperature < 0 || form.value.temperature > 2) {
     e.temperature = t('charEdit.tempRange');
   }
-  if (form.value.maxTokens < 1 || form.value.maxTokens > 32768) {
+  // T-16：留空（null）= 未设置，合法；仅填写时才校验范围
+  if (
+    form.value.maxTokens !== null &&
+    (form.value.maxTokens < 1 || form.value.maxTokens > 32768)
+  ) {
     e.maxTokens = t('charEdit.maxTokensRange');
   }
   if (form.value.authorDepth < 0 || form.value.authorDepth > 50) {
@@ -225,7 +230,10 @@ function loadCharacter(c: UICharacter) {
     model: c.model,
     profileId: c.profileId ?? null,
     temperature: c.temperature,
-    maxTokens: c.maxTokens,
+    maxTokens:
+      typeof c.maxTokens === 'number' && Number.isFinite(c.maxTokens) && c.maxTokens > 0
+        ? c.maxTokens
+        : null,
     authorNote: c.authorNote,
     authorDepth: c.authorDepth,
     favorite: c.favorite,
@@ -288,7 +296,7 @@ const previewCharacter = computed<UICharacter>(() => ({
   authorNote: form.value.authorNote,
   authorDepth: form.value.authorDepth,
   temperature: form.value.temperature,
-  maxTokens: form.value.maxTokens,
+  maxTokens: form.value.maxTokens ?? undefined,
   worldEntries: [],
   tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
   // F01.6 角色属性预览
@@ -436,6 +444,21 @@ function removeStat(index: number): void {
   form.value.stats.splice(index, 1);
 }
 
+/**
+ * T-16：maxTokens 输入（空串 = 清空 = 未设置，回落 Profile 级）
+ *
+ * 不用 `v-model.number`：空输入会被解析为 NaN，无法区分"未设置"与"填错了"。
+ */
+function onMaxTokensInput(e: Event): void {
+  const raw = (e.target as HTMLInputElement).value.trim();
+  if (raw === '') {
+    form.value.maxTokens = null;
+    return;
+  }
+  const v = Number(raw);
+  form.value.maxTokens = Number.isFinite(v) ? v : null;
+}
+
 function buildPatch(): Partial<UICharacter> {
   const attributes = buildAttributes();
   return {
@@ -452,7 +475,8 @@ function buildPatch(): Partial<UICharacter> {
     model: form.value.model,
     profileId: form.value.profileId,
     temperature: form.value.temperature,
-    maxTokens: form.value.maxTokens,
+    // T-16：null = 未设置 → undefined（回落 Profile 级），与 personality/scenario 同款
+    maxTokens: form.value.maxTokens ?? undefined,
     authorNote: form.value.authorNote,
     authorDepth: form.value.authorDepth,
     favorite: form.value.favorite,
@@ -856,20 +880,23 @@ function handleExport() {
             <label for="f-maxtok" class="field-label">{{ t('charEdit.maxTokensLabel') }}</label>
             <input
               id="f-maxtok"
-              v-model.number="form.maxTokens"
+              :value="form.maxTokens ?? ''"
               type="number"
               min="1"
               max="32768"
               step="1"
               class="field-input"
               :class="{ 'has-error': errors.maxTokens }"
+              :placeholder="t('charEdit.maxTokensPlaceholder')"
               :aria-invalid="!!errors.maxTokens"
               :aria-describedby="errors.maxTokens ? 'err-maxtok' : undefined"
+              @input="onMaxTokensInput"
             />
             <p v-if="errors.maxTokens" id="err-maxtok" class="field-error" role="alert">
               <Icon name="alert-triangle" :size="12" />
               <span>{{ errors.maxTokens }}</span>
             </p>
+            <p v-else class="field-hint">{{ t('charEdit.maxTokensHint') }}</p>
           </div>
         </fieldset>
 
@@ -1162,7 +1189,7 @@ function handleExport() {
             </div>
             <div class="meta-row">
               <dt>{{ t('charEdit.previewMaxTokens') }}</dt>
-              <dd>{{ previewCharacter.maxTokens }}</dd>
+              <dd>{{ previewCharacter.maxTokens ?? t('charEdit.maxTokensUnset') }}</dd>
             </div>
             <div class="meta-row">
               <dt>{{ t('charEdit.previewDepth') }}</dt>

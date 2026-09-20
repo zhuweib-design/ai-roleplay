@@ -78,7 +78,10 @@ export interface CharacterExt {
   profileId?: string | null;
   /** 采样温度 */
   temperature?: number;
-  /** 最大生成 Token 数 */
+  /**
+   * 最大生成 Token 数
+   * undefined = 未设置（回落 Profile 级 → 不传）；绝不用 0 表示未设置
+   */
   maxTokens?: number;
   /** P0-2：角色级思考强度覆盖；undefined/null = 跟随 Profile */
   reasoningEffort?: ReasoningEffort | null;

@@ -355,11 +355,58 @@ describe('ContextPanel — 降级与采样控件', () => {
     );
     await nextTick();
     const characterStore = useCharacterStore();
-    const resetBtn = wrapper.findAll('.ctx-reset-btn')[0]!;
+    // 按 aria-label 精确取采样参数的"恢复默认"（maxTokens 有同名 class 但不同 aria-label）
+    const resetBtn = wrapper
+      .findAll('.ctx-reset-btn')
+      .find((b) => b.attributes('aria-label') === t('llm.samplingReset'))!;
     await resetBtn.trigger('click');
 
     const updated = characterStore.characters.find((c) => c.id === 'c1');
     expect(updated?.sampling?.topP).toBeUndefined();
+  });
+
+  // ── T-16：maxTokens 可选（修掉 profile.maxTokens 死代码） ──
+
+  /** 定位"最大 Tokens"那一行（按滑块 aria-label 精确取，避免与其它 range 混淆） */
+  function findMaxTokensRow(wrapper: ReturnType<typeof mountPanel>) {
+    return wrapper
+      .findAll('.ctx-range-label')
+      .find((row) =>
+        row.findAll('input[type="range"]').some((i) => i.attributes('aria-label') === t('ctx.maxTokensAria'))
+      );
+  }
+
+  it('角色级未设置 maxTokens 时显示"未设置"，且不显示清除按钮', async () => {
+    const wrapper = mountPanel(makeProfile({ maxTokens: 1024 }), makeChar({ maxTokens: undefined }));
+    await nextTick();
+
+    const row = findMaxTokensRow(wrapper)!;
+    expect(row.text()).toContain(t('ctx.maxTokensUnset'));
+    expect(row.find('.ctx-reset-btn-maxtok').exists()).toBe(false);
+    // 滑块把手中立跟随生效值（Profile 级 1024），但文案仍标明"未设置"
+    expect(row.find('input[type="range"]').attributes('value')).toBe('1024');
+  });
+
+  it('点击清除按钮把角色级 maxTokens 置回未设置（而非置 0）', async () => {
+    const wrapper = mountPanel(makeProfile({ maxTokens: 1024 }), makeChar({ maxTokens: 2048 }));
+    await nextTick();
+
+    const row = findMaxTokensRow(wrapper)!;
+    expect(row.find('.ctx-reset-btn-maxtok').exists()).toBe(true);
+    await row.find('.ctx-reset-btn-maxtok').trigger('click');
+
+    const updated = useCharacterStore().characters.find((c) => c.id === 'c1');
+    expect(updated?.maxTokens).toBeUndefined();
+  });
+
+  it('拖动滑块写入角色级 maxTokens', async () => {
+    const wrapper = mountPanel(makeProfile({ maxTokens: 1024 }), makeChar({ maxTokens: undefined }));
+    await nextTick();
+
+    await findMaxTokensRow(wrapper)!.find('input[type="range"]').setValue('4096');
+
+    const updated = useCharacterStore().characters.find((c) => c.id === 'c1');
+    expect(updated?.maxTokens).toBe(4096);
   });
 
   it('思考强度选择写入角色级 reasoningEffort', async () => {

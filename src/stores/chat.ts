@@ -261,7 +261,8 @@ export const useChatStore = defineStore('chat', () => {
       systemPrompt: options?.systemPrompt ?? '',
       maxContextTokens: options?.maxContextTokens ?? 8192,
       reservedTokens: options?.reservedTokens ?? 1024,
-      // 需求3: API Profile 默认最大 Tokens（角色 overrides.maxTokens 优先）
+      // 需求3/T-16: API Profile 默认最大 Tokens
+      // 角色级未设置时 overrides 里不写该键 → 本值真正生效（此前被角色级必填 4096 无条件覆盖）
       maxTokens: profile.maxTokens,
       // P0-3：Profile 级采样参数（角色级显式设置时在 overrides 里覆盖）
       ...buildSamplingConfigPatch(profile.sampling),
@@ -303,17 +304,26 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * P0-2/P0-3：构造本轮请求的 overrides（角色级覆盖）
    *
-   * 与既有 temperature / maxTokens 不同，新参数在**每一档都是可选**的：
-   * 角色级未设置时不写该键，从而让 Profile 级 / 全局默认值生效（三档合并）。
+   * 与既有 temperature 不同，maxTokens 与新参数在**每一档都是可选**的：
+   * 角色级未设置时不写该键，从而让 Profile 级 / 全局默认值生效（逐档回落）。
    */
   function buildCharacterOverrides(
     character: UICharacter
   ): NonNullable<import('../services/chat-manager').SendMessageParams['overrides']> {
     const overrides: NonNullable<import('../services/chat-manager').SendMessageParams['overrides']> = {
       temperature: character.temperature,
-      maxTokens: character.maxTokens,
       ...buildSamplingConfigPatch(character.sampling),
     };
+    /**
+     * T-16：角色级 maxTokens 为可选，未设置时**不写该键**。
+     * 写在对象里（哪怕是 undefined）都会被 `{...config, ...overrides}` 覆盖掉
+     * Profile 级默认值 —— 这正是 profile.maxTokens 沦为死代码的原因。
+     */
+    const charMaxTokens = character.maxTokens;
+    // 0 与负数不是合法的 max_tokens（合法区间 1~32768），按"未设置"处理（fail-open）
+    if (typeof charMaxTokens === 'number' && Number.isFinite(charMaxTokens) && charMaxTokens > 0) {
+      overrides.maxTokens = charMaxTokens;
+    }
     // P0-2：capability 为 none 时静默丢弃角色级思考强度（不报错、不打断对话）
     const capability = activeProfileForCapability
       ? resolveReasoningCapability(activeProfileForCapability)

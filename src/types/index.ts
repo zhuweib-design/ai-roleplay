@@ -103,7 +103,15 @@ export interface UICharacter {
   authorNote: string;
   authorDepth: number;
   temperature: number;
-  maxTokens: number;
+  /**
+   * 需求3：单次回复最大 Tokens（角色级覆盖）
+   *
+   * **可选**（T-16 语义）：`undefined` / `null` = 未设置 = 向下回落
+   * —— 角色级 → Profile 级 → 不传（供应商默认）。
+   * 绝不用 0 或魔法数字表示"未设置"：历史上它是必填 number（默认 4096），
+   * 导致 Profile 级 `maxTokens` 被无条件覆盖而永不生效（死代码），本轮改为可选修掉。
+   */
+  maxTokens?: number;
   worldEntries: WorldEntry[];
   tokenBudget: TokenBudget;
   /** P0-2：角色级思考强度覆盖；undefined/null = 跟随 Profile */
