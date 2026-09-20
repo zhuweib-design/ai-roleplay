@@ -11,7 +11,10 @@
  *   1. dist/index.html 必须存在且含 Content-Security-Policy meta；
  *   2. 必须包含关键指令：default-src 'self' / script-src 'self' / object-src 'none' / base-uri 'self'；
  *   3. script-src 中不得出现 'unsafe-eval' / 'unsafe-inline'（这两个放行会让 CSP 形同虚设）；
- *   4. 构建产物中不得出现「无 src 的内联 <script>」——会被自身 CSP 拦截，导致白屏。
+ *   4. 构建产物中不得出现「无 src 的内联 <script>」——会被自身 CSP 拦截，导致白屏；
+ *   5. 构建产物中不得引用第三方字体 CDN（fonts.googleapis.com / fonts.gstatic.com）——
+ *      字体已本地镜像（scripts/vendor-fonts.mjs），第三方请求会泄漏 IP/Referer 且被自身 CSP 拦截；
+ *   6. 本地字体镜像完整性：dist/fonts/fonts.css 存在，且其全部 url() 引用指向存在的 woff2 分片。
  *
  * 前置条件：需先执行 npm run build（CI 中紧跟 Build 步骤之后）。
  *
@@ -113,6 +116,42 @@ if (inlineTags.length > 0) {
   );
 }
 
+// ── 5. 构建产物不得引用第三方字体 CDN ──
+// 字体已本地镜像到 public/fonts/（scripts/vendor-fonts.mjs），CSP 也不再放行
+// fonts.googleapis.com / fonts.gstatic.com。若此处出现引用，说明有人重新引入了
+// 第三方字体 —— 既会向第三方暴露访问者 IP/Referer，也会被自身 CSP 拦截而静默失效。
+const THIRD_PARTY_FONT_RE = /https?:\/\/fonts\.(googleapis|gstatic)\.com/g;
+const thirdPartyHits = [...html.matchAll(THIRD_PARTY_FONT_RE)].map((m) => m[0]);
+if (thirdPartyHits.length > 0) {
+  errors.push(
+    `${REL} 引用了第三方字体 CDN（${[...new Set(thirdPartyHits)].join(', ')}）—— ` +
+      '字体应本地镜像（node scripts/vendor-fonts.mjs），第三方请求会泄漏 IP/Referer 且被自身 CSP 拦截'
+  );
+}
+
+// ── 6. 本地字体镜像完整性 ──
+// fonts.css 与它引用的 woff2 分片必须都在构建产物中，否则字体静默回退系统衬线。
+const FONTS_CSS = join(ROOT, 'dist', 'fonts', 'fonts.css');
+if (!existsSync(FONTS_CSS)) {
+  errors.push(
+    'dist/fonts/fonts.css 不存在 —— 字体镜像缺失。修复：node scripts/vendor-fonts.mjs 后重新构建'
+  );
+} else {
+  const fontsCss = readFileSync(FONTS_CSS, 'utf8');
+  const refs = [...fontsCss.matchAll(/url\(([^)]+)\)/g)]
+    .map((m) => m[1].trim().replace(/^['"]|['"]$/g, ''))
+    .filter((u) => !/^(https?:|data:)/.test(u));
+  const missing = refs.filter((r) => !existsSync(join(ROOT, 'dist', 'fonts', r)));
+  if (refs.length === 0) {
+    errors.push('dist/fonts/fonts.css 未引用任何本地 woff2 分片 —— 字体镜像内容异常');
+  } else if (missing.length > 0) {
+    errors.push(
+      `dist/fonts/fonts.css 引用了 ${missing.length}/${refs.length} 个不存在的 woff2 分片（如 ${missing[0]}）—— ` +
+        '镜像不完整，这些字形会静默回退系统字体。修复：node scripts/vendor-fonts.mjs --force'
+    );
+  }
+}
+
 if (errors.length) {
   console.error(`\n[csp-guard] 失败：发现 ${errors.length} 项问题\n`);
   for (const e of errors) console.error('  ✗ ' + e);
@@ -126,5 +165,6 @@ if (errors.length) {
 const directiveCount = csp.split(';').filter((s) => s.trim()).length;
 console.log(
   `[csp-guard] 通过：${REL} 含 CSP meta（${directiveCount} 条指令），` +
-    "关键指令齐备、script-src 未被 'unsafe-eval'/'unsafe-inline' 削弱、无内联 script。"
+    "关键指令齐备、script-src 未被 'unsafe-eval'/'unsafe-inline' 削弱、无内联 script、" +
+    '无第三方字体 CDN 引用、本地字体镜像完整。'
 );

@@ -81,8 +81,10 @@ export const WEB_CSP_DIRECTIVES = [
   "default-src 'self'",
   "script-src 'self' 'wasm-unsafe-eval'",
   "worker-src 'self' blob:",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' data: https://fonts.gstatic.com",
+  // 字体已本地镜像到 public/fonts/（scripts/vendor-fonts.mjs），故不再放行
+  // fonts.googleapis.com / fonts.gstatic.com —— 消除第三方字体请求带来的 IP/Referer 泄漏
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob:",
   "connect-src 'self' https:",
@@ -206,7 +208,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // 注意：**不含 woff2** —— public/fonts/ 下 105 个字体分片约 5.8MB，
+        // 若纳入预缓存，安装时会把大量用不到的 unicode-range 分片一并下载。
+        // 字体改由 HTTP 缓存 + 浏览器按 unicode-range 按需加载；离线时回退系统衬线。
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         navigateFallback: '/',
         // web-llm(6MB)/onnx 等大 chunk 需超默认 2MB 预缓存上限,否则触发 missing-assets
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,

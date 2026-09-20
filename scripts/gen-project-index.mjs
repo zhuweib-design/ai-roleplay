@@ -56,6 +56,8 @@ const AGGREGATE_DIRS = {
   'src-tauri/icons': 'Tauri 应用图标资源（桌面 / Android / iOS 多尺寸 PNG / ICO / ICNS）',
   'public/assets/icons/dl_builtin_tik_tok': '内置线性图标集（SVG，11 个）',
   'docs/assets/screenshots': 'UI 冒烟截图（按路由与主题命名，由 scripts/ui-shot.mjs 生成）',
+  'public/fonts':
+    '本地镜像字体分片（Playfair Display 拉丁 + Noto Serif SC 中文，105 个 unicode-range 分片；由 scripts/vendor-fonts.mjs 生成，不参与 PWA 预缓存）',
 };
 
 /** 人工核对过的用途说明（优先级最高，避免用文件名臆测） */
@@ -285,6 +287,7 @@ const CURATED = {
   'scripts/i18n-scan.mjs': '门禁：硬编码中文 UI 文案扫描（strict 模式）',
   'scripts/generate-pwa-icons.mjs': '工具：由 icon-source.png 生成 PWA 图标到 public/',
   'scripts/ui-shot.mjs': '工具：遍历路由批量截图到 docs/assets/screenshots/',
+  'scripts/vendor-fonts.mjs': '工具：把 Google Fonts 镜像到 public/fonts/，消除第三方字体请求（支持 --check 供校验）',
   'scripts/p11-baseline.mjs': '测量：P11 性能基线采集',
   'scripts/p11-scroll-fps.mjs': '测量：滚动帧率采集',
   'scripts/gen-project-index.mjs': '工具：生成本索引文件',

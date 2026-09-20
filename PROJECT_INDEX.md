@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-20 10:11（本地时区）
+- **生成时间**：2026-09-20 10:21（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v0.2.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：383 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：0 个
+- **收录文件**：385 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：0 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -37,11 +37,12 @@ ai-roleplay/
 - `market/`  — 8 个文件
   - `cards/`  — 1 个文件
   - `items/`  — 6 个文件
-- `public/`  — 20 个文件
+- `public/`  — 126 个文件
   - `assets/`  — 14 个文件
     - `icons/`  — 12 个文件
       - `dl_builtin_tik_tok/`  — 12 个文件
-- `scripts/`  — 16 个文件
+  - `fonts/`  — 106 个文件
+- `scripts/`  — 17 个文件
 - `src/`  — 160 个文件
   - `api/`  — 10 个文件
   - `components/`  — 22 个文件
@@ -95,7 +96,7 @@ ai-roleplay/
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `index.html` | html | 程序 | Vite 入口 HTML，挂载 #app | 已跟踪 |  |
+| `index.html` | html | 程序 | Vite 入口 HTML，挂载 #app | 已修改 |  |
 | `src-tauri/build.rs` | rs | 程序 | Tauri 构建脚本（tauri-build） | 已跟踪 |  |
 | `src-tauri/src/commands/app_info.rs` | rs | 程序 | 命令：应用信息 | 已跟踪 |  |
 | `src-tauri/src/commands/chat_stream.rs` | rs | 程序 | 命令：流式对话（SSE 转发） | 已跟踪 |  |
@@ -398,9 +399,9 @@ ai-roleplay/
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
-| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
+| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已修改 |  |
 | `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已跟踪 |  |
-| `README.md` | md | 开发文档 | 项目主说明（中文） | 已跟踪 |  |
+| `README.md` | md | 开发文档 | 项目主说明（中文） | 已修改 |  |
 | `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已跟踪 |  |
 | `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已忽略 |  |
 | `docs/dev/b-type-findings.md` | md | 开发文档 | 开发文档：`!` 非空断言治理审计记录 | 已忽略 |  |
@@ -480,10 +481,10 @@ ai-roleplay/
 | `src-tauri/icons/` | 目录聚合 | 配置 | Tauri 应用图标资源（桌面 / Android / iOS 多尺寸 PNG / ICO / ICNS）（共 49 个文件） | 未跟踪 |  |
 | `src-tauri/tauri.conf.json` | json | 配置 | Tauri 应用配置（窗口 / 打包 / 更新签名公钥） | 已跟踪 |  |
 | `tsconfig.json` | json | 配置 | TypeScript 编译选项与路径映射 | 已跟踪 |  |
-| `vite.config.ts` | ts | 配置 | Vite 构建配置：别名、代码分包、PWA 插件 | 已跟踪 |  |
+| `vite.config.ts` | ts | 配置 | Vite 构建配置：别名、代码分包、PWA 插件 | 已修改 |  |
 | `vitest.config.ts` | ts | 配置 | Vitest 单测配置：jsdom 环境、覆盖率阈值门禁 | 已跟踪 |  |
 
-### 2.10 脚本（16）
+### 2.10 脚本（17）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -491,7 +492,7 @@ ai-roleplay/
 | `scripts/check-contrast.mjs` | mjs | 脚本 | 门禁：5 套主题关键色对对比度 ≥ AA | 已跟踪 |  |
 | `scripts/contrast-audit.mjs` | mjs | 脚本 | 审计：对比度全量扫描报告 | 已跟踪 |  |
 | `scripts/csp-audit.mjs` | mjs | 脚本 | 工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用） | 已跟踪 |  |
-| `scripts/csp-guard.mjs` | mjs | 脚本 | 门禁：Web 端 CSP 契约校验（构建产物含 CSP、关键指令齐备、script-src 未被削弱） | 已跟踪 |  |
+| `scripts/csp-guard.mjs` | mjs | 脚本 | 门禁：Web 端 CSP 契约校验（构建产物含 CSP、关键指令齐备、script-src 未被削弱） | 已修改 |  |
 | `scripts/css-conventions-guard.mjs` | mjs | 脚本 | 门禁：CSS 约定守卫单一入口（编排断点 / 视口 / hover / !important / 控件字号五项子检查） | 已跟踪 |  |
 | `scripts/css-viewport-guard.mjs` | mjs | 脚本 | 门禁：CSS 视口单位使用校验 | 已跟踪 |  |
 | `scripts/gen-project-index.mjs` | mjs | 脚本 | 工具：生成本索引文件 | 已修改 |  |
@@ -503,8 +504,9 @@ ai-roleplay/
 | `scripts/p11-baseline.mjs` | mjs | 脚本 | 测量：P11 性能基线采集 | 已跟踪 |  |
 | `scripts/p11-scroll-fps.mjs` | mjs | 脚本 | 测量：滚动帧率采集 | 已跟踪 |  |
 | `scripts/ui-shot.mjs` | mjs | 脚本 | 工具：遍历路由批量截图到 docs/assets/screenshots/ | 已跟踪 |  |
+| `scripts/vendor-fonts.mjs` | mjs | 脚本 | 工具：把 Google Fonts 镜像到 public/fonts/，消除第三方字体请求（支持 --check 供校验） | 未跟踪 |  |
 
-### 2.11 其他（20）
+### 2.11 其他（21）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -525,6 +527,7 @@ ai-roleplay/
 | `public/assets/hero-cyber-nexus.jpg` | jpg | 其他 | 首页主视觉图（赛博主题） | 已跟踪 |  |
 | `public/assets/hero-seraphina.jpg` | jpg | 其他 | 首页主视觉图（角色主题） | 已跟踪 |  |
 | `public/assets/icons/dl_builtin_tik_tok/` | 目录聚合 | 其他 | 内置线性图标集（SVG，11 个）（共 12 个文件） | 未跟踪 |  |
+| `public/fonts/` | 目录聚合 | 其他 | 本地镜像字体分片（Playfair Display 拉丁 + Noto Serif SC 中文，105 个 unicode-range 分片；由 scripts/vendor-fonts.mjs 生成，不参与 PWA 预缓存）（共 106 个文件） | 未跟踪 |  |
 | `public/pwa-192x192.png` | png | 其他 | PWA 图标 192×192 | 已跟踪 |  |
 | `public/pwa-512x512.png` | png | 其他 | PWA 图标 512×512 | 已跟踪 |  |
 | `public/pwa-icon.svg` | svg | 其他 | PWA 图标（矢量） | 已跟踪 |  |
@@ -542,9 +545,9 @@ ai-roleplay/
 | AI记忆 | 12 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
 | 截图 | 1 | docs/assets/screenshots/ 下 UI 冒烟截图 |
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
-| 脚本 | 16 | scripts/ 门禁、审计与工具脚本 |
-| 其他 | 20 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **383** | 与「收录文件」数一致 |
+| 脚本 | 17 | scripts/ 门禁、审计与工具脚本 |
+| 其他 | 21 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
+| **合计** | **385** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

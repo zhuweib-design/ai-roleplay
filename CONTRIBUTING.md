@@ -28,7 +28,7 @@
    npm run a11y:contrast      # 无障碍对比度（≥ AA 4.5:1）
    npm run test:coverage      # Vitest + 覆盖率门禁（statements 78 / branches 73 / functions 78 / lines 78）
    npm run build              # vue-tsc 类型检查 + vite 生产构建
-   npm run check:csp          # Web 端 CSP 契约守卫（须在 build 之后跑）
+   npm run check:csp          # Web 端 CSP 契约守卫（含第三方字体 CDN 与字体镜像完整性校验，须在 build 之后跑）
    ```
 
    **桌面端门禁（仅改动 `src-tauri/` 时需额外跑，耗时较长）**

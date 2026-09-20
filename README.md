@@ -89,7 +89,7 @@ npm run check:css-conventions  # CSS 约定守卫（5 项合一：断点单一�
 npm run a11y:contrast      # 无障碍对比度（≥ AA 4.5:1）
 npm run test:coverage      # Vitest + 覆盖率（statements 78 / branches 73 / functions 78 / lines 78）
 npm run build              # vue-tsc 类型检查 + vite 生产构建
-npm run check:csp          # Web 端 CSP 契约守卫（校验构建产物的 CSP 未被移除/削弱，须在 build 之后跑）
+npm run check:csp          # Web 端 CSP 契约守卫（CSP 未被移除/削弱 + 无第三方字体 CDN 引用 + 字体镜像完整，须在 build 之后跑）
 ```
 
 **桌面端（仅改动 `src-tauri/` 时跑）**
@@ -138,9 +138,16 @@ Content-Security-Policy: frame-ancestors 'none'; report-uri /csp-report
 
 改动 CSP 允许清单后，建议做一次运行时审计：先 `npm run build`，再另开终端 `npx vite preview --port 4173 --strictPort`，然后 `npm run csp:audit`。
 
-### 3. 外链字体在部分网络环境下不可用
+### 3. ~~外链字体在部分网络环境下不可用~~ 已解决（2026-09-20）
 
-`index.html` 通过 Google Fonts 引入 Playfair Display / Noto Serif SC（仅「暗夜剧场」主题的衬线标题使用）。中国大陆网络环境下通常不可达，此时首屏短暂等待后回退系统衬线字体，**功能不受影响**；PWA 离线场景同样回退。后续计划改为自托管字体，届时可一并收窄 CSP 的 `style-src` / `font-src` 放行。
+字体（Playfair Display 拉丁 / Noto Serif SC 中文，仅「暗夜剧场」主题的衬线标题使用）原先从 Google Fonts 引入，中国大陆网络环境下通常不可达。现已**本地镜像到 `public/fonts/`**（105 个 `unicode-range` 分片 / 约 5.8 MB，由 `scripts/vendor-fonts.mjs` 生成，可重复运行以更新字体）：
+
+- **不再有任何第三方字体请求**，消除了向 Google 暴露访问者 IP / Referer 的问题；
+- CSP 的 `style-src` / `font-src` 已同步收窄，移除两处 CDN 放行；
+- 浏览器仍按 `unicode-range` **按需加载**用到的分片（实测单次会话约 9 个），运行时下载量与原先一致；
+- 字体分片**不参与 PWA 预缓存**（否则会白白下载约 5.8 MB 用不到的分片）；离线且 HTTP 缓存未命中时回退系统衬线，功能不受影响。
+
+> 相关门禁：`npm run check:csp` 会校验构建产物中无第三方字体 CDN 引用、且本地字体镜像完整。
 
 ### 4. 数据存于浏览器 IndexedDB，存在被清除的风险
 
