@@ -300,6 +300,42 @@ describe('C. 匹配与 i18n', () => {
     expect(s?.entries.map((e) => e.key)).toEqual(['mood']);
   });
 
+  it('C-10 QA D1 回归：同一规范字段经别名重复输出 → 只留后者（去重口径为规范 key）', () => {
+    const schema: StatusSchema = {
+      version: 1,
+      fields: [{ key: 'location', aliases: ['place'] }],
+    };
+    const s = parseStatusBlock('{"location":"酒馆","place":"二楼"}', schema, 'm1');
+    expect(s?.entries).toHaveLength(1);
+    expect(s?.entries[0]?.key).toBe('location');
+    expect(s?.entries[0]?.value).toBe('二楼');
+  });
+
+  it('C-11 QA D1 回归：别名命中的排序位不退化（存/取都用规范 key）', () => {
+    const schema: StatusSchema = {
+      version: 1,
+      fields: [
+        { key: 'mood', order: 2 },
+        { key: 'location', aliases: ['place'], order: 1 },
+      ],
+    };
+    const s = parseStatusBlock('place: tavern\nmood: happy', schema, 'm1');
+    expect(s?.entries.map((e) => e.key)).toEqual(['location', 'mood']);
+  });
+
+  it('C-12 子串命中同样按规范 key 去重', () => {
+    const s = parseStatusBlock('current_location: a\nlocation: b');
+    expect(s?.entries).toHaveLength(1);
+    expect(s?.entries[0]?.key).toBe('location');
+    expect(s?.entries[0]?.value).toBe('b');
+  });
+
+  it('C-13 mood 命中内置表但无图标（白名单无情绪类图标，宁缺勿滥）', () => {
+    const s = parseStatusBlock('mood: happy');
+    expect(s?.entries[0]?.key).toBe('mood');
+    expect(s?.entries[0]?.icon).toBeUndefined();
+  });
+
   it('C-09 order 排序生效', () => {
     const schema: StatusSchema = {
       version: 1,

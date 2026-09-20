@@ -123,8 +123,14 @@ export interface StatusFieldPreset {
   key: string;
   /** i18n key（zh/en 双语，形如 'status.field.location'） */
   i18nKey: string;
-  /** 图标（icons.ts 白名单内） */
-  icon: StatusIconName;
+  /**
+   * 图标（icons.ts 白名单内）
+   *
+   * 可选：白名单里**没有情绪/表情类图标**，给 `mood` 硬塞 `star`（收藏/评分语义）
+   * 只会造成误读 —— 这时"不显示图标"是正确的降级，而非缺陷。
+   * 宁缺勿滥：宁可少一个图标，也不要一个会误导的图标。
+   */
+  icon?: StatusIconName;
   /** 建议值类型 */
   type: StatusValueType;
 }
@@ -141,7 +147,9 @@ export const STATUS_FIELD_REGISTRY: readonly StatusFieldPreset[] = [
   { key: 'affection', i18nKey: 'status.field.affection', icon: 'heart', type: 'number' },
   { key: 'identity', i18nKey: 'status.field.identity', icon: 'user', type: 'string' },
   { key: 'relationship', i18nKey: 'status.field.relationship', icon: 'users', type: 'string' },
-  { key: 'mood', i18nKey: 'status.field.mood', icon: 'star', type: 'string' },
+  // mood 刻意不配图标：icons.ts 白名单无情绪类图标，star 是"收藏/评分"语义会误导
+  { key: 'mood', i18nKey: 'status.field.mood', type: 'string' },
+  // thought 用 chat-circle 而非 brain：brain 已被 P0 思维链占用，避免两者视觉混淆
   { key: 'thought', i18nKey: 'status.field.thought', icon: 'chat-circle', type: 'string' },
   { key: 'inventory', i18nKey: 'status.field.inventory', icon: 'archive', type: 'string' },
 ] as const;

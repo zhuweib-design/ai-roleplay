@@ -341,8 +341,11 @@ export function parseStatusBlock(
 
     if (def?.show === false) continue;
 
-    // 命中后用**规范 key**（schema 字段 / 内置预设的归一化 key）作为 entry.key：
-    // 这样别名与子串命中也能与"直接输出规范 key"命中同一条，结转与去重才成立。
+    // 命中后用**规范 key**（schema 字段 / 内置预设的归一化 key）作为去重与排序口径：
+    // 这样"直接输出规范 key"与"别名/子串命中"会落到同一条，
+    // 去重（`{"location":…,"place":…}` 只留后者）与结转才成立。
+    // 注意：`byKey` / `orderOf` 必须**同时**用规范 key 存取 —— 存 raw、取 normalized 的不对称
+    // 会让别名命中时的排序位退化成 0（QA D1）。
     const canonicalKey = def ? normalizeKey(def.key) : normalizeKey(preset!.key);
     const entry: StatusEntry = {
       key: canonicalKey,
@@ -355,8 +358,8 @@ export function parseStatusBlock(
       const num = Number(pair.value);
       if (Number.isFinite(num)) entry.raw = num;
     }
-    byKey.set(pair.key, entry);
-    orderOf.set(pair.key, seq++);
+    byKey.set(canonicalKey, entry);
+    orderOf.set(canonicalKey, seq++);
   }
 
   const entries = Array.from(byKey.values());

@@ -33,20 +33,31 @@ describe('STATUS_FIELD_REGISTRY — 内置字段表', () => {
       expect(p.key).toMatch(/^[a-z]+$/);
       expect(p.i18nKey).toBe(`status.field.${p.key}`);
       // 源码零中文：key / i18nKey / icon / type 全部不得含 CJK
-      expect(/[一-龥]/.test(p.key + p.i18nKey + p.icon + p.type)).toBe(false);
+      expect(/[一-龥]/.test(p.key + p.i18nKey + (p.icon ?? '') + p.type)).toBe(false);
     }
   });
 
-  it('每个图标都在 icons.ts 白名单里有实际路径（防改名后静默降级为空白）', () => {
+  it('配了图标的字段，其图标都在 icons.ts 白名单里有实际路径（防改名后静默降级为空白）', () => {
     for (const p of STATUS_FIELD_REGISTRY) {
+      if (!p.icon) continue;
       expect(getIconPath(p.icon), `icon=${p.icon}`).not.toBe('');
     }
   });
 
-  it('StatusIconName 白名单与 registry 完全一致（无多余、无缺失）', () => {
-    const used = new Set(STATUS_FIELD_REGISTRY.map((p) => p.icon));
-    expect(new Set(STATUS_ICON_NAMES)).toEqual(used);
-    expect(STATUS_ICON_NAMES).toHaveLength(8);
+  it('registry 里用到的图标全部落在 StatusIconName 白名单内（防越界常量）', () => {
+    const used = STATUS_FIELD_REGISTRY.map((p) => p.icon).filter((i): i is StatusIconName => !!i);
+    for (const icon of used) {
+      expect(STATUS_ICON_NAMES).toContain(icon);
+    }
+    expect(new Set(used).size).toBe(used.length); // 图标不重复
+  });
+
+  it('mood 刻意不配图标（白名单无情绪类图标，宁缺勿滥）', () => {
+    expect(findRegistryPreset('mood')?.icon).toBeUndefined();
+  });
+
+  it('thought 用 chat-circle 而非 brain（brain 已归 P0 思维链，避免视觉混淆）', () => {
+    expect(findRegistryPreset('thought')?.icon).toBe('chat-circle');
   });
 
   it('registry 顺序为设计约定的语义顺序（地点/时间/好感/身份/关系/心情/想法/持有）', () => {
