@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import 'fake-indexeddb/auto';
 
 // Mock createApiClient：返回预设的 AI 响应
@@ -177,6 +179,47 @@ describe('角色随机生成 store action (F01.7)', () => {
 
     resolveChat!(makeValidResponse());
     await promise1;
+  });
+
+  /**
+   * T-16：新建角色不得写死 maxTokens
+   *
+   * 角色级一旦携带显式值，就会无条件覆盖 Profile 级配置（历史死代码）。
+   * `createCharacter` 与 `generateRandomCharacter` 是两条**独立**的新建路径，
+   * 必须同时满足，缺一条就等于死代码在该路径上没修掉。
+   */
+  it('T-16：generateRandomCharacter 生成的角色 maxTokens 未设置（回落 Profile 级）', async () => {
+    mockChat.mockResolvedValue(makeValidResponse());
+    const store = useCharacterStore();
+
+    const id = await store.generateRandomCharacter('fantasy');
+    const generated = store.characters.find((c) => c.id === id);
+
+    expect(generated).toBeDefined();
+    expect(generated!.maxTokens).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(generated!, 'maxTokens')).toBe(false);
+  });
+
+  it('T-16：createCharacter 新建的角色 maxTokens 同样未设置（两条路径一致）', () => {
+    const store = useCharacterStore();
+
+    const id = store.createCharacter();
+    const created = store.characters.find((c) => c.id === id);
+
+    expect(created).toBeDefined();
+    expect(created!.maxTokens).toBeUndefined();
+  });
+
+  it('T-16 防漂移：character store 内不再有任何角色级 maxTokens 硬编码', () => {
+    const ROOT = resolve(__dirname, '../..');
+    const src = readFileSync(resolve(ROOT, 'src/stores/character.ts'), 'utf8');
+
+    // 历史魔法数字不得复活
+    expect(src).not.toContain('maxTokens: 4096');
+    // 全文件只剩 1 处 maxTokens —— 生成角色时的**API 调用参数**（1500），不是角色字段
+    const hits = [...src.matchAll(/maxTokens:/g)];
+    expect(hits.length).toBe(1);
+    expect(src).toContain('maxTokens: 1500');
   });
 
   it('生成成功后设置 lastInfo', async () => {

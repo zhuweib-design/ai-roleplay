@@ -575,7 +575,11 @@ export const useCharacterStore = defineStore('character', () => {
         authorNote: '',
         authorDepth: 4,
         temperature: 1.0,
-        maxTokens: 4096,
+        /**
+         * T-16：与 createCharacter 一致 —— 不写 maxTokens（= 未设置）。
+         * 此前这里硬编码 4096，导致 **AI 生成的角色**同样无条件覆盖 Profile 级配置，
+         * 任务 1 的死代码修复在这条路径上落空。
+         */
         worldEntries: [],
         tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
         attributes: generated.attributes,
