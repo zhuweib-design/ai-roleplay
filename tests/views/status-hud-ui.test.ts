@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import StatusHud from '../../src/components/chat/StatusHud.vue';
 import { parseStatusBlock } from '@core/status-parser';
 import type { CharacterStatus, StatusSchema } from '@core/status-schema';
+import { isMobile } from '@core/viewport';
 import { initLocale, setLocale } from '@/i18n';
+import { nextTick } from 'vue';
 
 /**
  * P1 StatusHud UI 测试 (T04)
@@ -122,5 +124,95 @@ describe('StatusHud — P1 角色状态栏', () => {
       props: { status: statusFrom('location: tavern\nfoobar: <status>x</status>') },
     });
     expect(wrapper.html()).not.toContain('<status>');
+  });
+});
+
+/**
+ * P1：小屏（≤640）消息级状态条折叠
+ *
+ * 消息列表空间紧张：每轮都铺开状态会把列表撑爆，故小屏默认折叠成一行。
+ * 视口状态来自 `useViewport` 的模块级单例，测完必须复位。
+ */
+describe('StatusHud — P1 小屏折叠', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    initLocale('zh');
+  });
+
+  afterEach(() => {
+    isMobile.value = false;
+  });
+
+  it('非小屏：inline 不出现折叠开关，列表直接可见', () => {
+    isMobile.value = false;
+    const wrapper = mount(StatusHud, {
+      props: {
+        status: statusFrom('location: tavern'),
+        variant: 'inline',
+        collapsibleOnMobile: true,
+      },
+    });
+    expect(wrapper.find('.status-hud-toggle').exists()).toBe(false);
+    expect(wrapper.find('.status-hud-list').exists()).toBe(true);
+  });
+
+  it('小屏但未开启折叠（群聊成员条等一次性展示处）：保持展开，避免行为突变', async () => {
+    isMobile.value = true;
+    const wrapper = mount(StatusHud, {
+      props: { status: statusFrom('location: tavern'), variant: 'inline' },
+    });
+    await nextTick();
+    expect(wrapper.find('.status-hud-toggle').exists()).toBe(false);
+    expect(wrapper.find('.status-hud-list').exists()).toBe(true);
+  });
+
+  it('小屏：inline 默认折叠（列表不在 DOM 里），标题与字段数可见', async () => {
+    isMobile.value = true;
+    const wrapper = mount(StatusHud, {
+      props: {
+        status: statusFrom('location: tavern\naffection: 80'),
+        variant: 'inline',
+        collapsibleOnMobile: true,
+      },
+    });
+    await nextTick();
+
+    const toggle = wrapper.find('.status-hud-toggle');
+    expect(toggle.exists()).toBe(true);
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+    expect(wrapper.find('.status-hud-list').exists()).toBe(false);
+    // 折叠态仍能看到"这是状态条"以及折叠了多少字段
+    expect(wrapper.find('.status-hud-title').text()).toBe('角色状态');
+    expect(wrapper.find('.status-hud-count').text()).toBe('2');
+  });
+
+  it('小屏：点击开关展开，再点收起（aria-expanded 同步）', async () => {
+    isMobile.value = true;
+    const wrapper = mount(StatusHud, {
+      props: {
+        status: statusFrom('location: tavern'),
+        variant: 'inline',
+        collapsibleOnMobile: true,
+      },
+    });
+    await nextTick();
+
+    await wrapper.find('.status-hud-toggle').trigger('click');
+    expect(wrapper.find('.status-hud-list').exists()).toBe(true);
+    expect(wrapper.find('.status-hud-toggle').attributes('aria-expanded')).toBe('true');
+
+    await wrapper.find('.status-hud-toggle').trigger('click');
+    expect(wrapper.find('.status-hud-list').exists()).toBe(false);
+    expect(wrapper.find('.status-hud-toggle').attributes('aria-expanded')).toBe('false');
+  });
+
+  it('小屏：sticky 不折叠（会话级只有一条，恒展开）', async () => {
+    isMobile.value = true;
+    const wrapper = mount(StatusHud, {
+      props: { status: statusFrom('location: tavern'), variant: 'sticky' },
+    });
+    await nextTick();
+    expect(wrapper.find('.status-hud-toggle').exists()).toBe(false);
+    expect(wrapper.find('.status-hud-list').exists()).toBe(true);
   });
 });

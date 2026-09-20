@@ -559,6 +559,13 @@ export const useChatStore = defineStore('chat', () => {
               cacheUsage.value.missTokens += usage.promptCacheMissTokens ?? 0;
               cacheUsage.value.reported++;
             }
+            /**
+             * P1：思考 token 落到本条消息（与 thinking 同款，便于回溯"这轮想了多久"）
+             * 供应商未上报时保持 undefined（UI 不展示）—— 绝不写 0，0 会被误读成"思考没花 token"。
+             */
+            if (typeof usage.reasoningTokens === 'number' && usage.reasoningTokens > 0) {
+              liveMsg.reasoningTokens = usage.reasoningTokens;
+            }
           },
           onDone: (fullContent) => {
             void countTokens(fullContent).then((n) => { tokenUsage.value.completion += n; });
@@ -778,6 +785,7 @@ export const useChatStore = defineStore('chat', () => {
     // P1：status 同理（本轮状态属于上一轮生成结果）
     target.content = '';
     target.thinking = '';
+    target.reasoningTokens = undefined;
     target.status = undefined;
     target.generating = true;
 
@@ -904,6 +912,8 @@ export const useChatStore = defineStore('chat', () => {
     msg.content = newContent;
     // P0-1：正文被改写后旧思考即失效，必须清空，避免"旧思考 + 新正文"错配（§7.4）
     if (msg.thinking) msg.thinking = '';
+    // P1：思考 token 属于旧生成结果，一并清空（新正文没有对应的思考开销）
+    if (msg.reasoningTokens !== undefined) msg.reasoningTokens = undefined;
     // P1：状态快照同样属于旧生成结果，一并清空
     if (msg.status) msg.status = undefined;
     // 编辑后持久化由调用方决定是否触发（避免无 character 引用）

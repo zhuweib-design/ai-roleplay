@@ -45,8 +45,15 @@ export interface UIMessage {
    */
   thinking?: string;
   /**
+   * P1：本条消息思考消耗的 token（来自 ChatUsage.reasoningTokens）
+   * 供应商未上报时恒为 undefined → UI 不展示（不显示 0）。
+   * 与 thinking 同款随消息持久化，便于回溯"第 N 轮思考花了多少 token"。
+   */
+  reasoningTokens?: number;
+  /**
    * P1：本条消息的状态快照（流式下在状态块闭合后一次性写入）
-   * 注：本轮只在会话级 sticky HUD 渲染，消息级渲染留待后续（数据照常存储）。
+   * 由 MessageBubble 以 inline variant 渲染（会话级 sticky 条仍由 ChatMain 挂载），
+   * 受 settings.statusHudConfig.showInline 控制；未设置时不渲染。
    */
   status?: CharacterStatus;
   /** 旁白/动作描述（斜体灰色，正文后） */

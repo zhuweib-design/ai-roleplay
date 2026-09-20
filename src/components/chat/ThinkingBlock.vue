@@ -44,8 +44,13 @@ const props = withDefaults(
     generating?: boolean;
     /** 是否默认折叠（来自全局 settings.thinkingConfig.defaultCollapsed） */
     defaultCollapsed?: boolean;
+    /**
+     * P1：本条思考消耗的 token（来自 ChatUsage.reasoningTokens）
+     * 供应商未上报时为 undefined → **不展示**（显示 0 会被误读成"思考没花 token"）
+     */
+    reasoningTokens?: number;
   }>(),
-  { thinking: '', messageId: '', generating: false, defaultCollapsed: true }
+  { thinking: '', messageId: '', generating: false, defaultCollapsed: true, reasoningTokens: undefined }
 );
 
 /** 是否有可展示的思考（空串与 undefined 都不渲染折叠块，§7.4） */
@@ -69,6 +74,25 @@ function toggle(): void {
 const title = computed(() =>
   props.generating && !expanded.value ? t('bubble.thinkingLoading') : t('bubble.thinking')
 );
+
+/**
+ * P1：思考 token 是否可展示
+ *
+ * 只认"供应商真的上报了正数"这一种情况：undefined / null / 0 / NaN 一律不展示。
+ * 生成未完成时也没有最终用量，同样不展示（避免中途闪一个不完整的数字）。
+ */
+const hasReasoningTokens = computed(
+  () =>
+    !props.generating &&
+    typeof props.reasoningTokens === 'number' &&
+    Number.isFinite(props.reasoningTokens) &&
+    props.reasoningTokens > 0
+);
+
+/** 思考 token 文案（仅在 hasReasoningTokens 为真时渲染） */
+const reasoningTokensText = computed(() =>
+  t('bubble.thinkingTokens', { count: props.reasoningTokens ?? 0 })
+);
 </script>
 
 <template>
@@ -83,6 +107,8 @@ const title = computed(() =>
     >
       <Icon name="brain" :size="13" />
       <span class="thinking-title">{{ title }}</span>
+      <!-- P1: reasoning tokens — rendered only when the provider reports them -->
+      <span v-if="hasReasoningTokens" class="thinking-tokens">{{ reasoningTokensText }}</span>
       <span v-if="generating && !expanded" class="thinking-pulse" aria-hidden="true" />
       <Icon :name="expanded ? 'chevron-up' : 'chevron-down'" :size="13" />
     </button>
@@ -127,6 +153,15 @@ const title = computed(() =>
   flex: 1;
   font-family: var(--font-display);
   letter-spacing: 0.02em;
+}
+
+/* P1：思考 token 数（等宽数字避免数字变化时宽度跳动；比标题略小，不抢主语） */
+.thinking-tokens {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+  white-space: nowrap;
 }
 
 .thinking-pulse {

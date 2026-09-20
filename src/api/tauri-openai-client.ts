@@ -2,6 +2,7 @@ import type { ApiClient } from './api-client';
 import type { ChatRequest, ChatStream } from './types';
 import { ApiError } from './types';
 import { buildChatCompletionsUrl, buildModelsUrl, toOpenAIMessage } from './openai-protocol';
+import { usageReasoningTokens } from './openai-client';
 import { t } from '@/i18n';
 
 /**
@@ -238,7 +239,12 @@ export class TauriOpenAIClient implements ApiClient {
               totalTokens: payload.usage.total_tokens,
               promptCacheHitTokens: payload.usage.prompt_cache_hit_tokens,
               promptCacheMissTokens: payload.usage.prompt_cache_miss_tokens,
-              reasoningTokens: payload.usage.reasoning_tokens,
+              /**
+               * P1：Rust 侧把 usage 整块透传（serde_json::Value），
+               * 官方字段在 `completion_tokens_details.reasoning_tokens` 里，
+               * 顶层 `reasoning_tokens` 只是部分网关的平铺写法 —— 两者都要读。
+               */
+              reasoningTokens: usageReasoningTokens(payload.usage),
             };
           }
         } else if (payload.type === 'error') {

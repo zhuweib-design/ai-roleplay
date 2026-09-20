@@ -54,6 +54,11 @@ export interface ChatMessage {
    */
   thinking?: string;
   /**
+   * P1：本条消息思考消耗的 token（供应商未上报时不写该字段 → 不显示 0）
+   * 与 thinking 同构：**不参与回传**（prompt-builder 只读 content）。
+   */
+  reasoningTokens?: number;
+  /**
    * P1：本条消息解析出的角色状态快照。
    * 与 thinking 同构 —— 独立于 content 存储，**不参与回传**（prompt-builder 只读 content）。
    * 旧数据无此字段 → undefined → 不渲染。仅 assistant 消息有值。

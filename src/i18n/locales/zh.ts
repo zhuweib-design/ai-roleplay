@@ -248,6 +248,8 @@ export default {
   'bubble.thinkingExpand': '展开思考',
   'bubble.thinkingCollapse': '收起思考',
   'bubble.thinkingAria': '思考过程（可折叠）',
+  // P1 思考 token 数（供应商未上报时整体不渲染）
+  'bubble.thinkingTokens': '思考 {count} tokens',
   // P0-2/P0-3 采样与推理强度的共用文案（ContextPanel / SettingsModelPanel 复用）
   'llm.reasoningLow': '低',
   'llm.reasoningMedium': '中',
@@ -270,6 +272,8 @@ export default {
   'status.instructionOff': '关闭',
   'status.showSticky': '顶部显示当前状态',
   'status.showInline': '消息内显示状态',
+  // P1：小屏折叠时的字段数提示（{count} 个字段）
+  'status.entryCount': '共 {count} 个字段',
   'status.unknownField': '未识别字段',
   'status.schemaTitle': '状态字段',
   'status.schemaAdd': '添加字段',

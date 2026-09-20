@@ -444,6 +444,26 @@ interface SSEParsed {
 }
 
 /**
+ * P1：从 usage 里取推理（思考）token 数
+ *
+ * 官方口径：`usage.completion_tokens_details.reasoning_tokens`（OpenAI Chat Completions）。
+ * 部分 OpenAI 兼容网关把它平铺到 `usage.reasoning_tokens`，故做一次兜底。
+ * 两者都没有时返回 undefined（= 拿不到数据，UI 不展示，绝不显示 0）。
+ */
+export function usageReasoningTokens(usage: unknown): number | undefined {
+  if (!usage || typeof usage !== 'object') return undefined;
+  const u = usage as {
+    completion_tokens_details?: { reasoning_tokens?: unknown };
+    reasoning_tokens?: unknown;
+  };
+  const official = u.completion_tokens_details?.reasoning_tokens;
+  if (typeof official === 'number' && Number.isFinite(official)) return official;
+  const flat = u.reasoning_tokens;
+  if (typeof flat === 'number' && Number.isFinite(flat)) return flat;
+  return undefined;
+}
+
+/**
  * 解析单个 SSE 事件块
  * 支持标准格式：
  *   data: {"choices":[{"delta":{"content":"Hi"},"finish_reason":null}]}
@@ -495,6 +515,8 @@ function parseSSEEvent(raw: string): SSEParsed | null {
         prompt_cache_hit_tokens?: number;
         prompt_cache_miss_tokens?: number;
         completion_tokens_details?: { reasoning_tokens?: number };
+        /** P1：部分网关把推理 token 直接放在 usage 顶层（非 OpenAI 官方，兜底读取） */
+        reasoning_tokens?: number;
       };
       error?: { message?: string };
     };
@@ -504,6 +526,7 @@ function parseSSEEvent(raw: string): SSEParsed | null {
       return { delta: '', finishReason: 'error' };
     }
 
+    const reasoning = usageReasoningTokens(parsed.usage);
     const usage = parsed.usage
       ? {
           ...(parsed.usage.prompt_tokens !== undefined
@@ -521,9 +544,12 @@ function parseSSEEvent(raw: string): SSEParsed | null {
           ...(parsed.usage.prompt_cache_miss_tokens !== undefined
             ? { prompt_cache_miss_tokens: parsed.usage.prompt_cache_miss_tokens }
             : {}),
-          ...(parsed.usage.completion_tokens_details?.reasoning_tokens !== undefined
-            ? { reasoning_tokens: parsed.usage.completion_tokens_details.reasoning_tokens }
-            : {}),
+          /**
+           * P1：推理 token —— 官方在 `completion_tokens_details.reasoning_tokens`，
+           * 部分兼容网关直接放 usage 顶层，两者都读（官方字段优先）。
+           * 取不到就不写该键（上层据此不展示，而不是展示 0）。
+           */
+          ...(reasoning !== undefined ? { reasoning_tokens: reasoning } : {}),
         }
       : undefined;
 

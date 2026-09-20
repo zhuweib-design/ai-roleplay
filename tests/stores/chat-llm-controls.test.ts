@@ -290,6 +290,82 @@ describe('chat store — P0-2 思考强度 / P0-3 采样参数下发', () => {
   });
 });
 
+// ── P1：思考 token（ChatUsage.reasoningTokens → 消息） ──
+
+/** 构造带独立 usage chunk 的 OpenAI 兼容 SSE 流 */
+function makeSSEResponseWithUsage(usage: Record<string, unknown>): Response {
+  const encoder = new TextEncoder();
+  const chunks = [
+    encoder.encode(
+      'data: ' +
+        JSON.stringify({
+          choices: [{ index: 0, delta: { content: '正文' }, finish_reason: null }],
+        }) +
+        '\n\n'
+    ),
+    encoder.encode('data: ' + JSON.stringify({ choices: [], usage }) + '\n\n'),
+    encoder.encode('data: [DONE]\n\n'),
+  ];
+  const stream = new ReadableStream({
+    start(controller) {
+      for (const c of chunks) controller.enqueue(c);
+      controller.close();
+    },
+  });
+  return { ok: true, status: 200, body: stream } as Response;
+}
+
+describe('chat store — P1 思考 token 落地', () => {
+  let originalFetch: typeof globalThis.fetch;
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    originalFetch = globalThis.fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  it('usage.completion_tokens_details.reasoning_tokens 写入本条消息', async () => {
+    const chatStore = useChatStore();
+    chatStore.setApiProfile(makeApiProfile({ model: 'deepseek-r1' }));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      makeSSEResponseWithUsage({ completion_tokens_details: { reasoning_tokens: 33 } })
+    );
+
+    const char = makeCharacter({ id: 'tok-char' });
+    await chatStore.sendMessage(char, 'hi');
+
+    const ai = char.messages[char.messages.length - 1]!;
+    expect(ai.reasoningTokens).toBe(33);
+  });
+
+  it('usage 未上报推理 token 时消息上不产生该字段（不显示 0）', async () => {
+    const chatStore = useChatStore();
+    chatStore.setApiProfile(makeApiProfile());
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      makeSSEResponseWithUsage({ prompt_tokens: 1, completion_tokens: 2 })
+    );
+
+    const char = makeCharacter({ id: 'tok-char-none' });
+    await chatStore.sendMessage(char, 'hi');
+
+    const ai = char.messages[char.messages.length - 1]!;
+    expect(ai.reasoningTokens).toBeUndefined();
+  });
+
+  it('editMessage 清空思考 token（正文改写后旧开销失效）', () => {
+    const chatStore = useChatStore();
+    const msg = makeMessage({ id: 'm1', content: 'a', reasoningTokens: 99 });
+
+    chatStore.editMessage(msg, 'new content');
+
+    expect(msg.reasoningTokens).toBeUndefined();
+  });
+});
+
 // ── T-16：修掉 profile.maxTokens 死代码（角色级 maxTokens 改为可选） ──
 
 describe('chat store — T-16 maxTokens 逐档回落', () => {

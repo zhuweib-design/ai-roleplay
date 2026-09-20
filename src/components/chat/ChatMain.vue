@@ -690,7 +690,7 @@ function startWithExample(text: string) {
         <MessageBubble
           v-for="msg in visibleMessages"
           :key="msg.id"
-          v-memo="[msg.content, msg.thinking, msg.status, msg.generating, msg.narration, msg.narrationAfter]"
+          v-memo="[msg.content, msg.thinking, msg.reasoningTokens, msg.status, msg.generating, msg.narration, msg.narrationAfter]"
           :msg="msg"
           @action="handleMessageAction"
           :ref="(el) => cacheMsgHeight(el, msg.id)"

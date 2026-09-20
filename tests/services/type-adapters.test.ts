@@ -870,6 +870,45 @@ describe('type-adapters — P1 statusSchema / statusInstruction', () => {
   });
 });
 
+describe('type-adapters — P1 思考 token 透传', () => {
+  it('UIMessage.reasoningTokens 写入并回读 ChatMessage.reasoningTokens', () => {
+    const chat = uiMsgToChatMsg({
+      id: 'm1',
+      role: 'assistant',
+      content: '正文',
+      thinking: '思考',
+      reasoningTokens: 256,
+      timestamp: 1,
+    });
+    expect(chat.reasoningTokens).toBe(256);
+
+    const back = chatMsgToUiMsg(chat);
+    expect(back?.reasoningTokens).toBe(256);
+  });
+
+  it('未上报（undefined / 0）时不落盘，回读为 undefined（不显示 0）', () => {
+    const base = { id: 'm2', role: 'assistant' as const, content: '正文', timestamp: 1 };
+    expect(uiMsgToChatMsg({ ...base, reasoningTokens: undefined }).reasoningTokens).toBeUndefined();
+    expect(uiMsgToChatMsg({ ...base, reasoningTokens: 0 }).reasoningTokens).toBeUndefined();
+    expect(
+      chatMsgToUiMsg({ ...base, timestamp: '2026-09-20T00:00:00.000Z', swipes: [], swipeIndex: 0 })
+        ?.reasoningTokens
+    ).toBeUndefined();
+  });
+
+  it('旧数据（无该字段）回读不产生 reasoningTokens', () => {
+    const legacy: ChatMessage = {
+      id: 'm3',
+      role: 'assistant',
+      content: '旧正文',
+      timestamp: '2026-09-20T00:00:00.000Z',
+      swipes: [],
+      swipeIndex: 0,
+    };
+    expect(chatMsgToUiMsg(legacy)?.reasoningTokens).toBeUndefined();
+  });
+});
+
 describe('type-adapters — P1 消息 status 透传', () => {
   const status: CharacterStatus = {
     messageId: 'msg-1',

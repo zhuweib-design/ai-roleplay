@@ -1,5 +1,5 @@
 import type { ApiClient } from './api-client';
-import type { ChatRequest, ChatStream, ApiErrorKind } from './types';
+import type { ChatRequest, ChatStream, ApiErrorKind, ChatUsage } from './types';
 import { ApiError } from './types';
 import {
   buildMessagesUrl,
@@ -194,6 +194,22 @@ export class AnthropicClient implements ApiClient {
     // P0-1：Anthropic 字段型思考累计值（标签型由编排层处理）
     let fullThinking = '';
     let finishReason: string | undefined;
+    /**
+     * P1：用量统计（message_start 的初始 usage + message_delta 的最终 usage）
+     * 后到的事件覆盖同名已上报字段，未上报的字段恒为 undefined（不显示 0）。
+     */
+    let usage: ChatUsage | undefined;
+    const mergeUsage = (raw: AnthropicUsage | undefined): void => {
+      if (!raw) return;
+      const next = toAnthropicChatUsage(raw);
+      // 一个字段都没上报时不带 usage（保持"拿不到就不给"的语义，不产生空对象）
+      if (Object.keys(next).length === 0) return;
+      usage = { ...usage, ...next };
+      // Anthropic 不返回 total_tokens；两个分项分别来自不同事件，故合并后再算一次
+      if (usage.promptTokens !== undefined && usage.completionTokens !== undefined) {
+        usage.totalTokens = usage.promptTokens + usage.completionTokens;
+      }
+    };
     // T-02：tool_use block 增量聚合（按 index，input_json 逐段拼接）
     const toolCallAgg = new Map<number, { id: string; name: string; args: string }>();
 
@@ -246,11 +262,15 @@ export class AnthropicClient implements ApiClient {
               fullContent,
               finishReason,
               ...(fullThinking ? { fullThinking } : {}),
+              ...(usage ? { usage } : {}),
               ...(toolCallAgg.size > 0 ? { toolCalls: toAnthropicToolCalls(toolCallAgg) } : {}),
             };
             return;
           } else if (parsed.kind === 'finish') {
             finishReason = parsed.finishReason;
+            mergeUsage(parsed.usage);
+          } else if (parsed.kind === 'usage') {
+            mergeUsage(parsed.usage);
           } else if (parsed.kind === 'error') {
             yield { type: 'error', error: parsed.message };
             return;
@@ -264,6 +284,7 @@ export class AnthropicClient implements ApiClient {
         fullContent,
         finishReason,
         ...(fullThinking ? { fullThinking } : {}),
+        ...(usage ? { usage } : {}),
         ...(toolCallAgg.size > 0 ? { toolCalls: toAnthropicToolCalls(toolCallAgg) } : {}),
       };
     } finally {
@@ -394,16 +415,56 @@ function statusToKind(status: number): ApiErrorKind {
   return 'unknown';
 }
 
+/**
+ * Anthropic usage 原始形态（P1：思考 token 展示）
+ *
+ * 官方口径：思考消耗在 `usage.output_tokens_details.thinking_tokens`
+ * （见 platform.claude.com → Extended thinking："monitor the
+ * usage.output_tokens_details.thinking_tokens field in the response"）。
+ * 流式下 `message_start.message.usage` 与 `message_delta.usage` 都会带 usage，
+ * 后者是最终累计值。
+ *
+ * 缓存字段（cache_read/creation_input_tokens）**刻意不映射**：
+ * 只映射其一会让上层"前缀缓存命中率"算出 100% 的假数字，宁缺。
+ */
+interface AnthropicUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  output_tokens_details?: { thinking_tokens?: number };
+}
+
 /** 单个 SSE 事件解析结果 */
 type ParsedAnthropicEvent =
   | { kind: 'delta'; text: string }
   | { kind: 'thinkingDelta'; text: string }
-  | { kind: 'finish'; finishReason: string }
+  | { kind: 'finish'; finishReason: string; usage?: AnthropicUsage }
+  | { kind: 'usage'; usage: AnthropicUsage }
   | { kind: 'stop' }
   | { kind: 'error'; message: string }
   | { kind: 'toolStart'; index: number; id: string; name: string }
   | { kind: 'toolDelta'; index: number; json: string }
   | { kind: 'other' };
+
+/**
+ * Anthropic usage → ChatUsage
+ *
+ * 只输出**已上报**的字段：拿不到就是 undefined（UI 不展示，绝不显示 0）。
+ * Anthropic 不返回 total_tokens，由 input + output 自行相加。
+ */
+export function toAnthropicChatUsage(raw: AnthropicUsage | undefined): ChatUsage {
+  const out: ChatUsage = {};
+  if (!raw) return out;
+  const input = raw.input_tokens;
+  const output = raw.output_tokens;
+  if (typeof input === 'number' && Number.isFinite(input)) out.promptTokens = input;
+  if (typeof output === 'number' && Number.isFinite(output)) out.completionTokens = output;
+  if (out.promptTokens !== undefined && out.completionTokens !== undefined) {
+    out.totalTokens = out.promptTokens + out.completionTokens;
+  }
+  const thinking = raw.output_tokens_details?.thinking_tokens;
+  if (typeof thinking === 'number' && Number.isFinite(thinking)) out.reasoningTokens = thinking;
+  return out;
+}
 
 /**
  * 解析 Anthropic SSE 事件块(按 data: 行解析,type 字段区分事件)
@@ -439,10 +500,18 @@ function parseAnthropicSSEEvent(raw: string): ParsedAnthropicEvent | null {
         stop_reason?: string;
         partial_json?: string;
       };
+      /** P1：message_start 事件携带初始 usage（message.usage） */
+      message?: { usage?: AnthropicUsage };
+      /** P1：message_delta 事件携带最终 usage */
+      usage?: AnthropicUsage;
       error?: { type?: string; message?: string };
     };
 
     switch (parsed.type) {
+      // P1：message_start 的 usage（含 input_tokens；output 通常为 1，随后被 message_delta 覆盖）
+      case 'message_start': {
+        return parsed.message?.usage ? { kind: 'usage', usage: parsed.message.usage } : null;
+      }
       case 'content_block_start': {
         const block = parsed.content_block;
         if (block?.type === 'tool_use' && block.id && block.name) {
@@ -465,10 +534,18 @@ function parseAnthropicSSEEvent(raw: string): ParsedAnthropicEvent | null {
         }
         return null;
       }
-      case 'message_delta':
-        return parsed.delta?.stop_reason
-          ? { kind: 'finish', finishReason: parsed.delta.stop_reason }
-          : null;
+      case 'message_delta': {
+        // P1：message_delta 同时带 stop_reason 与最终 usage —— 一条事件两个信息都不能丢
+        const stopReason = parsed.delta?.stop_reason;
+        if (stopReason) {
+          return {
+            kind: 'finish',
+            finishReason: stopReason,
+            ...(parsed.usage ? { usage: parsed.usage } : {}),
+          };
+        }
+        return parsed.usage ? { kind: 'usage', usage: parsed.usage } : null;
+      }
       case 'message_stop':
         return { kind: 'stop' };
       case 'error':

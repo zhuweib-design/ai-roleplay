@@ -104,9 +104,11 @@ export interface ChatUsage {
   /** 前缀缓存未命中 token(DeepSeek: prompt_cache_miss_tokens) */
   promptCacheMissTokens?: number;
   /**
-   * P0-1：推理（思考）消耗的 token
-   * 来源：OpenAI `completion_tokens_details.reasoning_tokens`；Anthropic 无此字段。
-   * 本轮只预留数据位，不参与 UI 展示（P1）。
+   * 推理（思考）消耗的 token（P1 起在思维链块上展示）
+   *
+   * 来源：OpenAI 兼容 `usage.completion_tokens_details.reasoning_tokens`（部分网关平铺为 `usage.reasoning_tokens`）；
+   * Anthropic `usage.output_tokens_details.thinking_tokens`；local/WebLLM 不上报。
+   * **拿不到时必须是 undefined —— UI 不展示，绝不显示 0（0 会被误读成"思考没花 token"）。**
    */
   reasoningTokens?: number;
 }

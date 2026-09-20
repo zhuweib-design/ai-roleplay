@@ -3,6 +3,7 @@ import type { UIMessage } from '@/types';
 import Icon from '@/components/common/Icon.vue';
 import type { IconName } from '@/components/common/icons';
 import ThinkingBlock from './ThinkingBlock.vue';
+import StatusHud from './StatusHud.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { computed, getCurrentInstance } from 'vue';
 import { t } from '@/i18n';
@@ -30,6 +31,17 @@ const settingsStore = tryUseSettingsStore();
 
 const defaultCollapsed = computed(
   () => settingsStore?.thinkingConfig?.defaultCollapsed !== false
+);
+
+/**
+ * P1：消息级状态条开关（默认开）
+ *
+ * 与顶部 sticky 条是两个独立开关：sticky 说"当前状态"，inline 说"这一轮的状态"。
+ * 未安装 Pinia 的挂载场景（单测直接 mount）下 settingsStore 为 null → 默认开，
+ * 但 msg.status 缺省时不渲染，故不会凭空冒出空条。
+ */
+const showInlineStatus = computed(
+  () => settingsStore?.statusHudConfig?.showInline !== false
 );
 
 const emit = defineEmits<{
@@ -75,10 +87,20 @@ const assistantActions: MsgAction[] = [
         :message-id="msg.id"
         :generating="msg.generating === true"
         :default-collapsed="defaultCollapsed"
+        :reasoning-tokens="msg.reasoningTokens"
       />
       <em v-if="msg.narration" class="msg-narration">{{ msg.narration }}</em>
       <p class="msg-text" :style="msg.narration ? 'margin-top: 6px' : ''">{{ msg.content }}</p>
       <em v-if="msg.narrationAfter" class="msg-narration-after">{{ msg.narrationAfter }}</em>
+
+      <!-- P1：消息级状态（本轮结束时的状态；仅在 msg.status 存在时渲染）
+           小屏折叠开启：消息列表里每轮都可能出现一条，不折叠会把列表撑爆 -->
+      <StatusHud
+        v-if="showInlineStatus"
+        variant="inline"
+        collapsible-on-mobile
+        :status="msg.status"
+      />
 
       <!-- 生成中指示器：aria-live 让屏幕阅读器感知状态变化 -->
       <div

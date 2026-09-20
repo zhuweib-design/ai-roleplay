@@ -244,6 +244,83 @@ describe('TauriOpenAIClient', () => {
       expect(doneEvents[0]!.fullContent).toBe('Hello World');
     });
 
+    /**
+     * P1：Rust 侧把 usage 整块透传（serde_json::Value），
+     * 官方字段在 usage.completion_tokens_details.reasoning_tokens 里 —— 必须解析到。
+     */
+    it('done.usage.completion_tokens_details.reasoning_tokens → reasoningTokens', async () => {
+      const client = new TauriOpenAIClient({
+        baseUrl: 'https://api.deepseek.com',
+        apiKey: 'test-key',
+      });
+
+      const channel = createMockChannel();
+
+      invokeMock.mockImplementation(async (cmd: string) => {
+        if (cmd === 'chat_stream') {
+          setTimeout(() => {
+            channel.emit({
+              type: 'done',
+              full_content: '答案',
+              finish_reason: 'stop',
+              usage: {
+                prompt_tokens: 10,
+                completion_tokens: 20,
+                total_tokens: 30,
+                completion_tokens_details: { reasoning_tokens: 15 },
+              },
+            });
+          }, 0);
+          return Promise.resolve('答案');
+        }
+        return Promise.resolve(null);
+      });
+
+      const events = [];
+      for await (const ev of client.chatStream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'deepseek-r1',
+      })) {
+        events.push(ev);
+      }
+
+      const done = events.find((e) => e.type === 'done');
+      expect(done?.usage?.reasoningTokens).toBe(15);
+    });
+
+    it('done.usage 无推理字段时 reasoningTokens 为 undefined（不显示 0）', async () => {
+      const client = new TauriOpenAIClient({
+        baseUrl: 'https://api.openai.com',
+        apiKey: 'test-key',
+      });
+
+      const channel = createMockChannel();
+
+      invokeMock.mockImplementation(async (cmd: string) => {
+        if (cmd === 'chat_stream') {
+          setTimeout(() => {
+            channel.emit({
+              type: 'done',
+              full_content: '答案',
+              usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+            });
+          }, 0);
+          return Promise.resolve('答案');
+        }
+        return Promise.resolve(null);
+      });
+
+      const events = [];
+      for await (const ev of client.chatStream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'gpt-4',
+      })) {
+        events.push(ev);
+      }
+
+      expect(events.find((e) => e.type === 'done')?.usage?.reasoningTokens).toBeUndefined();
+    });
+
     it('错误事件后 yield error 并结束', async () => {
       const client = new TauriOpenAIClient({
         baseUrl: 'https://api.openai.com',

@@ -268,6 +268,10 @@ export function uiMsgToChatMsg(ui: UIMessage): ChatMessage {
     swipeIndex: 0,
     // P0-1：思维链随消息一并持久化（仅非空字符串才写，避免污染旧数据 schema）
     ...(ui.thinking ? { thinking: ui.thinking } : {}),
+    // P1：思考 token 落盘（仅已上报的正数才写；未上报不写 → 回读为 undefined → 不显示 0）
+    ...(typeof ui.reasoningTokens === 'number' && ui.reasoningTokens > 0
+      ? { reasoningTokens: ui.reasoningTokens }
+      : {}),
     // P1：状态快照随消息持久化（与 thinking 同款；无状态时不写 → 旧数据零迁移）
     ...(ui.status ? { status: ui.status } : {}),
   };
@@ -294,6 +298,10 @@ export function chatMsgToUiMsg(msg: ChatMessage): UIMessage | null {
         : msg.timestamp,
     // P0-1：思维链回读（旧数据无此字段 → undefined → 不渲染折叠块）
     ...(msg.thinking ? { thinking: msg.thinking } : {}),
+    // P1：思考 token 回读（旧数据无此字段 → undefined → 不展示，绝不显示 0）
+    ...(typeof msg.reasoningTokens === 'number' && msg.reasoningTokens > 0
+      ? { reasoningTokens: msg.reasoningTokens }
+      : {}),
     // P1：状态快照回读（旧数据无此字段 → undefined → 不渲染状态栏）
     ...(msg.status ? { status: msg.status } : {}),
   };

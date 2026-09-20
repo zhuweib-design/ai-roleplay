@@ -10,6 +10,7 @@ import { useSettingsStore } from '../../src/stores/settings';
 import { useCharacterStore } from '../../src/stores/character';
 import { t } from '@/i18n';
 import type { UIMessage, UICharacter, ApiProfile } from '@/types';
+import type { CharacterStatus } from '@core/status-schema';
 
 /**
  * P0 UI 测试 (T05)
@@ -103,6 +104,34 @@ describe('ThinkingBlock — P0-1 折叠容器', () => {
     expect(wrapper.find('.thinking-body').exists()).toBe(false);
   });
 
+  it('P1：供应商上报思考 token 时展示（生成完成后）', () => {
+    const wrapper = mount(ThinkingBlock, {
+      props: { thinking: '我在思考', messageId: 'tb-tok-1', reasoningTokens: 128 },
+    });
+    expect(wrapper.find('.thinking-tokens').exists()).toBe(true);
+    expect(wrapper.find('.thinking-tokens').text()).toBe(t('bubble.thinkingTokens', { count: 128 }));
+  });
+
+  it('P1：未上报（undefined）/ 0 都不展示——绝不显示 0', () => {
+    expect(
+      mount(ThinkingBlock, { props: { thinking: 'x', reasoningTokens: undefined } }).find(
+        '.thinking-tokens'
+      ).exists()
+    ).toBe(false);
+    expect(
+      mount(ThinkingBlock, { props: { thinking: 'x', reasoningTokens: 0 } }).find(
+        '.thinking-tokens'
+      ).exists()
+    ).toBe(false);
+  });
+
+  it('P1：生成中不展示 token（避免中途出现不完整的数字）', () => {
+    const wrapper = mount(ThinkingBlock, {
+      props: { thinking: 'x', generating: true, reasoningTokens: 128 },
+    });
+    expect(wrapper.find('.thinking-tokens').exists()).toBe(false);
+  });
+
   it('空思考 / 空白思考不渲染折叠块', () => {
     expect(
       mount(ThinkingBlock, { props: { thinking: '' } }).find('.thinking-block').exists()
@@ -186,6 +215,54 @@ describe('MessageBubble — 思考块挂载', () => {
     });
     await nextTick();
     expect(wrapper.find('.thinking-body').exists()).toBe(true);
+  });
+});
+
+describe('MessageBubble — P1 消息级状态渲染', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  /** 一条可用的状态快照（直接构造，避免依赖解析器） */
+  const STATUS: CharacterStatus = {
+    messageId: 'm1',
+    parseMode: 'json' as const,
+    unknownCount: 0,
+    entries: [{ key: 'location', label: '地点', value: '酒馆', icon: 'map-pin' }],
+  };
+
+  it('msg.status 存在时渲染 inline 状态条（与顶部 sticky 不同 variant）', () => {
+    const wrapper = mount(MessageBubble, { props: { msg: makeMsg({ status: STATUS }) } });
+    const hud = wrapper.find('.status-hud');
+    expect(hud.exists()).toBe(true);
+    expect(hud.classes()).toContain('status-hud-inline');
+    expect(hud.classes()).not.toContain('status-hud-sticky');
+    expect(wrapper.find('.status-value').text()).toBe('酒馆');
+  });
+
+  it('msg.status 缺失时完全不渲染状态条（不渲染空壳）', () => {
+    const wrapper = mount(MessageBubble, { props: { msg: makeMsg() } });
+    expect(wrapper.find('.status-hud').exists()).toBe(false);
+  });
+
+  it('showInline=false 时关闭消息级状态条', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const settings = useSettingsStore();
+    settings.setStatusHudConfig({ showInline: false });
+    const wrapper = mount(MessageBubble, {
+      props: { msg: makeMsg({ status: STATUS }) },
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    expect(wrapper.find('.status-hud').exists()).toBe(false);
+  });
+
+  it('用户消息不渲染状态条（状态只属于 assistant 轮次）', () => {
+    const wrapper = mount(MessageBubble, {
+      props: { msg: { id: 'u1', role: 'user', content: '你好', timestamp: 1, status: STATUS } },
+    });
+    expect(wrapper.find('.status-hud').exists()).toBe(false);
   });
 });
 

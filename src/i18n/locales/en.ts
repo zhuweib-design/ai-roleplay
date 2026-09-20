@@ -248,6 +248,8 @@ const en: Record<MessageKey, string> = {
   'bubble.thinkingExpand': 'Expand thinking',
   'bubble.thinkingCollapse': 'Collapse thinking',
   'bubble.thinkingAria': 'Thinking process (collapsible)',
+  // P1 reasoning token count (hidden entirely when the provider did not report it)
+  'bubble.thinkingTokens': '{count} thinking tokens',
   // P0-2/P0-3 shared wording for sampling + reasoning effort
   'llm.reasoningLow': 'Low',
   'llm.reasoningMedium': 'Medium',
@@ -270,6 +272,8 @@ const en: Record<MessageKey, string> = {
   'status.instructionOff': 'Off',
   'status.showSticky': 'Show current status on top',
   'status.showInline': 'Show status in messages',
+  // P1: field count shown when the inline HUD is collapsed on small screens
+  'status.entryCount': '{count} fields',
   'status.unknownField': 'Unrecognized field',
   'status.schemaTitle': 'Status fields',
   'status.schemaAdd': 'Add field',

@@ -235,6 +235,78 @@ describe('AnthropicClient', () => {
       expect(events).toEqual([{ type: 'error', error: '服务过载' }]);
     });
 
+    /**
+     * P1：思考 token 展示 —— Anthropic 官方口径
+     * `usage.output_tokens_details.thinking_tokens`
+     * （platform.claude.com / Extended thinking："monitor the usage.output_tokens_details.thinking_tokens field"）
+     */
+    it('P1：message_delta.usage.output_tokens_details.thinking_tokens → reasoningTokens', async () => {
+      const client = makeClient();
+      const chunks = [
+        event('message_start', {
+          message: { usage: { input_tokens: 100, output_tokens: 1 } },
+        }),
+        event('content_block_delta', { delta: { type: 'thinking_delta', thinking: '想一想' } }),
+        event('content_block_delta', { delta: { type: 'text_delta', text: '答案' } }),
+        event('message_delta', {
+          delta: { stop_reason: 'end_turn' },
+          usage: { output_tokens: 58, output_tokens_details: { thinking_tokens: 42 } },
+        }),
+        event('message_stop'),
+      ];
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        mockResponse(makeReadableStream([toSSEStream(chunks)]))
+      );
+
+      const events = await collect(client.chatStream({ messages: [], model: 'm' }));
+      const done = events.find((e) => e.type === 'done');
+      expect(done?.usage).toEqual({
+        promptTokens: 100,
+        completionTokens: 58,
+        totalTokens: 158,
+        reasoningTokens: 42,
+      });
+    });
+
+    it('P1：message_delta 只带 output_tokens 时 reasoningTokens 缺失（不编造、不显示 0）', async () => {
+      const client = makeClient();
+      const chunks = [
+        event('message_start', { message: { usage: { input_tokens: 7 } } }),
+        event('message_delta', { delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 9 } }),
+        event('message_stop'),
+      ];
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        mockResponse(makeReadableStream([toSSEStream(chunks)]))
+      );
+
+      const events = await collect(client.chatStream({ messages: [], model: 'm' }));
+      expect(events.find((e) => e.type === 'done')?.usage).toEqual({
+        promptTokens: 7,
+        completionTokens: 9,
+        totalTokens: 16,
+      });
+      expect(events.find((e) => e.type === 'done')?.usage?.reasoningTokens).toBeUndefined();
+    });
+
+    it('P1：完全没有 usage 事件时 done 不带 usage 字段', async () => {
+      const client = makeClient();
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        mockResponse(
+          makeReadableStream([
+            toSSEStream([
+              event('message_start', { message: { content: [] } }),
+              event('content_block_delta', { delta: { type: 'text_delta', text: 'x' } }),
+              event('message_stop'),
+            ]),
+          ])
+        )
+      );
+      const events = await collect(client.chatStream({ messages: [], model: 'm' }));
+      const done = events.find((e) => e.type === 'done');
+      expect(done).toEqual({ type: 'done', fullContent: 'x', finishReason: undefined });
+      expect(done?.usage).toBeUndefined();
+    });
+
     it('用户中止时输出 error 事件', async () => {
       const client = makeClient();
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new DOMException('aborted', 'AbortError'));

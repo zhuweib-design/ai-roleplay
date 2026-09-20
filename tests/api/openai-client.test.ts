@@ -884,4 +884,46 @@ describe('OpenAIClient — P0-1 字段型思考解析', () => {
     const events = await collect(client.chatStream({ messages: [], model: 'o3' }));
     expect(events.find((e) => e.type === 'done')?.usage?.reasoningTokens).toBe(12);
   });
+
+  it('P1：部分网关把 reasoning_tokens 平铺在 usage 顶层时同样解析', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse(
+        makeReadableStream([
+          toSSEStream([
+            deltaChunk('正文'),
+            JSON.stringify({
+              choices: [],
+              usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3, reasoning_tokens: 7 },
+            }),
+            '[DONE]',
+          ]),
+        ])
+      )
+    );
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    const events = await collect(client.chatStream({ messages: [], model: 'o3' }));
+    expect(events.find((e) => e.type === 'done')?.usage?.reasoningTokens).toBe(7);
+  });
+
+  it('P1：usage 不含推理字段时 reasoningTokens 为 undefined（不显示 0）', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse(
+        makeReadableStream([
+          toSSEStream([
+            deltaChunk('正文'),
+            JSON.stringify({
+              choices: [],
+              usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+            }),
+            '[DONE]',
+          ]),
+        ])
+      )
+    );
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    const events = await collect(client.chatStream({ messages: [], model: 'gpt-4o' }));
+    const usage = events.find((e) => e.type === 'done')?.usage;
+    expect(usage?.reasoningTokens).toBeUndefined();
+    expect(usage?.completionTokens).toBe(2);
+  });
 });
