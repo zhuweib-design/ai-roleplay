@@ -4272,4 +4272,18 @@ select.field-input {
   color: var(--danger, #f7768e);
   background: color-mix(in srgb, var(--danger, #f7768e) 12%, transparent);
 }
+
+@media (max-width: 640px) {
+  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
+  .field-input,
+  .form-textarea,
+  .custom-css-textarea,
+  .data-mgmt-select,
+  .extension-block .form-row input[type='number'],
+  .extension-block .form-row input[type='password'],
+  .extension-block .form-row select,
+  .profile-input {
+    font-size: 16px;
+  }
+}
 </style>

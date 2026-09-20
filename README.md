@@ -85,10 +85,7 @@ npm run build
 ```bash
 npm run lint               # ESLint（0 error）
 npm run i18n:check:strict  # i18n 严格扫描（无硬编码中文）
-npm run check:breakpoints  # 断点单一来源守卫（禁止野断点）
-npm run check:viewport     # 动态视口守卫（禁止裸 100vh）
-npm run check:hover        # 触屏 hover 守卫（:hover 须按设备能力分流，防 tap 粘滞）
-npm run check:important    # !important 棘轮守卫（存量基线只许降不许升）
+npm run check:css-conventions  # CSS 约定守卫（5 项合一：断点单一来源 / 动态视口 / 触屏 hover / !important 棘轮 / 可编辑控件字号 I-7）
 npm run a11y:contrast      # 无障碍对比度（≥ AA 4.5:1）
 npm run test:coverage      # Vitest + 覆盖率（statements 78 / branches 73 / functions 78 / lines 78）
 npm run build              # vue-tsc 类型检查 + vite 生产构建
@@ -101,7 +98,7 @@ npm run check:csp          # Web 端 CSP 契约守卫（校验构建产物的 CS
 npm run tauri:build        # 桌面端编译验证（需 Rust 工具链，耗时较长）
 ```
 
-> CI（`.github/workflows/ci.yml`）的 `quality-gates` 按序执行：lint → i18n strict → 断点守卫 → 视口守卫 → hover 守卫 → `!important` 守卫 → 对比度审计 → 覆盖率 → 构建 → CSP 守卫。另有独立 job：Playwright E2E（桌面 + 移动双 project）、Tauri 编译、Tauri 发布（打 `v*` tag 或手动触发时产出签名安装包）。
+> CI（`.github/workflows/ci.yml`）的 `quality-gates` 按序执行：lint → i18n strict → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7，五项合一）→ 对比度审计 → 覆盖率 → 构建 → CSP 守卫。另有独立 job：Playwright E2E（桌面 + 移动双 project）、Tauri 编译、Tauri 发布（打 `v*` tag 或手动触发时产出签名安装包）。
 > 完整门禁链与阈值以 `.github/workflows/ci.yml` 和 `vitest.config.ts` 为准，本清单不复述细节。
 
 ## ⚠️ Web 端已知限制

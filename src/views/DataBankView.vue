@@ -1017,4 +1017,12 @@ function getCharacterName(id?: string): string {
     justify-content: center;
   }
 }
+
+@media (max-width: 640px) {
+  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
+  .search-input,
+  .char-select-input {
+    font-size: 16px;
+  }
+}
 </style>

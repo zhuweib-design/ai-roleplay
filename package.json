@@ -19,6 +19,8 @@
     "check:viewport": "node scripts/css-viewport-guard.mjs",
     "check:hover": "node scripts/hover-guard.mjs",
     "check:important": "node scripts/important-guard.mjs",
+    "check:i7-control-font-size": "node scripts/i7-control-font-size-guard.mjs",
+    "check:css-conventions": "node scripts/css-conventions-guard.mjs",
     "check:csp": "node scripts/csp-guard.mjs",
     "csp:audit": "node scripts/csp-audit.mjs",
     "typecheck": "vue-tsc --noEmit",

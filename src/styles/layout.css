@@ -372,3 +372,10 @@
 @media (hover: hover) and (pointer: fine) {
   .msg-toolbar-btn.danger:hover { color: var(--primary); }
 }
+
+/* I-7：≤640px 下可编辑控件字号提到 16px，防 iOS 聚焦放大页面。 */
+@media (max-width: 640px) {
+  .chat-input {
+    font-size: 16px;
+  }
+}

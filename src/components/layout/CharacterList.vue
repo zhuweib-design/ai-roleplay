@@ -557,4 +557,11 @@ function onDrawerTouchEnd(e: TouchEvent) {
     font-size: 13px;
   }
 }
+
+@media (max-width: 640px) {
+  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
+  .char-search-input {
+    font-size: 16px;
+  }
+}
 </style>

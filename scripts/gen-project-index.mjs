@@ -24,6 +24,8 @@ const OUT_FILE = path.join(ROOT, 'PROJECT_INDEX.md');
 /** 按目录名排除（含依赖、构建产物、缓存、测试输出） */
 const EXCLUDE_DIR_NAMES = new Set([
   '.git', '.svn', '.hg', 'node_modules', 'vendor', '.venv', 'venv', 'env',
+  // IDE 工程元数据（非项目内容；通常已被 .gitignore 忽略，不应进入索引）
+  '.idea', '.vscode',
   '__pycache__', 'dist', 'build', 'out', 'coverage', '.next', '.nuxt',
   '.cache', '.parcel-cache', 'artifacts', 'model', 'target',
   'test-results', 'playwright-report',
@@ -276,6 +278,8 @@ const CURATED = {
   'scripts/csp-audit.mjs': '工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用）',
   'scripts/hover-guard.mjs': '门禁：禁止未按 (hover: hover) 分流的 :hover，防触屏 tap 后 hover 粘滞',
   'scripts/important-guard.mjs': '门禁：!important 棘轮守卫（基线锁定，只许降不许升）',
+  'scripts/css-conventions-guard.mjs': '门禁：CSS 约定守卫单一入口（编排断点 / 视口 / hover / !important / 控件字号五项子检查）',
+  'scripts/i7-control-font-size-guard.mjs': '门禁：移动断点内可编辑控件字号 ≥16px 兜底（I-7，防 iOS 聚焦放大页面）',
   'scripts/check-contrast.mjs': '门禁：5 套主题关键色对对比度 ≥ AA',
   'scripts/contrast-audit.mjs': '审计：对比度全量扫描报告',
   'scripts/i18n-scan.mjs': '门禁：硬编码中文 UI 文案扫描（strict 模式）',

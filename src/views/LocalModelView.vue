@@ -1283,4 +1283,11 @@ onMounted(async () => {
     transform: rotate(360deg);
   }
 }
+
+@media (max-width: 640px) {
+  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
+  .setting-row input[type="number"] {
+    font-size: 16px;
+  }
+}
 </style>

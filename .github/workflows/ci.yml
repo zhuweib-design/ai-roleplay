@@ -45,22 +45,16 @@ jobs:
       - name: i18n check (strict)
         run: npm run i18n:check:strict
 
-      # 跨端断点单一来源门禁（S-10）：禁止野断点数字、禁止 matchMedia 出现在 viewport.ts 外、L1/L4 数值同步
-      - name: Breakpoint guard (check:breakpoints)
-        run: npm run check:breakpoints
-
-      # 动态视口守卫（S-8）：禁止裸 100vh（须 100vh + 100dvh 双写），防 iOS 动态视口工具条遮挡
-      - name: Viewport guard (check:viewport)
-        run: npm run check:viewport
-
-      # 触屏 hover 守卫（I-5 / P2-5）：禁止未按 (hover: hover) and (pointer: fine) 分流的 :hover，
-      # 防止触屏 tap 后 hover 态粘滞
-      - name: Hover guard (check:hover)
-        run: npm run check:hover
-
-      # !important 棘轮守卫（S-1 / P2-4）：存量基线锁定，只许降不许升
-      - name: Important guard (check:important)
-        run: npm run check:important
+      # CSS 约定守卫（单一入口，编排 5 项子检查，任一项失败即整体失败）：
+      #   1. 断点单一来源（S-10）—— 禁止野断点数字、禁止 matchMedia 出现在 viewport.ts 外、L1/L4 数值同步
+      #   2. 动态视口（S-8）—— 禁止裸 100vh（须 100vh + 100dvh 双写），防 iOS 动态视口工具条遮挡
+      #   3. 触屏 hover（I-5 / P2-5）—— 禁止未按 (hover: hover) and (pointer: fine) 分流的 :hover
+      #   4. !important 棘轮（S-1 / P2-4）—— 存量基线锁定，只许降不许升
+      #   5. 可编辑控件字号（I-7）—— 移动断点内 input/textarea/select 须有 ≥16px 兜底，防 iOS 聚焦放大
+      # 各子检查仍可单独运行：npm run check:breakpoints / check:viewport / check:hover /
+      # check:important / check:i7-control-font-size
+      - name: CSS conventions guard (check:css-conventions)
+        run: npm run check:css-conventions
 
       # 无障碍对比度门禁：静态核验 5 个内置主题的关键色对 ≥ AA(4.5:1)
       # （axe 在 jsdom 无法计算颜色对比度, 故由 check-contrast.mjs 单独校验; axe 的 ARIA/语义规则已并入 test:coverage）

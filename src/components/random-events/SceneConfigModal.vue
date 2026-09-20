@@ -399,4 +399,13 @@ function handleClose(): void {
   color: var(--on-primary);
   border-color: var(--primary);
 }
+
+@media (max-width: 640px) {
+  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
+  .form-row input[type='text'],
+  .form-row input[type='number'],
+  .form-row select {
+    font-size: 16px;
+  }
+}
 </style>

@@ -24,10 +24,7 @@
    ```bash
    npm run lint               # ESLint（0 error 才通过）
    npm run i18n:check:strict  # i18n 严格扫描（无硬编码中文）
-   npm run check:breakpoints  # 断点单一来源守卫（禁止野断点 / matchMedia 越界）
-   npm run check:viewport     # 动态视口守卫（禁止裸 100vh，须 100vh + 100dvh 双写）
-   npm run check:hover        # 触屏 hover 守卫（:hover 须按设备能力分流，防 tap 粘滞）
-   npm run check:important    # !important 棘轮守卫（存量基线只许降不许升）
+   npm run check:css-conventions  # CSS 约定守卫（5 项合一：断点单一来源 / 动态视口 / 触屏 hover / !important 棘轮 / 可编辑控件字号 I-7）
    npm run a11y:contrast      # 无障碍对比度（≥ AA 4.5:1）
    npm run test:coverage      # Vitest + 覆盖率门禁（statements 78 / branches 73 / functions 78 / lines 78）
    npm run build              # vue-tsc 类型检查 + vite 生产构建
