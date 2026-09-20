@@ -26,19 +26,28 @@ export const REASONING_MODEL_RE =
   /(^o\d|gpt-5|deepseek-r1|qwq|qwen3|glm-4\.5|-reasoner|thinking)/i;
 
 /**
- * Anthropic `budget_tokens` 下限：低于此值启用 extended thinking 无意义，
- * 且极易触发协议 400，故放弃启用（降级为不传）
+ * Anthropic `budget_tokens` 下限
+ *
+ * 官方原文（extended thinking）：**Minimum of 1,024 tokens**。
+ * 低于此值启用 extended thinking 无意义且会触发协议 400，
+ * 故放弃启用（降级为不传），让对话继续而不是被服务端错误打断。
  */
-export const ANTHROPIC_MIN_BUDGET_TOKENS = 256;
+export const ANTHROPIC_MIN_BUDGET_TOKENS = 1024;
 
 /**
- * Anthropic 启用 extended thinking 时与之冲突、必须抑制的采样参数
+ * Anthropic 思考下发形态
  *
- * 依据 Anthropic 官方 extended thinking 文档：开启 thinking 时
- * `temperature` 与 `top_p` 不被接受（top_k 亦不建议同用）。
- * 抑制清单写成常量，便于随官方文档更新调整。
+ * - `'adaptive'`：新版（Claude 4.6+ / 5+）—— `thinking:{type:'adaptive'}`
+ *   + `output_config.effort`，**直接用我方三档，无需 budget 换算**
+ * - `'extended'`：旧版—— `thinking:{type:'enabled', budget_tokens:N}`
  */
-export const ANTHROPIC_THINKING_CONFLICT_PARAMS: readonly string[] = ['temperature', 'top_p'];
+export type AnthropicThinkingMode = 'adaptive' | 'extended';
+
+/**
+ * 次版本号大于该阈值即视为"日期戳"而非次版本（如 `claude-sonnet-4-20250514`）
+ * → 按"未指定次版本（0）"处理，避免把发布日期误判成 20250514 次版本
+ */
+const ANTHROPIC_MINOR_DATE_CUTOFF = 100;
 
 /** Anthropic 各档位的 budget_tokens */
 const ANTHROPIC_BUDGET: Record<ReasoningEffort, number> = {
@@ -85,7 +94,10 @@ export function resolveReasoningCapability(profile: ApiProfile): ReasoningCapabi
  *
  * 协议约束：`budget_tokens` 必须 **< `max_tokens`**，否则服务端 400。
  * clamp 规则：`min(BUDGET[effort], max(1, maxTokens - 1))`
- * 若 clamp 结果 < 256 → 返回 null（放弃启用 thinking，降级为不传），避免打断对话。
+ * 若 clamp 结果 < 1024（官方下限）→ 返回 null（放弃启用 thinking，降级为不传），
+ * 避免触发协议 400 打断对话。
+ *
+ * 仅 `extended` 形态需要 budget；`adaptive` 形态直接下发 effort，不经过此函数。
  */
 export function toAnthropicBudget(
   effort: ReasoningEffort,
@@ -96,6 +108,53 @@ export function toAnthropicBudget(
   const clamped = Math.min(budget, limit);
   if (clamped < ANTHROPIC_MIN_BUDGET_TOKENS) return null;
   return clamped;
+}
+
+/**
+ * P0-2 修正 B：判定 Anthropic 模型应走 adaptive 还是 extended 形态
+ *
+ * 来源与版本边界（按 Anthropic 官方 extended thinking 文档）：
+ * - `thinking:{type:'enabled', budget_tokens}` 自 **4.6 起 deprecated**，
+ *   **4.7+ 直接返回 400**（写死 budget 的老代码会在新模型上炸）
+ * - 因此：主版本 ≥ 5，或主版本 = 4 且次版本 ≥ 6 → `adaptive`
+ * - 主版本 = 4 且次版本 ≤ 5、主版本 < 4 → `extended`
+ *
+ * **无法解析版本号时默认 `extended`**（保守：保持现状，绝不主动给老模型发 adaptive
+ * 触发 400；等模型命名稳定后只需改本函数的解析规则）
+ *
+ * @example
+ * resolveAnthropicThinkingMode('claude-sonnet-4-6')  // 'adaptive'
+ * resolveAnthropicThinkingMode('claude-opus-4.5')    // 'extended'
+ * resolveAnthropicThinkingMode('claude-3-7-sonnet')  // 'extended'
+ */
+export function resolveAnthropicThinkingMode(model: string | undefined): AnthropicThinkingMode {
+  if (!model) return 'extended';
+  const name = model.toLowerCase();
+
+  // 形如 claude-sonnet-4-6 / claude-opus-4.5 / claude-3-7-sonnet-20250219
+  const versionMatch = name.match(/(?<!\d)(\d+)[.-](\d+)(?!\d)/);
+  let major: number | null = null;
+  let minor = 0;
+
+  if (versionMatch) {
+    major = Number(versionMatch[1]);
+    const rawMinor = Number(versionMatch[2]);
+    // 次版本是日期戳（如 claude-sonnet-4-20250514）→ 视为未指定次版本
+    minor = rawMinor >= ANTHROPIC_MINOR_DATE_CUTOFF ? 0 : rawMinor;
+  } else {
+    // 退化命名（claude-3-opus-20240229 / claude-2.1 等）：只取主版本
+    const majorOnly = name.match(/(?<!\d)(\d+)(?:\.(\d+))?(?!\d)/);
+    if (majorOnly) {
+      major = Number(majorOnly[1]);
+      const rawMinor = majorOnly[2] === undefined ? 0 : Number(majorOnly[2]);
+      minor = rawMinor >= ANTHROPIC_MINOR_DATE_CUTOFF ? 0 : rawMinor;
+    }
+  }
+
+  if (major === null || !Number.isFinite(major)) return 'extended';
+  if (major >= 5) return 'adaptive';
+  if (major === 4 && minor >= 6) return 'adaptive';
+  return 'extended';
 }
 
 /**

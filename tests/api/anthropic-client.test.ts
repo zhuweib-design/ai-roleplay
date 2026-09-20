@@ -484,7 +484,7 @@ describe('AnthropicClient — P0-2/P0-3 body 组装', () => {
     expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 4096 });
   });
 
-  it('P0-2：启用 thinking 时抑制 temperature 与 top_p（协议冲突降级）', async () => {
+  it('P0-2 修正 A：启用 thinking 时**照常下发** temperature 与 top_p（不再抑制）', async () => {
     const body = await captureBody({
       messages: [],
       model: 'claude-3-7-sonnet',
@@ -494,8 +494,9 @@ describe('AnthropicClient — P0-2/P0-3 body 组装', () => {
       reasoningEffort: 'low',
     });
     expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 1024 });
-    expect(body.temperature).toBeUndefined();
-    expect(body.top_p).toBeUndefined();
+    // 官方未规定 thinking 与采样参数冲突；抑制 = 静默丢弃用户显式设置，比报错更糟
+    expect(body.temperature).toBe(0.8);
+    expect(body.top_p).toBe(0.6);
   });
 
   it('未启用 thinking 时 temperature / top_p 正常下发', async () => {
@@ -511,26 +512,85 @@ describe('AnthropicClient — P0-2/P0-3 body 组装', () => {
     expect(body.top_p).toBe(0.6);
   });
 
-  it('P0-2：budget clamp 后过小（<256）时放弃启用 thinking', async () => {
+  it('P0-2：budget clamp 后低于官方下限（<1024）时放弃启用 thinking', async () => {
     const body = await captureBody({
       messages: [],
-      model: 'm',
+      model: 'claude-3-7-sonnet',
       maxTokens: 128,
       reasoningEffort: 'high',
     });
     expect(body.thinking).toBeUndefined();
-    // 放弃启用后 temperature 恢复下发（不再被抑制）
+    expect(body.output_config).toBeUndefined();
     expect(body.temperature).toBeUndefined(); // 请求未给 temperature，故仍无该键
   });
 
   it('P0-2：high + maxTokens=2048 → budget clamp 到 2047', async () => {
     const body = await captureBody({
       messages: [],
-      model: 'm',
+      model: 'claude-3-7-sonnet',
       maxTokens: 2048,
       reasoningEffort: 'high',
     });
     expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 2047 });
+  });
+
+  it('P0-2 修正 B：4.6+ 走 adaptive（thinking.type=adaptive + output_config.effort）', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'claude-sonnet-4-6',
+      maxTokens: 8192,
+      reasoningEffort: 'high',
+    });
+    expect(body.thinking).toEqual({ type: 'adaptive' });
+    // effort 直接就是三档，无需 budget 换算
+    expect(body.output_config).toEqual({ effort: 'high' });
+    expect(body.budget_tokens).toBeUndefined();
+  });
+
+  it('P0-2 修正 B：adaptive 形态下采样参数同样照常下发（不受 maxTokens 影响）', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'claude-opus-4.6',
+      maxTokens: 8192,
+      temperature: 0.3,
+      topP: 0.9,
+      reasoningEffort: 'low',
+    });
+    expect(body.thinking).toEqual({ type: 'adaptive' });
+    expect(body.output_config).toEqual({ effort: 'low' });
+    expect(body.temperature).toBe(0.3);
+    expect(body.top_p).toBe(0.9);
+  });
+
+  it('P0-2 修正 B：4.5 及以下仍走 extended + budget_tokens', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'claude-opus-4.5',
+      maxTokens: 8192,
+      reasoningEffort: 'medium',
+    });
+    expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 4096 });
+    expect(body.output_config).toBeUndefined();
+  });
+
+  it('P0-2 修正 B：无法解析版本号的模型默认 extended（保守，不触发 400）', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'claude-unknown-model',
+      maxTokens: 8192,
+      reasoningEffort: 'medium',
+    });
+    expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 4096 });
+  });
+
+  it('P0-2：未设置 reasoningEffort 时不下发 thinking / output_config', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'claude-sonnet-4-6',
+      maxTokens: 8192,
+    });
+    expect(body.thinking).toBeUndefined();
+    expect(body.output_config).toBeUndefined();
   });
 
   it('P0-3：presence/frequency penalty 在 Anthropic 上静默丢弃', async () => {

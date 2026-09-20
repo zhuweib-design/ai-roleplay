@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import {
   resolveReasoningCapability,
   toAnthropicBudget,
+  resolveAnthropicThinkingMode,
   supportsSamplingParam,
   resolveSampling,
   matchesReasoningModelPattern,
   REASONING_MODEL_RE,
-  ANTHROPIC_THINKING_CONFLICT_PARAMS,
   ANTHROPIC_MIN_BUDGET_TOKENS,
 } from '../../src/api/reasoning-capability';
 import type { ApiProfile } from '@/types';
@@ -79,7 +79,7 @@ describe('reasoning-capability — toAnthropicBudget', () => {
     expect(toAnthropicBudget('high', 2048)).toBe(2047);
   });
 
-  it('low + maxTokens=128 → null（clamp 后 < 256，放弃启用）', () => {
+  it('low + maxTokens=128 → null（clamp 后 < 1024，放弃启用）', () => {
     expect(toAnthropicBudget('low', 128)).toBeNull();
   });
 
@@ -94,13 +94,63 @@ describe('reasoning-capability — toAnthropicBudget', () => {
     expect(toAnthropicBudget('medium', undefined)).toBe(4095);
   });
 
-  it('clamp 结果低于下限（256）时返回 null —— 放弃启用而非触发协议 400', () => {
-    // maxTokens=256 → limit=255 → clamped=255 < 256
+  it('官方下限为 1024（Minimum of 1,024 tokens）', () => {
+    expect(ANTHROPIC_MIN_BUDGET_TOKENS).toBe(1024);
+  });
+
+  it('clamp 结果低于下限（<1024）时返回 null —— 放弃启用而非触发协议 400', () => {
+    // maxTokens=1024 → limit=1023 → clamped=1023 < 1024
     expect(toAnthropicBudget('low', ANTHROPIC_MIN_BUDGET_TOKENS)).toBeNull();
-    // maxTokens=257 → limit=256 → clamped=256，刚好达到下限
+    // maxTokens=1025 → limit=1024 → clamped=1024，刚好达到下限
     expect(toAnthropicBudget('low', ANTHROPIC_MIN_BUDGET_TOKENS + 1)).toBe(
       ANTHROPIC_MIN_BUDGET_TOKENS
     );
+  });
+
+  it('1023 / 1024 边界：低于下限一位即放弃', () => {
+    expect(toAnthropicBudget('low', 1023)).toBeNull();
+    expect(toAnthropicBudget('low', 1024)).toBeNull();
+    expect(toAnthropicBudget('low', 1025)).toBe(1024);
+  });
+});
+
+describe('reasoning-capability — resolveAnthropicThinkingMode（adaptive / extended 分流）', () => {
+  it('主版本 ≥ 5 → adaptive', () => {
+    expect(resolveAnthropicThinkingMode('claude-sonnet-5')).toBe('adaptive');
+    expect(resolveAnthropicThinkingMode('claude-opus-5-1')).toBe('adaptive');
+  });
+
+  it('主版本 = 4 且次版本 ≥ 6 → adaptive', () => {
+    expect(resolveAnthropicThinkingMode('claude-sonnet-4-6')).toBe('adaptive');
+    expect(resolveAnthropicThinkingMode('claude-opus-4.6')).toBe('adaptive');
+    expect(resolveAnthropicThinkingMode('claude-haiku-4-7')).toBe('adaptive');
+  });
+
+  it('主版本 = 4 且次版本 ≤ 5 → extended', () => {
+    expect(resolveAnthropicThinkingMode('claude-sonnet-4-5')).toBe('extended');
+    expect(resolveAnthropicThinkingMode('claude-opus-4.5')).toBe('extended');
+    expect(resolveAnthropicThinkingMode('claude-haiku-4-1')).toBe('extended');
+  });
+
+  it('主版本 < 4 → extended', () => {
+    expect(resolveAnthropicThinkingMode('claude-3-7-sonnet-20250219')).toBe('extended');
+    expect(resolveAnthropicThinkingMode('claude-3-5-sonnet-20241022')).toBe('extended');
+    expect(resolveAnthropicThinkingMode('claude-2.1')).toBe('extended');
+  });
+
+  it('无法解析版本号 → 默认 extended（保守，不给老模型发 adaptive 触发 400）', () => {
+    expect(resolveAnthropicThinkingMode('claude-unknown')).toBe('extended');
+    expect(resolveAnthropicThinkingMode('')).toBe('extended');
+    expect(resolveAnthropicThinkingMode(undefined)).toBe('extended');
+  });
+
+  it('日期戳次版本（claude-sonnet-4-20250514）按未指定次版本处理 → extended', () => {
+    expect(resolveAnthropicThinkingMode('claude-sonnet-4-20250514')).toBe('extended');
+  });
+
+  it('大小写不敏感', () => {
+    expect(resolveAnthropicThinkingMode('Claude-Sonnet-4-6')).toBe('adaptive');
+    expect(resolveAnthropicThinkingMode('CLAUDE-OPUS-4-5')).toBe('extended');
   });
 });
 
@@ -194,8 +244,9 @@ describe('reasoning-capability — 启发式正则与抑制清单', () => {
     expect(REASONING_MODEL_RE.flags).toContain('i');
   });
 
-  it('Anthropic 抑制清单含 temperature 与 top_p（写成常量便于随文档调整）', () => {
-    expect(ANTHROPIC_THINKING_CONFLICT_PARAMS).toContain('temperature');
-    expect(ANTHROPIC_THINKING_CONFLICT_PARAMS).toContain('top_p');
+  it('修正 A：不再存在"启用 thinking 即抑制采样参数"的清单出口', async () => {
+    // 抑制清单已被移除——静默丢弃用户显式设置比服务端报错更糟
+    const mod = (await import('../../src/api/reasoning-capability')) as Record<string, unknown>;
+    expect(mod.ANTHROPIC_THINKING_CONFLICT_PARAMS).toBeUndefined();
   });
 });

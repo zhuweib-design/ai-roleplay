@@ -10,7 +10,7 @@ import {
 import { toDevProxyUrl } from './openai-protocol';
 import {
   toAnthropicBudget,
-  ANTHROPIC_THINKING_CONFLICT_PARAMS,
+  resolveAnthropicThinkingMode,
 } from './reasoning-capability';
 import { t } from '@/i18n';
 
@@ -61,37 +61,41 @@ export class AnthropicClient implements ApiClient {
     };
     if (system) body.system = system;
 
-    // P0-2：Anthropic extended thinking（thinking.budget_tokens）
-    // 预算由 toAnthropicBudget 按 max_tokens 做 clamp；clamp 后过小（<256）返回 null
-    // → 放弃启用，降级为不传，避免协议 400 打断对话。
+    /**
+     * P0-2 修正 B：Anthropic 思考下发按模型版本分流 adaptive / extended
+     *
+     * 版本边界（官方 extended thinking 文档）：
+     * `thinking:{type:'enabled',budget_tokens}` 自 4.6 起 deprecated、**4.7+ 直接 400**，
+     * 故新模型改发 `thinking:{type:'adaptive'}` + `output_config:{effort}`（effort 即三档，
+     * 无需 budget 换算）；旧模型沿用 extended + budget。
+     * 判定规则集中在 `resolveAnthropicThinkingMode()`（纯函数、可单测、易随文档调整）。
+     *
+     * 修正 A：此处**不再抑制** temperature / top_p。
+     * 官方并未规定 thinking 与采样参数冲突；抑制的真实后果是"静默丢弃用户显式设置"
+     * （调了滑块毫无效果且无提示），比服务端报错更糟。统一为与 OpenAI 侧一致的策略：
+     * 只加思考参数，不动采样参数；真不兼容就让服务端报错走既有错误链路。
+     */
     const maxTokens = request.maxTokens ?? AnthropicClient.DEFAULT_MAX_TOKENS;
-    const budget = request.reasoningEffort
-      ? toAnthropicBudget(request.reasoningEffort, maxTokens)
-      : null;
-    const thinkingEnabled = budget !== null;
-
-    if (budget !== null) {
-      body.thinking = { type: 'enabled', budget_tokens: budget };
+    if (request.reasoningEffort) {
+      if (resolveAnthropicThinkingMode(request.model) === 'adaptive') {
+        body.thinking = { type: 'adaptive' };
+        body.output_config = { effort: request.reasoningEffort };
+      } else {
+        // 预算由 toAnthropicBudget 按 max_tokens 做 clamp；clamp 后低于官方下限
+        // （1024）返回 null → 放弃启用，降级为不传，避免协议 400 打断对话。
+        const budget = toAnthropicBudget(request.reasoningEffort, maxTokens);
+        if (budget !== null) {
+          body.thinking = { type: 'enabled', budget_tokens: budget };
+        }
+      }
     }
 
-    /**
-     * P0-2 协议冲突降级：Anthropic 启用 extended thinking 时，
-     * `temperature` / `top_p` 不被接受（清单见 ANTHROPIC_THINKING_CONFLICT_PARAMS，
-     * 可随官方文档更新）。此处**主动抑制写入 body**，而用户可见的滑块值不变，
-     * 避免"改了滑块没反应"的困惑。
-     */
-    const suppressed = (protocolKey: string): boolean =>
-      thinkingEnabled && ANTHROPIC_THINKING_CONFLICT_PARAMS.includes(protocolKey);
-
-    if (request.temperature !== undefined && !suppressed('temperature')) {
+    // 采样参数：启用 thinking 时**照常下发**（修正 A，理由见上）
+    if (request.temperature !== undefined) {
       body.temperature = request.temperature;
     }
-    // P0-3：top_p（启用 thinking 时同样被抑制）
-    if (
-      request.topP !== undefined &&
-      request.topP !== null &&
-      !suppressed('top_p')
-    ) {
+    // P0-3：top_p
+    if (request.topP !== undefined && request.topP !== null) {
       body.top_p = request.topP;
     }
     // P0-3：presence_penalty / frequency_penalty 为 OpenAI 兼容层专有，
