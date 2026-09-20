@@ -255,4 +255,51 @@ describe('提示词构建 — P0-1 思考回传开关', () => {
     );
     expect(historyWithThinking).toEqual(snapshot);
   });
+
+  test('契约一致：只有 assistant 消息回包思考，user / system 消息即使带 thinking 也不回包', async () => {
+    const history: ChatMessage[] = [
+      {
+        role: 'user',
+        content: '用户说的话',
+        id: 'u1',
+        timestamp: '',
+        swipes: [],
+        swipeIndex: 0,
+        thinking: '不该出现的思考',
+      },
+      {
+        role: 'system',
+        content: '系统提示',
+        id: 's1',
+        timestamp: '',
+        swipes: [],
+        swipeIndex: 0,
+        thinking: '系统也不该回包',
+      },
+      {
+        role: 'assistant',
+        content: '助手说的',
+        id: 'a1',
+        timestamp: '',
+        swipes: [],
+        swipeIndex: 0,
+        thinking: '助手思考',
+      },
+    ];
+
+    const result = await buildPrompt(
+      makeCard(),
+      history,
+      '继续',
+      makeSettings({ includeThinkingInHistory: true })
+    );
+
+    expect(result.messages.find((m) => m.role === 'user')?.content).toBe('用户说的话');
+    // 历史里的 system 消息原样透传（注意 messages[0] 是生成的系统提示词，故按内容判定）
+    expect(result.messages.some((m) => m.content === '系统提示')).toBe(true);
+    expect(result.messages.some((m) => m.content.includes('系统也不该回包'))).toBe(false);
+    expect(result.messages.find((m) => m.role === 'assistant')?.content).toBe(
+      '<think>助手思考</think>助手说的'
+    );
+  });
 });

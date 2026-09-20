@@ -184,11 +184,15 @@ export async function buildPrompt(
   // P0-1：thinking 与 content 分字段存储，默认只读 content（天然剥离）；
   // 仅当 includeThinkingInHistory 开启时才在**内存中**回包成 <think> 前缀，
   // 绝不修改传入的 history 对象（无副作用）。
+  //
+  // 契约（与上方 JSDoc 一致）：只有**assistant** 消息才回包思考。
+  // user / system 消息理论上不带 thinking；即使带了（脏数据或将来误用），
+  // 也绝不能把"用户说的话"包进 <think> 里冒充模型思考——那会污染上下文语义。
   const includeThinking = settings.includeThinkingInHistory === true;
   for (const msg of history) {
     const hasThinking = typeof msg.thinking === 'string' && msg.thinking !== '';
     const content =
-      includeThinking && hasThinking
+      includeThinking && msg.role === 'assistant' && hasThinking
         ? `${THINKING_OPEN_TAG}${msg.thinking}${THINKING_CLOSE_TAG}${msg.content}`
         : msg.content;
     messages.push({ role: msg.role, content });
