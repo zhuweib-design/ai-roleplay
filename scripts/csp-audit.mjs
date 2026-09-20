@@ -15,8 +15,10 @@
  *   npx vite preview --port 4173 --strictPort     # 另开一个终端
  *   node scripts/csp-audit.mjs                    # 或 BASE_URL=... node scripts/csp-audit.mjs
  *
- * 输出：逐路由的 CSP 违规数 / console 错误 / 404，并做一次负向对照
- *   （注入内联脚本，确认 CSP 确实被浏览器执行而非仅存在于 HTML 中）。
+ * 输出：逐路由的 CSP 违规数 / console 错误 / 404，并做两类对照：
+ *   1. 负向对照（注入内联脚本，确认 CSP 确实被浏览器执行而非仅存在于 HTML 中）；
+ *   2. 能力探针（WebAssembly.compile + Worker(blob:)，确认放行清单对本地向量模型
+ *      onnxruntime-web 与 @mlc-ai/web-llm 的运行时前提是够用的）。
  *
  * 为何不接入 CI：需要「构建产物 + 静态服务器 + 真实浏览器」三件套，
  *   放进 quality-gates 会显著拉长门禁；静态契约检查已覆盖「CSP 被静默移除/削弱」这一主要回归风险。
@@ -115,6 +117,52 @@ const negativeControl = await page.evaluate(async () => {
   };
 });
 
+// ── 能力探针：确认放行清单够用于本地模型/WebLLM 的运行时前提 ──
+// 背景（Web SOP 评审遗留项「本地模型路径未经运行时验证」）：
+//   script-src 'wasm-unsafe-eval' 与 worker-src blob: 是 onnxruntime-web（本地向量模型）
+//   与 @mlc-ai/web-llm 的运行前提。逐路由审计只覆盖页面加载，不触发 WASM 编译与 Worker 创建，
+//   故在此显式探测这两项能力，避免「CSP 放行了但实际用不了」或「实际被拦却无人发现」。
+const capabilities = await page.evaluate(async () => {
+  const out = {};
+  const before = window.__csp.length;
+
+  // 1) WebAssembly 编译 → 依赖 script-src 'wasm-unsafe-eval'
+  try {
+    const bytes = new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
+    await WebAssembly.compile(bytes);
+    out.wasm = { ok: true };
+  } catch (e) {
+    out.wasm = { ok: false, err: String(e).slice(0, 200) };
+  }
+
+  // 2) blob: Worker → 依赖 worker-src blob:（onnxruntime-web 的线程池走这条）
+  try {
+    const url = URL.createObjectURL(
+      new Blob(['self.onmessage=()=>{self.postMessage("pong")}'], { type: 'application/javascript' })
+    );
+    const w = new Worker(url);
+    out.blobWorker = await new Promise((resolve) => {
+      const t = setTimeout(() => resolve({ ok: false, msg: '__timeout__' }), 3000);
+      w.onmessage = (e) => {
+        clearTimeout(t);
+        resolve({ ok: e.data === 'pong', msg: e.data });
+      };
+      w.onerror = (e) => {
+        clearTimeout(t);
+        resolve({ ok: false, msg: e.message || '__error__' });
+      };
+      w.postMessage('ping');
+    });
+    w.terminate();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    out.blobWorker = { ok: false, err: String(e).slice(0, 200) };
+  }
+
+  out.newViolations = window.__csp.slice(before).map((v) => `${v.directive} <- ${v.blockedURI}`);
+  return out;
+});
+
 await browser.close();
 
 let totalCsp = 0;
@@ -136,6 +184,17 @@ console.log('负向对照（注入内联脚本，应被 script-src 拦截）:');
 console.log(`  内联脚本实际执行: ${negativeControl.inlineExecuted}   （期望 false）`);
 console.log(`  新增违规: ${JSON.stringify(negativeControl.newViolations)}`);
 
+console.log('能力探针（本地模型 / WebLLM 的运行时前提）:');
+console.log(
+  `  WebAssembly.compile: ${capabilities.wasm.ok ? '✓ 通过' : '✗ 被拦 → ' + capabilities.wasm.err}`
+);
+console.log(
+  `  Worker(blob: URL):   ${capabilities.blobWorker.ok ? '✓ 通过' : '✗ 失败 → ' + (capabilities.blobWorker.err || capabilities.blobWorker.msg)}`
+);
+if (capabilities.newViolations.length) {
+  console.log(`  探针期间新增违规: ${JSON.stringify(capabilities.newViolations)}`);
+}
+
 const enforced = negativeControl.inlineExecuted === false && negativeControl.newViolations.length > 0;
 if (totalCsp > 0) {
   console.error('\n[FAIL] 存在 CSP 违规 —— 放行清单不足，请调整 vite.config.ts 的 WEB_CSP_DIRECTIVES。');
@@ -145,4 +204,12 @@ if (!enforced) {
   console.error('\n[FAIL] 负向对照未生效 —— CSP 可能未被浏览器执行（检查 meta 是否被移除或写错）。');
   process.exit(1);
 }
-console.log('\n[PASS] 无 CSP 违规，且负向对照确认 CSP 已被浏览器执行。');
+if (!capabilities.wasm.ok || !capabilities.blobWorker.ok) {
+  console.error(
+    '\n[FAIL] 能力探针失败 —— 本地向量模型 / WebLLM 在生产 CSP 下无法运行。\n' +
+      "  请在 vite.config.ts 的 WEB_CSP_DIRECTIVES 中补足 script-src 'wasm-unsafe-eval' / worker-src blob:，\n" +
+      '  并同步更新 scripts/csp-guard.mjs 的关键指令清单。'
+  );
+  process.exit(1);
+}
+console.log('\n[PASS] 无 CSP 违规、负向对照确认 CSP 已生效、能力探针通过（WASM + blob Worker 可用）。');

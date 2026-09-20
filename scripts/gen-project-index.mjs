@@ -322,6 +322,7 @@ const CURATED = {
   'docs/fixes/web-sop-fix-batch4-report.md': '修复文档：Web SOP 修复第四批交付报告（口径统一与流程固化）',
   'docs/fixes/i7-mobile-control-font-size-fix-2026-09-20.md': '修复文档：I-7 移动端控件字号修复 + CSS 约定守卫合并（含真实浏览器实测数据）',
   'docs/dev/P2-11-virtualization-plan.md': '开发文档：P2-11 长对话虚拟化分批计划',
+  'docs/dev/web-deployment-sop.md': '开发文档：Web 端部署 SOP（部署前验证 / 硬性要求 / 5 类托管配置 / 部署后验证 / 常见坑 / 回滚）',
   'docs/design/P2-9-csp-whitelist-report.md': '设计文档：P2-9 CSP / remote 白名单盘点与决策记录',
 
   'public/pwa-icon.svg': 'PWA 图标（矢量）',
