@@ -215,9 +215,25 @@ describe('normalizeStatusHudConfig — 全局偏好校验', () => {
 });
 
 describe('StatusIconName 与 IconName 的兼容性', () => {
-  it('白名单内的名字都能被 getIconPath 解析（无空白图标）', () => {
+  /**
+   * 为什么遍历**整个白名单**而不是只遍历 registry 用过的图标？
+   *
+   * `src/components/ContextPanel.vue` 的 schema 编辑器用 `[...STATUS_ICON_NAMES]`
+   * 作为图标下拉选项 —— 用户能选中**任何**白名单图标，包括引擎内置表里没用到的
+   * （如 `star`，它在 D2 之后已不在 registry 里，但仍可被用户选给自定义字段）。
+   * 若只校验"registry 用过的图标"，将来有人改名/删除 `icons.ts` 里的 `star` 将**无人检出**，
+   * 结果是用户在编辑器里选了 star、HUD 静默渲染成一个空 svg。
+   *
+   * 因此这里必须直接打在 `icons.ts` 的 PATHS 上，覆盖白名单全量。
+   * 请勿"优化"回只遍历 STATUS_FIELD_REGISTRY。
+   */
+  it('白名单全量（含未被内置表使用的 star）都能被 getIconPath 解析出实际路径', () => {
     for (const name of STATUS_ICON_NAMES as StatusIconName[]) {
-      expect(getIconPath(name).length).toBeGreaterThan(0);
+      expect(getIconPath(name), `白名单图标 ${name} 在 icons.ts 里无实际路径`).not.toBe('');
     }
+    // 显式钉住"未被 registry 使用但仍在下拉里"的那一个，防止后人误删白名单项
+    expect(STATUS_ICON_NAMES).toContain('star');
+    expect(STATUS_FIELD_REGISTRY.some((p) => p.icon === 'star')).toBe(false);
+    expect(getIconPath('star')).not.toBe('');
   });
 });
