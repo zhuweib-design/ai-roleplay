@@ -343,6 +343,10 @@ export const useChatStore = defineStore('chat', () => {
       const strip = settingsStore.thinkingConfig?.stripFromHistory !== false;
       patch.includeThinkingInHistory = !strip;
 
+      // P1：提示词注入开关（默认 false = 不要求模型产出状态块；解析/渲染与开关无关）
+      // 角色级 ext.statusInstruction 由 chat-manager 在本轮请求里再覆盖（'on'/'off' 优先）
+      patch.statusInstructionEnabled = settingsStore.statusHudConfig?.enabled === true;
+
       // P0-3：全局采样默认值（最低优先级，仅在 config 该字段为空时补齐）
       const defaults = settingsStore.samplingDefaults;
       if (defaults) {
@@ -533,6 +537,10 @@ export const useChatStore = defineStore('chat', () => {
           // P0-1：思考增量（fullThinking 为累计值，直接覆盖即可）
           onThinking: (_delta, fullThinking) => {
             liveMsg.thinking = fullThinking;
+          },
+          // P1：状态快照（状态块闭合后一次性回调；null = 本轮无可用状态）
+          onStatus: (status) => {
+            liveMsg.status = status ? { ...status, messageId: liveMsg.id } : undefined;
           },
           onUsage: (usage) => {
             // 前缀缓存统计(供应商返回 cache 拆解时)
@@ -757,8 +765,10 @@ export const useChatStore = defineStore('chat', () => {
 
     // 重置目标消息
     // P0-1：重新生成必须清空 thinking，否则会出现"旧思考 + 新正文"的错配（§7.4）
+    // P1：status 同理（本轮状态属于上一轮生成结果）
     target.content = '';
     target.thinking = '';
+    target.status = undefined;
     target.generating = true;
 
     // 转换 UI → 核心
@@ -834,6 +844,10 @@ export const useChatStore = defineStore('chat', () => {
           onThinking: (_delta, fullThinking) => {
             target.thinking = fullThinking;
           },
+          // P1：状态快照（重新生成时同上先清空，避免"旧状态 + 新正文"错配）
+          onStatus: (status) => {
+            target.status = status ? { ...status, messageId: target.id } : undefined;
+          },
           onDone: (fullContent) => {
             void countTokens(fullContent).then((n) => { tokenUsage.value.completion += n; });
             target.content = fullContent;
@@ -880,6 +894,8 @@ export const useChatStore = defineStore('chat', () => {
     msg.content = newContent;
     // P0-1：正文被改写后旧思考即失效，必须清空，避免"旧思考 + 新正文"错配（§7.4）
     if (msg.thinking) msg.thinking = '';
+    // P1：状态快照同样属于旧生成结果，一并清空
+    if (msg.status) msg.status = undefined;
     // 编辑后持久化由调用方决定是否触发（避免无 character 引用）
   }
 

@@ -4,6 +4,7 @@ import { ApiError } from '../../src/api/types';
 import type { ApiClient } from '../../src/api/api-client';
 import type { ChatStream, ChatStreamEvent, ChatRequest, ApiMessage } from '../../src/api/types';
 import type { CharacterCard, ChatMessage } from '@core/character-card';
+import type { CharacterStatus } from '@core/status-schema';
 import { MemoryStore, CharacterRegistry, EmotionTracker } from '@core/memory-store';
 import { OptimizationPipeline, createDefaultConfig } from '@core/optimization-pipeline';
 import type { L0L2Deps } from '@core/l0-l2-runtime';
@@ -1202,5 +1203,215 @@ describe('ChatManager — P0-2/P0-3 请求装配', () => {
     });
     expect(requests[0]!.topP).toBe(0.5);
     expect(requests[0]!.reasoningEffort).toBe('low');
+  });
+});
+
+// ── P1：编排层角色状态块（解析 / 剥离 / 提示词注入） ──
+
+describe('ChatManager — P1 角色状态块', () => {
+  /** 记录请求体的 fake client（用于断言提示词注入） */
+  function captureClient(): { client: ApiClient; requests: ChatRequest[] } {
+    const requests: ChatRequest[] = [];
+    const client: ApiClient = {
+      provider: 'spy',
+      async chat(): Promise<string> {
+        return '';
+      },
+      async *chatStream(req: ChatRequest): ChatStream {
+        requests.push(JSON.parse(JSON.stringify(req)) as ChatRequest);
+        yield { type: 'done', fullContent: '' };
+      },
+    };
+    return { client, requests };
+  }
+
+  function systemOf(requests: ChatRequest[]): string {
+    return requests[0]?.messages.find((m) => m.role === 'system')?.content ?? '';
+  }
+
+  const SCHEMA = {
+    version: 1 as const,
+    fields: [{ key: 'location', type: 'string' as const }],
+  };
+
+  it('标签型流：onDelta 只收正文，onStatus 收结构化状态', async () => {
+    const client = makeFakeApiClient([
+      { type: 'delta', delta: '好的，我们出发' },
+      { type: 'delta', delta: '<sta' },
+      { type: 'delta', delta: 'tus>location: tavern</sta' },
+      { type: 'delta', delta: 'tus>' },
+      { type: 'done', fullContent: '好的，我们出发<status>location: tavern</status>' },
+    ]);
+    const deltas: string[] = [];
+    let status: unknown = 'NOT_CALLED';
+    let final = '';
+
+    await new ChatManager({ apiClient: client, model: 'm' }).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      {
+        onDelta: (d) => deltas.push(d),
+        onStatus: (s) => {
+          status = s;
+        },
+        onDone: (full) => {
+          final = full;
+        },
+      }
+    );
+
+    expect(deltas.join('')).toBe('好的，我们出发');
+    expect(final).toBe('好的，我们出发');
+    expect(final.includes('<status>')).toBe(false);
+    expect(status).toMatchObject({
+      parseMode: 'lines',
+      entries: [{ key: 'location', value: 'tavern' }],
+    });
+  });
+
+  it('未闭合状态块：残留归正文（绝不丢内容），onStatus 收 null', async () => {
+    const client = makeFakeApiClient([
+      { type: 'delta', delta: '正文<status>location: tavern' },
+      { type: 'done', fullContent: '正文<status>location: tavern' },
+    ]);
+    let status: unknown = 'NOT_CALLED';
+    let final = '';
+    await new ChatManager({ apiClient: client, model: 'm' }).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      {
+        onStatus: (s) => {
+          status = s;
+        },
+        onDone: (full) => {
+          final = full;
+        },
+      }
+    );
+    expect(final).toContain('location: tavern');
+    expect(final.includes('<status>')).toBe(false);
+    expect(status).toBeNull();
+  });
+
+  it('收尾兜底：```status 围栏也能识别并剥离', async () => {
+    const raw = '正文\n\n```status\n{"location":"tavern"}\n```';
+    const client = makeFakeApiClient([
+      { type: 'delta', delta: raw },
+      { type: 'done', fullContent: raw },
+    ]);
+    let status: CharacterStatus | null = null;
+    let final = '';
+    await new ChatManager({ apiClient: client, model: 'm' }).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      {
+        onStatus: (s) => {
+          status = s;
+        },
+        onDone: (full) => {
+          final = full;
+        },
+      }
+    );
+    expect(final).toBe('正文');
+    expect((status as CharacterStatus | null)?.entries?.[0]?.value).toBe('tavern');
+  });
+
+  it('无状态块时 onStatus 收到 null（行为与改动前一致）', async () => {
+    const client = makeFakeApiClient([
+      { type: 'delta', delta: '你好' },
+      { type: 'done', fullContent: '你好' },
+    ]);
+    let status: unknown = 'NOT_CALLED';
+    await new ChatManager({ apiClient: client, model: 'm' }).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      { onStatus: (s) => { status = s; } }
+    );
+    expect(status).toBeNull();
+  });
+
+  it('注入默认关闭：system 提示词不含状态指令', async () => {
+    const { client, requests } = captureClient();
+    await new ChatManager({ apiClient: client, model: 'm' }).sendMessage({
+      card: makeCard({ ext: { statusSchema: SCHEMA } }),
+      history: [],
+      userMessage: 'hi',
+    });
+    expect(systemOf(requests)).not.toContain('[Character Status]');
+  });
+
+  it('全局开关打开 → 注入英文状态指令', async () => {
+    const { client, requests } = captureClient();
+    await new ChatManager({
+      apiClient: client,
+      model: 'm',
+      statusInstructionEnabled: true,
+    }).sendMessage({
+      card: makeCard({ ext: { statusSchema: SCHEMA } }),
+      history: [],
+      userMessage: 'hi',
+    });
+    const sys = systemOf(requests);
+    expect(sys).toContain('[Character Status]');
+    expect(sys).toContain('<status>');
+    // 硬约束：注入必须用英文 key，否则模型照抄中文会导致匹配层全部落空
+    expect(/[一-龥]/.test(sys.slice(sys.indexOf('[Character Status]')))).toBe(false);
+  });
+
+  it('角色级 statusInstruction 覆盖全局（on 开启 / off 关闭）', async () => {
+    const { client: c1, requests: r1 } = captureClient();
+    await new ChatManager({ apiClient: c1, model: 'm' }).sendMessage({
+      card: makeCard({ ext: { statusSchema: SCHEMA, statusInstruction: 'on' } }),
+      history: [],
+      userMessage: 'hi',
+    });
+    expect(systemOf(r1)).toContain('[Character Status]');
+
+    const { client: c2, requests: r2 } = captureClient();
+    await new ChatManager({
+      apiClient: c2,
+      model: 'm',
+      statusInstructionEnabled: true,
+    }).sendMessage({
+      card: makeCard({ ext: { statusSchema: SCHEMA, statusInstruction: 'off' } }),
+      history: [],
+      userMessage: 'hi',
+    });
+    expect(systemOf(r2)).not.toContain('[Character Status]');
+  });
+
+  it('状态块写在 <think> 内 → 不提取（已知取舍，与 P0 一致）', async () => {
+    const raw = '<think>想一下<status>location: x</status></think>正文';
+    const client = makeFakeApiClient([
+      { type: 'delta', delta: raw },
+      { type: 'done', fullContent: raw },
+    ]);
+    let status: unknown = 'NOT_CALLED';
+    let final = '';
+    await new ChatManager({ apiClient: client, model: 'm' }).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      {
+        onStatus: (s) => {
+          status = s;
+        },
+        onDone: (full) => {
+          final = full;
+        },
+      }
+    );
+    expect(final).toBe('正文');
+    expect(status).toBeNull();
+  });
+
+  it('状态快照按角色 schema 解析（未知 key 走降级展示）', async () => {
+    const raw = '正文<status>{"location":"tavern","心情":"很好"}</status>';
+    const client = makeFakeApiClient([
+      { type: 'delta', delta: raw },
+      { type: 'done', fullContent: raw },
+    ]);
+    let status: CharacterStatus | null = null;
+    await new ChatManager({ apiClient: client, model: 'm' }).sendMessage(
+      { card: makeCard({ ext: { statusSchema: SCHEMA } }), history: [], userMessage: 'hi' },
+      { onStatus: (s) => { status = s; } }
+    );
+    expect((status as CharacterStatus | null)?.entries).toHaveLength(2);
+    expect((status as CharacterStatus | null)?.unknownCount).toBe(1);
   });
 });

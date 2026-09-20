@@ -25,6 +25,8 @@ import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import ThinkingBlock from '@/components/chat/ThinkingBlock.vue';
+import StatusHud from '@/components/chat/StatusHud.vue';
+import { resolveLatestStatus } from '@core/status-parser';
 import type { GroupChatMode, GroupMember } from '@/core/group-chat';
 import type { UICharacter } from '@/types';
 // F10.3 随机 NPC 生成
@@ -97,6 +99,26 @@ const currentMembers = computed(() => groupStore.currentMembers);
 
 // 创建群聊时可选的角色卡（排除已选中的）
 const availableCharacters = computed(() => characterStore.characters);
+
+/**
+ * P1：各成员的"当前状态"快照（按 characterId 分组后纯派生，零持久化）
+ *
+ * TODO：群聊当前仍是 mock 链路（本文件 simulateAiReply 用 setTimeout 造回复），
+ * 无法产出真实的 `<status>` 块 → 本计算恒为空、UI 不渲染。
+ * 待群聊接入 chat-manager 真实流式链路后，ChatMessage.status 会被自动填充，此处即生效。
+ */
+const memberStatuses = computed(() => {
+  const group = currentGroup.value;
+  if (!group) return [];
+  return group.members
+    .map((m) => {
+      const schema =
+        characterStore.characters.find((c) => c.id === m.characterId)?.statusSchema ?? null;
+      const own = group.messages.filter((msg) => msg.characterId === m.characterId);
+      return { characterId: m.characterId, name: m.name, status: resolveLatestStatus(own, schema) };
+    })
+    .filter((x) => x.status !== null);
+});
 
 // 添加成员弹窗中可选的角色卡（排除已在群聊中的）
 const addMemberAvailable = computed(() => {
@@ -730,6 +752,22 @@ type="button"
                 <Icon name="user" :size="12" />
                 <span>{{ t('group.modeDesignated') }}</span>
               </button>
+            </div>
+
+            <!--
+              P1 成员状态：按 characterId 分组派生。
+              TODO：群聊 mock 链路无真实状态输出（见 memberStatuses 注释），
+              接入真实流式链路后此处自动渲染。
+            -->
+            <div
+              v-if="memberStatuses.length > 0"
+              class="member-status-bar"
+              :aria-label="t('status.hudAria')"
+            >
+              <div v-for="ms in memberStatuses" :key="ms.characterId" class="member-status-row">
+                <span class="member-status-name">{{ ms.name }}</span>
+                <StatusHud variant="inline" :status="ms.status" />
+              </div>
             </div>
           </header>
 
@@ -1600,6 +1638,27 @@ type="button"
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 10px;
+}
+
+/* P1 成员状态条（mock 链路下恒空，接入真实流式后生效） */
+.member-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.member-status-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.member-status-name {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
 }
 
 .member-chip {

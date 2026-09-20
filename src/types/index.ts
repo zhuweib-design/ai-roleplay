@@ -7,6 +7,7 @@
 
 import type { CharacterAttributes } from '@core/character-card';
 import type { ReasoningEffort } from '@api/types';
+import type { CharacterStatus, StatusSchema, StatusHudConfig } from '@core/status-schema';
 import { t } from '@/i18n';
 
 /**
@@ -43,6 +44,11 @@ export interface UIMessage {
    * 仅在 assistant 消息上有意义；渲染条件为 `!!thinking && thinking.trim() !== ''`。
    */
   thinking?: string;
+  /**
+   * P1：本条消息的状态快照（流式下在状态块闭合后一次性写入）
+   * 注：本轮只在会话级 sticky HUD 渲染，消息级渲染留待后续（数据照常存储）。
+   */
+  status?: CharacterStatus;
   /** 旁白/动作描述（斜体灰色，正文后） */
   narrationAfter?: string;
   /** 是否正在生成中 */
@@ -104,6 +110,10 @@ export interface UICharacter {
   reasoningEffort?: ReasoningEffort | null;
   /** P0-3：角色级采样参数覆盖（可选；未设置字段跟随 Profile → 全局默认） */
   sampling?: SamplingOverrides | null;
+  /** P1：角色自带状态 schema（ext 打包/解包，见 type-adapters） */
+  statusSchema?: StatusSchema | null;
+  /** P1：'on'|'off'|null —— null = 继承全局 settings.statusHudConfig.enabled */
+  statusInstruction?: 'on' | 'off' | null;
   /** F01.6 角色属性（可选，v1.1 新增） */
   attributes?: CharacterAttributes;
   /** F16.4 关联的故事 ID（null 表示未关联故事，不启用时间/主角系统） */
@@ -276,6 +286,8 @@ export interface AppSettings {
   thinkingConfig?: ThinkingConfig;
   /** P0-3：全局采样默认值（本轮不提供 UI，仅留数据位与合并逻辑） */
   samplingDefaults?: SamplingOverrides | null;
+  /** P1：状态栏全局偏好（缺省 → DEFAULT_STATUS_HUD_CONFIG） */
+  statusHudConfig?: StatusHudConfig;
 }
 
 /**

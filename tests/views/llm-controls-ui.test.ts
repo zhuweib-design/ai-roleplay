@@ -252,6 +252,18 @@ describe('SegmentedControl — 三档分段控件', () => {
   });
 });
 
+/**
+ * 按 aria-label 精确定位"思考强度"分段控件
+ *
+ * P1 起面板里多了一个"状态指令"分段控件（同组件），
+ * 因此不能再靠 findComponent(SegmentedControl) 判断思考强度是否存在。
+ */
+function findReasoningSegment(wrapper: ReturnType<typeof mount>) {
+  return wrapper
+    .findAllComponents(SegmentedControl)
+    .find((c) => c.attributes('aria-label') === t('ctx.reasoningEffortAria'));
+}
+
 describe('ContextPanel — 降级与采样控件', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -283,7 +295,8 @@ describe('ContextPanel — 降级与采样控件', () => {
       makeChar({ sampling: null })
     );
     await nextTick();
-    expect(wrapper.findComponent(SegmentedControl).exists()).toBe(false);
+    // P1 起面板内有两段 SegmentedControl（思考强度 + 状态指令），故按 aria-label 精确定位
+    expect(findReasoningSegment(wrapper)).toBeUndefined();
     // 采样分组整体不渲染（local 不支持 frequency_penalty，且 topP 在该 Profile 下仍支持 → 分组出现但只有 topP）
     const freqInput = wrapper
       .findAll('input[type="range"]')
@@ -294,7 +307,7 @@ describe('ContextPanel — 降级与采样控件', () => {
   it('provider=openai 时思考强度控件显示（未命中正则也显示）', async () => {
     const wrapper = mountPanel(makeProfile({ model: 'gpt-4o' }), makeChar());
     await nextTick();
-    expect(wrapper.findComponent(SegmentedControl).exists()).toBe(true);
+    expect(findReasoningSegment(wrapper)).toBeDefined();
     // 未命中启发式正则 → 显示提示文案，但控件仍在
     expect(wrapper.text()).toContain('可能不支持推理强度');
   });

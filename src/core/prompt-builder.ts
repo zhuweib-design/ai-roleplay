@@ -64,6 +64,11 @@ export interface PromptContexts {
   protagonistContext?: string;
   /** F16.4 故事时间上下文文本（由 story-time.buildStoryTimePrompt 生成） */
   storyTimeContext?: string;
+  /**
+   * P1：角色状态栏指令文本（由 status-prompt.buildStatusInstruction 生成）
+   * 仅当全局开关或角色级开关打开时才非空；关闭时**不传**（请求体与改动前逐字节一致）。
+   */
+  statusContext?: string;
 }
 
 /**
@@ -87,6 +92,7 @@ export async function buildPrompt(
     eventsContext,
     protagonistContext,
     storyTimeContext,
+    statusContext,
   } = contexts;
   const macroCtx = { user: settings.userName, char: card.name };
 
@@ -171,7 +177,7 @@ export async function buildPrompt(
   }
 
   const systemContent = replaceMacros(
-    `${settings.systemPrompt}\n\n${worldDescText}${beforeText}${charDef}${attributesText}${afterText}${eventsContext ? '\n\n' + eventsContext : ''}${protagonistContext ? '\n\n' + protagonistContext : ''}${storyTimeContext ? '\n\n' + storyTimeContext : ''}`,
+    `${settings.systemPrompt}\n\n${worldDescText}${beforeText}${charDef}${attributesText}${afterText}${eventsContext ? '\n\n' + eventsContext : ''}${protagonistContext ? '\n\n' + protagonistContext : ''}${storyTimeContext ? '\n\n' + storyTimeContext : ''}${statusContext ? '\n\n' + statusContext : ''}`,
     macroCtx
   );
 

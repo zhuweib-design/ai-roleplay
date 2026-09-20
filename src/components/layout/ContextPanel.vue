@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useCharacterStore } from '@/stores/character';
 import { usePersonaStore } from '@/stores/persona';
 import { useLorebookStore } from '@/stores/lorebook';
@@ -18,6 +18,11 @@ import type { ReasoningEffort } from '@/api/types';
 import { REASONING_EFFORTS, type SamplingOverrides } from '@/types';
 import { t } from '@/i18n';
 import type { ApiProfile } from '@/types';
+import {
+  STATUS_ICON_NAMES,
+  normalizeStatusSchema,
+  type StatusFieldDef,
+} from '@core/status-schema';
 
 const characterStore = useCharacterStore();
 const personaStore = usePersonaStore();
@@ -226,6 +231,115 @@ const supportsFrequencyPenalty = computed(() =>
 function onAuthorDepth(e: Event) {
   const v = Number((e.target as HTMLInputElement).value);
   characterStore.updateCharacter(char.value.id, { authorDepth: v });
+}
+
+// ── P1 角色状态栏：状态指令三态开关 + schema 编辑器 ──
+
+/** 三态：继承全局 / 强制开启 / 强制关闭（null = 继承） */
+const statusInstructionOptions = computed(() => [
+  { value: 'inherit', label: t('status.instructionInherit') },
+  { value: 'on', label: t('status.instructionOn') },
+  { value: 'off', label: t('status.instructionOff') },
+]);
+
+/** 当前角色的状态指令（未设置显示为"继承全局"） */
+const statusInstruction = computed<string>(() => {
+  const v = char.value.statusInstruction;
+  return v === 'on' || v === 'off' ? v : 'inherit';
+});
+
+function onStatusInstruction(value: string | null): void {
+  const next = value === 'on' || value === 'off' ? value : null;
+  characterStore.updateCharacter(char.value.id, { statusInstruction: next });
+}
+
+/** schema 编辑器的字段快照（来自角色卡；无 schema 时为空数组） */
+const statusFields = computed<StatusFieldDef[]>(() => char.value.statusSchema?.fields ?? []);
+
+/** 编辑器折叠状态（默认折叠，避免长 schema 挤占面板） */
+const schemaOpen = ref(false);
+
+/** 图标下拉选项（全部来自 icons.ts 白名单，本轮零新增图标） */
+const statusIconOptions: string[] = [...STATUS_ICON_NAMES];
+
+/**
+ * 写回 schema（统一走 normalizeStatusSchema 校验，脏数据不落盘）
+ * 全部字段被删空时写 null = 回到"纯嗅探模式"
+ */
+function writeStatusSchema(fields: StatusFieldDef[]): void {
+  const prev = char.value.statusSchema;
+  const next = normalizeStatusSchema({
+    version: 1,
+    fields,
+    unknownKeyPolicy: prev?.unknownKeyPolicy,
+    maxFields: prev?.maxFields,
+  }) ?? null;
+  characterStore.updateCharacter(char.value.id, { statusSchema: next });
+}
+
+function addStatusField(): void {
+  const fields = statusFields.value.map((f) => ({ ...f }));
+  fields.push({ key: `field${fields.length + 1}`, type: 'string' });
+  writeStatusSchema(fields);
+}
+
+function removeStatusField(index: number): void {
+  const fields = statusFields.value.map((f) => ({ ...f }));
+  if (index < 0 || index >= fields.length) return;
+  fields.splice(index, 1);
+  writeStatusSchema(fields);
+}
+
+function patchStatusField(index: number, patch: Partial<StatusFieldDef>): void {
+  const fields = statusFields.value.map((f) => ({ ...f }));
+  const target = fields[index];
+  if (!target) return;
+  const next: StatusFieldDef = { ...target, ...patch };
+  // undefined = "清除该设置"，直接删键，保持"未设置"语义（绝不用空串表示未设置）
+  for (const k of Object.keys(patch) as Array<keyof StatusFieldDef>) {
+    if (patch[k] === undefined) delete next[k];
+  }
+  fields[index] = next;
+  writeStatusSchema(fields);
+}
+
+function onStatusFieldKey(index: number, e: Event): void {
+  patchStatusField(index, { key: (e.target as HTMLInputElement).value });
+}
+
+function onStatusFieldLabel(index: number, e: Event): void {
+  const v = (e.target as HTMLInputElement).value;
+  // 空串 = 未设置（走内置 i18n 或原始 key），不落空字符串污染 schema
+  patchStatusField(index, v === '' ? { label: undefined } : { label: v });
+}
+
+function onStatusFieldType(index: number, e: Event): void {
+  const v = (e.target as HTMLSelectElement).value;
+  patchStatusField(index, {
+    type: v === 'number' || v === 'enum' ? v : 'string',
+  });
+}
+
+function onStatusFieldIcon(index: number, e: Event): void {
+  const v = (e.target as HTMLSelectElement).value;
+  patchStatusField(index, { icon: v === '' ? undefined : (v as StatusFieldDef['icon']) });
+}
+
+/** 逗号分隔 → 字符串数组（空串表示清空该字段） */
+function splitList(raw: string): string[] | undefined {
+  const parts = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s !== '');
+  return parts.length > 0 ? parts : undefined;
+}
+
+function onStatusFieldAliases(index: number, e: Event): void {
+  patchStatusField(index, { aliases: splitList((e.target as HTMLInputElement).value) });
+}
+
+function onStatusFieldOptions(index: number, e: Event): void {
+  patchStatusField(index, { options: splitList((e.target as HTMLInputElement).value) });
 }
 
 // I-8：触屏横向滑动关闭抽屉（右抽屉：向左滑 >60px 关闭）
@@ -526,6 +640,120 @@ class="token-bar" role="progressbar"
             <Icon name="close" :size="12" />
           </button>
         </label>
+      </section>
+
+      <!-- P1 角色状态栏：状态指令三态开关 + 折叠式 schema 编辑器 -->
+      <section class="ctx-section" aria-labelledby="ctx-status-title">
+        <header class="ctx-section-header">
+          <span id="ctx-status-title" class="ctx-section-title">{{ t('status.instruction') }}</span>
+          <span class="ctx-section-value">{{ statusFields.length }}</span>
+        </header>
+        <SegmentedControl
+          :model-value="statusInstruction"
+          :options="statusInstructionOptions"
+          :aria-label="t('status.instruction')"
+          @update:model-value="onStatusInstruction"
+        />
+        <p class="ctx-param-hint">{{ t('status.instructionHint') }}</p>
+
+        <button
+          type="button"
+          class="ctx-schema-toggle"
+          :aria-expanded="schemaOpen"
+          aria-controls="ctx-status-schema"
+          @click="schemaOpen = !schemaOpen"
+        >
+          <Icon :name="schemaOpen ? 'chevron-up' : 'chevron-down'" :size="14" />
+          <span>{{ t('status.schemaTitle') }}</span>
+        </button>
+
+        <div v-if="schemaOpen" id="ctx-status-schema" class="ctx-schema">
+          <div v-for="(f, i) in statusFields" :key="`sf-${i}`" class="status-field">
+            <div class="status-field-row">
+              <label class="status-field-cell">
+                <span class="status-field-label">{{ t('status.schemaKey') }}</span>
+                <input
+                  class="tk-input status-field-input"
+                  type="text"
+                  :value="f.key"
+                  :placeholder="t('status.schemaKeyHint')"
+                  :aria-label="t('status.schemaKey')"
+                  @input="onStatusFieldKey(i, $event)"
+                />
+              </label>
+              <label class="status-field-cell">
+                <span class="status-field-label">{{ t('status.schemaLabel') }}</span>
+                <input
+                  class="tk-input status-field-input"
+                  type="text"
+                  :value="f.label ?? ''"
+                  :aria-label="t('status.schemaLabel')"
+                  @input="onStatusFieldLabel(i, $event)"
+                />
+              </label>
+            </div>
+            <div class="status-field-row">
+              <label class="status-field-cell">
+                <span class="status-field-label">{{ t('status.schemaType') }}</span>
+                <select
+                  class="tk-input status-field-input"
+                  :value="f.type ?? 'string'"
+                  :aria-label="t('status.schemaType')"
+                  @change="onStatusFieldType(i, $event)"
+                >
+                  <option value="string">{{ t('status.schemaTypeString') }}</option>
+                  <option value="number">{{ t('status.schemaTypeNumber') }}</option>
+                  <option value="enum">{{ t('status.schemaTypeEnum') }}</option>
+                </select>
+              </label>
+              <label class="status-field-cell">
+                <span class="status-field-label">{{ t('status.schemaIcon') }}</span>
+                <select
+                  class="tk-input status-field-input"
+                  :value="f.icon ?? ''"
+                  :aria-label="t('status.schemaIcon')"
+                  @change="onStatusFieldIcon(i, $event)"
+                >
+                  <option value="">{{ t('status.schemaIconNone') }}</option>
+                  <option v-for="ic in statusIconOptions" :key="ic" :value="ic">{{ ic }}</option>
+                </select>
+              </label>
+            </div>
+            <label class="status-field-cell">
+              <span class="status-field-label">{{ t('status.schemaAliases') }}</span>
+              <input
+                class="tk-input status-field-input"
+                type="text"
+                :value="(f.aliases ?? []).join(', ')"
+                :placeholder="t('status.schemaAliasesHint')"
+                :aria-label="t('status.schemaAliases')"
+                @input="onStatusFieldAliases(i, $event)"
+              />
+            </label>
+            <label v-if="f.type === 'enum'" class="status-field-cell">
+              <span class="status-field-label">{{ t('status.schemaOptions') }}</span>
+              <input
+                class="tk-input status-field-input"
+                type="text"
+                :value="(f.options ?? []).join(', ')"
+                :aria-label="t('status.schemaOptions')"
+                @input="onStatusFieldOptions(i, $event)"
+              />
+            </label>
+            <button
+              type="button"
+              class="ctx-reset-btn status-field-remove"
+              :aria-label="t('status.schemaRemove')"
+              @click="removeStatusField(i)"
+            >
+              <Icon name="trash-2" :size="12" />
+            </button>
+          </div>
+          <button type="button" class="ctx-schema-add" @click="addStatusField">
+            <Icon name="plus" :size="14" />
+            <span>{{ t('status.schemaAdd') }}</span>
+          </button>
+        </div>
       </section>
     </div>
   </aside>
@@ -892,6 +1120,116 @@ class="token-bar" role="progressbar"
   /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
   .ctx-textarea,
   .ctx-persona-select {
+    font-size: 16px;
+  }
+}
+
+/* ── P1 角色状态栏：schema 编辑器 ── */
+
+.ctx-schema-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 32px;
+  margin-top: var(--spacing-sm);
+  padding: 0 var(--spacing-sm);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ctx-schema-toggle:hover {
+    color: var(--foreground);
+  }
+}
+
+.ctx-schema-toggle:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 1px;
+}
+
+.ctx-schema {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.status-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--muted-foreground) 6%, transparent);
+}
+
+.status-field-row {
+  display: flex;
+  gap: 6px;
+}
+
+.status-field-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.status-field-label {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.status-field-input {
+  width: 100%;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.status-field-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.ctx-schema-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ctx-schema-add:hover {
+    color: var(--foreground);
+  }
+}
+
+.ctx-schema-add:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 1px;
+}
+
+@media (max-width: 640px) {
+  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
+  .status-field-input {
     font-size: 16px;
   }
 }

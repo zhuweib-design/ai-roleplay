@@ -1,5 +1,7 @@
 import type { CharacterCard, ChatMessage, CharacterExt } from '@core/character-card';
 import type { ReasoningEffort } from '@api/types';
+import type { StatusSchema } from '@core/status-schema';
+import { normalizeStatusSchema } from '@core/status-schema';
 import type { UICharacter, UIMessage, WorldEntry, SamplingOverrides } from '@/types';
 import { t } from '@/i18n';
 
@@ -24,6 +26,10 @@ import { t } from '@/i18n';
  */
 export function uiCharToCard(ui: UICharacter): CharacterCard {
   const now = new Date().toISOString();
+  // P1：落盘前先归一化（脏 schema 不落盘，读取侧再校验一次做双保险）
+  const statusSchema = normalizeStatusSchema(ui.statusSchema);
+  const statusInstruction =
+    ui.statusInstruction === 'on' || ui.statusInstruction === 'off' ? ui.statusInstruction : null;
 
   return {
     id: ui.id,
@@ -67,6 +73,10 @@ export function uiCharToCard(ui: UICharacter): CharacterCard {
       ...(ui.reasoningEffort ? { reasoningEffort: ui.reasoningEffort } : {}),
       // P0-3：角色级采样参数（深拷贝，且剔除 null 字段保持"未设置"语义）
       ...(ui.sampling ? { sampling: normalizeSampling(ui.sampling) } : {}),
+      // P1：角色状态 schema（校验后深拷贝；全非法时不落盘，避免空对象污染 schema）
+      ...(statusSchema ? { statusSchema } : {}),
+      // P1：角色级状态指令（'on'/'off' 才落盘；null = 继承全局，保持"未设置"语义）
+      ...(statusInstruction ? { statusInstruction } : {}),
     },
   };
 }
@@ -122,6 +132,28 @@ function readLegacySampling(card: CharacterCard): SamplingOverrides | undefined 
   const raw = (card as Record<string, unknown>)['sampling'];
   if (!raw || typeof raw !== 'object') return undefined;
   return readSampling({ sampling: raw } as CharacterExt);
+}
+
+/**
+ * P1：从角色卡读状态 schema（ext 优先 + 顶层 legacy 回退，与 storyId 同款）
+ *
+ * 迭代 33 前的旧数据把 UI 字段直接存顶层索引签名，因此必须双路读取，
+ * 否则旧卡读出来会丢 schema（§0.3 G-2）。脏数据一律 fail-open 返回 null。
+ */
+function readStatusSchema(ext: CharacterExt | undefined, card: CharacterCard): StatusSchema | null {
+  const raw = ext?.statusSchema ?? (card as Record<string, unknown>)['statusSchema'];
+  return normalizeStatusSchema(raw) ?? null;
+}
+
+/**
+ * P1：从角色卡读状态指令（ext 优先 + 顶层 legacy 回退；非法值按 null = 继承全局）
+ */
+function readStatusInstruction(
+  ext: CharacterExt | undefined,
+  card: CharacterCard
+): 'on' | 'off' | null {
+  const raw = ext?.statusInstruction ?? (card as Record<string, unknown>)['statusInstruction'];
+  return raw === 'on' || raw === 'off' ? raw : null;
 }
 
 /**
@@ -188,6 +220,9 @@ export function cardToUiChar(
     reasoningEffort: readReasoningEffort(ext) ?? (legacy('reasoningEffort') as ReasoningEffort | null | undefined) ?? overrides?.reasoningEffort ?? null,
     // P0-3：角色级采样参数（ext 优先；无则 null = 全部跟随上层）
     sampling: readSampling(ext) ?? readLegacySampling(card) ?? overrides?.sampling ?? null,
+    // P1：角色状态 schema / 状态指令（ext 优先 + 顶层 legacy 回退；脏数据 → null）
+    statusSchema: readStatusSchema(ext, card),
+    statusInstruction: readStatusInstruction(ext, card),
   };
 
   return { ...base, ...overrides };
@@ -212,6 +247,8 @@ export function uiMsgToChatMsg(ui: UIMessage): ChatMessage {
     swipeIndex: 0,
     // P0-1：思维链随消息一并持久化（仅非空字符串才写，避免污染旧数据 schema）
     ...(ui.thinking ? { thinking: ui.thinking } : {}),
+    // P1：状态快照随消息持久化（与 thinking 同款；无状态时不写 → 旧数据零迁移）
+    ...(ui.status ? { status: ui.status } : {}),
   };
 }
 
@@ -236,6 +273,8 @@ export function chatMsgToUiMsg(msg: ChatMessage): UIMessage | null {
         : msg.timestamp,
     // P0-1：思维链回读（旧数据无此字段 → undefined → 不渲染折叠块）
     ...(msg.thinking ? { thinking: msg.thinking } : {}),
+    // P1：状态快照回读（旧数据无此字段 → undefined → 不渲染状态栏）
+    ...(msg.status ? { status: msg.status } : {}),
   };
 }
 

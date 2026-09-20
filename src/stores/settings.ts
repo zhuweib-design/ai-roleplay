@@ -11,6 +11,8 @@ import type {
   ThinkingConfig,
   SamplingOverrides,
 } from '@/types';
+import type { StatusHudConfig } from '@core/status-schema';
+import { DEFAULT_STATUS_HUD_CONFIG, normalizeStatusHudConfig } from '@core/status-schema';
 import { DEFAULT_THINKING_CONFIG } from '@/types';
 import { buildCustomThemeCss, generateThemeTokens, type ThemeTokens } from '@/core/theme-extractor';
 import type { StorageAdapter } from '../storage/storage-adapter';
@@ -107,6 +109,14 @@ export const useSettingsStore = defineStore('settings', () => {
    * 本轮**不提供 UI**，仅保留数据位与三档合并逻辑（角色级 ?? Profile 级 ?? 全局 ?? 不传）
    */
   const samplingDefaults = ref<SamplingOverrides | null>(null);
+
+  /**
+   * P1 角色状态栏全局偏好
+   *
+   * 语义沿用 §1.4「嗅探免费、注入授权」：`enabled`（是否要求模型产出状态块）默认
+   * **false** —— 不默认改变模型行为；解析与渲染永远开启（模型自己输出了就白捡）。
+   */
+  const statusHudConfig = ref<StatusHudConfig>({ ...DEFAULT_STATUS_HUD_CONFIG });
 
   // AC20 主密码会话管理（不持久化到存储层；仅运行时内存）
   // - masterPassword：仅运行时内存，刷新页面后需重新解锁
@@ -752,6 +762,10 @@ export const useSettingsStore = defineStore('settings', () => {
         if (saved.samplingDefaults && typeof saved.samplingDefaults === 'object') {
           samplingDefaults.value = normalizeSamplingDefaults(saved.samplingDefaults);
         }
+        // P1 加载状态栏偏好（向后兼容：无字段时保留默认值；脏字段回落默认）
+        if (saved.statusHudConfig && typeof saved.statusHudConfig === 'object') {
+          statusHudConfig.value = normalizeStatusHudConfig(saved.statusHudConfig);
+        }
         // AC20 加载主密码验证器（apiKey 字段保持加密形式，待 unlock 后解密）
         if (typeof saved.masterPasswordVerifier !== 'undefined') {
           masterPasswordVerifier.value = saved.masterPasswordVerifier;
@@ -845,6 +859,8 @@ export const useSettingsStore = defineStore('settings', () => {
         thinkingConfig: { ...toRaw(thinkingConfig.value) },
         // P0-3 全局采样默认值（null = 未设置）
         samplingDefaults: samplingDefaults.value ? { ...toRaw(samplingDefaults.value) } : null,
+        // P1 状态栏偏好
+        statusHudConfig: { ...toRaw(statusHudConfig.value) },
       });
     } catch (err) {
       lastError.value = i18nT('settings.saveFailed', {
@@ -885,6 +901,14 @@ export const useSettingsStore = defineStore('settings', () => {
     samplingDefaults.value = value ? normalizeSamplingDefaults(value) : null;
   }
 
+  /**
+   * P1：更新状态栏全局偏好（局部 patch，未给字段保持原值）
+   * 调用方负责在需要落盘时调用 persistSettings()
+   */
+  function setStatusHudConfig(patch: Partial<StatusHudConfig>): void {
+    statusHudConfig.value = normalizeStatusHudConfig({ ...statusHudConfig.value, ...patch });
+  }
+
   return {
     // 状态
     theme,
@@ -903,9 +927,10 @@ export const useSettingsStore = defineStore('settings', () => {
     summarizationConfig,
     // F11.3 Quick Reply
     quickReplies,
-    // P0-1 思维链偏好 / P0-3 全局采样默认值
+    // P0-1 思维链偏好 / P0-3 全局采样默认值 / P1 状态栏偏好
     thinkingConfig,
     samplingDefaults,
+    statusHudConfig,
     lastError,
     // AC20 主密码会话状态
     hasMasterPassword,
@@ -954,6 +979,7 @@ export const useSettingsStore = defineStore('settings', () => {
     // P0-1 思维链偏好 / P0-3 全局采样默认值
     setThinkingConfig,
     setSamplingDefaults,
+    setStatusHudConfig,
     // T-07: SillyTavern Quick Reply 格式互导
     exportQuickRepliesSt,
     importQuickRepliesSt,

@@ -7,11 +7,13 @@ import { useSettingsStore } from '@/stores/settings';
 import { useStoryStore } from '@/stores/story';
 import { usePersonaStore } from '@/stores/persona';
 import { uiMsgsToChatMsgs } from '@/services/type-adapters';
+import { resolveLatestStatus } from '@core/status-parser';
 import { downloadChatMarkdown } from '@/services/backup-service';
 import type { Chat } from '@/storage/types';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import MessageBubble from './MessageBubble.vue';
+import StatusHud from './StatusHud.vue';
 import Toast from '@/components/common/Toast.vue';
 import Modal from '@/components/common/Modal.vue';
 import ApiErrorModal from '@/components/common/ApiErrorModal.vue';
@@ -84,6 +86,15 @@ const textarea = ref<HTMLTextAreaElement | null>(null);
 const msgArea = ref<HTMLElement | null>(null);
 
 const char = computed(() => characterStore.currentCharacter!);
+
+// ── P1 会话级状态 HUD ──
+// 纯 computed 派生（resolveLatestStatus 从后往前回溯，key 首次出现即锁定），
+// 零额外持久化、不随消息数增长 DOM。消息级渲染本轮不做（决策 2），但 msg.status 照常存储。
+const latestStatus = computed(() =>
+  resolveLatestStatus(char.value?.messages ?? [], char.value?.statusSchema ?? null)
+);
+/** 顶部状态条开关（默认开；关闭时不渲染，解析与存储不受影响） */
+const showStatusHud = computed(() => settings.statusHudConfig?.showSticky !== false);
 
 // ── P2-11 性能：双向窗口化渲染(替代 P1-9 尾部窗口) ──
 // 只渲染可见区间 [windowStart, windowEnd) 附近消息(恒 ≤ 2×RENDER_WINDOW),
@@ -637,6 +648,9 @@ function startWithExample(text: string) {
       </div>
     </header>
 
+    <!-- P1 会话级状态条：截至当前的最新状态（纯 computed 派生，零持久化） -->
+    <StatusHud v-if="showStatusHud" variant="sticky" :status="latestStatus" />
+
     <!-- 消息区：role="log" + aria-live 让屏幕阅读器感知新消息；
          生成期间 aria-busy 暂停逐 token 播报（P2-4 读屏节流） -->
     <div
@@ -676,7 +690,7 @@ function startWithExample(text: string) {
         <MessageBubble
           v-for="msg in visibleMessages"
           :key="msg.id"
-          v-memo="[msg.content, msg.thinking, msg.generating, msg.narration, msg.narrationAfter]"
+          v-memo="[msg.content, msg.thinking, msg.status, msg.generating, msg.narration, msg.narrationAfter]"
           :msg="msg"
           @action="handleMessageAction"
           :ref="(el) => cacheMsgHeight(el, msg.id)"

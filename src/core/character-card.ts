@@ -9,6 +9,7 @@
 
 import { t } from '@/i18n';
 import type { ReasoningEffort, SamplingParams } from '@api/types';
+import type { CharacterStatus, StatusSchema } from '@core/status-schema';
 
 /** 单个属性项（键值对，支持数值或文本类型） */
 export interface CharacterAttribute {
@@ -52,6 +53,12 @@ export interface ChatMessage {
    * 仅在 assistant 消息上有意义（user/system 恒空）。
    */
   thinking?: string;
+  /**
+   * P1：本条消息解析出的角色状态快照。
+   * 与 thinking 同构 —— 独立于 content 存储，**不参与回传**（prompt-builder 只读 content）。
+   * 旧数据无此字段 → undefined → 不渲染。仅 assistant 消息有值。
+   */
+  status?: CharacterStatus;
 }
 
 /**
@@ -88,6 +95,16 @@ export interface CharacterExt {
   storyId?: string | null;
   /** 绑定的世界书 ID 列表 */
   boundWorldBookIds?: string[];
+  /**
+   * P1：角色自带状态 schema（沿用 P0 的 ext 收纳约定，不散落到顶层索引签名）。
+   * null / undefined = 无 schema → 解析器退化到"纯嗅探模式"（内置 8 字段 + 降级展示）。
+   */
+  statusSchema?: StatusSchema | null;
+  /**
+   * P1：该角色是否注入"输出状态块"的提示词指令。
+   * 'on' / 'off' 显式覆盖；null / undefined = 继承全局 settings.statusHudConfig.enabled。
+   */
+  statusInstruction?: 'on' | 'off' | null;
 }
 
 export interface CharacterCard {

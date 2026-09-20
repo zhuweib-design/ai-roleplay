@@ -11,6 +11,15 @@ import { ApiError } from '@api/types';
 import { buildPrompt, type PromptContexts, type PromptSettings } from '@core/prompt-builder';
 import type { CharacterCard, ChatMessage } from '@core/character-card';
 import { ThinkingSplitter, parseThinkingComplete } from '@core/thinking-parser';
+import {
+  createStatusSplitter,
+  parseStatusComplete,
+  extractStatusFence,
+  stripStatusFence,
+  parseStatusBlock,
+} from '@core/status-parser';
+import { buildStatusInstruction } from '@core/status-prompt';
+import type { CharacterStatus } from '@core/status-schema';
 import { compressMessages, type OptimizationPipeline } from '@core/optimization-pipeline';
 import {
   applyL0Context,
@@ -67,6 +76,14 @@ export interface ChatManagerConfig {
   l0l2?: L0L2Deps;
   /** E-01：会话 ID（情绪状态键；缺省用前缀哈希兜底） */
   sessionId?: string;
+  /**
+   * P1：是否向模型注入"要求输出状态块"的提示词指令。
+   *
+   * 只影响**注入**（改变模型行为）；解析与渲染**永远开启**（模型自己输出了就白捡）。
+   * 由 chat store 的 applyRuntimeLlmControls() 从 settings.statusHudConfig.enabled 同步，
+   * 角色级 `ext.statusInstruction === 'on' | 'off'` 在此之上覆盖（见 sendMessage 内解析）。
+   */
+  statusInstructionEnabled?: boolean;
 }
 
 export interface SendMessageParams {
@@ -127,6 +144,13 @@ export interface ChatManagerCallbacks {
   onPromptBuilt?: (info: { tokenCount: number; trimmed: boolean; messageCount: number }) => void;
   /** E-01：本轮生成完成后情绪状态更新回调（成功时触发，供 UI 展示） */
   onEmotionUpdated?: (label: string, sessionId: string) => void;
+  /**
+   * P1：本轮解析出的角色状态快照（状态块闭合后一次性回调；无状态时不回调）
+   *
+   * 与 onThinking 同构：调用方只需用返回值覆盖 UI 消息的 `status` 字段。
+   * 未解析出任何可用字段时为 null（渲染层据此不渲染，不渲染空壳）。
+   */
+  onStatus?: (status: CharacterStatus | null) => void;
 }
 
 /**
@@ -185,13 +209,26 @@ export class ChatManager {
       includeThinkingInHistory: merged.includeThinkingInHistory === true,
     };
 
+    // P1：状态块指令注入（解析/渲染永远开启，只有"要求模型产出"需要授权 —— §1.4）
+    // 优先级：card.ext.statusInstruction('on'|'off') > config.statusInstructionEnabled（全局）
+    const statusInstruction = params.card.ext?.statusInstruction;
+    const statusEnabled =
+      statusInstruction === 'on'
+        ? true
+        : statusInstruction === 'off'
+          ? false
+          : merged.statusInstructionEnabled === true;
+    // 提示词**必须是英文 key**（§4.6 硬约束 ①）：模型照抄中文 key 会导致匹配层全部落空
+    const statusContext = buildStatusInstruction(params.card.ext?.statusSchema, statusEnabled);
+
     // 1. 构建 prompt（含 token 裁剪，W6 集成 Lorebook 扫描与注入 F06.2-F06.3，F09.2 集成 RAG 注入，F17.2 集成激活事件注入，F16.3 主角身份注入，F16.4 故事时间注入）
     const built = await buildPrompt(
       params.card,
       params.history,
       params.userMessage,
       promptSettings,
-      params.contexts
+      // 未注入时保持与改动前完全一致的空上下文（请求体逐字节不变）
+      statusContext ? { ...params.contexts, statusContext } : params.contexts
     );
 
     callbacks?.onPromptBuilt?.({
@@ -263,6 +300,38 @@ export class ChatManager {
     let fullContent = '';
     /** P0-1：本轮累计思考（供 onThinking 的 fullThinking 参数与收敛判定使用） */
     let thinkingBuf = '';
+    /** P1：本轮最新状态快照（多块时后者覆盖前者；未解析出字段时为 null） */
+    let statusOut: CharacterStatus | null = null;
+    /** P1：角色自带状态 schema；null = 纯嗅探模式（内置 8 字段 + 降级展示） */
+    const statusSchema = params.card.ext?.statusSchema ?? null;
+
+    /** P1：解析一段状态块原文并覆盖 statusOut（解析不出字段时保留原值） */
+    const pushStatus = (raw: string): void => {
+      const parsed = parseStatusBlock(raw, statusSchema, '');
+      if (parsed) statusOut = parsed;
+    };
+
+    /**
+     * P1 done 收敛：对最终正文做一次**幂等**的状态剥离
+     * 标签优先，未命中时补一次 ```status 围栏兜底（围栏只在收尾跑，不参与流式）
+     */
+    const convergeStatus = (text: string): string => {
+      const sp = parseStatusComplete(text);
+      if (sp.hasStatus) {
+        const parsed = parseStatusBlock(sp.statusRaw, statusSchema, '');
+        if (parsed) statusOut = parsed;
+        return sp.content;
+      }
+      const fenced = extractStatusFence(text);
+      if (fenced) {
+        const parsed = parseStatusBlock(fenced, statusSchema, '');
+        if (parsed) {
+          statusOut = parsed;
+          return stripStatusFence(text);
+        }
+      }
+      return text;
+    };
 
     try {
       // T-02：工具调用循环 —— 模型发起 tool_calls 时执行工具并回填，
@@ -282,8 +351,31 @@ export class ChatManager {
         let finishReason: string | undefined;
         // P0-1：标签型思维链解析（跨 chunk 撕裂安全）；每轮独立，避免工具轮状态串味
         const splitter = new ThinkingSplitter();
+        // P1：状态块解析器**串联**在思维链之后（复用同一状态机，只换标签与策略；§1.3）
+        const statusSplitter = createStatusSplitter();
         /** 本轮是否收到过**字段型**思考（与标签型互斥判定用） */
         let fieldThinking = '';
+
+        /**
+         * 冲刷两级解析器残留，返回可输出到正文的增量
+         *
+         * 顺序固定：先冲思维链 → 其正文残留喂给状态解析器 → 再冲状态解析器。
+         * 未闭合的状态块残留归正文（unclosedPolicy='text'），内容不丢。
+         */
+        const flushSplitters = (): string => {
+          let textDelta = '';
+          const tail = splitter.flush();
+          if (tail.thinkingDelta) pushThinking(tail.thinkingDelta);
+          if (tail.textDelta) {
+            const sd = statusSplitter.feed(tail.textDelta);
+            if (sd.thinkingDelta) pushStatus(sd.thinkingDelta);
+            textDelta += sd.textDelta;
+          }
+          const statusTail = statusSplitter.flush();
+          if (statusTail.thinkingDelta) pushStatus(statusTail.thinkingDelta);
+          textDelta += statusTail.textDelta;
+          return textDelta;
+        };
 
         /**
          * 把一段思考增量累加并回调
@@ -307,9 +399,14 @@ export class ChatManager {
               const d = splitter.feed(ev.delta);
               if (d.thinkingDelta) pushThinking(d.thinkingDelta);
               if (d.textDelta) {
-                roundContent += d.textDelta;
-                fullContent += d.textDelta;
-                callbacks?.onDelta?.(d.textDelta, fullContent);
+                // P1：状态块二次剥离 —— 只认 <status>，未闭合残留归正文（绝不丢内容）
+                const sd = statusSplitter.feed(d.textDelta);
+                if (sd.thinkingDelta) pushStatus(sd.thinkingDelta);
+                if (sd.textDelta) {
+                  roundContent += sd.textDelta;
+                  fullContent += sd.textDelta;
+                  callbacks?.onDelta?.(sd.textDelta, fullContent);
+                }
               }
             }
           } else if (ev.type === 'done') {
@@ -317,13 +414,12 @@ export class ChatManager {
             finishReason = ev.finishReason;
             toolCalls = ev.toolCalls;
 
-            // 冲刷标签型解析器的残留（未闭合思考 / 尾部疑似标签前缀）
-            const tail = splitter.flush();
-            if (tail.thinkingDelta) pushThinking(tail.thinkingDelta);
-            if (tail.textDelta) {
-              roundContent += tail.textDelta;
-              fullContent += tail.textDelta;
-              callbacks?.onDelta?.(tail.textDelta, fullContent);
+            // 冲刷两级解析器的残留（未闭合思考 / 未闭合状态块 / 尾部疑似标签前缀）
+            const flushed = flushSplitters();
+            if (flushed) {
+              roundContent += flushed;
+              fullContent += flushed;
+              callbacks?.onDelta?.(flushed, fullContent);
             }
 
             // 工具轮：跳出流循环执行工具（stream 已 yield done，通常紧随 [DONE] 结束；
@@ -354,6 +450,10 @@ export class ChatManager {
               fullContent = ev.fullContent ?? roundContent;
             }
 
+            // ── P1 done 收敛：状态块幂等剥离（无条件；与思考分支无关）──
+            fullContent = convergeStatus(fullContent);
+            callbacks?.onStatus?.(statusOut);
+
             // 用量统计透传(缓存命中率统计用)
             if (ev.usage) callbacks?.onUsage?.(ev.usage);
             // E-01: 情绪状态更新(规则标注;fail-open;仅在 L0 启用且有 deps 时)
@@ -362,8 +462,14 @@ export class ChatManager {
             return fullContent;
           } else if (ev.type === 'error') {
             // 中止/出错：冲刷残留，让已收到的思考不至于丢失
-            const tail = splitter.flush();
-            if (tail.thinkingDelta) pushThinking(tail.thinkingDelta);
+            const flushed = flushSplitters();
+            if (flushed) {
+              roundContent += flushed;
+              fullContent += flushed;
+              callbacks?.onDelta?.(flushed, fullContent);
+            }
+            fullContent = convergeStatus(fullContent);
+            callbacks?.onStatus?.(statusOut);
             const err = new Error(ev.error || t('api.genFailed'));
             callbacks?.onError?.(err);
             return fullContent; // 返回已收到的部分内容
@@ -373,17 +479,19 @@ export class ChatManager {
         // 流自然结束未触发 done 事件
         if (!hasDone) {
           // 与 done 分支一致：先冲刷解析器残留，再收敛
-          const tail = splitter.flush();
-          if (tail.thinkingDelta) pushThinking(tail.thinkingDelta);
-          if (tail.textDelta) {
-            roundContent += tail.textDelta;
-            fullContent += tail.textDelta;
-            callbacks?.onDelta?.(tail.textDelta, fullContent);
+          const flushed = flushSplitters();
+          if (flushed) {
+            roundContent += flushed;
+            fullContent += flushed;
+            callbacks?.onDelta?.(flushed, fullContent);
           }
           if (fieldThinking === '' && splitter.hasThinking) {
             const parsed = parseThinkingComplete(roundContent);
             fullContent = parsed.content || roundContent;
           }
+          // P1：与 done 分支同款的状态收敛
+          fullContent = convergeStatus(fullContent);
+          callbacks?.onStatus?.(statusOut);
           callbacks?.onDone?.(fullContent);
           return fullContent;
         }
@@ -416,6 +524,9 @@ export class ChatManager {
         }
 
         // 工具轮数超限：结束循环，返回最后内容
+        // P1：同样走一次状态收敛，保证任何退出路径都不会把 <status> 标签泄进正文
+        fullContent = convergeStatus(fullContent);
+        callbacks?.onStatus?.(statusOut);
         callbacks?.onDone?.(fullContent, finishReason);
         return fullContent;
       }

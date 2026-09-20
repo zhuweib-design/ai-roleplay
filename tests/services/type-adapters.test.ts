@@ -10,6 +10,7 @@ import {
 } from '../../src/services/type-adapters';
 import type { CharacterCard, ChatMessage } from '@core/character-card';
 import type { UICharacter, UIMessage, WorldEntry } from '@/types';
+import type { CharacterStatus } from '@core/status-schema';
 
 // ── 测试夹具 ──
 
@@ -761,5 +762,94 @@ describe('type-adapters — P0-1 思维链字段', () => {
 
     const back = chatMsgsToUiMsgs(chatMsgs);
     expect(back[0]?.thinking).toBe('想 A');
+  });
+});
+
+// ── P1 角色状态栏字段 ──
+
+describe('type-adapters — P1 statusSchema / statusInstruction', () => {
+  const schema = {
+    version: 1 as const,
+    fields: [{ key: 'location', type: 'string' as const, icon: 'map-pin' as const }],
+  };
+
+  it('uiCharToCard → cardToUiChar round-trip 保留 schema 与指令', () => {
+    const card = uiCharToCard(makeUIChar({ statusSchema: schema, statusInstruction: 'on' }));
+    expect(card.ext?.statusSchema).toEqual(schema);
+    expect(card.ext?.statusInstruction).toBe('on');
+
+    const back = cardToUiChar(card);
+    expect(back.statusSchema).toEqual(schema);
+    expect(back.statusInstruction).toBe('on');
+  });
+
+  it('statusInstruction 为 null / 非法值时不落盘（继承全局语义）', () => {
+    const card = uiCharToCard(makeUIChar({ statusInstruction: null }));
+    expect(card.ext?.statusInstruction).toBeUndefined();
+    expect(cardToUiChar(card).statusInstruction).toBeNull();
+
+    const bogus = uiCharToCard(makeUIChar({ statusInstruction: 'yes' as unknown as 'on' }));
+    expect(bogus.ext?.statusInstruction).toBeUndefined();
+  });
+
+  it('ext 缺失时从顶层 legacy 索引签名回退读取（迭代33 前的旧卡）', () => {
+    const card = makeCard({ statusSchema: schema, statusInstruction: 'off' });
+    const ui = cardToUiChar(card);
+    expect(ui.statusSchema).toEqual(schema);
+    expect(ui.statusInstruction).toBe('off');
+  });
+
+  it('全字段非法的 schema → 不落盘（fail-open，回到纯嗅探模式）', () => {
+    const dirty = { version: 1, fields: [{ key: '' }, { key: '  ' }] } as never;
+    const card = uiCharToCard(makeUIChar({ statusSchema: dirty }));
+    expect(card.ext?.statusSchema).toBeUndefined();
+    expect(cardToUiChar(card).statusSchema).toBeNull();
+  });
+
+  it('字段 key 合法但 type/icon 非法 → 保留 key，剔除非法项（不静默丢整个字段）', () => {
+    const partial = {
+      version: 1,
+      fields: [{ key: 'mood', type: 'boolean', icon: 'not-an-icon' }],
+    } as never;
+    const card = uiCharToCard(makeUIChar({ statusSchema: partial }));
+    expect(card.ext?.statusSchema?.fields).toEqual([{ key: 'mood' }]);
+    expect(cardToUiChar(card).statusSchema?.fields).toEqual([{ key: 'mood' }]);
+  });
+
+  it('无 ext 的旧卡读取 statusSchema 不抛错', () => {
+    const card = makeCard();
+    expect(() => cardToUiChar(card)).not.toThrow();
+    expect(cardToUiChar(card).statusSchema).toBeNull();
+    expect(cardToUiChar(card).statusInstruction).toBeNull();
+  });
+});
+
+describe('type-adapters — P1 消息 status 透传', () => {
+  const status: CharacterStatus = {
+    messageId: 'msg-1',
+    parseMode: 'json',
+    unknownCount: 0,
+    entries: [{ key: 'location', label: '地点', value: 'tavern', icon: 'map-pin' }],
+  };
+
+  it('UIMessage.status 写入并回读 ChatMessage.status', () => {
+    const msg = uiMsgToChatMsg(makeUIMsg({ role: 'assistant', status }));
+    expect(msg.status).toEqual(status);
+    expect(chatMsgToUiMsg(msg)?.status).toEqual(status);
+  });
+
+  it('旧 ChatMessage（无 status）→ StatusHud 数据为 undefined', () => {
+    expect(chatMsgToUiMsg(makeChatMsg())?.status).toBeUndefined();
+    expect(uiMsgToChatMsg(makeUIMsg()).status).toBeUndefined();
+  });
+
+  it('批量转换保留 status', () => {
+    const msgs: UIMessage[] = [
+      makeUIMsg({ id: 'a', role: 'assistant', status }),
+      makeUIMsg({ id: 'b', role: 'user' }),
+    ];
+    const back = chatMsgsToUiMsgs(uiMsgsToChatMsgs(msgs));
+    expect(back[0]?.status?.entries[0]?.value).toBe('tavern');
+    expect(back[1]?.status).toBeUndefined();
   });
 });
