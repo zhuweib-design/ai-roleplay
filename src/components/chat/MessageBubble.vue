@@ -2,11 +2,35 @@
 import type { UIMessage } from '@/types';
 import Icon from '@/components/common/Icon.vue';
 import type { IconName } from '@/components/common/icons';
+import ThinkingBlock from './ThinkingBlock.vue';
+import { useSettingsStore } from '@/stores/settings';
+import { computed, getCurrentInstance } from 'vue';
 import { t } from '@/i18n';
 
 defineProps<{
   msg: UIMessage;
 }>();
+
+/**
+ * P0-1：思考块默认折叠与否来自全局偏好
+ * （settings.thinkingConfig.defaultCollapsed，缺省 true = 折叠）
+ *
+ * 兼容"未安装 Pinia"的挂载场景（部分单测直接 mount 组件）：
+ * 直接调 useSettingsStore() 会抛 getActivePinia()，故先探测应用是否装了 Pinia
+ * （app.config.globalProperties.$pinia 由 app.use(pinia) 注入），
+ * 未安装则回落到"默认折叠"常量——这样既能读到偏好，又不会污染渲染路径。
+ */
+function tryUseSettingsStore(): ReturnType<typeof useSettingsStore> | null {
+  const vm = getCurrentInstance();
+  const piniaInstalled = Boolean(vm?.appContext.config.globalProperties.$pinia);
+  return piniaInstalled ? useSettingsStore() : null;
+}
+
+const settingsStore = tryUseSettingsStore();
+
+const defaultCollapsed = computed(
+  () => settingsStore?.thinkingConfig?.defaultCollapsed !== false
+);
 
 const emit = defineEmits<{
   action: [msgId: string, action: string];
@@ -45,6 +69,13 @@ const assistantActions: MsgAction[] = [
 
     <!-- AI 消息 -->
     <div v-else class="msg-bubble msg-assistant">
+      <!-- P0-1：思维链折叠块（正文之上；空白思考不渲染） -->
+      <ThinkingBlock
+        :thinking="msg.thinking"
+        :message-id="msg.id"
+        :generating="msg.generating === true"
+        :default-collapsed="defaultCollapsed"
+      />
       <em v-if="msg.narration" class="msg-narration">{{ msg.narration }}</em>
       <p class="msg-text" :style="msg.narration ? 'margin-top: 6px' : ''">{{ msg.content }}</p>
       <em v-if="msg.narrationAfter" class="msg-narration-after">{{ msg.narrationAfter }}</em>

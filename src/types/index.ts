@@ -6,9 +6,28 @@
  */
 
 import type { CharacterAttributes } from '@core/character-card';
+import type { ReasoningEffort } from '@api/types';
 import { t } from '@/i18n';
 
-export type NavKey = 'chat' | 'character' | 'worldbook' | 'group' | 'databank' | 'archives' | 'settings' | 'story' | 'random-events' | 'local-model' | 'image-gen' | 'character-version' | 'community-market' | 'profile';
+/**
+ * P0-3：采样参数覆盖集合（不含已平铺的 temperature / maxTokens）
+ *
+ * 收纳为对象而非继续平铺，避免持久化 schema 无限膨胀。
+ * 语义沿用 T-16：`undefined` / `null` = **不传** = 供应商默认。
+ */
+export interface SamplingOverrides {
+  /** 0-1；undefined/null = 不传 */
+  topP?: number | null;
+  /** -2 ~ 2；undefined/null = 不传 */
+  presencePenalty?: number | null;
+  /** -2 ~ 2；undefined/null = 不传 */
+  frequencyPenalty?: number | null;
+}
+
+/** P0-2：思考强度三档的展示顺序（UI 共用，避免各面板重复定义） */
+export const REASONING_EFFORTS: readonly ReasoningEffort[] = ['low', 'medium', 'high'] as const;
+
+export type NavKey ='chat' | 'character' | 'worldbook' | 'group' | 'databank' | 'archives' | 'settings' | 'story' | 'random-events' | 'local-model' | 'image-gen' | 'character-version' | 'community-market' | 'profile';
 
 /** UI 层消息类型（扩展核心 ChatMessage，增加展示状态字段） */
 export interface UIMessage {
@@ -18,6 +37,12 @@ export interface UIMessage {
   narration?: string;
   /** 正文 */
   content: string;
+  /**
+   * P0-1：模型思维链。与 content **分字段存储** ——
+   * prompt-builder 只读 content，因此"回传前剥离"是天然默认行为，无需正则 replace。
+   * 仅在 assistant 消息上有意义；渲染条件为 `!!thinking && thinking.trim() !== ''`。
+   */
+  thinking?: string;
   /** 旁白/动作描述（斜体灰色，正文后） */
   narrationAfter?: string;
   /** 是否正在生成中 */
@@ -75,6 +100,10 @@ export interface UICharacter {
   maxTokens: number;
   worldEntries: WorldEntry[];
   tokenBudget: TokenBudget;
+  /** P0-2：角色级思考强度覆盖；undefined/null = 跟随 Profile */
+  reasoningEffort?: ReasoningEffort | null;
+  /** P0-3：角色级采样参数覆盖（可选；未设置字段跟随 Profile → 全局默认） */
+  sampling?: SamplingOverrides | null;
   /** F01.6 角色属性（可选，v1.1 新增） */
   attributes?: CharacterAttributes;
   /** F16.4 关联的故事 ID（null 表示未关联故事，不启用时间/主角系统） */
@@ -104,7 +133,39 @@ export interface ApiProfile {
    * 未设置时回退到 ChatManager 默认值
    */
   maxTokens?: number;
+  /**
+   * P0-2：该模型是否支持推理强度
+   * - 'auto'（默认）：按模型名启发式判定
+   * - 'on' / 'off'：用户显式强制，用于纠正启发式误判
+   */
+  reasoningSupport?: 'auto' | 'on' | 'off';
+  /** P0-2：Profile 级默认思考强度（角色级未设置时使用） */
+  reasoningEffort?: ReasoningEffort | null;
+  /** P0-3：Profile 级默认采样参数 */
+  sampling?: SamplingOverrides | null;
 }
+
+/**
+ * P0-1：思维链全局偏好
+ *
+ * 语义是"我是否愿意为上下文连贯多付 token"，属用户偏好而非角色人设，
+ * 因此落在**全局 settings** 而非角色级。
+ */
+export interface ThinkingConfig {
+  /**
+   * 发请求时是否剥离历史 assistant 消息的思考（默认 true = 剥离，省 token）。
+   * 只在内存组装阶段生效，**不修改任何持久化数据**。
+   */
+  stripFromHistory: boolean;
+  /** 新消息思考块是否默认折叠（默认 true） */
+  defaultCollapsed: boolean;
+}
+
+/** P0-1：思维链偏好的默认值（剥离 + 折叠） */
+export const DEFAULT_THINKING_CONFIG: ThinkingConfig = {
+  stripFromHistory: true,
+  defaultCollapsed: true,
+};
 
 /** 需求3：模型分类 */
 export type ModelCategory = 'chat' | 'image-video' | 'embedding';
@@ -211,6 +272,10 @@ export interface AppSettings {
    * null 表示尚未设置主密码（首次启动或用户主动关闭加密）。
    */
   masterPasswordVerifier?: string | null;
+  /** P0-1：思维链偏好（剥离开关 / 默认折叠） */
+  thinkingConfig?: ThinkingConfig;
+  /** P0-3：全局采样默认值（本轮不提供 UI，仅留数据位与合并逻辑） */
+  samplingDefaults?: SamplingOverrides | null;
 }
 
 /**

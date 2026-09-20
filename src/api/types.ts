@@ -29,6 +29,34 @@ export interface ToolCall {
   };
 }
 
+/**
+ * P0-2 思考强度（对外统一概念）
+ *
+ * 三个档位是**产品语义**，各 provider 的实际下发形态由
+ * `src/api/reasoning-capability.ts` 翻译（OpenAI 用 reasoning_effort，
+ * Anthropic 用 thinking.budget_tokens，其余不下发）。
+ */
+export type ReasoningEffort = 'low' | 'medium' | 'high';
+
+/**
+ * P0-3 采样参数集合（持久化层的收纳容器）
+ *
+ * 语义沿用 T-16：`undefined` / `null` = **不传** = 供应商默认。
+ * 绝不用 0 表示"未设置"（top_p=0 是"只取概率最高的 token"）。
+ */
+export interface SamplingParams {
+  /** 0-2；undefined/null = 不传 = 供应商默认 */
+  temperature?: number | null;
+  /** undefined/null = 不传 = 供应商默认（沿用 T-16） */
+  maxTokens?: number | null;
+  /** 0-1；undefined/null = 不传 */
+  topP?: number | null;
+  /** -2 ~ 2；undefined/null = 不传 */
+  presencePenalty?: number | null;
+  /** -2 ~ 2；undefined/null = 不传 */
+  frequencyPenalty?: number | null;
+}
+
 /** 发送给 LLM 的单条消息 */
 export interface ApiMessage {
   role: ApiRole;
@@ -49,6 +77,14 @@ export interface ChatRequest {
   temperature?: number;
   /** 单次回复最大 tokens */
   maxTokens?: number;
+  /** P0-3：核采样阈值 0-1；undefined/null = 不传 */
+  topP?: number;
+  /** P0-3：存在惩罚 -2~2（OpenAI 兼容层专有；Anthropic / local 静默丢弃） */
+  presencePenalty?: number;
+  /** P0-3：频率惩罚 -2~2（同上） */
+  frequencyPenalty?: number;
+  /** P0-2：思考强度；命中 capability 才真正下发，否则 client 静默丢弃 */
+  reasoningEffort?: ReasoningEffort;
   /** T-02:可用工具定义列表(模型可在回复中发起工具调用) */
   tools?: ToolDefinition[];
   /** 终止信号，用于 stop() 中止请求 */
@@ -67,14 +103,24 @@ export interface ChatUsage {
   promptCacheHitTokens?: number;
   /** 前缀缓存未命中 token(DeepSeek: prompt_cache_miss_tokens) */
   promptCacheMissTokens?: number;
+  /**
+   * P0-1：推理（思考）消耗的 token
+   * 来源：OpenAI `completion_tokens_details.reasoning_tokens`；Anthropic 无此字段。
+   * 本轮只预留数据位，不参与 UI 展示（P1）。
+   */
+  reasoningTokens?: number;
 }
 
 export interface ChatStreamEvent {
   type: ChatStreamEventType;
-  /** type=delta：增量 token */
+  /** type=delta：增量 token（标签型思考已被编排层剥离，此处恒为正文） */
   delta?: string;
+  /** type=delta：思考增量（字段型来源由 client 产出；标签型此字段为空） */
+  thinkingDelta?: string;
   /** type=done：完整回复内容 */
   fullContent?: string;
+  /** type=done：完整思考（字段型由 client 提供；标签型由编排层解析补齐） */
+  fullThinking?: string;
   /** type=error：错误消息 */
   error?: string;
   /** finish_reason（仅 done 时）：stop / length / content_filter */

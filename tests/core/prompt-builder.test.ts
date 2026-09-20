@@ -164,3 +164,95 @@ describe('作者笔记注入 (F03.5)', () => {
     expect(noteIdx).toBeGreaterThan(-1);
   });
 });
+
+// ── P0-1：历史思考的回传剥离 ──
+
+describe('提示词构建 — P0-1 思考回传开关', () => {
+  const historyWithThinking: ChatMessage[] = [
+    {
+      role: 'assistant',
+      content: '不用客气。喝点茶吧。',
+      id: 'h1',
+      timestamp: '',
+      swipes: [],
+      swipeIndex: 0,
+      thinking: '他刚获救，先安抚情绪',
+    },
+    {
+      role: 'user',
+      content: '谢谢你救了我。',
+      id: 'h2',
+      timestamp: '',
+      swipes: [],
+      swipeIndex: 0,
+    },
+  ];
+
+  test('includeThinkingInHistory=true：assistant 历史以 <think>… 开头回包', async () => {
+    const result = await buildPrompt(
+      makeCard(),
+      historyWithThinking,
+      '继续',
+      makeSettings({ includeThinkingInHistory: true })
+    );
+    const assistant = result.messages.find(
+      (m) => m.role === 'assistant' && m.content.startsWith('<think>')
+    );
+    expect(assistant).toBeDefined();
+    expect(assistant!.content).toBe('<think>他刚获救，先安抚情绪</think>不用客气。喝点茶吧。');
+  });
+
+  test('includeThinkingInHistory=false（默认）：content 与 msg.content 逐字节相等', async () => {
+    const result = await buildPrompt(makeCard(), historyWithThinking, '继续', makeSettings());
+    const assistant = result.messages.find((m) => m.role === 'assistant');
+    expect(assistant!.content).toBe('不用客气。喝点茶吧。');
+    expect(assistant!.content).toBe(historyWithThinking[0]!.content);
+    // 全量断言：任何消息都不含 <think>
+    expect(result.messages.some((m) => m.content.includes('<think>'))).toBe(false);
+  });
+
+  test('未显式设置（undefined）时按剥离处理', async () => {
+    const settings = makeSettings();
+    delete settings.includeThinkingInHistory;
+    const result = await buildPrompt(makeCard(), historyWithThinking, '继续', settings);
+    expect(result.messages.some((m) => m.content.includes('<think>'))).toBe(false);
+  });
+
+  test('thinking 为空串时不回包（避免空 <think></think>）', async () => {
+    const history: ChatMessage[] = [
+      { ...historyWithThinking[0]!, thinking: '' },
+    ];
+    const result = await buildPrompt(
+      makeCard(),
+      history,
+      '继续',
+      makeSettings({ includeThinkingInHistory: true })
+    );
+    expect(result.messages.some((m) => m.content.includes('<think>'))).toBe(false);
+  });
+
+  test('旧数据无 thinking 字段时行为完全不变', async () => {
+    const legacy: ChatMessage[] = [
+      { role: 'assistant', content: '旧回复', id: 'l1', timestamp: '', swipes: [], swipeIndex: 0 },
+    ];
+    const result = await buildPrompt(
+      makeCard(),
+      legacy,
+      '继续',
+      makeSettings({ includeThinkingInHistory: true })
+    );
+    const assistant = result.messages.find((m) => m.role === 'assistant');
+    expect(assistant!.content).toBe('旧回复');
+  });
+
+  test('回传组装不修改传入的 history 对象（无副作用）', async () => {
+    const snapshot = JSON.parse(JSON.stringify(historyWithThinking)) as ChatMessage[];
+    await buildPrompt(
+      makeCard(),
+      historyWithThinking,
+      '继续',
+      makeSettings({ includeThinkingInHistory: true })
+    );
+    expect(historyWithThinking).toEqual(snapshot);
+  });
+});

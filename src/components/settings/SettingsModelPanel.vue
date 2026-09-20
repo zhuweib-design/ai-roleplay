@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router';
 import { useSettingsStore } from '@/stores/settings';
 import { useChatStore } from '@/stores/chat';
 import { useLocalModelStore } from '@/stores/local-model';
-import { MODEL_CATEGORIES, type ModelCategory } from '@/types';
+import { MODEL_CATEGORIES, type ModelCategory, type SamplingOverrides } from '@/types';
 import { createApiClient } from '@/api';
 import type { ApiProfile } from '@/types';
 import type { ModelSize } from '@/core/local-model-engine';
@@ -46,7 +46,37 @@ const form = ref({
   category: 'chat' as 'chat' | 'image-video' | 'embedding',
   // T-16: maxTokens 允许为空(undefined=不传,由供应商默认;用户可设置)
   maxTokens: undefined as number | undefined,
+  // P0-2: 推理强度支持三态（auto=按模型名启发式；on/off=用户强制纠偏）
+  reasoningSupport: 'auto' as 'auto' | 'on' | 'off',
+  // P0-2: Profile 级默认思考强度（空串 = 不设置）
+  reasoningEffort: '' as '' | 'low' | 'medium' | 'high',
+  // P0-3: Profile 级默认采样参数（空 = 不传 = 供应商默认；绝不用 0 表示未设置）
+  topP: '' as string | number,
+  presencePenalty: '' as string | number,
+  frequencyPenalty: '' as string | number,
 });
+
+/**
+ * P0-3：把表单里的采样输入转为 `number | undefined`
+ * 空串 / null / NaN 一律视为"未设置"（= 不传 = 供应商默认）
+ */
+function toOptionalNumber(v: string | number): number | undefined {
+  if (v === '' || v === null || v === undefined) return undefined;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+// ── P0-1 思维链偏好（全局；改动后即时持久化） ──
+const stripFromHistory = ref(settings.thinkingConfig?.stripFromHistory !== false);
+const defaultCollapsed = ref(settings.thinkingConfig?.defaultCollapsed !== false);
+
+function onThinkingPrefChange(): void {
+  settings.setThinkingConfig({
+    stripFromHistory: stripFromHistory.value,
+    defaultCollapsed: defaultCollapsed.value,
+  });
+  void settings.persistSettings();
+}
 
 // ── 本地模型（第9条：与云端统一管理） ──
 const modelMgmtTab = ref<'cloud' | 'local'>('cloud');
@@ -275,6 +305,11 @@ function resetForm() {
     model: 'gpt-4o',
     category: 'chat',
     maxTokens: undefined as number | undefined,
+    reasoningSupport: 'auto' as 'auto' | 'on' | 'off',
+    reasoningEffort: '' as '' | 'low' | 'medium' | 'high',
+    topP: '' as string | number,
+    presencePenalty: '' as string | number,
+    frequencyPenalty: '' as string | number,
   };
 }
 
@@ -285,6 +320,11 @@ function openCreateModal() {
     ...tpl,
     maxTokens: tpl.maxTokens ?? undefined,
     category: (tpl.category ?? 'chat') as 'chat' | 'image-video' | 'embedding',
+    reasoningSupport: (tpl.reasoningSupport ?? 'auto') as 'auto' | 'on' | 'off',
+    reasoningEffort: (tpl.reasoningEffort ?? '') as '' | 'low' | 'medium' | 'high',
+    topP: tpl.sampling?.topP ?? '',
+    presencePenalty: tpl.sampling?.presencePenalty ?? '',
+    frequencyPenalty: tpl.sampling?.frequencyPenalty ?? '',
   };
   editMode.value = 'create';
   editModalOpen.value = true;
@@ -296,6 +336,11 @@ function openEditModal(profile: ApiProfile) {
     maxTokens: profile.maxTokens ?? undefined,
     provider: profile.provider as 'openai' | 'anthropic' | 'custom' | 'deepseek',
     category: (profile.category ?? 'chat') as 'chat' | 'image-video' | 'embedding',
+    reasoningSupport: (profile.reasoningSupport ?? 'auto') as 'auto' | 'on' | 'off',
+    reasoningEffort: (profile.reasoningEffort ?? '') as '' | 'low' | 'medium' | 'high',
+    topP: profile.sampling?.topP ?? '',
+    presencePenalty: profile.sampling?.presencePenalty ?? '',
+    frequencyPenalty: profile.sampling?.frequencyPenalty ?? '',
   };
   editMode.value = 'edit';
   editModalOpen.value = true;
@@ -307,6 +352,23 @@ function onProviderChange() {
   if (opt && !form.value.baseUrl.trim()) {
     form.value.baseUrl = opt.defaultBaseUrl;
   }
+}
+
+/**
+ * P0-3：把表单里的三个采样输入打包为 SamplingOverrides
+ * 全部为空时返回 null（避免落盘空对象污染 schema）
+ */
+function buildProfileSampling(): SamplingOverrides | null {
+  const sampling: SamplingOverrides = {
+    topP: toOptionalNumber(form.value.topP) ?? null,
+    presencePenalty: toOptionalNumber(form.value.presencePenalty) ?? null,
+    frequencyPenalty: toOptionalNumber(form.value.frequencyPenalty) ?? null,
+  };
+  const hasAny =
+    sampling.topP !== null ||
+    sampling.presencePenalty !== null ||
+    sampling.frequencyPenalty !== null;
+  return hasAny ? sampling : null;
 }
 
 function saveProfile() {
@@ -324,6 +386,11 @@ function saveProfile() {
     category: form.value.category,
     // T-16: 空值保存为 undefined(不传 max_tokens,供应商默认);0/NaN/'' 视为空
     maxTokens: form.value.maxTokens ? form.value.maxTokens : undefined,
+    // P0-2: 推理强度支持三态 + Profile 级默认档位（空串 = 不设置）
+    reasoningSupport: form.value.reasoningSupport,
+    reasoningEffort: form.value.reasoningEffort === '' ? null : form.value.reasoningEffort,
+    // P0-3: Profile 级默认采样参数（留空 = 不传 = 供应商默认）
+    sampling: buildProfileSampling(),
   };
   if (editMode.value === 'create') {
     settings.addApiProfile(payload);
@@ -721,6 +788,44 @@ watch(
       </ul>
     </section>
 
+    <!-- P0-1：思维链偏好（全局；剥离开关 + 默认折叠） -->
+    <section class="settings-section" aria-labelledby="thinking-prefs-title">
+      <header class="section-header">
+        <h2 id="thinking-prefs-title" class="section-title">
+          <Icon name="brain" :size="16" />
+          <span>{{ t('settings.thinkingTitle') }}</span>
+        </h2>
+      </header>
+
+      <label class="pref-row">
+        <span class="pref-text">
+          <span class="pref-label">{{ t('settings.thinkingStripHistory') }}</span>
+          <span class="pref-desc">{{ t('settings.thinkingStripHistoryDesc') }}</span>
+        </span>
+        <input
+          v-model="stripFromHistory"
+          type="checkbox"
+          class="pref-checkbox"
+          :aria-label="t('settings.thinkingStripHistory')"
+          @change="onThinkingPrefChange"
+        />
+      </label>
+
+      <label class="pref-row">
+        <span class="pref-text">
+          <span class="pref-label">{{ t('settings.thinkingDefaultCollapsed') }}</span>
+          <span class="pref-desc">{{ t('settings.thinkingDefaultCollapsedDesc') }}</span>
+        </span>
+        <input
+          v-model="defaultCollapsed"
+          type="checkbox"
+          class="pref-checkbox"
+          :aria-label="t('settings.thinkingDefaultCollapsed')"
+          @change="onThinkingPrefChange"
+        />
+      </label>
+    </section>
+
     <Modal
       v-model="editModalOpen"
       :title="editMode === 'create' ? t('modelPanel.createTitle') : t('modelPanel.editTitle')"
@@ -882,6 +987,88 @@ watch(
           <p class="field-hint">{{ t('modelPanel.maxTokensHint') }}</p>
         </div>
 
+        <!-- P0-2：推理强度支持（三态，纠正启发式误判） -->
+        <div class="form-field">
+          <label for="p-reasoning-support" class="field-label">{{ t('modelPanel.reasoningSupport') }}</label>
+          <select
+            id="p-reasoning-support"
+            v-model="form.reasoningSupport"
+            class="field-input"
+          >
+            <option value="auto">{{ t('modelPanel.reasoningSupportAuto') }}</option>
+            <option value="on">{{ t('modelPanel.reasoningSupportOn') }}</option>
+            <option value="off">{{ t('modelPanel.reasoningSupportOff') }}</option>
+          </select>
+          <p class="field-hint">{{ t('modelPanel.reasoningSupportHint') }}</p>
+        </div>
+
+        <!-- P0-2：Profile 级默认思考强度 -->
+        <div class="form-field">
+          <label for="p-reasoning-effort" class="field-label">{{ t('modelPanel.reasoningEffortLabel') }}</label>
+          <select
+            id="p-reasoning-effort"
+            v-model="form.reasoningEffort"
+            class="field-input"
+          >
+            <option value="">{{ t('modelPanel.reasoningEffortNone') }}</option>
+            <option value="low">{{ t('llm.reasoningLow') }}</option>
+            <option value="medium">{{ t('llm.reasoningMedium') }}</option>
+            <option value="high">{{ t('llm.reasoningHigh') }}</option>
+          </select>
+          <p class="field-hint">{{ t('modelPanel.reasoningEffortHint') }}</p>
+        </div>
+
+        <!-- P0-3：Profile 级默认采样参数（留空 = 不传 = 供应商默认） -->
+        <fieldset class="sampling-fieldset">
+          <legend class="field-label">{{ t('modelPanel.samplingTitle') }}</legend>
+          <p class="field-hint">{{ t('modelPanel.samplingHint') }}</p>
+
+          <div class="form-field">
+            <label for="p-top-p" class="field-label">{{ t('modelPanel.topPLabel') }}</label>
+            <input
+              id="p-top-p"
+              v-model="form.topP"
+              type="number"
+              min="0"
+              max="1"
+              step="0.05"
+              class="field-input"
+              :placeholder="t('modelPanel.topPPlaceholder')"
+            />
+            <p class="field-hint">{{ t('modelPanel.topPHint') }}</p>
+          </div>
+
+          <div class="form-field">
+            <label for="p-presence" class="field-label">{{ t('modelPanel.presencePenaltyLabel') }}</label>
+            <input
+              id="p-presence"
+              v-model="form.presencePenalty"
+              type="number"
+              min="-2"
+              max="2"
+              step="0.1"
+              class="field-input"
+              :placeholder="t('modelPanel.presencePenaltyPlaceholder')"
+            />
+            <p class="field-hint">{{ t('modelPanel.presencePenaltyHint') }}</p>
+          </div>
+
+          <div class="form-field">
+            <label for="p-frequency" class="field-label">{{ t('modelPanel.frequencyPenaltyLabel') }}</label>
+            <input
+              id="p-frequency"
+              v-model="form.frequencyPenalty"
+              type="number"
+              min="-2"
+              max="2"
+              step="0.1"
+              class="field-input"
+              :placeholder="t('modelPanel.frequencyPenaltyPlaceholder')"
+            />
+            <p class="field-hint">{{ t('modelPanel.frequencyPenaltyHint') }}</p>
+          </div>
+        </fieldset>
+
         <div class="form-field">
           <div class="test-row">
             <button
@@ -1003,6 +1190,62 @@ watch(
   font-weight: 600;
   color: var(--foreground);
   margin: 0;
+}
+
+/* P0-1：思维链偏好行 */
+.pref-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.pref-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pref-label {
+  font-size: 13px;
+  color: var(--foreground);
+}
+
+.pref-desc {
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--muted-foreground);
+}
+
+.pref-checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--secondary);
+  cursor: pointer;
+}
+
+.pref-checkbox:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+/* P0-3：采样参数分组 */
+.sampling-fieldset {
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.sampling-fieldset .form-field:first-of-type {
+  margin-top: var(--spacing-sm);
 }
 
 .section-hint {

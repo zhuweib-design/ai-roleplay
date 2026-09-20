@@ -6,7 +6,8 @@ import type { CharacterCard } from '@/core/character-card';
 import { ChatManager, classifyChatError, type ChatManagerConfig } from '../services/chat-manager';
 import { chatErrorI18n } from '../services/chat-error';
 import { createApiClient } from '../api';
-import { ApiError, type ApiErrorKind } from '../api/types';
+import { ApiError, type ApiErrorKind, type ReasoningEffort } from '../api/types';
+import { resolveReasoningCapability } from '../api/reasoning-capability';
 import type { StorageAdapter } from '../storage/storage-adapter';
 import type { Chat } from '../storage/types';
 import {
@@ -65,6 +66,30 @@ function toLastErrorRecord(
     message: err.message,
     original: err,
   };
+}
+
+/**
+ * P0-3：把采样参数对象转为 ChatManagerConfig 的 patch
+ *
+ * 关键：**只输出已设置的键**。若把 `undefined` 也写进去，
+ * `{...config, ...overrides}` 会用 undefined 覆盖掉下一档的默认值 ——
+ * 这正是既有 `profile.maxTokens` 成为死代码的原因（§0.3），新参数不能再踩。
+ */
+function buildSamplingConfigPatch(
+  sampling?: { topP?: number | null; presencePenalty?: number | null; frequencyPenalty?: number | null } | null
+): Partial<Pick<ChatManagerConfig, 'topP' | 'presencePenalty' | 'frequencyPenalty'>> {
+  const patch: Partial<Pick<ChatManagerConfig, 'topP' | 'presencePenalty' | 'frequencyPenalty'>> = {};
+  if (!sampling) return patch;
+  if (typeof sampling.topP === 'number' && Number.isFinite(sampling.topP)) {
+    patch.topP = sampling.topP;
+  }
+  if (typeof sampling.presencePenalty === 'number' && Number.isFinite(sampling.presencePenalty)) {
+    patch.presencePenalty = sampling.presencePenalty;
+  }
+  if (typeof sampling.frequencyPenalty === 'number' && Number.isFinite(sampling.frequencyPenalty)) {
+    patch.frequencyPenalty = sampling.frequencyPenalty;
+  }
+  return patch;
 }
 
 /**
@@ -176,6 +201,11 @@ export const useChatStore = defineStore('chat', () => {
     profile: ApiProfile | null;
     options?: Partial<Pick<ChatManagerConfig, 'userName' | 'systemPrompt' | 'maxContextTokens' | 'reservedTokens'>>;
   } | null = null;
+  /**
+   * P0-2：当前生效 Profile（用于思考强度能力判定）
+   * capability === 'none' 时角色级的 reasoningEffort 会被静默丢弃（不报错、不打断对话）
+   */
+  let activeProfileForCapability: ApiProfile | null = null;
 
   // ── 依赖注入 ──
 
@@ -216,10 +246,14 @@ export const useChatStore = defineStore('chat', () => {
   ): void {
     if (!profile) {
       chatManager = null;
+      activeProfileForCapability = null;
       return;
     }
+    activeProfileForCapability = profile;
 
     const apiClient = createApiClient(profile);
+    // P0-2：Profile 的思考强度能力（决定是否下发；'none' 时静默丢弃）
+    const capability = resolveReasoningCapability(profile);
     const config: ChatManagerConfig = {
       apiClient,
       model: profile.model,
@@ -229,6 +263,12 @@ export const useChatStore = defineStore('chat', () => {
       reservedTokens: options?.reservedTokens ?? 1024,
       // 需求3: API Profile 默认最大 Tokens（角色 overrides.maxTokens 优先）
       maxTokens: profile.maxTokens,
+      // P0-3：Profile 级采样参数（角色级显式设置时在 overrides 里覆盖）
+      ...buildSamplingConfigPatch(profile.sampling),
+      // P0-2：Profile 级默认思考强度（仅 capability 可用时才注入）
+      ...(capability !== 'none' && profile.reasoningEffort
+        ? { reasoningEffort: profile.reasoningEffort }
+        : {}),
       // T-02: 内置工具装配 —— get_var/set_var 直连全局变量,
       // retrieve_document 惰性调用 data-bank store(global 作用域);
       // ponytail: search_lorebook 需角色级 lorebook 上下文(chat-context 持有),
@@ -258,6 +298,76 @@ export const useChatStore = defineStore('chat', () => {
         }),
     };
     chatManager = new ChatManager(config);
+  }
+
+  /**
+   * P0-2/P0-3：构造本轮请求的 overrides（角色级覆盖）
+   *
+   * 与既有 temperature / maxTokens 不同，新参数在**每一档都是可选**的：
+   * 角色级未设置时不写该键，从而让 Profile 级 / 全局默认值生效（三档合并）。
+   */
+  function buildCharacterOverrides(
+    character: UICharacter
+  ): NonNullable<import('../services/chat-manager').SendMessageParams['overrides']> {
+    const overrides: NonNullable<import('../services/chat-manager').SendMessageParams['overrides']> = {
+      temperature: character.temperature,
+      maxTokens: character.maxTokens,
+      ...buildSamplingConfigPatch(character.sampling),
+    };
+    // P0-2：capability 为 none 时静默丢弃角色级思考强度（不报错、不打断对话）
+    const capability = activeProfileForCapability
+      ? resolveReasoningCapability(activeProfileForCapability)
+      : 'none';
+    const effort: ReasoningEffort | null | undefined = character.reasoningEffort;
+    if (capability !== 'none' && (effort === 'low' || effort === 'medium' || effort === 'high')) {
+      overrides.reasoningEffort = effort;
+    }
+    return overrides;
+  }
+
+  /**
+   * P0-1/P0-3：每轮发送前同步「全局偏好」到 ChatManager
+   *
+   * - 思维链：settings.thinkingConfig.stripFromHistory → includeThinkingInHistory
+   * - 采样：全局 samplingDefaults 仅在 Profile 级也未设置时兜底（最低优先级）
+   *
+   * settings store 在此处惰性导入（与既有 maybeGenerateRandomEvent 一致，避免循环依赖）。
+   */
+  async function applyRuntimeLlmControls(): Promise<void> {
+    try {
+      const { useSettingsStore } = await import('./settings');
+      const settingsStore = useSettingsStore();
+      const patch: Partial<ChatManagerConfig> = {};
+
+      // P0-1：剥离开关（默认 true = 剥离 → includeThinkingInHistory = false）
+      const strip = settingsStore.thinkingConfig?.stripFromHistory !== false;
+      patch.includeThinkingInHistory = !strip;
+
+      // P0-3：全局采样默认值（最低优先级，仅在 config 该字段为空时补齐）
+      const defaults = settingsStore.samplingDefaults;
+      if (defaults) {
+        const cfg = chatManager?.currentConfig;
+        if (cfg) {
+          if (cfg.topP === undefined && typeof defaults.topP === 'number') patch.topP = defaults.topP;
+          if (
+            cfg.presencePenalty === undefined &&
+            typeof defaults.presencePenalty === 'number'
+          ) {
+            patch.presencePenalty = defaults.presencePenalty;
+          }
+          if (
+            cfg.frequencyPenalty === undefined &&
+            typeof defaults.frequencyPenalty === 'number'
+          ) {
+            patch.frequencyPenalty = defaults.frequencyPenalty;
+          }
+        }
+      }
+
+      chatManager?.updateConfig(patch);
+    } catch {
+      /* fail-open：全局偏好读取失败不影响主链路 */
+    }
   }
 
   /**
@@ -384,6 +494,8 @@ export const useChatStore = defineStore('chat', () => {
       beginRequestTracking(card);
       // E-01: 以角色 ID 作为会话键(情绪状态按角色隔离)
       chatManager.updateConfig({ sessionId: character.id });
+      // P0-1/P0-3：同步思维链偏好与全局采样默认值
+      await applyRuntimeLlmControls();
       // E-01: 种入角色 standing 事实(首次;字节稳定前缀数据源)
       await seedStandingFacts(card, character.id);
       await chatManager.sendMessage(
@@ -392,8 +504,7 @@ export const useChatStore = defineStore('chat', () => {
           history,
           userMessage: text,
           overrides: {
-            temperature: character.temperature,
-            maxTokens: character.maxTokens,
+            ...buildCharacterOverrides(character),
             userName: ctx.userName,
           },
           contexts: ctx,
@@ -418,6 +529,10 @@ export const useChatStore = defineStore('chat', () => {
             }
             liveMsg.content = fullContent;
             streamingContent.value = fullContent;
+          },
+          // P0-1：思考增量（fullThinking 为累计值，直接覆盖即可）
+          onThinking: (_delta, fullThinking) => {
+            liveMsg.thinking = fullThinking;
           },
           onUsage: (usage) => {
             // 前缀缓存统计(供应商返回 cache 拆解时)
@@ -641,7 +756,9 @@ export const useChatStore = defineStore('chat', () => {
     const userText = historyBefore[lastUserIdx]!.content;
 
     // 重置目标消息
+    // P0-1：重新生成必须清空 thinking，否则会出现"旧思考 + 新正文"的错配（§7.4）
     target.content = '';
+    target.thinking = '';
     target.generating = true;
 
     // 转换 UI → 核心
@@ -677,6 +794,8 @@ export const useChatStore = defineStore('chat', () => {
       beginRequestTracking(card);
       // E-01: 以角色 ID 作为会话键(情绪状态按角色隔离)
       chatManager.updateConfig({ sessionId: character.id });
+      // P0-1/P0-3：同步思维链偏好与全局采样默认值
+      await applyRuntimeLlmControls();
       // E-01: 种入角色 standing 事实(首次;字节稳定前缀数据源)
       await seedStandingFacts(card, character.id);
       await chatManager.sendMessage(
@@ -685,8 +804,7 @@ export const useChatStore = defineStore('chat', () => {
           history,
           userMessage: userText,
           overrides: {
-            temperature: character.temperature,
-            maxTokens: character.maxTokens,
+            ...buildCharacterOverrides(character),
             userName: ctx.userName,
           },
           contexts: ctx,
@@ -711,6 +829,10 @@ export const useChatStore = defineStore('chat', () => {
             }
             target.content = fullContent;
             streamingContent.value = fullContent;
+          },
+          // P0-1：思考增量（fullThinking 为累计值）
+          onThinking: (_delta, fullThinking) => {
+            target.thinking = fullThinking;
           },
           onDone: (fullContent) => {
             void countTokens(fullContent).then((n) => { tokenUsage.value.completion += n; });
@@ -756,6 +878,8 @@ export const useChatStore = defineStore('chat', () => {
 
   function editMessage(msg: UIMessage, newContent: string): void {
     msg.content = newContent;
+    // P0-1：正文被改写后旧思考即失效，必须清空，避免"旧思考 + 新正文"错配（§7.4）
+    if (msg.thinking) msg.thinking = '';
     // 编辑后持久化由调用方决定是否触发（避免无 character 引用）
   }
 

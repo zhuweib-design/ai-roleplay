@@ -5,6 +5,26 @@ import { t } from '@/i18n';
 /** local-model store 实例类型（动态导入避免运行时拉取 WebLLM 链） */
 type LocalStore = ReturnType<typeof import('@/stores/local-model').useLocalModelStore>;
 
+/** WebLLM 引擎 top_p 的最终兜底值（请求与 store 都未设置时） */
+const LOCAL_FALLBACK_TOP_P = 0.95;
+
+/**
+ * P0-3：解析本地模型实际使用的 top_p
+ *
+ * 优先级：request.topP（角色级 ?? Profile 级 ?? 全局默认）> store.defaultTopP > 0.95
+ * 语义沿用 T-16：`undefined` / `null` = 未设置，继续向下回落（不能用 0 兜底）。
+ */
+function resolveLocalTopP(request: ChatRequest, store: LocalStore): number {
+  if (typeof request.topP === 'number' && Number.isFinite(request.topP)) {
+    return request.topP;
+  }
+  const storeTopP = (store as { settings?: { defaultTopP?: number } }).settings?.defaultTopP;
+  if (typeof storeTopP === 'number' && Number.isFinite(storeTopP)) {
+    return storeTopP;
+  }
+  return LOCAL_FALLBACK_TOP_P;
+}
+
 /**
  * 本地 WebLLM 客户端 (第9条)
  *
@@ -15,6 +35,11 @@ type LocalStore = ReturnType<typeof import('@/stores/local-model').useLocalModel
  * - 本地模型注册表 + 引擎由 local-model store 管理（models/加载状态/推理）
  * - 本客户端仅记录目标模型 id，推理前确保模型已加载
  * - chatStream 为单次生成：引擎内部流式，对外一次性返回（ChatManager 兼容）
+ *
+ * P0 能力边界（硬边界，UI 侧据此隐藏对应控件）：
+ * - 支持 `top_p`（WebLLM 引擎原生参数）
+ * - 不支持 `presence_penalty` / `frequency_penalty` / `reasoning_effort` → 静默忽略
+ * - 思维链只能走**标签型**（模型输出 `<think>…</think>`），由编排层统一解析
  */
 export class LocalApiClient implements ApiClient {
   readonly provider = 'local';
@@ -37,9 +62,10 @@ export class LocalApiClient implements ApiClient {
 
   async chat(request: ChatRequest): Promise<string> {
     const store = await this.ensureModel();
-    // T-05: 透传 top-p（store 层用 settings.defaultTopP 兜底）
-    const store2 = store as { settings?: { defaultTopP?: number } };
-    const topP = (store2.settings?.defaultTopP as number | undefined) ?? 0.95;
+    // T-05 + P0-3：top-p **优先读请求**（修既有漏洞：此前硬编码 ?? 0.95，
+    // 从不读 request.topP，导致角色级/Profile 级设置对本地模型完全无效）；
+    // 请求未设置时才回落到 store 默认，最后才是 0.95。
+    const topP = resolveLocalTopP(request, store);
     return store.infer({
       modelId: this.modelId,
       messages: request.messages.map((m) => ({ role: m.role, content: m.content })) as Array<{
@@ -87,7 +113,7 @@ export class LocalApiClient implements ApiClient {
             }>,
             temperature: request.temperature,
             maxTokens: request.maxTokens,
-            topP: (store as { settings?: { defaultTopP?: number } }).settings?.defaultTopP ?? 0.95,
+            topP: resolveLocalTopP(request, store),
           },
           (delta) => {
             full += delta;

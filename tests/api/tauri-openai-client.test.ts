@@ -468,3 +468,141 @@ describe('TauriOpenAIClient usage 统计', () => {
     expect(result.value.usage).toBeUndefined();
   });
 });
+
+// ── P0-1 / P0-3：Tauri 侧采样参数下发与思考通道 ──
+
+describe('TauriOpenAIClient — P0-3 采样参数下发', () => {
+  it('采样参数按 camelCase 下发到 Rust（未设置时不带该键）', async () => {
+    const client = new TauriOpenAIClient({
+      baseUrl: 'https://api.openai.com',
+      apiKey: 'test-key',
+    });
+    const channel = createMockChannel();
+    let captured: Record<string, unknown> | null = null;
+
+    invokeMock.mockImplementation(async (cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === 'chat_stream') {
+        captured = (args?.request ?? null) as Record<string, unknown> | null;
+        setTimeout(() => {
+          channel.emit({ type: 'done', full_content: 'ok', finish_reason: 'stop' });
+        }, 0);
+        return Promise.resolve('ok');
+      }
+      return Promise.resolve(null);
+    });
+
+    const events: Array<{ type: string }> = [];
+    for await (const ev of client.chatStream({
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'gpt-4o',
+      topP: 0.8,
+      presencePenalty: 0.2,
+      frequencyPenalty: -0.1,
+      reasoningEffort: 'medium',
+    })) {
+      events.push(ev);
+    }
+    expect(events.some((e) => e.type === 'done')).toBe(true);
+
+    expect(captured).not.toBeNull();
+    expect(captured!.topP).toBe(0.8);
+    expect(captured!.presencePenalty).toBe(0.2);
+    expect(captured!.frequencyPenalty).toBe(-0.1);
+    expect(captured!.reasoningEffort).toBe('medium');
+  });
+
+  it('未设置采样参数时不带对应键（= 供应商默认）', async () => {
+    const client = new TauriOpenAIClient({
+      baseUrl: 'https://api.openai.com',
+      apiKey: 'test-key',
+    });
+    const channel = createMockChannel();
+    let captured: Record<string, unknown> | null = null;
+
+    invokeMock.mockImplementation(async (cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === 'chat_stream') {
+        captured = (args?.request ?? null) as Record<string, unknown> | null;
+        setTimeout(() => {
+          channel.emit({ type: 'done', full_content: 'ok', finish_reason: 'stop' });
+        }, 0);
+        return Promise.resolve('ok');
+      }
+      return Promise.resolve(null);
+    });
+
+    for await (const _ev of client.chatStream({
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'gpt-4o',
+    })) {
+      /* 消费流 */
+    }
+
+    expect(captured!.topP).toBeUndefined();
+    expect(captured!.presencePenalty).toBeUndefined();
+    expect(captured!.frequencyPenalty).toBeUndefined();
+    expect(captured!.reasoningEffort).toBeUndefined();
+    // 既有字段不受影响
+    expect(captured!.model).toBe('gpt-4o');
+  });
+});
+
+describe('TauriOpenAIClient — P0-1 思考通道', () => {
+  it('thinking 增量 → thinkingDelta；done 带 fullThinking', async () => {
+    const client = new TauriOpenAIClient({
+      baseUrl: 'https://api.openai.com',
+      apiKey: 'test-key',
+    });
+    const channel = createMockChannel();
+
+    invokeMock.mockImplementation(async () => {
+      setTimeout(() => {
+        channel.emit({ type: 'delta', thinking: '我在思考' });
+        channel.emit({ type: 'delta', delta: '答案' });
+        channel.emit({
+          type: 'done',
+          full_content: '答案',
+          full_thinking: '我在思考',
+          finish_reason: 'stop',
+        });
+      }, 0);
+      return Promise.resolve('答案');
+    });
+
+    const events: Array<{ type: string; delta?: string; thinkingDelta?: string; fullThinking?: string }> = [];
+    for await (const ev of client.chatStream({
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'deepseek-r1',
+    })) {
+      events.push(ev);
+    }
+
+    expect(events.some((e) => e.thinkingDelta === '我在思考')).toBe(true);
+    const done = events.find((e) => e.type === 'done');
+    expect(done?.fullThinking).toBe('我在思考');
+  });
+
+  it('无思考时 done 不带 fullThinking', async () => {
+    const client = new TauriOpenAIClient({
+      baseUrl: 'https://api.openai.com',
+      apiKey: 'test-key',
+    });
+    const channel = createMockChannel();
+
+    invokeMock.mockImplementation(async () => {
+      setTimeout(() => {
+        channel.emit({ type: 'delta', delta: '正文' });
+        channel.emit({ type: 'done', full_content: '正文', finish_reason: 'stop' });
+      }, 0);
+      return Promise.resolve('正文');
+    });
+
+    const events: Array<{ type: string; fullThinking?: string }> = [];
+    for await (const ev of client.chatStream({
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'gpt-4o',
+    })) {
+      events.push(ev);
+    }
+    expect(events.find((e) => e.type === 'done')?.fullThinking).toBeUndefined();
+  });
+});

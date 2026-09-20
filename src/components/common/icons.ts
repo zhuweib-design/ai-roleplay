@@ -67,7 +67,9 @@ export type IconName =
   | 'warning'
   | 'clock'
   | 'puzzle'
-  | 'database';
+  | 'database'
+  // P0-1 思维链（思考块折叠容器标题图标）
+  | 'brain';
 
 const PATHS: Record<IconName, string> = {
   house: '<path d="M3 12L12 4l9 8M5 10v10h14V10"/>',
@@ -133,6 +135,8 @@ const PATHS: Record<IconName, string> = {
   'clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   'puzzle': '<path d="M10 3h4v3h3v3h3v4h-3v3h-3v3h-4v-3H7v-3H4v-4h3V6h3z"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
   'database': '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/>',
+  // P0-1：思考块图标（静态常量，非模型输出，走既有白名单 v-html 安全）
+  brain: '<path d="M12 5a3 3 0 0 0-5.83-.99A3 3 0 0 0 3 8.5a3.5 3.5 0 0 0 .6 1.96A3 3 0 0 0 5 16.5a3 3 0 0 0 2.5 1.46A3 3 0 0 0 12 19z"/><path d="M12 5a3 3 0 0 1 5.83-.99A3 3 0 0 1 21 8.5a3.5 3.5 0 0 1-.6 1.96A3 3 0 0 1 19 16.5a3 3 0 0 1-2.5 1.46A3 3 0 0 1 12 19z"/><path d="M12 5v14"/>',
 };
 
 export function getIconPath(name: IconName): string {

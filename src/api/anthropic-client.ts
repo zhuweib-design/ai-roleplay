@@ -8,6 +8,10 @@ import {
   toAnthropicTools,
 } from './anthropic-protocol';
 import { toDevProxyUrl } from './openai-protocol';
+import {
+  toAnthropicBudget,
+  ANTHROPIC_THINKING_CONFLICT_PARAMS,
+} from './reasoning-capability';
 import { t } from '@/i18n';
 
 /**
@@ -56,9 +60,42 @@ export class AnthropicClient implements ApiClient {
       stream,
     };
     if (system) body.system = system;
-    if (request.temperature !== undefined) {
+
+    // P0-2：Anthropic extended thinking（thinking.budget_tokens）
+    // 预算由 toAnthropicBudget 按 max_tokens 做 clamp；clamp 后过小（<256）返回 null
+    // → 放弃启用，降级为不传，避免协议 400 打断对话。
+    const maxTokens = request.maxTokens ?? AnthropicClient.DEFAULT_MAX_TOKENS;
+    const budget = request.reasoningEffort
+      ? toAnthropicBudget(request.reasoningEffort, maxTokens)
+      : null;
+    const thinkingEnabled = budget !== null;
+
+    if (budget !== null) {
+      body.thinking = { type: 'enabled', budget_tokens: budget };
+    }
+
+    /**
+     * P0-2 协议冲突降级：Anthropic 启用 extended thinking 时，
+     * `temperature` / `top_p` 不被接受（清单见 ANTHROPIC_THINKING_CONFLICT_PARAMS，
+     * 可随官方文档更新）。此处**主动抑制写入 body**，而用户可见的滑块值不变，
+     * 避免"改了滑块没反应"的困惑。
+     */
+    const suppressed = (protocolKey: string): boolean =>
+      thinkingEnabled && ANTHROPIC_THINKING_CONFLICT_PARAMS.includes(protocolKey);
+
+    if (request.temperature !== undefined && !suppressed('temperature')) {
       body.temperature = request.temperature;
     }
+    // P0-3：top_p（启用 thinking 时同样被抑制）
+    if (
+      request.topP !== undefined &&
+      request.topP !== null &&
+      !suppressed('top_p')
+    ) {
+      body.top_p = request.topP;
+    }
+    // P0-3：presence_penalty / frequency_penalty 为 OpenAI 兼容层专有，
+    // Anthropic Messages 协议无对应字段 → 静默忽略（不写 body、不报错）。
     // T-02：工具调用定义（Anthropic 格式转换）
     if (request.tools && request.tools.length > 0) {
       body.tools = toAnthropicTools(request.tools);
@@ -150,6 +187,8 @@ export class AnthropicClient implements ApiClient {
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
     let fullContent = '';
+    // P0-1：Anthropic 字段型思考累计值（标签型由编排层处理）
+    let fullThinking = '';
     let finishReason: string | undefined;
     // T-02：tool_use block 增量聚合（按 index，input_json 逐段拼接）
     const toolCallAgg = new Map<number, { id: string; name: string; args: string }>();
@@ -185,6 +224,9 @@ export class AnthropicClient implements ApiClient {
           if (parsed.kind === 'delta' && parsed.text) {
             fullContent += parsed.text;
             yield { type: 'delta', delta: parsed.text };
+          } else if (parsed.kind === 'thinkingDelta' && parsed.text) {
+            fullThinking += parsed.text;
+            yield { type: 'delta', thinkingDelta: parsed.text };
           } else if (parsed.kind === 'toolStart') {
             const agg = toolCallAgg.get(parsed.index) ?? { id: '', name: '', args: '' };
             agg.id = parsed.id;
@@ -199,6 +241,7 @@ export class AnthropicClient implements ApiClient {
               type: 'done',
               fullContent,
               finishReason,
+              ...(fullThinking ? { fullThinking } : {}),
               ...(toolCallAgg.size > 0 ? { toolCalls: toAnthropicToolCalls(toolCallAgg) } : {}),
             };
             return;
@@ -216,6 +259,7 @@ export class AnthropicClient implements ApiClient {
         type: 'done',
         fullContent,
         finishReason,
+        ...(fullThinking ? { fullThinking } : {}),
         ...(toolCallAgg.size > 0 ? { toolCalls: toAnthropicToolCalls(toolCallAgg) } : {}),
       };
     } finally {
@@ -349,6 +393,7 @@ function statusToKind(status: number): ApiErrorKind {
 /** 单个 SSE 事件解析结果 */
 type ParsedAnthropicEvent =
   | { kind: 'delta'; text: string }
+  | { kind: 'thinkingDelta'; text: string }
   | { kind: 'finish'; finishReason: string }
   | { kind: 'stop' }
   | { kind: 'error'; message: string }
@@ -383,7 +428,13 @@ function parseAnthropicSSEEvent(raw: string): ParsedAnthropicEvent | null {
       type?: string;
       index?: number;
       content_block?: { type?: string; id?: string; name?: string };
-      delta?: { type?: string; text?: string; stop_reason?: string; partial_json?: string };
+      delta?: {
+        type?: string;
+        text?: string;
+        thinking?: string;
+        stop_reason?: string;
+        partial_json?: string;
+      };
       error?: { type?: string; message?: string };
     };
 
@@ -393,12 +444,18 @@ function parseAnthropicSSEEvent(raw: string): ParsedAnthropicEvent | null {
         if (block?.type === 'tool_use' && block.id && block.name) {
           return { kind: 'toolStart', index: parsed.index ?? 0, id: block.id, name: block.name };
         }
+        // P0-1：thinking block 开始（仅标记，思考内容由 thinking_delta 逐段送达）
         return null;
       }
       case 'content_block_delta': {
         if (parsed.delta?.type === 'text_delta' && parsed.delta.text) {
           return { kind: 'delta', text: parsed.delta.text };
         }
+        // P0-1：Anthropic extended thinking 的思考增量
+        if (parsed.delta?.type === 'thinking_delta' && parsed.delta.thinking) {
+          return { kind: 'thinkingDelta', text: parsed.delta.thinking };
+        }
+        // signature_delta 不展示（signature 仅用于工具调用回传），忽略
         if (parsed.delta?.type === 'input_json_delta' && parsed.delta.partial_json) {
           return { kind: 'toolDelta', index: parsed.index ?? 0, json: parsed.delta.partial_json };
         }

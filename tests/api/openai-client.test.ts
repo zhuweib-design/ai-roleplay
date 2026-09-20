@@ -707,3 +707,181 @@ describe('OpenAIClient usage 统计', () => {
     expect(events[events.length - 1]!.usage).toBeUndefined();
   });
 });
+
+// ── P0-2 / P0-3：采样参数与思考强度（body 组装） ──
+
+describe('OpenAIClient — P0-3 采样参数 body 组装', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  /** 抓取最近一次 fetch 的 body */
+  async function captureBody(request: ChatRequest): Promise<Record<string, unknown>> {
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }))
+    );
+    await new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' }).chat(request);
+    return JSON.parse((spy.mock.calls[0]![1] as RequestInit).body as string) as Record<string, unknown>;
+  }
+
+  it('参数未设置时不应出现在 body 里（undefined/null = 不传 = 供应商默认）', async () => {
+    const body = await captureBody({ messages: [{ role: 'user', content: 'hi' }], model: 'gpt-4o' });
+    expect(body.top_p).toBeUndefined();
+    expect(body.presence_penalty).toBeUndefined();
+    expect(body.frequency_penalty).toBeUndefined();
+    expect(body.reasoning_effort).toBeUndefined();
+  });
+
+  it('null 同样视为未设置，不写入 body', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'gpt-4o',
+      topP: null,
+      presencePenalty: null,
+      frequencyPenalty: null,
+    } as ChatRequest & { topP: null; presencePenalty: null; frequencyPenalty: null });
+    expect(body.top_p).toBeUndefined();
+    expect(body.presence_penalty).toBeUndefined();
+    expect(body.frequency_penalty).toBeUndefined();
+  });
+
+  it('0 是合法值，必须写入 body（不能用 0 表示未设置）', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'gpt-4o',
+      topP: 0,
+      presencePenalty: 0,
+      frequencyPenalty: 0,
+    });
+    expect(body.top_p).toBe(0);
+    expect(body.presence_penalty).toBe(0);
+    expect(body.frequency_penalty).toBe(0);
+  });
+
+  it('有值时按 OpenAI 协议键名写入：top_p / presence_penalty / frequency_penalty', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'gpt-4o',
+      topP: 0.85,
+      presencePenalty: 0.4,
+      frequencyPenalty: -0.3,
+    });
+    expect(body.top_p).toBe(0.85);
+    expect(body.presence_penalty).toBe(0.4);
+    expect(body.frequency_penalty).toBe(-0.3);
+  });
+
+  it('P0-2：reasoningEffort 命中时下发 reasoning_effort', async () => {
+    const body = await captureBody({ messages: [], model: 'o3', reasoningEffort: 'high' });
+    expect(body.reasoning_effort).toBe('high');
+  });
+
+  it('P0-2：未设置 reasoningEffort 时不下发（capability=none 时静默丢弃）', async () => {
+    const body = await captureBody({ messages: [], model: 'gpt-4o' });
+    expect(body.reasoning_effort).toBeUndefined();
+  });
+
+  it('P0-2 决策3：只加 reasoning_effort，不动 temperature（服务端报错走既有错误链路）', async () => {
+    const body = await captureBody({ messages: [], model: 'o3', temperature: 0.7, reasoningEffort: 'low' });
+    expect(body.reasoning_effort).toBe('low');
+    expect(body.temperature).toBe(0.7);
+  });
+});
+
+// ── P0-1：字段型思考（reasoning_content / reasoning） ──
+
+describe('OpenAIClient — P0-1 字段型思考解析', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  function reasoningChunk(reasoning: string): string {
+    return JSON.stringify({
+      choices: [{ index: 0, delta: { reasoning_content: reasoning }, finish_reason: null }],
+    });
+  }
+
+  function reasoningAliasChunk(reasoning: string): string {
+    return JSON.stringify({
+      choices: [{ index: 0, delta: { reasoning }, finish_reason: null }],
+    });
+  }
+
+  async function streamOf(events: string[]) {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse(makeReadableStream([toSSEStream([...events, '[DONE]'])]))
+    );
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    return collect(client.chatStream({ messages: [], model: 'deepseek-r1' }));
+  }
+
+  it('reasoning_content chunk → yield thinkingDelta', async () => {
+    const events = await streamOf([reasoningChunk('我在思考'), deltaChunk('答案')]);
+    const thinking = events.filter((e) => e.type === 'delta' && e.thinkingDelta);
+    expect(thinking).toHaveLength(1);
+    expect(thinking[0]!.thinkingDelta).toBe('我在思考');
+  });
+
+  it('部分网关用 delta.reasoning（备用键）同样产出 thinkingDelta', async () => {
+    const events = await streamOf([reasoningAliasChunk('备用键思考')]);
+    expect(events.some((e) => e.thinkingDelta === '备用键思考')).toBe(true);
+  });
+
+  it('done 事件带出完整思考 fullThinking', async () => {
+    const events = await streamOf([reasoningChunk('想 A'), reasoningChunk('想 B'), deltaChunk('正文')]);
+    const done = events.find((e) => e.type === 'done');
+    expect(done?.fullThinking).toBe('想 A想 B');
+    expect(done?.fullContent).toBe('正文');
+  });
+
+  it('无思考时 done 不带 fullThinking（避免空串污染）', async () => {
+    const events = await streamOf([deltaChunk('纯正文')]);
+    const done = events.find((e) => e.type === 'done');
+    expect(done?.fullThinking).toBeUndefined();
+  });
+
+  it('正文与思考同时到达时合并为一次 delta 事件', async () => {
+    const both = JSON.stringify({
+      choices: [{ index: 0, delta: { content: '正文', reasoning_content: '思考' }, finish_reason: null }],
+    });
+    const events = await streamOf([both]);
+    const delta = events.find((e) => e.type === 'delta');
+    expect(delta?.delta).toBe('正文');
+    expect(delta?.thinkingDelta).toBe('思考');
+  });
+
+  it('usage.completion_tokens_details.reasoning_tokens → ChatUsage.reasoningTokens', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse(
+        makeReadableStream([
+          toSSEStream([
+            deltaChunk('正文'),
+            JSON.stringify({
+              choices: [],
+              usage: {
+                prompt_tokens: 10,
+                completion_tokens: 20,
+                total_tokens: 30,
+                completion_tokens_details: { reasoning_tokens: 12 },
+              },
+            }),
+            '[DONE]',
+          ]),
+        ])
+      )
+    );
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    const events = await collect(client.chatStream({ messages: [], model: 'o3' }));
+    expect(events.find((e) => e.type === 'done')?.usage?.reasoningTokens).toBe(12);
+  });
+});

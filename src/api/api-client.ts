@@ -38,15 +38,36 @@ export interface ApiClient {
   listModels?(): Promise<string[]>;
 }
 
-/** 构建请求时的辅助工具：合并默认参数 */
+/**
+ * 把 `undefined` / `null` 统一收敛为 `undefined`（= 不传 = 供应商默认）
+ * 用于合并参数时避免把 null 透进 body。
+ */
+function pickNumber(
+  primary: number | null | undefined,
+  fallback: number | null | undefined
+): number | undefined {
+  if (typeof primary === 'number' && Number.isFinite(primary)) return primary;
+  if (typeof fallback === 'number' && Number.isFinite(fallback)) return fallback;
+  return undefined;
+}
+
+/**
+ * 构建请求时的辅助工具：合并默认参数
+ *
+ * 逐字段 `??` 合并，请求侧优先；两侧都未设置时保持 `undefined`（不传）。
+ * 注意：`reasoningEffort` 不参与合并 —— 它由 capability 决定是否下发。
+ */
 export function mergeDefaultParams(
   request: ChatRequest,
-  defaults: { temperature?: number; maxTokens?: number }
+  defaults: import('./types').SamplingParams
 ): ChatRequest {
   return {
     ...request,
-    temperature: request.temperature ?? defaults.temperature,
-    maxTokens: request.maxTokens ?? defaults.maxTokens,
+    temperature: pickNumber(request.temperature, defaults.temperature),
+    maxTokens: pickNumber(request.maxTokens, defaults.maxTokens),
+    topP: pickNumber(request.topP, defaults.topP),
+    presencePenalty: pickNumber(request.presencePenalty, defaults.presencePenalty),
+    frequencyPenalty: pickNumber(request.frequencyPenalty, defaults.frequencyPenalty),
   };
 }
 

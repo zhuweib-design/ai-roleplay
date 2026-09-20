@@ -5,6 +5,42 @@ import { buildChatCompletionsUrl, buildModelsUrl, toOpenAIMessage } from './open
 import { t } from '@/i18n';
 
 /**
+ * P0-1/P0-2/P0-3：组装发给 Rust 端的请求参数中的采样与推理部分
+ *
+ * 关键约定：`undefined` / `null` 一律**不下发**该键（= 供应商默认），
+ * 避免把 0 当成"未设置"。Rust 侧字段为 Option + serde(default)，缺失即不注入 body。
+ */
+function buildSamplingArgs(request: {
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  presencePenalty?: number;
+  frequencyPenalty?: number;
+  reasoningEffort?: string;
+}): Record<string, number | string> {
+  const args: Record<string, number | string> = {};
+  if (request.temperature !== undefined && request.temperature !== null) {
+    args.temperature = request.temperature;
+  }
+  if (request.maxTokens !== undefined && request.maxTokens !== null) {
+    args.max_tokens = request.maxTokens;
+  }
+  if (request.topP !== undefined && request.topP !== null) {
+    args.topP = request.topP;
+  }
+  if (request.presencePenalty !== undefined && request.presencePenalty !== null) {
+    args.presencePenalty = request.presencePenalty;
+  }
+  if (request.frequencyPenalty !== undefined && request.frequencyPenalty !== null) {
+    args.frequencyPenalty = request.frequencyPenalty;
+  }
+  if (request.reasoningEffort) {
+    args.reasoningEffort = request.reasoningEffort;
+  }
+  return args;
+}
+
+/**
  * Tauri OpenAI 兼容客户端 (Phase H4)
  *
  * 在 Tauri 桌面应用环境中使用 Rust reqwest 建立 SSE 流式连接，
@@ -15,10 +51,13 @@ import { t } from '@/i18n';
  * - TauriOpenAIClient（Tauri）：Rust reqwest + Tauri events，原生网络栈
  *
  * 完整事件协议（见 src-tauri/src/commands/chat_stream.rs）：
- *   - { type: 'delta', delta: 'token' }
- *   - { type: 'done', full_content: '...', finish_reason: 'stop' }
+ *   - { type: 'delta', delta: 'token', thinking?: '思考增量' }  // P0-1
+ *   - { type: 'done', full_content: '...', full_thinking?: '...', finish_reason: 'stop' }
  *   - { type: 'error', error: '...', status?: number }
  *   - { type: 'ping' }  // 心跳
+ *
+ * 注：Rust 侧 ChatStreamRequest 使用 `#[serde(rename_all = "camelCase")]`，
+ * 因此采样参数以 camelCase（topP / presencePenalty / ...）下发。
  */
 export class TauriOpenAIClient implements ApiClient {
   readonly provider = 'openai';
@@ -141,8 +180,7 @@ export class TauriOpenAIClient implements ApiClient {
           apiKey: this.config.apiKey,
           model: request.model,
           messages: request.messages.map(toOpenAIMessage),
-          temperature: request.temperature,
-          max_tokens: request.maxTokens,
+          ...buildSamplingArgs(request),
           extraHeaders: this.config.extraHeaders,
           allowPrivate: TauriOpenAIClient.isLocalOrPrivateUrl(this.endpoint),
         },
@@ -171,6 +209,7 @@ export class TauriOpenAIClient implements ApiClient {
     const queue: StreamEventPayload[] = [];
     let done = false;
     let doneContent = '';
+    let doneThinking = '';
     let doneFinishReason: string | undefined;
     let doneUsage: import('./types').ChatUsage | undefined;
     let streamError: { message: string; status?: number } | null = null;
@@ -190,6 +229,7 @@ export class TauriOpenAIClient implements ApiClient {
         if (payload.type === 'done') {
           done = true;
           doneContent = payload.full_content || '';
+          doneThinking = payload.full_thinking || '';
           doneFinishReason = payload.finish_reason;
           if (payload.usage) {
             doneUsage = {
@@ -198,6 +238,7 @@ export class TauriOpenAIClient implements ApiClient {
               totalTokens: payload.usage.total_tokens,
               promptCacheHitTokens: payload.usage.prompt_cache_hit_tokens,
               promptCacheMissTokens: payload.usage.prompt_cache_miss_tokens,
+              reasoningTokens: payload.usage.reasoning_tokens,
             };
           }
         } else if (payload.type === 'error') {
@@ -232,8 +273,7 @@ export class TauriOpenAIClient implements ApiClient {
           apiKey: this.config.apiKey,
           model: request.model,
           messages: request.messages.map(toOpenAIMessage),
-          temperature: request.temperature,
-          max_tokens: request.maxTokens,
+          ...buildSamplingArgs(request),
           extraHeaders: this.config.extraHeaders,
           allowPrivate: TauriOpenAIClient.isLocalOrPrivateUrl(this.endpoint),
         },
@@ -247,6 +287,8 @@ export class TauriOpenAIClient implements ApiClient {
       });
 
       let fullContent = '';
+      // P0-1：字段型思考累计值
+      let fullThinking = '';
 
       // 通过事件队列消费增量（事件驱动唤醒，非忙轮询）
       while (!done || queue.length > 0) {
@@ -261,11 +303,18 @@ export class TauriOpenAIClient implements ApiClient {
         while (queue.length > 0) {
           const payload = queue.shift()!;
 
-          if (payload.type === 'delta' && payload.delta) {
-            fullContent += payload.delta;
-            yield { type: 'delta', delta: payload.delta };
+          if (payload.type === 'delta') {
+            if (payload.delta) fullContent += payload.delta;
+            if (payload.thinking) fullThinking += payload.thinking;
+            // 正文与思考可能同时到达，合并为一次 delta 事件
+            yield {
+              type: 'delta',
+              ...(payload.delta ? { delta: payload.delta } : {}),
+              ...(payload.thinking ? { thinkingDelta: payload.thinking } : {}),
+            };
           } else if (payload.type === 'done') {
             if (payload.full_content) fullContent = payload.full_content;
+            if (payload.full_thinking) fullThinking = payload.full_thinking;
           } else if (payload.type === 'error') {
             // 已经在 listen 回调中处理
           }
@@ -299,6 +348,7 @@ export class TauriOpenAIClient implements ApiClient {
         type: 'done',
         fullContent: doneContent || fullContent,
         finishReason: doneFinishReason,
+        ...(doneThinking || fullThinking ? { fullThinking: doneThinking || fullThinking } : {}),
         ...(doneUsage ? { usage: doneUsage } : {}),
       };
     } finally {
@@ -344,7 +394,11 @@ export class TauriOpenAIClient implements ApiClient {
 interface StreamEventPayload {
   type: 'delta' | 'done' | 'error' | 'ping';
   delta?: string;
+  /** P0-1：思考增量（Rust 侧从 delta.reasoning_content 读取） */
+  thinking?: string;
   full_content?: string;
+  /** P0-1：完整思考（done 事件带出） */
+  full_thinking?: string;
   finish_reason?: string;
   error?: string;
   status?: number;
@@ -355,6 +409,8 @@ interface StreamEventPayload {
     total_tokens?: number;
     prompt_cache_hit_tokens?: number;
     prompt_cache_miss_tokens?: number;
+    /** P0-1：推理 token（completion_tokens_details.reasoning_tokens） */
+    reasoning_tokens?: number;
   };
 }
 

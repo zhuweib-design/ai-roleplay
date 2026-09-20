@@ -955,3 +955,252 @@ describe('ChatManager 工具调用循环 (T-02)', () => {
     expect(result).toBe('');
   });
 });
+
+// ── P0-1：编排层思维链（标签型 + 字段型 + done 收敛） ──
+
+describe('ChatManager — P0-1 思维链', () => {
+  function newManager(client: ApiClient) {
+    return new ChatManager({ apiClient: client, model: 'test-model' });
+  }
+
+  it('标签型流：onThinking 收到思考，onDelta 只收到正文', async () => {
+    const client = makeFakeApiClient([
+      { type: 'delta', delta: '<thi' },
+      { type: 'delta', delta: 'nk>A</thi' },
+      { type: 'delta', delta: 'nk>B' },
+      { type: 'done', fullContent: '<think>A</think>B' },
+    ]);
+    const thinking: string[] = [];
+    const deltas: string[] = [];
+    let final = '';
+
+    await newManager(client).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      {
+        onThinking: (d) => thinking.push(d),
+        onDelta: (d) => deltas.push(d),
+        onDone: (full) => {
+          final = full;
+        },
+      }
+    );
+
+    expect(thinking.join('')).toBe('A');
+    expect(deltas.join('')).toBe('B');
+    // done 的 fullContent 含 <think> 标签时，最终 onDone 的 content 已剥离
+    expect(final).toBe('B');
+    expect(final.includes('<think>')).toBe(false);
+  });
+
+  it('字段型流：thinkingDelta 走 onThinking，不影响 onDelta', async () => {
+    const client = makeFakeApiClient([
+      { type: 'delta', thinkingDelta: '我在思考' },
+      { type: 'delta', delta: '答案' },
+      { type: 'done', fullContent: '答案', fullThinking: '我在思考' },
+    ]);
+    const thinking: string[] = [];
+    const deltas: string[] = [];
+    let finalThinking = '';
+    let final = '';
+
+    await newManager(client).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      {
+        onThinking: (d, full) => {
+          thinking.push(d);
+          finalThinking = full;
+        },
+        onDelta: (d) => deltas.push(d),
+        onDone: (full) => {
+          final = full;
+        },
+      }
+    );
+
+    expect(thinking.join('')).toBe('我在思考');
+    expect(finalThinking).toBe('我在思考');
+    expect(deltas.join('')).toBe('答案');
+    expect(final).toBe('答案');
+  });
+
+  it('混合来源：字段型优先，标签型兜底（互斥原则）', async () => {
+    // 字段型已出现 → done 的 fullContent 原样采用，不再做标签解析
+    const client = makeFakeApiClient([
+      { type: 'delta', thinkingDelta: '字段思考' },
+      { type: 'delta', delta: '正文' },
+      { type: 'done', fullContent: '正文' },
+    ]);
+    let final = '';
+    await newManager(client).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      { onDone: (full) => { final = full; } }
+    );
+    expect(final).toBe('正文');
+  });
+
+  it('未闭合标签：flush 后思考不丢失，正文为空', async () => {
+    const client = makeFakeApiClient([
+      { type: 'delta', delta: '<think>想了一半' },
+      { type: 'done', fullContent: '<think>想了一半' },
+    ]);
+    let finalThinking = '';
+    let final = '';
+    await newManager(client).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      {
+        onThinking: (_d, full) => { finalThinking = full; },
+        onDone: (full) => { final = full; },
+      }
+    );
+    expect(finalThinking).toBe('想了一半');
+    expect(final).toBe('');
+  });
+
+  it('中止/出错时冲刷残留思考（不丢失已收到的部分）', async () => {
+    const client = makeFakeApiClient([
+      { type: 'delta', delta: '<think>未完' },
+      { type: 'error', error: '已停止生成' },
+    ]);
+    let finalThinking = '';
+    await newManager(client).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      { onThinking: (_d, full) => { finalThinking = full; } }
+    );
+    expect(finalThinking).toBe('未完');
+  });
+
+  it('无思考时完全不触发 onThinking（行为与改动前一致）', async () => {
+    const client = makeFakeApiClient([
+      { type: 'delta', delta: '你好' },
+      { type: 'done', fullContent: '你好' },
+    ]);
+    let called = false;
+    await newManager(client).sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      { onThinking: () => { called = true; } }
+    );
+    expect(called).toBe(false);
+  });
+
+  it('includeThinkingInHistory 只影响发请求的 messages，不改变传入的 history 对象', async () => {
+    const requests: ChatRequest[] = [];
+    const client: ApiClient = {
+      provider: 'spy',
+      async chat(): Promise<string> {
+        return '';
+      },
+      async *chatStream(req: ChatRequest): ChatStream {
+        requests.push(JSON.parse(JSON.stringify(req)) as ChatRequest);
+        yield { type: 'done', fullContent: '' };
+      },
+    };
+    const history: ChatMessage[] = [
+      { ...makeMessage('user', '问'), id: 'h1' },
+      { ...makeMessage('assistant', '答'), id: 'h2', thinking: '历史思考' },
+    ];
+    const historySnapshot = JSON.parse(JSON.stringify(history)) as ChatMessage[];
+
+    const manager = new ChatManager({
+      apiClient: client,
+      model: 'm',
+      includeThinkingInHistory: true,
+    });
+    await manager.sendMessage({ card: makeCard(), history, userMessage: '再问' });
+
+    // 请求体里回包了 <think>
+    const assistant = requests[0]!.messages.find((m) => m.content.startsWith('<think>'));
+    expect(assistant).toBeDefined();
+    expect(assistant!.content).toBe('<think>历史思考</think>答');
+    // 原 history 未被修改（无副作用）
+    expect(history).toEqual(historySnapshot);
+  });
+
+  it('includeThinkingInHistory 默认 false：请求体不含思考', async () => {
+    const requests: ChatRequest[] = [];
+    const client: ApiClient = {
+      provider: 'spy',
+      async chat(): Promise<string> {
+        return '';
+      },
+      async *chatStream(req: ChatRequest): ChatStream {
+        requests.push(JSON.parse(JSON.stringify(req)) as ChatRequest);
+        yield { type: 'done', fullContent: '' };
+      },
+    };
+    const history: ChatMessage[] = [
+      { ...makeMessage('assistant', '答'), id: 'h2', thinking: '历史思考' },
+    ];
+    await new ChatManager({ apiClient: client, model: 'm' }).sendMessage({
+      card: makeCard(),
+      history,
+      userMessage: '再问',
+    });
+    expect(requests[0]!.messages.some((m) => m.content.includes('<think>'))).toBe(false);
+  });
+});
+
+// ── P0-2 / P0-3：采样参数与思考强度的请求装配 ──
+
+describe('ChatManager — P0-2/P0-3 请求装配', () => {
+  function captureClient(): { client: ApiClient; requests: ChatRequest[] } {
+    const requests: ChatRequest[] = [];
+    const client: ApiClient = {
+      provider: 'spy',
+      async chat(): Promise<string> {
+        return '';
+      },
+      async *chatStream(req: ChatRequest): ChatStream {
+        requests.push(JSON.parse(JSON.stringify(req)) as ChatRequest);
+        yield { type: 'done', fullContent: '' };
+      },
+    };
+    return { client, requests };
+  }
+
+  it('配置中的采样参数应装配进 ChatRequest', async () => {
+    const { client, requests } = captureClient();
+    await new ChatManager({
+      apiClient: client,
+      model: 'm',
+      topP: 0.9,
+      presencePenalty: 0.3,
+      frequencyPenalty: -0.2,
+      reasoningEffort: 'high',
+    }).sendMessage({ card: makeCard(), history: [], userMessage: 'hi' });
+
+    expect(requests[0]!.topP).toBe(0.9);
+    expect(requests[0]!.presencePenalty).toBe(0.3);
+    expect(requests[0]!.frequencyPenalty).toBe(-0.2);
+    expect(requests[0]!.reasoningEffort).toBe('high');
+  });
+
+  it('未设置时请求体不含这些键（= 不传 = 供应商默认）', async () => {
+    const { client, requests } = captureClient();
+    await new ChatManager({ apiClient: client, model: 'm' }).sendMessage({
+      card: makeCard(),
+      history: [],
+      userMessage: 'hi',
+    });
+    expect(requests[0]!.topP).toBeUndefined();
+    expect(requests[0]!.presencePenalty).toBeUndefined();
+    expect(requests[0]!.frequencyPenalty).toBeUndefined();
+    expect(requests[0]!.reasoningEffort).toBeUndefined();
+  });
+
+  it('overrides 可覆盖 config 的采样参数与思考强度', async () => {
+    const { client, requests } = captureClient();
+    await new ChatManager({
+      apiClient: client,
+      model: 'm',
+      topP: 0.9,
+      reasoningEffort: 'high',
+    }).sendMessage({
+      card: makeCard(),
+      history: [],
+      userMessage: 'hi',
+      overrides: { topP: 0.5, reasoningEffort: 'low' },
+    });
+    expect(requests[0]!.topP).toBe(0.5);
+    expect(requests[0]!.reasoningEffort).toBe('low');
+  });
+});

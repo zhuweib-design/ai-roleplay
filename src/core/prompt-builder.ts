@@ -15,12 +15,26 @@ export interface PromptSettings {
   maxContextTokens: number;
   reservedTokens: number;
   userName: string;
+  /**
+   * P0-1：历史 assistant 消息中的思维链是否随请求回传
+   * - false（默认）：只发 content —— 因为 thinking 与 content **分字段存储**，
+   *   不发即剥离，**无需任何正则 replace**，且对已存历史零影响。
+   * - true：把 thinking 以 `<think>…</think>` 前缀回包进 content（**仅内存组装，不落盘**）。
+   */
+  includeThinkingInHistory?: boolean;
 }
 
 export interface BuiltMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
+
+/**
+ * P0-1：回传思考时的包裹标签（与 thinking-parser 的默认标签保持一致）
+ * 纯技术常量（英文），无需 i18n。
+ */
+const THINKING_OPEN_TAG = '<think>';
+const THINKING_CLOSE_TAG = '</think>';
 
 export interface BuiltPrompt {
   messages: BuiltMessage[];
@@ -167,8 +181,17 @@ export async function buildPrompt(
   ];
 
   // 添加对话历史
+  // P0-1：thinking 与 content 分字段存储，默认只读 content（天然剥离）；
+  // 仅当 includeThinkingInHistory 开启时才在**内存中**回包成 <think> 前缀，
+  // 绝不修改传入的 history 对象（无副作用）。
+  const includeThinking = settings.includeThinkingInHistory === true;
   for (const msg of history) {
-    messages.push({ role: msg.role, content: msg.content });
+    const hasThinking = typeof msg.thinking === 'string' && msg.thinking !== '';
+    const content =
+      includeThinking && hasThinking
+        ? `${THINKING_OPEN_TAG}${msg.thinking}${THINKING_CLOSE_TAG}${msg.content}`
+        : msg.content;
+    messages.push({ role: msg.role, content });
   }
 
   // 5. 注入 @D 深度条目（W6 新增）

@@ -148,3 +148,73 @@ describe('LocalApiClient 流式 (T-04)', () => {
     expect(text).toBe('完整回复');
   });
 });
+
+// ── P0-3：top_p 读取修复（请求优先于硬编码 0.95） ──
+
+describe('LocalApiClient — P0-3 top_p 取值优先级', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+    vi.resetModules();
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+    vi.doUnmock('@/stores/local-model');
+  });
+
+  /** 抓取传给引擎的 topP */
+  async function captureTopP(
+    store: ReturnType<typeof makeMockStore>,
+    request: { messages: Array<{ role: 'user'; content: string }>; model: string; topP?: number }
+  ): Promise<number | undefined> {
+    const infer = store.infer as unknown as { mock: { calls: unknown[][] } };
+    mockLocalModelStore(store);
+    const { LocalApiClient: LocalClient } = await import('@api/local-api-client');
+    const client = new LocalClient('test-model');
+    await client.chat(request);
+    const call = infer.mock.calls[0]?.[0] as { topP?: number } | undefined;
+    return call?.topP;
+  }
+
+  it('request.topP 有值时优先于 store 默认（修既有漏洞）', async () => {
+    const store = makeMockStore({});
+    (store as unknown as { settings: { defaultTopP: number } }).settings = { defaultTopP: 0.5 };
+    const topP = await captureTopP(store, {
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'test-model',
+      topP: 0.3,
+    });
+    expect(topP).toBe(0.3);
+  });
+
+  it('request.topP 为 0 时也应被采信（0 是合法值，不是"未设置"）', async () => {
+    const store = makeMockStore({});
+    (store as unknown as { settings: { defaultTopP: number } }).settings = { defaultTopP: 0.5 };
+    const topP = await captureTopP(store, {
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'test-model',
+      topP: 0,
+    });
+    expect(topP).toBe(0);
+  });
+
+  it('request.topP 未设置时回落到 store.settings.defaultTopP', async () => {
+    const store = makeMockStore({});
+    (store as unknown as { settings: { defaultTopP: number } }).settings = { defaultTopP: 0.66 };
+    const topP = await captureTopP(store, {
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'test-model',
+    });
+    expect(topP).toBe(0.66);
+  });
+
+  it('两者都未设置时回落到 0.95（保持既有默认行为）', async () => {
+    const store = makeMockStore({});
+    const topP = await captureTopP(store, {
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'test-model',
+    });
+    expect(topP).toBe(0.95);
+  });
+});

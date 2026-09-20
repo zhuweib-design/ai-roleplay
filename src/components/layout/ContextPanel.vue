@@ -7,6 +7,15 @@ import { useChatStore } from '@/stores/chat';
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
+import SegmentedControl from '@/components/common/SegmentedControl.vue';
+import {
+  resolveReasoningCapability,
+  supportsSamplingParam,
+  resolveSampling,
+  matchesReasoningModelPattern,
+} from '@/api/reasoning-capability';
+import type { ReasoningEffort } from '@/api/types';
+import { REASONING_EFFORTS, type SamplingOverrides } from '@/types';
 import { t } from '@/i18n';
 import type { ApiProfile } from '@/types';
 
@@ -114,6 +123,105 @@ function onAuthorNote(e: Event) {
   const v = (e.target as HTMLTextAreaElement).value;
   characterStore.updateCharacter(char.value.id, { authorNote: v });
 }
+
+// ── P0-2 思考强度 / P0-3 采样参数（角色级覆盖） ──
+
+/** 当前生效 Profile 的思考强度能力；'none' 时控件隐藏（不为统一而暴露无效开关） */
+const reasoningCapability = computed(() =>
+  effectiveProfile.value ? resolveReasoningCapability(effectiveProfile.value) : 'none'
+);
+
+/**
+ * 决策：REASONING_MODEL_RE **不作为隐藏依据，只作提示依据**。
+ * 正则必然滞后于新模型，用它隐藏会让功能对大多数用户不可见。
+ */
+const reasoningHeuristicMiss = computed(
+  () => !matchesReasoningModelPattern(effectiveProfile.value?.model)
+);
+
+/** 角色级采样覆盖（可能为 null） */
+const charSampling = computed<SamplingOverrides | null>(() => char.value.sampling ?? null);
+
+/** 三档合并后的实际生效值（角色级 ?? Profile 级 ?? 全局默认） */
+const resolvedSampling = computed(() =>
+  resolveSampling(
+    charSampling.value,
+    effectiveProfile.value?.sampling ?? null,
+    settingsStore.samplingDefaults ?? null
+  )
+);
+
+/** 三档思考强度选项（跟随上游配置时用 llm.reasoningFollow 文案展示） */
+const reasoningOptions = computed(() =>
+  REASONING_EFFORTS.map((value) => ({
+    value,
+    label:
+      value === 'low'
+        ? t('llm.reasoningLow')
+        : value === 'medium'
+          ? t('llm.reasoningMedium')
+          : t('llm.reasoningHigh'),
+  }))
+);
+
+/** 实际展示/下发的思考强度：角色级 ?? Profile 级 */
+const effectiveReasoningEffort = computed<ReasoningEffort | null>(
+  () => char.value.reasoningEffort ?? effectiveProfile.value?.reasoningEffort ?? null
+);
+
+function onReasoningEffort(value: string | null): void {
+  if (value !== 'low' && value !== 'medium' && value !== 'high') return;
+  characterStore.updateCharacter(char.value.id, { reasoningEffort: value });
+}
+
+/**
+ * 角色级采样参数写入
+ * 语义：`undefined` / `null` = 未设置 = 跟随 Profile → 全局默认（绝不用 0 表示未设置）
+ */
+function writeSampling(patch: Partial<SamplingOverrides>): void {
+  const next: SamplingOverrides = { ...(charSampling.value ?? {}) };
+  for (const [k, v] of Object.entries(patch) as Array<
+    [keyof SamplingOverrides, number | null | undefined]
+  >) {
+    if (typeof v === 'number' && Number.isFinite(v)) next[k] = v;
+    else delete next[k];
+  }
+  characterStore.updateCharacter(char.value.id, { sampling: next });
+}
+
+/** 恢复默认（把角色级覆盖置回未设置） */
+function resetSampling(key: keyof SamplingOverrides): void {
+  writeSampling({ [key]: null } as Partial<SamplingOverrides>);
+}
+
+/** 角色级是否显式设置了该参数（决定是否显示"恢复默认"按钮） */
+function isCharSet(key: keyof SamplingOverrides): boolean {
+  return typeof charSampling.value?.[key] === 'number';
+}
+
+/** 展示用数值：未设置时用合并后的生效值，都没有时用中性默认值 */
+function displayValue(key: keyof SamplingOverrides, fallback: number): number {
+  const v = resolvedSampling.value[key];
+  return typeof v === 'number' ? v : fallback;
+}
+
+function onTopP(e: Event): void {
+  writeSampling({ topP: Number((e.target as HTMLInputElement).value) });
+}
+
+function onFrequencyPenalty(e: Event): void {
+  writeSampling({ frequencyPenalty: Number((e.target as HTMLInputElement).value) });
+}
+
+/** 采样参数是否被当前 provider 支持（不支持则隐藏控件） */
+const supportsTopP = computed(() =>
+  effectiveProfile.value ? supportsSamplingParam(effectiveProfile.value, 'topP') : false
+);
+const supportsFrequencyPenalty = computed(() =>
+  effectiveProfile.value
+    ? supportsSamplingParam(effectiveProfile.value, 'frequencyPenalty')
+    : false
+);
 
 function onAuthorDepth(e: Event) {
   const v = Number((e.target as HTMLInputElement).value);
@@ -335,6 +443,88 @@ class="token-bar" role="progressbar"
             @input="onMaxTokens"
           />
           <span class="ctx-range-value" aria-hidden="true">{{ char.maxTokens }}</span>
+        </label>
+
+        <!-- P0-2 思考强度：capability = none 时整个隐藏（不为统一而暴露无效开关） -->
+        <div v-if="reasoningCapability !== 'none'" class="ctx-param-row">
+          <span class="ctx-param-label">{{ t('ctx.reasoningEffort') }}</span>
+          <SegmentedControl
+            :model-value="effectiveReasoningEffort"
+            :options="reasoningOptions"
+            :aria-label="t('ctx.reasoningEffortAria')"
+            @update:model-value="onReasoningEffort"
+          />
+          <!-- 正则只作提示：未命中仍允许设置 -->
+          <p v-if="reasoningHeuristicMiss" class="ctx-param-hint">
+            {{ t('llm.reasoningMaybeUnsupported') }}
+          </p>
+        </div>
+      </section>
+
+      <!-- P0-3 高级采样：角色级只放 topP + frequencyPenalty（RP 场景最需要防复读） -->
+      <section
+        v-if="supportsTopP || supportsFrequencyPenalty"
+        class="ctx-section"
+        aria-labelledby="ctx-sampling-title"
+      >
+        <header class="ctx-section-header">
+          <span id="ctx-sampling-title" class="ctx-section-title">{{ t('ctx.samplingTitle') }}</span>
+        </header>
+
+        <label v-if="supportsTopP" class="ctx-range-label">
+          <span>{{ t('ctx.topP') }}</span>
+          <input
+            type="range"
+            class="tk-range"
+            min="0"
+            max="1"
+            step="0.05"
+            :value="displayValue('topP', 1)"
+            :aria-label="t('ctx.topPAria')"
+            @input="onTopP"
+          />
+          <span class="ctx-range-value" aria-hidden="true">
+            {{ isCharSet('topP') ? displayValue('topP', 1).toFixed(2) : t('llm.samplingUnset') }}
+          </span>
+          <button
+            v-if="isCharSet('topP')"
+            type="button"
+            class="ctx-reset-btn"
+            :aria-label="t('llm.samplingReset')"
+            @click="resetSampling('topP')"
+          >
+            <Icon name="close" :size="12" />
+          </button>
+        </label>
+
+        <label v-if="supportsFrequencyPenalty" class="ctx-range-label">
+          <span>{{ t('ctx.frequencyPenalty') }}</span>
+          <input
+            type="range"
+            class="tk-range"
+            min="-2"
+            max="2"
+            step="0.1"
+            :value="displayValue('frequencyPenalty', 0)"
+            :aria-label="t('ctx.frequencyPenaltyAria')"
+            @input="onFrequencyPenalty"
+          />
+          <span class="ctx-range-value" aria-hidden="true">
+            {{
+              isCharSet('frequencyPenalty')
+                ? displayValue('frequencyPenalty', 0).toFixed(1)
+                : t('llm.samplingUnset')
+            }}
+          </span>
+          <button
+            v-if="isCharSet('frequencyPenalty')"
+            type="button"
+            class="ctx-reset-btn"
+            :aria-label="t('llm.samplingReset')"
+            @click="resetSampling('frequencyPenalty')"
+          >
+            <Icon name="close" :size="12" />
+          </button>
         </label>
       </section>
     </div>
@@ -577,9 +767,10 @@ class="token-bar" role="progressbar"
   outline: none;
 }
 
+/* P0-3：第 4 列留给「恢复默认」按钮（无按钮时该列宽度为 0，不改变既有布局） */
 .ctx-range-label {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: var(--spacing-sm);
   margin-top: 10px;
@@ -650,6 +841,51 @@ class="token-bar" role="progressbar"
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* P0-2/P0-3：思考强度与采样参数行 */
+.ctx-param-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--spacing-sm);
+}
+
+.ctx-param-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.ctx-param-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.ctx-reset-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ctx-reset-btn:hover {
+    color: var(--foreground);
+  }
+}
+
+.ctx-reset-btn:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 1px;
 }
 
 @media (max-width: 640px) {

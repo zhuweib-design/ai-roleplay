@@ -638,3 +638,128 @@ describe('type-adapters — worldEntriesToStorage', () => {
     expect(entries[0]!.name).toBe('世界1');
   });
 });
+
+// ── P0-1 / P0-2 / P0-3 新增字段的 round-trip ──
+
+describe('type-adapters — P0 新字段 round-trip', () => {
+  it('UICharacter 含 reasoningEffort/sampling 时经 card 往返无损', () => {
+    const ui = makeUIChar({
+      reasoningEffort: 'high',
+      sampling: { topP: 0.9, presencePenalty: 0.5, frequencyPenalty: -0.25 },
+    });
+
+    const card = uiCharToCard(ui);
+    expect(card.ext?.reasoningEffort).toBe('high');
+    expect(card.ext?.sampling).toEqual({
+      topP: 0.9,
+      presencePenalty: 0.5,
+      frequencyPenalty: -0.25,
+    });
+
+    const back = cardToUiChar(card, {
+      conversations: ui.conversations,
+      messages: ui.messages,
+      worldEntries: ui.worldEntries,
+      tokenBudget: ui.tokenBudget,
+    });
+    expect(back.reasoningEffort).toBe('high');
+    expect(back.sampling).toEqual({
+      topP: 0.9,
+      presencePenalty: 0.5,
+      frequencyPenalty: -0.25,
+    });
+  });
+
+  it('sampling 中的 null 字段应被剔除（null = 未设置，不落盘）', () => {
+    const ui = makeUIChar({
+      sampling: { topP: 0.7, presencePenalty: null, frequencyPenalty: null },
+    });
+
+    const card = uiCharToCard(ui);
+    expect(card.ext?.sampling).toEqual({ topP: 0.7 });
+  });
+
+  it('sampling 全为 null 时不应写入 ext（避免空对象污染 schema）', () => {
+    const ui = makeUIChar({
+      sampling: { topP: null, presencePenalty: null, frequencyPenalty: null },
+    });
+
+    const card = uiCharToCard(ui);
+    expect(card.ext?.sampling).toBeUndefined();
+  });
+
+  it('reasoningEffort 为 null/undefined 时不应写入 ext（= 跟随 Profile）', () => {
+    expect(uiCharToCard(makeUIChar({ reasoningEffort: null })).ext?.reasoningEffort).toBeUndefined();
+    expect(uiCharToCard(makeUIChar({ reasoningEffort: undefined })).ext?.reasoningEffort).toBeUndefined();
+  });
+
+  it('旧数据（无新字段）解包后行为不变：reasoningEffort=null、sampling=null', () => {
+    const card = makeCard(); // 无 ext
+    const ui = cardToUiChar(card);
+
+    expect(ui.reasoningEffort).toBeNull();
+    expect(ui.sampling).toBeNull();
+    // 既有字段不受影响
+    expect(ui.temperature).toBe(1.0);
+    expect(ui.maxTokens).toBe(4096);
+  });
+
+  it('ext.sampling 含非法值时逐字段丢弃', () => {
+    const card = makeCard({
+      ext: {
+        sampling: { topP: 0.5, presencePenalty: 'x', frequencyPenalty: Number.NaN },
+      } as unknown as CharacterCard['ext'],
+    });
+
+    const ui = cardToUiChar(card);
+    expect(ui.sampling).toEqual({ topP: 0.5 });
+  });
+
+  it('ext.reasoningEffort 为非法值时按未设置处理', () => {
+    const card = makeCard({
+      ext: { reasoningEffort: 'ultra' } as unknown as CharacterCard['ext'],
+    });
+
+    expect(cardToUiChar(card).reasoningEffort).toBeNull();
+  });
+});
+
+describe('type-adapters — P0-1 思维链字段', () => {
+  it('UIMessage.thinking 应写入 ChatMessage.thinking', () => {
+    const ui = makeUIMsg({ role: 'assistant', content: '正文', thinking: '我在思考' });
+    const msg = uiMsgToChatMsg(ui);
+
+    expect(msg.thinking).toBe('我在思考');
+    expect(msg.content).toBe('正文');
+  });
+
+  it('ChatMessage.thinking 应回读到 UIMessage.thinking', () => {
+    const msg = makeChatMsg({ content: '正文', thinking: '我在思考' });
+    const ui = chatMsgToUiMsg(msg);
+
+    expect(ui?.thinking).toBe('我在思考');
+    expect(ui?.content).toBe('正文');
+  });
+
+  it('thinking 为空串时不写入（保持"从未产生思考"语义）', () => {
+    expect(uiMsgToChatMsg(makeUIMsg({ thinking: '' })).thinking).toBeUndefined();
+    expect(chatMsgToUiMsg(makeChatMsg({ thinking: '' }))?.thinking).toBeUndefined();
+  });
+
+  it('旧数据无 thinking 字段时双向转换行为不变', () => {
+    expect(uiMsgToChatMsg(makeUIMsg()).thinking).toBeUndefined();
+    expect(chatMsgToUiMsg(makeChatMsg())?.thinking).toBeUndefined();
+  });
+
+  it('批量转换保留 thinking', () => {
+    const msgs: UIMessage[] = [
+      makeUIMsg({ id: 'a', role: 'assistant', thinking: '想 A' }),
+      makeUIMsg({ id: 'b', role: 'user', content: '问' }),
+    ];
+    const chatMsgs = uiMsgsToChatMsgs(msgs);
+    expect(chatMsgs.map((m) => m.thinking)).toEqual(['想 A', undefined]);
+
+    const back = chatMsgsToUiMsgs(chatMsgs);
+    expect(back[0]?.thinking).toBe('想 A');
+  });
+});

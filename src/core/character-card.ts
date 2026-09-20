@@ -8,6 +8,7 @@
  */
 
 import { t } from '@/i18n';
+import type { ReasoningEffort, SamplingParams } from '@api/types';
 
 /** 单个属性项（键值对，支持数值或文本类型） */
 export interface CharacterAttribute {
@@ -44,6 +45,13 @@ export interface ChatMessage {
   timestamp: string;
   swipes: string[];
   swipeIndex: number;
+  /**
+   * P0-1：模型思维链。与 content 分离存储 ——
+   * prompt-builder 只读 content，因此"回传前剥离"为天然默认（零 replace）。
+   * 旧数据无此字段 → 读取为 undefined → 行为完全不变。
+   * 仅在 assistant 消息上有意义（user/system 恒空）。
+   */
+  thinking?: string;
 }
 
 /**
@@ -65,6 +73,13 @@ export interface CharacterExt {
   temperature?: number;
   /** 最大生成 Token 数 */
   maxTokens?: number;
+  /** P0-2：角色级思考强度覆盖；undefined/null = 跟随 Profile */
+  reasoningEffort?: ReasoningEffort | null;
+  /**
+   * P0-3：角色级采样参数覆盖（收纳为对象，避免持久化 schema 继续膨胀）
+   * 语义：`undefined` / `null` = 不传 = 供应商默认，绝不用 0 表示未设置。
+   */
+  sampling?: SamplingParams | null;
   /** 头像类型：图片或渐变 */
   avatarType?: 'image' | 'gradient';
   gradientFrom?: string;

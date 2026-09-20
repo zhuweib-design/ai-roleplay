@@ -74,6 +74,18 @@ pub struct ChatStreamRequest {
     /// 最大 tokens（可选）
     #[serde(default)]
     pub max_tokens: Option<u32>,
+    /// P0-3：核采样阈值 top_p（可选；未设置 = 不传 = 供应商默认）
+    #[serde(default, alias = "top_p")]
+    pub top_p: Option<f32>,
+    /// P0-3：存在惩罚（可选；OpenAI 兼容层专有）
+    #[serde(default, alias = "presence_penalty")]
+    pub presence_penalty: Option<f32>,
+    /// P0-3：频率惩罚（可选；OpenAI 兼容层专有）
+    #[serde(default, alias = "frequency_penalty")]
+    pub frequency_penalty: Option<f32>,
+    /// P0-2：思考强度 low/medium/high（可选；命中 capability 才下发）
+    #[serde(default, alias = "reasoning_effort")]
+    pub reasoning_effort: Option<String>,
     /// 额外 headers（如 Azure api-key）
     #[serde(default)]
     pub extra_headers: Option<HashMap<String, String>>,
@@ -86,9 +98,11 @@ pub struct ChatStreamRequest {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum StreamEvent {
-    /// 收到增量 token
+    /// 收到增量 token（P0-1：thinking 为字段型思考增量，来自 delta.reasoning_content）
     Delta {
         delta: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        thinking: Option<String>,
     },
     /// 生成完成
     Done {
@@ -97,6 +111,9 @@ pub enum StreamEvent {
         /// 用量统计(供应商返回时;含前缀缓存拆解 prompt_cache_hit/miss_tokens)
         #[serde(skip_serializing_if = "Option::is_none")]
         usage: Option<serde_json::Value>,
+        /// P0-1：完整思考内容（字段型累计值；无思考时不序列化该键）
+        #[serde(skip_serializing_if = "Option::is_none")]
+        full_thinking: Option<String>,
     },
     /// 错误（含用户中止）
     Error {
@@ -235,6 +252,20 @@ async fn run_chat_stream(
     if let Some(max_tokens) = request.max_tokens {
         body["max_tokens"] = serde_json::json!(max_tokens);
     }
+    // P0-3：采样参数逐个注入（未设置即不注入，由供应商使用自己的默认值）
+    if let Some(top_p) = request.top_p {
+        body["top_p"] = serde_json::json!(top_p);
+    }
+    if let Some(presence_penalty) = request.presence_penalty {
+        body["presence_penalty"] = serde_json::json!(presence_penalty);
+    }
+    if let Some(frequency_penalty) = request.frequency_penalty {
+        body["frequency_penalty"] = serde_json::json!(frequency_penalty);
+    }
+    // P0-2：思考强度（OpenAI 兼容推理模型的 reasoning_effort）
+    if let Some(effort) = &request.reasoning_effort {
+        body["reasoning_effort"] = serde_json::json!(effort);
+    }
 
     // 构造 HTTP client（全局复用连接池，P1-5）
     let client = http_client();
@@ -301,6 +332,8 @@ async fn run_chat_stream(
     // 可跨网络 chunk 边界，旧实现会截断成 U+FFFD 永久损坏内容（P0-1）
     let mut buffer: Vec<u8> = Vec::new();
     let mut full_content = String::new();
+    // P0-1：字段型思考累计值（delta.reasoning_content）
+    let mut full_thinking = String::new();
     let mut finish_reason: Option<String> = None;
     // 用量统计(usage chunk 累积,DeepSeek 系含前缀缓存拆解)
     let mut usage: Option<serde_json::Value> = None;
@@ -358,13 +391,29 @@ async fn run_chat_stream(
                                 full_content: full_content.clone(),
                                 finish_reason: finish_reason.clone(),
                                 usage: usage.clone(),
+                                full_thinking: if full_thinking.is_empty() {
+                                    None
+                                } else {
+                                    Some(full_thinking.clone())
+                                },
                             },
                         );
                         return Ok(full_content);
                     }
-                    ParsedSSE::Delta { delta } => {
-                        full_content.push_str(&delta);
-                        let _ = app.emit(&channel, StreamEvent::Delta { delta });
+                    ParsedSSE::Delta { delta, thinking } => {
+                        if let Some(d) = &delta {
+                            full_content.push_str(d);
+                        }
+                        if let Some(t) = &thinking {
+                            full_thinking.push_str(t);
+                        }
+                        let _ = app.emit(
+                            &channel,
+                            StreamEvent::Delta {
+                                delta: delta.unwrap_or_default(),
+                                thinking,
+                            },
+                        );
                     }
                     ParsedSSE::Usage { usage: u } => {
                         // 用量统计(通常为流式末 chunk;含前缀缓存拆解)
@@ -395,6 +444,11 @@ async fn run_chat_stream(
             full_content: full_content.clone(),
             finish_reason: finish_reason.clone(),
             usage: usage.clone(),
+            full_thinking: if full_thinking.is_empty() {
+                None
+            } else {
+                Some(full_thinking.clone())
+            },
         },
     );
     Ok(full_content)
@@ -484,8 +538,11 @@ pub(crate) fn validate_endpoint(
 enum ParsedSSE {
     /// [DONE] 标记
     Done,
-    /// 增量内容
-    Delta { delta: String },
+    /// 增量内容（delta 与 thinking 可能同时存在）
+    Delta {
+        delta: Option<String>,
+        thinking: Option<String>,
+    },
     /// 结束原因（如 stop / length / content_filter）
     FinishReason { reason: String },
     /// 用量统计(usage chunk,choices 为空数组)
@@ -566,14 +623,30 @@ fn parse_sse_event(raw: &str) -> Option<ParsedSSE> {
     let choices = parsed.get("choices")?.as_array()?;
     let choice = choices.first()?;
 
-    // 提取 delta
+    // 提取 delta（P0-1：content 与 reasoning_content 可同时出现）
     if let Some(delta) = choice.get("delta") {
-        if let Some(content) = delta.get("content").and_then(|c| c.as_str()) {
-            return Some(ParsedSSE::Delta {
-                delta: content.to_string(),
+        let content = delta
+            .get("content")
+            .and_then(|c| c.as_str())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
+        // 部分网关（如 OpenRouter）用 reasoning，主流用 reasoning_content，两者都读
+        let thinking = delta
+            .get("reasoning_content")
+            .and_then(|c| c.as_str())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .or_else(|| {
+                delta
+                    .get("reasoning")
+                    .and_then(|c| c.as_str())
+                    .filter(|s| !s.is_empty())
+                    .map(|s| s.to_string())
             });
+        if content.is_some() || thinking.is_some() {
+            return Some(ParsedSSE::Delta { delta: content, thinking });
         }
-        // delta 但无 content（首个 chunk 的角色宣告），忽略
+        // delta 但无 content / thinking（首个 chunk 的角色宣告），继续看 finish_reason
     }
 
     // 提取 finish_reason
@@ -632,7 +705,10 @@ mod tests {
         let raw = r#"data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}"#;
         let result = parse_sse_event(raw);
         match result {
-            Some(ParsedSSE::Delta { delta }) => assert_eq!(delta, "Hello"),
+            Some(ParsedSSE::Delta { delta, thinking }) => {
+                assert_eq!(delta.as_deref(), Some("Hello"));
+                assert_eq!(thinking, None);
+            }
             _ => panic!("Expected Delta, got {:?}", result),
         }
     }
@@ -817,15 +893,82 @@ mod usage_tests {
             full_content: "ok".into(),
             finish_reason: Some("stop".into()),
             usage: Some(serde_json::json!({"prompt_cache_hit_tokens": 60})),
+            full_thinking: Some("想过".into()),
         };
         let json = serde_json::to_string(&done).unwrap();
         assert!(json.contains("prompt_cache_hit_tokens"));
+        assert!(json.contains("full_thinking"));
         let no_usage = StreamEvent::Done {
             full_content: "ok".into(),
             finish_reason: None,
             usage: None,
+            full_thinking: None,
         };
         let json2 = serde_json::to_string(&no_usage).unwrap();
         assert!(!json2.contains("usage"));
+        assert!(!json2.contains("full_thinking"));
+    }
+
+    #[test]
+    fn test_delta_event_omits_thinking_when_none() {
+        let d = StreamEvent::Delta {
+            delta: "hi".into(),
+            thinking: None,
+        };
+        let json = serde_json::to_string(&d).unwrap();
+        assert!(!json.contains("thinking"));
+        let d2 = StreamEvent::Delta {
+            delta: "hi".into(),
+            thinking: Some("想".into()),
+        };
+        let json2 = serde_json::to_string(&d2).unwrap();
+        assert!(json2.contains("thinking"));
+    }
+
+    #[test]
+    fn test_parse_sse_delta_with_reasoning_content() {
+        let raw = r#"data: {"choices":[{"delta":{"content":"答","reasoning_content":"想"}}]}"#;
+        match parse_sse_event(raw) {
+            Some(ParsedSSE::Delta { delta, thinking }) => {
+                assert_eq!(delta.as_deref(), Some("答"));
+                assert_eq!(thinking.as_deref(), Some("想"));
+            }
+            _ => panic!("Expected Delta with thinking"),
+        }
+    }
+
+    #[test]
+    fn test_parse_sse_delta_with_reasoning_alias() {
+        let raw = r#"data: {"choices":[{"delta":{"reasoning":"想"}}]}"#;
+        match parse_sse_event(raw) {
+            Some(ParsedSSE::Delta { delta, thinking }) => {
+                assert_eq!(delta, None);
+                assert_eq!(thinking.as_deref(), Some("想"));
+            }
+            _ => panic!("Expected Delta with thinking"),
+        }
+    }
+
+    #[test]
+    fn test_chat_stream_request_accepts_camel_and_snake_sampling() {
+        let camel = r#"{"endpoint":"https://x/v1/chat/completions","apiKey":"k","model":"m","messages":[],"topP":0.8,"presencePenalty":0.1,"frequencyPenalty":0.2,"reasoningEffort":"high"}"#;
+        let req: ChatStreamRequest = serde_json::from_str(camel).unwrap();
+        assert_eq!(req.top_p, Some(0.8));
+        assert_eq!(req.presence_penalty, Some(0.1));
+        assert_eq!(req.frequency_penalty, Some(0.2));
+        assert_eq!(req.reasoning_effort.as_deref(), Some("high"));
+
+        let snake = r#"{"endpoint":"https://x/v1/chat/completions","apiKey":"k","model":"m","messages":[],"top_p":0.8,"presence_penalty":0.1,"frequency_penalty":0.2,"reasoning_effort":"low"}"#;
+        let req2: ChatStreamRequest = serde_json::from_str(snake).unwrap();
+        assert_eq!(req2.top_p, Some(0.8));
+        assert_eq!(req2.reasoning_effort.as_deref(), Some("low"));
+
+        // 旧请求体不含新字段时全部为 None（向后兼容）
+        let legacy = r#"{"endpoint":"https://x/v1/chat/completions","apiKey":"k","model":"m","messages":[]}"#;
+        let req3: ChatStreamRequest = serde_json::from_str(legacy).unwrap();
+        assert_eq!(req3.top_p, None);
+        assert_eq!(req3.presence_penalty, None);
+        assert_eq!(req3.frequency_penalty, None);
+        assert_eq!(req3.reasoning_effort, None);
     }
 }

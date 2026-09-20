@@ -110,6 +110,8 @@ export class OpenAIClient implements ApiClient {
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
     let fullContent = '';
+    // P0-1：字段型思考的累计值（标签型由编排层 ThinkingSplitter 处理，此处不涉及）
+    let fullThinking = '';
     let finishReason: string | undefined;
     // T-02：流式 tool_calls 增量聚合（按 index，arguments 逐段拼接）
     const toolCallAgg = new Map<
@@ -152,15 +154,22 @@ export class OpenAIClient implements ApiClient {
               type: 'done',
               fullContent,
               finishReason,
+              ...(fullThinking ? { fullThinking } : {}),
               ...(usage ? { usage } : {}),
               ...(toolCallAgg.size > 0 ? { toolCalls: toOpenAIToolCalls(toolCallAgg) } : {}),
             };
             return;
           }
 
-          if (event.delta !== undefined) {
-            fullContent += event.delta;
-            yield { type: 'delta', delta: event.delta };
+          // P0-1：正文增量与思考增量可能同时出现（同一 chunk 两个字段），合并为一次事件
+          if (event.delta !== undefined || event.reasoning !== undefined) {
+            if (event.delta !== undefined) fullContent += event.delta;
+            if (event.reasoning !== undefined) fullThinking += event.reasoning;
+            yield {
+              type: 'delta',
+              ...(event.delta !== undefined ? { delta: event.delta } : {}),
+              ...(event.reasoning !== undefined ? { thinkingDelta: event.reasoning } : {}),
+            };
           }
 
           // T-02：聚合流式 tool_calls 增量
@@ -182,6 +191,7 @@ export class OpenAIClient implements ApiClient {
               totalTokens: event.usage.total_tokens,
               promptCacheHitTokens: event.usage.prompt_cache_hit_tokens,
               promptCacheMissTokens: event.usage.prompt_cache_miss_tokens,
+              reasoningTokens: event.usage.reasoning_tokens,
             };
           }
 
@@ -196,6 +206,7 @@ export class OpenAIClient implements ApiClient {
         type: 'done',
         fullContent,
         finishReason,
+        ...(fullThinking ? { fullThinking } : {}),
         ...(usage ? { usage } : {}),
         ...(toolCallAgg.size > 0 ? { toolCalls: toOpenAIToolCalls(toolCallAgg) } : {}),
       };
@@ -354,6 +365,22 @@ export class OpenAIClient implements ApiClient {
       // OpenAI 字段为 max_tokens（v1）或 max_completion_tokens（v2 较新模型）
       body.max_tokens = request.maxTokens;
     }
+    // P0-3：以下采样参数沿用 T-16 语义 —— undefined/null = 不传 = 供应商默认。
+    // 绝不能用 0 表示"未设置"（top_p=0 是"只取概率最高的 token"，语义完全不同）。
+    if (request.topP !== undefined && request.topP !== null) {
+      body.top_p = request.topP;
+    }
+    if (request.presencePenalty !== undefined && request.presencePenalty !== null) {
+      body.presence_penalty = request.presencePenalty;
+    }
+    if (request.frequencyPenalty !== undefined && request.frequencyPenalty !== null) {
+      body.frequency_penalty = request.frequencyPenalty;
+    }
+    // P0-2：仅 OpenAI 兼容推理模型接受 reasoning_effort；其余服务端会报错，
+    // 由既有错误链路提示（上层已按 capability 判定是否下发）
+    if (request.reasoningEffort) {
+      body.reasoning_effort = request.reasoningEffort;
+    }
     // T-02：工具调用定义透传
     if (request.tools && request.tools.length > 0) {
       body.tools = request.tools;
@@ -390,6 +417,12 @@ function statusToKind(status: number): ApiErrorKind {
 /** 将 SSE 单事件解析结果 */
 interface SSEParsed {
   delta?: string;
+  /**
+   * P0-1：字段型思考增量
+   * 主流用 `delta.reasoning_content`，部分网关（如 OpenRouter）用 `delta.reasoning`，
+   * 两者**同时读取，取先出现的非空值**。
+   */
+  reasoning?: string;
   finishReason?: string;
   done?: boolean;
   /** T-02：流式 tool_calls 增量（按 index 分段） */
@@ -405,6 +438,8 @@ interface SSEParsed {
     total_tokens?: number;
     prompt_cache_hit_tokens?: number;
     prompt_cache_miss_tokens?: number;
+    /** P0-1：推理模型思考消耗的 token（P1 才做 UI 展示，本轮仅预留数据位） */
+    reasoning_tokens?: number;
   };
 }
 
@@ -442,6 +477,9 @@ function parseSSEEvent(raw: string): SSEParsed | null {
         delta?: {
           role?: string;
           content?: string;
+          /** P0-1：OpenAI 兼容推理模型的思考增量（部分网关用 reasoning） */
+          reasoning_content?: string;
+          reasoning?: string;
           tool_calls?: Array<{
             index?: number;
             id?: string;
@@ -456,6 +494,7 @@ function parseSSEEvent(raw: string): SSEParsed | null {
         total_tokens?: number;
         prompt_cache_hit_tokens?: number;
         prompt_cache_miss_tokens?: number;
+        completion_tokens_details?: { reasoning_tokens?: number };
       };
       error?: { message?: string };
     };
@@ -482,6 +521,9 @@ function parseSSEEvent(raw: string): SSEParsed | null {
           ...(parsed.usage.prompt_cache_miss_tokens !== undefined
             ? { prompt_cache_miss_tokens: parsed.usage.prompt_cache_miss_tokens }
             : {}),
+          ...(parsed.usage.completion_tokens_details?.reasoning_tokens !== undefined
+            ? { reasoning_tokens: parsed.usage.completion_tokens_details.reasoning_tokens }
+            : {}),
         }
       : undefined;
 
@@ -500,6 +542,8 @@ function parseSSEEvent(raw: string): SSEParsed | null {
 
     // 空字符串 content（如 OpenAI 首个 chunk 的角色宣告）不应作为 delta yield
     const deltaContent = choice.delta?.content;
+    // P0-1：同时读 reasoning_content 与 reasoning，取先出现的非空值
+    const deltaReasoning = choice.delta?.reasoning_content || choice.delta?.reasoning;
     const toolCalls = choice.delta?.tool_calls
       ?.filter((tc) => tc.index !== undefined)
       .map((tc) => ({
@@ -510,6 +554,7 @@ function parseSSEEvent(raw: string): SSEParsed | null {
 
     return {
       delta: deltaContent ? deltaContent : undefined,
+      ...(deltaReasoning ? { reasoning: deltaReasoning } : {}),
       finishReason: choice.finish_reason ?? undefined,
       ...(toolCalls && toolCalls.length > 0 ? { toolCalls } : {}),
       ...(usage ? { usage } : {}),

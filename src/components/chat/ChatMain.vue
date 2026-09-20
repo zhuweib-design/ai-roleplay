@@ -669,9 +669,14 @@ function startWithExample(text: string) {
         >
           {{ t('chat.loadOlder', { count: windowStart }) }}
         </button>
+        <!--
+          P0-1 渲染性能：v-memo 让历史消息在这些值未变时被 Vue **直接跳过 patch**，
+          只有最后一条（流式写入中）的消息参与更新；既有 RENDER_WINDOW 窗口化不动。
+        -->
         <MessageBubble
           v-for="msg in visibleMessages"
           :key="msg.id"
+          v-memo="[msg.content, msg.thinking, msg.generating, msg.narration, msg.narrationAfter]"
           :msg="msg"
           @action="handleMessageAction"
           :ref="(el) => cacheMsgHeight(el, msg.id)"

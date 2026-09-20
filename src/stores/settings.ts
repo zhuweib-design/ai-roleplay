@@ -8,7 +8,10 @@ import type {
   QuickReplyButton,
   ModelCategory,
   CustomTheme,
+  ThinkingConfig,
+  SamplingOverrides,
 } from '@/types';
+import { DEFAULT_THINKING_CONFIG } from '@/types';
 import { buildCustomThemeCss, generateThemeTokens, type ThemeTokens } from '@/core/theme-extractor';
 import type { StorageAdapter } from '../storage/storage-adapter';
 import {
@@ -92,6 +95,18 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // F11.3 Quick Reply 按钮列表（默认空）
   const quickReplies = ref<QuickReplyButton[]>([]);
+
+  /**
+   * P0-1 思维链全局偏好（默认：剥离历史思考 + 新消息折叠）
+   * 属用户偏好而非角色人设，因此落全局而非角色级。
+   */
+  const thinkingConfig = ref<ThinkingConfig>({ ...DEFAULT_THINKING_CONFIG });
+
+  /**
+   * P0-3 全局采样默认值
+   * 本轮**不提供 UI**，仅保留数据位与三档合并逻辑（角色级 ?? Profile 级 ?? 全局 ?? 不传）
+   */
+  const samplingDefaults = ref<SamplingOverrides | null>(null);
 
   // AC20 主密码会话管理（不持久化到存储层；仅运行时内存）
   // - masterPassword：仅运行时内存，刷新页面后需重新解锁
@@ -719,6 +734,24 @@ export const useSettingsStore = defineStore('settings', () => {
         if (Array.isArray(saved.quickReplies)) {
           quickReplies.value = saved.quickReplies;
         }
+        // P0-1 加载思维链偏好（向后兼容：无字段时保留默认值）
+        if (saved.thinkingConfig && typeof saved.thinkingConfig === 'object') {
+          const tc = saved.thinkingConfig as Partial<ThinkingConfig>;
+          thinkingConfig.value = {
+            stripFromHistory:
+              typeof tc.stripFromHistory === 'boolean'
+                ? tc.stripFromHistory
+                : DEFAULT_THINKING_CONFIG.stripFromHistory,
+            defaultCollapsed:
+              typeof tc.defaultCollapsed === 'boolean'
+                ? tc.defaultCollapsed
+                : DEFAULT_THINKING_CONFIG.defaultCollapsed,
+          };
+        }
+        // P0-3 加载全局采样默认值（null = 未设置）
+        if (saved.samplingDefaults && typeof saved.samplingDefaults === 'object') {
+          samplingDefaults.value = normalizeSamplingDefaults(saved.samplingDefaults);
+        }
         // AC20 加载主密码验证器（apiKey 字段保持加密形式，待 unlock 后解密）
         if (typeof saved.masterPasswordVerifier !== 'undefined') {
           masterPasswordVerifier.value = saved.masterPasswordVerifier;
@@ -808,6 +841,10 @@ export const useSettingsStore = defineStore('settings', () => {
         quickReplies: toRaw(quickReplies.value).map((b) => toRaw(b)),
         // AC20 主密码验证器
         masterPasswordVerifier: masterPasswordVerifier.value,
+        // P0-1 思维链偏好
+        thinkingConfig: { ...toRaw(thinkingConfig.value) },
+        // P0-3 全局采样默认值（null = 未设置）
+        samplingDefaults: samplingDefaults.value ? { ...toRaw(samplingDefaults.value) } : null,
       });
     } catch (err) {
       lastError.value = i18nT('settings.saveFailed', {
@@ -832,6 +869,22 @@ export const useSettingsStore = defineStore('settings', () => {
     lastError.value = null;
   }
 
+  /**
+   * P0-1：更新思维链偏好（局部 patch，未给字段保持原值）
+   * 调用方负责在需要落盘时调用 persistSettings()
+   */
+  function setThinkingConfig(patch: Partial<ThinkingConfig>): void {
+    thinkingConfig.value = { ...thinkingConfig.value, ...patch };
+  }
+
+  /**
+   * P0-3：更新全局采样默认值（传 null 清空 = 全部走供应商默认）
+   * 本轮无 UI，仅保留数据位与合并逻辑供后续接入
+   */
+  function setSamplingDefaults(value: SamplingOverrides | null): void {
+    samplingDefaults.value = value ? normalizeSamplingDefaults(value) : null;
+  }
+
   return {
     // 状态
     theme,
@@ -850,6 +903,9 @@ export const useSettingsStore = defineStore('settings', () => {
     summarizationConfig,
     // F11.3 Quick Reply
     quickReplies,
+    // P0-1 思维链偏好 / P0-3 全局采样默认值
+    thinkingConfig,
+    samplingDefaults,
     lastError,
     // AC20 主密码会话状态
     hasMasterPassword,
@@ -895,6 +951,9 @@ export const useSettingsStore = defineStore('settings', () => {
     moveQuickReply,
     clearQuickReplies,
     createQuickReplyTemplate,
+    // P0-1 思维链偏好 / P0-3 全局采样默认值
+    setThinkingConfig,
+    setSamplingDefaults,
     // T-07: SillyTavern Quick Reply 格式互导
     exportQuickRepliesSt,
     importQuickRepliesSt,
@@ -968,6 +1027,23 @@ function normalizeCustomTheme(ct: CustomTheme): CustomTheme {
     avgLuminance,
     tokens,
   };
+}
+
+/**
+ * P0-3：归一化全局采样默认值
+ * 逐字段校验，丢弃非法值；全空时返回 null（= 未设置，走供应商默认）
+ */
+function normalizeSamplingDefaults(raw: unknown): SamplingOverrides | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const src = raw as Record<string, unknown>;
+  const out: SamplingOverrides = {};
+  for (const key of ['topP', 'presencePenalty', 'frequencyPenalty'] as const) {
+    const v = src[key];
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      out[key] = v;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 /** 计算 hex 色的相对亮度（0-1），供旧数据缺 avgLuminance 时近似 */

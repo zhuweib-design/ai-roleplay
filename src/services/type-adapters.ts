@@ -1,5 +1,6 @@
-import type { CharacterCard, ChatMessage } from '@core/character-card';
-import type { UICharacter, UIMessage, WorldEntry } from '@/types';
+import type { CharacterCard, ChatMessage, CharacterExt } from '@core/character-card';
+import type { ReasoningEffort } from '@api/types';
+import type { UICharacter, UIMessage, WorldEntry, SamplingOverrides } from '@/types';
 import { t } from '@/i18n';
 
 /**
@@ -62,8 +63,65 @@ export function uiCharToCard(ui: UICharacter): CharacterCard {
       ...(ui.gradientTo ? { gradientTo: ui.gradientTo } : {}),
       ...(ui.storyId !== undefined ? { storyId: ui.storyId } : {}),
       ...(ui.boundWorldBookIds ? { boundWorldBookIds: [...ui.boundWorldBookIds] } : {}),
+      // P0-2：角色级思考强度（undefined/null = 跟随 Profile，不落盘避免误判）
+      ...(ui.reasoningEffort ? { reasoningEffort: ui.reasoningEffort } : {}),
+      // P0-3：角色级采样参数（深拷贝，且剔除 null 字段保持"未设置"语义）
+      ...(ui.sampling ? { sampling: normalizeSampling(ui.sampling) } : {}),
     },
   };
+}
+
+/**
+ * P0-3：归一化采样参数覆盖对象
+ *
+ * 规则：
+ * - 丢弃 `null` / `undefined` / 非有限数值字段（保持"未设置 = 不传"语义）
+ * - 全空时返回 undefined，避免落盘一个空对象污染 schema
+ */
+function normalizeSampling(
+  raw: Partial<Record<'topP' | 'presencePenalty' | 'frequencyPenalty', number | null>>
+): Record<string, number> | undefined {
+  const out: Record<string, number> = {};
+  for (const key of ['topP', 'presencePenalty', 'frequencyPenalty'] as const) {
+    const v = raw[key];
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      out[key] = v;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/**
+ * P0-2：从 ext 读取角色级思考强度（非法值按"未设置"处理，fail-open）
+ */
+function readReasoningEffort(ext?: CharacterExt): ReasoningEffort | undefined {
+  const v = ext?.reasoningEffort;
+  return v === 'low' || v === 'medium' || v === 'high' ? v : undefined;
+}
+
+/**
+ * P0-3：从 ext 读取角色级采样参数（逐字段校验，全空返回 undefined）
+ */
+function readSampling(ext?: CharacterExt): SamplingOverrides | undefined {
+  const raw = ext?.sampling;
+  if (!raw || typeof raw !== 'object') return undefined;
+  const out: SamplingOverrides = {};
+  for (const key of ['topP', 'presencePenalty', 'frequencyPenalty'] as const) {
+    const v = (raw as Record<string, unknown>)[key];
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      out[key] = v;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/**
+ * P0-3：兼容旧格式（采样字段曾可能直接存顶层索引签名）
+ */
+function readLegacySampling(card: CharacterCard): SamplingOverrides | undefined {
+  const raw = (card as Record<string, unknown>)['sampling'];
+  if (!raw || typeof raw !== 'object') return undefined;
+  return readSampling({ sampling: raw } as CharacterExt);
 }
 
 /**
@@ -126,6 +184,10 @@ export function cardToUiChar(
     // 迭代33：关联字段从 ext 恢复（未持久化时保持未设置语义）
     ...(storyId !== undefined ? { storyId } : {}),
     ...(boundWorldBookIds ? { boundWorldBookIds: [...boundWorldBookIds] } : {}),
+    // P0-2：角色级思考强度（ext 优先；旧数据无此字段 → undefined = 跟随 Profile）
+    reasoningEffort: readReasoningEffort(ext) ?? (legacy('reasoningEffort') as ReasoningEffort | null | undefined) ?? overrides?.reasoningEffort ?? null,
+    // P0-3：角色级采样参数（ext 优先；无则 null = 全部跟随上层）
+    sampling: readSampling(ext) ?? readLegacySampling(card) ?? overrides?.sampling ?? null,
   };
 
   return { ...base, ...overrides };
@@ -148,6 +210,8 @@ export function uiMsgToChatMsg(ui: UIMessage): ChatMessage {
         : ui.timestamp,
     swipes: [],
     swipeIndex: 0,
+    // P0-1：思维链随消息一并持久化（仅非空字符串才写，避免污染旧数据 schema）
+    ...(ui.thinking ? { thinking: ui.thinking } : {}),
   };
 }
 
@@ -170,6 +234,8 @@ export function chatMsgToUiMsg(msg: ChatMessage): UIMessage | null {
       typeof msg.timestamp === 'string'
         ? new Date(msg.timestamp).getTime()
         : msg.timestamp,
+    // P0-1：思维链回读（旧数据无此字段 → undefined → 不渲染折叠块）
+    ...(msg.thinking ? { thinking: msg.thinking } : {}),
   };
 }
 

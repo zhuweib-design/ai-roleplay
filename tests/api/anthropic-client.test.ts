@@ -441,3 +441,172 @@ describe('AnthropicClient 工具调用 (T-02)', () => {
     expect(text).toBe('');
   });
 });
+
+// ── P0-1 / P0-2 / P0-3：Anthropic 思考强度与采样参数 ──
+
+describe('AnthropicClient — P0-2/P0-3 body 组装', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  async function captureBody(
+    request: Parameters<AnthropicClient['chat']>[0]
+  ): Promise<Record<string, unknown>> {
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }))
+    );
+    await makeClient().chat(request);
+    return JSON.parse((spy.mock.calls[0]![1] as RequestInit).body as string) as Record<string, unknown>;
+  }
+
+  it('P0-3：top_p 未设置时不写入 body', async () => {
+    const body = await captureBody({ messages: [], model: 'claude-3-5-sonnet-20241022' });
+    expect(body.top_p).toBeUndefined();
+  });
+
+  it('P0-3：top_p 有值时写入 body', async () => {
+    const body = await captureBody({ messages: [], model: 'm', topP: 0.7, maxTokens: 8192 });
+    expect(body.top_p).toBe(0.7);
+  });
+
+  it('P0-2：启用 thinking 时下发 thinking.budget_tokens（clamped）', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'claude-3-7-sonnet',
+      maxTokens: 8192,
+      reasoningEffort: 'medium',
+    });
+    expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 4096 });
+  });
+
+  it('P0-2：启用 thinking 时抑制 temperature 与 top_p（协议冲突降级）', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'claude-3-7-sonnet',
+      maxTokens: 8192,
+      temperature: 0.8,
+      topP: 0.6,
+      reasoningEffort: 'low',
+    });
+    expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 1024 });
+    expect(body.temperature).toBeUndefined();
+    expect(body.top_p).toBeUndefined();
+  });
+
+  it('未启用 thinking 时 temperature / top_p 正常下发', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'm',
+      maxTokens: 8192,
+      temperature: 0.8,
+      topP: 0.6,
+    });
+    expect(body.thinking).toBeUndefined();
+    expect(body.temperature).toBe(0.8);
+    expect(body.top_p).toBe(0.6);
+  });
+
+  it('P0-2：budget clamp 后过小（<256）时放弃启用 thinking', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'm',
+      maxTokens: 128,
+      reasoningEffort: 'high',
+    });
+    expect(body.thinking).toBeUndefined();
+    // 放弃启用后 temperature 恢复下发（不再被抑制）
+    expect(body.temperature).toBeUndefined(); // 请求未给 temperature，故仍无该键
+  });
+
+  it('P0-2：high + maxTokens=2048 → budget clamp 到 2047', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'm',
+      maxTokens: 2048,
+      reasoningEffort: 'high',
+    });
+    expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 2047 });
+  });
+
+  it('P0-3：presence/frequency penalty 在 Anthropic 上静默丢弃', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'm',
+      maxTokens: 8192,
+      presencePenalty: 0.5,
+      frequencyPenalty: 0.5,
+    });
+    expect(body.presence_penalty).toBeUndefined();
+    expect(body.frequency_penalty).toBeUndefined();
+  });
+
+  it('P0-3：Anthropic 不接受 0 作为"未设置"，但 0 也应被抑制写入（协议无此字段）', async () => {
+    const body = await captureBody({
+      messages: [],
+      model: 'm',
+      maxTokens: 8192,
+      presencePenalty: 0,
+      frequencyPenalty: 0,
+    });
+    expect(body.presence_penalty).toBeUndefined();
+    expect(body.frequency_penalty).toBeUndefined();
+  });
+});
+
+describe('AnthropicClient — P0-1 字段型思考解析', () => {
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  async function streamOf(events: string[]) {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockResponse(makeReadableStream([toSSEStream(events)]))
+    );
+    return collect(makeClient().chatStream({ messages: [], model: 'claude-3-7-sonnet', maxTokens: 8192 }));
+  }
+
+  it('thinking_delta → yield thinkingDelta', async () => {
+    const events = await streamOf([
+      event('content_block_start', { index: 0, content_block: { type: 'thinking' } }),
+      event('content_block_delta', { index: 0, delta: { type: 'thinking_delta', thinking: '我在思考' } }),
+      event('content_block_stop', { index: 0 }),
+      event('content_block_start', { index: 1, content_block: { type: 'text', text: '' } }),
+      event('content_block_delta', { index: 1, delta: { type: 'text_delta', text: '答案' } }),
+      event('message_stop'),
+    ]);
+    expect(events.some((e) => e.thinkingDelta === '我在思考')).toBe(true);
+    const done = events.find((e) => e.type === 'done');
+    expect(done?.fullThinking).toBe('我在思考');
+    expect(done?.fullContent).toBe('答案');
+  });
+
+  it('signature_delta 被忽略（不展示、不进正文）', async () => {
+    const events = await streamOf([
+      event('content_block_delta', { index: 0, delta: { type: 'signature_delta', signature: 'abc' } }),
+      event('content_block_delta', { index: 0, delta: { type: 'text_delta', text: '正文' } }),
+      event('message_stop'),
+    ]);
+    expect(events.some((e) => e.thinkingDelta)).toBe(false);
+    const done = events.find((e) => e.type === 'done');
+    expect(done?.fullContent).toBe('正文');
+    expect(done?.fullThinking).toBeUndefined();
+  });
+
+  it('无思考时 done 不带 fullThinking', async () => {
+    const events = await streamOf([
+      event('content_block_delta', { index: 0, delta: { type: 'text_delta', text: '纯正文' } }),
+      event('message_stop'),
+    ]);
+    expect(events.find((e) => e.type === 'done')?.fullThinking).toBeUndefined();
+  });
+});

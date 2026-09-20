@@ -24,6 +24,7 @@ import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
+import ThinkingBlock from '@/components/chat/ThinkingBlock.vue';
 import type { GroupChatMode, GroupMember } from '@/core/group-chat';
 import type { UICharacter } from '@/types';
 // F10.3 随机 NPC 生成
@@ -770,6 +771,18 @@ type="button"
                   <div v-if="msg.role === 'assistant'" class="msg-sender">
                     {{ msg.characterName }}
                   </div>
+                  <!--
+                    P0-1：群聊复用 ThinkingBlock 渲染思维链。
+                    TODO(群聊真实流式)：当前群聊 AI 回复仍是 mock
+                    （见本文件 simulateAiReply 的 setTimeout + t('group.mockReply')），
+                    未接入 ChatManager 流式链路，因此 thinking 暂无数据来源。
+                    待群聊接入真实流式后，此处无需改动即可生效。
+                  -->
+                  <ThinkingBlock
+                    v-if="msg.role === 'assistant'"
+                    :thinking="msg.thinking"
+                    :message-id="msg.id"
+                  />
                   <div class="msg-content">{{ msg.content }}</div>
                   <div class="msg-time">{{ messageTime(msg.timestamp) }}</div>
                 </div>

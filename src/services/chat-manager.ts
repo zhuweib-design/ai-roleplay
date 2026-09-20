@@ -1,8 +1,16 @@
 import type { ApiClient } from '@api/api-client';
-import type { ApiMessage, ChatRequest, ToolCall, ToolDefinition, ChatUsage } from '@api/types';
+import type {
+  ApiMessage,
+  ChatRequest,
+  ToolCall,
+  ToolDefinition,
+  ChatUsage,
+  ReasoningEffort,
+} from '@api/types';
 import { ApiError } from '@api/types';
 import { buildPrompt, type PromptContexts, type PromptSettings } from '@core/prompt-builder';
 import type { CharacterCard, ChatMessage } from '@core/character-card';
+import { ThinkingSplitter, parseThinkingComplete } from '@core/thinking-parser';
 import { compressMessages, type OptimizationPipeline } from '@core/optimization-pipeline';
 import {
   applyL0Context,
@@ -35,6 +43,20 @@ export interface ChatManagerConfig {
   temperature?: number;
   /** 默认单次回复最大 Tokens */
   maxTokens?: number;
+  /** P0-3：核采样阈值 0-1；undefined = 不传（供应商默认） */
+  topP?: number;
+  /** P0-3：存在惩罚 -2~2；undefined = 不传 */
+  presencePenalty?: number;
+  /** P0-3：频率惩罚 -2~2；undefined = 不传 */
+  frequencyPenalty?: number;
+  /** P0-2：思考强度（运行时由 capability 决定是否真正下发） */
+  reasoningEffort?: ReasoningEffort;
+  /**
+   * P0-1：历史 assistant 消息中的思考是否随请求回传
+   * 默认 false = 剥离（省 token）；true 时以 `<think>…</think>` 前缀回包进 content。
+   * **只在内存组装时生效，不修改任何持久化数据。**
+   */
+  includeThinkingInHistory?: boolean;
   /** T-02：可用工具定义列表（模型可在回复中发起工具调用） */
   tools?: ToolDefinition[];
   /** T-02：工具执行器（执行模型发起的工具调用，返回结果文本） */
@@ -54,8 +76,25 @@ export interface SendMessageParams {
   history: ChatMessage[];
   /** 用户输入文本 */
   userMessage: string;
-  /** 覆盖默认配置（model/temperature/maxTokens/userName） */
-  overrides?: Partial<Pick<ChatManagerConfig, 'model' | 'temperature' | 'maxTokens' | 'userName'>>;
+  /**
+   * 覆盖默认配置（model / userName / 全部采样参数 / 思考强度）
+   *
+   * 注意：只传**已设置**的键 —— 未设置的键不应出现在本对象里，
+   * 否则 `{...config, ...overrides}` 会用 undefined 覆盖掉 Profile 级默认值。
+   */
+  overrides?: Partial<
+    Pick<
+      ChatManagerConfig,
+      | 'model'
+      | 'userName'
+      | 'temperature'
+      | 'maxTokens'
+      | 'topP'
+      | 'presencePenalty'
+      | 'frequencyPenalty'
+      | 'reasoningEffort'
+    >
+  >;
   /** 迭代33：可选注入上下文（Lorebook / RAG / 事件 / 主角 / 故事时间），收拢为单一对象 */
   contexts?: PromptContexts;
 }
@@ -65,8 +104,19 @@ export interface SendMessageParams {
  * 任一回调可选；返回值被忽略
  */
 export interface ChatManagerCallbacks {
-  /** 每收到一个 delta token 触发，fullContent 为累计内容 */
+  /** 每收到一个 delta token 触发，fullContent 为累计正文（已剥离思考） */
   onDelta?: (delta: string, fullContent: string) => void;
+  /**
+   * P0-1：每收到一段思考增量触发，fullThinking 为累计思考
+   *
+   * 两种来源都收敛到本回调：
+   * - 字段型（`reasoning_content` / `thinking_delta`）→ 由 client 直接产出
+   * - 标签型（`<think>…</think>`）→ 由编排层 ThinkingSplitter 切分后产出
+   *
+   * 收敛阶段（done）若最终思考与累计值不一致，会以 delta='' 再回调一次，
+   * 调用方只需用 fullThinking 覆盖即可。
+   */
+  onThinking?: (delta: string, fullThinking: string) => void;
   /** 生成完成 */
   onDone?: (fullContent: string, finishReason?: string) => void;
   /** 收到用量统计(含前缀缓存拆解时可用;每轮 done 触发) */
@@ -131,6 +181,8 @@ export class ChatManager {
       maxContextTokens: merged.maxContextTokens ?? 8192,
       reservedTokens: merged.reservedTokens ?? 1024,
       userName: merged.userName ?? 'User',
+      // P0-1：默认剥离历史思考（省 token）；显式开启时才回包
+      includeThinkingInHistory: merged.includeThinkingInHistory === true,
     };
 
     // 1. 构建 prompt（含 token 裁剪，W6 集成 Lorebook 扫描与注入 F06.2-F06.3，F09.2 集成 RAG 注入，F17.2 集成激活事件注入，F16.3 主角身份注入，F16.4 故事时间注入）
@@ -192,6 +244,12 @@ export class ChatManager {
     };
     if (merged.temperature !== undefined) request.temperature = merged.temperature;
     if (merged.maxTokens !== undefined) request.maxTokens = merged.maxTokens;
+    // P0-3：采样参数（undefined 不写 → client 不传 → 供应商默认）
+    if (merged.topP !== undefined) request.topP = merged.topP;
+    if (merged.presencePenalty !== undefined) request.presencePenalty = merged.presencePenalty;
+    if (merged.frequencyPenalty !== undefined) request.frequencyPenalty = merged.frequencyPenalty;
+    // P0-2：思考强度（client 侧按 capability 决定是否真正下发）
+    if (merged.reasoningEffort) request.reasoningEffort = merged.reasoningEffort;
     // T-02：装配工具定义
     if (merged.tools && merged.tools.length > 0) {
       request.tools = merged.tools;
@@ -203,6 +261,8 @@ export class ChatManager {
 
     this._isGenerating = true;
     let fullContent = '';
+    /** P0-1：本轮累计思考（供 onThinking 的 fullThinking 参数与收敛判定使用） */
+    let thinkingBuf = '';
 
     try {
       // T-02：工具调用循环 —— 模型发起 tool_calls 时执行工具并回填，
@@ -220,17 +280,51 @@ export class ChatManager {
         let hasDone = false;
         let toolCalls: ToolCall[] | undefined;
         let finishReason: string | undefined;
+        // P0-1：标签型思维链解析（跨 chunk 撕裂安全）；每轮独立，避免工具轮状态串味
+        const splitter = new ThinkingSplitter();
+        /** 本轮是否收到过**字段型**思考（与标签型互斥判定用） */
+        let fieldThinking = '';
+
+        /**
+         * 把一段思考增量累加并回调
+         * @returns 累加后的累计思考
+         */
+        const pushThinking = (delta: string): string => {
+          thinkingBuf += delta;
+          callbacks?.onThinking?.(delta, thinkingBuf);
+          return thinkingBuf;
+        };
 
         for await (const ev of stream) {
-          if (ev.type === 'delta' && ev.delta) {
-            roundContent += ev.delta;
-            fullContent += ev.delta;
-            callbacks?.onDelta?.(ev.delta, fullContent);
+          if (ev.type === 'delta') {
+            // ① 字段型思考（reasoning_content / thinking_delta）—— client 已识别
+            if (ev.thinkingDelta) {
+              fieldThinking += ev.thinkingDelta;
+              pushThinking(ev.thinkingDelta);
+            }
+            // ② 标签型思考（<think>…</think>）—— 编排层统一切分，4 个 client 全受益
+            if (ev.delta) {
+              const d = splitter.feed(ev.delta);
+              if (d.thinkingDelta) pushThinking(d.thinkingDelta);
+              if (d.textDelta) {
+                roundContent += d.textDelta;
+                fullContent += d.textDelta;
+                callbacks?.onDelta?.(d.textDelta, fullContent);
+              }
+            }
           } else if (ev.type === 'done') {
             hasDone = true;
-            if (ev.fullContent) roundContent = ev.fullContent;
             finishReason = ev.finishReason;
             toolCalls = ev.toolCalls;
+
+            // 冲刷标签型解析器的残留（未闭合思考 / 尾部疑似标签前缀）
+            const tail = splitter.flush();
+            if (tail.thinkingDelta) pushThinking(tail.thinkingDelta);
+            if (tail.textDelta) {
+              roundContent += tail.textDelta;
+              fullContent += tail.textDelta;
+              callbacks?.onDelta?.(tail.textDelta, fullContent);
+            }
 
             // 工具轮：跳出流循环执行工具（stream 已 yield done，通常紧随 [DONE] 结束；
             // 若流未结束，break 关闭 generator 时其挂起在 yield 点，可安全回收）
@@ -243,8 +337,23 @@ export class ChatManager {
               break;
             }
 
-            // 最终回复：优先用 done 事件的完整内容
-            if (ev.fullContent) fullContent = ev.fullContent;
+            // ── P0-1 done 收敛（§1.1.3 互斥原则，防 fullContent 回冲带标签）──
+            // 字段型：fullContent 本身不含思考 → 直接用，不做二次解析
+            // 标签型：对 fullContent 跑一次完整解析（幂等，与流式累积一致）
+            if (fieldThinking !== '') {
+              fullContent = ev.fullContent ?? roundContent;
+            } else if (splitter.hasThinking) {
+              const parsed = parseThinkingComplete(ev.fullContent ?? roundContent);
+              fullContent = parsed.content || roundContent;
+              if (parsed.thinking && parsed.thinking !== thinkingBuf) {
+                thinkingBuf = parsed.thinking;
+                // 累计值被修正：以 delta='' 回调，调用方只需用 fullThinking 覆盖
+                callbacks?.onThinking?.('', thinkingBuf);
+              }
+            } else {
+              fullContent = ev.fullContent ?? roundContent;
+            }
+
             // 用量统计透传(缓存命中率统计用)
             if (ev.usage) callbacks?.onUsage?.(ev.usage);
             // E-01: 情绪状态更新(规则标注;fail-open;仅在 L0 启用且有 deps 时)
@@ -252,6 +361,9 @@ export class ChatManager {
             callbacks?.onDone?.(fullContent, ev.finishReason);
             return fullContent;
           } else if (ev.type === 'error') {
+            // 中止/出错：冲刷残留，让已收到的思考不至于丢失
+            const tail = splitter.flush();
+            if (tail.thinkingDelta) pushThinking(tail.thinkingDelta);
             const err = new Error(ev.error || t('api.genFailed'));
             callbacks?.onError?.(err);
             return fullContent; // 返回已收到的部分内容
@@ -260,6 +372,18 @@ export class ChatManager {
 
         // 流自然结束未触发 done 事件
         if (!hasDone) {
+          // 与 done 分支一致：先冲刷解析器残留，再收敛
+          const tail = splitter.flush();
+          if (tail.thinkingDelta) pushThinking(tail.thinkingDelta);
+          if (tail.textDelta) {
+            roundContent += tail.textDelta;
+            fullContent += tail.textDelta;
+            callbacks?.onDelta?.(tail.textDelta, fullContent);
+          }
+          if (fieldThinking === '' && splitter.hasThinking) {
+            const parsed = parseThinkingComplete(roundContent);
+            fullContent = parsed.content || roundContent;
+          }
           callbacks?.onDone?.(fullContent);
           return fullContent;
         }
