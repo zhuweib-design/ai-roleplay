@@ -605,6 +605,10 @@ export const useChatStore = defineStore('chat', () => {
 
       // 5. 持久化对话（无论成功 / 失败，都保存已收到的内容）
       await persistChat(character);
+
+      // 6. 摘要接线：异步生成 / 更新摘要（fire-and-forget，失败静默）
+      //    放在持久化之后 —— 摘要依赖已落盘的消息，且不阻塞本轮返回
+      void maybeGenerateSummary(character);
     } finally {
       isGenerating.value = false;
       streamingContent.value = '';
@@ -932,6 +936,45 @@ export const useChatStore = defineStore('chat', () => {
    * 将当前角色对话持久化到存储层
    * 使用 character.id 作为 characterId，messages[0].id 拼接作为 chatId（简化）
    */
+  /**
+   * 摘要接线（2026-09-21）：按需生成 / 更新当前会话摘要。
+   *
+   * 设计为 **fire-and-forget + fail-open** —— 在回复完成并持久化之后异步触发，
+   * 不阻塞 UI；任何失败静默（摘要是锦上添花，不该影响主链路）。
+   *
+   * 与 L1 压缩的分工：**摘要管「被裁掉的最早历史」，L1 管「仍在窗口内的历史」**。
+   *
+   * 存储：摘要只落在 `Chat`（存储层 + sessions 运行时缓存），**不进 UICharacter**
+   * —— persistChat 已透传 `existing?.summary`，因此不会被落盘抹掉。
+   */
+  async function maybeGenerateSummary(character: UICharacter): Promise<void> {
+    try {
+      const mgr = chatManager;
+      if (!mgr || !storageAdapter) return;
+      const { useSettingsStore } = await import('./settings');
+      const settings = useSettingsStore();
+      const config = settings.summarizationConfig;
+      if (!config?.enabled) return;
+
+      const chatId = activeChatId.value ?? `chat-${character.id}`;
+      const existing = sessions.value.find((s) => s.id === chatId);
+      const messages = uiMsgsToChatMsgs(character.messages);
+      const summary = await mgr.summarizeIfNeeded(messages, config, existing?.summary ?? null);
+      if (!summary) return;
+
+      if (existing) {
+        existing.summary = summary;
+        try {
+          await storageAdapter.saveChat(existing);
+        } catch {
+          /* 落盘失败不阻断：内存态已更新，下一轮注入仍可用 */
+        }
+      }
+    } catch {
+      /* fail-open：摘要整条链路静默失败 */
+    }
+  }
+
   async function persistChat(character: UICharacter): Promise<void> {
     if (!storageAdapter) return; // 未注入存储适配器，静默跳过
     if (character.messages.length === 0) return;
@@ -953,6 +996,10 @@ export const useChatStore = defineStore('chat', () => {
       updatedAt: now,
       pinned: existing?.pinned,
       archived: existing?.archived,
+      // 摘要接线（2026-09-21）：透传已生成的摘要
+      // 摘要由 persistChat 之外的异步流程写入 sessions，此处**必须透传**，
+      // 否则每次落盘都会把刚生成的摘要抹掉
+      summary: existing?.summary,
     };
 
     try {
