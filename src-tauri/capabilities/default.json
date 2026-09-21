@@ -1,12 +1,11 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "默认权限配置（最小化）：应用仅通过自定义 Rust 命令（core:default）访问能力；fs/shell/http/dialog/os 插件均未使用，不授予权限。",
+  "description": "默认权限配置：应用仅通过自定义 Rust 命令访问能力（core:default）；fs/shell/http/dialog/os 插件均未使用，不授予权限。updater:default 为自动更新所必需——设置页「检查更新」会调用 downloadAndInstall() 走完下载与安装全流程，故不能收窄为仅 allow-check。remote 只放行本地开发地址，不再放行任意 https 来源（避免任意来源页面继承上述权限）。",
   "windows": ["main"],
   "permissions": ["core:default", "updater:default"],
   "remote": {
     "urls": [
-      "https://*",
       "http://localhost:*",
       "http://127.0.0.1:*"
     ]
