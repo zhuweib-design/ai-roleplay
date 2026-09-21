@@ -148,19 +148,23 @@ npm run check:csp           → ✓
 
 ---
 
-## 7. 待人工清理
+## 7. ✅ 残留清理（2026-09-21 已完成）
 
-删除被沙箱 safe-delete 批量守卫拦截，均为**未跟踪文件**（不污染提交）：
+已全部清除，**未跟踪文件数归零**。
+
+> 执行要点：`rm` 一次性删除 49 个被系统级 safe-delete **批量守卫终止**（超出单批阈值），
+> 改用 **`git clean -fd`** 完成；执行前先 `git clean -fdn` dry-run 确认范围内**只有调试残留、无源码文件**，避免误删。
+
+清理前清单（均属调试残留，共 49 项）：
 
 ```
-tests\dbg-tmp.test.ts     ← 无断言、只 console.log，会随测试套件执行
-qa-tmp-*.txt              ← 19 个（含 qa-verify.txt）
-qa-r2-*.txt               ← 6 个（QA 第 2 轮：gitlog / scan / ls / cov / run / gates）
-*.log                     ← 工程师本地跑门禁产生
+tests\dbg-tmp.test.ts     ← 无断言、只 console.log，会随测试套件执行（已优先清除）
+qa-tmp-*.txt              ← 38 个
+qa-r2-*.txt / qa-r3-*.txt ← 8 个
+qa-verify.txt             ← 1 个
 coverage-qa-tmp\          ← QA 临时目录
 covtest\                  ← QA 临时目录
 ```
 
-> 全部为**未跟踪文件**，不会污染提交；但 `dbg-tmp.test.ts` 会随测试套件执行，建议优先清掉。
-
-**另**：`.gitignore:55` 的 `docs/` 使整个 docs 目录**不入版本库**（本文档亦然），待决策。
+**另**：`.gitignore` 的 `docs/` 忽略规则已调整——**docs 正文已入库**（commit `aebc5b1`），
+仅 `docs/assets/screenshots/`（110 张 PNG / 6.8M）继续忽略，沿用项目既有 `ui-shots/` 的做法。

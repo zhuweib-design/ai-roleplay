@@ -222,7 +222,7 @@ QA 第 1 轮的 2 条红灯全部转绿，本轮无新增源码缺陷。
 | R1 | 两块 `<status>` 落在**同一 chunk** | 原文拼接后降级为一条脏值。已固化"不崩/不丢"用例，仅显示不完美 |
 | R2 | 单行多对非 JSON（`{location: 酒馆, time: 傍晚}`） | 后续 key 会粘进 value，只出 1 条。模型按提示词输出 JSON 时不会触发 |
 | R3 | 群聊 mock 链路 | 无真实流式状态输出，`memberStatuses` 恒空、UI 不渲染；`TODO` 已注明 |
-| R4 | `test:coverage` 偶发 worker RPC 超时 | 同 P0，ONNX 重用例压住主线程，**非用例失败**，加 `--maxWorkers=2` 可解；**未改门禁脚本** |
+| ~~R4~~ | ~~`test:coverage` 偶发 worker RPC 超时~~ | ✅ **2026-09-21 已解决**：`test:coverage` 脚本固定 `--maxWorkers=2`（commit `319bee8`）。根因是 ONNX 重用例 15s+ 叠加覆盖率插桩压住主线程，导致 worker RPC 回调超时——**退出码 1 但用例全过（假失败）**。三次独立实测 EXIT=0 |
 
 ---
 
