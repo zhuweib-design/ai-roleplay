@@ -56,10 +56,18 @@ jobs:
       - name: CSS conventions guard (check:css-conventions)
         run: npm run check:css-conventions
 
-      # 无障碍对比度门禁：静态核验 5 个内置主题的关键色对 ≥ AA(4.5:1)
+      # 无障碍对比度门禁（P1-2 重构）：不再硬编码色值，改为
+      #   A) 读 tokens.css/themes.css 真实变量，递归解析 var() 与 color-mix()
+      #   B) 扫描 src/ 下实际出现的 color × background 配对（含同色染层合成）
+      # A 部分（语义配对）硬卡 AA；B 部分为存量棘轮（基线见脚本 BASELINE_SCAN_FAILURES，只许降不许升）
       # （axe 在 jsdom 无法计算颜色对比度, 故由 check-contrast.mjs 单独校验; axe 的 ARIA/语义规则已并入 test:coverage）
       - name: Contrast audit (a11y:contrast)
         run: npm run a11y:contrast
+
+      # 门禁自测：构造正/负样本，确认门禁本身能区分达标与不达标
+      # （防「永远绿灯」的死门禁 —— 旧版正因硬编码色值而与实际代码脱钩）
+      - name: Contrast guard self-test
+        run: npm run a11y:contrast:self-test
 
       # 覆盖率门禁：vitest v8 provider，阈值定义在 vitest.config.ts
       # （statements 78 / branches 73 / functions 78 / lines 78），未达标则非零退出
