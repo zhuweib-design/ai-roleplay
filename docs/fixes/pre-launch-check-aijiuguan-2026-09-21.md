@@ -171,7 +171,7 @@ git revert <commit-sha>
 | 5 | 扩展对比度静态门禁 | ✅ **已完成** | `0fe8955`。不再硬编码色值，改为读 `tokens.css/themes.css` + 扫描 `src/` 实际样式配对（448 处）；双轨判定：语义配对硬卡、全仓扫描走存量棘轮 |
 | 6 | 依赖漏洞 + CI `npm audit` 门禁 | ✅ **已完成** | `02deeed`。① js-yaml high 经 `npm audit fix` 非破坏性消除；② vitest 3 → **5.0.1** 消除 3 项 moderate（未撞 collector bug）；③ CI 增 `npm audit --audit-level=high` 门禁防再漂移。**`npm audit` 现 0 漏洞**。兼容性适配：vitest 5 强制 `vi.mock` 位于模块顶层，2 个测试文件改用 `vi.hoisted()` |
 | 7 | CONTRIBUTING 补本地复现门禁 | ✅ **已完成** | `0c11ad3`。补入沙箱下「退出码不可信」的判定口径（构建改用 `npx vite build --emptyOutDir=false`、覆盖率**看输出**而非退出码），并把 lint 基线由文档旧记的「~50 warnings」修正为实测的 **0 error / 2 warning**（旧值会把已修复的历史告警误判成回归） |
-| 8 | 批量清理 P2-6 的同类残留 | ✅ **本轮部分完成** | `f820ea2`。用新门禁 `--list-all` **实测定位**（比报告的静态行号更准），清理 **11 个规则 / 5 主题下共 20 处**（含报告 P2-5 的 `.send-btn-primary`）。棘轮基线 **156 → 136**。<br>⚠️ **本项建议的「grep 守卫」未采纳** —— 新对比度门禁已覆盖该场景且更强：grep 只能匹配「token 叠同色染层」的**写法**，而门禁直接算**实际对比度**（能发现 `--on-media` 叠 `--primary` 这类非同名配对）。<br>剩余 136 处属其它类型（`muted-foreground on border` 等），继续由棘轮看住、逐项收敛 |
+| 8 | 批量清理 P2-6 的同类残留 | ✅ **本轮部分完成** | `f820ea2`。用新门禁 `--list-all` **实测定位**（比报告的静态行号更准），清理 **11 个规则 / 5 主题下共 20 处**（含报告 P2-5 的 `.send-btn-primary`）。棘轮基线 **156 → 136**。<br>⚠️ **本项建议的「grep 守卫」未采纳** —— 新对比度门禁已覆盖该场景且更强：grep 只能匹配「token 叠同色染层」的**写法**，而门禁直接算**实际对比度**（能发现 `--on-media` 叠 `--primary` 这类非同名配对）。<br>后续又收敛第二批 5 处（`d38bfdd`，`--accent-orange-text` 派生 token 为新增），基线降至 **131**。剩余存量的**类型分类与收敛顺序**见 `docs/dev/contrast-存量分类与收敛建议.md` —— 其中占比最大的 32 处（`--border` 作 badge 背景）**需设计取舍**，不宜由工程侧单方面批量替换 |
 
 ### 补充验证（全部完成后的最终状态）
 
