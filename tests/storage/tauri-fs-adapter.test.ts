@@ -4,18 +4,19 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 // TauriFSAdapter 内部通过动态 import('@tauri-apps/api/core') 调用 invoke
 // 在测试中我们将其 mock 为可记录调用参数的 stub
 
-const invokeMock = vi.fn();
+// vitest 5 起强制要求 vi.mock 位于模块顶层（它本身是 hoisted 的，写在 beforeEach
+// 里既无实际作用又会直接报错）。用 vi.hoisted 保证工厂引用的变量在提升后已初始化。
+const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }));
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: invokeMock,
+}));
 
 // 模拟 Tauri 环境：注入 window.__TAURI_INTERNALS__
 beforeEach(() => {
   (window as unknown as { __TAURI_INTERNALS__: unknown }).__TAURI_INTERNALS__ = {
     invoke: invokeMock,
   };
-
-  // 模拟 ESM 模块（动态 import 使用）
-  vi.mock('@tauri-apps/api/core', () => ({
-    invoke: invokeMock,
-  }));
 });
 
 afterEach(() => {

@@ -3,22 +3,25 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 // ── Mock Tauri APIs ──
 // 模拟 @tauri-apps/api/core.invoke 和 @tauri-apps/api/event.listen
 
-const invokeMock = vi.fn();
-const listenMock = vi.fn();
+// vitest 5 起强制要求 vi.mock 位于模块顶层（它本身是 hoisted 的，写在 beforeEach
+// 里既无实际作用又会直接报错）。用 vi.hoisted 保证工厂引用的变量在提升后已初始化。
+const { invokeMock, listenMock } = vi.hoisted(() => ({
+  invokeMock: vi.fn(),
+  listenMock: vi.fn(),
+}));
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: invokeMock,
+}));
+vi.mock('@tauri-apps/api/event', () => ({
+  listen: listenMock,
+}));
 
 beforeEach(() => {
   // 模拟 Tauri 环境
   (window as unknown as { __TAURI_INTERNALS__: unknown }).__TAURI_INTERNALS__ = {
     invoke: invokeMock,
   };
-
-  // 模拟 ESM 模块
-  vi.mock('@tauri-apps/api/core', () => ({
-    invoke: invokeMock,
-  }));
-  vi.mock('@tauri-apps/api/event', () => ({
-    listen: listenMock,
-  }));
 
   invokeMock.mockReset();
   listenMock.mockReset();

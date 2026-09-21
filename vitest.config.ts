@@ -28,6 +28,11 @@ export default defineConfig({
       // P2-1 回归防线：覆盖率低于阈值 CI 即失败。
       // 基线(vitest@4 v8, 2026-08-15 实测): statements 78.99 / branches 74.05 /
       // functions 81.26 / lines 80.22。阈值按实测留 ~1 点余量防偶发抖动误伤。
+      //
+      // ⚠️ 口径提醒（2026-09-21 vitest 3 -> 5 升级）：v8 provider 在大版本间
+      // 统计口径会变，**跨版本比较覆盖率数字无意义**。vitest@5 实测
+      // 78.57 / 74.47 / 80.13 / 79.93，与上面的 vitest@4 基线一致；
+      // 而 vitest@3 时代曾显示 86.76（同一份代码），差异全部来自口径而非真实升降。
       // 注: vitest@2 时代 Windows 盘符大小写(G:/g:)重复计文件问题在 vitest@4
       // (v8 provider 重写) 已修复, Windows/CI 口径一致; branches 因 ?? / 三元 /
       // 复合条件计数更细而天然偏低, 故单独设 73%。

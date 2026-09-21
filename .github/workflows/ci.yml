@@ -37,6 +37,12 @@ jobs:
       - name: Install dependencies (npm ci)
         run: npm ci
 
+      # 依赖漏洞门禁（P1-6）：只拦 high 及以上，避免 dev-only 的 moderate 阻塞发布。
+      # 历史教训：08-20 为绕 vitest collector bug 降版，使 npm audit 从 0 项静默
+      # 漂移到 4 项（1 high + 3 moderate）而无人察觉 —— 该门禁即为此而设。
+      - name: Dependency audit (high and above)
+        run: npm audit --audit-level=high
+
       # 代码质量/风格门禁（eslint flat config, 0 errors 才通过）
       - name: Lint (eslint .)
         run: npm run lint
