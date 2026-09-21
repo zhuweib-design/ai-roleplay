@@ -357,6 +357,16 @@ export const useChatStore = defineStore('chat', () => {
       // 角色级 ext.statusInstruction 由 chat-manager 在本轮请求里再覆盖（'on'/'off' 优先）
       patch.statusInstructionEnabled = settingsStore.statusHudConfig?.enabled === true;
 
+      // 摘要接线（2026-09-21）：把当前会话的摘要传给 chat-manager，用于下一轮注入
+      //
+      // 摘要由 maybeGenerateSummary 在上一轮回复完成后异步写入 sessions，
+      // 此处**每轮读取最新值** —— 不传的话摘要即使生成了也不会被注入。
+      const chatId = activeChatId.value;
+      if (chatId) {
+        const current = sessions.value.find((s) => s.id === chatId);
+        patch.existingSummary = current?.summary ?? null;
+      }
+
       // P0-3：全局采样默认值（最低优先级，仅在 config 该字段为空时补齐）
       const defaults = settingsStore.samplingDefaults;
       if (defaults) {
