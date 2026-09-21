@@ -653,7 +653,7 @@ onMounted(async () => {
 
 .header-tag.enabled {
   background: color-mix(in srgb, var(--success) 20%, transparent);
-  color: var(--success);
+  color: var(--success-fg);
 }
 
 .header-btn {

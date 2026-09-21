@@ -939,7 +939,7 @@ function formatCooldown(ms: number): string {
 
 .badge.severity {
   background: color-mix(in srgb, var(--warning-fg) 15%, transparent);
-  color: var(--warning-fg);
+  color: var(--warning-text);
 }
 
 .badge.severity[data-sev='major'] {

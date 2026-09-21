@@ -986,7 +986,7 @@ function tagsPreview(tags: string[]): string {
 @media (hover: hover) and (pointer: fine) {
   .generate-btn:hover:not(:disabled) {
     background: var(--secondary);
-    color: var(--on-media);
+    color: var(--on-accent);
   }
 }
 
@@ -1093,7 +1093,7 @@ function tagsPreview(tags: string[]): string {
 .modal-generate {
   background: var(--secondary);
   border-color: var(--secondary);
-  color: var(--on-media);
+  color: var(--on-accent);
 }
 
 @media (hover: hover) and (pointer: fine) {

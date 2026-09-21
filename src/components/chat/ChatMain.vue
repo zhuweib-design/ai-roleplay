@@ -886,7 +886,7 @@ function startWithExample(text: string) {
 .modal-save {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--on-media);
+  color: var(--on-primary);
 }
 
 /* F08.2 背景遮罩层（覆盖在背景图上，保证文字可读性） */

@@ -946,12 +946,12 @@ onMounted(async () => {
 
 .badge.size[data-size="small"] {
   background: color-mix(in srgb, var(--success) 20%, transparent);
-  color: var(--success);
+  color: var(--success-fg);
 }
 
 .badge.size[data-size="medium"] {
   background: color-mix(in srgb, var(--warning-fg) 20%, transparent);
-  color: var(--warning-fg);
+  color: var(--warning-text);
 }
 
 .badge.loaded {
@@ -961,7 +961,7 @@ onMounted(async () => {
 
 .badge.friendly {
   background: color-mix(in srgb, var(--accent-blue) 15%, transparent);
-  color: var(--accent-blue);
+  color: var(--accent-blue-text);
 }
 
 .model-desc {

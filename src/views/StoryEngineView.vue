@@ -2945,7 +2945,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 .time-current-value {
   font-size: 12px;
   font-weight: 600;
-  color: var(--accent-blue);
+  color: var(--accent-blue-text);
   padding: 2px 8px;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
@@ -3071,7 +3071,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 
 .protagonist-badge.source-badge {
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
-  color: var(--accent-blue);
+  color: var(--accent-blue-text);
 }
 
 .protagonist-desc {

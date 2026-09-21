@@ -2033,7 +2033,7 @@ select.field-input {
 .modal-save {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--on-media);
+  color: var(--on-primary);
 }
 
 @media (hover: hover) and (pointer: fine) {
