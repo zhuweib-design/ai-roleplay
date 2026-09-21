@@ -25,6 +25,7 @@ import {
   isTauriEnv,
 } from '@/core/model-file-adapter';
 import { useUserVectorModelStore } from '@/stores/user-vector-model';
+import { useSettingsStore } from '@/stores/settings';
 import type { ScannedModelCandidate } from '@/core/vector-model-install';
 import { isStopwordFilterEnabled, setStopwordFilterEnabled } from '@/core/stopword-filter';
 import { t } from '@/i18n';
@@ -67,6 +68,9 @@ async function runSmoke(modelId: VectorModelId) {
     testingModel.value = null;
   }
 }
+
+// P1-4：远程向量密钥需随主密码加密/解密，故引入 settings store
+const settingsStore = useSettingsStore();
 
 // 线上引用字段(持久化 aijiuguan.remoteEmbedding)
 const remote = ref({
@@ -142,19 +146,29 @@ async function pickAndInstall() {
   }
 }
 
-function saveRemote() {
+async function saveRemote() {
   try {
-    localStorage.setItem('aijiuguan.remoteEmbedding', JSON.stringify(remote.value));
+    // P1-4：已设主密码时加密 apiKey 后再落盘；未设主密码则保持明文
+    // （与 apiProfiles 的透明加密语义一致：内存明文、持久化加密）
+    const payload = {
+      ...remote.value,
+      apiKey: await settingsStore.encryptRemoteSecret(remote.value.apiKey),
+    };
+    localStorage.setItem('aijiuguan.remoteEmbedding', JSON.stringify(payload));
     showToast('success', t('vector.remoteSaved'));
   } catch {
     showToast('error', t('vector.saveFailed'));
   }
 }
 
-function loadRemote() {
+async function loadRemote() {
   try {
     const raw = localStorage.getItem('aijiuguan.remoteEmbedding');
-    if (raw) remote.value = { ...remote.value, ...JSON.parse(raw) };
+    if (!raw) return;
+    const saved = JSON.parse(raw) as Partial<typeof remote.value>;
+    // P1-4：已加密的 apiKey 需解密后回填表单；未解锁时返回空串（不回填密文）
+    const apiKey = await settingsStore.decryptRemoteSecret(String(saved.apiKey ?? ''));
+    remote.value = { ...remote.value, ...saved, apiKey };
   } catch {
     /* 忽略损坏配置 */
   }
@@ -269,7 +283,7 @@ onMounted(() => {
   // 自定义模型:加载元数据 + Tauri 预扫描
   void userStore.load();
   void refreshScanned();
-  loadRemote();
+  void loadRemote();
   void (async () => {
     const mod = await loadBenchmarkMod();
     hasBest.value = mod.getBestEmbeddingModel() !== null;

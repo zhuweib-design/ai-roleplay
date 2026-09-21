@@ -35,6 +35,7 @@ import {
   verifyMasterPassword,
   reencryptApiKey,
 } from '@core/api-key-crypto';
+import { setRemoteApiKeyState } from '@core/vector-model-manager';
 import { exportQuickRepliesToStJson, importQuickRepliesFromSt } from '@core/st-compat';
 import { setLocale as setI18nLocale, t as i18nT, detectLocale, type Locale } from '@/i18n';
 
@@ -170,6 +171,9 @@ export const useSettingsStore = defineStore('settings', () => {
     if (!pw) throw new Error(i18nT('masterPwd.pwdPlaceholder'));
     masterPasswordVerifier.value = await generateVerifier(pw);
     masterPassword.value = pw;
+    // P1-4：存量明文远程密钥在此收敛为密文，并写入内存态
+    await encryptRemoteEmbeddingKey(pw);
+    await loadRemoteApiKeyDecrypted();
     await persistSettings();
   }
 
@@ -186,6 +190,8 @@ export const useSettingsStore = defineStore('settings', () => {
     masterPassword.value = pw;
     // 解密内存中所有已加密的 apiKey
     await decryptAllApiKeys();
+    // P1-4：解密远程向量密钥并写入内存态（供同步的 defaultFactory 取用）
+    await loadRemoteApiKeyDecrypted();
     return true;
   }
 
@@ -197,6 +203,8 @@ export const useSettingsStore = defineStore('settings', () => {
    */
   function lock(): void {
     masterPassword.value = '';
+    // P1-4：锁定后不再向 provider 下发远程向量密钥（内存态置 locked）
+    syncRemoteApiKeyState();
   }
 
   /**
@@ -242,6 +250,8 @@ export const useSettingsStore = defineStore('settings', () => {
         );
       }
     }
+    // P1-4：远程向量密钥同样随主密码轮换（否则改密码后它再也解不开）
+    await reencryptRemoteEmbeddingKey(oldPw, newPw);
 
     // 更新 verifier
     masterPasswordVerifier.value = await generateVerifier(newPw);
@@ -283,6 +293,122 @@ export const useSettingsStore = defineStore('settings', () => {
       } catch {
         lastError.value = i18nT('masterPwd.translationKeyDecryptFailed');
       }
+    }
+  }
+
+  // ── P1-4：远程向量网关 apiKey 纳入主密码加密体系 ──
+  //
+  // 该密钥原先以**明文**存于 localStorage['aijiuguan.remoteEmbedding']，游离于
+  // 主密码体系之外（apiProfiles / translationConfig 的 apiKey 都会加密，唯独它没有），
+  // 也不在备份导出的明文密钥检查范围内。
+  //
+  // 读取侧的特殊性：VectorModelManager.defaultFactory() 是**同步静态**方法，
+  // 而 decryptApiKey() 是异步的（Web Crypto）。故不采用「读取时解密」（会把调用链
+  // 整体异步化），而是「解锁时解密一次写入内存态，读取时同步取用」。
+  //
+  // ⚠️ 边界：本改动只消除**磁盘明文**。lock() 不清内存中的 apiKey 明文是既有局限
+  // （见 lock() 注释），内存态的语义与该既有行为保持一致，不夸大安全收益。
+
+  /** 远程向量配置的 localStorage 键 */
+  const REMOTE_EMBEDDING_KEY = 'aijiuguan.remoteEmbedding';
+
+  function readRemoteEmbedding(): Record<string, unknown> | null {
+    try {
+      const raw = localStorage.getItem(REMOTE_EMBEDDING_KEY);
+      return raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeRemoteEmbedding(payload: Record<string, unknown>): void {
+    localStorage.setItem(REMOTE_EMBEDDING_KEY, JSON.stringify(payload));
+  }
+
+  /** 把 localStorage 中远程配置的 apiKey 用主密码加密（已加密则跳过） */
+  async function encryptRemoteEmbeddingKey(pw: string): Promise<void> {
+    const cfg = readRemoteEmbedding();
+    if (!cfg || typeof cfg.apiKey !== 'string' || !cfg.apiKey) return;
+    if (isEncrypted(cfg.apiKey)) return;
+    cfg.apiKey = await encryptApiKey(cfg.apiKey, pw);
+    writeRemoteEmbedding(cfg);
+  }
+
+  /** 用新密码重新加密远程配置的 apiKey（改主密码时调用） */
+  async function reencryptRemoteEmbeddingKey(oldPw: string, newPw: string): Promise<void> {
+    const cfg = readRemoteEmbedding();
+    if (!cfg || typeof cfg.apiKey !== 'string' || !cfg.apiKey) return;
+    if (!isEncrypted(cfg.apiKey)) return; // 明文（未解锁场景）：交由持久化侧处理
+    cfg.apiKey = await reencryptApiKey(cfg.apiKey, oldPw, newPw);
+    writeRemoteEmbedding(cfg);
+  }
+
+  /** 依据主密码状态同步内存态（同步路径：未设主密码 / 未解锁 / 明文存量） */
+  function syncRemoteApiKeyState(): void {
+    if (!masterPasswordVerifier.value) {
+      setRemoteApiKeyState({ state: 'plain' });
+      return;
+    }
+    if (!masterPassword.value) {
+      setRemoteApiKeyState({ state: 'locked' });
+      return;
+    }
+    const stored = readRemoteEmbedding()?.apiKey;
+    if (typeof stored === 'string' && stored && !isEncrypted(stored)) {
+      setRemoteApiKeyState({ state: 'unlocked', key: stored });
+    } else {
+      // 密文需异步解密，先置 locked，由 loadRemoteApiKeyDecrypted 接管
+      setRemoteApiKeyState({ state: 'locked' });
+    }
+  }
+
+  /** 异步解密并写入内存态（unlock / setMasterPassword 成功后调用） */
+  async function loadRemoteApiKeyDecrypted(): Promise<void> {
+    if (!masterPassword.value) {
+      setRemoteApiKeyState({ state: 'locked' });
+      return;
+    }
+    const stored = readRemoteEmbedding()?.apiKey;
+    if (typeof stored !== 'string' || !stored) {
+      setRemoteApiKeyState({ state: 'unlocked', key: '' });
+      return;
+    }
+    if (!isEncrypted(stored)) {
+      setRemoteApiKeyState({ state: 'unlocked', key: stored });
+      return;
+    }
+    try {
+      setRemoteApiKeyState({
+        state: 'unlocked',
+        key: await decryptApiKey(stored, masterPassword.value),
+      });
+    } catch {
+      // 解密失败：置为不可用；用户重新保存远程配置即可恢复
+      setRemoteApiKeyState({ state: 'locked' });
+    }
+  }
+
+  /**
+   * P1-4：供设置页保存远程向量配置时加密 apiKey
+   * 未设主密码时原样返回（与 apiProfiles 的透明加密语义一致）
+   */
+  async function encryptRemoteSecret(plain: string): Promise<string> {
+    if (!plain || isEncrypted(plain)) return plain;
+    if (!masterPassword.value) return plain;
+    return encryptApiKey(plain, masterPassword.value);
+  }
+
+  /**
+   * P1-4：供设置页回填表单时解密 apiKey
+   * 未加密时原样返回；已加密但未解锁时返回空串（不回填密文）
+   */
+  async function decryptRemoteSecret(stored: string): Promise<string> {
+    if (!stored || !isEncrypted(stored)) return stored;
+    if (!masterPassword.value) return '';
+    try {
+      return await decryptApiKey(stored, masterPassword.value);
+    } catch {
+      return '';
     }
   }
 
@@ -770,6 +896,9 @@ export const useSettingsStore = defineStore('settings', () => {
         if (typeof saved.masterPasswordVerifier !== 'undefined') {
           masterPasswordVerifier.value = saved.masterPasswordVerifier;
         }
+        // P1-4：按主密码状态初始化远程向量密钥的内存态
+        // （已设主密码 -> locked，待 unlock 后解密；未设 -> plain，沿用明文）
+        syncRemoteApiKeyState();
         // 末尾重断言 data-theme：customTheme 注入后再次同步 DOM 与 store，
         // 避免异步启动时序导致 data-theme 回退为默认（刷新后自定义主题失效）
         setTheme(theme.value);
@@ -992,6 +1121,9 @@ export const useSettingsStore = defineStore('settings', () => {
     getSessionMasterPassword: () => masterPassword.value,
     restoreSession,
     decryptAllApiKeys,
+    // P1-4：远程向量密钥的加解密辅助（供设置页保存/回填远程配置时调用）
+    encryptRemoteSecret,
+    decryptRemoteSecret,
     // 持久化
     setStorageAdapter,
     loadFromStorage,

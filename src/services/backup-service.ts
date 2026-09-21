@@ -63,6 +63,19 @@ export async function exportAll(
   }
   const trKey = settings?.translationConfig?.apiKey;
   if (trKey && !isEncrypted(trKey)) plaintextKeys.push(t('backup.translationKey'));
+  // P1-4：远程向量网关密钥存于 localStorage['aijiuguan.remoteEmbedding']（不在
+  // settings 内），此前游离于明文检查之外 —— 导出备份时会带着明文一起走。
+  try {
+    const rawRemote = localStorage.getItem('aijiuguan.remoteEmbedding');
+    if (rawRemote) {
+      const remoteCfg = JSON.parse(rawRemote) as { apiKey?: string };
+      if (remoteCfg.apiKey && !isEncrypted(remoteCfg.apiKey)) {
+        plaintextKeys.push(t('backup.remoteEmbeddingKey'));
+      }
+    }
+  } catch {
+    /* 配置损坏：不阻断导出，交由其它路径处理 */
+  }
   if (plaintextKeys.length > 0) {
     // T-06 审计:明文密钥拒绝导出
     auditLogger.record('backup_export', t('backup.plainKeysBlocked', { keys: plaintextKeys.join('、') }), 'blocked');

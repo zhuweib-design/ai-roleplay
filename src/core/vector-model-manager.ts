@@ -19,6 +19,52 @@ import {
 import { getBestEmbeddingModel } from './rag-benchmark';
 import { isUserVectorModelId } from './vector-model-install';
 
+// ── P1-4：远程向量网关 apiKey 的内存态 ────────────────────────────────────
+//
+// 背景：该密钥原先以**明文**存于 localStorage['aijiuguan.remoteEmbedding']，
+// 游离于主密码加密体系之外（apiProfiles / translationConfig 的 apiKey 都会加密，
+// 唯独它没有），且不在备份导出的明文密钥检查范围内。
+//
+// 为什么用「内存态」而非「读取时解密」：
+// `VectorModelManager.defaultFactory()` 是**同步静态**方法，而主密码体系的
+// `decryptApiKey()` 是异步的（Web Crypto）。若在此处解密会把整条调用链异步化 ——
+// 属破坏性改动。故沿用与 apiProfiles 相同的模式：
+// **解锁时解密一次存入内存，读取时同步取用**。
+//
+// 三态语义：
+// - 'plain'    未设主密码 → 沿用 localStorage 明文（与改造前行为一致）
+// - 'unlocked' 已设且已解锁 → 使用解密后的明文
+// - 'locked'   已设但未解锁 → 不下发密钥（远程向量不可用，与 apiProfiles
+//                            未解锁时拿不到 apiKey 的语义一致）
+export type RemoteApiKeyState =
+  | { state: 'plain' }
+  | { state: 'unlocked'; key: string }
+  | { state: 'locked' };
+
+let remoteApiKeyState: RemoteApiKeyState = { state: 'plain' };
+
+/** 由 settings store 在解锁 / 锁定 / 设置或修改主密码时调用 */
+export function setRemoteApiKeyState(next: RemoteApiKeyState): void {
+  remoteApiKeyState = next;
+}
+
+/** 当前内存态（供测试与调试使用） */
+export function getRemoteApiKeyState(): RemoteApiKeyState {
+  return remoteApiKeyState;
+}
+
+/** 把内存态解析为实际可用密钥；fallback 为 localStorage 中的存储值 */
+function resolveRemoteApiKey(fallback: string): string {
+  switch (remoteApiKeyState.state) {
+    case 'plain':
+      return fallback;
+    case 'unlocked':
+      return remoteApiKeyState.key;
+    case 'locked':
+      return '';
+  }
+}
+
 export type VectorModelId =
   | 'bge-large-zh-v1.5'
   | 'bge-large-zh-v1.5-int8-onnx'
@@ -168,7 +214,8 @@ export class VectorModelManager {
       if (remote?.baseUrl) {
         return new GatewayEmbeddingProvider({
           baseUrl: `${remote.baseUrl.replace(/\/+$/, '')}${remote.embeddingPath ?? '/embeddings'}`,
-          apiKey: remote.apiKey ?? '',
+          // P1-4：密钥经内存态解析（已设主密码且已解锁时用解密值；未解锁时为空）
+          apiKey: resolveRemoteApiKey(remote.apiKey ?? ''),
           model: remote.modelName ?? model,
           defaultDim: remote.dim ?? VECTOR_MODELS[model].dim,
         });

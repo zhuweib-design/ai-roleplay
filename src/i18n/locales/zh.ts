@@ -2445,6 +2445,7 @@ export default {
 
   // ── 备份/导入/导出（backup-service） ──
   'backup.translationKey': '翻译 API Key',
+  'backup.remoteEmbeddingKey': '远程向量网关 API Key',
   'backup.plainKeysBlocked': '明文密钥阻止导出:{keys}',
   'backup.abortedPlainKeys': '备份中止：检测到未加密的 API Key（{keys}）。请先在设置中设置主密码（自动加密后重试），或清除这些 API Key。',
   'backup.summary': '角色 {chars} / 对话 {chats} / 世界书 {lbs}',
