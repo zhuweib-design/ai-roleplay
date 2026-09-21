@@ -457,7 +457,7 @@ watch(
 .step-dot.active {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--on-accent);
+  color: var(--on-primary);
 }
 
 .step-line {
@@ -758,7 +758,7 @@ watch(
 .modal-confirm {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--on-accent);
+  color: var(--on-primary);
 }
 
 @media (hover: hover) and (pointer: fine) {

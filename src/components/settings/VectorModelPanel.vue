@@ -718,7 +718,7 @@ select.field-input {
   border-radius: var(--radius-md);
   background: var(--primary);
   border: 1px solid var(--primary);
-  color: var(--on-media);
+  color: var(--on-primary);
   font-size: 12px;
   cursor: pointer;
   transition: background-color .15s ease, border-color .15s ease;

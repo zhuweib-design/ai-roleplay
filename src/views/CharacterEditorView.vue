@@ -1324,7 +1324,7 @@ function handleExport() {
 .header-btn.save {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--on-media);
+  color: var(--on-primary);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1515,7 +1515,7 @@ function handleExport() {
 
 .type-btn.active {
   background: var(--secondary);
-  color: var(--on-media);
+  color: var(--on-accent);
 }
 
 .type-btn:focus-visible {
@@ -1644,7 +1644,7 @@ function handleExport() {
 .footer-btn.save {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--on-media);
+  color: var(--on-primary);
 }
 
 @media (hover: hover) and (pointer: fine) {

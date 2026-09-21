@@ -257,7 +257,7 @@
   border-radius: 50%;
   background: var(--primary);
   border: none;
-  color: var(--on-media);
+  color: var(--on-primary);
   cursor: pointer;
   transition: filter .15s ease, transform .15s ease;
   flex-shrink: 0;

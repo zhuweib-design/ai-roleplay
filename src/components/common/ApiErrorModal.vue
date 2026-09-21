@@ -370,7 +370,7 @@ function handleRetry() {
 .btn-primary {
   background: var(--primary);
   border: 1px solid var(--primary);
-  color: var(--on-accent);
+  color: var(--on-primary);
 }
 
 @media (hover: hover) and (pointer: fine) {

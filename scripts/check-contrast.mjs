@@ -329,7 +329,7 @@ console.log('══════════════════════�
  *
  * 收敛后请同步下调此值；若某次改动使数字上升，说明引入了新的低对比度配对。
  */
-const BASELINE_SCAN_FAILURES = 156;
+const BASELINE_SCAN_FAILURES = 136;
 
 let semanticFailed = 0;
 let scanFailed = 0;
@@ -382,8 +382,9 @@ if (scanFailed === 0) {
   console.log(
     `  ${scanFailed} 处不达标，分布在 ${byFile.size} 个文件 ｜ 基线 ${BASELINE_SCAN_FAILURES} ｜ ${verdict}`
   );
-  // 只在超基线时逐条列出，避免持平/收敛时刷屏；持平与收敛仍打印前 20 条便于观察
-  const showAll = scanDelta > 0;
+  // 只在超基线时逐条列出，避免持平/收敛时刷屏；持平与收敛默认打印前 20 条便于观察。
+  // 传 --list-all 可强制列出全部（用于批量收敛存量）。
+  const showAll = scanDelta > 0 || process.argv.includes('--list-all');
   let printed = 0;
   for (const [file, list] of byFile) {
     if (!showAll && printed >= 20) break;
