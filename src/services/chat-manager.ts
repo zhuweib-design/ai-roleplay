@@ -22,6 +22,13 @@ import { buildStatusInstruction } from '@core/status-prompt';
 import type { CharacterStatus } from '@core/status-schema';
 import { compressMessages, type OptimizationPipeline } from '@core/optimization-pipeline';
 import {
+  shouldSummarize,
+  injectSummary,
+  DefaultSummarizationService,
+  type SummarizationConfig,
+  type ConversationSummary,
+} from '@core/summarizer';
+import {
   applyL0Context,
   applyOutputDiscipline,
   updateEmotionState,
@@ -84,6 +91,18 @@ export interface ChatManagerConfig {
    * 角色级 `ext.statusInstruction === 'on' | 'off'` 在此之上覆盖（见 sendMessage 内解析）。
    */
   statusInstructionEnabled?: boolean;
+  // ── 摘要接线（2026-09-21）──
+  /**
+   * 会话摘要配置。**不传 = 完全不触发摘要**（行为与接线前一致）。
+   *
+   * 传入后：流式结束时会**异步**（fire-and-forget）判断是否需要生成摘要，
+   * 失败静默 —— 不阻塞、不影响主链路（天然 fail-open）。
+   */
+  summarizationConfig?: SummarizationConfig;
+  /** 现有摘要（增量更新用；由 chat store 从当前会话读取后传入） */
+  existingSummary?: ConversationSummary | null;
+  /** 摘要生成完成回调（chat store 负责写回会话并持久化） */
+  onSummaryGenerated?: (summary: ConversationSummary) => void;
 }
 
 export interface SendMessageParams {
@@ -263,6 +282,18 @@ export class ChatManager {
           built.messages = l2.messages as typeof built.messages;
         }
       }
+    }
+
+    // 摘要接线（2026-09-21）：把已有摘要注入上下文头部
+    //
+    // 位置在 L1 压缩之前 —— 摘要是 system 消息，而 compressMessages 天然跳过
+    // system 与当前轮 user，故两者职责不重叠：
+    //   摘要管「被裁掉的最早历史」，L1 管「仍在窗口内的历史」。
+    if (this.config.existingSummary?.content) {
+      built.messages = injectSummary(
+        built.messages,
+        this.config.existingSummary
+      ) as typeof built.messages;
     }
 
     // E-04 二期: 嵌入优化挂载 —— 对长历史消息做 L1 压缩(默认关闭;fail-open 不影响主链路)
@@ -568,6 +599,36 @@ export class ChatManager {
    * E-01: 情绪状态更新(每轮回复完成后调用)
    * 仅当 L0 启用且有 deps 时生效;规则标注命中情绪词才写入;fail-open 不影响主链路
    */
+  /**
+   * 摘要接线（2026-09-21）：按需生成/更新会话摘要。
+   *
+   * **异步、fire-and-forget、fail-open** —— 由调用方（chat store）在流式回复
+   * 结束后触发；失败静默返回 null，**不阻塞、不影响主链路**。
+   *
+   * 与 L1 压缩的分工：**摘要管「被裁掉的最早历史」，L1 管「仍在窗口内的历史」**。
+   *
+   * @param messages 完整消息列表（含历史与最新回复）
+   * @param config 摘要配置（来自 `settings.summarizationConfig`）
+   * @param existingSummary 现有摘要（增量更新用）
+   * @returns 新摘要；未启用 / 未达阈值 / 失败时返回 null
+   */
+  async summarizeIfNeeded(
+    messages: ChatMessage[],
+    config: SummarizationConfig,
+    existingSummary: ConversationSummary | null
+  ): Promise<ConversationSummary | null> {
+    try {
+      if (!(await shouldSummarize(messages, config, existingSummary))) return null;
+      const service = new DefaultSummarizationService(
+        this.config.apiClient,
+        this.config.model
+      );
+      return await service.summarize(messages, config, existingSummary);
+    } catch {
+      return null; // fail-open：摘要失败绝不影响主链路
+    }
+  }
+
   private async updateEmotion(
     reply: string,
     callbacks?: ChatManagerCallbacks
