@@ -54,6 +54,20 @@
    > `mv test-results "artifacts/_tr_$(date +%s%N)"`（项目既有约定见 `MEMORY.md`）。
    > 目录不存在时 Playwright 的清理是 `force` 空操作，不消耗删除配额（已实测确认有效）。
 
+   > **⚠️ 沙箱环境下门禁退出码不可信（本地复现要点）**
+   > 带「安全删除」保护的沙箱（如 WorkBuddy）会拦截构建 / 覆盖率**启动期**的目录清理，
+   > 使退出码**恒为 1**，但这并不代表门禁失败。本地复现请按下列方式判定：
+   > - **构建**：改用 `npx vite build --emptyOutDir=false`（跳过清 `dist/`），退出码恢复可信；
+   > - **覆盖率**：看**输出**而非退出码 —— 同时满足「无 threshold 类报错」+「用例全绿
+   >   （`Tests N passed` 且 0 failed）」即通过；
+   > - **E2E**：先按上条清走 `test-results/`，否则启动期清理失败会整体跑不起来。
+   >
+   > CI（干净 runner）不受影响，退出码可信。
+
+   > **lint 基线口径**：当前实测 **0 error / 2 warning**（2 条在 `CharacterList.vue`，
+   > 属既有历史告警）。文档中曾记作「~50 warnings」，那是早于多轮修复的旧值 ——
+   > **以 2 warnings 为基线**，多于 2 条即为回归。
+
 5. 提交信息遵循仓库既有风格（小步、明确，如 `feat(scope): describe`）。
 6. 向 `master` 发起 **Pull Request** 并描述改动目的。
 
