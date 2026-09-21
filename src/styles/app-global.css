@@ -35,7 +35,7 @@
   justify-content: space-between;
   padding: 8px 16px;
   background: var(--warning-bg, #3a2f1e);
-  color: var(--warning-fg, #f0c674);
+  color: var(--warning-text, #f0c674);
   border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   font-size: 13px;
 }

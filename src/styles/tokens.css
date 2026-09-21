@@ -244,4 +244,5 @@
   --secondary-text: color-mix(in srgb, var(--secondary) 78%, var(--foreground));
   --warning-text: color-mix(in srgb, var(--warning, #f59e0b) 78%, var(--foreground));
   --accent-blue-text: color-mix(in srgb, var(--accent-blue) 78%, var(--foreground));
+  --accent-orange-text: color-mix(in srgb, var(--accent-orange) 78%, var(--foreground));
 }

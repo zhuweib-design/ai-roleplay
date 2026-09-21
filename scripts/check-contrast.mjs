@@ -329,7 +329,7 @@ console.log('══════════════════════�
  *
  * 收敛后请同步下调此值；若某次改动使数字上升，说明引入了新的低对比度配对。
  */
-const BASELINE_SCAN_FAILURES = 136;
+const BASELINE_SCAN_FAILURES = 131;
 
 let semanticFailed = 0;
 let scanFailed = 0;

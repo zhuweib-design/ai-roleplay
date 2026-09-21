@@ -903,7 +903,7 @@ class="token-bar" role="progressbar"
   font-size: 11px;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--secondary) 10%, transparent);
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .token-bar {
@@ -1103,7 +1103,7 @@ class="token-bar" role="progressbar"
   padding: 1px 4px;
   background: color-mix(in srgb, var(--secondary) 10%, transparent);
   border-radius: var(--radius-sm);
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 /* 视觉隐藏但屏幕阅读器可读 */

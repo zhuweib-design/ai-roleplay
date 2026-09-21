@@ -226,7 +226,7 @@ function handleRetry() {
 .kind-auth {
   background: var(--warning-bg);
   border-color: var(--warning-border);
-  color: var(--warning-fg);
+  color: var(--warning-text);
 }
 
 .kind-network,
@@ -239,7 +239,7 @@ function handleRetry() {
 .kind-warning {
   background: color-mix(in srgb, var(--accent-orange) 12%, transparent);
   border-color: color-mix(in srgb, var(--accent-orange) 30%, transparent);
-  color: var(--accent-orange);
+  color: var(--accent-orange-text);
 }
 
 .kind-unknown {
