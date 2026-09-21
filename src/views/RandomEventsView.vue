@@ -1046,8 +1046,10 @@ function formatCooldown(ms: number): string {
 
 .empty-hint {
   font-size: 12px !important;
+  /* --muted-foreground 本身即 AA 达标的次要文本 token（门禁 muted/背景、muted/卡片 均覆盖）。
+     原叠加 opacity: 0.7 会在半透明混合后把对比度压到 3.11/4.30/4.05（light/oled/theatre），
+     故移除额外透明度 —— 提示文字是信息性文本，非装饰，必须 ≥4.5:1。 */
   color: var(--muted-foreground);
-  opacity: 0.7;
 }
 
 /* 生成器配置表单 */

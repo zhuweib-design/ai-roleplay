@@ -517,7 +517,9 @@ function switchPersona(id: string): void {
   background: var(--card-elevated);
   padding: 1px 4px;
   border-radius: var(--radius-xs);
-  color: var(--secondary);
+  /* --secondary 作文字在 theatre 的 --card-elevated 上仅 4.37:1；
+     改用派生 token --secondary-text（与 .card-tags 同源）。 */
+  color: var(--secondary-text);
 }
 
 /* 激活徽章 */
@@ -601,7 +603,9 @@ function switchPersona(id: string): void {
   background: var(--card-elevated);
   padding: 1px 4px;
   border-radius: var(--radius-xs);
-  color: var(--secondary);
+  /* --secondary 作文字在 theatre 的 --card-elevated 上仅 4.37:1；
+     改用派生 token --secondary-text（与 .card-tags 同源）。 */
+  color: var(--secondary-text);
 }
 
 .field-error {
@@ -660,13 +664,18 @@ function switchPersona(id: string): void {
 .action-btn.primary {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--on-accent);
+  /* primary 背景须配 --on-primary。原用 --on-accent（深色），在 dark/midnight/oled
+     的 primary 上仅 3.52~4.21:1；on-primary/primary 为门禁已覆盖的达标配对。 */
+  color: var(--on-primary);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .action-btn.primary:hover:not(:disabled) {
     background: var(--destructive);
     border-color: var(--destructive);
+    /* hover 背景切换为 destructive 后，文字须改用 --on-accent（深色）配对；
+       实测 on-accent/destructive 在 5 主题下均 ≥4.5:1。 */
+    color: var(--on-accent);
   }
 }
 

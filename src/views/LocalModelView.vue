@@ -670,7 +670,9 @@ onMounted(async () => {
 
 .header-tag.available {
   background: color-mix(in srgb, var(--success) 20%, transparent);
-  color: var(--success);
+  /* --success 是「背景/装饰」用色，文字须用其前景版 --success-fg。
+     light 下 --success(#059669) on 20% 染层仅 2.79:1；success-fg(#065F46) 达标。 */
+  color: var(--success-fg);
 }
 
 .header-tag.unavailable {
@@ -743,7 +745,8 @@ onMounted(async () => {
 }
 
 .cap-value.ok {
-  color: var(--success);
+  /* 同上：--success 作文字在 light 卡片上仅 3.76:1，改用 --success-fg。 */
+  color: var(--success-fg);
 }
 
 .cap-value.no {

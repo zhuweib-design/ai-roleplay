@@ -3337,7 +3337,9 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 
 .template-pill.active {
   border-color: var(--accent-blue);
-  color: var(--accent-blue);
+  /* accent-blue 作文字叠在同色 10% 染层上，light 下仅 4.44:1；
+     改用派生 token --accent-blue-text（accent-blue 与 foreground 混合，主题自适应）。 */
+  color: var(--accent-blue-text);
   background: color-mix(in srgb, var(--accent-blue) 10%, transparent);
 }
 

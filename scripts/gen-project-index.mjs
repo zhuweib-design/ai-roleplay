@@ -316,6 +316,8 @@ const CURATED = {
   'docs/fixes/pre-launch-check-aijiuguan-2026-08-15.md': '修复文档：上线前全检报告（2026-08-15）',
   'docs/fixes/pre-launch-check-aijiuguan-2026-08-17.md': '修复文档：6 维度全检报告（2026-08-17）',
   'docs/fixes/pre-launch-check-aijiuguan-2026-08-19.md': '修复文档：6 维度全检报告（2026-08-19）',
+  'docs/fixes/pre-launch-check-aijiuguan-2026-09-21.md':
+    '修复文档：上线前全检报告（代码审查 + 安全审计 + QA，2026-09-21）',
   'docs/fixes/web-sop-fix-batch1-report.md': '修复文档：Web SOP 修复第一批交付报告（修正失实声明）',
   'docs/fixes/web-sop-fix-batch2-report.md': '修复文档：Web SOP 修复第二批交付报告（补齐门禁）',
   'docs/fixes/web-sop-fix-batch3-report.md': '修复文档：Web SOP 修复第三批交付报告（安全与数据保障）',

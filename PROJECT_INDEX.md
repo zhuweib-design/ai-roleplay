@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-20 11:04（本地时区）
+- **生成时间**：2026-09-21 10:52（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v0.2.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：386 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：0 个
+- **收录文件**：424 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：17 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -17,9 +17,9 @@ ai-roleplay/
   - `workflows/`  — 1 个文件
 - `.workbuddy/`  — 9 个文件
   - `memory/`  — 9 个文件
-- `.workbuddy-ai/`  — 3 个文件
-  - `memory/`  — 3 个文件
-- `docs/`  — 137 个文件
+- `.workbuddy-ai/`  — 4 个文件
+  - `memory/`  — 4 个文件
+- `docs/`  — 147 个文件
   - `assets/`  — 110 个文件
     - `screenshots/`  — 110 个文件
       - `themes/`  — 84 个文件
@@ -27,12 +27,12 @@ ai-roleplay/
         - `midnight/`  — 21 个文件
         - `oled/`  — 21 个文件
         - `theatre/`  — 21 个文件
-  - `design/`  — 8 个文件
-  - `dev/`  — 6 个文件
-  - `fixes/`  — 11 个文件
-  - `other/`  — 1 个文件
+  - `design/`  — 10 个文件
+  - `dev/`  — 10 个文件
+  - `fixes/`  — 12 个文件
+  - `other/`  — 4 个文件
   - `product/`  — 1 个文件
-- `e2e/`  — 10 个文件
+- `e2e/`  — 11 个文件
   - `mobile/`  — 1 个文件
 - `market/`  — 8 个文件
   - `cards/`  — 1 个文件
@@ -43,11 +43,11 @@ ai-roleplay/
       - `dl_builtin_tik_tok/`  — 12 个文件
   - `fonts/`  — 106 个文件
 - `scripts/`  — 17 个文件
-- `src/`  — 160 个文件
-  - `api/`  — 10 个文件
-  - `components/`  — 22 个文件
-    - `chat/`  — 3 个文件
-    - `common/`  — 9 个文件
+- `src/`  — 168 个文件
+  - `api/`  — 11 个文件
+  - `components/`  — 25 个文件
+    - `chat/`  — 5 个文件
+    - `common/`  — 10 个文件
     - `layout/`  — 3 个文件
     - `mobile/`  — 1 个文件
     - `random-events/`  — 2 个文件
@@ -55,7 +55,7 @@ ai-roleplay/
     - `story/`  — 1 个文件
     - `worldbook/`  — 1 个文件
   - `composables/`  — 1 个文件
-  - `core/`  — 65 个文件
+  - `core/`  — 69 个文件
   - `data/`  — 1 个文件
   - `i18n/`  — 3 个文件
     - `locales/`  — 2 个文件
@@ -80,23 +80,23 @@ ai-roleplay/
   - `src/`  — 11 个文件
     - `commands/`  — 5 个文件
     - `storage/`  — 1 个文件
-- `tests/`  — 102 个文件
+- `tests/`  — 120 个文件
   - `accessibility/`  — 3 个文件
-  - `api/`  — 5 个文件
-  - `core/`  — 60 个文件
-  - `services/`  — 6 个文件
+  - `api/`  — 8 个文件
+  - `core/`  — 67 个文件
+  - `services/`  — 8 个文件
   - `storage/`  — 4 个文件
-  - `stores/`  — 17 个文件
-  - `views/`  — 5 个文件
+  - `stores/`  — 20 个文件
+  - `views/`  — 8 个文件
 ```
 
 ## 二、文件索引
 
-### 2.1 程序（173）
+### 2.1 程序（181）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `index.html` | html | 程序 | Vite 入口 HTML，挂载 #app | 已修改 |  |
+| `index.html` | html | 程序 | Vite 入口 HTML，挂载 #app | 已跟踪 |  |
 | `src-tauri/build.rs` | rs | 程序 | Tauri 构建脚本（tauri-build） | 已跟踪 |  |
 | `src-tauri/src/commands/app_info.rs` | rs | 程序 | 命令：应用信息 | 已跟踪 |  |
 | `src-tauri/src/commands/chat_stream.rs` | rs | 程序 | 命令：流式对话（SSE 转发） | 已跟踪 |  |
@@ -118,11 +118,14 @@ ai-roleplay/
 | `src/api/local-api-client.ts` | ts | 程序 | 本地模型 API 客户端（web-llm 引擎） | 已跟踪 |  |
 | `src/api/openai-client.ts` | ts | 程序 | OpenAI 协议客户端 | 已跟踪 |  |
 | `src/api/openai-protocol.ts` | ts | 程序 | OpenAI 协议报文构造与解析 | 已跟踪 |  |
+| `src/api/reasoning-capability.ts` | ts | 程序 | 模块：reasoning-capability（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/api/tauri-openai-client.ts` | ts | 程序 | Tauri 侧 OpenAI 兼容客户端 | 已跟踪 |  |
 | `src/api/types.ts` | ts | 程序 | API 请求/响应类型定义 | 已跟踪 |  |
 | `src/components/chat/ChatMain.vue` | vue | 程序 | 组件：对话主区域 | 已跟踪 |  |
 | `src/components/chat/MessageBubble.vue` | vue | 程序 | 组件：消息气泡（Markdown 渲染） | 已跟踪 |  |
 | `src/components/chat/NewConversationModal.vue` | vue | 程序 | 组件：新建对话弹窗 | 已跟踪 |  |
+| `src/components/chat/StatusHud.vue` | vue | 程序 | 组件：StatusHud（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/chat/ThinkingBlock.vue` | vue | 程序 | 组件：ThinkingBlock（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/common/ApiErrorModal.vue` | vue | 程序 | 通用组件：API 错误提示弹窗 | 已跟踪 |  |
 | `src/components/common/Avatar.vue` | vue | 程序 | 通用组件：头像 | 已跟踪 |  |
 | `src/components/common/FilterTabs.vue` | vue | 程序 | 通用组件：筛选标签页 | 已跟踪 |  |
@@ -130,6 +133,7 @@ ai-roleplay/
 | `src/components/common/MasterPasswordModal.vue` | vue | 程序 | 通用组件：主密码输入弹窗 | 已跟踪 |  |
 | `src/components/common/Modal.vue` | vue | 程序 | 通用组件：模态框 | 已跟踪 |  |
 | `src/components/common/OnboardingModal.vue` | vue | 程序 | 通用组件：新手引导弹窗 | 已跟踪 |  |
+| `src/components/common/SegmentedControl.vue` | vue | 程序 | 组件：SegmentedControl（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/common/Toast.vue` | vue | 程序 | 通用组件：轻提示 | 已跟踪 |  |
 | `src/components/common/icons.ts` | ts | 程序 | 图标路径常量表 | 已跟踪 |  |
 | `src/components/layout/CharacterList.vue` | vue | 程序 | 布局：角色列表侧栏 | 已跟踪 |  |
@@ -186,6 +190,9 @@ ai-roleplay/
 | `src/core/sanitize.ts` | ts | 程序 | HTML 净化（DOMPurify 封装，防 XSS） | 已跟踪 |  |
 | `src/core/slash-command.ts` | ts | 程序 | 斜杠命令解析与执行 | 已跟踪 |  |
 | `src/core/st-compat.ts` | ts | 程序 | SillyTavern 数据格式兼容层 | 已跟踪 |  |
+| `src/core/status-parser.ts` | ts | 程序 | 模块：status-parser（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/status-prompt.ts` | ts | 程序 | 模块：status-prompt（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/status-schema.ts` | ts | 程序 | 模块：status-schema（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/stopword-filter.ts` | ts | 程序 | 停用词过滤（RAG 增强） | 已跟踪 |  |
 | `src/core/storage-persistence.ts` | ts | 程序 | Web/PWA 持久化授权（navigator.storage.persist，降低 IndexedDB 被驱逐风险） | 已跟踪 |  |
 | `src/core/story-analyzer.ts` | ts | 程序 | 剧情分析器 | 已跟踪 |  |
@@ -195,6 +202,7 @@ ai-roleplay/
 | `src/core/story-types.ts` | ts | 程序 | 剧情引擎类型定义 | 已跟踪 |  |
 | `src/core/summarizer.ts` | ts | 程序 | 对话摘要生成 | 已跟踪 |  |
 | `src/core/theme-extractor.ts` | ts | 程序 | 主题色提取 | 已跟踪 |  |
+| `src/core/thinking-parser.ts` | ts | 程序 | 模块：thinking-parser（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/token-counter.ts` | ts | 程序 | Token 计数（gpt-tokenizer） | 已跟踪 |  |
 | `src/core/tool-registry.ts` | ts | 程序 | 工具/函数调用注册表 | 已跟踪 |  |
 | `src/core/trigger-engine.ts` | ts | 程序 | 触发器引擎 | 已跟踪 |  |
@@ -250,34 +258,35 @@ ai-roleplay/
 | `src/styles/responsive.css` | css | 程序 | 响应式断点样式（口径统一 640px） | 已跟踪 |  |
 | `src/styles/themes.css` | css | 程序 | 内置 5 套主题变量 | 已跟踪 |  |
 | `src/styles/tokens-responsive.css` | css | 程序 | 响应式设计令牌 | 已跟踪 |  |
-| `src/styles/tokens.css` | css | 程序 | 设计令牌（颜色/间距/字号） | 已跟踪 |  |
+| `src/styles/tokens.css` | css | 程序 | 设计令牌（颜色/间距/字号） | 已修改 |  |
 | `src/types/index.ts` | ts | 程序 | 全局共享类型定义 | 已跟踪 |  |
 | `src/utils/onboarding.ts` | ts | 程序 | 新手引导状态读写（完成标志值为 "1"） | 已跟踪 |  |
 | `src/views/ArchivesView.vue` | vue | 程序 | 页面：归档 | 已跟踪 |  |
 | `src/views/CharacterEditorView.vue` | vue | 程序 | 页面：角色编辑 | 已跟踪 |  |
 | `src/views/CharacterVersionView.vue` | vue | 程序 | 页面：角色版本管理 | 已跟踪 |  |
-| `src/views/CharactersView.vue` | vue | 程序 | 页面：角色列表 | 已跟踪 |  |
+| `src/views/CharactersView.vue` | vue | 程序 | 页面：角色列表 | 已修改 |  |
 | `src/views/ChatView.vue` | vue | 程序 | 页面：对话主界面 | 已跟踪 |  |
-| `src/views/CommunityMarketView.vue` | vue | 程序 | 页面：社区市场 | 已跟踪 |  |
+| `src/views/CommunityMarketView.vue` | vue | 程序 | 页面：社区市场 | 已修改 |  |
 | `src/views/DataBankView.vue` | vue | 程序 | 页面：数据银行 | 已跟踪 |  |
 | `src/views/GroupChatView.vue` | vue | 程序 | 页面：群聊 | 已跟踪 |  |
-| `src/views/ImageGeneratorView.vue` | vue | 程序 | 页面：图像生成 | 已跟踪 |  |
-| `src/views/LocalModelView.vue` | vue | 程序 | 页面：本地模型管理 | 已跟踪 |  |
-| `src/views/ProfileView.vue` | vue | 程序 | 页面：用户档案 | 已跟踪 |  |
-| `src/views/RandomEventsView.vue` | vue | 程序 | 页面：随机事件 | 已跟踪 |  |
+| `src/views/ImageGeneratorView.vue` | vue | 程序 | 页面：图像生成 | 已修改 |  |
+| `src/views/LocalModelView.vue` | vue | 程序 | 页面：本地模型管理 | 已修改 |  |
+| `src/views/ProfileView.vue` | vue | 程序 | 页面：用户档案 | 已修改 |  |
+| `src/views/RandomEventsView.vue` | vue | 程序 | 页面：随机事件 | 已修改 |  |
 | `src/views/SettingsView.vue` | vue | 程序 | 页面：设置中心（含数据管理与安全） | 已跟踪 |  |
-| `src/views/StoryEngineView.vue` | vue | 程序 | 页面：剧情引擎 | 已跟踪 |  |
+| `src/views/StoryEngineView.vue` | vue | 程序 | 页面：剧情引擎 | 已修改 |  |
 | `src/views/WorldBookView.vue` | vue | 程序 | 页面：世界书管理 | 已跟踪 |  |
 | `src/vite-env.d.ts` | ts | 程序 | Vite 环境变量与静态资源类型声明 | 已跟踪 |  |
 
-### 2.2 测试（112）
+### 2.2 测试（131）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `e2e/backup-restore.spec.ts` | ts | 测试 | E2E 测试：backup-restore 场景 | 已跟踪 |  |
 | `e2e/character-crud.spec.ts` | ts | 测试 | E2E 测试：character-crud 场景 | 已跟踪 |  |
 | `e2e/chat-flow.spec.ts` | ts | 测试 | E2E 测试：chat-flow 场景 | 已跟踪 |  |
-| `e2e/contrast-axe.spec.ts` | ts | 测试 | E2E 测试：contrast-axe 场景 | 已跟踪 |  |
+| `e2e/contrast-axe.spec.ts` | ts | 测试 | E2E 测试：contrast-axe 场景 | 已修改 |  |
+| `e2e/custom-theme-contrast.spec.ts` | ts | 测试 | E2E 测试：custom-theme-contrast 场景 | 已跟踪 |  |
 | `e2e/i18n-locale.spec.ts` | ts | 测试 | E2E 测试：i18n-locale 场景 | 已跟踪 |  |
 | `e2e/mobile/mobile-layout.spec.ts` | ts | 测试 | E2E 测试：mobile-layout 场景 | 已跟踪 |  |
 | `e2e/storage-state.json` | json | 测试 | E2E 预置 localStorage（跳过新手引导） | 已跟踪 |  |
@@ -289,9 +298,12 @@ ai-roleplay/
 | `tests/accessibility/worldbook-group-axe.test.ts` | ts | 测试 | 单元测试：worldbook-group-axe 模块 | 已跟踪 |  |
 | `tests/api/anthropic-client.test.ts` | ts | 测试 | 单元测试：anthropic-client 模块 | 已跟踪 |  |
 | `tests/api/diagnostics.test.ts` | ts | 测试 | 单元测试：diagnostics 模块 | 已跟踪 |  |
+| `tests/api/llm-controls-p0.qa-independent.test.ts` | ts | 测试 | 单元测试：llm-controls-p0.qa-independent 模块 | 已跟踪 |  |
 | `tests/api/local-api-client.test.ts` | ts | 测试 | 单元测试：local-api-client 模块 | 已跟踪 |  |
 | `tests/api/openai-client.test.ts` | ts | 测试 | 单元测试：openai-client 模块 | 已跟踪 |  |
+| `tests/api/reasoning-capability.test.ts` | ts | 测试 | 单元测试：reasoning-capability 模块 | 已跟踪 |  |
 | `tests/api/tauri-openai-client.test.ts` | ts | 测试 | 单元测试：tauri-openai-client 模块 | 已跟踪 |  |
+| `tests/api/usage-reasoning-tokens.qa-independent.test.ts` | ts | 测试 | 单元测试：usage-reasoning-tokens.qa-independent 模块 | 已跟踪 |  |
 | `tests/core/api-key-crypto.test.ts` | ts | 测试 | 单元测试：api-key-crypto 模块 | 已跟踪 |  |
 | `tests/core/audit-log.test.ts` | ts | 测试 | 单元测试：audit-log 模块 | 已跟踪 |  |
 | `tests/core/backup-crypto.test.ts` | ts | 测试 | 单元测试：backup-crypto 模块 | 已跟踪 |  |
@@ -333,6 +345,10 @@ ai-roleplay/
 | `tests/core/sanitize.test.ts` | ts | 测试 | 单元测试：sanitize 模块 | 已跟踪 |  |
 | `tests/core/slash-command.test.ts` | ts | 测试 | 单元测试：slash-command 模块 | 已跟踪 |  |
 | `tests/core/st-compat.test.ts` | ts | 测试 | 单元测试：st-compat 模块 | 已跟踪 |  |
+| `tests/core/status-parser.qa-independent.test.ts` | ts | 测试 | 单元测试：status-parser.qa-independent 模块 | 已跟踪 |  |
+| `tests/core/status-parser.test.ts` | ts | 测试 | 单元测试：status-parser 模块 | 已跟踪 |  |
+| `tests/core/status-prompt.test.ts` | ts | 测试 | 单元测试：status-prompt 模块 | 已跟踪 |  |
+| `tests/core/status-schema.test.ts` | ts | 测试 | 单元测试：status-schema 模块 | 已跟踪 |  |
 | `tests/core/stopword-filter.test.ts` | ts | 测试 | 单元测试：stopword-filter 模块 | 已跟踪 |  |
 | `tests/core/storage-persistence.test.ts` | ts | 测试 | 单元测试：storage-persistence 模块 | 已跟踪 |  |
 | `tests/core/story-analyzer.test.ts` | ts | 测试 | 单元测试：story-analyzer 模块 | 已跟踪 |  |
@@ -341,7 +357,10 @@ ai-roleplay/
 | `tests/core/story-time.test.ts` | ts | 测试 | 单元测试：story-time 模块 | 已跟踪 |  |
 | `tests/core/story.test.ts` | ts | 测试 | 单元测试：story 模块 | 已跟踪 |  |
 | `tests/core/summarizer.test.ts` | ts | 测试 | 单元测试：summarizer 模块 | 已跟踪 |  |
+| `tests/core/theme-contrast.test.ts` | ts | 测试 | 单元测试：theme-contrast 模块 | 已跟踪 |  |
 | `tests/core/theme-extractor.test.ts` | ts | 测试 | 单元测试：theme-extractor 模块 | 已跟踪 |  |
+| `tests/core/thinking-parser.qa-independent.test.ts` | ts | 测试 | 单元测试：thinking-parser.qa-independent 模块 | 已跟踪 |  |
+| `tests/core/thinking-parser.test.ts` | ts | 测试 | 单元测试：thinking-parser 模块 | 已跟踪 |  |
 | `tests/core/token-counter.test.ts` | ts | 测试 | 单元测试：token-counter 模块 | 已跟踪 |  |
 | `tests/core/tool-registry.test.ts` | ts | 测试 | 单元测试：tool-registry 模块 | 已跟踪 |  |
 | `tests/core/trigger-engine.test.ts` | ts | 测试 | 单元测试：trigger-engine 模块 | 已跟踪 |  |
@@ -356,6 +375,8 @@ ai-roleplay/
 | `tests/services/backup-service.test.ts` | ts | 测试 | 单元测试：backup-service 模块 | 已跟踪 |  |
 | `tests/services/chat-error.test.ts` | ts | 测试 | 单元测试：chat-error 模块 | 已跟踪 |  |
 | `tests/services/chat-manager.test.ts` | ts | 测试 | 单元测试：chat-manager 模块 | 已跟踪 |  |
+| `tests/services/llm-controls-p0.qa-independent.test.ts` | ts | 测试 | 单元测试：llm-controls-p0.qa-independent 模块 | 已跟踪 |  |
+| `tests/services/status-hud-p1.qa-independent.test.ts` | ts | 测试 | 单元测试：status-hud-p1.qa-independent 模块 | 已跟踪 |  |
 | `tests/services/translator.test.ts` | ts | 测试 | 单元测试：translator 模块 | 已跟踪 |  |
 | `tests/services/tts-service.test.ts` | ts | 测试 | 单元测试：tts-service 模块 | 已跟踪 |  |
 | `tests/services/type-adapters.test.ts` | ts | 测试 | 单元测试：type-adapters 模块 | 已跟踪 |  |
@@ -368,6 +389,8 @@ ai-roleplay/
 | `tests/stores/character-version.test.ts` | ts | 测试 | 单元测试：character-version 模块 | 已跟踪 |  |
 | `tests/stores/character.test.ts` | ts | 测试 | 单元测试：character 模块 | 已跟踪 |  |
 | `tests/stores/chat-context.test.ts` | ts | 测试 | 单元测试：chat-context 模块 | 已跟踪 |  |
+| `tests/stores/chat-llm-controls.test.ts` | ts | 测试 | 单元测试：chat-llm-controls 模块 | 已跟踪 |  |
+| `tests/stores/chat-p0-thinking.qa-independent.test.ts` | ts | 测试 | 单元测试：chat-p0-thinking.qa-independent 模块 | 已跟踪 |  |
 | `tests/stores/chat.test.ts` | ts | 测试 | 单元测试：chat 模块 | 已跟踪 |  |
 | `tests/stores/community-market.test.ts` | ts | 测试 | 单元测试：community-market 模块 | 已跟踪 |  |
 | `tests/stores/data-bank.test.ts` | ts | 测试 | 单元测试：data-bank 模块 | 已跟踪 |  |
@@ -376,6 +399,7 @@ ai-roleplay/
 | `tests/stores/local-model.test.ts` | ts | 测试 | 单元测试：local-model 模块 | 已跟踪 |  |
 | `tests/stores/lorebook-hierarchy.test.ts` | ts | 测试 | 单元测试：lorebook-hierarchy 模块 | 已跟踪 |  |
 | `tests/stores/master-password.test.ts` | ts | 测试 | 单元测试：master-password 模块 | 已跟踪 |  |
+| `tests/stores/maxtokens-priority.qa-independent.test.ts` | ts | 测试 | 单元测试：maxtokens-priority.qa-independent 模块 | 已跟踪 |  |
 | `tests/stores/persona.test.ts` | ts | 测试 | 单元测试：persona 模块 | 已跟踪 |  |
 | `tests/stores/quick-reply.test.ts` | ts | 测试 | 单元测试：quick-reply 模块 | 已跟踪 |  |
 | `tests/stores/random-events.test.ts` | ts | 测试 | 单元测试：random-events 模块 | 已跟踪 |  |
@@ -384,8 +408,11 @@ ai-roleplay/
 | `tests/views/app-tauri-ux.test.ts` | ts | 测试 | 单元测试：app-tauri-ux 模块 | 已跟踪 |  |
 | `tests/views/chat-ime.test.ts` | ts | 测试 | 单元测试：chat-ime 模块 | 已跟踪 |  |
 | `tests/views/chat-main-window.test.ts` | ts | 测试 | 单元测试：chat-main-window 模块 | 已跟踪 |  |
+| `tests/views/llm-controls-ui.test.ts` | ts | 测试 | 单元测试：llm-controls-ui 模块 | 已跟踪 |  |
 | `tests/views/settings-local-model.test.ts` | ts | 测试 | 单元测试：settings-local-model 模块 | 已跟踪 |  |
+| `tests/views/status-hud-ui.test.ts` | ts | 测试 | 单元测试：status-hud-ui 模块 | 已跟踪 |  |
 | `tests/views/story-engine-quicksetup.test.ts` | ts | 测试 | 单元测试：story-engine-quicksetup 模块 | 已跟踪 |  |
+| `tests/views/thinking-tokens-inline-status.qa-independent.test.ts` | ts | 测试 | 单元测试：thinking-tokens-inline-status.qa-independent 模块 | 已跟踪 |  |
 
 ### 2.3 产品文档（2）
 
@@ -394,58 +421,66 @@ ai-roleplay/
 | `docs/product/AI酒馆开发计划文档.md` | md | 产品文档 | 产品文档：开发计划与任务台账 | 已忽略 |  |
 | `public/sillytavern-vs-airoleplay.html` | html | 产品文档 | 静态页：SillyTavern vs ai-roleplay 系统化对比报告 | 已忽略 |  |
 
-### 2.4 开发文档（12）
+### 2.4 开发文档（16）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
-| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
+| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已修改 |  |
 | `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已跟踪 |  |
-| `README.md` | md | 开发文档 | 项目主说明（中文） | 已修改 |  |
+| `README.md` | md | 开发文档 | 项目主说明（中文） | 已跟踪 |  |
 | `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已跟踪 |  |
-| `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已忽略 |  |
-| `docs/dev/b-type-findings.md` | md | 开发文档 | 开发文档：`!` 非空断言治理审计记录 | 已忽略 |  |
-| `docs/dev/data-backup-restore.md` | md | 开发文档 | 开发文档：备份恢复与灾备演练 Runbook（P2-#3 修复交付） | 已忽略 |  |
-| `docs/dev/mobile-pwa-plan.md` | md | 开发文档 | 开发文档：手机端 PWA 实现计划 | 已忽略 |  |
-| `docs/dev/rag-enhancement-plan.md` | md | 开发文档 | 开发文档：RAG 增强实现计划 | 已忽略 |  |
-| `docs/dev/web-deployment-sop.md` | md | 开发文档 | 开发文档：Web 端部署 SOP（部署前验证 / 硬性要求 / 5 类托管配置 / 部署后验证 / 常见坑 / 回滚） | 已忽略 |  |
+| `docs/dev/2026-09-20-LLM控制能力交付总览.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已跟踪 |  |
+| `docs/dev/b-type-findings.md` | md | 开发文档 | 开发文档：`!` 非空断言治理审计记录 | 已跟踪 |  |
+| `docs/dev/character-status-hud-落地记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/data-backup-restore.md` | md | 开发文档 | 开发文档：备份恢复与灾备演练 Runbook（P2-#3 修复交付） | 已跟踪 |  |
+| `docs/dev/llm-controls-p0-落地记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/llm-controls-收尾三项记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/mobile-pwa-plan.md` | md | 开发文档 | 开发文档：手机端 PWA 实现计划 | 已跟踪 |  |
+| `docs/dev/rag-enhancement-plan.md` | md | 开发文档 | 开发文档：RAG 增强实现计划 | 已跟踪 |  |
+| `docs/dev/web-deployment-sop.md` | md | 开发文档 | 开发文档：Web 端部署 SOP（部署前验证 / 硬性要求 / 5 类托管配置 / 部署后验证 / 常见坑 / 回滚） | 已跟踪 |  |
 | `public/ai-roleplay-dev-plan.html` | html | 开发文档 | 开发文档（静态页）：AI 酒馆开发计划 | 已忽略 |  |
 
-### 2.5 修复文档（11）
+### 2.5 修复文档（12）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `docs/fixes/cross-client-review-2026-09-07.md` | md | 修复文档 | 修复文档：跨客户端评审报告（28 项缺陷来源） | 已忽略 |  |
-| `docs/fixes/goal-tracker.md` | md | 修复文档 | 修复文档：跨端一致性 28 项缺陷修复进度台账 | 已忽略 |  |
-| `docs/fixes/i7-mobile-control-font-size-fix-2026-09-20.md` | md | 修复文档 | 修复文档：I-7 移动端控件字号修复 + CSS 约定守卫合并（含真实浏览器实测数据） | 已忽略 |  |
-| `docs/fixes/pre-launch-check-aijiuguan-2026-08-15.md` | md | 修复文档 | 修复文档：上线前全检报告（2026-08-15） | 已忽略 |  |
-| `docs/fixes/pre-launch-check-aijiuguan-2026-08-17.md` | md | 修复文档 | 修复文档：6 维度全检报告（2026-08-17） | 已忽略 |  |
-| `docs/fixes/pre-launch-check-aijiuguan-2026-08-19.md` | md | 修复文档 | 修复文档：6 维度全检报告（2026-08-19） | 已忽略 |  |
-| `docs/fixes/web-sop-fix-batch1-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第一批交付报告（修正失实声明） | 已忽略 |  |
-| `docs/fixes/web-sop-fix-batch2-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第二批交付报告（补齐门禁） | 已忽略 |  |
-| `docs/fixes/web-sop-fix-batch3-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第三批交付报告（安全与数据保障） | 已忽略 |  |
-| `docs/fixes/web-sop-fix-batch4-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第四批交付报告（口径统一与流程固化） | 已忽略 |  |
-| `docs/fixes/web-sop-review-2026-09-18.md` | md | 修复文档 | 修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维） | 已忽略 |  |
+| `docs/fixes/cross-client-review-2026-09-07.md` | md | 修复文档 | 修复文档：跨客户端评审报告（28 项缺陷来源） | 已跟踪 |  |
+| `docs/fixes/goal-tracker.md` | md | 修复文档 | 修复文档：跨端一致性 28 项缺陷修复进度台账 | 已跟踪 |  |
+| `docs/fixes/i7-mobile-control-font-size-fix-2026-09-20.md` | md | 修复文档 | 修复文档：I-7 移动端控件字号修复 + CSS 约定守卫合并（含真实浏览器实测数据） | 已跟踪 |  |
+| `docs/fixes/pre-launch-check-aijiuguan-2026-08-15.md` | md | 修复文档 | 修复文档：上线前全检报告（2026-08-15） | 已跟踪 |  |
+| `docs/fixes/pre-launch-check-aijiuguan-2026-08-17.md` | md | 修复文档 | 修复文档：6 维度全检报告（2026-08-17） | 已跟踪 |  |
+| `docs/fixes/pre-launch-check-aijiuguan-2026-08-19.md` | md | 修复文档 | 修复文档：6 维度全检报告（2026-08-19） | 已跟踪 |  |
+| `docs/fixes/pre-launch-check-aijiuguan-2026-09-21.md` | md | 修复文档 | 修复文档：上线前全检报告（代码审查 + 安全审计 + QA，2026-09-21） | 未跟踪 |  |
+| `docs/fixes/web-sop-fix-batch1-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第一批交付报告（修正失实声明） | 已跟踪 |  |
+| `docs/fixes/web-sop-fix-batch2-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第二批交付报告（补齐门禁） | 已跟踪 |  |
+| `docs/fixes/web-sop-fix-batch3-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第三批交付报告（安全与数据保障） | 已跟踪 |  |
+| `docs/fixes/web-sop-fix-batch4-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第四批交付报告（口径统一与流程固化） | 已跟踪 |  |
+| `docs/fixes/web-sop-review-2026-09-18.md` | md | 修复文档 | 修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维） | 已跟踪 |  |
 
-### 2.6 设计文档（8）
+### 2.6 设计文档（10）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `docs/design/AI酒馆项目嵌入优化方案开发文档.md` | md | 设计文档 | 设计文档：嵌入优化方案（L0/L1/L2 三层） | 已忽略 |  |
-| `docs/design/P2-9-csp-whitelist-report.md` | md | 设计文档 | 设计文档：P2-9 CSP / remote 白名单盘点与决策记录 | 已忽略 |  |
-| `docs/design/design-system-specification.md` | md | 设计文档 | 设计文档：设计系统规范（令牌 / 组件 / 移动端） | 已忽略 |  |
-| `docs/design/e00-decision.md` | md | 设计文档 | 设计文档：E-00 嵌入优化形态决策 | 已忽略 |  |
-| `docs/design/mobile-ui-design.md` | md | 设计文档 | 设计文档：移动端 UI 设计（页面功能明细） | 已忽略 |  |
-| `docs/design/rag-enhancement-design.md` | md | 设计文档 | 设计文档：RAG 增强设计 | 已忽略 |  |
-| `docs/design/software-design-document.md` | md | 设计文档 | 设计文档：软件设计说明书 | 已忽略 |  |
-| `docs/design/threat-model.md` | md | 设计文档 | 设计文档：威胁模型（含提示词注入专项） | 已忽略 |  |
+| `docs/design/P2-9-csp-whitelist-report.md` | md | 设计文档 | 设计文档：P2-9 CSP / remote 白名单盘点与决策记录 | 已跟踪 |  |
+| `docs/design/character-status-hud-增量设计.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/design/design-system-specification.md` | md | 设计文档 | 设计文档：设计系统规范（令牌 / 组件 / 移动端） | 已跟踪 |  |
+| `docs/design/e00-decision.md` | md | 设计文档 | 设计文档：E-00 嵌入优化形态决策 | 已跟踪 |  |
+| `docs/design/llm-controls-p0-增量设计.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/design/mobile-ui-design.md` | md | 设计文档 | 设计文档：移动端 UI 设计（页面功能明细） | 已跟踪 |  |
+| `docs/design/rag-enhancement-design.md` | md | 设计文档 | 设计文档：RAG 增强设计 | 已跟踪 |  |
+| `docs/design/software-design-document.md` | md | 设计文档 | 设计文档：软件设计说明书 | 已跟踪 |  |
+| `docs/design/threat-model.md` | md | 设计文档 | 设计文档：威胁模型（含提示词注入专项） | 已跟踪 |  |
 
-### 2.7 AI记忆（12）
+### 2.7 AI记忆（13）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `.workbuddy-ai/memory/2026-09-18.md` | md | AI记忆 | AI记忆：2026-09-18 工作日志 | 已忽略 |  |
 | `.workbuddy-ai/memory/2026-09-20.md` | md | AI记忆 | AI记忆：2026-09-20 工作日志 | 已忽略 |  |
+| `.workbuddy-ai/memory/2026-09-21.md` | md | AI记忆 | AI记忆：2026-09-21 工作日志 | 已忽略 |  |
 | `.workbuddy-ai/memory/MEMORY.md` | md | AI记忆 | AI记忆：项目长期约定与结论 | 已忽略 |  |
 | `.workbuddy/memory/2026-08-13.md` | md | AI记忆 | AI记忆：2026-08-13 工作日志 | 已忽略 |  |
 | `.workbuddy/memory/2026-08-14.md` | md | AI记忆 | AI记忆：2026-08-14 工作日志 | 已忽略 |  |
@@ -492,7 +527,7 @@ ai-roleplay/
 | `scripts/breakpoint-guard.mjs` | mjs | 脚本 | 门禁：禁止野断点、断点数值 L1/L4 同步校验 | 已跟踪 |  |
 | `scripts/check-contrast.mjs` | mjs | 脚本 | 门禁：5 套主题关键色对对比度 ≥ AA | 已跟踪 |  |
 | `scripts/contrast-audit.mjs` | mjs | 脚本 | 审计：对比度全量扫描报告 | 已跟踪 |  |
-| `scripts/csp-audit.mjs` | mjs | 脚本 | 工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用） | 已修改 |  |
+| `scripts/csp-audit.mjs` | mjs | 脚本 | 工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用） | 已跟踪 |  |
 | `scripts/csp-guard.mjs` | mjs | 脚本 | 门禁：Web 端 CSP 契约校验（构建产物含 CSP、关键指令齐备、script-src 未被削弱） | 已跟踪 |  |
 | `scripts/css-conventions-guard.mjs` | mjs | 脚本 | 门禁：CSS 约定守卫单一入口（编排断点 / 视口 / hover / !important / 控件字号五项子检查） | 已跟踪 |  |
 | `scripts/css-viewport-guard.mjs` | mjs | 脚本 | 门禁：CSS 视口单位使用校验 | 已跟踪 |  |
@@ -507,14 +542,17 @@ ai-roleplay/
 | `scripts/ui-shot.mjs` | mjs | 脚本 | 工具：遍历路由批量截图到 docs/assets/screenshots/ | 已跟踪 |  |
 | `scripts/vendor-fonts.mjs` | mjs | 脚本 | 工具：把 Google Fonts 镜像到 public/fonts/，消除第三方字体请求（支持 --check 供校验） | 已跟踪 |  |
 
-### 2.11 其他（21）
+### 2.11 其他（24）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `LICENSE` | (无扩展名) | 其他 | Apache-2.0 许可证全文 | 已跟踪 |  |
 | `MIGRATION_LOG.md` | md | 其他 | 目录整理迁移日志 | 已跟踪 |  |
-| `PROJECT_INDEX.md` | md | 其他 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已跟踪 | 索引文件（不递归展开） |
-| `docs/other/项目文档结构.md` | md | 其他 | 其他：项目文档分类规范 | 已忽略 |  |
+| `PROJECT_INDEX.md` | md | 其他 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已修改 | 索引文件（不递归展开） |
+| `docs/other/tifa-ollama-webui-产品分析.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/other/tifa-ollama-webui-分析汇总.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/other/tifa-ollama-webui-架构评审.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/other/项目文档结构.md` | md | 其他 | 其他：项目文档分类规范 | 已跟踪 |  |
 | `icon-source.png` | png | 其他 | 应用图标设计源图（生成 PWA / Tauri 图标用） | 已跟踪 |  |
 | `market/cards/seraphina.json` | json | 其他 | 社区市场示例：角色卡数据 | 已跟踪 |  |
 | `market/index.json` | json | 其他 | 社区市场索引（角色卡 / 模板清单） | 已跟踪 |  |
@@ -537,18 +575,18 @@ ai-roleplay/
 
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
-| 程序 | 173 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
-| 测试 | 112 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
+| 程序 | 181 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
+| 测试 | 131 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 2 | docs/product/ 产品与项目规划材料 |
-| 开发文档 | 12 | docs/dev/ 实现计划、Runbook、审计记录 |
-| 修复文档 | 11 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
-| 设计文档 | 8 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
-| AI记忆 | 12 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
+| 开发文档 | 16 | docs/dev/ 实现计划、Runbook、审计记录 |
+| 修复文档 | 12 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
+| 设计文档 | 10 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
+| AI记忆 | 13 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
 | 截图 | 1 | docs/assets/screenshots/ 下 UI 冒烟截图 |
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 17 | scripts/ 门禁、审计与工具脚本 |
-| 其他 | 21 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **386** | 与「收录文件」数一致 |
+| 其他 | 24 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
+| **合计** | **424** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

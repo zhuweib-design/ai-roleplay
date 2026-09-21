@@ -227,4 +227,21 @@
   --cyan: var(--secondary);
   --danger: var(--error-fg);
   --warning: var(--warning-fg);
+
+  /* ═══════════════════════════════════════════════════════════════
+     派生 token · 强调色「作文字」时的可读变体（v1.2）
+     ═══════════════════════════════════════════════════════════════
+     背景：--secondary / --accent-blue / --warning 原设计主要作「背景/装饰」色，
+     直接作文本叠在同色染层或 elevated 面上时，light/theatre 下会掉到 4.08~4.44:1。
+
+     修复方式：与 --foreground 混合 22% —— 浅色主题前景偏暗 → 文字变深，
+     深色主题前景偏亮 → 文字变亮，从而随主题自适应达 AA，且保留原有色相。
+
+     关键点：这是**派生** token，只引用现有 token，故**无需各主题分别定义**；
+     自定义主题覆盖 --secondary/--foreground/--warning-fg/--accent-blue 后自动生效
+     （自定义主题的覆盖选择器 :root[data-theme="custom"] 与 :root 同为 html 元素，
+      且优先级更高，故此处 var() 取到的即主题值）。 */
+  --secondary-text: color-mix(in srgb, var(--secondary) 78%, var(--foreground));
+  --warning-text: color-mix(in srgb, var(--warning, #f59e0b) 78%, var(--foreground));
+  --accent-blue-text: color-mix(in srgb, var(--accent-blue) 78%, var(--foreground));
 }

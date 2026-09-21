@@ -676,13 +676,17 @@ function tagsPreview(tags: string[]): string {
 .new-btn {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--on-media);
+  /* primary 背景须配 --on-primary（白 / 深金）。原用 --on-media(#FFF)，
+     theatre 金底上仅 2.39:1；on-primary/primary 为门禁已覆盖的达标配对。 */
+  color: var(--on-primary);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .new-btn:hover {
     background: var(--destructive);
     border-color: var(--destructive);
+    /* destructive 背景的正确文字 token 是 --on-accent（深色），
+       实测 on-accent/destructive 在 5 主题下均 ≥4.5:1，故保持不变。 */
     color: var(--on-accent);
   }
 }
@@ -808,7 +812,9 @@ function tagsPreview(tags: string[]): string {
 
 .card-tags {
   font-size: 12px;
-  color: var(--secondary);
+  /* --secondary 作文字在 theatre 的 --card-elevated 上仅 4.37:1；
+     改用派生 token --secondary-text（= secondary 与 foreground 混合，主题自适应）。 */
+  color: var(--secondary-text);
   margin: 0;
 }
 

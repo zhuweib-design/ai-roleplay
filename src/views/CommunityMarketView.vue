@@ -967,7 +967,9 @@ type="button"
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--warning, #f59e0b) 15%, transparent);
-  color: var(--warning, #f59e0b);
+  /* warning 作文字叠在同色 15% 染层上，light 下仅 4.08:1；
+     改用派生 token --warning-text（warning 与 foreground 混合，主题自适应）。 */
+  color: var(--warning-text);
   font-size: 11px;
   font-weight: 600;
   vertical-align: middle;

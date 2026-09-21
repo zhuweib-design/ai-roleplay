@@ -754,7 +754,9 @@ onMounted(async () => {
   border-radius: var(--radius-md);
   border: none;
   background: var(--primary);
-  color: var(--primary-fg);
+  /* primary 背景须配 --on-primary（白 / 深金）。原用 --primary-fg（浅品牌色），
+     与 --primary 同色系，light 主题下文字与背景同色（1.00:1）完全不可见。 */
+  color: var(--on-primary);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
