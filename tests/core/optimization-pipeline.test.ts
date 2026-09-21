@@ -125,7 +125,8 @@ describe('配置持久化与 compressMessages (E-04 二期)', () => {
   it('load/save 配置往返,损坏数据回退默认', () => {
         try {
       localStorage.removeItem('ai-roleplay:optimization-config');
-      expect(loadOptimizationConfig().enabled).toBe(false);
+      // 2026-09-21 起默认开启 L0（见 createDefaultConfig 的决策说明）
+      expect(loadOptimizationConfig().enabled).toBe(true);
 
       saveOptimizationConfig({ enabled: true, l0Enabled: true, l1Enabled: true, l2Enabled: false, stage: 'l0-l2' });
       const loaded = loadOptimizationConfig();
@@ -134,7 +135,8 @@ describe('配置持久化与 compressMessages (E-04 二期)', () => {
       expect(loaded.stage).toBe('l0-l2');
 
       localStorage.setItem('ai-roleplay:optimization-config', '{broken');
-      expect(loadOptimizationConfig().enabled).toBe(false);
+      // 2026-09-21 起默认开启 L0（见 createDefaultConfig 的决策说明）
+      expect(loadOptimizationConfig().enabled).toBe(true);
     } finally {
       localStorage.removeItem('ai-roleplay:optimization-config');
     }

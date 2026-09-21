@@ -79,7 +79,9 @@ describe('applyOutputDiscipline (E-02 L2)', () => {
 
 describe('applyL0Context (E-01 L0)', () => {
   it('未启用时原样返回且无前缀哈希', async () => {
-    const out = await applyL0Context(makeDeps(), 'SYSTEM', makePipeline());
+    // 显式传 enabled:false —— 2026-09-21 起默认配置为「L0 开」，
+    // 不能再依赖默认值来表达"未启用"这个前提
+    const out = await applyL0Context(makeDeps(), 'SYSTEM', makePipeline({ enabled: false }));
     expect(out).toMatchObject({ systemContent: 'SYSTEM', prefixHash: '' });
   });
 

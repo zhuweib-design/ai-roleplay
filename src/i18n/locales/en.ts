@@ -2136,7 +2136,7 @@ const en: Record<MessageKey, string> = {
   'settingsView.profileResetAction': 'Back to default profile',
   'settingsView.optSection': 'Embedding Optimization (experimental)',
   'settingsView.optSectionDesc': 'Three-layer middleware optimization: context structure (L0) / output discipline (L2) / content compression (L1).',
-  'settingsView.optDefaultOff': 'All off by default',
+  'settingsView.optDefaultOff': 'L0 (context structure) is on by default; L2 / L1 are opt-in',
   'settingsView.optSectionDesc2': '. Requires restart; all paths fail-open, auto-fallback to original text.',
   'settingsView.optMasterSwitch': 'Master switch (experimental)',
   'settingsView.optL0': 'L0 Context structure (prefix stability)',

@@ -2136,7 +2136,7 @@ export default {
   'settingsView.profileResetAction': '切回默认档案',
   'settingsView.optSection': '嵌入优化(实验)',
   'settingsView.optSectionDesc': '三层中间件优化:上下文结构(L0)/输出纪律(L2)/内容压缩(L1)。',
-  'settingsView.optDefaultOff': '默认全部关闭',
+  'settingsView.optDefaultOff': '默认开启 L0（上下文结构）；L2 / L1 需手动开启',
   'settingsView.optSectionDesc2': ',开启后重启应用生效;所有路径 fail-open,失败自动回退原文。',
   'settingsView.optMasterSwitch': '总开关(实验性)',
   'settingsView.optL0': 'L0 上下文结构(前缀稳定)',

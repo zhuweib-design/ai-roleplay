@@ -38,9 +38,23 @@ export interface OptimizationConfig {
   stage: OptimizationStage;
 }
 
-/** 默认配置:全关 */
+/**
+ * 默认配置：**默认开启 L0**（上下文结构层）
+ *
+ * 决策依据（2026-09-21，产品确认「L0 设为默认开」）：
+ * - **L0 不改写任何内容** —— 只做「前缀字节稳定 + 情绪状态注入」，风险为零；
+ *   收益是命中 provider 前缀缓存（DeepSeek 命中价约为 miss 的 1/10）
+ * - **L2（旁白精简）与 L1（历史压缩）会改写内容**（前者改输出文风、后者改送入
+ *   模型的历史），保持默认关闭，由用户按需开启
+ *
+ * 注意：L0 生效要求总开关 `enabled` 同时为 true —— 见 `l0-l2-runtime.ts` 的
+ * `if (!pipeline.enabled) return outcome`，故两者一并开启。
+ *
+ * 兼容性：`loadOptimizationConfig()` 会优先读取已持久化的配置，
+ * 因此本改动**不影响已有用户**（仅影响新用户与清空存储后的默认值）。
+ */
 export function createDefaultConfig(): OptimizationConfig {
-  return { enabled: false, l0Enabled: false, l2Enabled: false, l1Enabled: false, stage: 'off' };
+  return { enabled: true, l0Enabled: true, l2Enabled: false, l1Enabled: false, stage: 'off' };
 }
 
 // ── 配置持久化(E-04 二期,独立于 AppSettings 持久化链) ──
