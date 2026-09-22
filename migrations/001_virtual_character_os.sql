@@ -437,9 +437,16 @@ CREATE TABLE IF NOT EXISTS memory_sources (
     event_id UUID NULL REFERENCES events(id) ON DELETE SET NULL,
     turn_id UUID NULL REFERENCES conversation_turns(id) ON DELETE SET NULL,
     weight NUMERIC(5,4) NOT NULL DEFAULT 1 CHECK (weight BETWEEN 0 AND 1),
-    PRIMARY KEY (memory_id, event_id, turn_id),
     CHECK (event_id IS NOT NULL OR turn_id IS NOT NULL)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uq_memory_sources_event
+    ON memory_sources (memory_id, event_id)
+    WHERE event_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_memory_sources_turn
+    ON memory_sources (memory_id, turn_id)
+    WHERE turn_id IS NOT NULL;
+
 
 CREATE INDEX IF NOT EXISTS idx_memory_sources_event
     ON memory_sources (event_id);

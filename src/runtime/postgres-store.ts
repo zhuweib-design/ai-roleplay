@@ -1,5 +1,5 @@
 import { OptimisticLockError } from './store';
-import type { DomainEvent, RuntimeSnapshot, RuntimeSnapshotStore, StateChange } from './types';
+import type { DomainEvent, Episode, MemoryRecord, RuntimeSnapshot, RuntimeSnapshotStore, StateChange } from './types';
 
 export interface SqlResult<Row = Record<string, unknown>> {
   rows: Row[];
@@ -52,7 +52,7 @@ function json(value: unknown): string {
  * 这不是浏览器端模拟器，而是服务端 PostgreSQL 的真实事务边界：
  * - 角色行 FOR UPDATE 锁定
  * - expectedVersion 乐观锁校验
- * - Event / StateChange / Snapshot / Audit 同事务提交
+ * - Event / StateChange / Memory / Episode / Snapshot / Audit 同事务提交
  */
 export class PostgresRuntimeStore implements RuntimeSnapshotStore {
   constructor(
@@ -105,6 +105,7 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
           json(snapshot.character.profile.boundaries ?? []),
         ]
       );
+      await this.persistNormalizedState(tx, null, snapshot);
       await tx.query(
         `INSERT INTO state_snapshots (character_id, event_sequence, state)
          VALUES ($1, $2, $3::jsonb)`,
@@ -150,7 +151,9 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
       for (const change of snapshot.stateChanges.filter((item) => !knownStateChangeIds.has(item.id))) {
         await this.insertStateChange(tx, change);
       }
+      await this.persistNormalizedState(tx, current, snapshot);
 
+      await this.persistNormalizedState(tx, null, snapshot);
       await tx.query(
         `INSERT INTO state_snapshots (character_id, event_sequence, state)
          VALUES ($1, $2, $3::jsonb)`,
@@ -178,6 +181,137 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
     });
   }
 
+  private async persistNormalizedState(
+    tx: SqlExecutor,
+    current: RuntimeSnapshot | null,
+    next: RuntimeSnapshot
+  ): Promise<void> {
+    const knownMemoryIds = new Set(current?.memories.map((memory) => memory.id) ?? []);
+    for (const memory of next.memories.filter((item) => !knownMemoryIds.has(item.id))) {
+      await this.insertMemory(tx, memory);
+    }
+
+    const knownEpisodeIds = new Set(current?.episodes.map((episode) => episode.id) ?? []);
+    for (const episode of next.episodes) {
+      if (knownEpisodeIds.has(episode.id)) {
+        await this.updateEpisode(tx, next.character.id, episode);
+      } else {
+        await this.insertEpisode(tx, next.character.id, episode);
+      }
+      await this.insertEpisodeEvents(tx, episode);
+    }
+  }
+
+  private async insertMemory(tx: SqlExecutor, memory: MemoryRecord): Promise<void> {
+    if (!isUuid(memory.id) || !isUuid(memory.characterId)) {
+      throw new Error('PostgreSQL Memory 要求 id、characterId 使用 UUID');
+    }
+    await tx.query(
+      `INSERT INTO memories
+        (id, character_id, memory_type, content, target_id, importance, salience, occurred_at, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        memory.id,
+        memory.characterId,
+        memory.type,
+        memory.content,
+        memory.targetId && isUuid(memory.targetId) ? memory.targetId : null,
+        memory.importance,
+        memory.salience,
+        memory.occurredAt,
+        json({ sourceEventId: memory.sourceEventId, lastAccessedAt: memory.lastAccessedAt }),
+      ]
+    );
+    if (memory.sourceEventId && isUuid(memory.sourceEventId)) {
+      await tx.query(
+        `INSERT INTO memory_sources (memory_id, event_id, turn_id, weight)
+         VALUES ($1, $2, NULL, 1)
+         ON CONFLICT DO NOTHING`,
+        [memory.id, memory.sourceEventId]
+      );
+    }
+  }
+
+  private async insertEpisode(
+    tx: SqlExecutor,
+    characterId: string,
+    episode: Episode
+  ): Promise<void> {
+    if (!isUuid(episode.id) || !isUuid(characterId)) {
+      throw new Error('PostgreSQL Episode 要求 id、characterId 使用 UUID');
+    }
+    await tx.query(
+      `INSERT INTO emotion_episodes
+        (id, character_id, episode_type, started_at, peak_at, recovered_at, peak_intensity, resolution, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        episode.id,
+        characterId,
+        episode.topic ?? 'runtime',
+        episode.startedAt,
+        episode.lastEventAt,
+        episode.resolvedAt ?? null,
+        episode.peakIntensity,
+        episode.status === 'resolved' ? 'resolved' : null,
+        json({
+          topic: episode.topic,
+          targetId: episode.targetId,
+          status: episode.status,
+          currentIntensity: episode.currentIntensity,
+          salience: episode.salience,
+          residualInfluence: episode.residualInfluence,
+          unresolved: episode.unresolved,
+        }),
+      ]
+    );
+  }
+
+  private async updateEpisode(
+    tx: SqlExecutor,
+    characterId: string,
+    episode: Episode
+  ): Promise<void> {
+    if (!isUuid(episode.id) || !isUuid(characterId)) {
+      throw new Error('PostgreSQL Episode 要求 id、characterId 使用 UUID');
+    }
+    await tx.query(
+      `UPDATE emotion_episodes
+          SET peak_at = $3, recovered_at = $4, peak_intensity = $5, resolution = $6, metadata = $7::jsonb
+        WHERE id = $1 AND character_id = $2`,
+      [
+        episode.id,
+        characterId,
+        episode.lastEventAt,
+        episode.resolvedAt ?? null,
+        episode.peakIntensity,
+        episode.status === 'resolved' ? 'resolved' : null,
+        json({
+          topic: episode.topic,
+          targetId: episode.targetId,
+          status: episode.status,
+          currentIntensity: episode.currentIntensity,
+          salience: episode.salience,
+          residualInfluence: episode.residualInfluence,
+          unresolved: episode.unresolved,
+        }),
+      ]
+    );
+  }
+
+  private async insertEpisodeEvents(tx: SqlExecutor, episode: Episode): Promise<void> {
+    if (!isUuid(episode.id)) throw new Error('PostgreSQL Episode 要求 id 使用 UUID');
+    for (const [ordinal, eventId] of episode.eventIds.entries()) {
+      if (!isUuid(eventId)) continue;
+      await tx.query(
+        `INSERT INTO emotion_episode_events (episode_id, event_id, ordinal)
+         VALUES ($1, $2, $3)
+         ON CONFLICT DO NOTHING`,
+        [episode.id, eventId, ordinal]
+      );
+    }
+  }
   private async insertEvent(tx: SqlExecutor, event: DomainEvent): Promise<void> {
     if (!isUuid(event.id) || !isUuid(event.characterId) || !isUuid(event.tenantId)) {
       throw new Error('PostgreSQL Runtime Event 要求 tenantId、characterId、eventId 使用 UUID');

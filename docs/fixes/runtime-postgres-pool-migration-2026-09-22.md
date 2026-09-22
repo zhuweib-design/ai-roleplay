@@ -21,6 +21,9 @@
 - `createPgPoolRuntimeApi(pool, tenantId, options)`。
 - `createPgPoolRuntimeHttpHandler(pool, tenantId, options)`。
 
+### 1.2 Schema 约束修正
+
+`memory_sources` 原先使用包含可空 `event_id`、`turn_id` 的复合主键；PostgreSQL 会将主键列强制为非空，无法表达“Event 或 Turn 二选一”的设计。当前迁移改为两个条件唯一索引，保留 Event 来源和 Turn 来源的互斥可选语义，并允许 Runtime Event 只写入 `event_id`。
 ### 1.2 可执行迁移文件
 
 新增 `migrations/001_virtual_character_os.sql`，内容从权威文档

@@ -16,6 +16,8 @@ import {
   type SqlExecutor,
   type DomainEvent,
   type StateChange,
+  type Episode,
+  type MemoryRecord,
 } from '@/runtime';
 
 describe('Virtual Character OS Runtime Core', () => {
@@ -364,11 +366,46 @@ describe('Virtual Character OS Runtime Core', () => {
       delta: 0,
       changes: {},
     };
-    const next = { ...initial, events: [event], stateChanges: [stateChange], version: 1, updatedAt: event.occurredAt };
+    const memory: MemoryRecord = {
+      id: '55555555-5555-4555-8555-555555555555',
+      characterId,
+      type: 'semantic',
+      content: 'PostgreSQL 记忆投影',
+      importance: 0.8,
+      salience: 0.8,
+      sourceEventId: event.id,
+      occurredAt: event.occurredAt,
+    };
+    const episode: Episode = {
+      id: '66666666-6666-4666-8666-666666666666',
+      topic: 'PostgreSQL Episode',
+      status: 'active',
+      startedAt: event.occurredAt,
+      lastEventAt: event.occurredAt,
+      currentIntensity: 0.8,
+      peakIntensity: 0.8,
+      salience: 0.8,
+      residualInfluence: 0.8,
+      unresolved: true,
+      eventIds: [event.id],
+    };
+    const next = {
+      ...initial,
+      events: [event],
+      stateChanges: [stateChange],
+      memories: [memory],
+      episodes: [episode],
+      version: 1,
+      updatedAt: event.occurredAt,
+    };
     await store.commit(next, 0);
     expect(await store.load(characterId)).toEqual(next);
     expect(queries.some((query) => query.includes('FOR UPDATE'))).toBe(true);
     expect(queries.some((query) => query.includes('state_audit_logs'))).toBe(true);
+    expect(queries.some((query) => query.includes('INSERT INTO memories'))).toBe(true);
+    expect(queries.some((query) => query.includes('memory_sources'))).toBe(true);
+    expect(queries.some((query) => query.includes('emotion_episodes'))).toBe(true);
+    expect(queries.some((query) => query.includes('emotion_episode_events'))).toBe(true);
     await expect(store.commit(next, 0)).rejects.toBeInstanceOf(Error);
   });
   it('API 基线可创建角色、接收事件并构建上下文', async () => {
