@@ -298,7 +298,11 @@ export class ChatManager {
 
     // E-04 二期: 嵌入优化挂载 —— 对长历史消息做 L1 压缩(默认关闭;fail-open 不影响主链路)
     if (this.config.optimization?.l1Enabled) {
-      const outcome = compressMessages(built.messages, this.config.optimization);
+      // BugFix:第三参此前未传 → runL1 拿到空的 entities/exemptTexts →
+      // validateCompression 的 entityRate/emotionRate 恒为 1 → 语义校验恒通过,
+      // 实体/情绪保护形同虚设。这里补传(来源与局限见 collectL1Options 的 JSDoc)。
+      const l1Options = await this.collectL1Options(params.card, params.contexts);
+      const outcome = compressMessages(built.messages, this.config.optimization, l1Options);
       if (outcome.compressedCount > 0) {
         // 压缩保持 role/content 结构,BuiltMessage 兼容
         built.messages = outcome.messages as typeof built.messages;
@@ -627,6 +631,66 @@ export class ChatManager {
     } catch {
       return null; // fail-open：摘要失败绝不影响主链路
     }
+  }
+
+  /**
+   * E-04 二期 BugFix:为 L1 压缩收集「设定实体」与「豁免文本」
+   *
+   * 背景(sendMessage 中 compressMessages 调用处的缺陷):
+   * `compressMessages(messages, pipeline)` 此前不传第三参 `options`,
+   * 于是 runL1 的 entities / exemptTexts 全为 undefined,
+   * validateCompression 走「空集合 → rate = 1」分支 → 语义校验**恒通过**,
+   * 实体与情绪保护形同虚设(压缩生效但保护未生效)。
+   *
+   * 来源选择(改动最小且语义正确):
+   * - **entities** = 角色名 + 当前会话挂载的世界书条目关键词。
+   *   世界书的 `keys` 就是设定里的专有名词(人名/地名/组织名),是「设定实体」
+   *   最直接的现成来源 —— 无需新增 NLP 实体抽取。
+   *   局限:**角色卡 description / personality / scenario 正文中出现的实体不会
+   *   自动进表**(需 NLP 抽取,本次不做),世界书未覆盖的设定实体同样不在表内;
+   *   这些实体**不受校验保护**,属已知局限 —— 不为了跑通而伪造实体列表。
+   *   注:实体表偏大在新分母口径下无害(分母只算原文实含的部分)。
+   * - **exemptTexts** = MemoryStore 中 `scope='standing'` 的事实正文(与 L0 前缀同源)。
+   *   standing 仅人工可写、永不被优化器改写,故永不压缩。
+   *   局限:MemoryStore 当前没有「按 scope 列举」的 API,只能 listIds + 逐个 get;
+   *   为保持 fail-open,任一步失败即降级为不豁免(绝不影响主链路)。
+   *
+   * @param card 当前角色卡(提供角色名)
+   * @param contexts 本轮注入上下文(提供 Lorebook 列表)
+   * @returns 交给 compressMessages 的选项;任何异常都降级为空集(fail-open)
+   */
+  private async collectL1Options(
+    card: CharacterCard,
+    contexts?: PromptContexts
+  ): Promise<{ entities: string[]; exemptTexts: string[] }> {
+    // 1. 设定实体:角色名 + 世界书关键词(去重;跳过正则型 key,它不参与字面匹配)
+    const entities = new Set<string>();
+    if (card.name && card.name.trim() !== '') entities.add(card.name.trim());
+    for (const book of contexts?.lorebooks ?? []) {
+      for (const entry of book.entries ?? []) {
+        if (!entry.enabled) continue;
+        for (const key of entry.keys ?? []) {
+          const trimmed = key.trim();
+          if (trimmed !== '' && !trimmed.startsWith('/')) entities.add(trimmed);
+        }
+      }
+    }
+
+    // 2. 豁免文本:standing 事实正文(与 L0 前缀同源,永不压缩)
+    const exemptTexts: string[] = [];
+    const deps = this.config.l0l2;
+    if (deps) {
+      try {
+        const facts = await Promise.all(deps.store.listIds().map((id) => deps.store.get(id)));
+        for (const fact of facts) {
+          if (fact && fact.scope === 'standing' && fact.body) exemptTexts.push(fact.body);
+        }
+      } catch {
+        /* fail-open:standing 读取失败则不做豁免,仅失去保护,不影响主链路 */
+      }
+    }
+
+    return { entities: Array.from(entities), exemptTexts };
   }
 
   private async updateEmotion(

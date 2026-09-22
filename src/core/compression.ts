@@ -158,6 +158,20 @@ export interface Validation {
 /**
  * 语义校验:min(实体保留率, 情绪词保留率) ≥ 0.9 且关键实体保留率 = 1.0
  * 用于压缩前后的 fail-open 判断(不达标回退原文)
+ *
+ * ⚠️ 分母口径(BugFix 2026-09-21,防回归必读):
+ * `entities` / `emotionWords` 传入的是**全局声明表**(角色设定 + 世界书的全部实体、
+ * 全部情绪词),而 L1 压缩是**逐条消息**进行的 —— 单条消息天然只含全集的一小部分。
+ *
+ * 旧实现直接以 `list.length`(全集大小)为分母,于是:
+ *   rate = (本条消息命中数) / (全集大小) → 分子恒远小于分母 → rate 恒 <0.9
+ *   → **所有消息都被 fail-open 回退原文**(实测:补传 entities 后压缩生效条数从 4 条掉到 0 条)。
+ * 同时当集合为空时旧实现直接给 1,于是「调用方忘了传参」与「原文没有实体」
+ * 两种情况无法区分 —— 校验恒通过,保护形同虚设。
+ *
+ * 正确口径:**分母 = 原文本中实际出现的条目数**。语义是
+ * 「原文里有的,压缩后丢了多少」,而不是「全局表里有多少没出现在这条消息里」。
+ * 分母为 0 表示原文本来就没有该维度内容 → 无需保留 → rate = 1(通过)。
  */
 export function validateCompression(input: ValidationInput): Validation {
   const count = (list: string[], haystack: string): number =>
@@ -165,11 +179,14 @@ export function validateCompression(input: ValidationInput): Validation {
 
   const entities = input.entities ?? [];
   const emotionWords = input.emotionWords ?? [];
-  const entityRate = entities.length > 0
-    ? count(entities, input.compressed) / entities.length
+  // 分母取「原文实含」而非「声明全集」——见上方 JSDoc 的 BugFix 说明
+  const entityTotal = count(entities, input.original);
+  const emotionTotal = count(emotionWords, input.original);
+  const entityRate = entityTotal > 0
+    ? count(entities, input.compressed) / entityTotal
     : 1;
-  const emotionRate = emotionWords.length > 0
-    ? count(emotionWords, input.compressed) / emotionWords.length
+  const emotionRate = emotionTotal > 0
+    ? count(emotionWords, input.compressed) / emotionTotal
     : 1;
   const missingCritical = (input.criticalEntities ?? []).filter((e) => !input.compressed.includes(e));
 

@@ -94,6 +94,33 @@ describe('OptimizationPipeline (E-04)', () => {
     expect(resumed.compressed).toBe(true);
   });
 
+  // ── BugFix 2026-09-21:校验分母口径回归用例 ──
+
+  it('传入全局实体表时不再全量回退', () => {
+    // 回归用例:旧实现以「全局实体表长度」为分母,单条消息只含其中一小部分
+    // → entityRate 恒 <0.9 → 每条消息都 fail-open 回退原文(压缩生效条数 0)。
+    // 修正后分母 = 原文实含的实体数,本例为 1(绯),压缩后仍保留 → 通过。
+    const p = new OptimizationPipeline(withL1());
+    const text = '绯放下酒杯，看向门口。'.repeat(12);
+    const r = p.runL1({
+      text,
+      entities: ['绯', '翡翠酒馆', '旅人', '灰烬教会', '白桦镇', '卡尔', '老雷', '溪木村', '哨塔', '北境'],
+    });
+    expect(r.compressed).toBe(true);
+    expect(r.text.length).toBeLessThan(text.length);
+    expect(p.stats.fallbackCount).toBe(0);
+    expect(p.stats.compressCount).toBe(1);
+  });
+
+  it('负样本:关键实体缺失 → 回退原文(校验真正生效,不恒通过)', () => {
+    const p = new OptimizationPipeline(withL1());
+    const text = '他缓缓地行走在走廊上。'.repeat(12);
+    const r = p.runL1({ text, entities: ['星陨之剑'], criticalEntities: ['星陨之剑'] });
+    expect(r.compressed).toBe(false);
+    expect(r.fallbackReason).toBe('validation');
+    expect(p.stats.fallbackCount).toBe(1);
+  });
+
   it('decide 与暂停状态联动', () => {
     const p = new OptimizationPipeline(withL1());
     const ctx = {

@@ -976,19 +976,23 @@ async function measureMessageList(mod) {
   return {
     messageCount: messages.length,
     minCompressLength: mod.MIN_COMPRESS_LENGTH,
-    // 线上接线：src/services/chat-manager.ts:301 调用 compressMessages(built.messages, pipeline)，未传第三参
+    // 线上接线：src/services/chat-manager.ts 现已调用
+    // compressMessages(built.messages, pipeline, options) —— 第三参已补传（见 collectL1Options）
     asWired: await run(undefined),
-    // 对照：补传 entities / exemptTexts，观察显著性打分与豁免带来的差异
+    // 对照：显式补传 entities / exemptTexts，与线上接线口径互为参照
     withEntities: await run({
       entities: SAMPLE_ENTITIES,
       exemptTexts: STANDING_FACTS.map((f) => f.body),
     }),
-    note: '线上接线未传 entities / criticalEntities / emotionWords，'
-      + '导致 runL1 的语义校验三个维度全部为空集（entityRate / emotionRate 恒为 1.0、missingCritical 恒空），'
-      + '校验恒通过 —— 压缩的实体/情绪保护实际未生效。',
-    withEntitiesNote: '补传 entities 后压缩条数下降，原因是 validateCompression 以「全局实体表」为分母：'
-      + '单条消息不可能包含角色卡的全部实体，entityRate 天然低于 0.9 → 全部 fail-open 回退。'
-      + '这是校验分母设计问题，不是压缩器问题（见 compression.strict 中按「原文实含实体」为分母的对照口径）。',
+    note: '线上接线（chat-manager.ts）曾未传 entities / exemptTexts，使语义校验三个维度'
+      + '全为空集（entityRate / emotionRate 恒为 1.0），保护形同虚设；'
+      + '该缺陷已于 2026-09-21 修复（补传第三参）。'
+      + '此处 asWired 仍按「不传参」运行，作为历史口径留下的对照。',
+    withEntitiesNote: 'validateCompression 的分母已于 2026-09-21 修复为「原文实含实体数」；'
+      + '此前用全局实体表做分母，单条消息天然低于 0.9 → 全部 fail-open 回退（压缩条数 4 → 0）。'
+      + '修复后补传 entities 不再使压缩归零。'
+      + '注：当前 strictValidationPassRate 仍不达标，根因已不是分母，'
+      + '而是情绪词保留率 —— extractiveCompress 的打分不含情绪词权重（见情绪保留率指标）。',
   };
 }
 
