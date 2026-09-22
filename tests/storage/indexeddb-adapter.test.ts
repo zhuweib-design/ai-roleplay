@@ -72,6 +72,8 @@ function makeSettings(overrides: Partial<AppSettings> = {}): AppSettings {
     translationConfig: { enabled: false, provider: 'none', apiKey: '', direction: 'auto' },
     summarizationConfig: { enabled: true, threshold: 4000, keepRecent: 10, maxSummaryTokens: 500, temperature: 0.3 },
     quickReplies: [],
+    maxContextTokens: 8192,
+    reservedTokens: 1024,
     ...overrides,
   };
 }

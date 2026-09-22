@@ -219,6 +219,8 @@ describe('TauriFSAdapter', () => {
         translationConfig: { enabled: false, provider: 'none' as const, apiKey: '', direction: 'auto' as const },
         summarizationConfig: { enabled: true, threshold: 4000, keepRecent: 10, maxSummaryTokens: 500, temperature: 0.3 },
         quickReplies: [],
+        maxContextTokens: 8192,
+        reservedTokens: 1024,
       };
       invokeMock.mockResolvedValueOnce(undefined);
       await adapter.saveSettings(settings);

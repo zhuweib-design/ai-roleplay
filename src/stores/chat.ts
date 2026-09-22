@@ -2,6 +2,10 @@ import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { UIMessage, UICharacter, ApiProfile } from '@/types';
+import {
+  DEFAULT_MAX_CONTEXT_TOKENS,
+  DEFAULT_RESERVED_TOKENS,
+} from '@/types';
 import type { CharacterCard } from '@/core/character-card';
 import { ChatManager, classifyChatError, type ChatManagerConfig } from '../services/chat-manager';
 import { chatErrorI18n } from '../services/chat-error';
@@ -207,6 +211,24 @@ export const useChatStore = defineStore('chat', () => {
    */
   let activeProfileForCapability: ApiProfile | null = null;
 
+  /**
+   * 全局上下文长度缓存（maxContextTokens / reservedTokens）
+   *
+   * applyApiProfile 是**同步**函数，无法 await 惰性导入 settings store（避免循环依赖），
+   * 故由每轮发送前的 applyRuntimeLlmControls（异步）从 settings 同步到这两个缓存，
+   * 供 applyApiProfile 在同步构建 ChatManager 时读取。
+   */
+  let globalMaxContextTokens = DEFAULT_MAX_CONTEXT_TOKENS;
+  let globalReservedTokens = DEFAULT_RESERVED_TOKENS;
+
+  /**
+   * 本轮 ChatManager 的上下文长度是否由调用方**显式** options 指定。
+   * undefined = 未显式指定 → 允许全局设置（settings）生效；
+   * 否则显式传入优先于全局设置（优先级：options > settings > 默认）。
+   */
+  let explicitMaxContextTokens: number | undefined;
+  let explicitReservedTokens: number | undefined;
+
   // ── 依赖注入 ──
 
   /**
@@ -251,6 +273,10 @@ export const useChatStore = defineStore('chat', () => {
     }
     activeProfileForCapability = profile;
 
+    // 记录本轮 options 是否显式指定上下文长度（供 applyRuntimeLlmControls 判断是否用全局设置覆盖）
+    explicitMaxContextTokens = options?.maxContextTokens;
+    explicitReservedTokens = options?.reservedTokens;
+
     const apiClient = createApiClient(profile);
     // P0-2：Profile 的思考强度能力（决定是否下发；'none' 时静默丢弃）
     const capability = resolveReasoningCapability(profile);
@@ -259,8 +285,9 @@ export const useChatStore = defineStore('chat', () => {
       model: profile.model,
       userName: options?.userName ?? 'User',
       systemPrompt: options?.systemPrompt ?? '',
-      maxContextTokens: options?.maxContextTokens ?? 8192,
-      reservedTokens: options?.reservedTokens ?? 1024,
+      // 上下文长度：显式 options 优先，其次全局设置缓存（由 applyRuntimeLlmControls 同步）
+      maxContextTokens: options?.maxContextTokens ?? globalMaxContextTokens,
+      reservedTokens: options?.reservedTokens ?? globalReservedTokens,
       // 需求3/T-16: API Profile 默认最大 Tokens
       // 角色级未设置时 overrides 里不写该键 → 本值真正生效（此前被角色级必填 4096 无条件覆盖）
       maxTokens: profile.maxTokens,
@@ -356,6 +383,13 @@ export const useChatStore = defineStore('chat', () => {
       // P1：提示词注入开关（默认 false = 不要求模型产出状态块；解析/渲染与开关无关）
       // 角色级 ext.statusInstruction 由 chat-manager 在本轮请求里再覆盖（'on'/'off' 优先）
       patch.statusInstructionEnabled = settingsStore.statusHudConfig?.enabled === true;
+
+      // 上下文长度：同步全局设置到缓存，并在未被显式 options 覆盖时下发到 config
+      // （修复：此前 chat-manager / store 硬编码 8192/1024，接入大上下文模型无法生效）
+      globalMaxContextTokens = settingsStore.maxContextTokens;
+      globalReservedTokens = settingsStore.reservedTokens;
+      if (explicitMaxContextTokens === undefined) patch.maxContextTokens = settingsStore.maxContextTokens;
+      if (explicitReservedTokens === undefined) patch.reservedTokens = settingsStore.reservedTokens;
 
       // 摘要接线（2026-09-21）：把当前会话的摘要传给 chat-manager，用于下一轮注入
       //

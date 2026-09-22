@@ -71,8 +71,20 @@ function onPersonaChange(e: Event) {
   personaStore.setActivePersona(v || null);
 }
 
-// Token 预算总量
-const TOTAL_BUDGET = 8192;
+/**
+ * Token 预算总量：取全局设置的上下文窗口上限（**响应式**，配置改动即时反映）。
+ *
+ * 修复：此前硬编码 8192，用户把上下文配到 256K 后用量条仍按 8192 计算、
+ * 恒显 100%，可视化与实际配置脱节（"改了但看不出来"）。现直接跟随
+ * settings.maxContextTokens，与设置页入口保持同一数据源。
+ *
+ * 边界：上限为 0 / 负数 / 非有限数（脏数据）时回落到 1，
+ * 避免除零、避免 aria-valuemax 出现 0 或非法值。
+ */
+const TOTAL_BUDGET = computed(() => {
+  const max = settingsStore.maxContextTokens;
+  return Number.isFinite(max) && max > 0 ? max : 1;
+});
 
 const usedTokens = computed(
   () =>
@@ -82,7 +94,7 @@ const usedTokens = computed(
 );
 
 const usedPercent = computed(() =>
-  Math.min(100, Math.round((usedTokens.value / TOTAL_BUDGET) * 100))
+  Math.min(100, Math.round((usedTokens.value / TOTAL_BUDGET.value) * 100))
 );
 
 // 各分项占比（用于堆叠条）

@@ -192,6 +192,18 @@ export const DEFAULT_THINKING_CONFIG: ThinkingConfig = {
   defaultCollapsed: true,
 };
 
+/**
+ * 上下文窗口 Token 上限的默认值。
+ *
+ * 历史上该值硬编码在 chat-manager / chat store（8192），导致接入大上下文模型
+ * （如 256K）也无法利用 —— 历史仍在 8192 处被裁剪。现改为可配置，
+ * 本常量作为「旧数据缺失字段时的回落默认」与「首次启动默认」，保持既有行为不变。
+ */
+export const DEFAULT_MAX_CONTEXT_TOKENS = 8192;
+
+/** 为模型回复预留 Token 数的默认值（默认 1024） */
+export const DEFAULT_RESERVED_TOKENS = 1024;
+
 /** 需求3：模型分类 */
 export type ModelCategory = 'chat' | 'image-video' | 'embedding';
 
@@ -303,6 +315,24 @@ export interface AppSettings {
   samplingDefaults?: SamplingOverrides | null;
   /** P1：状态栏全局偏好（缺省 → DEFAULT_STATUS_HUD_CONFIG） */
   statusHudConfig?: StatusHudConfig;
+  /**
+   * 上下文窗口 Token 上限（全局设置）。
+   *
+   * 决定 prompt-builder 的历史裁剪预算：`预算 = maxContextTokens - reservedTokens`。
+   * 接入大上下文模型（如 256K）时需调大，否则默认 8192 会过早裁剪历史。
+   * 优先级：调用方显式 options > 本全局设置 > DEFAULT_MAX_CONTEXT_TOKENS。
+   *
+   * 兼容性：旧数据缺该字段时，加载阶段回落 DEFAULT_MAX_CONTEXT_TOKENS（8192）。
+   */
+  maxContextTokens: number;
+  /**
+   * 为模型回复预留的 Token 数（全局设置）。
+   *
+   * 语义：预算中留给模型输出与系统开销的部分，须**小于** maxContextTokens，
+   * 否则可用历史预算为 0（非法配置，UI 会拒绝保存）。
+   * 兼容性：旧数据缺该字段时，加载阶段回落 DEFAULT_RESERVED_TOKENS（1024）。
+   */
+  reservedTokens: number;
 }
 
 /**
