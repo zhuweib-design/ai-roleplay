@@ -21,9 +21,8 @@ export class CharacterCompileError extends Error {
   }
 }
 
-function id(prefix: string): string {
-  const random = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  return `${prefix}_${random}`;
+function id(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function mergeByKey<T extends { key: string }>(base: T[] = [], delta: Array<Partial<T> & Pick<T, 'key'>> = []): T[] {
@@ -124,7 +123,7 @@ export function compileCharacter(input: CharacterCompileInput): CharacterDefinit
   const emotions = mergeEmotionStates(archetype.defaultEmotions, delta.emotions, now);
   const mood = mergeMood(archetype.defaultMood, delta.mood, now);
   const character: CharacterDefinition = {
-    id: input.id ?? id('character'),
+    id: input.id ?? id(),
     tenantId: input.tenantId,
     archetypeId: archetype.id,
     profile,
@@ -146,4 +145,3 @@ export function compileCharacter(input: CharacterCompileInput): CharacterDefinit
   if (issues.length > 0) throw new CharacterCompileError(issues);
   return character;
 }
-

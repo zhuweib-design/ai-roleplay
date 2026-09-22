@@ -5,10 +5,15 @@ import {
   RuntimeApiAdapter,
   SnapshotRuntimeStore,
   RuntimeCore,
+  PostgresRuntimeStore,
+  replayRuntimeEvents,
   computeSalience,
   decayTowardsBaseline,
   handleRuntimeRequest,
   type RuntimeSnapshot,
+  type SqlExecutor,
+  type DomainEvent,
+  type StateChange,
 } from '@/runtime';
 
 describe('Virtual Character OS Runtime Core', () => {
@@ -172,6 +177,109 @@ describe('Virtual Character OS Runtime Core', () => {
     expect(loaded?.character.profile.displayName).toBe('可持久化角色');
     expect(snapshots.size).toBe(1);
   });
+
+  it('可以从事件流确定性 Replay 出相同的 Runtime State', async () => {
+    const { core } = createCore();
+    const character = await core.createCharacter({
+      tenantId: 'tenant-a',
+      profile: { displayName: 'Replay 角色' },
+      now: '2026-09-22T00:00:00.000Z',
+    });
+    const initial = await core.getSnapshot(character.id);
+    expect(initial).not.toBeNull();
+
+    const first = await core.ingestEvent({
+      tenantId: 'tenant-a',
+      characterId: character.id,
+      eventType: 'praise',
+      importance: 0.8,
+      occurredAt: '2026-09-22T00:01:00.000Z',
+      effects: { emotionDeltas: { joy: 0.6 } },
+    });
+    const second = await core.ingestEvent({
+      tenantId: 'tenant-a',
+      characterId: character.id,
+      eventType: 'insult',
+      importance: 0.8,
+      occurredAt: '2026-09-22T00:02:00.000Z',
+      effects: { emotionDeltas: { anger: 0.7 } },
+    });
+    const replayed = replayRuntimeEvents(
+      { ...initial!, version: 0, events: [], stateChanges: [], episodes: [], memories: [] },
+      [first.event, second.event]
+    );
+    expect(replayed.character.emotions).toEqual(second.snapshot.character.emotions);
+    expect(replayed.version).toBe(second.snapshot.version);
+  });
+
+  it('PostgresRuntimeStore 使用事务、版本锁和审计记录', async () => {
+    const tenantId = '11111111-1111-4111-8111-111111111111';
+    const characterId = '22222222-2222-4222-8222-222222222222';
+    let persisted: RuntimeSnapshot | null = null;
+    let version = 0;
+    const queries: string[] = [];
+    const fakeSql: SqlExecutor = {
+      async query<Row = Record<string, unknown>>(text: string, params: readonly unknown[] = []) {
+        queries.push(text);
+        if (text.includes('SELECT state_version')) {
+          return { rows: [{ state_version: version }] as Row[], rowCount: 1 };
+        }
+        if (text.includes('SELECT s.state')) {
+          return { rows: persisted ? [{ state: persisted, event_sequence: persisted.version }] as Row[] : [], rowCount: persisted ? 1 : 0 };
+        }
+        if (text.includes('SELECT state, event_sequence')) {
+          return { rows: persisted ? [{ state: persisted, event_sequence: persisted.version }] as Row[] : [], rowCount: persisted ? 1 : 0 };
+        }
+        if (text.includes('INSERT INTO state_snapshots')) {
+          persisted = JSON.parse(String(params[2])) as RuntimeSnapshot;
+          version = persisted.version;
+        }
+        if (text.includes('UPDATE characters')) version = Number(params[2]);
+        return { rows: [] as Row[], rowCount: 1 };
+      },
+      async transaction<T>(work: (transaction: SqlExecutor) => Promise<T>): Promise<T> {
+        return work(fakeSql);
+      },
+    };
+    const store = new PostgresRuntimeStore(fakeSql, tenantId);
+    const character = await coreCompilerCharacter(tenantId, characterId);
+    const initial: RuntimeSnapshot = {
+      character,
+      events: [],
+      stateChanges: [],
+      memories: [],
+      episodes: [],
+      version: 0,
+      updatedAt: character.updatedAt,
+    };
+    await store.initialize(initial);
+    const event: DomainEvent = {
+      id: '33333333-3333-4333-8333-333333333333',
+      tenantId,
+      characterId,
+      eventType: 'praise',
+      importance: 0.8,
+      payload: {},
+      occurredAt: '2026-09-22T00:01:00.000Z',
+    };
+    const stateChange: StateChange = {
+      id: '44444444-4444-4444-8444-444444444444',
+      eventId: event.id,
+      characterId,
+      occurredAt: event.occurredAt,
+      stateVersion: 1,
+      stateType: 'runtime',
+      dimension: 'projection',
+      delta: 0,
+      changes: {},
+    };
+    const next = { ...initial, events: [event], stateChanges: [stateChange], version: 1, updatedAt: event.occurredAt };
+    await store.commit(next, 0);
+    expect(await store.load(characterId)).toEqual(next);
+    expect(queries.some((query) => query.includes('FOR UPDATE'))).toBe(true);
+    expect(queries.some((query) => query.includes('state_audit_logs'))).toBe(true);
+    await expect(store.commit(next, 0)).rejects.toBeInstanceOf(Error);
+  });
   it('API 基线可创建角色、接收事件并构建上下文', async () => {
     const { core } = createCore();
     const api = new RuntimeApiAdapter(core);
@@ -210,6 +318,14 @@ describe('Virtual Character OS Runtime Core', () => {
     expect((context.body as { relevantMemories: unknown[] }).relevantMemories).toHaveLength(1);
   });
 });
+
+
+
+
+async function coreCompilerCharacter(tenantId: string, id: string) {
+  const { compileCharacter } = await import('@/runtime');
+  return compileCharacter({ tenantId, id, profile: { displayName: 'Postgres 角色' }, now: '2026-09-22T00:00:00.000Z' });
+}
 
 
 

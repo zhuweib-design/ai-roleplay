@@ -202,6 +202,12 @@ export interface StateChange {
   characterId: string;
   occurredAt: string;
   stateVersion: number;
+  stateType: string;
+  dimension: string;
+  targetId?: string;
+  oldValue?: number;
+  delta: number;
+  newValue?: number;
   changes: Metadata;
 }
 
@@ -256,6 +262,7 @@ export interface RuntimeContext {
 export interface RuntimeSnapshotStore {
   load(characterId: string): Promise<RuntimeSnapshot | null>;
   commit(snapshot: RuntimeSnapshot, expectedVersion: number): Promise<void>;
+  initialize?(snapshot: RuntimeSnapshot): Promise<void>;
 }
 
 export interface RuntimeEventInput {

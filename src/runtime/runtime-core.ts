@@ -33,9 +33,8 @@ import type {
   StateChange,
 } from './types';
 
-function id(prefix: string): string {
-  const random = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  return `${prefix}_${random}`;
+function id(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function asEffects(event: DomainEvent): EventEffects {
@@ -155,7 +154,7 @@ function updateEpisodes(snapshot: RuntimeSnapshot, event: DomainEvent, effects: 
     return [...snapshot.episodes.filter((episode) => episode.id !== current.id), updated];
   }
   const created: Episode = {
-    id: id('episode'),
+    id: id(),
     targetId: event.targetId,
     topic: event.topic,
     status: 'active',
@@ -179,7 +178,7 @@ function createMemoryIfRequested(
 ): MemoryRecord | undefined {
   if (!effects.memory?.content?.trim()) return undefined;
   return {
-    id: id('memory'),
+    id: id(),
     characterId: snapshot.character.id,
     type: effects.memory.type,
     content: effects.memory.content.trim(),
@@ -244,11 +243,14 @@ export function reduceRuntimeState(snapshot: RuntimeSnapshot, event: DomainEvent
     memories: memory ? [...provisional.memories, memory] : provisional.memories,
   };
   const stateChange: StateChange = {
-    id: id('state_change'),
+    id: id(),
     eventId: event.id,
     characterId: event.characterId,
     occurredAt: now,
     stateVersion: next.version,
+    stateType: 'runtime',
+    dimension: 'projection',
+    delta: 0,
     changes: diffSummary(before, next),
   };
   next.stateChanges = [...snapshot.stateChanges, stateChange];
@@ -256,6 +258,16 @@ export function reduceRuntimeState(snapshot: RuntimeSnapshot, event: DomainEvent
   return { snapshot: next, event, stateChange, createdMemory: memory, changedEpisode };
 }
 
+/**
+ * 从一个已知快照重放追加事件，供数据修复、版本升级和离线审计使用。
+ * 不访问存储，也不调用 LLM。
+ */
+export function replayRuntimeEvents(
+  initial: RuntimeSnapshot,
+  events: readonly DomainEvent[]
+): RuntimeSnapshot {
+  return events.reduce((snapshot, event) => reduceRuntimeState(snapshot, event).snapshot, initial);
+}
 export class RuntimeCore {
   private readonly queues = new Map<string, Promise<unknown>>();
 
@@ -267,7 +279,8 @@ export class RuntimeCore {
       throw new Error(`角色已存在：${character.id}`);
     }
     const snapshot = createRuntimeSnapshot(character);
-    await this.store.commit(snapshot, 0);
+    if (this.store.initialize) await this.store.initialize(snapshot);
+    else await this.store.commit(snapshot, 0);
     return character;
   }
 
@@ -277,7 +290,7 @@ export class RuntimeCore {
 
   async ingestEvent(input: RuntimeEventInput): Promise<RuntimeReduceResult> {
     const event: DomainEvent = {
-      id: id('event'),
+      id: id(),
       tenantId: input.tenantId,
       characterId: input.characterId,
       actorId: input.actorId,
@@ -315,7 +328,3 @@ export class RuntimeCore {
 }
 
 export { OptimisticLockError };
-
-
-
-

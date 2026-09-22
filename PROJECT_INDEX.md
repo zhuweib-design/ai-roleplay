@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-23 00:47（本地时区）
+- **生成时间**：2026-09-23 02:48（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v0.2.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：455 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：33 个
+- **收录文件**：457 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：33 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -43,7 +43,7 @@ ai-roleplay/
       - `dl_builtin_tik_tok/`  — 12 个文件
   - `fonts/`  — 106 个文件
 - `scripts/`  — 18 个文件
-- `src/`  — 177 个文件
+- `src/`  — 179 个文件
   - `api/`  — 11 个文件
   - `components/`  — 25 个文件
     - `chat/`  — 5 个文件
@@ -60,7 +60,7 @@ ai-roleplay/
   - `i18n/`  — 3 个文件
     - `locales/`  — 2 个文件
   - `router/`  — 1 个文件
-  - `runtime/`  — 9 个文件
+  - `runtime/`  — 11 个文件
   - `services/`  — 6 个文件
   - `storage/`  — 7 个文件
   - `stores/`  — 16 个文件
@@ -94,7 +94,7 @@ ai-roleplay/
 
 ## 二、文件索引
 
-### 2.1 程序（190）
+### 2.1 程序（192）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -184,7 +184,7 @@ ai-roleplay/
 | `src/core/onnx-embedding-provider.ts` | ts | 程序 | ONNX Runtime Web 嵌入提供方 | 已跟踪 |  |
 | `src/core/optimization-pipeline.ts` | ts | 程序 | 上下文优化流水线 | 已跟踪 |  |
 | `src/core/output-discipline.ts` | ts | 程序 | 输出纪律约束（L2） | 已跟踪 |  |
-| `src/core/prompt-builder.ts` | ts | 程序 | 提示词组装（角色 / 世界书 / 记忆拼接） | 已跟踪 |  |
+| `src/core/prompt-builder.ts` | ts | 程序 | 提示词组装（角色 / 世界书 / 记忆拼接） | 已修改 |  |
 | `src/core/protagonist.ts` | ts | 程序 | 主角设定管理 | 已跟踪 |  |
 | `src/core/rag-benchmark.ts` | ts | 程序 | RAG 检索质量基准测试 | 已跟踪 |  |
 | `src/core/rag-retriever.ts` | ts | 程序 | RAG 检索器：向量召回与上下文注入 | 已跟踪 |  |
@@ -224,18 +224,20 @@ ai-roleplay/
 | `src/i18n/locales/zh.ts` | ts | 程序 | 中文文案表 | 已跟踪 |  |
 | `src/main.ts` | ts | 程序 | 应用引导入口：创建 Vue 实例、注册 Pinia 与路由 | 已跟踪 |  |
 | `src/router/index.ts` | ts | 程序 | Vue Router 路由表 | 已跟踪 |  |
-| `src/runtime/character-compiler.ts` | ts | 程序 | Virtual Character OS Archetype + Delta + Seed Memories 编译器 | 未跟踪 |  |
-| `src/runtime/context-builder.ts` | ts | 程序 | Virtual Character OS 上下文构建器 | 未跟踪 |  |
-| `src/runtime/emotion-engine.ts` | ts | 程序 | Virtual Character OS 情绪衰减、Episode 与 Salience 引擎 | 未跟踪 |  |
-| `src/runtime/index.ts` | ts | 程序 | Virtual Character OS Runtime 统一出口 | 未跟踪 |  |
-| `src/runtime/project-runtime.ts` | ts | 程序 | AI 酒馆项目级 Runtime 工厂 | 未跟踪 |  |
-| `src/runtime/runtime-api.ts` | ts | 程序 | Virtual Character OS 运行时 API 适配器 | 未跟踪 |  |
-| `src/runtime/runtime-core.ts` | ts | 程序 | Virtual Character OS Runtime Core 状态归约主链 | 未跟踪 |  |
-| `src/runtime/store.ts` | ts | 程序 | Virtual Character OS Runtime Snapshot 存储接口与适配器 | 未跟踪 |  |
-| `src/runtime/types.ts` | ts | 程序 | Virtual Character OS Runtime 领域类型与 API 契约 | 未跟踪 |  |
+| `src/runtime/character-compiler.ts` | ts | 程序 | Virtual Character OS Archetype + Delta + Seed Memories 编译器 | 已修改 |  |
+| `src/runtime/chat-bridge.ts` | ts | 程序 | Virtual Character OS 聊天链路 Runtime Context 与 Event 桥接 | 未跟踪 |  |
+| `src/runtime/context-builder.ts` | ts | 程序 | Virtual Character OS 上下文构建器 | 已跟踪 |  |
+| `src/runtime/emotion-engine.ts` | ts | 程序 | Virtual Character OS 情绪衰减、Episode 与 Salience 引擎 | 已跟踪 |  |
+| `src/runtime/index.ts` | ts | 程序 | Virtual Character OS Runtime 统一出口 | 已修改 |  |
+| `src/runtime/postgres-store.ts` | ts | 程序 | Virtual Character OS PostgreSQL RuntimeStore 与事务边界 | 未跟踪 |  |
+| `src/runtime/project-runtime.ts` | ts | 程序 | AI 酒馆项目级 Runtime 工厂 | 已跟踪 |  |
+| `src/runtime/runtime-api.ts` | ts | 程序 | Virtual Character OS 运行时 API 适配器 | 已跟踪 |  |
+| `src/runtime/runtime-core.ts` | ts | 程序 | Virtual Character OS Runtime Core 状态归约主链 | 已修改 |  |
+| `src/runtime/store.ts` | ts | 程序 | Virtual Character OS Runtime Snapshot 存储接口与适配器 | 已跟踪 |  |
+| `src/runtime/types.ts` | ts | 程序 | Virtual Character OS Runtime 领域类型与 API 契约 | 已修改 |  |
 | `src/services/backup-service.ts` | ts | 程序 | 备份导出/导入服务 | 已跟踪 |  |
 | `src/services/chat-error.ts` | ts | 程序 | 对话错误类型与用户提示映射 | 已跟踪 |  |
-| `src/services/chat-manager.ts` | ts | 程序 | 对话流程编排（发送 / 流式接收 / 重试） | 已跟踪 |  |
+| `src/services/chat-manager.ts` | ts | 程序 | 对话流程编排（发送 / 流式接收 / 重试） | 已修改 |  |
 | `src/services/translator.ts` | ts | 程序 | 翻译服务 | 已跟踪 |  |
 | `src/services/tts-service.ts` | ts | 程序 | 语音合成服务 | 已跟踪 |  |
 | `src/services/type-adapters.ts` | ts | 程序 | 第三方数据格式适配 | 已跟踪 |  |
@@ -383,10 +385,10 @@ ai-roleplay/
 | `tests/core/world-generator.test.ts` | ts | 测试 | 单元测试：world-generator 模块 | 已跟踪 |  |
 | `tests/core/world-setting-chunker.test.ts` | ts | 测试 | 单元测试：world-setting-chunker 模块 | 已跟踪 |  |
 | `tests/i18n.test.ts` | ts | 测试 | 单元测试：i18n 模块 | 已跟踪 |  |
-| `tests/runtime/runtime-core.test.ts` | ts | 测试 | 单元测试：runtime-core 模块 | 未跟踪 |  |
+| `tests/runtime/runtime-core.test.ts` | ts | 测试 | 单元测试：runtime-core 模块 | 已修改 |  |
 | `tests/services/backup-service.test.ts` | ts | 测试 | 单元测试：backup-service 模块 | 已跟踪 |  |
 | `tests/services/chat-error.test.ts` | ts | 测试 | 单元测试：chat-error 模块 | 已跟踪 |  |
-| `tests/services/chat-manager.test.ts` | ts | 测试 | 单元测试：chat-manager 模块 | 已跟踪 |  |
+| `tests/services/chat-manager.test.ts` | ts | 测试 | 单元测试：chat-manager 模块 | 已修改 |  |
 | `tests/services/llm-controls-p0.qa-independent.test.ts` | ts | 测试 | 单元测试：llm-controls-p0.qa-independent 模块 | 已跟踪 |  |
 | `tests/services/status-hud-p1.qa-independent.test.ts` | ts | 测试 | 单元测试：status-hud-p1.qa-independent 模块 | 已跟踪 |  |
 | `tests/services/translator.test.ts` | ts | 测试 | 单元测试：translator 模块 | 已跟踪 |  |
@@ -423,7 +425,7 @@ ai-roleplay/
 | `tests/views/chat-ime.test.ts` | ts | 测试 | 单元测试：chat-ime 模块 | 已跟踪 |  |
 | `tests/views/chat-main-window.test.ts` | ts | 测试 | 单元测试：chat-main-window 模块 | 已跟踪 |  |
 | `tests/views/llm-controls-ui.test.ts` | ts | 测试 | 单元测试：llm-controls-ui 模块 | 已跟踪 |  |
-| `tests/views/settings-local-model.test.ts` | ts | 测试 | 单元测试：settings-local-model 模块 | 已修改 |  |
+| `tests/views/settings-local-model.test.ts` | ts | 测试 | 单元测试：settings-local-model 模块 | 已跟踪 |  |
 | `tests/views/status-hud-ui.test.ts` | ts | 测试 | 单元测试：status-hud-ui 模块 | 已跟踪 |  |
 | `tests/views/story-engine-quicksetup.test.ts` | ts | 测试 | 单元测试：story-engine-quicksetup 模块 | 已跟踪 |  |
 | `tests/views/thinking-tokens-inline-status.qa-independent.test.ts` | ts | 测试 | 单元测试：thinking-tokens-inline-status.qa-independent 模块 | 已跟踪 |  |
@@ -474,7 +476,7 @@ ai-roleplay/
 | `docs/fixes/pre-launch-check-aijiuguan-2026-08-17.md` | md | 修复文档 | 修复文档：6 维度全检报告（2026-08-17） | 已跟踪 |  |
 | `docs/fixes/pre-launch-check-aijiuguan-2026-08-19.md` | md | 修复文档 | 修复文档：6 维度全检报告（2026-08-19） | 已跟踪 |  |
 | `docs/fixes/pre-launch-check-aijiuguan-2026-09-21.md` | md | 修复文档 | 修复文档：上线前全检报告（代码审查 + 安全审计 + QA，2026-09-21） | 已跟踪 |  |
-| `docs/fixes/runtime-core-baseline-verification-2026-09-22.md` | md | 修复文档 | 验证记录：Runtime Core 基线自动化验证 | 未跟踪 |  |
+| `docs/fixes/runtime-core-baseline-verification-2026-09-22.md` | md | 修复文档 | 验证记录：Runtime Core 基线自动化验证 | 已修改 |  |
 | `docs/fixes/web-sop-fix-batch1-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第一批交付报告（修正失实声明） | 已跟踪 |  |
 | `docs/fixes/web-sop-fix-batch2-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第二批交付报告（补齐门禁） | 已跟踪 |  |
 | `docs/fixes/web-sop-fix-batch3-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第三批交付报告（安全与数据保障） | 已跟踪 |  |
@@ -493,11 +495,11 @@ ai-roleplay/
 | `docs/design/llm-controls-p0-增量设计.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/mobile-ui-design.md` | md | 设计文档 | 设计文档：移动端 UI 设计（页面功能明细） | 已跟踪 |  |
 | `docs/design/rag-enhancement-design.md` | md | 设计文档 | 设计文档：RAG 增强设计 | 已跟踪 |  |
-| `docs/design/runtime-core-基线设计.md` | md | 设计文档 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/design/runtime-core-基线设计.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/software-design-document.md` | md | 设计文档 | 设计文档：软件设计说明书 | 已跟踪 |  |
 | `docs/design/summarizer-接线设计.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/threat-model.md` | md | 设计文档 | 设计文档：威胁模型（含提示词注入专项） | 已跟踪 |  |
-| `docs/design/virtual-character-os-实现基线.md` | md | 设计文档 | 设计文档：Virtual Character OS 实现基线（Schema → Runtime → Emotion → Compiler → API） | 未跟踪 |  |
+| `docs/design/virtual-character-os-实现基线.md` | md | 设计文档 | 设计文档：Virtual Character OS 实现基线（Schema → Runtime → Emotion → Compiler → API） | 已修改 |  |
 
 ### 2.7 AI记忆（14）
 
@@ -576,16 +578,16 @@ ai-roleplay/
 | `LICENSE` | (无扩展名) | 其他 | Apache-2.0 许可证全文 | 已跟踪 |  |
 | `MIGRATION_LOG.md` | md | 其他 | 目录整理迁移日志 | 已跟踪 |  |
 | `PROJECT_INDEX.md` | md | 其他 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已修改 | 索引文件（不递归展开） |
-| `docs/Virtual-Character-OS-v1.0-database-schema.sql.md` | md | 其他 | 待确认 | 未跟踪 | 用途待确认 |
-| `docs/Virtual-Character-OS-v1.0-技术规格.md` | md | 其他 | 待确认 | 未跟踪 | 用途待确认 |
-| `docs/Virtual-Character-OS-v1.0-数据库-Schema-设计说明.md` | md | 其他 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/Virtual-Character-OS-v1.0-database-schema.sql.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/Virtual-Character-OS-v1.0-技术规格.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/Virtual-Character-OS-v1.0-数据库-Schema-设计说明.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/other/dialogue-experience-评估与选型建议.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/other/dialogue-models-选型调研.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/other/tifa-ollama-webui-产品分析.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/other/tifa-ollama-webui-分析汇总.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/other/tifa-ollama-webui-架构评审.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/other/项目文档结构.md` | md | 其他 | 其他：项目文档分类规范 | 已跟踪 |  |
-| `docs/对话记录.md` | md | 其他 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/对话记录.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `icon-source.png` | png | 其他 | 应用图标设计源图（生成 PWA / Tauri 图标用） | 已跟踪 |  |
 | `market/cards/seraphina.json` | json | 其他 | 社区市场示例：角色卡数据 | 已跟踪 |  |
 | `market/index.json` | json | 其他 | 社区市场索引（角色卡 / 模板清单） | 已跟踪 |  |
@@ -608,7 +610,7 @@ ai-roleplay/
 
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
-| 程序 | 190 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
+| 程序 | 192 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 134 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 2 | docs/product/ 产品与项目规划材料 |
 | 开发文档 | 23 | docs/dev/ 实现计划、Runbook、审计记录 |
@@ -619,7 +621,7 @@ ai-roleplay/
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 18 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 30 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **455** | 与「收录文件」数一致 |
+| **合计** | **457** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

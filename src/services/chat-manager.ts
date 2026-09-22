@@ -35,6 +35,7 @@ import {
   type L0L2Deps,
 } from '@core/l0-l2-runtime';
 import { t } from '@/i18n';
+import { buildChatRuntimeContext, recordChatTurn, type ChatRuntimeIntegration } from '@/runtime';
 
 /**
  * ChatManager 配置
@@ -81,6 +82,8 @@ export interface ChatManagerConfig {
   optimization?: OptimizationPipeline;
   /** E-01/E-02：L0/L2 运行时依赖（MemoryStore/CharacterRegistry/EmotionTracker） */
   l0l2?: L0L2Deps;
+  /** Virtual Character OS：可选的持久化角色 Runtime 接入。失败时保持聊天主链路 fail-open。 */
+  runtime?: ChatRuntimeIntegration;
   /** E-01：会话 ID（情绪状态键；缺省用前缀哈希兜底） */
   sessionId?: string;
   /**
@@ -241,13 +244,21 @@ export class ChatManager {
     const statusContext = buildStatusInstruction(params.card.ext?.statusSchema, statusEnabled);
 
     // 1. 构建 prompt（含 token 裁剪，W6 集成 Lorebook 扫描与注入 F06.2-F06.3，F09.2 集成 RAG 注入，F17.2 集成激活事件注入，F16.3 主角身份注入，F16.4 故事时间注入）
+    let promptContexts = params.contexts;
+    if (merged.runtime) {
+      const runtimeContext = await buildChatRuntimeContext(merged.runtime);
+      if (runtimeContext) {
+        promptContexts = { ...promptContexts, runtimeContext };
+      }
+    }
+
     const built = await buildPrompt(
       params.card,
       params.history,
       params.userMessage,
       promptSettings,
       // 未注入时保持与改动前完全一致的空上下文（请求体逐字节不变）
-      statusContext ? { ...params.contexts, statusContext } : params.contexts
+      statusContext ? { ...promptContexts, statusContext } : promptContexts
     );
 
     callbacks?.onPromptBuilt?.({
@@ -493,6 +504,7 @@ export class ChatManager {
             if (ev.usage) callbacks?.onUsage?.(ev.usage);
             // E-01: 情绪状态更新(规则标注;fail-open;仅在 L0 启用且有 deps 时)
             void this.updateEmotion(fullContent, callbacks);
+            this.recordRuntimeTurn(params.userMessage, fullContent);
             callbacks?.onDone?.(fullContent, ev.finishReason);
             return fullContent;
           } else if (ev.type === 'error') {
@@ -527,6 +539,7 @@ export class ChatManager {
           // P1：与 done 分支同款的状态收敛
           fullContent = convergeStatus(fullContent);
           callbacks?.onStatus?.(statusOut);
+          this.recordRuntimeTurn(params.userMessage, fullContent);
           callbacks?.onDone?.(fullContent);
           return fullContent;
         }
@@ -562,6 +575,7 @@ export class ChatManager {
         // P1：同样走一次状态收敛，保证任何退出路径都不会把 <status> 标签泄进正文
         fullContent = convergeStatus(fullContent);
         callbacks?.onStatus?.(statusOut);
+        this.recordRuntimeTurn(params.userMessage, fullContent);
         callbacks?.onDone?.(fullContent, finishReason);
         return fullContent;
       }
@@ -691,6 +705,12 @@ export class ChatManager {
     }
 
     return { entities: Array.from(entities), exemptTexts };
+  }
+
+  private recordRuntimeTurn(userMessage: string, assistantMessage: string): void {
+    if (this.config.runtime) {
+      void recordChatTurn(this.config.runtime, userMessage, assistantMessage);
+    }
   }
 
   private async updateEmotion(

@@ -119,6 +119,8 @@ const CURATED = {
   'src/runtime/emotion-engine.ts': 'Virtual Character OS 情绪衰减、Episode 与 Salience 引擎',
   'src/runtime/character-compiler.ts': 'Virtual Character OS Archetype + Delta + Seed Memories 编译器',
   'src/runtime/store.ts': 'Virtual Character OS Runtime Snapshot 存储接口与适配器',
+  'src/runtime/postgres-store.ts': 'Virtual Character OS PostgreSQL RuntimeStore 与事务边界',
+  'src/runtime/chat-bridge.ts': 'Virtual Character OS 聊天链路 Runtime Context 与 Event 桥接',
   'src/runtime/context-builder.ts': 'Virtual Character OS 上下文构建器',
   'src/runtime/runtime-core.ts': 'Virtual Character OS Runtime Core 状态归约主链',
   'src/runtime/runtime-api.ts': 'Virtual Character OS 运行时 API 适配器',
@@ -717,8 +719,6 @@ function main() {
   parts.push('5. 生成器只读 git（`ls-files` / `status` / `check-ignore`），不会执行 `add` / `commit` / `push`。');
   parts.push('6. 本文件全文使用相对路径；请勿在补充内容中写入绝对路径，以免泄露本机目录信息。');
   parts.push('7. 目录结构变更请同步记录到 `MIGRATION_LOG.md`。');
-  parts.push('');
-
   fs.writeFileSync(OUT_FILE, `${parts.join('\n')}\n`, 'utf8');
 
   console.log(`[gen-project-index] 已生成 ${path.basename(OUT_FILE)}`);
