@@ -2945,6 +2945,7 @@ const en: Record<MessageKey, string> = {
   'type.justNow': 'Just now',
   'lme.desc05': 'Qwen 0.5B quantized, smallest size, for entry-level and low-end devices',
   'lme.desc15': 'Qwen 1.5B quantized, balanced performance and speed, recommended for daily use',
+  'lme.descQwen3': 'Qwen3 1.7B quantized, strong Chinese with built-in reasoning, runs on low-end devices (Apache-2.0)',
   'lme.descLlama1': 'Meta Llama 3.2 1B quantized, excellent English capability',
   'lme.desc3': 'Qwen 3B quantized, excellent Chinese performance, needs mid-range GPU',
   'lme.descLlama3': 'Meta Llama 3.2 3B quantized, stronger overall capability',

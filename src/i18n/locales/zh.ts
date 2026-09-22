@@ -2945,6 +2945,7 @@ export default {
   'type.justNow': '刚刚',
   'lme.desc05': '通义千问 0.5B 量化版，体积最小，适合入门体验与低配设备',
   'lme.desc15': '通义千问 1.5B 量化版，性能与速度平衡，推荐日常使用',
+  'lme.descQwen3': '通义千问 3 代 1.7B 量化版，中文优秀且自带推理能力，低配可跑（Apache-2.0）',
   'lme.descLlama1': 'Meta Llama 3.2 1B 量化版，英文能力优秀',
   'lme.desc3': '通义千问 3B 量化版，中文表现优秀，需要中等显卡',
   'lme.descLlama3': 'Meta Llama 3.2 3B 量化版，综合能力更强',
