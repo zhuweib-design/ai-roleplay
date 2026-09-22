@@ -24,7 +24,16 @@
 ### 1.2 Schema 约束修正
 
 `memory_sources` 原先使用包含可空 `event_id`、`turn_id` 的复合主键；PostgreSQL 会将主键列强制为非空，无法表达“Event 或 Turn 二选一”的设计。当前迁移改为两个条件唯一索引，保留 Event 来源和 Turn 来源的互斥可选语义，并允许 Runtime Event 只写入 `event_id`。
-### 1.2 可执行迁移文件
+### 1.3 Runtime 规范化投影持久化
+
+`PostgresRuntimeStore` 现在在同一事务中同步写入：
+
+- `memories` 与 `memory_sources`。
+- `emotion_episodes` 与 `emotion_episode_events`。
+- Episode 状态变化通过当前投影更新，Event 关联保持追加且幂等。
+- Snapshot 仍然保存完整 Runtime 状态，作为跨版本读取和 Replay 的投影来源。
+
+### 1.4 可执行迁移文件
 
 新增 `migrations/001_virtual_character_os.sql`，内容从权威文档
 `docs/Virtual-Character-OS-v1.0-database-schema.sql.md` 的 SQL 代码块生成。
@@ -55,7 +64,7 @@ npm run lint -- --quiet
 结果：
 
 - Schema 漂移检查通过。
-- 3 个 Runtime 测试文件，20 个测试用例全部通过。
+- 4 个 Runtime 测试文件，20 个测试用例通过，1 个真实 PostgreSQL 集成用例按环境条件跳过。
 - 类型检查通过。
 - ESLint 通过。- 全量单元测试：123 个测试文件通过，1 个真实 PostgreSQL 集成测试文件在未配置 `RUNTIME_PG_TEST_URL` 时按预期跳过；3374 个测试用例通过，1 个集成用例跳过。
 - 生产构建在本阶段新增 Pool 适配器后通过。
