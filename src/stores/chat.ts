@@ -902,6 +902,9 @@ export const useChatStore = defineStore('chat', () => {
       );
 
       await persistChat(character);
+
+      // 摘要接线：regenerate 同样会改变会话内容，异步更新摘要（fire-and-forget）
+      void maybeGenerateSummary(character);
     } finally {
       isGenerating.value = false;
       streamingContent.value = '';
