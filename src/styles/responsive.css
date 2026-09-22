@@ -5,8 +5,8 @@
 
 /* ═══ 桌面默认（>1024px）：四栏完整布局 ═══ */
 @media (min-width: 1025px) {
-  .context-panel { display: flex !important; width: 320px !important; }
-  .context-panel.collapsed { width: 0 !important; }
+  .context-panel { display: flex; width: 320px; }
+  .context-panel.collapsed { width: 0; }
 }
 
 /* ═══ 抽屉布局（≤1024px：平板 + 移动端形态一致） ═══
@@ -16,10 +16,10 @@
   /* S-6（2026-09-16）：平板 CharacterList 统一抽屉化，与移动端一致；
      消除「平板 docked 侧栏 + 遮罩/inert 抽屉机制」打架。桌面(>1024)仍由 layout.css docked 四栏。 */
   .character-list {
-    position: fixed !important;
+    position: fixed;
     top: 0;
     left: 0;
-    width: 280px !important;
+    width: 280px;
     height: 100%;
     z-index: var(--z-drawer);
     transform: translateX(-100%);
@@ -29,10 +29,10 @@
   .character-list.active { transform: translateX(0); }
 
   .context-panel {
-    position: fixed !important;
+    position: fixed;
     top: 0;
     right: 0;
-    width: 320px !important;
+    width: 320px;
     height: 100%;
     z-index: var(--z-drawer);
     box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
@@ -54,25 +54,25 @@
   /* S-1（2026-09-16）：删除原 .nav-rail 移动端底部化方案（与 BottomNav 并存的死规则）。
      导航栏切换改由 App.vue 的 <NavRail v-if="!isMobile"> 真卸载承载，桌面/平板显示 NavRail，移动端显示 BottomNav。 */
 
-  .desktop-only { display: none !important; }
+  .desktop-only { display: none; }
 
   .msg-bubble { max-width: min(88%, 40em) !important; }
 
-  .chat-footer { padding: 8px 12px 12px !important; }
-  .chat-composer { padding: 10px 10px 8px !important; border-radius: var(--radius-lg) !important; }
-  .chat-input { font-size: 16px !important; min-height: 48px !important; max-height: 160px !important; }
-  .composer-btn { width: 30px !important; height: 30px !important; }
-  .send-btn-primary { width: 30px !important; height: 30px !important; }
-  .model-badge,
-  .chat-token { display: none !important; }
+  .chat-footer { padding: 8px 12px 12px; }
+  .chat-composer { padding: 10px 10px 8px; border-radius: var(--radius-lg); }
+  .chat-input { font-size: 16px; min-height: 48px; max-height: 160px; }
+  .composer-btn { width: 30px; height: 30px; }
+  .send-btn-primary { width: 30px; height: 30px; }
+  .model-badge { display: none !important; }
+  .chat-token { display: none; }
 
-  .chat-header { padding: 0 8px !important; }
+  .chat-header { padding: 0 8px; }
 }
 
 /* ═══ 极小屏（<380px） ═══ */
 @media (max-width: 380px) {
   .character-list { width: 240px !important; }
-  .context-panel { width: 280px !important; }
+  .context-panel { width: 280px; }
   .msg-bubble { max-width: min(92%, 40em) !important; }
 }
 

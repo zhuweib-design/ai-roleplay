@@ -75,14 +75,14 @@ npm run test:e2e
 | `npm run check:breakpoints` | 通过 |
 | `npm run check:viewport` | 通过 |
 | `npm run check:hover` | 通过 |
-| `npm run check:important` | 通过；总数 46，与基线持平 |
+| `npm run check:important` | 通过；总数 26，较原基线 46 减少 20 处，已将基线下调至 26 |
 | `npm run check:i7-control-font-size` | 通过；移动断点未覆盖项 0 |
 | `npm run check:css-conventions` | 通过；5/5 子检查通过 |
 | `npm run check:csp` | 通过 |
 | `npm run csp:audit` | 通过；8 个路由无 CSP、控制台、页面错误或 404，负向内联脚本对照被拦截，WASM 与 blob Worker 能力探针通过 |
 | `npm run opt:eval:strict` | 通过；离线优化门禁全部通过 |
 
-对比度门禁仍报告 131 处历史存量低对比度配对。本次未扩大存量；关键语义配对已全部达标。`!important` 当前共有 46 处，未新增，`src/styles/responsive.css` 仍有 24 处，后续可作为独立 CSS 收敛任务处理。
+对比度门禁仍报告 131 处历史存量低对比度配对。本次未扩大存量；关键语义配对已全部达标。CSS 收敛阶段已移除 `responsive.css` 中不需要的 20 处 `!important`，全项目总数从 46 降至 26，且已将 `important-guard.mjs` 的棘轮基线同步下调至 26。当前 `responsive.css` 仅剩 4 处，均用于覆盖组件 scoped 样式或极小屏消息气泡宽度。
 
 ## 三、本次修复与优化
 
@@ -126,6 +126,19 @@ npm run test:e2e
 ### 3.7 加密测试稳定性
 
 保留 PBKDF2 600,000 次迭代的安全参数，仅将“重复设置不会二次加密”测试超时时间提高到 15 秒，避免全量并行测试中因高成本加密造成偶发超时。单文件和全量测试均通过。
+
+### 3.8 CSS 重要性收敛
+
+审计后继续检查 `responsive.css` 的层叠关系。由于该文件在 `main.ts` 中晚于 `layout.css` 引入，以下全局布局覆盖不需要依赖 `!important`：桌面侧栏尺寸、平板抽屉定位、移动端输入区尺寸、聊天头部与底部间距、按钮尺寸及普通隐藏工具类均已移除强制优先级。
+
+保留的 4 处仅用于必要的跨组件覆盖：消息气泡宽度需要覆盖 `MessageBubble.vue` 的 scoped 规则，模型徽标需要覆盖 `ChatMain.vue` 的 scoped 规则，极小屏角色列表宽度和消息气泡宽度属于明确的移动端例外。
+
+结果：
+
+- 全项目 `!important`：46 处降至 26 处
+- `src/styles/responsive.css`：24 处降至 4 处
+- `npm run check:important`：通过，基线同步锁定为 26
+- 未改变 CSS 断点、布局结构或组件接口
 
 ## 四、变更文件
 
