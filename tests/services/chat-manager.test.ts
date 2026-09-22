@@ -1508,12 +1508,24 @@ describe('ChatManager — Runtime 接入', () => {
 
   it('回复完成后应记录 conversation_turn Runtime Event', async () => {
     const { client } = captureClient();
-    const events: Array<{ characterId: string; eventType: string; payload: Record<string, unknown> }> = [];
+    const events: Array<{
+      characterId: string;
+      eventType: string;
+      eventId?: string;
+      sourceTurnId?: string;
+      payload: Record<string, unknown>;
+    }> = [];
     const runtime = makeRuntime({
       api: {
         buildContext: async () => makeRuntimeContext(),
         ingestEvent: async (characterId, event) => {
-          events.push({ characterId, eventType: event.eventType, payload: event.payload ?? {} });
+          events.push({
+            characterId,
+            eventType: event.eventType,
+            eventId: event.eventId,
+            sourceTurnId: event.sourceTurnId,
+            payload: event.payload ?? {},
+          });
           return {} as RuntimeReduceResult;
         },
       },
@@ -1523,6 +1535,7 @@ describe('ChatManager — Runtime 接入', () => {
       card: makeCard(),
       history: [],
       userMessage: '你好',
+      runtimeTurnId: 'turn-20260922-001',
     });
     await Promise.resolve();
 
@@ -1530,12 +1543,14 @@ describe('ChatManager — Runtime 接入', () => {
     expect(events[0]).toMatchObject({
       characterId: 'character-1',
       eventType: 'conversation_turn',
+      sourceTurnId: 'turn-20260922-001',
       payload: {
         userMessage: '你好',
         assistantMessage: '回复内容',
         source: 'chat-manager',
       },
     });
+    expect(events[0]!.eventId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/);
   });
 
   it('Runtime Context 读取失败时仍应正常完成聊天', async () => {

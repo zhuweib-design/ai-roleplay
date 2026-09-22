@@ -96,6 +96,7 @@ export async function handleRuntimeRequest(
     if (error instanceof OptimisticLockError) return { status: 409, body: { error: 'VERSION_CONFLICT', message: error.message } };
     const message = error instanceof Error ? error.message : '未知运行时错误';
     if (message.includes('不存在')) return { status: 404, body: { error: 'NOT_FOUND', message } };
+    if (message.includes('租户隔离')) return { status: 403, body: { error: 'TENANT_FORBIDDEN', message } };
     return { status: 500, body: { error: 'RUNTIME_ERROR', message } };
   }
 }

@@ -37,8 +37,49 @@ function id(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+/**
+ * 为 Replay 产生跨运行稳定的 UUID-like ID。
+ * 运行时 Event 本身仍使用随机 ID；由 Event 派生的 Episode、Memory、StateChange
+ * 使用稳定 ID，避免同一事件流重放时产生不同的审计主键。
+ */
+function stableId(namespace: string, ...parts: string[]): string {
+  const input = [namespace, ...parts].join('\u0000');
+  const seeds = [0x811c9dc5, 0x9e3779b1, 0x85ebca6b, 0xc2b2ae35];
+  const hashes = seeds.map((seed, lane) => {
+    let hash = seed >>> 0;
+    for (let index = 0; index < input.length; index += 1) {
+      hash ^= (input.charCodeAt(index) + lane * 31 + index) & 0xff;
+      hash = Math.imul(hash, 0x01000193 + lane * 2) >>> 0;
+      hash ^= hash >>> 13;
+    }
+    return hash >>> 0;
+  });
+  const hex = hashes.map((hash) => hash.toString(16).padStart(8, '0')).join('');
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    '5' + hex.slice(13, 16),
+    '8' + hex.slice(17, 20),
+    hex.slice(20, 32),
+  ].join('-');
+}
+
 function asEffects(event: DomainEvent): EventEffects {
   return event.effects ?? {};
+}
+
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => [key, canonicalize(item)])
+  );
+}
+
+function sameEvent(left: DomainEvent, right: DomainEvent): boolean {
+  return JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right));
 }
 
 
@@ -154,7 +195,7 @@ function updateEpisodes(snapshot: RuntimeSnapshot, event: DomainEvent, effects: 
     return [...snapshot.episodes.filter((episode) => episode.id !== current.id), updated];
   }
   const created: Episode = {
-    id: id(),
+    id: stableId('episode', snapshot.character.id, event.id),
     targetId: event.targetId,
     topic: event.topic,
     status: 'active',
@@ -178,7 +219,7 @@ function createMemoryIfRequested(
 ): MemoryRecord | undefined {
   if (!effects.memory?.content?.trim()) return undefined;
   return {
-    id: id(),
+    id: stableId('memory', snapshot.character.id, event.id),
     characterId: snapshot.character.id,
     type: effects.memory.type,
     content: effects.memory.content.trim(),
@@ -202,7 +243,26 @@ function diffSummary(before: RuntimeSnapshot, after: RuntimeSnapshot): Record<st
   };
 }
 
+function duplicateEventResult(snapshot: RuntimeSnapshot, event: DomainEvent): RuntimeReduceResult | null {
+  const existing = snapshot.events.find((item) => item.id === event.id);
+  if (!existing) return null;
+  if (!sameEvent(existing, event)) {
+    throw new Error('事件 ID 已存在但内容不一致：' + event.id);
+  }
+  const stateChange = [...snapshot.stateChanges].reverse().find((item) => item.eventId === event.id);
+  if (!stateChange) throw new Error('事件 ' + event.id + ' 已存在但缺少 StateChange');
+  return {
+    snapshot,
+    event: existing,
+    stateChange,
+    createdMemory: snapshot.memories.find((item) => item.sourceEventId === event.id),
+    changedEpisode: snapshot.episodes.find((item) => item.eventIds.includes(event.id)),
+  };
+}
+
 export function reduceRuntimeState(snapshot: RuntimeSnapshot, event: DomainEvent): RuntimeReduceResult {
+  const duplicate = duplicateEventResult(snapshot, event);
+  if (duplicate) return duplicate;
   const now = event.occurredAt;
   const effects = asEffects(event);
   const before = snapshot;
@@ -243,7 +303,7 @@ export function reduceRuntimeState(snapshot: RuntimeSnapshot, event: DomainEvent
     memories: memory ? [...provisional.memories, memory] : provisional.memories,
   };
   const stateChange: StateChange = {
-    id: id(),
+    id: stableId('state-change', event.id, String(next.version)),
     eventId: event.id,
     characterId: event.characterId,
     occurredAt: now,
@@ -266,12 +326,35 @@ export function replayRuntimeEvents(
   initial: RuntimeSnapshot,
   events: readonly DomainEvent[]
 ): RuntimeSnapshot {
-  return events.reduce((snapshot, event) => reduceRuntimeState(snapshot, event).snapshot, initial);
+  const ordered = events
+    .map((event, index) => ({ event, index }))
+    .sort((left, right) =>
+      left.event.occurredAt.localeCompare(right.event.occurredAt) ||
+      left.event.id.localeCompare(right.event.id) ||
+      left.index - right.index
+    );
+  let snapshot = initial;
+  for (const { event } of ordered) {
+    if (event.characterId !== initial.character.id || event.tenantId !== initial.character.tenantId) {
+      throw new Error('Replay 事件与初始角色的租户或角色不一致');
+    }
+    snapshot = reduceRuntimeState(snapshot, event).snapshot;
+  }
+  return snapshot;
 }
+
+export interface RuntimeCoreOptions {
+  /** PostgreSQL 多实例并发冲突后的自动重试次数。 */
+  maxCommitRetries?: number;
+}
+
 export class RuntimeCore {
   private readonly queues = new Map<string, Promise<unknown>>();
+  private readonly maxCommitRetries: number;
 
-  constructor(private readonly store: RuntimeSnapshotStore) {}
+  constructor(private readonly store: RuntimeSnapshotStore, options: RuntimeCoreOptions = {}) {
+    this.maxCommitRetries = Math.max(0, Math.floor(options.maxCommitRetries ?? 2));
+  }
 
   async createCharacter(input: CharacterCompileInput): Promise<CharacterDefinition> {
     const character = compileCharacter(input);
@@ -289,8 +372,8 @@ export class RuntimeCore {
   }
 
   async ingestEvent(input: RuntimeEventInput): Promise<RuntimeReduceResult> {
-    const event: DomainEvent = {
-      id: id(),
+    let event: DomainEvent = {
+      id: input.eventId?.trim() || id(),
       tenantId: input.tenantId,
       characterId: input.characterId,
       actorId: input.actorId,
@@ -304,12 +387,27 @@ export class RuntimeCore {
       sourceTurnId: input.sourceTurnId,
     };
     return this.enqueue(input.characterId, async () => {
-      const snapshot = await this.store.load(input.characterId);
-      if (!snapshot) throw new Error(`角色不存在：${input.characterId}`);
-      if (snapshot.character.tenantId !== input.tenantId) throw new Error('租户隔离校验失败');
-      const result = reduceRuntimeState(snapshot, event);
-      await this.store.commit(result.snapshot, snapshot.version);
-      return result;
+      let attempt = 0;
+      while (true) {
+        const snapshot = await this.store.load(input.characterId);
+        if (!snapshot) throw new Error(`角色不存在：${input.characterId}`);
+        if (snapshot.character.tenantId !== input.tenantId) throw new Error('租户隔离校验失败');
+        const existing = input.eventId
+          ? snapshot.events.find((item) => item.id === input.eventId)
+          : undefined;
+        if (existing && input.occurredAt === undefined) {
+          event = { ...event, occurredAt: existing.occurredAt };
+        }
+        const result = reduceRuntimeState(snapshot, event);
+        if (result.snapshot === snapshot) return result;
+        try {
+          await this.store.commit(result.snapshot, snapshot.version);
+          return result;
+        } catch (error) {
+          if (!(error instanceof OptimisticLockError) || attempt >= this.maxCommitRetries) throw error;
+          attempt += 1;
+        }
+      }
     });
   }
 

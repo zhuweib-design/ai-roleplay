@@ -6,11 +6,13 @@ import {
   SnapshotRuntimeStore,
   RuntimeCore,
   PostgresRuntimeStore,
+  OptimisticLockError,
   replayRuntimeEvents,
   computeSalience,
   decayTowardsBaseline,
   handleRuntimeRequest,
   type RuntimeSnapshot,
+  type RuntimeSnapshotStore,
   type SqlExecutor,
   type DomainEvent,
   type StateChange,
@@ -210,6 +212,95 @@ describe('Virtual Character OS Runtime Core', () => {
     );
     expect(replayed.character.emotions).toEqual(second.snapshot.character.emotions);
     expect(replayed.version).toBe(second.snapshot.version);
+  });
+
+  it('Replay 按发生时间排序，并为派生审计实体保持稳定 ID', async () => {
+    const { core } = createCore();
+    const character = await core.createCharacter({
+      tenantId: 'tenant-a',
+      profile: { displayName: '有序 Replay 角色' },
+      now: '2026-09-22T00:00:00.000Z',
+    });
+    const initial = await core.getSnapshot(character.id);
+    expect(initial).not.toBeNull();
+
+    const early: DomainEvent = {
+      id: '33333333-3333-4333-8333-333333333333',
+      tenantId: 'tenant-a',
+      characterId: character.id,
+      eventType: 'promise',
+      importance: 0.8,
+      payload: {},
+      occurredAt: '2026-09-22T00:01:00.000Z',
+      effects: {
+        emotionDeltas: { joy: 0.4 },
+        memory: { type: 'episodic', content: '曾经许下承诺', importance: 0.8 },
+      },
+    };
+    const late: DomainEvent = {
+      id: '44444444-4444-4444-8444-444444444444',
+      tenantId: 'tenant-a',
+      characterId: character.id,
+      eventType: 'betrayal',
+      importance: 0.9,
+      payload: {},
+      occurredAt: '2026-09-22T00:02:00.000Z',
+      effects: { emotionDeltas: { anger: 0.7 } },
+    };
+    const cleanInitial = structuredClone(initial!);
+    const chronological = replayRuntimeEvents(cleanInitial, [early, late]);
+    const reversed = replayRuntimeEvents(structuredClone(initial!), [late, early]);
+
+    expect(reversed).toEqual(chronological);
+    expect(reversed.events.map((event) => event.id)).toEqual([early.id, late.id]);
+    expect(reversed.stateChanges.map((change) => change.id)).toEqual(
+      chronological.stateChanges.map((change) => change.id)
+    );
+    expect(reversed.memories.map((memory) => memory.id)).toEqual(
+      chronological.memories.map((memory) => memory.id)
+    );
+  });
+
+  it('事件写入支持乐观锁冲突重试与稳定 eventId 幂等', async () => {
+    const inner = new InMemoryRuntimeStore();
+    let failNextCommit = false;
+    const store: RuntimeSnapshotStore = {
+      load: (characterId) => inner.load(characterId),
+      commit: async (snapshot, expectedVersion) => {
+        if (failNextCommit) {
+          failNextCommit = false;
+          throw new OptimisticLockError(snapshot.character.id, expectedVersion, expectedVersion + 1);
+        }
+        await inner.commit(snapshot, expectedVersion);
+      },
+    };
+    const core = new RuntimeCore(store, { maxCommitRetries: 1 });
+    const character = await core.createCharacter({
+      tenantId: 'tenant-a',
+      profile: { displayName: '幂等角色' },
+      now: '2026-09-22T00:00:00.000Z',
+    });
+    const input = {
+      eventId: '55555555-5555-4555-8555-555555555555',
+      tenantId: 'tenant-a',
+      characterId: character.id,
+      eventType: 'greeting',
+      importance: 0.5,
+      occurredAt: '2026-09-22T00:01:00.000Z',
+      effects: { memory: { type: 'semantic' as const, content: '用户主动问候' } },
+    };
+
+    failNextCommit = true;
+    const first = await core.ingestEvent(input);
+    const duplicate = await core.ingestEvent(input);
+    const retryWithoutGeneratedTimestamp = await core.ingestEvent({ ...input, occurredAt: undefined });
+
+    expect(first.snapshot.version).toBe(1);
+    expect(duplicate.snapshot).toEqual(first.snapshot);
+    expect(retryWithoutGeneratedTimestamp.snapshot).toEqual(first.snapshot);
+    expect(duplicate.event.id).toBe(input.eventId);
+    expect(duplicate.snapshot.events).toHaveLength(1);
+    expect(duplicate.snapshot.memories).toHaveLength(1);
   });
 
   it('PostgresRuntimeStore 使用事务、版本锁和审计记录', async () => {

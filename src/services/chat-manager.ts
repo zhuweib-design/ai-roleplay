@@ -116,6 +116,8 @@ export interface SendMessageParams {
   history: ChatMessage[];
   /** 用户输入文本 */
   userMessage: string;
+  /** Runtime 对话轮次的稳定 ID；由会话层传入以支持 Event 幂等重试。 */
+  runtimeTurnId?: string;
   /**
    * 覆盖默认配置（model / userName / 全部采样参数 / 思考强度）
    *
@@ -505,7 +507,7 @@ export class ChatManager {
             if (ev.usage) callbacks?.onUsage?.(ev.usage);
             // E-01: 情绪状态更新(规则标注;fail-open;仅在 L0 启用且有 deps 时)
             void this.updateEmotion(fullContent, callbacks);
-            this.recordRuntimeTurn(params.userMessage, fullContent);
+            this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId);
             callbacks?.onDone?.(fullContent, ev.finishReason);
             return fullContent;
           } else if (ev.type === 'error') {
@@ -540,7 +542,7 @@ export class ChatManager {
           // P1：与 done 分支同款的状态收敛
           fullContent = convergeStatus(fullContent);
           callbacks?.onStatus?.(statusOut);
-          this.recordRuntimeTurn(params.userMessage, fullContent);
+          this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId);
           callbacks?.onDone?.(fullContent);
           return fullContent;
         }
@@ -576,7 +578,7 @@ export class ChatManager {
         // P1：同样走一次状态收敛，保证任何退出路径都不会把 <status> 标签泄进正文
         fullContent = convergeStatus(fullContent);
         callbacks?.onStatus?.(statusOut);
-        this.recordRuntimeTurn(params.userMessage, fullContent);
+        this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId);
         callbacks?.onDone?.(fullContent, finishReason);
         return fullContent;
       }
@@ -712,9 +714,9 @@ export class ChatManager {
     };
   }
 
-  private recordRuntimeTurn(userMessage: string, assistantMessage: string): void {
+  private recordRuntimeTurn(userMessage: string, assistantMessage: string, runtimeTurnId?: string): void {
     if (this.config.runtime) {
-      void recordChatTurn(this.config.runtime, userMessage, assistantMessage);
+      void recordChatTurn(this.config.runtime, userMessage, assistantMessage, runtimeTurnId);
     }
   }
 

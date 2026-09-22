@@ -561,6 +561,7 @@ export const useChatStore = defineStore('chat', () => {
           card,
           history,
           userMessage: text,
+          runtimeTurnId: userMsg.id,
           overrides: {
             ...buildCharacterOverrides(character),
             userName: ctx.userName,
@@ -879,6 +880,7 @@ export const useChatStore = defineStore('chat', () => {
           card,
           history,
           userMessage: userText,
+          runtimeTurnId: historyBefore[lastUserIdx]!.id,
           overrides: {
             ...buildCharacterOverrides(character),
             userName: ctx.userName,

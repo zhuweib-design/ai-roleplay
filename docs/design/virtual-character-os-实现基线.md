@@ -31,6 +31,8 @@ src/runtime/
 ├── runtime-api.ts           运行时 API 与请求路由适配器
 ├── context-builder.ts        Runtime Context 构建
 ├── chat-bridge.ts           Runtime Context / conversation_turn 聊天桥接
+├── runtime-http.ts          Fetch 客户端与 HTTP Handler
+├── server-runtime.ts        PostgreSQL Runtime 服务端组合入口
 ├── project-runtime.ts       AI 酒馆跨端存储工厂
 └── index.ts                 统一导出
 ```
@@ -111,6 +113,14 @@ Context Builder
 5. 写入前后状态和版本原因到 `state_audit_logs`。
 
 PostgreSQL UUID 字段要求由适配器边界校验；浏览器端的 IndexedDB / Tauri 路径仍可使用本地 ID 生成策略。
+### 4.3 幂等、重试与 Replay
+
+- `RuntimeEventInput.eventId` 可由客户端或服务端调用方提供；同一个事件 ID 且内容一致时，Reducer 返回已存在结果，不重复推进版本。
+- 同一个事件 ID 但内容不一致时立即拒绝，防止调用方误用幂等键覆盖历史事实。
+- `RuntimeCore` 默认在 `OptimisticLockError` 后自动重试 2 次；每次重试重新读取 Snapshot，再使用同一个稳定 Event 进行 Reducer 计算。
+- Replay 会按 `occurredAt` 排序，并以 Event ID 作为稳定的并列排序键；Replay 前强制校验 tenantId 和 characterId。
+- Episode、Memory、StateChange 使用由事件派生的稳定 UUID-like ID，避免同一事件流多次 Replay 产生不同审计主键。
+- 上述稳定 ID 只用于幂等、Replay 和审计关联，不承担认证或安全哈希职责。
 
 ## 5. Emotion Engine 基线
 
@@ -230,7 +240,8 @@ Replay 不写数据库，也不绕过 RuntimeStore 的事务边界。需要落�
 2. 将上下文追加到系统提示词末尾，格式以 `[Virtual Character Runtime State]` 开始。
 3. 明确标记该区块是内部状态指导，不是用户指令。
 4. 回复完成后异步发送 `conversation_turn` Event，payload 包含原始用户消息、助手回复和 `source: chat-manager`。
-5. Context 读取或 Event 写入异常通过 `onError` 上报，但不阻塞聊天请求、流式回调和 `onDone`。
+5. 会话层通过 `SendMessageParams.runtimeTurnId` 传入稳定轮次 ID；聊天桥接据此生成稳定 `eventId`，支持异步写入重试和 PostgreSQL UUID 边界。
+6. Context 读取或 Event 写入异常通过 `onError` 上报，但不阻塞聊天请求、流式回调和 `onDone`。
 
 Context 注入内容包括：
 
@@ -247,6 +258,26 @@ import { createProjectRuntime } from '@/runtime';
 
 const runtimeApi = createProjectRuntime();
 ```
+
+需要使用服务端 Runtime 时：
+
+```ts
+const runtimeApi = createProjectRuntime({
+  server: {
+    baseUrl: 'https://runtime.example.com',
+    headers: { Authorization: `Bearer ${token}` },
+  },
+});
+```
+
+`HttpRuntimeApi` 只通过 Fetch 调用 Runtime HTTP 服务，不接触 SQL 或 PostgreSQL。服务端组合入口为：
+
+```ts
+const api = createPostgresRuntimeApi(sqlExecutor, tenantId);
+const handler = createPostgresRuntimeHttpHandler(sqlExecutor, tenantId);
+```
+
+其中 `tenantId` 必须来自认证中间件；HTTP Handler 会覆盖写请求体中的伪造租户字段。真实 PostgreSQL 连接池、认证中间件和部署路由仍由宿主服务负责。
 
 该工厂会自动复用现有存储：
 

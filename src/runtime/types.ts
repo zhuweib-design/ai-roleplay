@@ -266,6 +266,8 @@ export interface RuntimeSnapshotStore {
 }
 
 export interface RuntimeEventInput {
+  /** 客户端重试或服务端幂等写入使用的稳定事件 ID。 */
+  eventId?: string;
   tenantId: string;
   characterId: string;
   eventType: string;

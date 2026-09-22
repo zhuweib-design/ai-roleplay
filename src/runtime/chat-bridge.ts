@@ -14,6 +14,31 @@ export interface ChatRuntimeIntegration {
   onError?: (error: Error, phase: 'context' | 'event') => void;
 }
 
+/**
+ * 将聊天调用方提供的稳定 Turn ID 映射为 PostgreSQL 可接受的 UUID。
+ * 这里只用于幂等键，不承担认证或安全哈希职责。
+ */
+function stableChatEventId(tenantId: string, characterId: string, turnId: string): string {
+  const input = `${tenantId}\u0000${characterId}\u0000${turnId}`;
+  const seeds = [0x811c9dc5, 0x9e3779b1, 0x85ebca6b, 0xc2b2ae35];
+  const hex = seeds.map((seed, lane) => {
+    let hash = seed >>> 0;
+    for (let index = 0; index < input.length; index += 1) {
+      hash ^= (input.charCodeAt(index) + lane * 31 + index) & 0xff;
+      hash = Math.imul(hash, 0x01000193 + lane * 2) >>> 0;
+      hash ^= hash >>> 13;
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+  }).join('');
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    `5${hex.slice(13, 16)}`,
+    `8${hex.slice(17, 20)}`,
+    hex.slice(20, 32),
+  ].join('-');
+}
+
 function compactList(values: string[], fallback: string): string {
   return values.length > 0 ? values.join('；') : fallback;
 }
@@ -46,15 +71,21 @@ export function createChatTurnEvent(
   integration: ChatRuntimeIntegration,
   userMessage: string,
   assistantMessage: string,
-  occurredAt = new Date().toISOString()
+  occurredAt = new Date().toISOString(),
+  sourceTurnId?: string
 ): RuntimeEventInput {
+  const normalizedTurnId = sourceTurnId?.trim() || undefined;
   return {
+    ...(normalizedTurnId
+      ? { eventId: stableChatEventId(integration.tenantId, integration.characterId, normalizedTurnId) }
+      : {}),
     tenantId: integration.tenantId,
     characterId: integration.characterId,
     targetId: integration.targetId,
     eventType: 'conversation_turn',
     importance: 0.5,
     occurredAt,
+    sourceTurnId: normalizedTurnId,
     payload: {
       userMessage,
       assistantMessage,
@@ -81,12 +112,13 @@ export async function buildChatRuntimeContext(
 export async function recordChatTurn(
   integration: ChatRuntimeIntegration,
   userMessage: string,
-  assistantMessage: string
+  assistantMessage: string,
+  sourceTurnId?: string
 ): Promise<void> {
   try {
     await integration.api.ingestEvent(
       integration.characterId,
-      createChatTurnEvent(integration, userMessage, assistantMessage)
+      createChatTurnEvent(integration, userMessage, assistantMessage, new Date().toISOString(), sourceTurnId)
     );
   } catch (error) {
     integration.onError?.(error instanceof Error ? error : new Error(String(error)), 'event');
