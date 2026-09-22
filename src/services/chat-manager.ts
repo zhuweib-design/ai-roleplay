@@ -34,6 +34,7 @@ import {
   updateEmotionState,
   type L0L2Deps,
 } from '@core/l0-l2-runtime';
+import { EMOTION_WORDS } from '@core/output-discipline';
 import { t } from '@/i18n';
 import { buildChatRuntimeContext, recordChatTurn, type ChatRuntimeIntegration } from '@/runtime';
 
@@ -676,7 +677,7 @@ export class ChatManager {
   private async collectL1Options(
     card: CharacterCard,
     contexts?: PromptContexts
-  ): Promise<{ entities: string[]; exemptTexts: string[] }> {
+  ): Promise<{ entities: string[]; emotionWords: string[]; exemptTexts: string[] }> {
     // 1. 设定实体:角色名 + 世界书关键词(去重;跳过正则型 key,它不参与字面匹配)
     const entities = new Set<string>();
     if (card.name && card.name.trim() !== '') entities.add(card.name.trim());
@@ -704,7 +705,11 @@ export class ChatManager {
       }
     }
 
-    return { entities: Array.from(entities), exemptTexts };
+    return {
+      entities: Array.from(entities),
+      emotionWords: Array.from(EMOTION_WORDS),
+      exemptTexts,
+    };
   }
 
   private recordRuntimeTurn(userMessage: string, assistantMessage: string): void {

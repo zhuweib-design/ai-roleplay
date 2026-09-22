@@ -4122,7 +4122,8 @@ select.field-input {
 .context-preset-btns .data-mgmt-btn.active {
   border-color: var(--tk-cyan-500);
   background: var(--card-elevated);
-  color: var(--tk-cyan-500);
+  /* 亮色主题中 cyan-500 叠在浅色卡片上对比度不足，使用专用文本派生色。 */
+  color: var(--accent-blue-text);
 }
 
 .context-budget {

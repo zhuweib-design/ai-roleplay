@@ -32,6 +32,7 @@ import Icon from '@/components/common/Icon.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import FilterTabs, { type FilterTab } from '@/components/common/FilterTabs.vue';
+import StoryTimeConfigPanel from '@/components/story/StoryTimeConfigPanel.vue';
 import {
   ANALYSIS_DEPTHS,
   type AnalysisDepth,

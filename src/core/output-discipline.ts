@@ -116,14 +116,16 @@ export function classifyScope(text: string): NarrationScope {
     return 'dialogue';
   }
 
-  // 2. 情绪/氛围旁白:命中情绪词(硬豁免)
-  if (hasAnyWord(EMOTION_WORDS, text)) {
-    return 'emotion_narration';
-  }
-
-  // 3. 状态性旁白:命中状态动词(可精简)
+  // 2. 状态性旁白:包含动作动词时优先归入可精简类别。
+  // 情绪词仍会由 protect() 保护；这样「犹豫后放下杯子」不会因一个情绪词
+  // 被误判为纯情绪旁白，但真正的情绪描写仍会落入下一分支。
   if (META_VERBS.some((v) => text.includes(v))) {
     return 'meta_narration';
+  }
+
+  // 3. 情绪/氛围旁白:命中情绪词(硬豁免)
+  if (hasAnyWord(EMOTION_WORDS, text)) {
+    return 'emotion_narration';
   }
 
   return 'other';

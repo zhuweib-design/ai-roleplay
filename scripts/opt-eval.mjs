@@ -378,13 +378,11 @@ function minOf(list, pick) {
 // ─────────────────────────────────────────────────────────────
 // 指标 1/2/3/6：L1 压缩（token 节省 / 语义校验 / 情绪保留 / 耗时）
 //
-// 分两种口径测量，因为线上接线与文档设计并不一致：
-//   - strict（完整校验口径）：显式传入 entities / criticalEntities / emotionWords，
+// 分两种口径测量：
+//   - strict（完整校验口径）：显式传入原文实际命中的 entities / criticalEntities / emotionWords，
 //     语义校验真正生效，不达标就 fail-open 回退原文。
-//   - asWired（线上接线口径）：复刻 src/services/chat-manager.ts 的
-//     `compressMessages(built.messages, pipeline)` —— 未传 options，
-//     于是 runL1 拿不到 entities/emotionWords，validateCompression 的
-//     entityRate / emotionRate 恒为 1，missingCritical 恒为空 → 校验恒通过。
+//   - asWired（线上接线口径）：复刻当前 chat-manager 的全局实体表、情绪词表和 standing 豁免文本，
+//     验证真实挂载点是否能在保护语义的前提下压缩。
 // ─────────────────────────────────────────────────────────────
 
 /**
@@ -406,14 +404,15 @@ async function runOne(mod, s, targetRatio, strict) {
   // declaredEntities 是角色卡/世界观的**全局**实体表，短样本天然不包含全部实体，
   // 若直接用全局表做分母会把「样本没提到」误判成「压缩丢了」。
   const entitiesInOriginal = s.entities.filter((e) => s.text.includes(e));
-  const emotionWords = strict ? originalEmotion.matched : [];
-  const entities = strict ? entitiesInOriginal : [];
+  const emotionWords = strict ? originalEmotion.matched : [...mod.EMOTION_WORDS];
+  const entities = strict ? entitiesInOriginal : s.entities;
   const criticalEntities = strict ? s.criticalEntities : [];
 
   const cr = mod.extractiveCompress(s.text, {
     targetRatio,
     entities,
     criticalEntities,
+    emotionWords,
     context: s.context,
   });
   const validation = mod.validateCompression({
@@ -539,6 +538,7 @@ async function measureCompression(mod, samples, targetRatio) {
         targetRatio,
         entities: s.entities,
         criticalEntities: s.criticalEntities,
+        emotionWords: originalEmotion.matched,
         context: s.context,
       });
       mod.validateCompression({
@@ -568,7 +568,7 @@ async function measureCompression(mod, samples, targetRatio) {
     asWired: {
       ...asWired,
       samples: wiredRows,
-      meaning: '线上接线口径：复刻 chat-manager 的 compressMessages(messages, pipeline)，未传 entities/emotionWords',
+      meaning: '线上接线口径：复刻 chat-manager 的 compressMessages(messages, pipeline, options)，传入实体、情绪词和 standing 豁免',
     },
     perf: {
       samples: durations.length,
@@ -976,23 +976,21 @@ async function measureMessageList(mod) {
   return {
     messageCount: messages.length,
     minCompressLength: mod.MIN_COMPRESS_LENGTH,
-    // 线上接线：src/services/chat-manager.ts 现已调用
-    // compressMessages(built.messages, pipeline, options) —— 第三参已补传（见 collectL1Options）
-    asWired: await run(undefined),
-    // 对照：显式补传 entities / exemptTexts，与线上接线口径互为参照
+    // 线上接线：src/services/chat-manager.ts 传入实体、情绪词和 standing 豁免。
+    asWired: await run({
+      entities: SAMPLE_ENTITIES,
+      emotionWords: [...mod.EMOTION_WORDS],
+      exemptTexts: STANDING_FACTS.map((f) => f.body),
+    }),
+    // 对照：只传实体和豁免文本，用于观察新增情绪词保护带来的变化。
     withEntities: await run({
       entities: SAMPLE_ENTITIES,
       exemptTexts: STANDING_FACTS.map((f) => f.body),
     }),
-    note: '线上接线（chat-manager.ts）曾未传 entities / exemptTexts，使语义校验三个维度'
-      + '全为空集（entityRate / emotionRate 恒为 1.0），保护形同虚设；'
-      + '该缺陷已于 2026-09-21 修复（补传第三参）。'
-      + '此处 asWired 仍按「不传参」运行，作为历史口径留下的对照。',
-    withEntitiesNote: 'validateCompression 的分母已于 2026-09-21 修复为「原文实含实体数」；'
-      + '此前用全局实体表做分母，单条消息天然低于 0.9 → 全部 fail-open 回退（压缩条数 4 → 0）。'
-      + '修复后补传 entities 不再使压缩归零。'
-      + '注：当前 strictValidationPassRate 仍不达标，根因已不是分母，'
-      + '而是情绪词保留率 —— extractiveCompress 的打分不含情绪词权重（见情绪保留率指标）。',
+    note: '线上接线（chat-manager.ts）现在传入角色/世界书实体、情绪词表和 standing 豁免文本；'
+      + 'asWired 口径用于验证这一真实接线，不再把历史的空 options 误报为线上状态。',
+    withEntitiesNote: '对照口径只传实体和 standing 豁免，不传情绪词；'
+      + '若该口径的情绪保留率下降，说明情绪保护缺失，而不是压缩器本身的随机波动。',
   };
 }
 
@@ -1309,7 +1307,7 @@ function printReport(report) {
   line(`  语义校验通过率 ${pct(c.strict.validationPassRate)}；实体保留率 ${pct(c.strict.entityRetentionRateAvg)}；情绪词保留率 ${pct(c.strict.emotionHitRetentionRateAvg)}（去重词口径 ${pct(c.strict.emotionWordRetentionRateAvg)}）`);
   line(`  实体保留率（若按全局声明表做分母）${pct(c.strict.entityRetentionRateDeclaredAvg)} —— 该口径会把「样本未提及」误判为「压缩丢失」，仅作对照`);
 
-  H('L1 内容压缩层 · 线上接线口径（chat-manager 未传 entities/emotionWords）');
+  H('L1 内容压缩层 · 线上接线口径（chat-manager 传入 entities/emotionWords/exemptTexts）');
   line(renderRow(['样本', '保留句数', '原tok', '压后tok', '节省率', '校验', 'fail-open 结果'], W));
   for (const s of c.asWired.samples) {
     line(renderRow([
@@ -1326,14 +1324,14 @@ function printReport(report) {
   }
   line(`\n  平均 token 节省率 ${pct(c.asWired.tokenSavingRateAvg)}`);
   line(`  端到端实际节省率 ${pct(c.asWired.effectiveTokenSavingRateAvg)}，回退 ${c.asWired.fallbackCount}/${c.asWired.sampleCount}`);
-  line(`  语义校验通过率 ${pct(c.asWired.validationPassRate)}（空校验，恒通过）`);
+  line(`  语义校验通过率 ${pct(c.asWired.validationPassRate)}`);
   line(`  实体保留率 ${pct(c.asWired.entityRetentionRateAvg)}；情绪词保留率 ${pct(c.asWired.emotionHitRetentionRateAvg)}（去重词口径 ${pct(c.asWired.emotionWordRetentionRateAvg)}）`);
 
   const ml = report.metrics.messageList;
   H('L1 · compressMessages 消息列表挂载点');
   line(`  消息数 ${ml.messageCount}（最短压缩阈值 ${ml.minCompressLength} 字符）`);
   line(`  线上接线：压缩 ${ml.asWired.compressedCount} 条，token ${ml.asWired.tokensBefore} → ${ml.asWired.tokensAfter}，节省 ${pct(ml.asWired.tokenSavingRate)}`);
-  line(`  补传 entities：压缩 ${ml.withEntities.compressedCount} 条，token ${ml.withEntities.tokensBefore} → ${ml.withEntities.tokensAfter}，节省 ${pct(ml.withEntities.tokenSavingRate)}`);
+  line(`  仅传 entities：压缩 ${ml.withEntities.compressedCount} 条，token ${ml.withEntities.tokensBefore} → ${ml.withEntities.tokensAfter}，节省 ${pct(ml.withEntities.tokenSavingRate)}`);
   line(`  注：${ml.note}`);
   line(`  注：${ml.withEntitiesNote}`);
 

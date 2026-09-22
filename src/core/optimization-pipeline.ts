@@ -202,6 +202,7 @@ export class OptimizationPipeline {
       targetRatio: input.targetRatio ?? 0.6,
       entities: input.entities,
       criticalEntities: input.criticalEntities,
+      emotionWords: input.emotionWords,
       context: input.context,
     });
 
@@ -291,7 +292,7 @@ export interface MessageCompressOutcome {
 export function compressMessages(
   messages: CompressibleMessage[],
   pipeline: OptimizationPipeline,
-  options: { entities?: string[]; exemptTexts?: string[] } = {}
+  options: { entities?: string[]; emotionWords?: string[]; exemptTexts?: string[] } = {}
 ): MessageCompressOutcome {
   if (!pipeline.l1Enabled) {
     return { messages, compressedCount: 0 };
@@ -306,6 +307,7 @@ export function compressMessages(
     const r = pipeline.runL1({
       text: m.content,
       entities: options.entities,
+      emotionWords: options.emotionWords,
       exemptTexts: options.exemptTexts,
     });
     if (r.compressed) compressedCount++;

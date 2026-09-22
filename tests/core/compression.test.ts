@@ -55,6 +55,25 @@ describe('extractiveCompress (E-03)', () => {
     expect(r.text).toContain('星陨之剑');
   });
 
+  it('情绪词所在句被保护，避免压缩丢失当前情绪', () => {
+    const text = '窗外下着雨。她感到非常心疼。桌上的烛火摇曳。远处传来脚步声。';
+    const r = extractiveCompress(text, {
+      targetRatio: 0.25,
+      emotionWords: ['心疼'],
+    });
+    expect(r.text).toContain('心疼');
+    expect(r.keptCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it('关键实体所在句被保护，即使目标比例很低也不丢失', () => {
+    const text = '普通的环境描述。星陨之剑已经断裂。另一段无关叙述。';
+    const r = extractiveCompress(text, {
+      targetRatio: 0.2,
+      criticalEntities: ['星陨之剑'],
+    });
+    expect(r.text).toContain('星陨之剑');
+  });
+
   it('单句文本原样返回', () => {
     const r = extractiveCompress('只有一句。', { targetRatio: 0.5 });
     expect(r.text).toBe('只有一句。');

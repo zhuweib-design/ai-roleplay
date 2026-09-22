@@ -31,6 +31,8 @@ export interface CompressOptions {
   entities?: string[];
   /** 关键实体(必须 100% 保留) */
   criticalEntities?: string[];
+  /** 情绪词列表；命中情绪词的句子优先保留，避免压缩破坏当前情绪 */
+  emotionWords?: string[];
   /** 上下文文本(相关性打分依据,如最近消息/当前提问) */
   context?: string;
   /** 是否启用去重(默认 true) */
@@ -66,7 +68,7 @@ function ngrams(s: string, n = 3): Set<string> {
  * 打分规则:
  * - 相关性:句子命中查询关键词数(关键词来自 context)
  * - 新颖度:句子 3-gram 与已选句重叠越少分越高(信息增量)
- * - 显著性:命中设定实体 +;句长过短/过长降权
+ * - 显著性:命中设定实体、关键实体和情绪词加权;句长过短/过长降权
  */
 export function extractiveCompress(text: string, options: CompressOptions): CompressResult {
   const sentences = splitSentences(text);
@@ -76,7 +78,8 @@ export function extractiveCompress(text: string, options: CompressOptions): Comp
 
   const keywords = options.context ? extractKeywords([options.context], 20) : [];
   const entitySet = new Set(options.entities ?? []);
-  const targetKept = Math.max(1, Math.round(sentences.length * options.targetRatio));
+  const criticalSet = new Set(options.criticalEntities ?? []);
+  const emotionSet = new Set(options.emotionWords ?? []);
 
   // 打分
   const scored = sentences.map((s, i) => {
@@ -85,14 +88,35 @@ export function extractiveCompress(text: string, options: CompressOptions): Comp
     const salience = entitySet.size > 0
       ? Array.from(entitySet).reduce((sum, e) => (s.includes(e) ? sum + 1 : sum), 0)
       : 0;
+    const criticalSalience = criticalSet.size > 0
+      ? Array.from(criticalSet).reduce((sum, e) => (s.includes(e) ? sum + 1 : sum), 0)
+      : 0;
+    const emotionSalience = emotionSet.size > 0
+      ? Array.from(emotionSet).reduce((sum, word) => (s.includes(word) ? sum + 1 : sum), 0)
+      : 0;
     const lenScore = s.length >= 8 && s.length <= 80 ? 1 : 0.5;
-    const sig = relevance * 2 + salience * 3 + lenScore;
-    return { i, text: s, sig, grams };
+    const sig = relevance * 2 + salience * 3 + criticalSalience * 8 + emotionSalience * 4 + lenScore;
+    return { i, text: s, sig, grams, criticalSalience, emotionSalience };
   });
 
+  // 关键实体和情绪词所在句子属于语义保护集。必要时提高保留句数，
+  // 优先保证校验维度不因提取式压缩而丢失，再由目标比例控制其余句子。
+  const protectedIndices = new Set(
+    scored
+      .filter((item) => item.criticalSalience > 0 || item.emotionSalience > 0)
+      .map((item) => item.i)
+  );
+  const targetKept = Math.max(
+    1,
+    Math.round(sentences.length * options.targetRatio),
+    protectedIndices.size
+  );
+
   // 贪婪选择:优先高 sig,惩罚与已选句重叠(新颖度)
-  const selected: typeof scored = [];
-  const pool = [...scored].sort((a, b) => b.sig - a.sig);
+  const selected: typeof scored = scored.filter((item) => protectedIndices.has(item.i));
+  const pool = scored
+    .filter((item) => !protectedIndices.has(item.i))
+    .sort((a, b) => b.sig - a.sig);
   for (const cand of pool) {
     if (selected.length >= targetKept) break;
     if (options.dedupe !== false) {
