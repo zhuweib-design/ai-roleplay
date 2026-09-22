@@ -98,8 +98,8 @@ E2E_PORT=5174 E2E_REUSE_SERVER=1 npm run test:e2e
 
 ## 3. 明确未完成项
 
-- 当前仍是 `SqlExecutor` 抽象和 PostgreSQL SQL 适配器，尚未在仓库内引入真实 `pg.Pool` 包装器。
-- 尚未执行真实 PostgreSQL 集成测试，也没有在本阶段自动运行迁移或部署服务。
+- 已新增 `src/runtime/postgres-executor.ts`，提供真实 `node-postgres Pool` 到 `SqlExecutor` 的事务适配；仍未连接本地或 CI 的真实 PostgreSQL 实例。
+- 尚未执行真实 PostgreSQL 集成测试，也没有在本阶段自动连接数据库执行迁移或部署服务。迁移 SQL 已生成并有 Schema 漂移检查门禁。
 - `createPostgresRuntimeHttpHandler` 是服务端组合边界，不等于生产认证、限流、日志和连接池已经部署。
 - `src/stores/chat.ts` 已为 ChatManager 提供稳定轮次 ID，但 Runtime 是否启用仍由宿主调用方通过 `ChatRuntimeIntegration` 注入；本地默认行为保持不变。
 

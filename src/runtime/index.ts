@@ -15,3 +15,5 @@ export * from './chat-bridge';
 
 export * from './runtime-http';
 export * from './server-runtime';
+
+export * from './postgres-executor';

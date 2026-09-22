@@ -27,6 +27,7 @@ src/runtime/
 ├── character-compiler.ts    Archetype + Delta + Seed Memories 编译器
 ├── store.ts                 InMemory / StorageAdapter 快照存储
 ├── postgres-store.ts        PostgreSQL 事务存储、版本锁和审计写入
+├── postgres-executor.ts     node-postgres Pool 到 SqlExecutor 的适配
 ├── runtime-core.ts          Event → StateReducer → Projection 主链与 Replay
 ├── runtime-api.ts           运行时 API 与请求路由适配器
 ├── context-builder.ts        Runtime Context 构建
@@ -96,7 +97,8 @@ Context Builder
 
 ### 4.2 PostgreSQL RuntimeStore
 
-`src/runtime/postgres-store.ts` 只依赖最小 `SqlExecutor` 端口，真实部署可由 `pg.Pool`、Tauri Rust command 或服务端 RPC 实现。
+`src/runtime/postgres-store.ts` 只依赖最小 `SqlExecutor` 端口。`src/runtime/postgres-executor.ts` 提供真实 node-postgres Pool 的结构化适配，不把 `pg` 依赖打进浏览器构建；
+Tauri Rust command 或其他服务端 RPC 也可以继续实现同一端口。
 
 初始化流程：
 
@@ -275,9 +277,13 @@ const runtimeApi = createProjectRuntime({
 ```ts
 const api = createPostgresRuntimeApi(sqlExecutor, tenantId);
 const handler = createPostgresRuntimeHttpHandler(sqlExecutor, tenantId);
+
+// 服务端直接使用 node-postgres Pool 时：
+const poolApi = createPgPoolRuntimeApi(pool, tenantId);
+const poolHandler = createPgPoolRuntimeHttpHandler(pool, tenantId);
 ```
 
-其中 `tenantId` 必须来自认证中间件；HTTP Handler 会覆盖写请求体中的伪造租户字段。真实 PostgreSQL 连接池、认证中间件和部署路由仍由宿主服务负责。
+其中 `tenantId` 必须来自认证中间件；HTTP Handler 会覆盖写请求体中的伪造租户字段。`createPgPoolRuntimeApi` 和 `createPgPoolRuntimeHttpHandler` 接受真实 `pg.Pool`，事务内固定使用同一个 client。认证中间件和部署路由仍由宿主服务负责。
 
 该工厂会自动复用现有存储：
 
@@ -336,3 +342,5 @@ git diff --check
 6. 保持 API 409 版本冲突语义。
 7. 将审计日志与状态提交放在同一事务中，记录 before/after 状态和提交原因。
 8. 不在浏览器端伪装 PostgreSQL 已连接；浏览器/Tauri 仍使用各自的本地存储适配器。
+9. 真实 PostgreSQL 部署使用 `migrations/001_virtual_character_os.sql`；
+   `npm run runtime:db:schema:check` 用于校验迁移文件与权威 Schema 文档没有漂移。

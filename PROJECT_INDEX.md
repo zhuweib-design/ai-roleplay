@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-23 05:17（本地时区）
+- **生成时间**：2026-09-23 05:47（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v0.2.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：462 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：37 个
+- **收录文件**：468 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：41 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -19,7 +19,7 @@ ai-roleplay/
   - `memory/`  — 9 个文件
 - `.workbuddy-ai/`  — 5 个文件
   - `memory/`  — 5 个文件
-- `docs/`  — 166 个文件
+- `docs/`  — 167 个文件
   - `assets/`  — 110 个文件
     - `screenshots/`  — 110 个文件
       - `themes/`  — 84 个文件
@@ -29,7 +29,7 @@ ai-roleplay/
         - `theatre/`  — 21 个文件
   - `design/`  — 13 个文件
   - `dev/`  — 17 个文件
-  - `fixes/`  — 15 个文件
+  - `fixes/`  — 16 个文件
   - `other/`  — 6 个文件
   - `product/`  — 1 个文件
 - `e2e/`  — 11 个文件
@@ -37,13 +37,14 @@ ai-roleplay/
 - `market/`  — 8 个文件
   - `cards/`  — 1 个文件
   - `items/`  — 6 个文件
+- `migrations/`  — 1 个文件
 - `public/`  — 126 个文件
   - `assets/`  — 14 个文件
     - `icons/`  — 12 个文件
       - `dl_builtin_tik_tok/`  — 12 个文件
   - `fonts/`  — 106 个文件
-- `scripts/`  — 18 个文件
-- `src/`  — 181 个文件
+- `scripts/`  — 19 个文件
+- `src/`  — 182 个文件
   - `api/`  — 11 个文件
   - `components/`  — 25 个文件
     - `chat/`  — 5 个文件
@@ -60,7 +61,7 @@ ai-roleplay/
   - `i18n/`  — 3 个文件
     - `locales/`  — 2 个文件
   - `router/`  — 1 个文件
-  - `runtime/`  — 13 个文件
+  - `runtime/`  — 14 个文件
   - `services/`  — 6 个文件
   - `storage/`  — 7 个文件
   - `stores/`  — 16 个文件
@@ -81,11 +82,11 @@ ai-roleplay/
   - `src/`  — 11 个文件
     - `commands/`  — 5 个文件
     - `storage/`  — 1 个文件
-- `tests/`  — 124 个文件
+- `tests/`  — 126 个文件
   - `accessibility/`  — 3 个文件
   - `api/`  — 8 个文件
   - `core/`  — 67 个文件
-  - `runtime/`  — 2 个文件
+  - `runtime/`  — 4 个文件
   - `services/`  — 8 个文件
   - `storage/`  — 4 个文件
   - `stores/`  — 22 个文件
@@ -94,7 +95,7 @@ ai-roleplay/
 
 ## 二、文件索引
 
-### 2.1 程序（194）
+### 2.1 程序（195）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -225,21 +226,22 @@ ai-roleplay/
 | `src/main.ts` | ts | 程序 | 应用引导入口：创建 Vue 实例、注册 Pinia 与路由 | 已跟踪 |  |
 | `src/router/index.ts` | ts | 程序 | Vue Router 路由表 | 已跟踪 |  |
 | `src/runtime/character-compiler.ts` | ts | 程序 | Virtual Character OS Archetype + Delta + Seed Memories 编译器 | 已跟踪 |  |
-| `src/runtime/chat-bridge.ts` | ts | 程序 | Virtual Character OS 聊天链路 Runtime Context 与 Event 桥接 | 已修改 |  |
+| `src/runtime/chat-bridge.ts` | ts | 程序 | Virtual Character OS 聊天链路 Runtime Context 与 Event 桥接 | 已跟踪 |  |
 | `src/runtime/context-builder.ts` | ts | 程序 | Virtual Character OS 上下文构建器 | 已跟踪 |  |
 | `src/runtime/emotion-engine.ts` | ts | 程序 | Virtual Character OS 情绪衰减、Episode 与 Salience 引擎 | 已跟踪 |  |
 | `src/runtime/index.ts` | ts | 程序 | Virtual Character OS Runtime 统一出口 | 已修改 |  |
+| `src/runtime/postgres-executor.ts` | ts | 程序 | 模块：postgres-executor（待确认具体功能） | 未跟踪 | 用途待确认 |
 | `src/runtime/postgres-store.ts` | ts | 程序 | Virtual Character OS PostgreSQL RuntimeStore 与事务边界 | 已跟踪 |  |
-| `src/runtime/project-runtime.ts` | ts | 程序 | AI 酒馆项目级 Runtime 工厂 | 已修改 |  |
-| `src/runtime/runtime-api.ts` | ts | 程序 | Virtual Character OS 运行时 API 适配器 | 已修改 |  |
-| `src/runtime/runtime-core.ts` | ts | 程序 | Virtual Character OS Runtime Core 状态归约主链 | 已修改 |  |
-| `src/runtime/runtime-http.ts` | ts | 程序 | 模块：runtime-http（待确认具体功能） | 未跟踪 | 用途待确认 |
-| `src/runtime/server-runtime.ts` | ts | 程序 | 模块：server-runtime（待确认具体功能） | 未跟踪 | 用途待确认 |
+| `src/runtime/project-runtime.ts` | ts | 程序 | AI 酒馆项目级 Runtime 工厂 | 已跟踪 |  |
+| `src/runtime/runtime-api.ts` | ts | 程序 | Virtual Character OS 运行时 API 适配器 | 已跟踪 |  |
+| `src/runtime/runtime-core.ts` | ts | 程序 | Virtual Character OS Runtime Core 状态归约主链 | 已跟踪 |  |
+| `src/runtime/runtime-http.ts` | ts | 程序 | 模块：runtime-http（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/runtime/server-runtime.ts` | ts | 程序 | 模块：server-runtime（待确认具体功能） | 已修改 | 用途待确认 |
 | `src/runtime/store.ts` | ts | 程序 | Virtual Character OS Runtime Snapshot 存储接口与适配器 | 已跟踪 |  |
-| `src/runtime/types.ts` | ts | 程序 | Virtual Character OS Runtime 领域类型与 API 契约 | 已修改 |  |
+| `src/runtime/types.ts` | ts | 程序 | Virtual Character OS Runtime 领域类型与 API 契约 | 已跟踪 |  |
 | `src/services/backup-service.ts` | ts | 程序 | 备份导出/导入服务 | 已跟踪 |  |
 | `src/services/chat-error.ts` | ts | 程序 | 对话错误类型与用户提示映射 | 已跟踪 |  |
-| `src/services/chat-manager.ts` | ts | 程序 | 对话流程编排（发送 / 流式接收 / 重试） | 已修改 |  |
+| `src/services/chat-manager.ts` | ts | 程序 | 对话流程编排（发送 / 流式接收 / 重试） | 已跟踪 |  |
 | `src/services/translator.ts` | ts | 程序 | 翻译服务 | 已跟踪 |  |
 | `src/services/tts-service.ts` | ts | 程序 | 语音合成服务 | 已跟踪 |  |
 | `src/services/type-adapters.ts` | ts | 程序 | 第三方数据格式适配 | 已跟踪 |  |
@@ -254,7 +256,7 @@ ai-roleplay/
 | `src/stores/character-version.ts` | ts | 程序 | 状态存储：角色卡版本历史 | 已跟踪 |  |
 | `src/stores/character.ts` | ts | 程序 | 状态存储：角色卡列表与当前角色 | 已跟踪 |  |
 | `src/stores/chat-context.ts` | ts | 程序 | 状态存储：对话上下文绑定（角色 / 世界书） | 已跟踪 |  |
-| `src/stores/chat.ts` | ts | 程序 | 状态存储：会话与消息管理 | 已修改 |  |
+| `src/stores/chat.ts` | ts | 程序 | 状态存储：会话与消息管理 | 已跟踪 |  |
 | `src/stores/community-market.ts` | ts | 程序 | 状态存储：社区市场 | 已跟踪 |  |
 | `src/stores/data-bank.ts` | ts | 程序 | 状态存储：数据银行素材 | 已跟踪 |  |
 | `src/stores/events.ts` | ts | 程序 | 状态存储：全局事件总线 | 已跟踪 |  |
@@ -293,7 +295,7 @@ ai-roleplay/
 | `src/views/WorldBookView.vue` | vue | 程序 | 页面：世界书管理 | 已跟踪 |  |
 | `src/vite-env.d.ts` | ts | 程序 | Vite 环境变量与静态资源类型声明 | 已跟踪 |  |
 
-### 2.2 测试（135）
+### 2.2 测试（137）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -387,11 +389,13 @@ ai-roleplay/
 | `tests/core/world-generator.test.ts` | ts | 测试 | 单元测试：world-generator 模块 | 已跟踪 |  |
 | `tests/core/world-setting-chunker.test.ts` | ts | 测试 | 单元测试：world-setting-chunker 模块 | 已跟踪 |  |
 | `tests/i18n.test.ts` | ts | 测试 | 单元测试：i18n 模块 | 已跟踪 |  |
-| `tests/runtime/runtime-core.test.ts` | ts | 测试 | 单元测试：runtime-core 模块 | 已修改 |  |
-| `tests/runtime/runtime-http.test.ts` | ts | 测试 | 单元测试：runtime-http 模块 | 未跟踪 |  |
+| `tests/runtime/postgres-executor.test.ts` | ts | 测试 | 单元测试：postgres-executor 模块 | 未跟踪 |  |
+| `tests/runtime/postgres-runtime.integration.test.ts` | ts | 测试 | 单元测试：postgres-runtime.integration 模块 | 未跟踪 |  |
+| `tests/runtime/runtime-core.test.ts` | ts | 测试 | 单元测试：runtime-core 模块 | 已跟踪 |  |
+| `tests/runtime/runtime-http.test.ts` | ts | 测试 | 单元测试：runtime-http 模块 | 已跟踪 |  |
 | `tests/services/backup-service.test.ts` | ts | 测试 | 单元测试：backup-service 模块 | 已跟踪 |  |
 | `tests/services/chat-error.test.ts` | ts | 测试 | 单元测试：chat-error 模块 | 已跟踪 |  |
-| `tests/services/chat-manager.test.ts` | ts | 测试 | 单元测试：chat-manager 模块 | 已修改 |  |
+| `tests/services/chat-manager.test.ts` | ts | 测试 | 单元测试：chat-manager 模块 | 已跟踪 |  |
 | `tests/services/llm-controls-p0.qa-independent.test.ts` | ts | 测试 | 单元测试：llm-controls-p0.qa-independent 模块 | 已跟踪 |  |
 | `tests/services/status-hud-p1.qa-independent.test.ts` | ts | 测试 | 单元测试：status-hud-p1.qa-independent 模块 | 已跟踪 |  |
 | `tests/services/translator.test.ts` | ts | 测试 | 单元测试：translator 模块 | 已跟踪 |  |
@@ -468,7 +472,7 @@ ai-roleplay/
 | `docs/dev/线上模型接入-G4-MeroMero-31B.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `public/ai-roleplay-dev-plan.html` | html | 开发文档 | 开发文档（静态页）：AI 酒馆开发计划 | 已忽略 |  |
 
-### 2.5 修复文档（15）
+### 2.5 修复文档（16）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -480,8 +484,9 @@ ai-roleplay/
 | `docs/fixes/pre-launch-check-aijiuguan-2026-08-17.md` | md | 修复文档 | 修复文档：6 维度全检报告（2026-08-17） | 已跟踪 |  |
 | `docs/fixes/pre-launch-check-aijiuguan-2026-08-19.md` | md | 修复文档 | 修复文档：6 维度全检报告（2026-08-19） | 已跟踪 |  |
 | `docs/fixes/pre-launch-check-aijiuguan-2026-09-21.md` | md | 修复文档 | 修复文档：上线前全检报告（代码审查 + 安全审计 + QA，2026-09-21） | 已跟踪 |  |
-| `docs/fixes/runtime-concurrency-http-boundary-2026-09-22.md` | md | 修复文档 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/fixes/runtime-concurrency-http-boundary-2026-09-22.md` | md | 修复文档 | 待确认 | 已修改 | 用途待确认 |
 | `docs/fixes/runtime-core-baseline-verification-2026-09-22.md` | md | 修复文档 | 验证记录：Runtime Core 基线自动化验证 | 已跟踪 |  |
+| `docs/fixes/runtime-postgres-pool-migration-2026-09-22.md` | md | 修复文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/fixes/web-sop-fix-batch1-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第一批交付报告（修正失实声明） | 已跟踪 |  |
 | `docs/fixes/web-sop-fix-batch2-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第二批交付报告（补齐门禁） | 已跟踪 |  |
 | `docs/fixes/web-sop-fix-batch3-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第三批交付报告（安全与数据保障） | 已跟踪 |  |
@@ -541,7 +546,7 @@ ai-roleplay/
 | `.i18nignore` | i18nignore | 配置 | i18n 扫描忽略清单 | 已忽略 |  |
 | `eslint.config.js` | js | 配置 | ESLint 扁平配置（Vue + TS） | 已跟踪 |  |
 | `package-lock.json` | json | 配置 | npm 依赖锁定文件（自动生成） | 已跟踪 |  |
-| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.2.0） | 已跟踪 |  |
+| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.2.0） | 已修改 |  |
 | `playwright.config.ts` | ts | 配置 | Playwright E2E 配置：testDir=e2e、本地 msedge / CI chromium | 已跟踪 |  |
 | `reasonix.toml` | toml | 配置 | Reasonix 工具工作区配置 | 已跟踪 |  |
 | `src-tauri/.gitignore` | gitignore | 配置 | 桌面端专属忽略规则 | 已跟踪 |  |
@@ -553,7 +558,7 @@ ai-roleplay/
 | `vite.config.ts` | ts | 配置 | Vite 构建配置：别名、代码分包、PWA 插件 | 已跟踪 |  |
 | `vitest.config.ts` | ts | 配置 | Vitest 单测配置：jsdom 环境、覆盖率阈值门禁 | 已跟踪 |  |
 
-### 2.10 脚本（18）
+### 2.10 脚本（19）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -573,10 +578,11 @@ ai-roleplay/
 | `scripts/opt-eval.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/p11-baseline.mjs` | mjs | 脚本 | 测量：P11 性能基线采集 | 已跟踪 |  |
 | `scripts/p11-scroll-fps.mjs` | mjs | 脚本 | 测量：滚动帧率采集 | 已跟踪 |  |
+| `scripts/sync-runtime-schema.mjs` | mjs | 脚本 | 待确认 | 未跟踪 | 用途待确认 |
 | `scripts/ui-shot.mjs` | mjs | 脚本 | 工具：遍历路由批量截图到 docs/assets/screenshots/ | 已跟踪 |  |
 | `scripts/vendor-fonts.mjs` | mjs | 脚本 | 工具：把 Google Fonts 镜像到 public/fonts/，消除第三方字体请求（支持 --check 供校验） | 已跟踪 |  |
 
-### 2.11 其他（30）
+### 2.11 其他（31）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -602,6 +608,7 @@ ai-roleplay/
 | `market/items/template-fantasy.json` | json | 其他 | 社区市场条目：奇幻题材模板 | 已跟踪 |  |
 | `market/items/template-sci-fi.json` | json | 其他 | 社区市场条目：科幻题材模板 | 已跟踪 |  |
 | `market/items/worldbook-midgard.json` | json | 其他 | 社区市场条目：世界书 Midgard | 已跟踪 |  |
+| `migrations/001_virtual_character_os.sql` | sql | 其他 | 待确认 | 未跟踪 | 用途待确认 |
 | `public/apple-touch-icon.png` | png | 其他 | iOS 主屏图标 | 已跟踪 |  |
 | `public/assets/hero-cyber-nexus.jpg` | jpg | 其他 | 首页主视觉图（赛博主题） | 已跟踪 |  |
 | `public/assets/hero-seraphina.jpg` | jpg | 其他 | 首页主视觉图（角色主题） | 已跟踪 |  |
@@ -615,18 +622,18 @@ ai-roleplay/
 
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
-| 程序 | 194 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
-| 测试 | 135 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
+| 程序 | 195 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
+| 测试 | 137 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 2 | docs/product/ 产品与项目规划材料 |
 | 开发文档 | 23 | docs/dev/ 实现计划、Runbook、审计记录 |
-| 修复文档 | 15 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
+| 修复文档 | 16 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
 | 设计文档 | 13 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
 | AI记忆 | 14 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
 | 截图 | 1 | docs/assets/screenshots/ 下 UI 冒烟截图 |
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
-| 脚本 | 18 | scripts/ 门禁、审计与工具脚本 |
-| 其他 | 30 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **462** | 与「收录文件」数一致 |
+| 脚本 | 19 | scripts/ 门禁、审计与工具脚本 |
+| 其他 | 31 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
+| **合计** | **468** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

@@ -4,6 +4,7 @@ import {
   type RuntimeHttpHandler,
 } from './runtime-http';
 import { PostgresRuntimeStore, type SqlExecutor } from './postgres-store';
+import { createPgPoolExecutor, type PgPoolLike } from './postgres-executor';
 import { RuntimeCore, type RuntimeCoreOptions } from './runtime-core';
 
 export interface PostgresRuntimeApiOptions {
@@ -35,4 +36,22 @@ export function createPostgresRuntimeHttpHandler(
   return createRuntimeHttpHandler(createPostgresRuntimeApi(sql, tenantId, options), {
     tenantId,
   });
+}
+
+/** 使用真实 node-postgres Pool 的服务端 Runtime 组合入口。 */
+export function createPgPoolRuntimeApi(
+  pool: PgPoolLike,
+  tenantId: string,
+  options: PostgresRuntimeApiOptions = {}
+): RuntimeApi {
+  return createPostgresRuntimeApi(createPgPoolExecutor(pool), tenantId, options);
+}
+
+/** 使用真实 node-postgres Pool 的 Runtime Fetch Handler。 */
+export function createPgPoolRuntimeHttpHandler(
+  pool: PgPoolLike,
+  tenantId: string,
+  options: PostgresRuntimeApiOptions = {}
+): RuntimeHttpHandler {
+  return createPostgresRuntimeHttpHandler(createPgPoolExecutor(pool), tenantId, options);
 }
