@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-25 02:37（本地时区）
+- **生成时间**：2026-09-25 02:41（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v0.2.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：485 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：29 个
+- **收录文件**：486 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：29 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -19,7 +19,7 @@ ai-roleplay/
   - `memory/`  — 9 个文件
 - `.workbuddy-ai/`  — 5 个文件
   - `memory/`  — 5 个文件
-- `docs/`  — 169 个文件
+- `docs/`  — 170 个文件
   - `assets/`  — 110 个文件
     - `screenshots/`  — 110 个文件
       - `themes/`  — 84 个文件
@@ -28,7 +28,7 @@ ai-roleplay/
         - `oled/`  — 21 个文件
         - `theatre/`  — 21 个文件
   - `design/`  — 14 个文件
-  - `dev/`  — 18 个文件
+  - `dev/`  — 19 个文件
   - `fixes/`  — 17 个文件
   - `other/`  — 6 个文件
 - `e2e/`  — 13 个文件
@@ -456,14 +456,14 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `public/sillytavern-vs-airoleplay.html` | html | 产品文档 | 静态页：SillyTavern vs ai-roleplay 系统化对比报告 | 已忽略 |  |
 
-### 2.4 开发文档（24）
+### 2.4 开发文档（25）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已修改 |  |
+| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
 | `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
-| `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已跟踪 |  |
-| `README.md` | md | 开发文档 | 项目主说明（中文） | 已跟踪 |  |
+| `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已修改 |  |
+| `README.md` | md | 开发文档 | 项目主说明（中文） | 已修改 |  |
 | `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已跟踪 |  |
 | `docs/dev/2026-09-20-LLM控制能力交付总览.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已跟踪 |  |
@@ -477,7 +477,8 @@ ai-roleplay/
 | `docs/dev/llm-controls-收尾三项记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/mobile-pwa-plan.md` | md | 开发文档 | 开发文档：手机端 PWA 实现计划 | 已跟踪 |  |
 | `docs/dev/rag-enhancement-plan.md` | md | 开发文档 | 开发文档：RAG 增强实现计划 | 已跟踪 |  |
-| `docs/dev/runtime-database-migration-runbook.md` | md | 开发文档 | 开发文档：Virtual Character OS 数据库迁移演练 Runbook（备份 / 锁等待 / 回滚 / 演练清单） | 未跟踪 |  |
+| `docs/dev/release-notes-0.3.0.md` | md | 开发文档 | 开发文档：0.3.0 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制） | 未跟踪 |  |
+| `docs/dev/runtime-database-migration-runbook.md` | md | 开发文档 | 开发文档：Virtual Character OS 数据库迁移演练 Runbook（备份 / 锁等待 / 回滚 / 演练清单） | 已跟踪 |  |
 | `docs/dev/web-deployment-sop.md` | md | 开发文档 | 开发文档：Web 端部署 SOP（部署前验证 / 硬性要求 / 5 类托管配置 / 部署后验证 / 常见坑 / 回滚） | 已跟踪 |  |
 | `docs/dev/优化效果评估脚本-使用说明.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/优化能力激活-交付总结.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
@@ -641,7 +642,7 @@ ai-roleplay/
 | 程序 | 202 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 144 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
-| 开发文档 | 24 | docs/dev/ 实现计划、Runbook、审计记录 |
+| 开发文档 | 25 | docs/dev/ 实现计划、Runbook、审计记录 |
 | 修复文档 | 17 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
 | 设计文档 | 14 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
 | AI记忆 | 14 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
@@ -649,7 +650,7 @@ ai-roleplay/
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 19 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 32 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **485** | 与「收录文件」数一致 |
+| **合计** | **486** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

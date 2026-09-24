@@ -201,6 +201,11 @@ This project is open-sourced under the **Apache License 2.0**. See [LICENSE](LIC
 
 - [Security & Privacy](#-security--privacy)
 
+### Release notes
+
+- **0.3.0**: see [`docs/dev/release-notes-0.3.0.md`](docs/dev/release-notes-0.3.0.md) for new capabilities, upgrade steps and known limitations.
+- **Database migration drill**: see [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md).
+
 ### Security & Privacy
 
 - Least-privilege client: capabilities only `core:default` + `updater:default`; no `fs/shell/http/dialog/os` permission

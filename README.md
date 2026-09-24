@@ -280,6 +280,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 - **Web 端（静态托管）**：完整流程见 [`docs/dev/web-deployment-sop.md`](docs/dev/web-deployment-sop.md) —— 含部署前验证清单、6 项硬性要求（HTTPS / `frame-ancestors` 响应头 / **`.wasm` MIME** / SPA 回退排除 / 缓存策略 / 剔除 source map）、Nginx / Caddy / Vercel / Netlify / 对象存储+CDN 的具体配置、12 项部署后验证清单与常见坑。
   - 部署前必须跑：`npm run build && npm run check:csp`，并在 `vite preview` 下跑 `npm run csp:audit`（逐路由 CSP 违规 + 负向对照 + **WASM/blob Worker 能力探针**）。
 - **桌面端（Tauri）**：打 `v*` tag 或手动触发 `tauri-release` workflow 产出签名安装包；更新签名公钥内置于 `tauri.conf.json`。
+- **版本发布说明**：见 [`docs/dev/release-notes-0.3.0.md`](docs/dev/release-notes-0.3.0.md)（0.3.0 新能力、升级步骤与已知限制）；数据库迁移演练见 [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md)。
 
 ### 隐私与安全
 
