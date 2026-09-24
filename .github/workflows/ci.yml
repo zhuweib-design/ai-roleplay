@@ -99,6 +99,8 @@ jobs:
       # 覆盖率门禁：vitest v8 provider，阈值定义在 vitest.config.ts
       # （statements 78 / branches 73 / functions 78 / lines 78），未达标则非零退出
       # 注：Linux 路径大小写一致, 无 Windows 本地盘符重复误报, 门禁正常生效
+      # 注：本步骤同时承载真实 PostgreSQL 集成测试（见上方 service 与 env），
+      #     不再单设重复 job，避免同一批集成用例执行两次。
       - name: Test + coverage gate (78/73/78/78)
         env:
           RUNTIME_PG_TEST_URL: postgresql://postgres:runtime_test@127.0.0.1:5432/runtime_test
@@ -122,56 +124,6 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 7
-
-  # 真实 PostgreSQL 集成门禁（0.3.0 新增）
-  # - 用 postgres:16 service 容器跑隔离 Schema 迁移 + 事务/并发/幂等/回滚集成测试
-  # - 覆盖单角色 RuntimeStore（tests/runtime/postgres-runtime.integration.test.ts）
-  #   与群聊公共 Turn + 跨成员 Event 原子事务（tests/runtime/postgres-group.integration.test.ts）
-  # - 集成测试默认在无 RUNTIME_PG_TEST_URL 时跳过，故必须在此显式注入连接串
-  runtime-postgres:
-    name: Runtime PostgreSQL Integration
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_PASSWORD: runtime_test
-          POSTGRES_DB: runtime_test
-        ports:
-          - 5432:5432
-        # 容器就绪探测：未通过则 job 失败，避免连接竞态导致误判
-        options: >-
-          --health-cmd "pg_isready -U postgres -d runtime_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies (npm ci)
-        run: npm ci
-
-      # 迁移文件与权威 Schema 文档必须逐字一致，否则集成测试验证的不是同一份 Schema
-      - name: Runtime schema drift check
-        run: npm run runtime:db:schema:check
-
-      - name: PostgreSQL integration tests
-        env:
-          RUNTIME_PG_TEST_URL: postgresql://postgres:runtime_test@127.0.0.1:5432/runtime_test
-          RUNTIME_PG_APPLY_SCHEMA: '1'
-        run: |
-          npx vitest run \
-            tests/runtime/postgres-runtime.integration.test.ts \
-            tests/runtime/postgres-group.integration.test.ts
 
   # E2E 门禁（已纳入默认门禁）: Playwright 真实浏览器跑 e2e/ 下全部 spec（含批量角色导入与群聊流程）
   # - 本地 Windows 用系统 Edge(channel: msedge, 免下载); CI(ubuntu) 自动切自带 chromium + --with-deps
@@ -264,7 +216,7 @@ jobs:
   tauri-release:
     name: Tauri Release (signed installers)
     if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
-    needs: [quality-gates, runtime-postgres, e2e]
+    needs: [quality-gates, e2e]
     permissions:
       contents: write
     strategy:

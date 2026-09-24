@@ -228,3 +228,21 @@
 ### 当前边界
 
 - 覆盖率门禁现依赖 CI service 容器；本地不提供 `RUNTIME_PG_TEST_URL` 时会因跳过集成测试而低于阈值，属预期行为，需本地起库或只跑 `npm run test`。
+
+## 2026-09-24 0.3.0 阶段一：CI 门禁收敛与群聊中止
+
+### 本轮实现
+
+- 新增真实 PostgreSQL 集成门禁：`quality-gates` 增加 `postgres:16-alpine` service，覆盖率步骤注入 `RUNTIME_PG_TEST_URL` 与 `RUNTIME_PG_APPLY_SCHEMA`，使单角色 RuntimeStore 与群聊多角色原子事务集成测试在 CI 中真实执行。
+- 群聊生成支持中止：生成中发送按钮切换为停止按钮，调用 `ChatManager.stop()`；中止后保留已收到的部分内容，但不提交公共回合、不投递旁听事件，避免半成品写入成员 Event 与 Snapshot。
+- 中止与生成错误分离：中止改为信息提示，不再误报为生成失败。
+
+### 验证记录
+
+- 覆盖率门禁接入数据库后：`All files 79.75 / 75.1 / 82.16 / 81.46`，高于 78/73/78/78 阈值；全量 3430 项通过。
+- 新增浏览器 E2E：请求挂起时停止入口可见、可中止并回到可发送状态，且中止后成员 Runtime 快照无本轮事件。
+- 群聊 E2E 2 项通过；`vue-tsc --noEmit`、ESLint、CSS 约定守卫通过。
+
+### 当前边界
+
+- 覆盖率门禁依赖 CI service 容器；本地不提供 `RUNTIME_PG_TEST_URL` 时集成测试会被跳过，覆盖率低于阈值属预期，需本地起库或只跑 `npm run test`。
