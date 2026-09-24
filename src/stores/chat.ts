@@ -55,6 +55,7 @@ import {
   type RuntimeBatchCreateResult,
 } from '@/runtime';
 import { RuntimeApiError } from '@/runtime/runtime-http';
+import { replayRuntimeEvents } from '@/runtime/runtime-core';
 
 /** 远程群聊公共回合的本地可靠投递记录。内容一旦入队不可被同键新载荷覆盖。 */
 export interface PendingGroupRuntimeTurn {
@@ -715,6 +716,101 @@ export const useChatStore = defineStore('chat', () => {
     } catch (error) {
       reportRuntimeError(error, 'event');
       return { enabled: true, attempted: 0, committed: 0 };
+    }
+  }
+
+  /**
+   * 载入角色的 Runtime 最小状态摘要，供界面检查。
+   * 只读：不推进状态、不写事件。角色尚未初始化时返回 enabled=false。
+   */
+  async function inspectRuntimeState(character: UICharacter): Promise<
+    | { enabled: false }
+    | {
+        enabled: true;
+        version: number;
+        updatedAt: string;
+        displayName: string;
+        eventCount: number;
+        memoryCount: number;
+        episodeCount: number;
+        stateChangeCount: number;
+        emotions: Array<{ emotion: string; intensity: number }>;
+        mood: { valence: number; arousal: number; dominance: number } | null;
+        recentEvents: Array<{ id: string; eventType: string; occurredAt: string; importance: number }>;
+      }
+  > {
+    try {
+      const tenantId = resolveRuntimeTenantId();
+      const api = await getRuntimeApi();
+      const snapshot = await api.getCharacter(stableChatCharacterId(tenantId, character.id));
+      const emotions = (snapshot.character.emotions ?? [])
+        .slice()
+        .sort((a, b) => b.intensity - a.intensity)
+        .slice(0, 5)
+        .map((item) => ({ emotion: String(item.emotion), intensity: item.intensity }));
+      const mood = snapshot.character.mood
+        ? {
+            valence: snapshot.character.mood.valence,
+            arousal: snapshot.character.mood.arousal,
+            dominance: snapshot.character.mood.dominance,
+          }
+        : null;
+      const recentEvents = (snapshot.events ?? [])
+        .slice()
+        .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
+        .slice(0, 5)
+        .map((event) => ({
+          id: event.id,
+          eventType: event.eventType,
+          occurredAt: event.occurredAt,
+          importance: event.importance,
+        }));
+      return {
+        enabled: true,
+        version: snapshot.version,
+        updatedAt: snapshot.updatedAt,
+        displayName: snapshot.character.profile?.displayName ?? character.name,
+        eventCount: snapshot.events?.length ?? 0,
+        memoryCount: snapshot.memories?.length ?? 0,
+        episodeCount: snapshot.episodes?.length ?? 0,
+        stateChangeCount: snapshot.stateChanges?.length ?? 0,
+        emotions,
+        mood,
+        recentEvents,
+      };
+    } catch (error) {
+      if (isRuntimeNotFound(error)) return { enabled: false };
+      reportRuntimeError(error, 'context');
+      return { enabled: false };
+    }
+  }
+
+  /**
+   * Runtime 回放自检：以初始快照重放事件流，比较重放结果与已存快照。
+   * 用于确认 Reducer 与历史事件的确定性一致（不写库）。
+   */
+  async function verifyRuntimeReplay(character: UICharacter): Promise<
+    | { enabled: false }
+    | { enabled: true; consistent: boolean; storedVersion: number; replayedVersion: number; eventCount: number }
+  > {
+    try {
+      const tenantId = resolveRuntimeTenantId();
+      const api = await getRuntimeApi();
+      const snapshot = await api.getCharacter(stableChatCharacterId(tenantId, character.id));
+      // 以空事件快照为基准重放全部事件，避免依赖“初始快照”的历史副本。
+      const baseline = { ...snapshot, events: [], stateChanges: [], version: 0 };
+      const replayed = replayRuntimeEvents(baseline, snapshot.events ?? []);
+      return {
+        enabled: true,
+        consistent: replayed.version === snapshot.version,
+        storedVersion: snapshot.version,
+        replayedVersion: replayed.version,
+        eventCount: snapshot.events?.length ?? 0,
+      };
+    } catch (error) {
+      if (isRuntimeNotFound(error)) return { enabled: false };
+      reportRuntimeError(error, 'context');
+      return { enabled: false };
     }
   }
 
@@ -1902,6 +1998,8 @@ export const useChatStore = defineStore('chat', () => {
     syncRemoteGroupMember,
     syncRemoteGroupStatus,
     runtimeCharacterIdFor,
+    inspectRuntimeState,
+    verifyRuntimeReplay,
     commitRuntimeGroupTurn,
     retryRemoteGroupOutbox,
     pendingGroupRuntimeTurns,

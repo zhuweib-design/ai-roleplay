@@ -308,3 +308,22 @@
 
 - 服务端 outbox 提供持久化与显式重放，但尚未接入后台自动重试调度；目前由客户端或运维显式触发。
 - 本地 StorageAdapter 队列仍保留作为离线兜底，两套队列通过稳定逻辑回合键对齐，不做双向同步。
+
+## 2026-09-24 0.3.0 阶段五：Runtime 最小状态查看与回放自检
+
+### 本轮实现
+
+- Chat Store 新增 `inspectRuntimeState(character)`：只读读取 Runtime 快照并返回最小摘要（版本、更新时间、事件/记忆/Episode/StateChange 计数、强度前 5 的情绪、Mood 三维、最近 5 条事件）；角色未初始化时返回 `enabled=false` 而非报错。
+- Chat Store 新增 `verifyRuntimeReplay(character)`：以空事件基准重放历史事件流，比较重放版本与已存版本，报告确定性一致性（不写库、不推进状态）。
+- 新增共享组件 `src/components/chat/RuntimeStatePanel.vue`：折叠式状态面板，展示上述摘要并提供「刷新」与「回放自检」动作，回放结果区分一致/不一致。
+- 单聊接入 `ContextPanel`，群聊在成员区接入带成员选择器的同款面板，覆盖「单聊和群聊的 Runtime 回放与最小状态查看」。
+
+### 验证记录
+
+- Chat Store Runtime 集成测试 14 项通过，新增覆盖快照摘要读取、未初始化角色降级、两条事件重放后版本一致（`replayedVersion === storedVersion === 2`）。
+- `vue-tsc --noEmit`、ESLint、`i18n:check:strict`（160 个文件）、CSS 约定守卫（5/5）通过。
+
+### 当前边界
+
+- 状态面板只读展示，尚不支持在界面上编辑情绪、关系或记忆；写入仍必须经过 Reducer 与受控事件入口。
+- 回放自检以空事件基准重放当前事件流，用于校验 Reducer 确定性；不替代离线审计所需的初始快照归档。

@@ -31,6 +31,7 @@ import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import ThinkingBlock from '@/components/chat/ThinkingBlock.vue';
 import StatusHud from '@/components/chat/StatusHud.vue';
+import RuntimeStatePanel from '@/components/chat/RuntimeStatePanel.vue';
 import { resolveLatestStatus } from '@core/status-parser';
 import type { GroupChatMode, GroupMember } from '@/core/group-chat';
 import type { UICharacter } from '@/types';
@@ -66,6 +67,9 @@ function goBack() {
     void router.push({ name: 'chat' });
   }
 }
+
+// 群聊 Runtime 状态查看：当前选中的成员
+const runtimeInspectMemberId = ref<string | null>(null);
 
 // ── UI 状态 ──
 const createModalOpen = ref(false);
@@ -110,6 +114,19 @@ const addMemberTargetGroupId = ref<string | null>(null);
 const currentGroup = computed(() => groupStore.currentGroup);
 const currentMessages = computed(() => groupStore.currentMessages);
 const currentMembers = computed(() => groupStore.currentMembers);
+
+// 群聊 Runtime 状态查看：可选成员与当前查看对象
+const runtimeInspectMember = computed(() => {
+  const members = currentGroup.value?.members ?? [];
+  if (members.length === 0) return null;
+  return members.find((member) => member.characterId === runtimeInspectMemberId.value) ?? members[0]!;
+});
+
+const runtimeInspectCharacter = computed(() => {
+  const member = runtimeInspectMember.value;
+  if (!member) return null;
+  return characterStore.characters.find((item) => item.id === member.characterId) ?? null;
+});
 
 // 当前群组是否存在未处理的群组定义 CAS 冲突
 const currentGroupConflict = computed(() => {
@@ -909,6 +926,27 @@ function isSystem(msg: { role: string }): boolean {
                   />
                 </label>
               </div>
+            </div>
+
+            <!-- Virtual Character OS：成员级 Runtime 最小状态查看与回放自检 -->
+            <div v-if="currentMembers.length > 0" class="group-runtime-inspect">
+              <label class="group-runtime-label" for="group-runtime-member">{{ t('runtime.title') }}</label>
+              <select
+                id="group-runtime-member"
+                class="group-runtime-select"
+                :value="runtimeInspectMember?.characterId ?? ''"
+                @change="runtimeInspectMemberId = ($event.target as HTMLSelectElement).value"
+              >
+                <option v-for="member in currentMembers" :key="member.characterId" :value="member.characterId">
+                  {{ member.name }}
+                </option>
+              </select>
+              <RuntimeStatePanel
+                v-if="runtimeInspectCharacter"
+                :key="runtimeInspectCharacter.id"
+                :character="runtimeInspectCharacter"
+                :label="runtimeInspectMember?.name"
+              />
             </div>
 
             <!-- 群组定义 CAS 冲突：显式提示，不静默覆盖远端 -->
@@ -1904,6 +1942,43 @@ type="button"
 
 .conflict-action {
   flex-shrink: 0;
+}
+
+/* 群聊 Runtime 状态查看区 */
+.group-runtime-inspect {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.group-runtime-label {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.group-runtime-select {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--foreground);
+  background: var(--video-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.group-runtime-select:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 1px;
+}
+
+@media (max-width: 640px) {
+  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7） */
+  .group-runtime-select {
+    font-size: 16px;
+  }
 }
 
 .members-bar {

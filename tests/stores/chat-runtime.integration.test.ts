@@ -99,6 +99,60 @@ describe('Chat Store — Runtime 实际链路', () => {
     expect(store.runtimeStatus?.phase).toBe('initialize');
   });
 
+  it('Runtime 最小状态查看返回快照摘要，未初始化角色返回 enabled=false', async () => {
+    const store = useChatStore();
+    const character = makeCharacter();
+    const created = await store.createRuntimeCharactersBatch([character]);
+    expect(created?.items[0]?.status).toBe('created');
+
+    const summary = await store.inspectRuntimeState(character);
+    expect(summary.enabled).toBe(true);
+    if (!summary.enabled) throw new Error('unreachable');
+    expect(summary.displayName).toBe(character.name);
+    expect(summary.version).toBe(0);
+    expect(summary.eventCount).toBe(0);
+    expect(summary.memoryCount).toBeGreaterThanOrEqual(0);
+    expect(summary.mood).not.toBeNull();
+
+    // 未初始化的角色不应报错，而是返回 enabled=false
+    const unknown = makeCharacter('never-created');
+    const missing = await store.inspectRuntimeState(unknown);
+    expect(missing.enabled).toBe(false);
+  });
+
+  it('Runtime 回放自检对已提交事件流报告一致', async () => {
+    const store = useChatStore();
+    const character = makeCharacter('replay-target');
+    const created = await store.createRuntimeCharactersBatch([character]);
+    expect(created?.items[0]?.status).toBe('created');
+
+    // 直接写入两条事件，避免依赖聊天链路的异步 fail-open 写入时机
+    const tenantId = localStorage.getItem('ai-roleplay:runtime-tenant-id:default');
+    expect(tenantId).toBeTruthy();
+    const api = createProjectRuntime();
+    const runtimeCharacterId = created!.items[0]!.characterId;
+    for (const [eventId, eventType] of [
+      [crypto.randomUUID(), 'replay_event_one'],
+      [crypto.randomUUID(), 'replay_event_two'],
+    ] as const) {
+      await api.ingestEvent(runtimeCharacterId, {
+        tenantId: tenantId!,
+        eventId,
+        eventType,
+        importance: 0.5,
+        payload: { source: 'replay-test' },
+      });
+    }
+
+    const replay = await store.verifyRuntimeReplay(character);
+    expect(replay.enabled).toBe(true);
+    if (!replay.enabled) throw new Error('unreachable');
+    expect(replay.eventCount).toBe(2);
+    expect(replay.consistent).toBe(true);
+    expect(replay.replayedVersion).toBe(replay.storedVersion);
+    expect(replay.replayedVersion).toBe(2);
+  });
+
   it('普通发送与重新生成都注入同一 Runtime 角色上下文', async () => {
     const requests: RequestInit[] = [];
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {
