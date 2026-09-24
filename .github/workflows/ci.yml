@@ -125,9 +125,9 @@ jobs:
           path: coverage/
           retention-days: 7
 
-  # E2E 门禁（已纳入默认门禁）: Playwright 真实浏览器跑 e2e/ 下全部 spec（含批量角色导入与群聊流程）
-  # - 本地 Windows 用系统 Edge(channel: msedge, 免下载); CI(ubuntu) 自动切自带 chromium + --with-deps
-  # - playwright.config.ts 在 CI 下切 chromium 分支, 避免 Linux 无系统 Edge 而报错
+  # E2E 门禁（已纳入默认门禁）: Playwright 真实浏览器跑 e2e/ 下全部 spec
+  # - 三个 project：桌面功能（chromium/Edge）、移动端布局与核心功能（Pixel 5 视口）、WebKit（Safari 近似内核）
+  # - 本地 Windows 用系统 Edge（免下载）+ 需 `npx playwright install webkit`；CI 安装 chromium + webkit
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest
@@ -144,8 +144,9 @@ jobs:
       - name: Install dependencies (npm ci)
         run: npm ci
 
-      - name: Install Playwright chromium
-        run: npx playwright install --with-deps chromium
+      # 双内核：chromium 覆盖桌面 + Pixel 5 视口；webkit 覆盖 Safari 近似内核
+      - name: Install Playwright browsers (chromium + webkit)
+        run: npx playwright install --with-deps chromium webkit
 
       - name: E2E tests
         run: npm run test:e2e

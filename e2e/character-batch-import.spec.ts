@@ -63,7 +63,9 @@ test('批量导入遇到 Runtime 持久化失败后可在本页重试，且不�
   await page.reload();
   await expect(page.getByRole('button', { name: '重试同步 1 个角色' })).toBeVisible();
   await page.getByRole('button', { name: '重试同步 1 个角色' }).click();
-  await expect(page.getByText('导入 1 个角色，Runtime 同步 1 个，失败 0 个')).toBeVisible();
+  // WebKit 冷启动 + IndexedDB 重放比 Chromium 慢，给重试结果显式超时，避免与其它 project
+  // 并行执行时因机器负载产生假失败（产品行为不变，仅提升断言稳定性）。
+  await expect(page.getByText('导入 1 个角色，Runtime 同步 1 个，失败 0 个')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole('button', { name: '重试同步 1 个角色' })).toHaveCount(0);
   await expect(page.getByRole('article', { name: `角色：${name}` })).toHaveCount(1);
 });

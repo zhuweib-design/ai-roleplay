@@ -377,3 +377,23 @@
 - 合并为「只追加」策略：本地与服务端对同一回合内容不一致时不做冲突判定，以本地已有记录为准。
 - 未实现分页拉取，`listTurns` 一次返回该群组全部公共回合；回合量很大时需补游标分页。
 - 服务端历史不含群聊系统消息（加入/离开/归档），这些仍只存在本地。
+
+## 2026-09-25 C1：CI 增加 WebKit（Safari 近似内核）
+
+### 本轮实现
+
+- `playwright.config.ts` 新增 `webkit` project（`Desktop Safari`），覆盖桌面核心功能：对话、群聊、批量导入、角色 CRUD、备份恢复、世界书。
+- CI `e2e` job 安装浏览器改为 `chromium webkit`；此前只装 chromium。
+- 该 project 设 `fullyParallel: false`：WebKit 冷启动与 IndexedDB 明显慢于 Chromium，与其它 project 并行时会出现「每次失败点不同」的假失败（实测两次分别倒在批量导入重试与世界书条目断言，单独与串行均通过）。
+- 为批量导入重试断言补显式 15s 超时，说明为 WebKit 冷启动开销而非产品行为变化。
+
+### 验证记录
+
+- WebKit 专项：9 项通过（无真实兼容性缺陷）。
+- 全量 Playwright E2E：**40 项通过**，覆盖桌面 19（Edge/Chromium）+ 手机功能 9（Pixel 5）+ 手机布局 3 + WebKit 9。
+- `vue-tsc`、ESLint、`i18n:check:strict`、CSS 约定守卫通过。
+
+### 当前边界
+
+- 覆盖 Chromium 与 WebKit 两个内核，仍未覆盖 Gecko（Firefox）。
+- WebKit project 串行执行，CI 时长增加约 20 秒；用例数量增长后需重新评估并行策略。
