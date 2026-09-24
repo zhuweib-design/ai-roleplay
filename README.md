@@ -4,7 +4,7 @@
 
 # 🍺 AI 酒馆
 
-**基于 SillyTavern 架构的 AI 角色扮演聊天应用：多模型对话 · 角色卡 · 世界书 · 群聊 · 故事引擎 · 社区市场 · 自定义主题 · 自定义向量模型 RAG**
+**基于 SillyTavern 架构的 AI 角色扮演聊天应用：多模型对话 · 角色卡 · 世界书 · 群聊 · 故事引擎 · 社区市场 · 自定义主题 · 自定义向量模型 RAG · Virtual Character OS Runtime**
 
 [![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.2.0)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
@@ -21,6 +21,7 @@
 - [✨ 特性](#-特性)
 - [🖼️ 预览](#-预览)
 - [🚀 快速开始](#-快速开始)
+- [🧠 Virtual Character OS Runtime](#-virtual-character-os-runtime)
 - [⚠️ Web 端已知限制](#️-web-端已知限制)
 - [⚙️ 技术栈](#-技术栈)
 - [🛣️ 路线图](#-路线图)
@@ -50,7 +51,8 @@
 | **自定义向量模型 + RAG** | 上传 ZIP 或登记本地目录添加自定义向量模型，驱动「动态记忆 / 静态世界设定」语义检索 |
 | **自定义主题** | 上传背景图自动提取主色调（k-means 聚类）并匹配组件配色，含深/浅主题与"暗夜剧场"字体 |
 | **世界书 / Lorebook** | 关键词门控激活，设定随语境自动注入 |
-| **角色卡与群聊** | 角色卡导入、Persona、群聊成员/发言顺序、随机 NPC |
+| **角色卡与群聊** | 角色卡批量导入（单批最多 50 个）、Persona、群聊成员/发言顺序、随机 NPC |
+| **Virtual Character OS Runtime** | 批量多角色、2–8 人真实模型群聊、独立 Context/Event、PostgreSQL 事务持久化、版本 CAS、Replay 审计 |
 | **故事引擎** | 剧本结构分析、主角配置、时间推进、随机事件 |
 | **社区市场** | 基于 GitHub 索引的模板 / 角色卡 / 世界书下载，含哈希校验与离线回退 |
 | **扩展系统** | 沙箱执行、按需权限（默认拒绝），社区扩展默认不自动执行 |
@@ -99,7 +101,73 @@ npm run tauri:build        # 桌面端编译验证（需 Rust 工具链，耗时
 ```
 
 > CI（`.github/workflows/ci.yml`）的 `quality-gates` 按序执行：lint → i18n strict → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7，五项合一）→ 对比度审计 → 覆盖率 → 构建 → CSP 守卫。另有独立 job：Playwright E2E（桌面 + 移动双 project）、Tauri 编译、Tauri 发布（打 `v*` tag 或手动触发时产出签名安装包）。
+
+**Runtime 改动（`src/runtime/`、`migrations/` 时追加）**
+
+```bash
+npm run runtime:db:schema:check  # 迁移文件与权威 Schema 文档漂移检查
+npm run typecheck                # Runtime 类型与契约检查
+```
+
 > 完整门禁链与阈值以 `.github/workflows/ci.yml` 和 `vitest.config.ts` 为准，本清单不复述细节。
+
+## 🧠 Virtual Character OS Runtime
+
+AI 酒馆内置 Virtual Character OS，用确定性状态机承载角色的长期演化，而不是把状态交给 LLM 自由改写。默认走本地快照（IndexedDB / Tauri 文件存储），配置服务端地址后切换为 PostgreSQL 事务边界。
+
+| 能力 | 说明 |
+| --- | --- |
+| **批量多角色** | 一次导入最多 50 个角色卡，逐项返回创建 / 已存在 / 校验失败；稳定角色 ID 保证重试不覆盖既有快照 |
+| **多角色群聊** | 2–8 个成员，自然轮换与指定发言；每个成员使用独立 Runtime Context 与 Event 流 |
+| **PostgreSQL 持久化边界** | 租户隔离的群组、成员与公共回合表；群组回合与各成员 Event、投影、Snapshot、Audit 在同一事务内提交 |
+| **并发与一致性** | 角色级与群组级版本 CAS；群组定义冲突显式返回 409，不静默覆盖成员 |
+| **回放与审计** | 确定性 Reducer 与 `replayRuntimeEvents`，按事件时间与输入顺序重放，用于状态修复与离线审计 |
+| **可靠重试** | 远程群聊提交失败后写入本地待提交队列，复用稳定回合 ID 幂等重试，不重复生成或重复写入 Event |
+
+### 启用服务端 Runtime
+
+```bash
+# 1. 应用 Schema 迁移
+psql "$DATABASE_URL" -f migrations/001_virtual_character_os.sql
+
+# 2. 校验迁移文件与权威 Schema 文档无漂移
+npm run runtime:db:schema:check
+```
+
+前端设置环境变量 `VITE_RUNTIME_BASE_URL` 后，聊天与群聊切换到服务端 Runtime HTTP API；未设置时保持原有本地快照行为。
+
+```bash
+# 前端构建时注入（.env.local 或 CI 变量）
+VITE_RUNTIME_BASE_URL=https://runtime.example.com npm run build
+```
+
+```ts
+// 服务端组合入口（租户 ID 必须来自认证中间件）
+const handler = createPgPoolRuntimeHttpHandler(pool, tenantId);
+```
+
+服务端对外路由：
+
+```text
+GET    /v1/runtime/health
+POST   /v1/runtime/characters
+POST   /v1/runtime/characters/batch
+GET    /v1/runtime/characters/:id
+POST   /v1/runtime/characters/:id/events
+POST   /v1/runtime/characters/:id/turns
+POST   /v1/runtime/characters/:id/context
+POST   /v1/runtime/groups
+GET    /v1/runtime/groups/:id
+GET    /v1/runtime/groups/:id/turns
+POST   /v1/runtime/groups/:id/turns
+POST   /v1/runtime/groups/:id/context
+POST   /v1/runtime/groups/:id/members
+DELETE /v1/runtime/groups/:id/members/:characterId
+```
+
+设计与验证记录见 [`docs/design/virtual-character-os-实现基线.md`](docs/design/virtual-character-os-实现基线.md) 与 [`docs/design/virtual-character-os-多角色群聊实施计划.md`](docs/design/virtual-character-os-多角色群聊实施计划.md)。
+
+> 生产部署仍需自行提供认证、网关路由、迁移备份与回滚演练；当前仓库提供的是 Runtime 边界、Schema 与可验证实现，不包含生产认证宿主。
 
 ## ⚠️ Web 端已知限制
 
@@ -173,6 +241,7 @@ Service Worker 采用 `autoUpdate`，仅预缓存本地静态资源（`runtimeCa
 
 ```
 src/core/            核心逻辑（RAG、嵌入、主题提取、市场索引、扩展加载…）
+src/runtime/         Virtual Character OS Runtime（Event/State/Context、Replay、PostgreSQL 与群聊事务边界）
 src/stores/          Pinia 状态（对话、设置、用户向量模型…）
 src/components/      组件（聊天、设置、通用 Modal/Icon…）
 src/views/           页面视图
@@ -188,6 +257,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 ## 🛣️ 路线图
 
 - [x] **0.2.0** — 自定义向量模型 + RAG、自定义主题、自动更新、社区市场、系统托盘/快捷键（已发布）
+- [x] **Virtual Character OS Runtime** — 批量多角色、多角色群聊、PostgreSQL 事务持久化、版本 CAS 与 Replay 审计（已落地）
 - [ ] **v1.0.0** — 首个稳定版本（规划）
 - [ ] **RAG 增强** — 更多预置嵌入模型、检索性能基准（规划）
 - [ ] **无障碍** — 自定义主题运行时对比度预检（规划）

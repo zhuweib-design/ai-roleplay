@@ -4,7 +4,7 @@
 
 # 🍺 AI 酒馆 (AI Tavern)
 
-**An AI role-playing chat app built on the SillyTavern architecture: multi-model chat · character cards · world books · group chat · story engine · community market · custom themes · custom vector-model RAG**
+**An AI role-playing chat app built on the SillyTavern architecture: multi-model chat · character cards · world books · group chat · story engine · community market · custom themes · custom vector-model RAG · Virtual Character OS Runtime**
 
 [![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.2.0)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
@@ -21,6 +21,7 @@
 - [✨ Features](#-features)
 - [🖼️ Preview](#-preview)
 - [🚀 Quick Start](#-quick-start)
+- [🧠 Virtual Character OS Runtime](#-virtual-character-os-runtime)
 - [⚙️ Tech Stack](#-tech-stack)
 - [🛣️ Roadmap](#-roadmap)
 - [🤝 Contributing](#-contributing)
@@ -49,7 +50,8 @@ Built for role-playing and narrative creation, **AI 酒馆** focuses on more tha
 | **Custom vector model + RAG** | Add vector models via ZIP or local folder to drive dynamic-memory / static-world semantic retrieval |
 | **Custom themes** | Background-image color extraction (k-means) auto-matches component palettes, incl. light/dark & "theatre" font |
 | **Worldbook / Lorebook** | Keyword-gated activation, settings auto-injected into context |
-| **Character cards & group chat** | Card import, Persona, member/turn control, random NPCs |
+| **Character cards & group chat** | Batch card import (up to 50 per batch), Persona, member/turn control, random NPCs |
+| **Virtual Character OS Runtime** | Batch characters, 2–8 member model-backed group chat, per-member Context/Event, PostgreSQL transactions, version CAS, replay audit |
 | **Story engine** | Script analysis, protagonist config, time progression, random events |
 | **Community market** | GitHub-indexed templates / cards / lorebooks with hash check & offline fallback |
 | **Extension system** | Sandboxed execution, permission-gated (deny by default), not auto-run |
@@ -91,6 +93,71 @@ npm run tauri:build   # Desktop build check
 
 > CI (`.github/workflows/ci.yml`) runs lint → i18n → coverage/build → contrast → Playwright e2e → Tauri build; `v*` tags or manual trigger produce signed installers.
 
+**Runtime changes (`src/runtime/`, `migrations/`) add:**
+
+```bash
+npm run runtime:db:schema:check  # migration vs. authoritative schema drift check
+npm run typecheck                # Runtime types and contract check
+```
+
+## 🧠 Virtual Character OS Runtime
+
+AI Tavern ships with Virtual Character OS: a deterministic state machine for long-term character evolution instead of letting the LLM rewrite state freely. It uses local snapshots (IndexedDB / Tauri file storage) by default and switches to a PostgreSQL transactional boundary when a server runtime URL is configured.
+
+| Capability | Description |
+| --- | --- |
+| **Batch characters** | Import up to 50 character cards per batch with per-item created / already-exists / validation results; stable character IDs make retries non-destructive |
+| **Multi-character group chat** | 2–8 members with natural rotation or designated speakers; each member keeps an independent Runtime Context and event stream |
+| **PostgreSQL persistence boundary** | Tenant-scoped group, member and public turn tables; group turns plus each member's Event, projection, Snapshot and Audit commit in one transaction |
+| **Concurrency and consistency** | Character-level and group-level version CAS; group definition conflicts return an explicit 409 instead of silently overwriting members |
+| **Replay and audit** | Deterministic reducer plus `replayRuntimeEvents`, replaying by event time and input order for state repair and offline audit |
+| **Reliable retry** | Failed remote group turns enter a local pending queue and retry idempotently with the same stable turn ID, without regenerating replies or duplicating events |
+
+### Enabling the server runtime
+
+```bash
+# 1. Apply the schema migration
+psql "$DATABASE_URL" -f migrations/001_virtual_character_os.sql
+
+# 2. Verify the migration and the authoritative schema doc have not drifted
+npm run runtime:db:schema:check
+```
+
+Setting `VITE_RUNTIME_BASE_URL` switches chat and group chat to the server Runtime HTTP API; leaving it unset keeps the existing local snapshot behaviour.
+
+```bash
+# Inject at frontend build time (.env.local or a CI variable)
+VITE_RUNTIME_BASE_URL=https://runtime.example.com npm run build
+```
+
+```ts
+// Server composition entry point (tenantId must come from auth middleware)
+const handler = createPgPoolRuntimeHttpHandler(pool, tenantId);
+```
+
+Server routes:
+
+```text
+GET    /v1/runtime/health
+POST   /v1/runtime/characters
+POST   /v1/runtime/characters/batch
+GET    /v1/runtime/characters/:id
+POST   /v1/runtime/characters/:id/events
+POST   /v1/runtime/characters/:id/turns
+POST   /v1/runtime/characters/:id/context
+POST   /v1/runtime/groups
+GET    /v1/runtime/groups/:id
+GET    /v1/runtime/groups/:id/turns
+POST   /v1/runtime/groups/:id/turns
+POST   /v1/runtime/groups/:id/context
+POST   /v1/runtime/groups/:id/members
+DELETE /v1/runtime/groups/:id/members/:characterId
+```
+
+Design and verification records: [`docs/design/virtual-character-os-实现基线.md`](docs/design/virtual-character-os-实现基线.md) and [`docs/design/virtual-character-os-多角色群聊实施计划.md`](docs/design/virtual-character-os-多角色群聊实施计划.md).
+
+> Production deployment still requires your own authentication, gateway routing, migration backup and rollback drills; this repository provides the Runtime boundary, schema and verifiable implementation, not a production auth host.
+
 ## ⚙️ Tech Stack
 
 | Layer | Tech |
@@ -105,6 +172,7 @@ npm run tauri:build   # Desktop build check
 
 ```
 src/core/            Core logic (RAG, embeddings, theme, market, extensions…)
+src/runtime/         Virtual Character OS Runtime (events/state/context, replay, PostgreSQL and group transactions)
 src/stores/          Pinia stores (chat, settings, user vector models…)
 src/components/      Components (chat, settings, common Modal/Icon…)
 src/views/           Views
@@ -116,6 +184,7 @@ tests/               Unit / a11y / E2E
 ## 🛣️ Roadmap
 
 - [x] **0.2.0** — custom vector model + RAG, custom themes, auto-update, market, tray/shortcut (released)
+- [x] **Virtual Character OS Runtime** — batch characters, multi-character group chat, PostgreSQL transactions, version CAS and replay audit (landed)
 - [ ] **v1.0.0** — first stable release (planned)
 - [ ] **RAG** — more preset embedding models, retrieval benchmarks (planned)
 - [ ] **A11y** — runtime contrast pre-check for custom themes (planned)
