@@ -15,6 +15,27 @@ function fakeApi(): GroupRuntimeApi & { calls: Array<{ method: string; args: unk
       calls.push({ method: 'getGroupState', args });
       return { groupId: args[0] as string, name: '群聊', status: 'active' as const, version: 3, memberIds: ['a', 'b'] };
     },
+    async enqueueTurn(input) {
+      calls.push({ method: 'enqueueTurn', args: [input] });
+      return {
+        groupId: input.groupId, turnId: input.turnId, speakerId: input.speakerId,
+        userMessage: input.userMessage, assistantMessage: input.assistantMessage,
+        occurredAt: input.occurredAt ?? '2026-09-23T00:00:00.000Z', status: 'pending' as const,
+        attempts: 0, createdAt: '2026-09-23T00:00:00.000Z', updatedAt: '2026-09-23T00:00:00.000Z',
+      };
+    },
+    async listPendingTurns(...args) {
+      calls.push({ method: 'listPendingTurns', args });
+      return [];
+    },
+    async retryPendingTurns(...args) {
+      calls.push({ method: 'retryPendingTurns', args });
+      return [];
+    },
+    async setGroupStatus(input) {
+      calls.push({ method: 'setGroupStatus', args: [input] });
+      return { groupId: input.groupId, name: '群聊', status: input.status, version: 6, memberIds: ['a', 'b'] };
+    },
     async addMember(...args) {
       calls.push({ method: 'addMember', args });
       return { groupId: args[0] as string, name: '群聊', status: 'active' as const, version: 4, memberIds: ['a', 'b', args[1] as string] };
@@ -71,9 +92,100 @@ describe('群聊 Runtime HTTP 边界', () => {
     expect(add.status).toBe(200);
     const remove = await handler(new Request('http://runtime.test/v1/runtime/groups/g/members/c', { method: 'DELETE' }));
     expect(remove.status).toBe(200);
+    const archive = await handler(new Request('http://runtime.test/v1/runtime/groups/g/status', {
+      method: 'PUT', body: JSON.stringify({ status: 'archived', expectedVersion: 3 }),
+    }));
+    expect(archive.status).toBe(200);
+    expect(await archive.json()).toMatchObject({ status: 'archived' });
     expect(api.calls.map((call) => call.method)).toEqual([
       'createGroup', 'getGroupState', 'commitTurn', 'listTurns', 'buildMemberContext', 'addMember', 'removeMember',
+      'setGroupStatus',
     ]);
+    expect(api.calls.at(-1)?.args[0]).toMatchObject({ groupId: 'g', status: 'archived', expectedVersion: 3 });
+  });
+
+  it('Handler 路由服务端 outbox 的入队、查询与重放', async () => {
+    const api = fakeApi();
+    const handler = createGroupRuntimeHttpHandler(api);
+
+    const enqueue = await handler(new Request('http://runtime.test/v1/runtime/groups/g/outbox', {
+      method: 'POST',
+      body: JSON.stringify({ turnId: 'r1', speakerId: 'a', userMessage: '问', assistantMessage: '答' }),
+    }));
+    expect(enqueue.status).toBe(200);
+    expect(await enqueue.json()).toMatchObject({ turnId: 'r1', status: 'pending' });
+
+    const list = await handler(new Request('http://runtime.test/v1/runtime/groups/g/outbox'));
+    expect(list.status).toBe(200);
+    expect(await list.json()).toEqual([]);
+
+    const retry = await handler(new Request('http://runtime.test/v1/runtime/groups/g/outbox/retry', {
+      method: 'POST', body: JSON.stringify({}),
+    }));
+    expect(retry.status).toBe(200);
+    expect(await retry.json()).toEqual([]);
+
+    expect(api.calls.map((call) => call.method)).toEqual([
+      'enqueueTurn', 'listPendingTurns', 'retryPendingTurns',
+    ]);
+  });
+
+  it('Http 客户端发送 outbox 请求', async () => {
+    const requests: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const client = new HttpGroupRuntimeApi({
+      baseUrl: 'https://runtime.test',
+      fetch: async (input, init) => {
+        requests.push({ input, init });
+        return new Response(JSON.stringify([]), {
+          status: 200, headers: { 'Content-Type': 'application/json' },
+        });
+      },
+    });
+    await client.listPendingTurns('g');
+    await client.retryPendingTurns('g');
+    expect(requests[0]?.input).toBe('https://runtime.test/v1/runtime/groups/g/outbox');
+    expect(requests[0]?.init?.method).toBe('GET');
+    expect(requests[1]?.input).toBe('https://runtime.test/v1/runtime/groups/g/outbox/retry');
+    expect(requests[1]?.init?.method).toBe('POST');
+  });
+
+  it('拒绝非法 status 与 expectedVersion 且不调用领域层', async () => {
+    const api = fakeApi();
+    const handler = createGroupRuntimeHttpHandler(api);
+
+    const badStatus = await handler(new Request('http://runtime.test/v1/runtime/groups/g/status', {
+      method: 'PUT', body: JSON.stringify({ status: 'deleted' }),
+    }));
+    expect(badStatus.status).toBe(400);
+
+    const badVersion = await handler(new Request('http://runtime.test/v1/runtime/groups/g/status', {
+      method: 'PUT', body: JSON.stringify({ status: 'active', expectedVersion: -1 }),
+    }));
+    expect(badVersion.status).toBe(400);
+
+    const wrongMethod = await handler(new Request('http://runtime.test/v1/runtime/groups/g/status', {
+      method: 'GET',
+    }));
+    expect(wrongMethod.status).toBe(405);
+
+    expect(api.calls).toHaveLength(0);
+  });
+
+  it('Http 客户端发送群组状态与期望版本', async () => {
+    const requests: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const client = new HttpGroupRuntimeApi({
+      baseUrl: 'https://runtime.test',
+      fetch: async (input, init) => {
+        requests.push({ input, init });
+        return new Response(JSON.stringify({ groupId: 'g', name: '群', status: 'archived', version: 4, memberIds: [] }), {
+          status: 200, headers: { 'Content-Type': 'application/json' },
+        });
+      },
+    });
+    await client.setGroupStatus({ groupId: 'g', status: 'archived', expectedVersion: 3 });
+    expect(requests[0]?.input).toBe('https://runtime.test/v1/runtime/groups/g/status');
+    expect(requests[0]?.init?.method).toBe('PUT');
+    expect(JSON.parse(String(requests[0]!.init?.body))).toEqual({ status: 'archived', expectedVersion: 3 });
   });
 
   it('Http 客户端发送成员变更的期望版本', async () => {

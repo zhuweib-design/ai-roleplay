@@ -238,7 +238,68 @@ integration('PostgreSQL 群聊公共回合与多角色原子事务', () => {
         http.createGroup({ groupId, name: '原子群聊', memberIds: [a, b] }),
         http.commitTurn({ groupId, turnId: 'concurrent-create', speakerId: b, userMessage: '并发创建重试', assistantMessage: '不会覆盖成员' }),
       ]);
-      await pool.query("UPDATE group_chats SET status = 'archived' WHERE id = $1", [groupId]);
+      // 服务端可靠投递队列：先入队持久化，再原子提交；提交成功自动标记 committed
+      const outboxTurn = { groupId, turnId: 'outbox-1', speakerId: a,
+        userMessage: '队列问题', assistantMessage: '队列回答' };
+      const enqueued = await http.enqueueTurn(outboxTurn);
+      expect(enqueued.status).toBe('pending');
+      expect(enqueued.attempts).toBe(0);
+      // 重复入队幂等：不新增条目、不重置 attempts
+      const enqueuedAgain = await http.enqueueTurn(outboxTurn);
+      expect(enqueuedAgain.turnId).toBe('outbox-1');
+      expect(await http.listPendingTurns(groupId)).toHaveLength(1);
+      // 原子提交成功后队列自动出清
+      const committed = await http.commitTurn(outboxTurn);
+      expect(committed.turnId).toBe('outbox-1');
+      expect(await http.listPendingTurns(groupId)).toHaveLength(0);
+      const outboxRow = await pool.query(
+        `SELECT status, attempts, committed_turn_id FROM group_turn_outbox
+          WHERE group_id = $1 AND logical_turn_id = 'outbox-1'`, [groupId]);
+      expect(outboxRow.rows[0]).toMatchObject({ status: 'committed' });
+      expect(outboxRow.rows[0]?.committed_turn_id).toBe(committed.id);
+
+      // 故障场景：入队后提交失败，条目保留 pending 供重放
+      await pool.query(`CREATE FUNCTION reject_outbox_link() RETURNS trigger AS $$
+        BEGIN IF NEW.character_id = '${b}'::uuid THEN RAISE EXCEPTION 'forced outbox failure';
+        END IF; RETURN NEW; END; $$ LANGUAGE plpgsql`);
+      await pool.query(`CREATE TRIGGER reject_outbox_link BEFORE INSERT ON group_event_links
+        FOR EACH ROW EXECUTE FUNCTION reject_outbox_link()`);
+      const retryTurn = { groupId, turnId: 'outbox-retry', speakerId: a,
+        userMessage: '待重试问题', assistantMessage: '待重试回答' };
+      await http.enqueueTurn(retryTurn);
+      // HTTP 层按设计对未知错误脱敏，只暴露通用错误信息
+      await expect(http.commitTurn(retryTurn)).rejects.toThrow('群聊 Runtime 内部错误');
+      const pendingAfterFailure = await http.listPendingTurns(groupId);
+      expect(pendingAfterFailure.map((item) => item.turnId)).toContain('outbox-retry');
+      await pool.query('DROP TRIGGER reject_outbox_link ON group_event_links');
+      // 服务端重放：队列条目提交成功并出清
+      const replayed = await http.retryPendingTurns(groupId);
+      expect(replayed).toContainEqual({ turnId: 'outbox-retry', status: 'committed' });
+      expect(await http.listPendingTurns(groupId)).toHaveLength(0);
+
+      // 归档 / 恢复走显式状态接口：状态变化推进定义版本，旧版本写入必须冲突
+      const beforeArchive = await http.getGroupState(groupId);
+      const archived = await http.setGroupStatus({
+        groupId, status: 'archived', expectedVersion: beforeArchive.version,
+      });
+      expect(archived.status).toBe('archived');
+      expect(archived.version).toBe(beforeArchive.version + 1);
+      await expect(http.setGroupStatus({ groupId, status: 'active', expectedVersion: beforeArchive.version }))
+        .rejects.toMatchObject({ status: 409, code: 'GROUP_VERSION_CONFLICT' });
+      // 归档群组拒绝公共回合与成员变更
+      await expect(http.commitTurn({ groupId, turnId: 'archived-turn', speakerId: a,
+        userMessage: '归档后', assistantMessage: '不允许' })).rejects.toMatchObject({ status: 404 });
+      await expect(http.addMember(groupId, c)).rejects.toMatchObject({ status: 404 });
+      const restored = await http.setGroupStatus({
+        groupId, status: 'active', expectedVersion: archived.version,
+      });
+      expect(restored.status).toBe('active');
+      expect(restored.version).toBe(archived.version + 1);
+      await expect(http.createGroup({ groupId, name: '原子群聊', memberIds: [a, b] }))
+        .resolves.toBeUndefined();
+      // 归档后 createGroup 重试必须拒绝
+      const beforeReArchive = await http.getGroupState(groupId);
+      await http.setGroupStatus({ groupId, status: 'archived', expectedVersion: beforeReArchive.version });
       await expect(http.createGroup({ groupId, name: '原子群聊', memberIds: [a, b] }))
         .rejects.toMatchObject({ status: 404, code: 'GROUP_NOT_FOUND' });
     } finally {

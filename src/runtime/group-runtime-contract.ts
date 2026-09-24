@@ -14,6 +14,13 @@ export interface RuntimeGroupState {
   memberIds: string[];
 }
 
+export interface SetRuntimeGroupStatusInput {
+  groupId: string;
+  status: 'active' | 'archived';
+  /** 可选乐观锁版本；不一致时返回 409，避免覆盖其他客户端的定义变更。 */
+  expectedVersion?: number;
+}
+
 export interface CommitRuntimeGroupTurnInput {
   groupId: string;
   /** 同群内稳定的逻辑回合键；重试必须复用。 */
@@ -22,6 +29,26 @@ export interface CommitRuntimeGroupTurnInput {
   userMessage: string;
   assistantMessage: string;
   occurredAt?: string;
+}
+
+/**
+ * 服务端可靠投递队列条目。
+ * 客户端先入队（单条 INSERT 即可持久化），再尝试原子提交；
+ * 提交失败时保留 pending，供显式重试。
+ */
+export interface RuntimeGroupOutboxEntry {
+  groupId: string;
+  turnId: string;
+  speakerId: string;
+  userMessage: string;
+  assistantMessage: string;
+  occurredAt: string;
+  status: 'pending' | 'committed' | 'failed';
+  attempts: number;
+  lastError?: string;
+  committedTurnId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface RuntimeGroupTurn {

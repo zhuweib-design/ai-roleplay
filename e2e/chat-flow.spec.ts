@@ -59,6 +59,12 @@ test('配置 API → 新建角色 → 对话流式回复', async ({ page }) => {
 
   // 3. 进入对话页，选择角色
   await page.goto('/chat');
+  // 移动视口（≤640px）下角色列表收在抽屉中，需先展开；桌面端不渲染该按钮。
+  // 用视口宽度判断而非 DOM 探测，避免组件挂载前的时序竞态。
+  const isNarrow = (page.viewportSize()?.width ?? 1280) <= 640;
+  if (isNarrow) {
+    await page.getByRole('button', { name: '打开角色列表' }).click();
+  }
   await page.getByRole('button', { name: `选择角色 ${name}` }).click();
 
   // 4. 发送消息

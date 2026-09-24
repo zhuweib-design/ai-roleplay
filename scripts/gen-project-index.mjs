@@ -259,6 +259,7 @@ const CURATED = {
   'src/views/ProfileView.vue': '页面：用户档案',
 
   'src/components/chat/ChatMain.vue': '组件：对话主区域',
+  'src/components/chat/RuntimeStatePanel.vue': '组件：Runtime 最小状态查看与回放自检（单聊与群聊共用）',
   'src/components/chat/MessageBubble.vue': '组件：消息气泡（Markdown 渲染）',
   'src/components/chat/NewConversationModal.vue': '组件：新建对话弹窗',
   'src/components/common/Modal.vue': '通用组件：模态框',

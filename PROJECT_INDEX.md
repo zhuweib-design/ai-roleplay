@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-24 15:52（本地时区）
+- **生成时间**：2026-09-24 22:07（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v0.2.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：483 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：29 个
+- **收录文件**：484 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：29 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -43,10 +43,10 @@ ai-roleplay/
       - `dl_builtin_tik_tok/`  — 12 个文件
   - `fonts/`  — 106 个文件
 - `scripts/`  — 19 个文件
-- `src/`  — 188 个文件
+- `src/`  — 189 个文件
   - `api/`  — 11 个文件
-  - `components/`  — 25 个文件
-    - `chat/`  — 5 个文件
+  - `components/`  — 26 个文件
+    - `chat/`  — 6 个文件
     - `common/`  — 10 个文件
     - `layout/`  — 3 个文件
     - `mobile/`  — 1 个文件
@@ -94,7 +94,7 @@ ai-roleplay/
 
 ## 二、文件索引
 
-### 2.1 程序（201）
+### 2.1 程序（202）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -126,6 +126,7 @@ ai-roleplay/
 | `src/components/chat/ChatMain.vue` | vue | 程序 | 组件：对话主区域 | 已跟踪 |  |
 | `src/components/chat/MessageBubble.vue` | vue | 程序 | 组件：消息气泡（Markdown 渲染） | 已跟踪 |  |
 | `src/components/chat/NewConversationModal.vue` | vue | 程序 | 组件：新建对话弹窗 | 已跟踪 |  |
+| `src/components/chat/RuntimeStatePanel.vue` | vue | 程序 | 组件：Runtime 最小状态查看与回放自检（单聊与群聊共用） | 已跟踪 |  |
 | `src/components/chat/StatusHud.vue` | vue | 程序 | 组件：StatusHud（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/chat/ThinkingBlock.vue` | vue | 程序 | 组件：ThinkingBlock（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/common/ApiErrorModal.vue` | vue | 程序 | 通用组件：API 错误提示弹窗 | 已跟踪 |  |
@@ -138,7 +139,7 @@ ai-roleplay/
 | `src/components/common/SegmentedControl.vue` | vue | 程序 | 组件：SegmentedControl（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/common/Toast.vue` | vue | 程序 | 通用组件：轻提示 | 已跟踪 |  |
 | `src/components/common/icons.ts` | ts | 程序 | 图标路径常量表 | 已跟踪 |  |
-| `src/components/layout/CharacterList.vue` | vue | 程序 | 布局：角色列表侧栏 | 已跟踪 |  |
+| `src/components/layout/CharacterList.vue` | vue | 程序 | 布局：角色列表侧栏 | 已修改 |  |
 | `src/components/layout/ContextPanel.vue` | vue | 程序 | 布局：上下文信息面板 | 已跟踪 |  |
 | `src/components/layout/NavRail.vue` | vue | 程序 | 布局：桌面端侧边导航 | 已跟踪 |  |
 | `src/components/mobile/BottomNav.vue` | vue | 程序 | 布局：移动端底部导航 | 已跟踪 |  |
@@ -297,7 +298,7 @@ ai-roleplay/
 | `src/views/RandomEventsView.vue` | vue | 程序 | 页面：随机事件 | 已跟踪 |  |
 | `src/views/SettingsView.vue` | vue | 程序 | 页面：设置中心（含数据管理与安全） | 已跟踪 |  |
 | `src/views/StoryEngineView.vue` | vue | 程序 | 页面：剧情引擎 | 已跟踪 |  |
-| `src/views/WorldBookView.vue` | vue | 程序 | 页面：世界书管理 | 已跟踪 |  |
+| `src/views/WorldBookView.vue` | vue | 程序 | 页面：世界书管理 | 已修改 |  |
 | `src/vite-env.d.ts` | ts | 程序 | Vite 环境变量与静态资源类型声明 | 已跟踪 |  |
 
 ### 2.2 测试（144）
@@ -307,7 +308,7 @@ ai-roleplay/
 | `e2e/backup-restore.spec.ts` | ts | 测试 | E2E 测试：backup-restore 场景 | 已跟踪 |  |
 | `e2e/character-batch-import.spec.ts` | ts | 测试 | E2E：批量角色导入、Runtime 同步失败重试与 50 个上限拒绝 | 已跟踪 |  |
 | `e2e/character-crud.spec.ts` | ts | 测试 | E2E 测试：character-crud 场景 | 已跟踪 |  |
-| `e2e/chat-flow.spec.ts` | ts | 测试 | E2E 测试：chat-flow 场景 | 已跟踪 |  |
+| `e2e/chat-flow.spec.ts` | ts | 测试 | E2E 测试：chat-flow 场景 | 已修改 |  |
 | `e2e/contrast-axe.spec.ts` | ts | 测试 | E2E 测试：contrast-axe 场景 | 已跟踪 |  |
 | `e2e/custom-theme-contrast.spec.ts` | ts | 测试 | E2E 测试：custom-theme-contrast 场景 | 已跟踪 |  |
 | `e2e/group-chat-flow.spec.ts` | ts | 测试 | E2E：双角色群聊真实模型链路、独立 Context/Event 与指定发言 | 已跟踪 |  |
@@ -459,10 +460,10 @@ ai-roleplay/
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
-| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
-| `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已跟踪 |  |
-| `README.md` | md | 开发文档 | 项目主说明（中文） | 已跟踪 |  |
+| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已修改 |  |
+| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已修改 |  |
+| `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已修改 |  |
+| `README.md` | md | 开发文档 | 项目主说明（中文） | 已修改 |  |
 | `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已跟踪 |  |
 | `docs/dev/2026-09-20-LLM控制能力交付总览.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已跟踪 |  |
@@ -521,7 +522,7 @@ ai-roleplay/
 | `docs/design/software-design-document.md` | md | 设计文档 | 设计文档：软件设计说明书 | 已跟踪 |  |
 | `docs/design/summarizer-接线设计.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/threat-model.md` | md | 设计文档 | 设计文档：威胁模型（含提示词注入专项） | 已跟踪 |  |
-| `docs/design/virtual-character-os-多角色群聊实施计划.md` | md | 设计文档 | 设计文档：多角色群聊与 PostgreSQL 群组事务实施计划及验证记录 | 已跟踪 |  |
+| `docs/design/virtual-character-os-多角色群聊实施计划.md` | md | 设计文档 | 设计文档：多角色群聊与 PostgreSQL 群组事务实施计划及验证记录 | 已修改 |  |
 | `docs/design/virtual-character-os-实现基线.md` | md | 设计文档 | 设计文档：Virtual Character OS 实现基线（Schema → Runtime → Emotion → Compiler → API） | 已跟踪 |  |
 
 ### 2.7 AI记忆（14）
@@ -560,7 +561,7 @@ ai-roleplay/
 | `eslint.config.js` | js | 配置 | ESLint 扁平配置（Vue + TS） | 已跟踪 |  |
 | `package-lock.json` | json | 配置 | npm 依赖锁定文件（自动生成） | 已跟踪 |  |
 | `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.2.0） | 已跟踪 |  |
-| `playwright.config.ts` | ts | 配置 | Playwright E2E 配置：testDir=e2e、本地 msedge / CI chromium | 已跟踪 |  |
+| `playwright.config.ts` | ts | 配置 | Playwright E2E 配置：testDir=e2e、本地 msedge / CI chromium | 已修改 |  |
 | `reasonix.toml` | toml | 配置 | Reasonix 工具工作区配置 | 已跟踪 |  |
 | `src-tauri/.gitignore` | gitignore | 配置 | 桌面端专属忽略规则 | 已跟踪 |  |
 | `src-tauri/Cargo.toml` | toml | 配置 | Rust 依赖与 crate 元信息 | 已跟踪 |  |
@@ -636,7 +637,7 @@ ai-roleplay/
 
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
-| 程序 | 201 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
+| 程序 | 202 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 144 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
 | 开发文档 | 23 | docs/dev/ 实现计划、Runbook、审计记录 |
@@ -647,7 +648,7 @@ ai-roleplay/
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 19 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 32 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **483** | 与「收录文件」数一致 |
+| **合计** | **484** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

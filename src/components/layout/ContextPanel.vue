@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import SegmentedControl from '@/components/common/SegmentedControl.vue';
+import RuntimeStatePanel from '@/components/chat/RuntimeStatePanel.vue';
 import {
   resolveReasoningCapability,
   supportsSamplingParam,
@@ -571,6 +572,14 @@ class="token-bar" role="progressbar"
           />
           <span class="ctx-range-value" aria-hidden="true">{{ char.authorDepth }}</span>
         </label>
+      </section>
+
+      <!-- Virtual Character OS：Runtime 最小状态查看与回放自检 -->
+      <section class="ctx-section" aria-labelledby="ctx-runtime-title">
+        <header class="ctx-section-header">
+          <span id="ctx-runtime-title" class="ctx-section-title">{{ t('runtime.title') }}</span>
+        </header>
+        <RuntimeStatePanel :character="char" />
       </section>
 
       <!-- 生成参数 -->

@@ -82,6 +82,16 @@ function confirmDelete(chat: Chat) {
   void chatStore.deleteSession(current.value ?? null, chat.id);
 }
 
+/**
+ * 选中角色。
+ * 移动端角色列表是覆盖式抽屉，选中后必须关闭，否则会遮挡对话输入区；
+ * 桌面端抽屉常驻（不依赖该开关），关闭为无操作。
+ */
+function onSelectCharacter(id: string) {
+  characterStore.selectCharacter(id);
+  characterStore.closeAllDrawers();
+}
+
 // I-8：触屏横向滑动关闭抽屉（左抽屉：向右滑 >60px 关闭）
 let touchStartX = 0;
 let touchStartY = 0;
@@ -153,7 +163,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
           :class="{ active: c.id === characterStore.currentCharacterId }"
           :aria-current="c.id === characterStore.currentCharacterId ? 'true' : undefined"
           :aria-label="c.id === characterStore.currentCharacterId ? t('charList.selectCharCurrent', { name: c.name }) : t('charList.selectChar', { name: c.name })"
-          @click="characterStore.selectCharacter(c.id)"
+          @click="onSelectCharacter(c.id)"
         >
           <Avatar :character="c" :size="32" />
           <span class="char-info">
@@ -267,7 +277,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
           :class="{ active: c.id === characterStore.currentCharacterId }"
           :aria-current="c.id === characterStore.currentCharacterId ? 'true' : undefined"
           :aria-label="c.id === characterStore.currentCharacterId ? t('charList.selectCharCurrent', { name: c.name }) : t('charList.selectChar', { name: c.name })"
-          @click="characterStore.selectCharacter(c.id)"
+          @click="onSelectCharacter(c.id)"
         >
           <Avatar :character="c" :size="32" />
           <span class="char-info">

@@ -228,3 +228,132 @@
 ### 当前边界
 
 - 覆盖率门禁现依赖 CI service 容器；本地不提供 `RUNTIME_PG_TEST_URL` 时会因跳过集成测试而低于阈值，属预期行为，需本地起库或只跑 `npm run test`。
+
+## 2026-09-24 0.3.0 阶段一：CI 门禁收敛与群聊中止
+
+### 本轮实现
+
+- 新增真实 PostgreSQL 集成门禁：`quality-gates` 增加 `postgres:16-alpine` service，覆盖率步骤注入 `RUNTIME_PG_TEST_URL` 与 `RUNTIME_PG_APPLY_SCHEMA`，使单角色 RuntimeStore 与群聊多角色原子事务集成测试在 CI 中真实执行。
+- 群聊生成支持中止：生成中发送按钮切换为停止按钮，调用 `ChatManager.stop()`；中止后保留已收到的部分内容，但不提交公共回合、不投递旁听事件，避免半成品写入成员 Event 与 Snapshot。
+- 中止与生成错误分离：中止改为信息提示，不再误报为生成失败。
+
+### 验证记录
+
+- 覆盖率门禁接入数据库后：`All files 79.75 / 75.1 / 82.16 / 81.46`，高于 78/73/78/78 阈值；全量 3430 项通过。
+- 新增浏览器 E2E：请求挂起时停止入口可见、可中止并回到可发送状态，且中止后成员 Runtime 快照无本轮事件。
+- 群聊 E2E 2 项通过；`vue-tsc --noEmit`、ESLint、CSS 约定守卫通过。
+
+### 当前边界
+
+- 覆盖率门禁依赖 CI service 容器；本地不提供 `RUNTIME_PG_TEST_URL` 时集成测试会被跳过，覆盖率低于阈值属预期，需本地起库或只跑 `npm run test`。
+
+## 2026-09-24 0.3.0 阶段二：群聊归档状态远端同步
+
+### 本轮实现
+
+- 群聊 Runtime 契约新增 `SetRuntimeGroupStatusInput`，`PostgresGroupRuntime.setGroupStatus` 支持归档与恢复：锁定群组行、校验 `expectedVersion`、状态变化时推进定义版本；归档后公共回合与成员变更一律拒绝。
+- 群聊 HTTP 新增 `PUT /v1/runtime/groups/:id/status`，支持 `status` 与可选 `expectedVersion`，非法状态、负版本与非 PUT 方法在进入领域层前拒绝；HTTP 客户端同步暴露 `setGroupStatus`。
+- Chat Store 新增 `syncRemoteGroupStatus`：远端模式先读取服务端版本并以 CAS 写入状态，成功后才修改本地生命周期，失败时不改变本地状态并上报 `runtimeStatus`。
+- 群聊页归档与恢复改走远端优先流程，远端失败提示「群聊归档状态同步失败，本地状态未修改」；恢复仍复用 store 的成员卡存在性校验。
+
+### 验证记录
+
+- 群聊 HTTP 测试 20 项通过，新增覆盖 status 路由、参数校验、错误方法与客户端请求体断言。
+- Chat Store 与 HTTP 专项 32 项通过，新增覆盖归档 CAS 版本透传与 409 冲突时本地状态不变。
+- 真实 PostgreSQL 集成测试通过：归档推进版本、旧版本恢复冲突、归档后公共回合与成员变更被拒、恢复后可正常创建重试、再次归档后创建重试返回 404。
+- 全量 Vitest 3430 项通过、3 项跳过；`vue-tsc --noEmit`、ESLint、`i18n:check:strict` 通过。
+
+### 当前边界
+
+- 归档状态由显式接口维护，本地归档与远端归档在远端不可用时不会自动重试，需要用户重新操作。
+- CAS 冲突仍只报告错误，冲突恢复界面待后续阶段实现。
+
+## 2026-09-24 0.3.0 阶段三：群组定义 CAS 冲突恢复界面
+
+### 本轮实现
+
+- Chat Store 新增 `groupRuntimeConflict`：成员增删或归档状态写入遇到 `GROUP_VERSION_CONFLICT` / `GROUP_CONFLICT` 时，记录冲突事实与远端最新成员、版本与状态，不自动覆盖。
+- 群聊页新增冲突提示条（`role="alert"`），提供「以服务端为准」与「稍后处理」两个显式动作；仅提示当前群组的冲突，不干扰其他群聊。
+- 新增 `adoptRemoteGroupDefinition`：把远端成员 ID 映射回本地角色卡，经 `groupStore.replaceMembers` 对齐成员与生命周期，只追加一条汇总系统消息，不改写历史消息；远端成员存在本地缺失角色卡时拒绝自动同步并提示。
+- `group-chat` store 新增 `replaceMembers`：校验成员数下限、上限与重复，支持在归档状态下对齐，避免冲突无法收敛。
+- Chat Store 暴露 `runtimeCharacterIdFor`，避免界面依赖内部 ID 缓存。
+
+### 验证记录
+
+- 群聊 store 测试 37 项通过，新增 `replaceMembers` 成员对齐与非法成员数拒绝。
+- 群聊 Store、HTTP 与本地群聊专项 68 项通过；全量 Vitest 3431 项通过、3 项跳过。
+- `vue-tsc --noEmit`、ESLint、`i18n:check:strict`、CSS 约定守卫（5/5）通过。
+
+### 当前边界
+
+- 「以服务端为准」只对齐成员与生命周期，不处理本地消息历史与服务端回合历史的差异；历史同步仍待后续阶段。
+- 冲突提示依赖当前群组视图，跨群组的冲突需切换到对应群聊处理。
+
+## 2026-09-24 0.3.0 阶段四：服务端可靠投递队列（outbox）
+
+### 本轮实现
+
+- 新增 `group_turn_outbox` 表：租户隔离、`(group_id, logical_turn_id)` 唯一、状态机 `pending / committed / failed`、`attempts` 与 `last_error`、`committed_turn_id` 关联公共回合；权威 Schema 与迁移文件经 `runtime:db:schema:sync` 同步。
+- `PostgresGroupRuntime` 新增 `enqueueTurn`、`listPendingTurns`、`retryPendingTurns`，并保留 `markGroupTurnCommitted` / `markGroupTurnFailed` 内部能力：入队为单条 INSERT 且幂等（重复入队刷新内容但不重置 `attempts`）；`commitTurn` 成功时在同一事务内把对应条目标记为 `committed`。
+- 群聊 HTTP 新增 `POST /v1/runtime/groups/:id/outbox`、`GET /v1/runtime/groups/:id/outbox`、`POST /v1/runtime/groups/:id/outbox/retry`，客户端同步暴露三个方法。
+- Chat Store 的公共回合提交改为「先入队持久化，再原子提交」：标签页在提交前崩溃时，服务端仍保留 pending 记录；新增 `retryRemoteGroupOutbox` 触发服务端重放，并清理本地已提交条目。
+
+### 验证记录
+
+- 群聊 HTTP 测试 22 项通过，新增覆盖 outbox 入队/查询/重放路由与客户端请求方法。
+- 真实 PostgreSQL 集成测试通过：入队幂等、提交成功后自动出清并关联 `committed_turn_id`、故障导致提交失败后条目保留 pending、故障解除后服务端重放成功并出清。
+- 全量 Vitest 3433 项通过、3 项跳过；`vue-tsc --noEmit`、ESLint、`i18n:check:strict`、Schema 漂移检查通过。
+
+### 当前边界
+
+- 服务端 outbox 提供持久化与显式重放，但尚未接入后台自动重试调度；目前由客户端或运维显式触发。
+- 本地 StorageAdapter 队列仍保留作为离线兜底，两套队列通过稳定逻辑回合键对齐，不做双向同步。
+
+## 2026-09-24 0.3.0 阶段五：Runtime 最小状态查看与回放自检
+
+### 本轮实现
+
+- Chat Store 新增 `inspectRuntimeState(character)`：只读读取 Runtime 快照并返回最小摘要（版本、更新时间、事件/记忆/Episode/StateChange 计数、强度前 5 的情绪、Mood 三维、最近 5 条事件）；角色未初始化时返回 `enabled=false` 而非报错。
+- Chat Store 新增 `verifyRuntimeReplay(character)`：以空事件基准重放历史事件流，比较重放版本与已存版本，报告确定性一致性（不写库、不推进状态）。
+- 新增共享组件 `src/components/chat/RuntimeStatePanel.vue`：折叠式状态面板，展示上述摘要并提供「刷新」与「回放自检」动作，回放结果区分一致/不一致。
+- 单聊接入 `ContextPanel`，群聊在成员区接入带成员选择器的同款面板，覆盖「单聊和群聊的 Runtime 回放与最小状态查看」。
+
+### 验证记录
+
+- Chat Store Runtime 集成测试 14 项通过，新增覆盖快照摘要读取、未初始化角色降级、两条事件重放后版本一致（`replayedVersion === storedVersion === 2`）。
+- `vue-tsc --noEmit`、ESLint、`i18n:check:strict`（160 个文件）、CSS 约定守卫（5/5）通过。
+
+### 当前边界
+
+- 状态面板只读展示，尚不支持在界面上编辑情绪、关系或记忆；写入仍必须经过 Reducer 与受控事件入口。
+- 回放自检以空事件基准重放当前事件流，用于校验 Reducer 确定性；不替代离线审计所需的初始快照归档。
+
+## 2026-09-24 0.3.0 阶段六：全流程全功能全 UI 验证与移动端缺陷修复
+
+### 本轮实现
+
+- 新增 `mobile-functional` Playwright project：把核心用户旅程（对话、群聊、批量导入、角色 CRUD、备份恢复、世界书）在 Pixel 5 视口下重跑，补齐此前仅覆盖布局的「手机端全功能」缺口。
+- `e2e/chat-flow.spec.ts` 按视口宽度适配：移动端先展开角色抽屉再选择角色，桌面端路径不变。
+
+### 本轮修复（由移动视口回归捕获的真实缺陷）
+
+1. **世界书条目树在移动端宽度坍缩**：`.entries-list-panel` 仅在移动断点定义为 `display:flex`，默认 `flex-direction:row` 使 `flex:1` 的 `.entries-list` 被头部挤压为 0 宽，条目树实际不可见、不可点选。修复为显式 `flex-direction:column` + `min-height:0`。修复前实测 `entry-tree-item` 宽度 0，修复后 393。
+2. **移动端选中角色后抽屉不关闭**：`selectCharacter` 只切换角色不关闭抽屉，覆盖层拦截对话发送按钮。修复为角色列表选中后调用 `closeAllDrawers()`（桌面端抽屉常驻，关闭为无操作）。
+
+### 验证记录
+
+- 全量 Playwright E2E：**31 项通过**，覆盖桌面 19 项、手机功能 9 项、手机布局 3 项；使用本地 Edge（桌面）与 Pixel 5 视口（393×851 / DPR 2.75 / isMobile / hasTouch）。
+- 全量 Vitest：3435 项通过、3 项跳过。
+- 生产构建通过（仍有既有大分包告警）。
+- `vue-tsc --noEmit`、ESLint、`i18n:check:strict`（160 个文件）、CSS 约定守卫（5/5）、Schema 漂移检查通过。
+
+### 当前边界
+
+- 本轮验证为本地浏览器（Edge）与移动视口仿真，不是真实移动设备或独立虚拟机镜像；移动端真机验收仍需在发布前补做。
+- 桌面端与移动端均在 Chromium 内核（Edge）下验证，未覆盖 WebKit / Gecko。
+
+### 补充修复（CI 对比度门禁）
+
+- 冲突提示条与群聊停止按钮初版使用了低对比度配色，CI `Contrast audit` 报出 4 处新增回归（`.conflict-banner` 浅色 4.26:1；`.send-btn.stop-btn` dark 2.83 / midnight 1.90 / oled 1.90）。
+- 改为项目既有语义 token：提示条使用 `--warning-bg` + `--warning-text` + `--warning-border`（`--warning-text` 是 tokens.css 专为「警示色作文字」派生的可读变体）；停止按钮改用 danger 三件套 `--danger-bg` / `--danger-fg` / `--danger-border`，不用实心 `--danger`（深色主题下为浅红，白字不足）。
+- 复验：`a11y:contrast` 回到基线持平（131 = 131）并判定通过；`a11y:contrast:self-test` 正负样本可区分；群聊与对比度 E2E 7 项通过。

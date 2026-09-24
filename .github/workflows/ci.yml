@@ -99,6 +99,8 @@ jobs:
       # 覆盖率门禁：vitest v8 provider，阈值定义在 vitest.config.ts
       # （statements 78 / branches 73 / functions 78 / lines 78），未达标则非零退出
       # 注：Linux 路径大小写一致, 无 Windows 本地盘符重复误报, 门禁正常生效
+      # 注：本步骤同时承载真实 PostgreSQL 集成测试（见上方 service 与 env），
+      #     不再单设重复 job，避免同一批集成用例执行两次。
       - name: Test + coverage gate (78/73/78/78)
         env:
           RUNTIME_PG_TEST_URL: postgresql://postgres:runtime_test@127.0.0.1:5432/runtime_test
@@ -123,7 +125,7 @@ jobs:
           path: coverage/
           retention-days: 7
 
-  # E2E 门禁（已纳入默认门禁）: Playwright 真实浏览器跑 e2e/ 下 6 个 spec
+  # E2E 门禁（已纳入默认门禁）: Playwright 真实浏览器跑 e2e/ 下全部 spec（含批量角色导入与群聊流程）
   # - 本地 Windows 用系统 Edge(channel: msedge, 免下载); CI(ubuntu) 自动切自带 chromium + --with-deps
   # - playwright.config.ts 在 CI 下切 chromium 分支, 避免 Linux 无系统 Edge 而报错
   e2e:

@@ -443,6 +443,33 @@ CREATE TABLE IF NOT EXISTS group_event_links (
     FOREIGN KEY (event_id, character_id) REFERENCES events(id, character_id) ON DELETE RESTRICT
 );
 
+-- 群聊公共回合的服务端可靠投递队列。
+-- 客户端先投递到此表（单条 INSERT，快速且可持久化），再尝试原子提交；
+-- 提交失败时保留 pending 记录，可由客户端或运维显式重试，
+-- 避免浏览器标签页在本地快照写入前崩溃导致回合丢失。
+CREATE TABLE IF NOT EXISTS group_turn_outbox (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    group_id UUID NOT NULL,
+    tenant_id UUID NOT NULL,
+    logical_turn_id TEXT NOT NULL CHECK (length(trim(logical_turn_id)) BETWEEN 1 AND 200),
+    speaker_id UUID NOT NULL,
+    user_message TEXT NOT NULL,
+    assistant_message TEXT NOT NULL,
+    occurred_at TIMESTAMPTZ NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'committed', 'failed')),
+    attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+    last_error TEXT NULL,
+    committed_turn_id UUID NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (group_id, logical_turn_id),
+    FOREIGN KEY (group_id, tenant_id) REFERENCES group_chats(id, tenant_id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id, speaker_id) REFERENCES group_chat_members(group_id, character_id) ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_group_outbox_pending
+    ON group_turn_outbox (tenant_id, group_id, status, created_at);
+
 CREATE TABLE IF NOT EXISTS state_changes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     character_id UUID NOT NULL REFERENCES characters(id) ON DELETE CASCADE,

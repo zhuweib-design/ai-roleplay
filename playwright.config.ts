@@ -55,6 +55,24 @@ export default defineConfig({
         : { ...devices['Desktop Chrome'], channel: 'msedge' },
     },
     {
+      // 移动视口功能回归：把核心用户旅程的桌面用例放到 Pixel 5 视口下重跑，
+      // 补齐「手机端全功能」验证。仅纳入无视觉基线快照的功能用例；
+      // 对比度与视觉快照用例仍在桌面 project 执行，避免视口差异造成误判。
+      name: isCI ? 'mobile-functional-chromium' : 'mobile-functional-msedge',
+      testMatch: [
+        '**/chat-flow.spec.ts',
+        '**/group-chat-flow.spec.ts',
+        '**/character-batch-import.spec.ts',
+        '**/character-crud.spec.ts',
+        '**/backup-restore.spec.ts',
+        '**/worldbook-flow.spec.ts',
+      ],
+      testIgnore: '**/mobile/**',
+      use: isCI
+        ? { ...devices['Pixel 5'] }
+        : { ...devices['Pixel 5'], channel: 'msedge' },
+    },
+    {
       // 移动视口（P1-6）：Pixel 5 = 393×851 / DPR 2.75 / isMobile / hasTouch
       // 仅跑 e2e/mobile/ 下的用例 —— 桌面用例在该视口下无视觉基线快照，不重复执行
       // 补齐此前零覆盖的移动端专属行为：底部导航显隐、抽屉遮罩层级、640 边界布局

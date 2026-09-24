@@ -1,11 +1,15 @@
 import type { RuntimeContext, RuntimeContextRequest } from './types';
-import type { CreateRuntimeGroupInput, CommitRuntimeGroupTurnInput, RuntimeGroupState, RuntimeGroupTurn } from './group-runtime-contract';
+import type { CreateRuntimeGroupInput, CommitRuntimeGroupTurnInput, SetRuntimeGroupStatusInput, RuntimeGroupState, RuntimeGroupOutboxEntry, RuntimeGroupTurn } from './group-runtime-contract';
 import { GroupRuntimeError } from './group-runtime-contract';
 import { RuntimeApiError, type RuntimeFetch, type RuntimeHttpApiOptions, type RuntimeHttpHandler } from './runtime-http';
 
 export interface GroupRuntimeApi {
   createGroup(input: CreateRuntimeGroupInput): Promise<void>;
   getGroupState(groupId: string): Promise<RuntimeGroupState>;
+  setGroupStatus(input: SetRuntimeGroupStatusInput): Promise<RuntimeGroupState>;
+  enqueueTurn(input: CommitRuntimeGroupTurnInput): Promise<RuntimeGroupOutboxEntry>;
+  listPendingTurns(groupId: string): Promise<RuntimeGroupOutboxEntry[]>;
+  retryPendingTurns(groupId: string): Promise<Array<{ turnId: string; status: 'committed' | 'failed'; error?: string }>>;
   addMember(groupId: string, characterId: string, expectedVersion?: number): Promise<RuntimeGroupState>;
   removeMember(groupId: string, characterId: string, expectedVersion?: number): Promise<RuntimeGroupState>;
   listTurns(groupId: string, memberId: string): Promise<RuntimeGroupTurn[]>;
@@ -34,6 +38,13 @@ export class HttpGroupRuntimeApi implements GroupRuntimeApi {
     return this.request(`/v1/runtime/groups/${encodeURIComponent(groupId)}`, 'GET');
   }
 
+  async setGroupStatus(input: SetRuntimeGroupStatusInput): Promise<RuntimeGroupState> {
+    return this.request(`/v1/runtime/groups/${encodeURIComponent(input.groupId)}/status`, 'PUT', {
+      status: input.status,
+      ...(input.expectedVersion === undefined ? {} : { expectedVersion: input.expectedVersion }),
+    });
+  }
+
   async addMember(groupId: string, characterId: string, expectedVersion?: number): Promise<RuntimeGroupState> {
     return this.request(`/v1/runtime/groups/${encodeURIComponent(groupId)}/members`, 'POST', {
       characterId, ...(expectedVersion === undefined ? {} : { expectedVersion }),
@@ -59,6 +70,18 @@ export class HttpGroupRuntimeApi implements GroupRuntimeApi {
 
   async commitTurn(input: CommitRuntimeGroupTurnInput): Promise<RuntimeGroupTurn> {
     return this.request(`/v1/runtime/groups/${encodeURIComponent(input.groupId)}/turns`, 'POST', input);
+  }
+
+  async enqueueTurn(input: CommitRuntimeGroupTurnInput): Promise<RuntimeGroupOutboxEntry> {
+    return this.request(`/v1/runtime/groups/${encodeURIComponent(input.groupId)}/outbox`, 'POST', input);
+  }
+
+  async listPendingTurns(groupId: string): Promise<RuntimeGroupOutboxEntry[]> {
+    return this.request(`/v1/runtime/groups/${encodeURIComponent(groupId)}/outbox`, 'GET');
+  }
+
+  async retryPendingTurns(groupId: string): Promise<Array<{ turnId: string; status: 'committed' | 'failed'; error?: string }>> {
+    return this.request(`/v1/runtime/groups/${encodeURIComponent(groupId)}/outbox/retry`, 'POST', {});
   }
 
   private async request<T>(path: string, method: string, body?: unknown): Promise<T> {
@@ -130,7 +153,7 @@ export function createGroupRuntimeHttpHandler(api: GroupRuntimeApi): RuntimeHttp
       const url = new URL(request.url);
       const method = request.method.toUpperCase();
       let body: Record<string, unknown> | undefined;
-      if (method === 'POST' || method === 'DELETE') {
+      if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
         try {
           const raw = await request.text();
           body = raw.trim() ? object(JSON.parse(raw) as unknown) : {};
@@ -151,8 +174,8 @@ export function createGroupRuntimeHttpHandler(api: GroupRuntimeApi): RuntimeHttp
         });
         return respond(200, { groupId: payload.groupId });
       }
-      const match = url.pathname.match(/^\/v1\/runtime\/groups\/([^/]+)(?:\/(turns|context|members)(?:\/([^/]+))?)?$/);
-      if (!match || (match[3] && match[2] !== 'members')) {
+      const match = url.pathname.match(/^\/v1\/runtime\/groups\/([^/]+)(?:\/(turns|context|members|status|outbox)(?:\/([^/]+))?)?$/);
+      if (!match || (match[3] && match[2] !== 'members' && !(match[2] === 'outbox' && match[3] === 'retry'))) {
         return respond(404, { error: 'NOT_FOUND' });
       }
       const groupId = decodeURIComponent(match[1]!);
@@ -179,6 +202,30 @@ export function createGroupRuntimeHttpHandler(api: GroupRuntimeApi): RuntimeHttp
         const payload = body!;
         return respond(200, await api.buildMemberContext(groupId,
           string(payload.memberId, 'memberId'), contextRequest(payload.request)));
+      }
+      if (resource === 'status' && !match[3] && method === 'PUT') {
+        const payload = body!;
+        const status = payload.status;
+        if (status !== 'active' && status !== 'archived') invalid('status 必须是 active 或 archived');
+        const expectedVersion = optionalVersion(payload.expectedVersion);
+        return respond(200, await api.setGroupStatus({
+          groupId, status, ...(expectedVersion === undefined ? {} : { expectedVersion }),
+        }));
+      }
+      if (resource === 'outbox' && !match[3] && method === 'POST') {
+        const payload = body!;
+        return respond(200, await api.enqueueTurn({
+          groupId, turnId: string(payload.turnId, 'turnId'), speakerId: string(payload.speakerId, 'speakerId'),
+          userMessage: string(payload.userMessage, 'userMessage'),
+          assistantMessage: string(payload.assistantMessage, 'assistantMessage'),
+          ...(payload.occurredAt === undefined ? {} : { occurredAt: string(payload.occurredAt, 'occurredAt') }),
+        }));
+      }
+      if (resource === 'outbox' && !match[3] && method === 'GET') {
+        return respond(200, await api.listPendingTurns(groupId));
+      }
+      if (resource === 'outbox' && match[3] === 'retry' && method === 'POST') {
+        return respond(200, await api.retryPendingTurns(groupId));
       }
       if (resource === 'members' && !match[3] && method === 'POST') {
         const expectedVersion = optionalVersion(body!.expectedVersion);

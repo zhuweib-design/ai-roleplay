@@ -19,7 +19,6 @@ import { ref, computed, watch, nextTick, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useChatStore } from '@/stores/chat';
-import { ChatManager } from '@/services/chat-manager';
 import { createApiClient } from '@/api';
 import { uiCharToCard } from '@/services/type-adapters';
 import { buildGroupHistory, buildGroupSystemPrompt } from '@/services/group-chat-prompt';
@@ -32,12 +31,14 @@ import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import ThinkingBlock from '@/components/chat/ThinkingBlock.vue';
 import StatusHud from '@/components/chat/StatusHud.vue';
+import RuntimeStatePanel from '@/components/chat/RuntimeStatePanel.vue';
 import { resolveLatestStatus } from '@core/status-parser';
 import type { GroupChatMode, GroupMember } from '@/core/group-chat';
 import type { UICharacter } from '@/types';
 // F10.3 随机 NPC 生成
 import { CHARACTER_TEMPLATES, type CharacterTemplateId } from '@core/character-generator';
 import { t } from '@/i18n';
+import { ChatManager, classifyChatError } from '@/services/chat-manager';
 
 // 需求6 补充：群聊记录筛选（状态 + 关键词）
 const groupFilter = ref<'all' | 'active' | 'archived'>('all');
@@ -67,6 +68,9 @@ function goBack() {
   }
 }
 
+// 群聊 Runtime 状态查看：当前选中的成员
+const runtimeInspectMemberId = ref<string | null>(null);
+
 // ── UI 状态 ──
 const createModalOpen = ref(false);
 const deleteGroupTargetId = ref<string | null>(null);
@@ -76,6 +80,13 @@ const toastOpen = ref(false);
 const toastType = ref<'info' | 'success' | 'error'>('info');
 const toastMessage = ref('');
 const messagesEndRef = useTemplateRef<HTMLElement>('messagesEnd');
+
+// ── 群聊生成中止 ──
+// 当前进行中的 ChatManager；同一时刻只允许一个群聊生成，避免并发中止串扰。
+let activeGroupManager: ChatManager | null = null;
+// 本轮是否由用户主动中止；中止后不得提交公共回合，也不得投递旁听事件。
+let groupGenerationAborted = false;
+
 
 // ── F10.3 随机 NPC 生成状态 ──
 const npcModalOpen = ref(false);
@@ -103,6 +114,26 @@ const addMemberTargetGroupId = ref<string | null>(null);
 const currentGroup = computed(() => groupStore.currentGroup);
 const currentMessages = computed(() => groupStore.currentMessages);
 const currentMembers = computed(() => groupStore.currentMembers);
+
+// 群聊 Runtime 状态查看：可选成员与当前查看对象
+const runtimeInspectMember = computed(() => {
+  const members = currentGroup.value?.members ?? [];
+  if (members.length === 0) return null;
+  return members.find((member) => member.characterId === runtimeInspectMemberId.value) ?? members[0]!;
+});
+
+const runtimeInspectCharacter = computed(() => {
+  const member = runtimeInspectMember.value;
+  if (!member) return null;
+  return characterStore.characters.find((item) => item.id === member.characterId) ?? null;
+});
+
+// 当前群组是否存在未处理的群组定义 CAS 冲突
+const currentGroupConflict = computed(() => {
+  const conflict = chatStore.groupRuntimeConflict;
+  if (!conflict || !currentGroup.value) return null;
+  return conflict.groupId === currentGroup.value.id ? conflict : null;
+});
 
 const pendingRuntimeTurns = computed(() => {
   const groupId = currentGroup.value?.id;
@@ -354,9 +385,20 @@ async function confirmGenerateNpc() {
 
 // ── F10.4 临时群聊生命周期 ──
 
-function archiveCurrentGroup() {
-  if (!currentGroup.value) return;
-  const ok = groupStore.archiveGroup(currentGroup.value.id);
+async function archiveCurrentGroup(): Promise<void> {
+  const group = currentGroup.value;
+  if (!group) return;
+  // 远端模式先同步归档，服务端成功后才修改本地生命周期，避免本地与服务端状态分叉。
+  const synced = await chatStore.syncRemoteGroupStatus({
+    group,
+    characters: characterStore.characters,
+    status: 'archived',
+  });
+  if (!synced.synced) {
+    showToast('error', t('group.runtimeStatusSyncFailed'));
+    return;
+  }
+  const ok = groupStore.archiveGroup(group.id);
   if (ok) {
     showToast('info', t('group.archived'));
   } else if (groupStore.lastError) {
@@ -364,11 +406,21 @@ function archiveCurrentGroup() {
   }
 }
 
-function restoreCurrentGroup() {
-  if (!currentGroup.value) return;
-  // 校验所有成员的角色卡是否仍存在
+async function restoreCurrentGroup(): Promise<void> {
+  const group = currentGroup.value;
+  if (!group) return;
+  const synced = await chatStore.syncRemoteGroupStatus({
+    group,
+    characters: characterStore.characters,
+    status: 'active',
+  });
+  if (!synced.synced) {
+    showToast('error', t('group.runtimeStatusSyncFailed'));
+    return;
+  }
+  // 成员卡缺失校验仍由 store 负责，保持既有错误文案与行为不变。
   const ok = groupStore.restoreGroup(
-    currentGroup.value.id,
+    group.id,
     (charId) => characterStore.characters.some((c) => c.id === charId)
   );
   if (ok) {
@@ -376,6 +428,58 @@ function restoreCurrentGroup() {
   } else if (groupStore.lastError) {
     showToast('error', groupStore.lastError);
   }
+}
+
+/**
+ * 以服务端为准：把远端成员定义与状态应用回本地群聊，清除冲突。
+ * 只对齐成员与生命周期，不改写本地消息历史。
+ */
+async function adoptRemoteGroupDefinition(): Promise<void> {
+  const group = currentGroup.value;
+  const conflict = currentGroupConflict.value;
+  if (!group || !conflict) return;
+
+  if (conflict.remoteMemberIds) {
+    // 远端成员 ID 是 Runtime UUID，需映射回本地角色卡
+    const runtimeToLocal = new Map(
+      characterStore.characters.map((character) => [
+        chatStore.runtimeCharacterIdFor(character),
+        character.id,
+      ]),
+    );
+    const remoteLocalIds = conflict.remoteMemberIds
+      .map((runtimeId) => runtimeToLocal.get(runtimeId))
+      .filter((id): id is string => Boolean(id));
+
+    if (remoteLocalIds.length !== conflict.remoteMemberIds.length) {
+      // 存在本地缺失的角色卡，不能静默丢弃成员
+      showToast('error', t('group.runtimeConflictMissingCards'));
+      return;
+    }
+
+    const kept = group.members.filter((member) => remoteLocalIds.includes(member.characterId));
+    const added = remoteLocalIds
+      .filter((localId) => !kept.some((member) => member.characterId === localId))
+      .map((localId) => characterStore.characters.find((character) => character.id === localId))
+      .filter((character): character is UICharacter => Boolean(character))
+      .map((character) => characterToCard(character));
+    const removedIds = group.members
+      .filter((member) => !remoteLocalIds.includes(member.characterId))
+      .map((member) => member.characterId);
+
+    if (!groupStore.replaceMembers(group.id, kept, added, removedIds)) {
+      showToast('error', groupStore.lastError ?? t('group.runtimeConflictApplyFailed'));
+      return;
+    }
+  }
+
+  if (conflict.remoteStatus && conflict.remoteStatus !== group.lifecycleStatus) {
+    if (conflict.remoteStatus === 'archived') groupStore.archiveGroup(group.id);
+    else groupStore.restoreGroup(group.id);
+  }
+
+  chatStore.clearGroupRuntimeConflict();
+  showToast('success', t('group.runtimeConflictAdopted'));
 }
 
 async function retryPendingRuntimeTurns(): Promise<void> {
@@ -396,6 +500,16 @@ async function retryPendingRuntimeTurns(): Promise<void> {
 }
 
 // ── 消息发送 ──
+/**
+ * 停止当前群聊生成。
+ * 保留已生成的部分内容，但本轮不提交公共回合，也不投递旁听事件。
+ */
+function stopGroupGeneration() {
+  if (!activeGroupManager) return;
+  groupGenerationAborted = true;
+  activeGroupManager.stop();
+}
+
 function sendMessage() {
   const group = currentGroup.value;
   if (!group || groupStore.isStreaming) return;
@@ -445,6 +559,7 @@ async function generateGroupReply(
   const group = { ...current, members: current.members.map((member) => ({ ...member })),
     messages: current.messages.map((message) => ({ ...message })) };
   groupStore.setStreaming(true);
+  groupGenerationAborted = false;
   const card = uiCharToCard(character);
   let messageId: string | null = null;
   let thinking = '';
@@ -459,6 +574,7 @@ async function generateGroupReply(
       maxTokens: profile.maxTokens,
       systemPrompt: buildGroupSystemPrompt(group, speaker),
     });
+    activeGroupManager = manager;
     const reply = await manager.sendMessage({
       card,
       history: buildGroupHistory(group, speaker, userMessageId),
@@ -477,12 +593,16 @@ async function generateGroupReply(
       onStatus: (status) => {
         if (messageId && status) groupStore.updateAssistantMessage(groupId, messageId, { status });
       },
-      onError: (error) => { generationErrors.push(error); },
+      onError: (error) => {
+        if (classifyChatError(error) === 'aborted') groupGenerationAborted = true;
+        else generationErrors.push(error);
+      },
     });
     if (reply) {
       if (!messageId) messageId = groupStore.addAssistantMessage(groupId, speaker.characterId, speaker.name, reply);
       if (messageId) groupStore.updateAssistantMessage(groupId, messageId, { content: reply, thinking });
-      const runtimeCommit = generationErrors.length === 0 && messageId
+      // 用户主动中止：保留已生成的部分内容，但不提交公共回合，也不投递旁听事件。
+      const runtimeCommit = !groupGenerationAborted && generationErrors.length === 0 && messageId
         ? await chatStore.commitRuntimeGroupTurn({
           group,
           characters: characterStore.characters,
@@ -497,7 +617,7 @@ async function generateGroupReply(
           groupStore.clearDesignatedSpeaker(groupId, speaker.characterId);
         }
         if (!runtimeCommit.committed) showToast('error', t('group.runtimeCommitFailed'));
-      } else if (generationErrors.length === 0 && messageId) {
+      } else if (!groupGenerationAborted && generationErrors.length === 0 && messageId) {
         if (group.mode === 'designated') groupStore.clearDesignatedSpeaker(groupId, speaker.characterId);
         // 本地 Runtime 模式下保留原有逐成员旁听路径；远程模式由服务端事务统一扇出。
         await Promise.allSettled(group.members
@@ -517,10 +637,15 @@ async function generateGroupReply(
           }));
       }
     }
-    if (generationErrors.length > 0 || !reply) showToast('error', generationErrors[0]?.message ?? t('group.emptyReply'));
+    if (groupGenerationAborted) {
+      showToast('info', t('chat.stopGenerating'));
+    } else if (generationErrors.length > 0 || !reply) {
+      showToast('error', generationErrors[0]?.message ?? t('group.emptyReply'));
+    }
   } catch (error) {
     showToast('error', error instanceof Error ? error.message : String(error));
   } finally {
+    activeGroupManager = null;
     groupStore.setStreaming(false);
   }
 }
@@ -803,6 +928,47 @@ function isSystem(msg: { role: string }): boolean {
               </div>
             </div>
 
+            <!-- Virtual Character OS：成员级 Runtime 最小状态查看与回放自检 -->
+            <div v-if="currentMembers.length > 0" class="group-runtime-inspect">
+              <label class="group-runtime-label" for="group-runtime-member">{{ t('runtime.title') }}</label>
+              <select
+                id="group-runtime-member"
+                class="group-runtime-select"
+                :value="runtimeInspectMember?.characterId ?? ''"
+                @change="runtimeInspectMemberId = ($event.target as HTMLSelectElement).value"
+              >
+                <option v-for="member in currentMembers" :key="member.characterId" :value="member.characterId">
+                  {{ member.name }}
+                </option>
+              </select>
+              <RuntimeStatePanel
+                v-if="runtimeInspectCharacter"
+                :key="runtimeInspectCharacter.id"
+                :character="runtimeInspectCharacter"
+                :label="runtimeInspectMember?.name"
+              />
+            </div>
+
+            <!-- 群组定义 CAS 冲突：显式提示，不静默覆盖远端 -->
+            <div v-if="currentGroupConflict" class="conflict-banner" role="alert">
+              <Icon name="alert-triangle" :size="14" />
+              <span class="conflict-text">{{ t('group.runtimeConflict') }}</span>
+              <button
+                type="button"
+                class="link-btn conflict-action"
+                @click="adoptRemoteGroupDefinition"
+              >
+                {{ t('group.runtimeConflictAdopt') }}
+              </button>
+              <button
+                type="button"
+                class="link-btn conflict-action"
+                @click="chatStore.clearGroupRuntimeConflict()"
+              >
+                {{ t('group.runtimeConflictDismiss') }}
+              </button>
+            </div>
+
             <!-- 成员列表 -->
             <div class="members-bar" role="list" :aria-label="t('group.membersAria')">
               <div
@@ -983,13 +1149,23 @@ type="button"
               </div>
             </div>
             <button
+              v-if="!groupStore.isStreaming"
               type="button"
               class="send-btn"
-              :disabled="!groupStore.inputText.trim() || groupStore.isStreaming"
+              :disabled="!groupStore.inputText.trim()"
               :aria-label="t('group.sendAria')"
               @click="sendMessage"
             >
               <Icon name="send" :size="16" />
+            </button>
+            <button
+              v-else
+              type="button"
+              class="send-btn stop-btn"
+              :aria-label="t('chat.stopGenerating')"
+              @click="stopGroupGeneration"
+            >
+              <Icon name="stop" :size="14" />
             </button>
             <span v-if="groupStore.isStreaming" role="status" aria-live="polite">{{ t('bubble.generatingText') }}</span>
           </footer>
@@ -1745,6 +1921,69 @@ type="button"
 }
 
 /* 成员列表 */
+/* 群组定义 CAS 冲突提示条 */
+.conflict-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--warning-bg);
+  /* 用 warning-text：tokens.css 中专门为「警示色作文字」派生的可读变体，
+     直接使用 --warning-fg 在当前主题下仅 4.26:1，未达 AA 4.5:1。 */
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+  font-size: 13px;
+}
+
+.conflict-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.conflict-action {
+  flex-shrink: 0;
+}
+
+/* 群聊 Runtime 状态查看区 */
+.group-runtime-inspect {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.group-runtime-label {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.group-runtime-select {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--foreground);
+  background: var(--video-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.group-runtime-select:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 1px;
+}
+
+@media (max-width: 640px) {
+  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7） */
+  .group-runtime-select {
+    font-size: 16px;
+  }
+}
+
 .members-bar {
   display: flex;
   flex-wrap: wrap;
@@ -1970,6 +2209,15 @@ type="button"
 .send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* 生成中：同一按钮切换为中止动作，用危险语义色与发送区分。
+   注：不用实心 --danger（在深色主题下为浅红，白字对比度不足），
+   改用 danger 三件套（bg/fg/border），与既有警示文本一致。 */
+.send-btn.stop-btn {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  border: 1px solid var(--danger-border);
 }
 
 /* @提及下拉 */

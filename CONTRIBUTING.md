@@ -38,7 +38,7 @@
    npm run typecheck                # Runtime 类型与契约检查
    ```
 
-   改动 Runtime 事务、群聊或 Schema 时，除单元测试外还需真实 PostgreSQL 验证（本地 Docker 或 CI 服务）：
+   改动 Runtime 事务、群聊或 Schema 时，除单元测试外还需真实 PostgreSQL 验证。CI 的 `runtime-postgres` job 已用 `postgres:16-alpine` service 自动执行；本地复现命令如下：
 
    ```bash
    # macOS / Linux / CI
@@ -61,6 +61,13 @@
 
    ```bash
    npm run test:e2e           # Playwright（本地复用系统 Edge；CI 用自带 chromium）
+   ```
+
+   Playwright 现包含三个 project：桌面功能（`msedge`）、移动端布局（Pixel 5，`e2e/mobile/`）、移动端核心功能（Pixel 5，对话/群聊/批量导入/角色 CRUD/备份恢复/世界书）。
+   仅跑移动端核心功能回归：
+
+   ```bash
+   npx playwright test --project=mobile-functional-msedge
    ```
 
    > 快速迭代时，`npm run typecheck` 可替代 `npm run build` 单独做类型检查；`npm run test` 可替代 `npm run test:coverage` 跳过覆盖率统计。
