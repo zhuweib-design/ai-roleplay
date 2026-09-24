@@ -6,7 +6,7 @@
 
 **基于 SillyTavern 架构的 AI 角色扮演聊天应用：多模型对话 · 角色卡 · 世界书 · 群聊 · 故事引擎 · 社区市场 · 自定义主题 · 自定义向量模型 RAG · Virtual Character OS Runtime**
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.2.0)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.3.0)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6.svg)]()
 [![Tauri 2](https://img.shields.io/badge/Tauri-2.0-24c8db.svg)]()
@@ -256,6 +256,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 
 ## 🛣️ 路线图
 
+- [x] **0.3.0** — Runtime 与群聊 MVP：服务端群聊历史跨设备同步、可靠投递队列、冲突恢复、Runtime 状态查看（已发布）
 - [x] **0.2.0** — 自定义向量模型 + RAG、自定义主题、自动更新、社区市场、系统托盘/快捷键（已发布）
 - [x] **Virtual Character OS Runtime** — 批量多角色、多角色群聊、PostgreSQL 事务持久化、版本 CAS 与 Replay 审计（已落地）
 - [ ] **v1.0.0** — 首个稳定版本（规划）

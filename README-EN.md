@@ -6,7 +6,7 @@
 
 **An AI role-playing chat app built on the SillyTavern architecture: multi-model chat · character cards · world books · group chat · story engine · community market · custom themes · custom vector-model RAG · Virtual Character OS Runtime**
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.2.0)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.3.0)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6.svg)]()
 [![Tauri 2](https://img.shields.io/badge/Tauri-2.0-24c8db.svg)]()
@@ -183,6 +183,7 @@ tests/               Unit / a11y / E2E
 
 ## 🛣️ Roadmap
 
+- [x] **0.3.0** — Runtime and group chat MVP: cross-device group history, reliable outbox, conflict recovery, Runtime state inspector (released)
 - [x] **0.2.0** — custom vector model + RAG, custom themes, auto-update, market, tray/shortcut (released)
 - [x] **Virtual Character OS Runtime** — batch characters, multi-character group chat, PostgreSQL transactions, version CAS and replay audit (landed)
 - [ ] **v1.0.0** — first stable release (planned)
