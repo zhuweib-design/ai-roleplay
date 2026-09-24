@@ -339,6 +339,7 @@ const CURATED = {
   'docs/dev/mobile-pwa-plan.md': '开发文档：手机端 PWA 实现计划',
   'docs/dev/rag-enhancement-plan.md': '开发文档：RAG 增强实现计划',
   'docs/dev/data-backup-restore.md': '开发文档：备份恢复与灾备演练 Runbook（P2-#3 修复交付）',
+  'docs/dev/runtime-database-migration-runbook.md': '开发文档：Virtual Character OS 数据库迁移演练 Runbook（备份 / 锁等待 / 回滚 / 演练清单）',
   'docs/fixes/goal-tracker.md': '修复文档：跨端一致性 28 项缺陷修复进度台账',
   'docs/fixes/web-sop-review-2026-09-18.md': '修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维）',
   'docs/fixes/runtime-core-baseline-verification-2026-09-22.md': '验证记录：Runtime Core 基线自动化验证',

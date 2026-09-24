@@ -397,3 +397,22 @@
 
 - 覆盖 Chromium 与 WebKit 两个内核，仍未覆盖 Gecko（Firefox）。
 - WebKit project 串行执行，CI 时长增加约 20 秒；用例数量增长后需重新评估并行策略。
+
+
+## 2026-09-25 A3：数据库迁移演练 Runbook
+
+### 本轮实现
+
+- 新增 `docs/dev/runtime-database-migration-runbook.md`：面向部署方的迁移演练文档，覆盖迁移范围（37 张表按八组分类）、幂等性保证、执行前检查（Schema 漂移校验 / 迁移前状态记录 / `pg_dump` 备份 / 长事务与锁等待评估）、执行命令（强制 `ON_ERROR_STOP=1`）、执行后验证（结构 / 隔离 Schema 集成测试 / 历史数据完整性）、回滚路径（首选备份恢复，局部回退仅限非生产）、11 项演练清单与已知边界。
+- 文档明确项目**不提供自动迁移编排**：`migrations/001_virtual_character_os.sql` 是单文件幂等全量脚本，未来结构性变更需新增独立迁移文件，不能改写历史迁移。
+- 索引生成器登记该文档，`PROJECT_INDEX.md` 收录。
+
+### 验证记录
+
+- 静态核对：Runbook 列出的 37 张表全部存在于迁移文件；`group_turn_outbox`、`group_chats_version_nonnegative`、`pgcrypto` 声明与迁移一致；表数量与 `CREATE TABLE IF NOT EXISTS` 计数一致（37）。
+- `npm run runtime:db:schema:check` 通过。
+
+### 当前边界
+
+- 本机 Docker 守护进程未运行，Runbook 中的 `pg_dump` / `psql` / 恢复命令**未在本轮实机演练**；正式发布前需在预发库按清单完整走一遍。
+- 文档假设使用 `psql` 与 `pg_dump` 标准工具，未覆盖托管数据库（如 RDS）的控制台备份方式。
