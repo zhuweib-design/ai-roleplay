@@ -111,6 +111,13 @@ const currentGroup = computed(() => groupStore.currentGroup);
 const currentMessages = computed(() => groupStore.currentMessages);
 const currentMembers = computed(() => groupStore.currentMembers);
 
+// 当前群组是否存在未处理的群组定义 CAS 冲突
+const currentGroupConflict = computed(() => {
+  const conflict = chatStore.groupRuntimeConflict;
+  if (!conflict || !currentGroup.value) return null;
+  return conflict.groupId === currentGroup.value.id ? conflict : null;
+});
+
 const pendingRuntimeTurns = computed(() => {
   const groupId = currentGroup.value?.id;
   return groupId
@@ -404,6 +411,58 @@ async function restoreCurrentGroup(): Promise<void> {
   } else if (groupStore.lastError) {
     showToast('error', groupStore.lastError);
   }
+}
+
+/**
+ * 以服务端为准：把远端成员定义与状态应用回本地群聊，清除冲突。
+ * 只对齐成员与生命周期，不改写本地消息历史。
+ */
+async function adoptRemoteGroupDefinition(): Promise<void> {
+  const group = currentGroup.value;
+  const conflict = currentGroupConflict.value;
+  if (!group || !conflict) return;
+
+  if (conflict.remoteMemberIds) {
+    // 远端成员 ID 是 Runtime UUID，需映射回本地角色卡
+    const runtimeToLocal = new Map(
+      characterStore.characters.map((character) => [
+        chatStore.runtimeCharacterIdFor(character),
+        character.id,
+      ]),
+    );
+    const remoteLocalIds = conflict.remoteMemberIds
+      .map((runtimeId) => runtimeToLocal.get(runtimeId))
+      .filter((id): id is string => Boolean(id));
+
+    if (remoteLocalIds.length !== conflict.remoteMemberIds.length) {
+      // 存在本地缺失的角色卡，不能静默丢弃成员
+      showToast('error', t('group.runtimeConflictMissingCards'));
+      return;
+    }
+
+    const kept = group.members.filter((member) => remoteLocalIds.includes(member.characterId));
+    const added = remoteLocalIds
+      .filter((localId) => !kept.some((member) => member.characterId === localId))
+      .map((localId) => characterStore.characters.find((character) => character.id === localId))
+      .filter((character): character is UICharacter => Boolean(character))
+      .map((character) => characterToCard(character));
+    const removedIds = group.members
+      .filter((member) => !remoteLocalIds.includes(member.characterId))
+      .map((member) => member.characterId);
+
+    if (!groupStore.replaceMembers(group.id, kept, added, removedIds)) {
+      showToast('error', groupStore.lastError ?? t('group.runtimeConflictApplyFailed'));
+      return;
+    }
+  }
+
+  if (conflict.remoteStatus && conflict.remoteStatus !== group.lifecycleStatus) {
+    if (conflict.remoteStatus === 'archived') groupStore.archiveGroup(group.id);
+    else groupStore.restoreGroup(group.id);
+  }
+
+  chatStore.clearGroupRuntimeConflict();
+  showToast('success', t('group.runtimeConflictAdopted'));
 }
 
 async function retryPendingRuntimeTurns(): Promise<void> {
@@ -850,6 +909,26 @@ function isSystem(msg: { role: string }): boolean {
                   />
                 </label>
               </div>
+            </div>
+
+            <!-- 群组定义 CAS 冲突：显式提示，不静默覆盖远端 -->
+            <div v-if="currentGroupConflict" class="conflict-banner" role="alert">
+              <Icon name="alert-triangle" :size="14" />
+              <span class="conflict-text">{{ t('group.runtimeConflict') }}</span>
+              <button
+                type="button"
+                class="link-btn conflict-action"
+                @click="adoptRemoteGroupDefinition"
+              >
+                {{ t('group.runtimeConflictAdopt') }}
+              </button>
+              <button
+                type="button"
+                class="link-btn conflict-action"
+                @click="chatStore.clearGroupRuntimeConflict()"
+              >
+                {{ t('group.runtimeConflictDismiss') }}
+              </button>
             </div>
 
             <!-- 成员列表 -->
@@ -1804,6 +1883,29 @@ type="button"
 }
 
 /* 成员列表 */
+/* 群组定义 CAS 冲突提示条 */
+.conflict-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--warning-bg, rgba(245, 158, 11, 0.12));
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.conflict-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.conflict-action {
+  flex-shrink: 0;
+}
+
 .members-bar {
   display: flex;
   flex-wrap: wrap;

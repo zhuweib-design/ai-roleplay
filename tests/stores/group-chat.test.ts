@@ -227,6 +227,26 @@ describe('group-chat store', () => {
       expect(store.lastError).toContain('上限');
     });
 
+    it('replaceMembers 按服务端定义同步成员并拒绝非法成员数', () => {
+      const { store, id } = setupGroup();
+      const g = store.groups[0]!;
+
+      // 服务端定义：保留 c2，移除 c1，新增 c3
+      const kept = g.members.filter((m) => m.characterId === 'c2');
+      const ok = store.replaceMembers(id!, kept, [makeCard({ id: 'c3', name: 'Charlie' })], ['c1']);
+      expect(ok).toBe(true);
+      const updated = store.groups[0]!;
+      expect(updated.members.map((m) => m.characterId).sort()).toEqual(['c2', 'c3']);
+      expect(updated.messages.some((m) => m.content.includes('Charlie'))).toBe(true);
+
+      // 成员数低于下限必须拒绝，且不改变现有成员
+      const before = updated.members.map((m) => m.characterId);
+      const rejected = store.replaceMembers(id!, [], [], []);
+      expect(rejected).toBe(false);
+      expect(store.groups[0]!.members.map((m) => m.characterId)).toEqual(before);
+      expect(store.lastError).toBeTruthy();
+    });
+
     it('removeMember 移除成员并生成 leave 系统消息', () => {
       const { store, id } = setupGroup();
       const ok = store.removeMember(id!, 'c2');

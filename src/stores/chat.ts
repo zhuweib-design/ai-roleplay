@@ -237,6 +237,19 @@ export const useChatStore = defineStore('chat', () => {
   const runtimeIntegrations = new Map<string, Promise<ChatRuntimeIntegration | null>>();
   const runtimeStatus = ref<{ phase: 'initialize' | 'context' | 'event'; message: string; at: number } | null>(null);
   const pendingGroupRuntimeTurns = ref<PendingGroupRuntimeTurn[]>([]);
+  /**
+   * 群组定义 CAS 冲突：远端成员/状态已被其他客户端修改。
+   * 仅记录冲突事实与远端最新定义，不自动覆盖，等待用户显式选择以服务端为准。
+   */
+  const groupRuntimeConflict = ref<{
+    groupId: string;
+    operation: 'add' | 'remove' | 'status';
+    message: string;
+    at: number;
+    remoteMemberIds?: string[];
+    remoteVersion?: number;
+    remoteStatus?: 'active' | 'archived';
+  } | null>(null);
   function runtimeTenantStorageKey(): string {
     return `ai-roleplay:runtime-tenant-id:${getActiveProfileId()}`;
   }
@@ -244,6 +257,16 @@ export const useChatStore = defineStore('chat', () => {
   function reportRuntimeError(error: unknown, phase: 'initialize' | 'context' | 'event'): void {
     const message = error instanceof Error ? error.message : String(error);
     runtimeStatus.value = { phase, message, at: Date.now() };
+  }
+
+  function isGroupVersionConflict(error: unknown): boolean {
+    return error instanceof RuntimeApiError
+      ? error.code === 'GROUP_VERSION_CONFLICT' || error.code === 'GROUP_CONFLICT'
+      : error instanceof Error && /GROUP_VERSION_CONFLICT|GROUP_CONFLICT/.test(error.message);
+  }
+
+  function clearGroupRuntimeConflict(): void {
+    groupRuntimeConflict.value = null;
   }
 
   function isPendingGroupRuntimeTurn(value: unknown): value is PendingGroupRuntimeTurn {
@@ -478,6 +501,14 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /**
+   * UI 角色 → Runtime 角色 ID。
+   * 冲突恢复需要把服务端返回的成员 ID 映射回本地角色卡，避免依赖内部缓存。
+   */
+  function runtimeCharacterIdFor(character: UICharacter): string {
+    return stableChatCharacterId(resolveRuntimeTenantId(), character.id);
+  }
+
   async function syncRemoteGroupMember(input: {
     group: GroupChat;
     characters: UICharacter[];
@@ -510,9 +541,41 @@ export const useChatStore = defineStore('chat', () => {
         await api.removeMember(runtimeGroupId, targetIntegration.characterId, state.version);
       }
       runtimeStatus.value = null;
+      clearGroupRuntimeConflict();
       return { enabled: true, synced: true };
     } catch (error) {
       reportRuntimeError(error, 'event');
+      // CAS 冲突：记录远端最新定义，供界面提示与「以服务端为准」恢复使用。
+      if (isGroupVersionConflict(error)) {
+        try {
+          const anchor = input.group.members[0];
+          if (anchor) {
+            const { runtimeGroupId } = await prepareRemoteGroupRuntime({
+              group: input.group,
+              characters: input.characters,
+              speakerCharacterId: anchor.characterId,
+            }, api);
+            const remote = await api.getGroupState(runtimeGroupId);
+            groupRuntimeConflict.value = {
+              groupId: input.group.id,
+              operation: input.operation,
+              message: error instanceof Error ? error.message : String(error),
+              at: Date.now(),
+              remoteMemberIds: remote.memberIds,
+              remoteVersion: remote.version,
+              remoteStatus: remote.status,
+            };
+          }
+        } catch {
+          // 读取远端定义失败时保留冲突事实，不阻断既有错误上报。
+          groupRuntimeConflict.value = {
+            groupId: input.group.id,
+            operation: input.operation,
+            message: error instanceof Error ? error.message : String(error),
+            at: Date.now(),
+          };
+        }
+      }
       return { enabled: true, synced: false };
     }
   }
@@ -541,9 +604,39 @@ export const useChatStore = defineStore('chat', () => {
         await api.setGroupStatus({ groupId: runtimeGroupId, status: input.status, expectedVersion: state.version });
       }
       runtimeStatus.value = null;
+      clearGroupRuntimeConflict();
       return { enabled: true, synced: true };
     } catch (error) {
       reportRuntimeError(error, 'event');
+      if (isGroupVersionConflict(error)) {
+        try {
+          const anchor = input.group.members[0];
+          if (anchor) {
+            const { runtimeGroupId } = await prepareRemoteGroupRuntime({
+              group: input.group,
+              characters: input.characters,
+              speakerCharacterId: anchor.characterId,
+            }, api);
+            const remote = await api.getGroupState(runtimeGroupId);
+            groupRuntimeConflict.value = {
+              groupId: input.group.id,
+              operation: 'status',
+              message: error instanceof Error ? error.message : String(error),
+              at: Date.now(),
+              remoteMemberIds: remote.memberIds,
+              remoteVersion: remote.version,
+              remoteStatus: remote.status,
+            };
+          }
+        } catch {
+          groupRuntimeConflict.value = {
+            groupId: input.group.id,
+            operation: 'status',
+            message: error instanceof Error ? error.message : String(error),
+            at: Date.now(),
+          };
+        }
+      }
       return { enabled: true, synced: false };
     }
   }
@@ -1767,8 +1860,11 @@ export const useChatStore = defineStore('chat', () => {
     ensureGroupRuntimeIntegration,
     syncRemoteGroupMember,
     syncRemoteGroupStatus,
+    runtimeCharacterIdFor,
     commitRuntimeGroupTurn,
     pendingGroupRuntimeTurns,
+    groupRuntimeConflict,
+    clearGroupRuntimeConflict,
     loadRuntimePendingGroupTurns,
     discardPendingGroupRuntimeTurns,
     async retryPendingGroupRuntimeTurn(input: { group: GroupChat; characters: UICharacter[]; groupTurnId: string }) {

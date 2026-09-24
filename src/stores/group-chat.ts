@@ -11,6 +11,7 @@ import {
   type GroupChatMode,
   validateGroupChatInput,
   MAX_GROUP_MEMBERS,
+  MIN_GROUP_MEMBERS,
 } from '@/core/group-chat';
 // F10.3 随机 NPC 生成（v1.1 新增）
 import { createApiClient } from '@/api';
@@ -420,6 +421,70 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     return true;
   }
 
+  /**
+   * 以服务端定义覆盖本地成员列表（CAS 冲突恢复）。
+   * 只调整成员与对应系统消息，不改写历史消息内容。
+   * 归档群组同样允许对齐，避免冲突无法收敛。
+   */
+  function replaceMembers(
+    groupId: string,
+    kept: GroupMember[],
+    added: CharacterCard[],
+    removedIds: string[]
+  ): boolean {
+    const g = groups.value.find((x) => x.id === groupId);
+    if (!g) return false;
+
+    const memberIds = [...kept.map((m) => m.characterId), ...added.map((c) => c.id)];
+    if (memberIds.length < MIN_GROUP_MEMBERS || memberIds.length > MAX_GROUP_MEMBERS) {
+      lastError.value = t('groupChat.memberCount', { min: MIN_GROUP_MEMBERS, max: MAX_GROUP_MEMBERS });
+      return false;
+    }
+    if (new Set(memberIds).size !== memberIds.length) {
+      lastError.value = t('groupChat.memberDuplicate');
+      return false;
+    }
+
+    const now = new Date().toISOString();
+    const removed = g.members.filter((member) => removedIds.includes(member.characterId));
+    g.members = [
+      ...kept.map((member) => ({ ...member })),
+      ...added.map((character) => {
+        const isTemp = character.isTemporary === true ||
+          (Array.isArray((character as { tags?: unknown }).tags) &&
+            ((character as { tags: string[] }).tags as string[]).includes('__temporary_npc'));
+        return {
+          characterId: character.id,
+          name: character.name,
+          avatar: character.avatar,
+          talkativeness: character.talkativeness,
+          joinedAt: now,
+          allowAutoSelect: true,
+          isTemporary: isTemp,
+        };
+      }),
+    ];
+
+    // 只补一条汇总系统消息，避免逐条噪声
+    if (removed.length > 0 || added.length > 0) {
+      g.messages.push({
+        id: `msg-${Date.now()}`,
+        role: 'system',
+        content: t('group.runtimeConflictMemberSync', {
+          added: added.map((c) => c.name).join('、') || '—',
+          removed: removed.map((m) => m.name).join('、') || '—',
+        }),
+        timestamp: now,
+        swipes: [],
+        swipeIndex: 0,
+        eventType: 'none',
+      });
+    }
+
+    void persistGroup(groupId);
+    return true;
+  }
+
   // ── F10.4 临时群聊生命周期 ──
 
   /**
@@ -815,6 +880,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     // 成员动作
     addMember,
     removeMember,
+    replaceMembers,
     // F10.4 临时群聊生命周期
     archiveGroup,
     restoreGroup,

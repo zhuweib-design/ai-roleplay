@@ -267,3 +267,24 @@
 
 - 归档状态由显式接口维护，本地归档与远端归档在远端不可用时不会自动重试，需要用户重新操作。
 - CAS 冲突仍只报告错误，冲突恢复界面待后续阶段实现。
+
+## 2026-09-24 0.3.0 阶段三：群组定义 CAS 冲突恢复界面
+
+### 本轮实现
+
+- Chat Store 新增 `groupRuntimeConflict`：成员增删或归档状态写入遇到 `GROUP_VERSION_CONFLICT` / `GROUP_CONFLICT` 时，记录冲突事实与远端最新成员、版本与状态，不自动覆盖。
+- 群聊页新增冲突提示条（`role="alert"`），提供「以服务端为准」与「稍后处理」两个显式动作；仅提示当前群组的冲突，不干扰其他群聊。
+- 新增 `adoptRemoteGroupDefinition`：把远端成员 ID 映射回本地角色卡，经 `groupStore.replaceMembers` 对齐成员与生命周期，只追加一条汇总系统消息，不改写历史消息；远端成员存在本地缺失角色卡时拒绝自动同步并提示。
+- `group-chat` store 新增 `replaceMembers`：校验成员数下限、上限与重复，支持在归档状态下对齐，避免冲突无法收敛。
+- Chat Store 暴露 `runtimeCharacterIdFor`，避免界面依赖内部 ID 缓存。
+
+### 验证记录
+
+- 群聊 store 测试 37 项通过，新增 `replaceMembers` 成员对齐与非法成员数拒绝。
+- 群聊 Store、HTTP 与本地群聊专项 68 项通过；全量 Vitest 3431 项通过、3 项跳过。
+- `vue-tsc --noEmit`、ESLint、`i18n:check:strict`、CSS 约定守卫（5/5）通过。
+
+### 当前边界
+
+- 「以服务端为准」只对齐成员与生命周期，不处理本地消息历史与服务端回合历史的差异；历史同步仍待后续阶段。
+- 冲突提示依赖当前群组视图，跨群组的冲突需切换到对应群聊处理。
