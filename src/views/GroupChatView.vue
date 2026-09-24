@@ -19,7 +19,6 @@ import { ref, computed, watch, nextTick, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useChatStore } from '@/stores/chat';
-import { ChatManager } from '@/services/chat-manager';
 import { createApiClient } from '@/api';
 import { uiCharToCard } from '@/services/type-adapters';
 import { buildGroupHistory, buildGroupSystemPrompt } from '@/services/group-chat-prompt';
@@ -38,6 +37,7 @@ import type { UICharacter } from '@/types';
 // F10.3 随机 NPC 生成
 import { CHARACTER_TEMPLATES, type CharacterTemplateId } from '@core/character-generator';
 import { t } from '@/i18n';
+import { ChatManager, classifyChatError } from '@/services/chat-manager';
 
 // 需求6 补充：群聊记录筛选（状态 + 关键词）
 const groupFilter = ref<'all' | 'active' | 'archived'>('all');
@@ -76,6 +76,13 @@ const toastOpen = ref(false);
 const toastType = ref<'info' | 'success' | 'error'>('info');
 const toastMessage = ref('');
 const messagesEndRef = useTemplateRef<HTMLElement>('messagesEnd');
+
+// ── 群聊生成中止 ──
+// 当前进行中的 ChatManager；同一时刻只允许一个群聊生成，避免并发中止串扰。
+let activeGroupManager: ChatManager | null = null;
+// 本轮是否由用户主动中止；中止后不得提交公共回合，也不得投递旁听事件。
+let groupGenerationAborted = false;
+
 
 // ── F10.3 随机 NPC 生成状态 ──
 const npcModalOpen = ref(false);
@@ -396,6 +403,16 @@ async function retryPendingRuntimeTurns(): Promise<void> {
 }
 
 // ── 消息发送 ──
+/**
+ * 停止当前群聊生成。
+ * 保留已生成的部分内容，但本轮不提交公共回合，也不投递旁听事件。
+ */
+function stopGroupGeneration() {
+  if (!activeGroupManager) return;
+  groupGenerationAborted = true;
+  activeGroupManager.stop();
+}
+
 function sendMessage() {
   const group = currentGroup.value;
   if (!group || groupStore.isStreaming) return;
@@ -445,6 +462,7 @@ async function generateGroupReply(
   const group = { ...current, members: current.members.map((member) => ({ ...member })),
     messages: current.messages.map((message) => ({ ...message })) };
   groupStore.setStreaming(true);
+  groupGenerationAborted = false;
   const card = uiCharToCard(character);
   let messageId: string | null = null;
   let thinking = '';
@@ -459,6 +477,7 @@ async function generateGroupReply(
       maxTokens: profile.maxTokens,
       systemPrompt: buildGroupSystemPrompt(group, speaker),
     });
+    activeGroupManager = manager;
     const reply = await manager.sendMessage({
       card,
       history: buildGroupHistory(group, speaker, userMessageId),
@@ -477,12 +496,16 @@ async function generateGroupReply(
       onStatus: (status) => {
         if (messageId && status) groupStore.updateAssistantMessage(groupId, messageId, { status });
       },
-      onError: (error) => { generationErrors.push(error); },
+      onError: (error) => {
+        if (classifyChatError(error) === 'aborted') groupGenerationAborted = true;
+        else generationErrors.push(error);
+      },
     });
     if (reply) {
       if (!messageId) messageId = groupStore.addAssistantMessage(groupId, speaker.characterId, speaker.name, reply);
       if (messageId) groupStore.updateAssistantMessage(groupId, messageId, { content: reply, thinking });
-      const runtimeCommit = generationErrors.length === 0 && messageId
+      // 用户主动中止：保留已生成的部分内容，但不提交公共回合，也不投递旁听事件。
+      const runtimeCommit = !groupGenerationAborted && generationErrors.length === 0 && messageId
         ? await chatStore.commitRuntimeGroupTurn({
           group,
           characters: characterStore.characters,
@@ -497,7 +520,7 @@ async function generateGroupReply(
           groupStore.clearDesignatedSpeaker(groupId, speaker.characterId);
         }
         if (!runtimeCommit.committed) showToast('error', t('group.runtimeCommitFailed'));
-      } else if (generationErrors.length === 0 && messageId) {
+      } else if (!groupGenerationAborted && generationErrors.length === 0 && messageId) {
         if (group.mode === 'designated') groupStore.clearDesignatedSpeaker(groupId, speaker.characterId);
         // 本地 Runtime 模式下保留原有逐成员旁听路径；远程模式由服务端事务统一扇出。
         await Promise.allSettled(group.members
@@ -517,10 +540,15 @@ async function generateGroupReply(
           }));
       }
     }
-    if (generationErrors.length > 0 || !reply) showToast('error', generationErrors[0]?.message ?? t('group.emptyReply'));
+    if (groupGenerationAborted) {
+      showToast('info', t('chat.stopGenerating'));
+    } else if (generationErrors.length > 0 || !reply) {
+      showToast('error', generationErrors[0]?.message ?? t('group.emptyReply'));
+    }
   } catch (error) {
     showToast('error', error instanceof Error ? error.message : String(error));
   } finally {
+    activeGroupManager = null;
     groupStore.setStreaming(false);
   }
 }
@@ -983,13 +1011,23 @@ type="button"
               </div>
             </div>
             <button
+              v-if="!groupStore.isStreaming"
               type="button"
               class="send-btn"
-              :disabled="!groupStore.inputText.trim() || groupStore.isStreaming"
+              :disabled="!groupStore.inputText.trim()"
               :aria-label="t('group.sendAria')"
               @click="sendMessage"
             >
               <Icon name="send" :size="16" />
+            </button>
+            <button
+              v-else
+              type="button"
+              class="send-btn stop-btn"
+              :aria-label="t('chat.stopGenerating')"
+              @click="stopGroupGeneration"
+            >
+              <Icon name="stop" :size="14" />
             </button>
             <span v-if="groupStore.isStreaming" role="status" aria-live="polite">{{ t('bubble.generatingText') }}</span>
           </footer>
@@ -1970,6 +2008,12 @@ type="button"
 .send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* 生成中：同一按钮切换为中止动作，用危险色与发送区分 */
+.send-btn.stop-btn {
+  background: var(--danger, #dc2626);
+  color: var(--on-primary);
 }
 
 /* @提及下拉 */
