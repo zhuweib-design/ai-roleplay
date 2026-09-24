@@ -873,6 +873,7 @@ export default {
   'group.runtimeRetryFailed': 'Runtime 回合重试仍失败，原回合已保留',
   'group.runtimeRetrySucceeded': '待提交群聊回合已完成同步',
   'group.runtimeMemberSyncFailed': '群聊成员同步失败，本地状态未修改',
+  'group.runtimeStatusSyncFailed': '群聊归档状态同步失败，本地状态未修改',
   'group.runtimeSubmitFailed': '群聊 Runtime 回合提交失败',
   'group.runtimeBatchLimit': '单批最多创建 50 个角色',
   'group.runtimeArchived': '已归档群组不能发言',

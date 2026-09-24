@@ -246,3 +246,24 @@
 ### 当前边界
 
 - 覆盖率门禁依赖 CI service 容器；本地不提供 `RUNTIME_PG_TEST_URL` 时集成测试会被跳过，覆盖率低于阈值属预期，需本地起库或只跑 `npm run test`。
+
+## 2026-09-24 0.3.0 阶段二：群聊归档状态远端同步
+
+### 本轮实现
+
+- 群聊 Runtime 契约新增 `SetRuntimeGroupStatusInput`，`PostgresGroupRuntime.setGroupStatus` 支持归档与恢复：锁定群组行、校验 `expectedVersion`、状态变化时推进定义版本；归档后公共回合与成员变更一律拒绝。
+- 群聊 HTTP 新增 `PUT /v1/runtime/groups/:id/status`，支持 `status` 与可选 `expectedVersion`，非法状态、负版本与非 PUT 方法在进入领域层前拒绝；HTTP 客户端同步暴露 `setGroupStatus`。
+- Chat Store 新增 `syncRemoteGroupStatus`：远端模式先读取服务端版本并以 CAS 写入状态，成功后才修改本地生命周期，失败时不改变本地状态并上报 `runtimeStatus`。
+- 群聊页归档与恢复改走远端优先流程，远端失败提示「群聊归档状态同步失败，本地状态未修改」；恢复仍复用 store 的成员卡存在性校验。
+
+### 验证记录
+
+- 群聊 HTTP 测试 20 项通过，新增覆盖 status 路由、参数校验、错误方法与客户端请求体断言。
+- Chat Store 与 HTTP 专项 32 项通过，新增覆盖归档 CAS 版本透传与 409 冲突时本地状态不变。
+- 真实 PostgreSQL 集成测试通过：归档推进版本、旧版本恢复冲突、归档后公共回合与成员变更被拒、恢复后可正常创建重试、再次归档后创建重试返回 404。
+- 全量 Vitest 3430 项通过、3 项跳过；`vue-tsc --noEmit`、ESLint、`i18n:check:strict` 通过。
+
+### 当前边界
+
+- 归档状态由显式接口维护，本地归档与远端归档在远端不可用时不会自动重试，需要用户重新操作。
+- CAS 冲突仍只报告错误，冲突恢复界面待后续阶段实现。

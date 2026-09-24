@@ -873,6 +873,7 @@ const en: Record<MessageKey, string> = {
   'group.runtimeRetryFailed': 'Runtime retry failed; the original turn was kept',
   'group.runtimeRetrySucceeded': 'Pending group Runtime turns synchronized',
   'group.runtimeMemberSyncFailed': 'Group member sync failed; local state was not changed',
+  'group.runtimeStatusSyncFailed': 'Group archive status sync failed; local state was not changed',
   'group.runtimeSubmitFailed': 'Failed to commit the group Runtime turn',
   'group.runtimeBatchLimit': 'At most 50 characters can be created per batch',
   'group.runtimeArchived': 'Archived groups cannot send messages',

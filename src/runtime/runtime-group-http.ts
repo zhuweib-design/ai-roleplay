@@ -1,11 +1,12 @@
 import type { RuntimeContext, RuntimeContextRequest } from './types';
-import type { CreateRuntimeGroupInput, CommitRuntimeGroupTurnInput, RuntimeGroupState, RuntimeGroupTurn } from './group-runtime-contract';
+import type { CreateRuntimeGroupInput, CommitRuntimeGroupTurnInput, SetRuntimeGroupStatusInput, RuntimeGroupState, RuntimeGroupTurn } from './group-runtime-contract';
 import { GroupRuntimeError } from './group-runtime-contract';
 import { RuntimeApiError, type RuntimeFetch, type RuntimeHttpApiOptions, type RuntimeHttpHandler } from './runtime-http';
 
 export interface GroupRuntimeApi {
   createGroup(input: CreateRuntimeGroupInput): Promise<void>;
   getGroupState(groupId: string): Promise<RuntimeGroupState>;
+  setGroupStatus(input: SetRuntimeGroupStatusInput): Promise<RuntimeGroupState>;
   addMember(groupId: string, characterId: string, expectedVersion?: number): Promise<RuntimeGroupState>;
   removeMember(groupId: string, characterId: string, expectedVersion?: number): Promise<RuntimeGroupState>;
   listTurns(groupId: string, memberId: string): Promise<RuntimeGroupTurn[]>;
@@ -32,6 +33,13 @@ export class HttpGroupRuntimeApi implements GroupRuntimeApi {
 
   async getGroupState(groupId: string): Promise<RuntimeGroupState> {
     return this.request(`/v1/runtime/groups/${encodeURIComponent(groupId)}`, 'GET');
+  }
+
+  async setGroupStatus(input: SetRuntimeGroupStatusInput): Promise<RuntimeGroupState> {
+    return this.request(`/v1/runtime/groups/${encodeURIComponent(input.groupId)}/status`, 'PUT', {
+      status: input.status,
+      ...(input.expectedVersion === undefined ? {} : { expectedVersion: input.expectedVersion }),
+    });
   }
 
   async addMember(groupId: string, characterId: string, expectedVersion?: number): Promise<RuntimeGroupState> {
@@ -130,7 +138,7 @@ export function createGroupRuntimeHttpHandler(api: GroupRuntimeApi): RuntimeHttp
       const url = new URL(request.url);
       const method = request.method.toUpperCase();
       let body: Record<string, unknown> | undefined;
-      if (method === 'POST' || method === 'DELETE') {
+      if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
         try {
           const raw = await request.text();
           body = raw.trim() ? object(JSON.parse(raw) as unknown) : {};
@@ -151,7 +159,7 @@ export function createGroupRuntimeHttpHandler(api: GroupRuntimeApi): RuntimeHttp
         });
         return respond(200, { groupId: payload.groupId });
       }
-      const match = url.pathname.match(/^\/v1\/runtime\/groups\/([^/]+)(?:\/(turns|context|members)(?:\/([^/]+))?)?$/);
+      const match = url.pathname.match(/^\/v1\/runtime\/groups\/([^/]+)(?:\/(turns|context|members|status)(?:\/([^/]+))?)?$/);
       if (!match || (match[3] && match[2] !== 'members')) {
         return respond(404, { error: 'NOT_FOUND' });
       }
@@ -179,6 +187,15 @@ export function createGroupRuntimeHttpHandler(api: GroupRuntimeApi): RuntimeHttp
         const payload = body!;
         return respond(200, await api.buildMemberContext(groupId,
           string(payload.memberId, 'memberId'), contextRequest(payload.request)));
+      }
+      if (resource === 'status' && !match[3] && method === 'PUT') {
+        const payload = body!;
+        const status = payload.status;
+        if (status !== 'active' && status !== 'archived') invalid('status 必须是 active 或 archived');
+        const expectedVersion = optionalVersion(payload.expectedVersion);
+        return respond(200, await api.setGroupStatus({
+          groupId, status, ...(expectedVersion === undefined ? {} : { expectedVersion }),
+        }));
       }
       if (resource === 'members' && !match[3] && method === 'POST') {
         const expectedVersion = optionalVersion(body!.expectedVersion);

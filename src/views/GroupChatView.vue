@@ -361,9 +361,20 @@ async function confirmGenerateNpc() {
 
 // ── F10.4 临时群聊生命周期 ──
 
-function archiveCurrentGroup() {
-  if (!currentGroup.value) return;
-  const ok = groupStore.archiveGroup(currentGroup.value.id);
+async function archiveCurrentGroup(): Promise<void> {
+  const group = currentGroup.value;
+  if (!group) return;
+  // 远端模式先同步归档，服务端成功后才修改本地生命周期，避免本地与服务端状态分叉。
+  const synced = await chatStore.syncRemoteGroupStatus({
+    group,
+    characters: characterStore.characters,
+    status: 'archived',
+  });
+  if (!synced.synced) {
+    showToast('error', t('group.runtimeStatusSyncFailed'));
+    return;
+  }
+  const ok = groupStore.archiveGroup(group.id);
   if (ok) {
     showToast('info', t('group.archived'));
   } else if (groupStore.lastError) {
@@ -371,11 +382,21 @@ function archiveCurrentGroup() {
   }
 }
 
-function restoreCurrentGroup() {
-  if (!currentGroup.value) return;
-  // 校验所有成员的角色卡是否仍存在
+async function restoreCurrentGroup(): Promise<void> {
+  const group = currentGroup.value;
+  if (!group) return;
+  const synced = await chatStore.syncRemoteGroupStatus({
+    group,
+    characters: characterStore.characters,
+    status: 'active',
+  });
+  if (!synced.synced) {
+    showToast('error', t('group.runtimeStatusSyncFailed'));
+    return;
+  }
+  // 成员卡缺失校验仍由 store 负责，保持既有错误文案与行为不变。
   const ok = groupStore.restoreGroup(
-    currentGroup.value.id,
+    group.id,
     (charId) => characterStore.characters.some((c) => c.id === charId)
   );
   if (ok) {

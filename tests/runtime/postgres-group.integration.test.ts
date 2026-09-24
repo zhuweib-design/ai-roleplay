@@ -238,7 +238,29 @@ integration('PostgreSQL 群聊公共回合与多角色原子事务', () => {
         http.createGroup({ groupId, name: '原子群聊', memberIds: [a, b] }),
         http.commitTurn({ groupId, turnId: 'concurrent-create', speakerId: b, userMessage: '并发创建重试', assistantMessage: '不会覆盖成员' }),
       ]);
-      await pool.query("UPDATE group_chats SET status = 'archived' WHERE id = $1", [groupId]);
+      // 归档 / 恢复走显式状态接口：状态变化推进定义版本，旧版本写入必须冲突
+      const beforeArchive = await http.getGroupState(groupId);
+      const archived = await http.setGroupStatus({
+        groupId, status: 'archived', expectedVersion: beforeArchive.version,
+      });
+      expect(archived.status).toBe('archived');
+      expect(archived.version).toBe(beforeArchive.version + 1);
+      await expect(http.setGroupStatus({ groupId, status: 'active', expectedVersion: beforeArchive.version }))
+        .rejects.toMatchObject({ status: 409, code: 'GROUP_VERSION_CONFLICT' });
+      // 归档群组拒绝公共回合与成员变更
+      await expect(http.commitTurn({ groupId, turnId: 'archived-turn', speakerId: a,
+        userMessage: '归档后', assistantMessage: '不允许' })).rejects.toMatchObject({ status: 404 });
+      await expect(http.addMember(groupId, c)).rejects.toMatchObject({ status: 404 });
+      const restored = await http.setGroupStatus({
+        groupId, status: 'active', expectedVersion: archived.version,
+      });
+      expect(restored.status).toBe('active');
+      expect(restored.version).toBe(archived.version + 1);
+      await expect(http.createGroup({ groupId, name: '原子群聊', memberIds: [a, b] }))
+        .resolves.toBeUndefined();
+      // 归档后 createGroup 重试必须拒绝
+      const beforeReArchive = await http.getGroupState(groupId);
+      await http.setGroupStatus({ groupId, status: 'archived', expectedVersion: beforeReArchive.version });
       await expect(http.createGroup({ groupId, name: '原子群聊', memberIds: [a, b] }))
         .rejects.toMatchObject({ status: 404, code: 'GROUP_NOT_FOUND' });
     } finally {

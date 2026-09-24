@@ -14,6 +14,13 @@ export interface RuntimeGroupState {
   memberIds: string[];
 }
 
+export interface SetRuntimeGroupStatusInput {
+  groupId: string;
+  status: 'active' | 'archived';
+  /** 可选乐观锁版本；不一致时返回 409，避免覆盖其他客户端的定义变更。 */
+  expectedVersion?: number;
+}
+
 export interface CommitRuntimeGroupTurnInput {
   groupId: string;
   /** 同群内稳定的逻辑回合键；重试必须复用。 */

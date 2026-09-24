@@ -151,11 +151,15 @@ describe('Chat Store — Runtime 实际链路', () => {
     const removeMember = vi.fn<GroupRuntimeApi['removeMember']>(async (groupId) => ({
       groupId, name: '远程测试群', status: 'active', version: 4, memberIds: ['group-a'],
     }));
+    const setGroupStatus = vi.fn<GroupRuntimeApi['setGroupStatus']>(async (input) => ({
+      groupId: input.groupId, name: '远程测试群', status: input.status, version: 5,
+      memberIds: ['group-a', 'group-b'],
+    }));
     const commit = vi.fn<GroupRuntimeApi['commitTurn']>(async (input) => ({
       ...input, id: 'turn-id', sequenceNo: 0, occurredAt: '2026-09-23T00:00:00.000Z', eventIds: {},
     }));
     const groups = createGroupRuntimeHttpHandler({
-      createGroup: create, getGroupState, commitTurn: commit, buildMemberContext: context,
+      createGroup: create, getGroupState, setGroupStatus, commitTurn: commit, buildMemberContext: context,
       addMember, removeMember, listTurns: async () => [],
     });
     const single = createRuntimeHttpHandler(characterApi);
@@ -168,7 +172,7 @@ describe('Chat Store — Runtime 实际链路', () => {
     });
     const store = useChatStore();
     const input = { group, characters, speakerCharacterId: characters[0]!.id };
-    return { store, input, paths, context, create, addMember, removeMember, commit };
+    return { store, input, paths, context, create, getGroupState, addMember, removeMember, setGroupStatus, commit };
   }
 
   it('远程群聊先确认群组，再走成员限定上下文，且不污染缓存的单角色 API', async () => {
@@ -243,6 +247,29 @@ describe('Chat Store — Runtime 实际链路', () => {
     expect(removed).toEqual({ enabled: true, synced: true });
     expect(removeMember).toHaveBeenCalledOnce();
     expect(removeMember.mock.calls[0]![1]).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('群组归档状态先同步远端，服务端失败时本地生命周期不变', async () => {
+    const { store, input, getGroupState, setGroupStatus } = setupGroupRemote();
+
+    const archived = await store.syncRemoteGroupStatus({
+      group: input.group, characters: input.characters, status: 'archived',
+    });
+    expect(archived).toEqual({ enabled: true, synced: true });
+    expect(setGroupStatus).toHaveBeenCalledOnce();
+    // 远端已 active，目标 archived：必须带服务端读取到的版本做 CAS
+    expect(setGroupStatus.mock.calls[0]![0]).toMatchObject({ status: 'archived', expectedVersion: 3 });
+
+    // 模拟服务端已归档：本地请求恢复为 active 时会触发状态写入并遭遇 CAS 冲突
+    getGroupState.mockImplementationOnce(async (groupId) => ({
+      groupId, name: '远程测试群', status: 'archived', version: 4, memberIds: ['group-a', 'group-b'],
+    }));
+    setGroupStatus.mockRejectedValueOnce(new GroupRuntimeError(409, 'GROUP_VERSION_CONFLICT', '群组状态已更新'));
+    const conflicted = await store.syncRemoteGroupStatus({
+      group: input.group, characters: input.characters, status: 'active',
+    });
+    expect(conflicted).toEqual({ enabled: true, synced: false });
+    expect(store.runtimeStatus?.phase).toBe('event');
   });
 
   it('远程提交失败会持久化待提交回合，刷新后可用同一载荷重试并清除队列', async () => {

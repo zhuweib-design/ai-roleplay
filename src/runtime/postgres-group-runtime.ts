@@ -1,5 +1,5 @@
-import { GroupRuntimeError, type CreateRuntimeGroupInput, type CommitRuntimeGroupTurnInput, type RuntimeGroupState, type RuntimeGroupTurn } from './group-runtime-contract';
-export { GroupRuntimeError, type CreateRuntimeGroupInput, type CommitRuntimeGroupTurnInput, type RuntimeGroupTurn } from './group-runtime-contract';
+import { GroupRuntimeError, type CreateRuntimeGroupInput, type CommitRuntimeGroupTurnInput, type SetRuntimeGroupStatusInput, type RuntimeGroupState, type RuntimeGroupTurn } from './group-runtime-contract';
+export { GroupRuntimeError, type CreateRuntimeGroupInput, type CommitRuntimeGroupTurnInput, type SetRuntimeGroupStatusInput, type RuntimeGroupTurn } from './group-runtime-contract';
 import { RuntimeCore, reduceRuntimeState } from './runtime-core';
 import { isRuntimeUuid, stableRuntimeUuid } from './runtime-id';
 import { PostgresRuntimeStore, type SqlExecutor } from './postgres-store';
@@ -94,6 +94,26 @@ export class PostgresGroupRuntime {
     return this.sql.transaction(async (tx) => this.readGroupState(tx, groupId, false));
   }
 
+  /**
+   * 设置群组状态（归档 / 恢复）。
+   * 归档后公共回合与成员变更都会被拒绝；恢复不改变成员定义，但会推进定义版本。
+   */
+  async setGroupStatus(input: SetRuntimeGroupStatusInput): Promise<RuntimeGroupState> {
+    uuid(input.groupId, '群组 ID');
+    validateExpectedVersion(input.expectedVersion);
+    return this.sql.transaction(async (tx) => {
+      await this.lockActiveOrArchivedGroup(tx, input.groupId);
+      const state = await this.readGroupState(tx, input.groupId, false);
+      assertGroupVersion(input.expectedVersion, state.version);
+      if (state.status === input.status) return state;
+      await tx.query(
+        'UPDATE group_chats SET status = $3, version = version + 1 WHERE id = $1 AND tenant_id = $2',
+        [input.groupId, this.tenantId, input.status]
+      );
+      return this.readGroupState(tx, input.groupId, false);
+    });
+  }
+
   async addMember(groupId: string, characterId: string, expectedVersion?: number): Promise<RuntimeGroupState> {
     uuid(groupId, '群组 ID');
     uuid(characterId, '成员 ID');
@@ -167,6 +187,15 @@ export class PostgresGroupRuntime {
   private async lockActiveGroup(tx: SqlExecutor, groupId: string): Promise<void> {
     const group = await tx.query(
       `SELECT 1 FROM group_chats WHERE id = $1 AND tenant_id = $2 AND status = 'active' FOR UPDATE`,
+      [groupId, this.tenantId]
+    );
+    if (!group.rowCount) throw new GroupRuntimeError(404, 'GROUP_NOT_FOUND', '群组不存在或不属于当前租户');
+  }
+
+  /** 归档/恢复路径需要锁定任意状态的群组行。 */
+  private async lockActiveOrArchivedGroup(tx: SqlExecutor, groupId: string): Promise<void> {
+    const group = await tx.query(
+      'SELECT 1 FROM group_chats WHERE id = $1 AND tenant_id = $2 FOR UPDATE',
       [groupId, this.tenantId]
     );
     if (!group.rowCount) throw new GroupRuntimeError(404, 'GROUP_NOT_FOUND', '群组不存在或不属于当前租户');

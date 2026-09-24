@@ -517,6 +517,37 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /**
+   * 同步群组归档 / 恢复状态到服务端。
+   * 远端成功后才允许本地变更，失败时不修改本地生命周期，避免本地与服务端状态分叉。
+   */
+  async function syncRemoteGroupStatus(input: {
+    group: GroupChat;
+    characters: UICharacter[];
+    status: 'active' | 'archived';
+  }): Promise<{ enabled: boolean; synced: boolean }> {
+    const api = getGroupRuntimeApi();
+    if (!api) return { enabled: false, synced: true };
+    try {
+      const anchor = input.group.members[0];
+      if (!anchor) throw new Error(t('group.runtimeNoAnchorMember'));
+      const { runtimeGroupId } = await prepareRemoteGroupRuntime({
+        group: input.group,
+        characters: input.characters,
+        speakerCharacterId: anchor.characterId,
+      }, api);
+      const state = await api.getGroupState(runtimeGroupId);
+      if (state.status !== input.status) {
+        await api.setGroupStatus({ groupId: runtimeGroupId, status: input.status, expectedVersion: state.version });
+      }
+      runtimeStatus.value = null;
+      return { enabled: true, synced: true };
+    } catch (error) {
+      reportRuntimeError(error, 'event');
+      return { enabled: true, synced: false };
+    }
+  }
+
   async function commitRuntimeGroupTurn(input: {
     group: GroupChat;
     characters: UICharacter[];
@@ -1735,6 +1766,7 @@ export const useChatStore = defineStore('chat', () => {
     ensureRuntimeIntegration,
     ensureGroupRuntimeIntegration,
     syncRemoteGroupMember,
+    syncRemoteGroupStatus,
     commitRuntimeGroupTurn,
     pendingGroupRuntimeTurns,
     loadRuntimePendingGroupTurns,
