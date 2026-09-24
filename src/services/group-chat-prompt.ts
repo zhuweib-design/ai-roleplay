@@ -1,6 +1,8 @@
 import type { ChatMessage } from '@core/character-card';
 import type { GroupChat, GroupMember } from '@core/group-chat';
 
+// i18n-ignore-start  // 群聊提示词与消息投影标签：模型面文本，非 UI 文案
+
 /** 群内公开消息投影：不读取其他角色的私有 Runtime 状态。 */
 export function buildGroupHistory(group: GroupChat, speaker: GroupMember, currentUserMessageId: string): ChatMessage[] {
   return group.messages
@@ -28,3 +30,4 @@ export function buildGroupSystemPrompt(group: GroupChat, speaker: GroupMember): 
   const members = group.members.map((member) => member.name).join('、');
   return `你正在群聊“${group.name}”中扮演${speaker.name}。成员：${members}。只写${speaker.name}的回复，不代替其他成员发言。`;
 }
+// i18n-ignore-end

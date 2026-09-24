@@ -288,7 +288,7 @@ export const useChatStore = defineStore('chat', () => {
   }): Promise<void> {
     const existing = pendingGroupRuntimeTurns.value.find((item) =>
       item.groupId === input.groupId && item.turnId === input.turnId);
-    const errorText = input.error instanceof Error ? input.error.message : String(input.error ?? '提交失败');
+    const errorText = input.error instanceof Error ? input.error.message : String(input.error ?? t('group.runtimeSubmitFailed'));
     if (existing) {
       existing.attempts += 1;
       existing.lastError = errorText;
@@ -358,6 +358,7 @@ export const useChatStore = defineStore('chat', () => {
     return runtimeApi;
   }
 
+  // i18n-ignore-start  // 服务端错误码与文案匹配规则，非 UI 文案
   function isRuntimeNotFound(error: unknown): boolean {
     return error instanceof RuntimeApiError
       ? error.status === 404
@@ -369,6 +370,7 @@ export const useChatStore = defineStore('chat', () => {
       ? error.status === 409 || /已存在|ALREADY_EXISTS/.test(error.message)
       : error instanceof Error && /已存在|already exists|ALREADY_EXISTS/.test(error.message);
   }
+  // i18n-ignore-end
 
   function runtimeInputForCard(tenantId: string, character: UICharacter, card: CharacterCard): CharacterCompileInput {
     return {
@@ -384,7 +386,7 @@ export const useChatStore = defineStore('chat', () => {
           ? [{ type: 'semantic' as const, content: card.description.trim(), importance: 0.5 }]
           : []),
         ...(card.scenario.trim()
-          ? [{ type: 'episodic' as const, content: `场景：${card.scenario.trim()}`, importance: 0.4 }]
+          ? [{ type: 'episodic' as const, content: `场景：${card.scenario.trim()}`, importance: 0.4 }] // i18n-ignore
           : []),
       ],
     };
@@ -393,7 +395,7 @@ export const useChatStore = defineStore('chat', () => {
   async function createRuntimeCharactersBatch(characters: UICharacter[]): Promise<RuntimeBatchCreateResult | null> {
     if (characters.length === 0) return { items: [] };
     if (characters.length > 50) {
-      reportRuntimeError(new Error('单批最多创建 50 个角色'), 'initialize');
+      reportRuntimeError(new Error(t('group.runtimeBatchLimit')), 'initialize');
       return null;
     }
     try {
@@ -421,17 +423,17 @@ export const useChatStore = defineStore('chat', () => {
     characters: UICharacter[];
     speakerCharacterId: string;
   }, api: HttpGroupRuntimeApi) {
-    if (input.group.lifecycleStatus === 'archived') throw new Error('已归档群组不能发言');
+    if (input.group.lifecycleStatus === 'archived') throw new Error(t('group.runtimeArchived'));
     if (!input.group.members.some((member) => member.characterId === input.speakerCharacterId)) {
-      throw new Error('发言角色不是群组成员');
+      throw new Error(t('group.runtimeNotMember'));
     }
     const tenantId = resolveRuntimeTenantId();
     const integrations = new Map<string, ChatRuntimeIntegration>();
     for (const member of input.group.members) {
       const character = input.characters.find((item) => item.id === member.characterId);
-      if (!character) throw new Error('群聊成员角色卡不存在：' + member.characterId);
+      if (!character) throw new Error(t('group.runtimeMemberCardMissing', { id: member.characterId }));
       const integration = await ensureRuntimeIntegration(character, uiCharToCard(character), 'group-' + input.group.id);
-      if (!integration) throw new Error('群聊成员 Runtime 初始化失败：' + character.name);
+      if (!integration) throw new Error(t('group.runtimeMemberInitFailed', { name: character.name }));
       integrations.set(member.characterId, integration);
     }
     const runtimeGroupId = stableRuntimeUuid('group-runtime', tenantId, input.group.id);
@@ -461,10 +463,10 @@ export const useChatStore = defineStore('chat', () => {
         requireContext: true,
         api: {
           buildContext: (characterId, request) => {
-            if (characterId !== speaker.characterId) throw new Error('群聊上下文角色不匹配');
+            if (characterId !== speaker.characterId) throw new Error(t('group.runtimeContextMismatch'));
             return api.buildMemberContext(runtimeGroupId, speaker.characterId, request);
           },
-          ingestEvent: async () => { throw new Error('远程群聊必须通过公共回合事务提交事件'); },
+          ingestEvent: async () => { throw new Error(t('group.runtimeMustUsePublicTurn')); },
         },
       };
     } catch (error) {
@@ -485,10 +487,10 @@ export const useChatStore = defineStore('chat', () => {
     try {
       if (input.group.members.length < 2 || !input.group.members.some((member) =>
         member.characterId === input.memberCharacterId)) {
-        if (input.operation === 'remove') throw new Error('待移除角色不是当前群组成员');
+        if (input.operation === 'remove') throw new Error(t('group.runtimeRemoveNotMember'));
       }
       const anchor = input.group.members[0];
-      if (!anchor) throw new Error('群组没有可用成员');
+      if (!anchor) throw new Error(t('group.runtimeNoAnchorMember'));
       const { runtimeGroupId } = await prepareRemoteGroupRuntime({
         group: input.group,
         characters: input.characters,
@@ -497,9 +499,9 @@ export const useChatStore = defineStore('chat', () => {
       // 读取版本后以 CAS 执行显式成员变更；并发客户端修改会得到 409，而不会静默覆盖。
       const state = await api.getGroupState(runtimeGroupId);
       const target = input.characters.find((character) => character.id === input.memberCharacterId);
-      if (!target) throw new Error('成员角色卡不存在：' + input.memberCharacterId);
+      if (!target) throw new Error(t('group.runtimeMemberCardMissing', { id: input.memberCharacterId }));
       const targetIntegration = await ensureRuntimeIntegration(target, uiCharToCard(target), 'group-' + input.group.id);
-      if (!targetIntegration) throw new Error('成员 Runtime 初始化失败：' + target.name);
+      if (!targetIntegration) throw new Error(t('group.runtimeMemberInitFailed', { name: target.name }));
       if (input.operation === 'add') {
         await api.addMember(runtimeGroupId, targetIntegration.characterId, state.version);
       } else {
