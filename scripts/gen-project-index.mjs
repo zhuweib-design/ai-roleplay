@@ -25,7 +25,7 @@ const OUT_FILE = path.join(ROOT, 'PROJECT_INDEX.md');
 const EXCLUDE_DIR_NAMES = new Set([
   '.git', '.svn', '.hg', 'node_modules', 'vendor', '.venv', 'venv', 'env',
   // IDE 工程元数据（非项目内容；通常已被 .gitignore 忽略，不应进入索引）
-  '.idea', '.vscode',
+  '.idea', '.vscode', '.obsidian',
   '__pycache__', 'dist', 'build', 'out', 'coverage', '.next', '.nuxt',
   '.cache', '.parcel-cache', 'artifacts', 'model', 'target',
   'test-results', 'playwright-report',
@@ -37,6 +37,8 @@ const EXCLUDE_REL_DIRS = new Set([
   '.reasonix/attachments',
   '.reasonix/reports',
   'src-tauri/gen',
+  // 本地专用产品文档：仅在本机保存历史（refs/local/docs-product），不进入版本控制与索引
+  'docs/product',
 ]);
 
 /** 按文件名排除（密钥、证书、数据库、日志、大二进制、锁文件） */
@@ -115,6 +117,26 @@ const CURATED = {
   'src/storage/tauri-fs-adapter.ts': 'Tauri 文件系统存储适配器（桌面端）',
   'src/storage/legacy-migration.ts': '历史数据格式迁移',
 
+  'src/runtime/types.ts': 'Virtual Character OS Runtime 领域类型与 API 契约',
+  'src/runtime/emotion-engine.ts': 'Virtual Character OS 情绪衰减、Episode 与 Salience 引擎',
+  'src/runtime/character-compiler.ts': 'Virtual Character OS Archetype + Delta + Seed Memories 编译器',
+  'src/runtime/store.ts': 'Virtual Character OS Runtime Snapshot 存储接口与适配器',
+  'src/runtime/postgres-store.ts': 'Virtual Character OS PostgreSQL RuntimeStore 与事务边界',
+  'src/runtime/postgres-executor.ts': 'node-postgres Pool 到 SqlExecutor 的事务适配器（服务端专用）',
+  'src/runtime/runtime-http.ts': 'Virtual Character OS 单角色 HTTP 客户端与 Fetch Handler',
+  'src/runtime/postgres-group-runtime.ts': 'Virtual Character OS PostgreSQL 群组事务、成员授权与多角色 Event 证据关联',
+  'src/runtime/server-runtime.ts': 'Virtual Character OS 服务端 Runtime 与群聊事务组合入口',
+  'src/runtime/group-runtime-contract.ts': 'Virtual Character OS 浏览器与服务端共享群聊类型及领域错误，不含 SQL 依赖',
+  'src/runtime/runtime-group-http.ts': 'Virtual Character OS 群聊 HTTP 客户端与 Fetch Handler',
+  'tests/runtime/group-runtime-http.test.ts': '群聊 HTTP 客户端与 Fetch Handler 边界测试',
+  'tests/runtime/postgres-group.integration.test.ts': '真实 PostgreSQL 群聊原子性、授权、并发及回滚集成测试',
+  'src/runtime/runtime-id.ts': 'Virtual Character OS 跨适配器稳定 UUID 与会话 Turn ID 规则',
+  'src/runtime/chat-bridge.ts': 'Virtual Character OS 聊天链路 Runtime Context 与 Event 桥接',
+  'src/runtime/context-builder.ts': 'Virtual Character OS 上下文构建器',
+  'src/runtime/runtime-core.ts': 'Virtual Character OS Runtime Core 状态归约主链',
+  'src/runtime/runtime-api.ts': 'Virtual Character OS 运行时 API 适配器',
+  'src/runtime/project-runtime.ts': 'AI 酒馆项目级 Runtime 工厂',
+  'src/runtime/index.ts': 'Virtual Character OS Runtime 统一出口',
   'src/core/character-card.ts': '角色卡模型与解析（含 SillyTavern 兼容）',
   'src/core/character-generator.ts': 'AI 角色生成',
   'src/core/character-version-control.ts': '角色卡版本控制',
@@ -188,6 +210,8 @@ const CURATED = {
   'src/services/translator.ts': '翻译服务',
   'src/services/tts-service.ts': '语音合成服务',
   'src/services/type-adapters.ts': '第三方数据格式适配',
+  'src/services/group-chat-prompt.ts': '群聊提示词组装（公共历史窗口与成员名单，隔离其他成员私有记忆）',
+  'src/services/group-chat-runtime.ts': '群聊发言选择与旁听 Event 投递规则',
 
   'src/stores/character.ts': '状态存储：角色卡列表与当前角色',
   'src/stores/character-version.ts': '状态存储：角色卡版本历史',
@@ -291,9 +315,13 @@ const CURATED = {
   'scripts/p11-baseline.mjs': '测量：P11 性能基线采集',
   'scripts/p11-scroll-fps.mjs': '测量：滚动帧率采集',
   'scripts/gen-project-index.mjs': '工具：生成本索引文件',
+  'scripts/sync-runtime-schema.mjs': '门禁：校验迁移文件与权威 Schema 文档无漂移（--check 只读比对）',
 
   'tests/setup.ts': 'Vitest 全局测试环境初始化',
+  'tests/stores/chat-runtime.integration.test.ts': 'Chat Store 到 Runtime Context 的实际链路集成测试',
   'e2e/storage-state.json': 'E2E 预置 localStorage（跳过新手引导）',
+  'e2e/character-batch-import.spec.ts': 'E2E：批量角色导入、Runtime 同步失败重试与 50 个上限拒绝',
+  'e2e/group-chat-flow.spec.ts': 'E2E：双角色群聊真实模型链路、独立 Context/Event 与指定发言',
 
   'docs/design/design-system-specification.md': '设计文档：设计系统规范（令牌 / 组件 / 移动端）',
   'docs/design/software-design-document.md': '设计文档：软件设计说明书',
@@ -302,7 +330,9 @@ const CURATED = {
   'docs/design/e00-decision.md': '设计文档：E-00 嵌入优化形态决策',
   'docs/design/threat-model.md': '设计文档：威胁模型（含提示词注入专项）',
   'docs/design/AI酒馆项目嵌入优化方案开发文档.md': '设计文档：嵌入优化方案（L0/L1/L2 三层）',
-  'docs/product/AI酒馆开发计划文档.md': '产品文档：开发计划与任务台账',
+  'docs/design/virtual-character-os-实现基线.md': '设计文档：Virtual Character OS 实现基线（Schema → Runtime → Emotion → Compiler → API）',
+  'docs/design/virtual-character-os-多角色群聊实施计划.md': '设计文档：多角色群聊与 PostgreSQL 群组事务实施计划及验证记录',
+  'docs/design/runtime-core-基线设计.md': '设计文档：Runtime Core 基线设计与并发、回放、审计边界',
   'docs/other/项目文档结构.md': '其他：项目文档分类规范',
   'docs/dev/b-type-findings.md': '开发文档：`!` 非空断言治理审计记录',
   'docs/dev/mobile-pwa-plan.md': '开发文档：手机端 PWA 实现计划',
@@ -310,6 +340,11 @@ const CURATED = {
   'docs/dev/data-backup-restore.md': '开发文档：备份恢复与灾备演练 Runbook（P2-#3 修复交付）',
   'docs/fixes/goal-tracker.md': '修复文档：跨端一致性 28 项缺陷修复进度台账',
   'docs/fixes/web-sop-review-2026-09-18.md': '修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维）',
+  'docs/fixes/runtime-core-baseline-verification-2026-09-22.md': '验证记录：Runtime Core 基线自动化验证',
+  'docs/fixes/runtime-chat-store-integration-2026-09-22.md': '验证记录：Runtime 聊天、原始 Turn 与 PostgreSQL 原子持久化接线',
+  'docs/fixes/runtime-postgres-pool-migration-2026-09-22.md': '验证记录：node-postgres Pool 适配、事务生命周期与 Schema 迁移文件',
+  'docs/fixes/runtime-concurrency-http-boundary-2026-09-22.md': '验证记录：Runtime 并发控制与 HTTP 边界加固',
+  'docs/fixes/full-project-audit-2026-09-22.md': '验证记录：全项目代码质量与流程审计',
   'docs/assets/test-gradient.jpg': '设计文档：渐变测试图（本地验证用）',
 
   'docs/fixes/cross-client-review-2026-09-07.md': '修复文档：跨客户端评审报告（28 项缺陷来源）',
@@ -345,6 +380,11 @@ const CURATED = {
   'market/items/template-sci-fi.json': '社区市场条目：科幻题材模板',
   'market/items/worldbook-midgard.json': '社区市场条目：世界书 Midgard',
 
+  'migrations/001_virtual_character_os.sql': '数据库迁移：Virtual Character OS 权威 Schema 的可执行副本（含旧部署幂等升级）',
+  'docs/Virtual-Character-OS-v1.0-database-schema.sql.md': '设计文档：Virtual Character OS 权威 Schema（迁移文件的事实源）',
+  'docs/Virtual-Character-OS-v1.0-技术规格.md': '设计文档：Virtual Character OS v1.0 技术规格',
+  'docs/Virtual-Character-OS-v1.0-数据库-Schema-设计说明.md': '设计文档：Virtual Character OS 数据库 Schema 设计说明',
+  'docs/对话记录.md': '其他：需求讨论与实施对话原始记录',
   '.workbuddy/memory/MEMORY.md': 'AI记忆：项目长期记忆（已归档的跨会话结论）',
   '.reasonix/skills/open-code-review/SKILL.md': 'AI记忆：代码评审技能定义',
 };
@@ -376,7 +416,6 @@ const DOC_DIR_CATEGORY = {
   'docs/design/': '设计文档',
   'docs/dev/': '开发文档',
   'docs/fixes/': '修复文档',
-  'docs/product/': '产品文档',
   'docs/other/': '其他',
 };
 
@@ -653,7 +692,7 @@ function main() {
   const catNote = {
     '程序': 'src/ 前端源码与 src-tauri/src/ Rust 源码、index.html',
     '测试': 'tests/ 单元与组件测试、e2e/ Playwright 场景',
-    '产品文档': 'docs/product/ 产品与项目规划材料',
+    '产品文档': 'public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除）',
     '开发文档': 'docs/dev/ 实现计划、Runbook、审计记录',
     '修复文档': 'docs/fixes/ 缺陷评审、修复交付与进度台账',
     '设计文档': 'docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档',
@@ -706,8 +745,6 @@ function main() {
   parts.push('5. 生成器只读 git（`ls-files` / `status` / `check-ignore`），不会执行 `add` / `commit` / `push`。');
   parts.push('6. 本文件全文使用相对路径；请勿在补充内容中写入绝对路径，以免泄露本机目录信息。');
   parts.push('7. 目录结构变更请同步记录到 `MIGRATION_LOG.md`。');
-  parts.push('');
-
   fs.writeFileSync(OUT_FILE, `${parts.join('\n')}\n`, 'utf8');
 
   console.log(`[gen-project-index] 已生成 ${path.basename(OUT_FILE)}`);

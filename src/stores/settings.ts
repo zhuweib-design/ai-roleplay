@@ -13,9 +13,12 @@ import type {
 } from '@/types';
 import type { StatusHudConfig } from '@core/status-schema';
 import { DEFAULT_STATUS_HUD_CONFIG, normalizeStatusHudConfig } from '@core/status-schema';
-import { DEFAULT_THINKING_CONFIG } from '@/types';
-import { buildCustomThemeCss, generateThemeTokens, type ThemeTokens } from '@/core/theme-extractor';
-import type { StorageAdapter } from '../storage/storage-adapter';
+import {
+  DEFAULT_THINKING_CONFIG,
+  DEFAULT_MAX_CONTEXT_TOKENS,
+  DEFAULT_RESERVED_TOKENS,
+} from '@/types';
+import { buildCustomThemeCss, generateThemeTokens, type ThemeTokens } from '@/core/theme-extractor';import type { StorageAdapter } from '../storage/storage-adapter';
 import {
   DEFAULT_TTS_CONFIG,
   type TTSConfig,
@@ -118,6 +121,25 @@ export const useSettingsStore = defineStore('settings', () => {
    * **false** —— 不默认改变模型行为；解析与渲染永远开启（模型自己输出了就白捡）。
    */
   const statusHudConfig = ref<StatusHudConfig>({ ...DEFAULT_STATUS_HUD_CONFIG });
+
+  /**
+   * 上下文窗口 Token 上限（全局）
+   *
+   * 决定 prompt-builder 的历史裁剪预算：`预算 = maxContextTokens - reservedTokens`。
+   * 接入大上下文模型（如 256K）时调大即可吃到优势；默认 8192 保持既有行为不变。
+   */
+  const maxContextTokens = ref<number>(DEFAULT_MAX_CONTEXT_TOKENS);
+
+  /** 为模型回复预留的 Token 数（全局，默认 1024） */
+  const reservedTokens = ref<number>(DEFAULT_RESERVED_TOKENS);
+
+  /**
+   * 可用上下文预算 = maxContextTokens - reservedTokens
+   * 即"实际能装历史消息的量"，UI 实时展示给用户（钳制非负，防御脏数据）
+   */
+  const availableContextTokens = computed(() =>
+    Math.max(0, maxContextTokens.value - reservedTokens.value)
+  );
 
   // AC20 主密码会话管理（不持久化到存储层；仅运行时内存）
   // - masterPassword：仅运行时内存，刷新页面后需重新解锁
@@ -892,6 +914,18 @@ export const useSettingsStore = defineStore('settings', () => {
         if (saved.statusHudConfig && typeof saved.statusHudConfig === 'object') {
           statusHudConfig.value = normalizeStatusHudConfig(saved.statusHudConfig);
         }
+        // 加载上下文长度配置（向后兼容：旧数据缺字段时保留默认 8192 / 1024）
+        if (typeof saved.maxContextTokens === 'number' && Number.isFinite(saved.maxContextTokens)) {
+          maxContextTokens.value = Math.floor(saved.maxContextTokens);
+        }
+        if (typeof saved.reservedTokens === 'number' && Number.isFinite(saved.reservedTokens)) {
+          reservedTokens.value = Math.floor(saved.reservedTokens);
+        }
+        // 防御脏数据：max ≤ reserved 会使预算为 0，整组回落默认，避免历史无法装入
+        if (maxContextTokens.value <= reservedTokens.value) {
+          maxContextTokens.value = DEFAULT_MAX_CONTEXT_TOKENS;
+          reservedTokens.value = DEFAULT_RESERVED_TOKENS;
+        }
         // AC20 加载主密码验证器（apiKey 字段保持加密形式，待 unlock 后解密）
         if (typeof saved.masterPasswordVerifier !== 'undefined') {
           masterPasswordVerifier.value = saved.masterPasswordVerifier;
@@ -990,6 +1024,9 @@ export const useSettingsStore = defineStore('settings', () => {
         samplingDefaults: samplingDefaults.value ? { ...toRaw(samplingDefaults.value) } : null,
         // P1 状态栏偏好
         statusHudConfig: { ...toRaw(statusHudConfig.value) },
+        // 上下文长度配置
+        maxContextTokens: maxContextTokens.value,
+        reservedTokens: reservedTokens.value,
       });
     } catch (err) {
       lastError.value = i18nT('settings.saveFailed', {
@@ -1038,6 +1075,45 @@ export const useSettingsStore = defineStore('settings', () => {
     statusHudConfig.value = normalizeStatusHudConfig({ ...statusHudConfig.value, ...patch });
   }
 
+  // ── 上下文长度配置 ──
+
+  /**
+   * 设置上下文窗口 Token 上限。
+   *
+   * 校验：新值必须 **大于** 当前 reservedTokens，否则拒绝（返回 false）且
+   * 不修改任何状态、不落盘 —— 因为 max ≤ reserved 时可用预算为 0，历史无法装入，
+   * 属非法配置（这也是 UI 提示"必须大于预留值"的底层依据）。
+   *
+   * @param value 新的 maxContextTokens
+   * @returns true=已应用并落盘；false=校验失败（未做任何修改）
+   */
+  function setMaxContextTokens(value: number): boolean {
+    if (!Number.isFinite(value)) return false;
+    const next = Math.floor(value);
+    if (next <= reservedTokens.value) return false;
+    maxContextTokens.value = next;
+    void persistSettings();
+    return true;
+  }
+
+  /**
+   * 设置为回复预留的 Token 数。
+   *
+   * 校验：新值必须 **小于** 当前 maxContextTokens 且非负，否则拒绝（返回 false）
+   * 且不修改任何状态、不落盘。
+   *
+   * @param value 新的 reservedTokens
+   * @returns true=已应用并落盘；false=校验失败（未做任何修改）
+   */
+  function setReservedTokens(value: number): boolean {
+    if (!Number.isFinite(value)) return false;
+    const next = Math.floor(value);
+    if (next < 0 || next >= maxContextTokens.value) return false;
+    reservedTokens.value = next;
+    void persistSettings();
+    return true;
+  }
+
   return {
     // 状态
     theme,
@@ -1060,6 +1136,10 @@ export const useSettingsStore = defineStore('settings', () => {
     thinkingConfig,
     samplingDefaults,
     statusHudConfig,
+    // 上下文长度配置
+    maxContextTokens,
+    reservedTokens,
+    availableContextTokens,
     lastError,
     // AC20 主密码会话状态
     hasMasterPassword,
@@ -1109,6 +1189,9 @@ export const useSettingsStore = defineStore('settings', () => {
     setThinkingConfig,
     setSamplingDefaults,
     setStatusHudConfig,
+    // 上下文长度配置
+    setMaxContextTokens,
+    setReservedTokens,
     // T-07: SillyTavern Quick Reply 格式互导
     exportQuickRepliesSt,
     importQuickRepliesSt,

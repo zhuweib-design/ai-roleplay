@@ -160,4 +160,7 @@ export interface StorageAdapter {
 
   /** 加载整块快照，不存在时返回 null */
   loadSnapshot<T>(key: string): Promise<T | null>;
+
+  /** 按键名前缀枚举已有快照，用于迁移前后兼容的 Runtime 角色列表。 */
+  listSnapshotsByPrefix?<T>(prefix: string): Promise<T[]>;
 }

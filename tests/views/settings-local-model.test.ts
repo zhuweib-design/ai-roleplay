@@ -116,7 +116,8 @@ describe('SettingsView 设置分类侧边栏 + 本地模型统一管理', () => 
     await seedDownloadedModels(localModelStore);
     const rows = wrapper.findAll('.model-mgmt-list .profile-item');
     expect(rows.length).toBe(localModelStore.models.length);
-    expect(rows.length).toBe(5);
+    // 注册表是可扩展清单，断言与当前注册表同步，避免新增合法模型造成脆弱的固定数量回归。
+    expect(rows.length).toBe(listRegisteredModels().length);
     expect(wrapper.text()).toContain('Qwen2.5 0.5B');
     expect(wrapper.text()).toContain('local');
     expect(wrapper.text()).toContain('下载 540MB');

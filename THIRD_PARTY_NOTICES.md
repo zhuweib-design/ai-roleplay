@@ -25,6 +25,7 @@ AI 酒馆（ai-roleplay）使用的第三方依赖及其许可证清单。
 | axe-core | MPL-2.0 | 无障碍扫描 |
 | jsdom | MIT | 测试环境 |
 | fake-indexeddb | Apache-2.0 | 测试环境 |
+| pg | MIT | PostgreSQL 服务端适配与真实数据库集成测试（devDependency，不进浏览器运行时） |
 
 ## 运行时 / 功能依赖（npm dependencies）
 

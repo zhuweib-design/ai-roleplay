@@ -5,6 +5,7 @@ import type { StorageAdapter } from '@/storage/storage-adapter';
 import type { CharacterCard } from '@/core/character-card';
 import {
   type GroupChat,
+  type GroupChatMessage,
   type GroupMember,
   type GroupChatCreateInput,
   type GroupChatMode,
@@ -198,7 +199,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
       return null;
     }
 
-    const id = `group-${Date.now()}`;
+    const id = `group-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
     const now = new Date().toISOString();
 
     // 构造成员列表
@@ -221,6 +222,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
 
     // 生成首消息（从成员的 alternateGreetings 中随机选取）
     let firstMessage = input.firstMessage ?? '';
+    let firstSpeaker = members[0];
     if (!firstMessage) {
       const candidates: { text: string; charName: string; charId: string }[] = [];
       members.forEach((m) => {
@@ -240,6 +242,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
       if (candidates.length > 0) {
         const pick = candidates[Math.floor(Math.random() * candidates.length)]!;
         firstMessage = pick.text;
+        firstSpeaker = members.find((member) => member.characterId === pick.charId);
       } else if (members.length > 0) {
         // 兜底：使用第一个成员的 firstMessage
         const card = characters.find((c) => c.id === members[0]!.characterId);
@@ -262,14 +265,15 @@ export const useGroupChatStore = defineStore('groupChat', () => {
               timestamp: now,
               swipes: [],
               swipeIndex: 0,
-              characterId: members[0]?.characterId,
-              characterName: members[0]?.name,
+              characterId: firstSpeaker?.characterId,
+              characterName: firstSpeaker?.name,
               eventType: 'none',
             },
           ]
         : [],
       mode: input.mode ?? 'natural',
       lastSpeakerId: null,
+      designatedSpeakerId: null,
       createdAt: now,
       updatedAt: now,
       lifecycleStatus: 'active',
@@ -540,10 +544,19 @@ export const useGroupChatStore = defineStore('groupChat', () => {
   ): GroupMember | null {
     const g = groups.value.find((x) => x.id === groupId);
     if (!g) return null;
-    return (
-      g.members.find((m) => m.characterId === characterId && m.allowAutoSelect) ??
-      null
-    );
+    const speaker = g.members.find((m) => m.characterId === characterId && m.allowAutoSelect) ?? null;
+    if (speaker) {
+      g.designatedSpeakerId = characterId;
+      void persistGroup(groupId);
+    }
+    return speaker;
+  }
+
+  function clearDesignatedSpeaker(groupId: string, characterId: string): void {
+    const group = groups.value.find((item) => item.id === groupId);
+    if (group?.designatedSpeakerId !== characterId) return;
+    group.designatedSpeakerId = null;
+    void persistGroup(groupId);
   }
 
   // ── 消息动作 ──
@@ -563,7 +576,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
 
     const now = new Date().toISOString();
     g.messages.push({
-      id: `msg-${Date.now()}`,
+      id: `msg-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`,
       role: 'user',
       content,
       timestamp: now,
@@ -584,13 +597,14 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     characterId: string,
     characterName: string,
     content: string
-  ): void {
+  ): string | null {
     const g = groups.value.find((x) => x.id === groupId);
-    if (!g) return;
+    if (!g) return null;
 
     const now = new Date().toISOString();
+    const messageId = `msg-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
     g.messages.push({
-      id: `msg-${Date.now()}`,
+      id: messageId,
       role: 'assistant',
       content,
       timestamp: now,
@@ -602,6 +616,15 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     });
 
     g.lastSpeakerId = characterId;
+    void persistGroup(groupId);
+    return messageId;
+  }
+
+  function updateAssistantMessage(groupId: string, messageId: string, patch: Partial<Pick<GroupChatMessage, 'content' | 'thinking' | 'status'>>): void {
+    const group = groups.value.find((item) => item.id === groupId);
+    const message = group?.messages.find((item) => item.id === messageId && item.role === 'assistant');
+    if (!message) return;
+    Object.assign(message, patch);
     void persistGroup(groupId);
   }
 
@@ -803,6 +826,8 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     addAssistantMessage,
     updateLastAssistantMessage,
     setMode,
+    clearDesignatedSpeaker,
+    updateAssistantMessage,
     setInput,
     setStreaming,
     // F10.3 随机 NPC 生成

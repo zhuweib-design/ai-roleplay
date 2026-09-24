@@ -107,8 +107,16 @@ function onDrawerTouchEnd(e: TouchEvent) {
 </script>
 
 <template>
-  <aside id="character-drawer" tabindex="-1" class="character-list" :class="{ active: characterStore.characterDrawerOpen }" :aria-label="t('charList.aria')"
-    @touchstart="onDrawerTouchStart" @touchmove="onDrawerTouchMove" @touchend="onDrawerTouchEnd">
+  <aside
+    id="character-drawer"
+    tabindex="-1"
+    class="character-list"
+    :class="{ active: characterStore.characterDrawerOpen }"
+    :aria-label="t('charList.aria')"
+    @touchstart="onDrawerTouchStart"
+    @touchmove="onDrawerTouchMove"
+    @touchend="onDrawerTouchEnd"
+  >
     <!-- 搜索区 -->
     <div class="character-search" style="position: relative">
       <span class="search-icon" aria-hidden="true">

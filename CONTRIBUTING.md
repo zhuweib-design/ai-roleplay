@@ -31,6 +31,26 @@
    npm run check:csp          # Web 端 CSP 契约守卫（含第三方字体 CDN 与字体镜像完整性校验，须在 build 之后跑）
    ```
 
+   **Runtime / 数据库门禁（改动 `src/runtime/`、`migrations/` 或数据库 Schema 时必跑）**
+
+   ```bash
+   npm run runtime:db:schema:check  # 迁移文件与权威 Schema 文档漂移检查
+   npm run typecheck                # Runtime 类型与契约检查
+   ```
+
+   改动 Runtime 事务、群聊或 Schema 时，除单元测试外还需真实 PostgreSQL 验证（本地 Docker 或 CI 服务）：
+
+   ```bash
+   # macOS / Linux / CI
+   RUNTIME_PG_TEST_URL=postgresql://... RUNTIME_PG_APPLY_SCHEMA=1 \
+     npm run test -- --run tests/runtime/postgres-runtime.integration.test.ts tests/runtime/postgres-group.integration.test.ts
+
+   # Windows PowerShell
+   $env:RUNTIME_PG_TEST_URL='postgresql://...'
+   $env:RUNTIME_PG_APPLY_SCHEMA='1'
+   npm run test -- --run tests/runtime/postgres-runtime.integration.test.ts tests/runtime/postgres-group.integration.test.ts
+   ```
+
    **桌面端门禁（仅改动 `src-tauri/` 时需额外跑，耗时较长）**
 
    ```bash
@@ -64,9 +84,9 @@
    >
    > CI（干净 runner）不受影响，退出码可信。
 
-   > **lint 基线口径**：当前实测 **0 error / 2 warning**（2 条在 `CharacterList.vue`，
-   > 属既有历史告警）。文档中曾记作「~50 warnings」，那是早于多轮修复的旧值 ——
-   > **以 2 warnings 为基线**，多于 2 条即为回归。
+   > **lint 基线口径**：当前实测 **0 error / 0 warning**。文档中曾记作「~50 warnings」或
+   > 「0 error / 2 warning」，那是早于多轮修复的旧值 —— **以 0 warning 为基线**，
+   > 出现任何 error 或 warning 即为回归。
 
 5. 提交信息遵循仓库既有风格（小步、明确，如 `feat(scope): describe`）。
 6. 向 `master` 发起 **Pull Request** 并描述改动目的。

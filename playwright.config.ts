@@ -8,12 +8,22 @@ import { defineConfig, devices } from '@playwright/test';
  *   `npx playwright install --with-deps chromium`）；Linux 无系统 Edge，
  *   原写死的 channel: 'msedge' 会导致找不到浏览器而整体失败
  * - 端口可通过 E2E_PORT 覆盖，避免与本地其他 dev server（如占用 5173 的进程）冲突
+ * - 默认不复用已有 dev server，避免测试误连到其他项目；需要复用时显式设置
+ *   E2E_REUSE_SERVER=1
  * - projects：桌面（Desktop Chrome）+ 移动视口（Pixel 5）。移动 project 用 testMatch
  *   限定到 e2e/mobile/，桌面 project 用 testIgnore 排除该目录，两者互不重叠。
  */
 const isCI = !!process.env.CI;
 const port = process.env.E2E_PORT ?? '5173';
 const baseURL = `http://localhost:${port}`;
+const reuseExistingServer = process.env.E2E_REUSE_SERVER === '1';
+const storageState = {
+  cookies: [],
+  origins: [{
+    origin: baseURL,
+    localStorage: [{ name: 'ai-roleplay:onboarding-done', value: '1' }],
+  }],
+};
 
 export default defineConfig({
   testDir: './e2e',
@@ -31,9 +41,9 @@ export default defineConfig({
     // 与既有用例的中文断言（按钮名/标签）全部不匹配。
     // 语言检测本身由 tests/i18n.test.ts 与 tests/stores/settings.test.ts 覆盖。
     locale: 'zh-CN',
-    // 预置新手引导完成标志，跳过 OnboardingModal 遮挡（值须为 '1'，见 src/utils/onboarding.ts）
-    // 多 origin 覆盖 CI(5173) 与本地验证(E2E_PORT=5174) 两种端口；不修改任何 spec
-    storageState: './e2e/storage-state.json',
+    // 按当前 baseURL 动态预置新手引导完成标志，避免 E2E_PORT 改变后回退到 OnboardingModal。
+    // 值须为 '1'，见 src/utils/onboarding.ts；不修改任何 spec。
+    storageState,
   },
   projects: [
     {
@@ -58,7 +68,7 @@ export default defineConfig({
   webServer: {
     command: `npm run dev -- --port ${port} --strictPort`,
     url: baseURL,
-    reuseExistingServer: true,
+    reuseExistingServer,
     timeout: 60_000,
   },
 });

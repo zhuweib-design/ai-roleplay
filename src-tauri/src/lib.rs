@@ -107,6 +107,7 @@ pub fn run() {
             // ── 整块快照命令（迭代33 新增） ──
             fs_commands::save_snapshot_file,
             fs_commands::load_snapshot_file,
+            fs_commands::list_snapshot_files,
             // ── 流式聊天命令 ──
             chat_stream::chat_stream,
             chat_stream::cancel_chat_stream,

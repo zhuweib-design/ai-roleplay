@@ -69,6 +69,8 @@ export interface PromptContexts {
    * 仅当全局开关或角色级开关打开时才非空；关闭时**不传**（请求体与改动前逐字节一致）。
    */
   statusContext?: string;
+  /** Virtual Character OS 当前运行时上下文。 */
+  runtimeContext?: string;
 }
 
 /**
@@ -93,6 +95,7 @@ export async function buildPrompt(
     protagonistContext,
     storyTimeContext,
     statusContext,
+    runtimeContext,
   } = contexts;
   const macroCtx = { user: settings.userName, char: card.name };
 
@@ -177,7 +180,7 @@ export async function buildPrompt(
   }
 
   const systemContent = replaceMacros(
-    `${settings.systemPrompt}\n\n${worldDescText}${beforeText}${charDef}${attributesText}${afterText}${eventsContext ? '\n\n' + eventsContext : ''}${protagonistContext ? '\n\n' + protagonistContext : ''}${storyTimeContext ? '\n\n' + storyTimeContext : ''}${statusContext ? '\n\n' + statusContext : ''}`,
+    `${settings.systemPrompt}\n\n${worldDescText}${beforeText}${charDef}${attributesText}${afterText}${eventsContext ? '\n\n' + eventsContext : ''}${protagonistContext ? '\n\n' + protagonistContext : ''}${storyTimeContext ? '\n\n' + storyTimeContext : ''}${statusContext ? '\n\n' + statusContext : ''}${runtimeContext ? '\n\n' + runtimeContext : ''}`,
     macroCtx
   );
 

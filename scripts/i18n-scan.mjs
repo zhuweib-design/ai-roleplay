@@ -10,6 +10,7 @@
  * - console.* 调试日志
  * - src/i18n/locales/zh.ts 是文案源（src/i18n 目录级忽略）
  * - src/data（mock 数据，非 UI 文案）
+ * - src/runtime（领域 Runtime 错误与审计文本，不是直接渲染的 UI 文案）
  *
  * 白名单机制（渐进式门禁）：
  * - .i18nignore 列出"暂未迁移"的文件/目录，默认扫描时跳过
@@ -39,6 +40,10 @@ const EXTS = new Set(['.vue', '.ts', '.tsx', '.js']);
 // 默认忽略目录（文案源 / 数据 / 构建产物）
 const IGNORED_DIRS = new Set(['node_modules', 'dist', 'i18n', 'data', 'model']);
 
+// 非 UI 领域模块不参与严格 UI 文案扫描；它们的错误文本由 API/Runtime 契约消费，
+// 不应为了通过 UI i18n 门禁而把稳定错误语义改成展示文案。
+const NON_UI_DIRS = new Set(['runtime']);
+
 /** 读取 .i18nignore（每行一个相对路径，支持 # 注释与目录前缀） */
 function loadIgnoreList() {
   if (!existsSync(IGNORE_FILE)) return [];
@@ -54,7 +59,7 @@ function walk(dir) {
     const full = join(dir, name);
     const st = statSync(full);
     if (st.isDirectory()) {
-      if (!IGNORED_DIRS.has(name)) results.push(...walk(full));
+      if (!IGNORED_DIRS.has(name) && !NON_UI_DIRS.has(name)) results.push(...walk(full));
     } else if (EXTS.has(name.slice(name.lastIndexOf('.')))) {
       results.push(full);
     }
@@ -76,7 +81,8 @@ function isIgnored(rel, ignoreList) {
  * 返回 '' 表示该行整体为注释/日志，跳过。
  */
 function effectiveCode(line, state) {
-  let text = line;
+  // Windows 检出为 CRLF：行尾会残留 \r，导致「行尾 // i18n-ignore」与其它行尾判断失效
+  let text = line.endsWith('\r') ? line.slice(0, -1) : line;
 
   // ⓪ 显式豁免标记（LLM 提示词 / mock 数据，非 UI 文案）
   //  - 行尾 // i18n-ignore            → 本行跳过

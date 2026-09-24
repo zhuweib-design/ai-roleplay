@@ -167,6 +167,9 @@ onMounted(async () => {
     const adapter = getStorageAdapter();
     await adapter.init();
     chatStore.setStorageAdapter(adapter);
+    await chatStore.loadRuntimePendingGroupTurns().catch((err) => {
+      console.error('从存储加载群聊 Runtime 待提交回合失败：', err);
+    });
     characterStore.setStorageAdapter(adapter);
     settings.setStorageAdapter(adapter);
     // W3 新增：世界书与群聊 store 注入适配器

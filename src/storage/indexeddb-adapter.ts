@@ -343,6 +343,13 @@ export class IndexedDBAdapter implements StorageAdapter {
     );
   }
 
+  async listSnapshotsByPrefix<T>(prefix: string): Promise<T[]> {
+    const records = await this.wrap(
+      this.store(STORE_SNAPSHOTS, 'readonly').getAll(IDBKeyRange.bound(prefix, `${prefix}\uffff`))
+    );
+    return (records as Array<{ value: T }>).map((record) => record.value);
+  }
+
   async loadSnapshot<T>(key: string): Promise<T | null> {
     const result = await this.wrap(
       this.store(STORE_SNAPSHOTS, 'readonly').get(key)

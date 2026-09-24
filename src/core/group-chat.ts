@@ -80,6 +80,8 @@ export interface GroupChat {
   mode: GroupChatMode;
   /** 最后发言的角色 ID（避免自然轮换中连续发言） */
   lastSpeakerId: string | null;
+  /** 指定模式下一次待发言角色；生成失败时保留以便重试。 */
+  designatedSpeakerId?: string | null;
   /** 创建时间 ISO */
   createdAt: string;
   /** 更新时间 ISO */

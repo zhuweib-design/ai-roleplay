@@ -1,0 +1,335 @@
+import { describe, expect, it } from 'vitest';
+import {
+  HttpRuntimeApi,
+  InMemoryRuntimeStore,
+  RuntimeApiAdapter,
+  RuntimeApiError,
+  RuntimeCore,
+  createRuntimeHttpHandler,
+  stableChatConversationTurnIds,
+} from '@/runtime';
+
+describe('Runtime HTTP 持久化边界', () => {
+  it('Fetch Handler 可以承载角色、Event、Snapshot 和 Context 的完整请求链', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const handler = createRuntimeHttpHandler(api);
+
+    const createResponse = await handler(
+      new Request('http://runtime.test/v1/runtime/characters', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenantId: 'tenant-a',
+          profile: { displayName: 'HTTP 角色', speakingStyle: '克制' },
+          now: '2026-09-22T00:00:00.000Z',
+        }),
+      })
+    );
+    expect(createResponse.status).toBe(201);
+    const created = await createResponse.json() as { character: { id: string } };
+
+    const eventResponse = await handler(
+      new Request('http://runtime.test/v1/runtime/characters/' + created.character.id + '/events', {
+        method: 'POST',
+        body: JSON.stringify({
+          eventId: 'http-turn-1',
+          tenantId: 'tenant-a',
+          eventType: 'greeting',
+          importance: 0.6,
+          occurredAt: '2026-09-22T00:01:00.000Z',
+          effects: { memory: { type: 'semantic', content: '用户问候了角色' } },
+        }),
+      })
+    );
+    expect(eventResponse.status).toBe(200);
+    expect((await eventResponse.json()).event.id).toBe('http-turn-1');
+
+    const turnResponse = await handler(
+      new Request('http://runtime.test/v1/runtime/characters/' + created.character.id + '/turns', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenantId: 'tenant-a',
+          turnId: 'http-turn-1',
+          conversationKey: 'chat-http-1',
+          userMessage: '你好',
+          assistantMessage: '你好，我在。',
+          occurredAt: '2026-09-22T00:01:00.000Z',
+        }),
+      })
+    );
+    expect(turnResponse.status).toBe(200);
+    const turn = await turnResponse.json() as { conversationId: string; sessionId: string };
+    expect(turn).toMatchObject(stableChatConversationTurnIds(
+      'tenant-a', created.character.id, 'chat-http-1', undefined, 'http-turn-1'
+    ));
+
+    const contextResponse = await handler(
+      new Request('http://runtime.test/v1/runtime/characters/' + created.character.id + '/context', {
+        method: 'POST',
+        body: JSON.stringify({ query: '问候' }),
+      })
+    );
+    expect(contextResponse.status).toBe(200);
+    expect((await contextResponse.json()).relevantMemories).toHaveLength(1);
+
+    const getResponse = await handler(
+      new Request('http://runtime.test/v1/runtime/characters/' + created.character.id)
+    );
+    expect(getResponse.status).toBe(200);
+    expect((await getResponse.json()).version).toBe(1);
+  });
+
+  it('批量创建多个角色返回逐项结果，可用稳定 ID 重试并隔离状态', async () => {
+    const store = new InMemoryRuntimeStore();
+    const handler = createRuntimeHttpHandler(new RuntimeApiAdapter(new RuntimeCore(store)), {
+      tenantId: 'server-tenant',
+    });
+    const client = new HttpRuntimeApi({
+      baseUrl: 'http://runtime.test',
+      fetch: (input, init) => handler(new Request(input, init)),
+    });
+    const inputs = [
+      { id: '11111111-1111-4111-8111-111111111111', tenantId: 'forged-tenant', profile: { displayName: '甲' } },
+      { id: '22222222-2222-4222-8222-222222222222', tenantId: 'forged-tenant', profile: { displayName: '乙' } },
+      { id: '33333333-3333-4333-8333-333333333333', tenantId: 'forged-tenant', profile: { displayName: '  ' } },
+    ];
+    const first = await client.createCharacters(inputs);
+    expect(first.items.map((item) => item.status)).toEqual(['created', 'created', 'invalid']);
+    expect(first.items[2]?.issues?.length).toBeGreaterThan(0);
+    expect((await store.load(inputs[0]!.id))?.character.tenantId).toBe('server-tenant');
+    expect((await store.load(inputs[1]!.id))?.character.tenantId).toBe('server-tenant');
+    const firstPage = await client.listCharacters({ tenantId: 'forged-tenant', limit: 1 });
+    expect(firstPage.items).toHaveLength(1);
+    expect(firstPage.items[0]?.tenantId).toBe('server-tenant');
+    expect(firstPage.nextCursor).toBeDefined();
+    const secondPage = await client.listCharacters({ tenantId: 'forged-tenant', limit: 1, cursor: firstPage.nextCursor });
+    expect(secondPage.items).toHaveLength(1);
+    expect(secondPage.nextCursor).toBeUndefined();
+    expect(new Set([...firstPage.items, ...secondPage.items].map((item) => item.id)))
+      .toEqual(new Set([inputs[0]!.id, inputs[1]!.id]));
+    const retry = await client.createCharacters(inputs);
+    expect(retry.items.map((item) => item.status)).toEqual(['already_exists', 'already_exists', 'invalid']);
+    expect((await store.load(inputs[0]!.id))?.character.profile.displayName).toBe('甲');
+    const duplicate = await handler(new Request('http://runtime.test/v1/runtime/characters/batch', {
+      method: 'POST',
+      body: JSON.stringify({ characters: [inputs[0], inputs[0]] }),
+    }));
+    expect(duplicate.status).toBe(422);
+    const empty = await handler(new Request('http://runtime.test/v1/runtime/characters/batch', {
+      method: 'POST', body: JSON.stringify({ characters: [] }),
+    }));
+    expect(empty.status).toBe(422);
+    const badPage = await handler(new Request('http://runtime.test/v1/runtime/characters?limit=0&tenantId=forged-tenant'));
+    expect(badPage.status).toBe(422);
+  });
+
+  it('Turn 路由识别 turn + event 请求并执行原子提交', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const created = await api.createCharacter({
+      tenantId: 'tenant-a',
+      profile: { displayName: '原子 HTTP 角色' },
+      now: '2026-09-22T00:00:00.000Z',
+    });
+    const handler = createRuntimeHttpHandler(api);
+    const response = await handler(new Request(
+      `http://runtime.test/v1/runtime/characters/${created.character.id}/turns`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          tenantId: 'tenant-a',
+          turn: {
+            turnId: 'http-atomic-turn-1',
+            conversationKey: 'chat-http-atomic',
+            userMessage: '你好',
+            assistantMessage: '你好，我在。',
+            occurredAt: '2026-09-22T00:01:00.000Z',
+          },
+          event: {
+            eventId: 'http-atomic-event-1',
+            eventType: 'conversation_turn',
+            occurredAt: '2026-09-22T00:01:00.000Z',
+            payload: { userMessage: '你好', assistantMessage: '你好，我在。' },
+          },
+        }),
+      }
+    ));
+
+    expect(response.status).toBe(200);
+    const body = await response.json() as {
+      turn: { userTurnId: string; assistantTurnId: string };
+      result: { snapshot: { version: number }; event: { sourceTurnIds: string[] } };
+    };
+    expect(body.result.snapshot.version).toBe(1);
+    expect(body.result.event.sourceTurnIds).toHaveLength(2);
+    expect(body.result.event.sourceTurnIds).toEqual([
+      body.turn.userTurnId,
+      body.turn.assistantTurnId,
+    ]);
+  });
+  it('服务端 Handler 使用认证租户覆盖请求体，避免客户端伪造 tenantId', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const handler = createRuntimeHttpHandler(api, { tenantId: 'tenant-authenticated' });
+    const response = await handler(
+      new Request('http://runtime.test/v1/runtime/characters', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenantId: 'tenant-forged',
+          profile: { displayName: '租户边界角色' },
+          now: '2026-09-22T00:00:00.000Z',
+        }),
+      })
+    );
+    expect(response.status).toBe(201);
+    const snapshot = await response.json() as { character: { tenantId: string } };
+    expect(snapshot.character.tenantId).toBe('tenant-authenticated');
+  });
+
+  it('HttpRuntimeApi 保留服务端路径、认证头和错误语义', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const api = new HttpRuntimeApi({
+      baseUrl: 'https://runtime.test/api/',
+      headers: { Authorization: 'Bearer test-token' },
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return new Response(JSON.stringify({
+          identity: { displayName: '远端角色' },
+          traits: [],
+          values: [],
+          beliefs: [],
+          currentState: { emotions: [], mood: {}, attitudes: [], relationships: [] },
+          recentEvents: [],
+          relevantMemories: [],
+          relevantEpisodes: [],
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      },
+    });
+
+    const context = await api.buildContext('character/1', { query: '当前状态' });
+    expect(context.identity.displayName).toBe('远端角色');
+    expect(calls[0]?.input).toBe('https://runtime.test/api/v1/runtime/characters/character%2F1/context');
+    expect(calls[0]?.init?.headers).toBeInstanceOf(Headers);
+    expect((calls[0]?.init?.headers as Headers).get('Authorization')).toBe('Bearer test-token');
+    expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({ query: '当前状态' });
+  });
+
+  it('HttpRuntimeApi 将 409 版本冲突转换为可判定错误', async () => {
+    const api = new HttpRuntimeApi({
+      baseUrl: 'https://runtime.test',
+      fetch: async () => new Response(JSON.stringify({
+        error: 'VERSION_CONFLICT',
+        message: '版本冲突',
+      }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    });
+
+    await expect(api.getCharacter('character-1')).rejects.toMatchObject({
+      status: 409,
+      code: 'VERSION_CONFLICT',
+      message: '版本冲突',
+    } satisfies Partial<RuntimeApiError>);
+  });
+
+  it('重复创建同一角色返回明确的 409 已存在语义', async () => {
+    const handler = createRuntimeHttpHandler(
+      new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()))
+    );
+    const body = JSON.stringify({
+      tenantId: 'tenant-a',
+      id: '33333333-3333-4333-8333-333333333333',
+      profile: { displayName: '已存在角色' },
+    });
+    const send = () => handler(new Request('http://runtime.test/v1/runtime/characters', {
+      method: 'POST', body,
+    }));
+    expect((await send()).status).toBe(201);
+    const duplicate = await send();
+    expect(duplicate.status).toBe(409);
+    expect(await duplicate.json()).toMatchObject({ error: 'ALREADY_EXISTS' });
+  });
+
+  it('Handler 将重复 Event 内容冲突映射为 409', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const created = await api.createCharacter({
+      tenantId: 'tenant-a',
+      profile: { displayName: '幂等冲突角色' },
+      now: '2026-09-22T00:00:00.000Z',
+    });
+    const handler = createRuntimeHttpHandler(api);
+    const path = `/v1/runtime/characters/${created.character.id}/events`;
+    const first = await handler(new Request(`http://runtime.test${path}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        tenantId: 'tenant-a',
+        eventId: 'same-event',
+        eventType: 'first',
+      }),
+    }));
+    const conflict = await handler(new Request(`http://runtime.test${path}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        tenantId: 'tenant-a',
+        eventId: 'same-event',
+        eventType: 'changed',
+      }),
+    }));
+    expect(first.status).toBe(200);
+    expect(conflict.status).toBe(409);
+    expect(await conflict.json()).toMatchObject({ error: 'IDEMPOTENCY_CONFLICT' });
+  });
+
+  it('Handler 对畸形请求返回校验错误，且不泄露内部异常', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const handler = createRuntimeHttpHandler(api);
+    const post = (route: string, body: unknown) => handler(new Request(
+      `http://runtime.test/v1/runtime/characters/character-1/${route}`,
+      { method: 'POST', body: JSON.stringify(body) }
+    ));
+    const invalidAtomic = await post('turns', {
+      tenantId: 'tenant-a',
+      turn: { turnId: 1, userMessage: '你好', assistantMessage: '收到' },
+      event: { eventType: 'conversation_turn' },
+    });
+    expect(invalidAtomic.status).toBe(422);
+    expect(await invalidAtomic.json()).toMatchObject({ error: 'VALIDATION_ERROR' });
+    const incompleteAtomic = await post('turns', {
+      tenantId: 'tenant-a',
+      turn: { turnId: 'turn-1', userMessage: '你好', assistantMessage: '收到' },
+    });
+    expect(incompleteAtomic.status).toBe(422);
+    const invalidLegacy = await post('turns', { tenantId: 'tenant-a', turnId: 'turn-1' });
+    expect(invalidLegacy.status).toBe(422);
+    const invalidEvent = await post('events', { tenantId: 'tenant-a', eventType: 'greeting', payload: [] });
+    expect(invalidEvent.status).toBe(422);
+    const invalidContext = await post('context', null);
+    expect(invalidContext.status).toBe(422);
+    const invalidCharacter = await handler(new Request('http://runtime.test/v1/runtime/characters', {
+      method: 'POST', body: 'null',
+    }));
+    expect(invalidCharacter.status).toBe(422);
+
+    const brokenApi = new RuntimeApiAdapter(new RuntimeCore({
+      load: async () => null,
+      commit: async () => { throw new Error('内部数据库密码不可泄露'); },
+    }));
+    const brokenHandler = createRuntimeHttpHandler(brokenApi);
+    const internalError = await brokenHandler(new Request('http://runtime.test/v1/runtime/characters', {
+      method: 'POST',
+      body: JSON.stringify({ tenantId: 'tenant-a', profile: { displayName: '安全测试' } }),
+    }));
+    expect(internalError.status).toBe(500);
+    expect(await internalError.json()).toEqual({ error: 'RUNTIME_ERROR', message: 'Runtime 处理失败' });
+  });
+
+  it('Handler 拒绝不支持方法和非法 JSON', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const handler = createRuntimeHttpHandler(api);
+    const methodResponse = await handler(new Request('http://runtime.test/v1/runtime/health', { method: 'PUT' }));
+    const jsonResponse = await handler(new Request('http://runtime.test/v1/runtime/characters', { method: 'POST', body: '{' }));
+    expect(methodResponse.status).toBe(405);
+    expect(jsonResponse.status).toBe(400);
+  });
+});

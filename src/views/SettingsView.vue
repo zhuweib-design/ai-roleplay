@@ -212,12 +212,74 @@ function handleCategoryKeydown(e: KeyboardEvent, currentIndex: number): void {
   }
 }
 
+// ── 上下文长度配置 ──
+
+/**
+ * 常用上下文窗口预设（覆盖 4K ~ 256K）
+ * 用户接入大上下文模型（如 256K）时可一键切换，免于手动输入长数字。
+ */
+const CONTEXT_PRESETS: readonly number[] = [
+  4096, 8192, 16384, 32768, 65536, 131072, 262144,
+] as const;
+
+/** 上下文长度校验错误文案（null = 无错误） */
+const contextLengthError = ref<string | null>(null);
+
+/** 可用历史预算（响应式跟随 store：max − reserved，钳制非负） */
+const contextBudget = computed(() => settings.availableContextTokens);
+
+/** 将 token 数格式化为可读文本（≥1000 用 K，非整数保留一位小数） */
+function formatTokenCount(n: number): string {
+  if (n < 1000) return String(n);
+  const k = n / 1000;
+  return `${Number.isInteger(k) ? k : k.toFixed(1)}K`;
+}
+
+/** 应用常用预设到上下文窗口上限（保留当前预留值；校验失败则提示且不落盘） */
+function applyContextPreset(max: number): void {
+  if (settings.setMaxContextTokens(max)) {
+    contextLengthError.value = null;
+    showToast(
+      'success',
+      t('settingsView.contextLengthSaved', { max, reserved: settings.reservedTokens })
+    );
+  } else {
+    contextLengthError.value = t('settingsView.contextLengthError');
+    showToast('error', t('settingsView.contextLengthError'));
+  }
+}
+
+/**
+ * 上下文窗口上限输入处理（@change，避免逐字符输入时误判）。
+ * 校验 max > reserved，失败则提示且不落盘（store 侧拒绝，输入框回退到原值）。
+ */
+function onMaxContextInput(e: Event): void {
+  const raw = Number((e.target as HTMLInputElement).value);
+  if (!Number.isFinite(raw) || raw <= 0 || !settings.setMaxContextTokens(raw)) {
+    contextLengthError.value = t('settingsView.contextLengthError');
+    return;
+  }
+  contextLengthError.value = null;
+}
+
+/**
+ * 预留 Token 输入处理（@change）。
+ * 校验 0 ≤ reserved < max，失败则提示且不落盘。
+ */
+function onReservedInput(e: Event): void {
+  const raw = Number((e.target as HTMLInputElement).value);
+  if (!Number.isFinite(raw) || raw < 0 || !settings.setReservedTokens(raw)) {
+    contextLengthError.value = t('settingsView.contextLengthError');
+    return;
+  }
+  contextLengthError.value = null;
+}
+
 // ── 字号配置 ──
 interface FontSizeOption {
   value: number;
   label: string;
-  sample: string;
-}
+  sample: string;}
 
 const fontSizeOptions = computed<FontSizeOption[]>(() =>
   FONT_SIZE_PRESETS.map((size) => ({
@@ -1447,6 +1509,68 @@ URL
     <!-- P2-7：模型管理面板（wrapper 承载 v-show，组件为多根节点无法直接绑定） -->
     <div v-show="activeCategory === 'model'">
       <SettingsModelPanel />
+
+      <!-- 上下文长度配置：接入大上下文模型（如 256K）时调大；默认 8192/1024 保持既有行为 -->
+      <section class="settings-section" aria-labelledby="context-length-title">
+        <header class="section-header">
+          <h2 id="context-length-title" class="section-title">
+            <Icon name="cpu" :size="16" />
+            <span>{{ t('settingsView.contextLengthTitle') }}</span>
+          </h2>
+        </header>
+
+        <div class="extension-block">
+          <label class="form-row">
+            <span>{{ t('settingsView.contextLengthMax') }}</span>
+            <input
+              type="number"
+              min="1024"
+              max="2000000"
+              step="1024"
+              :value="settings.maxContextTokens"
+              @change="onMaxContextInput"
+            />
+          </label>
+          <label class="form-row">
+            <span>{{ t('settingsView.contextLengthReserved') }}</span>
+            <input
+              type="number"
+              min="0"
+              max="1000000"
+              step="128"
+              :value="settings.reservedTokens"
+              @change="onReservedInput"
+            />
+          </label>
+
+          <div class="context-preset">
+            <span class="context-preset-label">{{ t('settingsView.contextLengthPreset') }}</span>
+            <div class="context-preset-btns">
+              <button
+                v-for="preset in CONTEXT_PRESETS"
+                :key="preset"
+                type="button"
+                class="data-mgmt-btn"
+                :class="{ active: settings.maxContextTokens === preset }"
+                @click="applyContextPreset(preset)"
+              >
+                {{ formatTokenCount(preset) }}
+              </button>
+            </div>
+          </div>
+
+          <p class="hint-text context-budget">
+            {{ t('settingsView.contextLengthBudget', { budget: contextBudget }) }}
+          </p>
+          <p class="hint-text">
+            {{ t('settingsView.contextLengthHint') }}
+          </p>
+          <p v-if="contextLengthError" class="context-error" role="alert">
+            {{ contextLengthError }}
+          </p>
+        </div>
+      </section>
+
       <VectorModelPanel />
     </div>
 
@@ -3971,6 +4095,46 @@ select.field-input {
   margin: 8px 0 0;
   font-size: 12px;
   color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+/* 上下文长度配置：预设快捷按钮 + 预算实时展示 */
+.context-preset {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+  font-size: 13px;
+  color: var(--foreground);
+}
+
+.context-preset-label {
+  min-width: 100px;
+  color: var(--muted-foreground);
+}
+
+.context-preset-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.context-preset-btns .data-mgmt-btn.active {
+  border-color: var(--tk-cyan-500);
+  background: var(--card-elevated);
+  /* 亮色主题中 cyan-500 叠在浅色卡片上对比度不足，使用专用文本派生色。 */
+  color: var(--accent-blue-text);
+}
+
+.context-budget {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.context-error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--tk-red-500, #ef4444);
   line-height: 1.5;
 }
 

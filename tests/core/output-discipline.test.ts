@@ -15,6 +15,8 @@ import {
   restore,
   compressMetaNarration,
   buildAutoClarityPrompt,
+  detectEmotion,
+  EMOTION_WORDS,
 } from '@core/output-discipline';
 
 describe('classifyScope (E-02)', () => {
@@ -108,5 +110,41 @@ describe('buildAutoClarityPrompt (E-02)', () => {
     expect(p).toContain('安全');
     expect(p).toContain('重复提问');
     expect(p).toContain('保护标记');
+  });
+});
+
+// ── detectEmotion：规则情绪标注（2026-09-22 扩词表 + 修正首命中）──
+
+describe('detectEmotion — 规则情绪标注', () => {
+  it('返回文本中最后出现的情绪词（"当前状态"语义）', () => {
+    // 旧实现按词表顺序取首个命中，"愤怒"排在"平静"前面 → 会误判为愤怒
+    expect(detectEmotion('他先是愤怒，然后逐渐平静下来。')).toBe('平静');
+  });
+
+  it('不再受词表顺序影响', () => {
+    // "愤怒"在词表中更靠前，但"喜悦"出现在文本更靠后 → 应取喜悦
+    expect(detectEmotion('她愤怒过，但此刻满是喜悦。')).toBe('喜悦');
+  });
+
+  it('常用口语情绪词可命中（原词表遗漏的那批）', () => {
+    expect(detectEmotion('我今天真的很开心')).toBe('开心');
+    expect(detectEmotion('他看起来有点难过')).toBe('难过');
+    expect(detectEmotion('她害怕极了')).toBe('害怕');
+    expect(detectEmotion('他生气了')).toBe('生气');
+    expect(detectEmotion('大家都感到惊讶')).toBe('惊讶');
+  });
+
+  it('无命中返回 null（调用方据此不更新状态）', () => {
+    expect(detectEmotion('今天天气不错，我们去散步。')).toBeNull();
+  });
+
+  it('空文本返回 null', () => {
+    expect(detectEmotion('')).toBeNull();
+  });
+
+  it('词表只含双字及以上词（避免 includes 子串误命中）', () => {
+    for (const w of EMOTION_WORDS) {
+      expect(w.length).toBeGreaterThanOrEqual(2);
+    }
   });
 });

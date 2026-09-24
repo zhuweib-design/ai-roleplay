@@ -471,11 +471,12 @@ describe('5. 静态红线', () => {
     expect(groupMounts[0]).not.toContain('msg.status');
   });
 
-  it('5-5 群聊不塞假 <status> 样例（决策 8，只留 TODO）', () => {
+  it('5-5 群聊不塞假 <status> 样例，真实流式状态进入成员快照', () => {
     const raw = readFileSync(resolve(ROOT, 'src/views/GroupChatView.vue'), 'utf8');
     const code = stripComments(raw);
     expect(code).not.toContain('<status>');
-    expect(/TODO/i.test(raw)).toBe(true);
+    expect(code).toContain('onStatus: (status) =>');
+    expect(code).toContain('groupStore.updateAssistantMessage(groupId, messageId, { status })');
   });
 
   it('5-6 ApiMessage 结构未被 P1 污染（四个 client 零改动的证据之一）', () => {

@@ -31,6 +31,8 @@ export interface CompressOptions {
   entities?: string[];
   /** 关键实体(必须 100% 保留) */
   criticalEntities?: string[];
+  /** 情绪词列表；命中情绪词的句子优先保留，避免压缩破坏当前情绪 */
+  emotionWords?: string[];
   /** 上下文文本(相关性打分依据,如最近消息/当前提问) */
   context?: string;
   /** 是否启用去重(默认 true) */
@@ -66,7 +68,7 @@ function ngrams(s: string, n = 3): Set<string> {
  * 打分规则:
  * - 相关性:句子命中查询关键词数(关键词来自 context)
  * - 新颖度:句子 3-gram 与已选句重叠越少分越高(信息增量)
- * - 显著性:命中设定实体 +;句长过短/过长降权
+ * - 显著性:命中设定实体、关键实体和情绪词加权;句长过短/过长降权
  */
 export function extractiveCompress(text: string, options: CompressOptions): CompressResult {
   const sentences = splitSentences(text);
@@ -76,7 +78,8 @@ export function extractiveCompress(text: string, options: CompressOptions): Comp
 
   const keywords = options.context ? extractKeywords([options.context], 20) : [];
   const entitySet = new Set(options.entities ?? []);
-  const targetKept = Math.max(1, Math.round(sentences.length * options.targetRatio));
+  const criticalSet = new Set(options.criticalEntities ?? []);
+  const emotionSet = new Set(options.emotionWords ?? []);
 
   // 打分
   const scored = sentences.map((s, i) => {
@@ -85,14 +88,35 @@ export function extractiveCompress(text: string, options: CompressOptions): Comp
     const salience = entitySet.size > 0
       ? Array.from(entitySet).reduce((sum, e) => (s.includes(e) ? sum + 1 : sum), 0)
       : 0;
+    const criticalSalience = criticalSet.size > 0
+      ? Array.from(criticalSet).reduce((sum, e) => (s.includes(e) ? sum + 1 : sum), 0)
+      : 0;
+    const emotionSalience = emotionSet.size > 0
+      ? Array.from(emotionSet).reduce((sum, word) => (s.includes(word) ? sum + 1 : sum), 0)
+      : 0;
     const lenScore = s.length >= 8 && s.length <= 80 ? 1 : 0.5;
-    const sig = relevance * 2 + salience * 3 + lenScore;
-    return { i, text: s, sig, grams };
+    const sig = relevance * 2 + salience * 3 + criticalSalience * 8 + emotionSalience * 4 + lenScore;
+    return { i, text: s, sig, grams, criticalSalience, emotionSalience };
   });
 
+  // 关键实体和情绪词所在句子属于语义保护集。必要时提高保留句数，
+  // 优先保证校验维度不因提取式压缩而丢失，再由目标比例控制其余句子。
+  const protectedIndices = new Set(
+    scored
+      .filter((item) => item.criticalSalience > 0 || item.emotionSalience > 0)
+      .map((item) => item.i)
+  );
+  const targetKept = Math.max(
+    1,
+    Math.round(sentences.length * options.targetRatio),
+    protectedIndices.size
+  );
+
   // 贪婪选择:优先高 sig,惩罚与已选句重叠(新颖度)
-  const selected: typeof scored = [];
-  const pool = [...scored].sort((a, b) => b.sig - a.sig);
+  const selected: typeof scored = scored.filter((item) => protectedIndices.has(item.i));
+  const pool = scored
+    .filter((item) => !protectedIndices.has(item.i))
+    .sort((a, b) => b.sig - a.sig);
   for (const cand of pool) {
     if (selected.length >= targetKept) break;
     if (options.dedupe !== false) {
@@ -158,6 +182,20 @@ export interface Validation {
 /**
  * 语义校验:min(实体保留率, 情绪词保留率) ≥ 0.9 且关键实体保留率 = 1.0
  * 用于压缩前后的 fail-open 判断(不达标回退原文)
+ *
+ * ⚠️ 分母口径(BugFix 2026-09-21,防回归必读):
+ * `entities` / `emotionWords` 传入的是**全局声明表**(角色设定 + 世界书的全部实体、
+ * 全部情绪词),而 L1 压缩是**逐条消息**进行的 —— 单条消息天然只含全集的一小部分。
+ *
+ * 旧实现直接以 `list.length`(全集大小)为分母,于是:
+ *   rate = (本条消息命中数) / (全集大小) → 分子恒远小于分母 → rate 恒 <0.9
+ *   → **所有消息都被 fail-open 回退原文**(实测:补传 entities 后压缩生效条数从 4 条掉到 0 条)。
+ * 同时当集合为空时旧实现直接给 1,于是「调用方忘了传参」与「原文没有实体」
+ * 两种情况无法区分 —— 校验恒通过,保护形同虚设。
+ *
+ * 正确口径:**分母 = 原文本中实际出现的条目数**。语义是
+ * 「原文里有的,压缩后丢了多少」,而不是「全局表里有多少没出现在这条消息里」。
+ * 分母为 0 表示原文本来就没有该维度内容 → 无需保留 → rate = 1(通过)。
  */
 export function validateCompression(input: ValidationInput): Validation {
   const count = (list: string[], haystack: string): number =>
@@ -165,11 +203,14 @@ export function validateCompression(input: ValidationInput): Validation {
 
   const entities = input.entities ?? [];
   const emotionWords = input.emotionWords ?? [];
-  const entityRate = entities.length > 0
-    ? count(entities, input.compressed) / entities.length
+  // 分母取「原文实含」而非「声明全集」——见上方 JSDoc 的 BugFix 说明
+  const entityTotal = count(entities, input.original);
+  const emotionTotal = count(emotionWords, input.original);
+  const entityRate = entityTotal > 0
+    ? count(entities, input.compressed) / entityTotal
     : 1;
-  const emotionRate = emotionWords.length > 0
-    ? count(emotionWords, input.compressed) / emotionWords.length
+  const emotionRate = emotionTotal > 0
+    ? count(emotionWords, input.compressed) / emotionTotal
     : 1;
   const missingCritical = (input.criticalEntities ?? []).filter((e) => !input.compressed.includes(e));
 

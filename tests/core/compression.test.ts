@@ -55,6 +55,25 @@ describe('extractiveCompress (E-03)', () => {
     expect(r.text).toContain('星陨之剑');
   });
 
+  it('情绪词所在句被保护，避免压缩丢失当前情绪', () => {
+    const text = '窗外下着雨。她感到非常心疼。桌上的烛火摇曳。远处传来脚步声。';
+    const r = extractiveCompress(text, {
+      targetRatio: 0.25,
+      emotionWords: ['心疼'],
+    });
+    expect(r.text).toContain('心疼');
+    expect(r.keptCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it('关键实体所在句被保护，即使目标比例很低也不丢失', () => {
+    const text = '普通的环境描述。星陨之剑已经断裂。另一段无关叙述。';
+    const r = extractiveCompress(text, {
+      targetRatio: 0.2,
+      criticalEntities: ['星陨之剑'],
+    });
+    expect(r.text).toContain('星陨之剑');
+  });
+
   it('单句文本原样返回', () => {
     const r = extractiveCompress('只有一句。', { targetRatio: 0.5 });
     expect(r.text).toBe('只有一句。');
@@ -96,6 +115,55 @@ describe('validateCompression (E-03)', () => {
     expect(v.pass).toBe(true);
     expect(v.entityRate).toBe(1);
     expect(v.emotionRate).toBe(1);
+  });
+
+  // ── BugFix 2026-09-21:校验分母口径回归用例 ──
+
+  it('分母只算原文实含的实体:全局表里未提及的实体不拉低保留率', () => {
+    // 旧实现以「全局实体表长度」为分母:单条消息天然只含全集的一小部分
+    // → entityRate 恒 <0.9 → 所有消息都被 fail-open 回退原文(压缩生效条数 0)。
+    // 正确口径:分母 = 原文实含(2 个),与全局表大小(10 个)无关。
+    const v = validateCompression({
+      original: '绯在翡翠酒馆擦着杯子。',
+      compressed: '绯在翡翠酒馆擦着杯子。',
+      entities: ['绯', '翡翠酒馆', '旅人', '灰烬教会', '白桦镇', '卡尔', '老雷', '溪木村', '哨塔', '北境'],
+    });
+    expect(v.entityRate).toBe(1);
+    expect(v.pass).toBe(true);
+  });
+
+  it('负样本:压缩丢掉原文实含的实体 → 校验拦下(不恒通过)', () => {
+    // 原文实含 3 个实体,压缩后只剩 1 个 → 1/3 < 0.9 → 判定失败 → fail-open 回退原文
+    const v = validateCompression({
+      original: '绯把钥匙交给旅人，灰烬教会在后面追。',
+      compressed: '绯把钥匙交给了他。',
+      entities: ['绯', '旅人', '灰烬教会', '白桦镇', '卡尔'],
+    });
+    // 1/3 经 round2 后为 0.33(<0.9 → 失败)
+    expect(v.entityRate).toBe(0.33);
+    expect(v.pass).toBe(false);
+  });
+
+  it('情绪词保留率的分母同样只算原文实含的词', () => {
+    const v = validateCompression({
+      original: '她感到心疼。',
+      compressed: '她感到心疼。',
+      emotionWords: ['心疼', '愤怒', '恐惧', '喜悦'],
+    });
+    expect(v.emotionRate).toBe(1);
+    expect(v.pass).toBe(true);
+  });
+
+  it('原文不含任何实体/情绪词 → 保留率为 1(无需保留,视为通过)', () => {
+    const v = validateCompression({
+      original: '窗外下着雨。',
+      compressed: '窗外下着雨。',
+      entities: ['绯', '旅人'],
+      emotionWords: ['心疼'],
+    });
+    expect(v.entityRate).toBe(1);
+    expect(v.emotionRate).toBe(1);
+    expect(v.pass).toBe(true);
   });
 });
 

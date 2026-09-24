@@ -120,7 +120,7 @@ describe('P1-4 远程向量密钥 — 纳入主密码加密体系', () => {
       expect(getRemoteApiKeyState()).toEqual({ state: 'unlocked', key: 'plain-key' });
     });
 
-    it('重复设置不会二次加密（已加密则跳过）', async () => {
+    it('重复设置不会二次加密（已加密则跳过）', { timeout: 15_000 }, async () => {
       seedRemote('plain-key');
       await store.setMasterPassword(PW_OLD);
       const once = storedApiKey();

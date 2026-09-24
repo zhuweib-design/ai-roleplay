@@ -85,6 +85,8 @@ test('对比度：5 主题下设置页无 WCAG AA 颜色对比违规', async ({ 
 });
 
 test('对比度：5 主题下对话页无 WCAG AA 颜色对比违规', async ({ page }) => {
+  // 测量静态终态：系统减弱动画会禁用消息淡入，避免并发渲染时抽样到半透明帧。
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript({ content: axe.source });
 
   for (const theme of THEMES) {

@@ -430,9 +430,10 @@ export const useCharacterStore = defineStore('character', () => {
         ui.name = `${ui.name}${t('char.importSuffix')}`;
       }
 
+      // 导入必须先确认落盘成功，避免容量或权限错误后 UI 显示成功、刷新却丢失角色。
+      if (storageAdapter) await storageAdapter.saveCharacter(uiCharToCard(ui));
       characters.value.push(ui);
       currentCharacterId.value = ui.id;
-      await persistCharacter(ui.id);
       lastInfo.value = t('char.imported2', { name: ui.name });
       return ui.id;
     } catch (err) {

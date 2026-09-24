@@ -22,12 +22,21 @@ import { buildStatusInstruction } from '@core/status-prompt';
 import type { CharacterStatus } from '@core/status-schema';
 import { compressMessages, type OptimizationPipeline } from '@core/optimization-pipeline';
 import {
+  shouldSummarize,
+  injectSummary,
+  DefaultSummarizationService,
+  type SummarizationConfig,
+  type ConversationSummary,
+} from '@core/summarizer';
+import {
   applyL0Context,
   applyOutputDiscipline,
   updateEmotionState,
   type L0L2Deps,
 } from '@core/l0-l2-runtime';
+import { EMOTION_WORDS } from '@core/output-discipline';
 import { t } from '@/i18n';
+import { buildChatRuntimeContext, recordChatTurn, type ChatRuntimeIntegration } from '@/runtime';
 
 /**
  * ChatManager 配置
@@ -74,6 +83,8 @@ export interface ChatManagerConfig {
   optimization?: OptimizationPipeline;
   /** E-01/E-02：L0/L2 运行时依赖（MemoryStore/CharacterRegistry/EmotionTracker） */
   l0l2?: L0L2Deps;
+  /** Virtual Character OS：可选的持久化角色 Runtime 接入。失败时保持聊天主链路 fail-open。 */
+  runtime?: ChatRuntimeIntegration;
   /** E-01：会话 ID（情绪状态键；缺省用前缀哈希兜底） */
   sessionId?: string;
   /**
@@ -84,6 +95,18 @@ export interface ChatManagerConfig {
    * 角色级 `ext.statusInstruction === 'on' | 'off'` 在此之上覆盖（见 sendMessage 内解析）。
    */
   statusInstructionEnabled?: boolean;
+  // ── 摘要接线（2026-09-21）──
+  /**
+   * 会话摘要配置。**不传 = 完全不触发摘要**（行为与接线前一致）。
+   *
+   * 传入后：流式结束时会**异步**（fire-and-forget）判断是否需要生成摘要，
+   * 失败静默 —— 不阻塞、不影响主链路（天然 fail-open）。
+   */
+  summarizationConfig?: SummarizationConfig;
+  /** 现有摘要（增量更新用；由 chat store 从当前会话读取后传入） */
+  existingSummary?: ConversationSummary | null;
+  /** 摘要生成完成回调（chat store 负责写回会话并持久化） */
+  onSummaryGenerated?: (summary: ConversationSummary) => void;
 }
 
 export interface SendMessageParams {
@@ -93,6 +116,12 @@ export interface SendMessageParams {
   history: ChatMessage[];
   /** 用户输入文本 */
   userMessage: string;
+  /** Runtime 对话轮次的稳定 ID；由会话层传入以支持 Event 幂等重试。 */
+  runtimeTurnId?: string;
+  /** 当前会话使用的 Runtime 接入；会覆盖配置级 Runtime。 */
+  runtime?: ChatRuntimeIntegration;
+  /** 仅注入 Runtime Context，不在 ChatManager 内写入 Event；群聊由服务端事务统一提交。 */
+  persistRuntime?: boolean;
   /**
    * 覆盖默认配置（model / userName / 全部采样参数 / 思考强度）
    *
@@ -222,13 +251,22 @@ export class ChatManager {
     const statusContext = buildStatusInstruction(params.card.ext?.statusSchema, statusEnabled);
 
     // 1. 构建 prompt（含 token 裁剪，W6 集成 Lorebook 扫描与注入 F06.2-F06.3，F09.2 集成 RAG 注入，F17.2 集成激活事件注入，F16.3 主角身份注入，F16.4 故事时间注入）
+    let promptContexts = params.contexts;
+    const runtime = params.runtime ?? merged.runtime;
+    if (runtime) {
+      const runtimeContext = await buildChatRuntimeContext(runtime);
+      if (runtimeContext) {
+        promptContexts = { ...promptContexts, runtimeContext };
+      }
+    }
+
     const built = await buildPrompt(
       params.card,
       params.history,
       params.userMessage,
       promptSettings,
       // 未注入时保持与改动前完全一致的空上下文（请求体逐字节不变）
-      statusContext ? { ...params.contexts, statusContext } : params.contexts
+      statusContext ? { ...promptContexts, statusContext } : promptContexts
     );
 
     callbacks?.onPromptBuilt?.({
@@ -265,9 +303,25 @@ export class ChatManager {
       }
     }
 
+    // 摘要接线（2026-09-21）：把已有摘要注入上下文头部
+    //
+    // 位置在 L1 压缩之前 —— 摘要是 system 消息，而 compressMessages 天然跳过
+    // system 与当前轮 user，故两者职责不重叠：
+    //   摘要管「被裁掉的最早历史」，L1 管「仍在窗口内的历史」。
+    if (this.config.existingSummary?.content) {
+      built.messages = injectSummary(
+        built.messages,
+        this.config.existingSummary
+      ) as typeof built.messages;
+    }
+
     // E-04 二期: 嵌入优化挂载 —— 对长历史消息做 L1 压缩(默认关闭;fail-open 不影响主链路)
     if (this.config.optimization?.l1Enabled) {
-      const outcome = compressMessages(built.messages, this.config.optimization);
+      // BugFix:第三参此前未传 → runL1 拿到空的 entities/exemptTexts →
+      // validateCompression 的 entityRate/emotionRate 恒为 1 → 语义校验恒通过,
+      // 实体/情绪保护形同虚设。这里补传(来源与局限见 collectL1Options 的 JSDoc)。
+      const l1Options = await this.collectL1Options(params.card, params.contexts);
+      const outcome = compressMessages(built.messages, this.config.optimization, l1Options);
       if (outcome.compressedCount > 0) {
         // 压缩保持 role/content 结构,BuiltMessage 兼容
         built.messages = outcome.messages as typeof built.messages;
@@ -458,6 +512,7 @@ export class ChatManager {
             if (ev.usage) callbacks?.onUsage?.(ev.usage);
             // E-01: 情绪状态更新(规则标注;fail-open;仅在 L0 启用且有 deps 时)
             void this.updateEmotion(fullContent, callbacks);
+            if (params.persistRuntime !== false) this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId, runtime);
             callbacks?.onDone?.(fullContent, ev.finishReason);
             return fullContent;
           } else if (ev.type === 'error') {
@@ -492,6 +547,7 @@ export class ChatManager {
           // P1：与 done 分支同款的状态收敛
           fullContent = convergeStatus(fullContent);
           callbacks?.onStatus?.(statusOut);
+          if (params.persistRuntime !== false) this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId, runtime);
           callbacks?.onDone?.(fullContent);
           return fullContent;
         }
@@ -527,6 +583,7 @@ export class ChatManager {
         // P1：同样走一次状态收敛，保证任何退出路径都不会把 <status> 标签泄进正文
         fullContent = convergeStatus(fullContent);
         callbacks?.onStatus?.(statusOut);
+        if (params.persistRuntime !== false) this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId, runtime);
         callbacks?.onDone?.(fullContent, finishReason);
         return fullContent;
       }
@@ -568,6 +625,111 @@ export class ChatManager {
    * E-01: 情绪状态更新(每轮回复完成后调用)
    * 仅当 L0 启用且有 deps 时生效;规则标注命中情绪词才写入;fail-open 不影响主链路
    */
+  /**
+   * 摘要接线（2026-09-21）：按需生成/更新会话摘要。
+   *
+   * **异步、fire-and-forget、fail-open** —— 由调用方（chat store）在流式回复
+   * 结束后触发；失败静默返回 null，**不阻塞、不影响主链路**。
+   *
+   * 与 L1 压缩的分工：**摘要管「被裁掉的最早历史」，L1 管「仍在窗口内的历史」**。
+   *
+   * @param messages 完整消息列表（含历史与最新回复）
+   * @param config 摘要配置（来自 `settings.summarizationConfig`）
+   * @param existingSummary 现有摘要（增量更新用）
+   * @returns 新摘要；未启用 / 未达阈值 / 失败时返回 null
+   */
+  async summarizeIfNeeded(
+    messages: ChatMessage[],
+    config: SummarizationConfig,
+    existingSummary: ConversationSummary | null
+  ): Promise<ConversationSummary | null> {
+    try {
+      if (!(await shouldSummarize(messages, config, existingSummary))) return null;
+      const service = new DefaultSummarizationService(
+        this.config.apiClient,
+        this.config.model
+      );
+      return await service.summarize(messages, config, existingSummary);
+    } catch {
+      return null; // fail-open：摘要失败绝不影响主链路
+    }
+  }
+
+  /**
+   * E-04 二期 BugFix:为 L1 压缩收集「设定实体」与「豁免文本」
+   *
+   * 背景(sendMessage 中 compressMessages 调用处的缺陷):
+   * `compressMessages(messages, pipeline)` 此前不传第三参 `options`,
+   * 于是 runL1 的 entities / exemptTexts 全为 undefined,
+   * validateCompression 走「空集合 → rate = 1」分支 → 语义校验**恒通过**,
+   * 实体与情绪保护形同虚设(压缩生效但保护未生效)。
+   *
+   * 来源选择(改动最小且语义正确):
+   * - **entities** = 角色名 + 当前会话挂载的世界书条目关键词。
+   *   世界书的 `keys` 就是设定里的专有名词(人名/地名/组织名),是「设定实体」
+   *   最直接的现成来源 —— 无需新增 NLP 实体抽取。
+   *   局限:**角色卡 description / personality / scenario 正文中出现的实体不会
+   *   自动进表**(需 NLP 抽取,本次不做),世界书未覆盖的设定实体同样不在表内;
+   *   这些实体**不受校验保护**,属已知局限 —— 不为了跑通而伪造实体列表。
+   *   注:实体表偏大在新分母口径下无害(分母只算原文实含的部分)。
+   * - **exemptTexts** = MemoryStore 中 `scope='standing'` 的事实正文(与 L0 前缀同源)。
+   *   standing 仅人工可写、永不被优化器改写,故永不压缩。
+   *   局限:MemoryStore 当前没有「按 scope 列举」的 API,只能 listIds + 逐个 get;
+   *   为保持 fail-open,任一步失败即降级为不豁免(绝不影响主链路)。
+   *
+   * @param card 当前角色卡(提供角色名)
+   * @param contexts 本轮注入上下文(提供 Lorebook 列表)
+   * @returns 交给 compressMessages 的选项;任何异常都降级为空集(fail-open)
+   */
+  private async collectL1Options(
+    card: CharacterCard,
+    contexts?: PromptContexts
+  ): Promise<{ entities: string[]; emotionWords: string[]; exemptTexts: string[] }> {
+    // 1. 设定实体:角色名 + 世界书关键词(去重;跳过正则型 key,它不参与字面匹配)
+    const entities = new Set<string>();
+    if (card.name && card.name.trim() !== '') entities.add(card.name.trim());
+    for (const book of contexts?.lorebooks ?? []) {
+      for (const entry of book.entries ?? []) {
+        if (!entry.enabled) continue;
+        for (const key of entry.keys ?? []) {
+          const trimmed = key.trim();
+          if (trimmed !== '' && !trimmed.startsWith('/')) entities.add(trimmed);
+        }
+      }
+    }
+
+    // 2. 豁免文本:standing 事实正文(与 L0 前缀同源,永不压缩)
+    const exemptTexts: string[] = [];
+    const deps = this.config.l0l2;
+    if (deps) {
+      try {
+        const facts = await Promise.all(deps.store.listIds().map((id) => deps.store.get(id)));
+        for (const fact of facts) {
+          if (fact && fact.scope === 'standing' && fact.body) exemptTexts.push(fact.body);
+        }
+      } catch {
+        /* fail-open:standing 读取失败则不做豁免,仅失去保护,不影响主链路 */
+      }
+    }
+
+    return {
+      entities: Array.from(entities),
+      emotionWords: Array.from(EMOTION_WORDS),
+      exemptTexts,
+    };
+  }
+
+  private recordRuntimeTurn(
+    userMessage: string,
+    assistantMessage: string,
+    runtimeTurnId?: string,
+    runtime: ChatRuntimeIntegration | undefined = this.config.runtime
+  ): void {
+    if (runtime) {
+      void recordChatTurn(runtime, userMessage, assistantMessage, runtimeTurnId);
+    }
+  }
+
   private async updateEmotion(
     reply: string,
     callbacks?: ChatManagerCallbacks

@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import 'fake-indexeddb/auto';
 import { useCharacterStore } from '../../src/stores/character';
 import { IndexedDBAdapter } from '@storage/indexeddb-adapter';
+import type { StorageAdapter } from '@storage/storage-adapter';
 
 // Polyfill: jsdom 环境下 File.text() 可能不可用
 if (typeof File !== 'undefined' && !File.prototype.text) {
@@ -513,6 +514,22 @@ describe('useCharacterStore — E5 单元测试', () => {
       expect(imported!.description).toContain('从 V2 导入');
       expect(store.lastInfo).toContain('已导入角色卡');
       expect(store.currentCharacterId).toBe(id);
+    });
+
+    it('导入落盘失败时不加入内存或报告成功', async () => {
+      const store = useCharacterStore();
+      const before = store.characters.length;
+      const selected = store.currentCharacterId;
+      store.setStorageAdapter({
+        saveCharacter: vi.fn().mockRejectedValue(new Error('quota exceeded')),
+      } as unknown as StorageAdapter);
+
+      const id = await store.importV2File(makeJsonFile(JSON.stringify(makeV2CardJson())));
+      expect(id).toBeNull();
+      expect(store.characters).toHaveLength(before);
+      expect(store.currentCharacterId).toBe(selected);
+      expect(store.lastError).toContain('quota exceeded');
+      expect(store.lastInfo).toBeNull();
     });
 
     it('JSON 格式错误应通过 lastError 反馈并返回 null', async () => {

@@ -143,6 +143,32 @@ export const MODEL_REGISTRY: LocalModelMeta[] = [
     lowResourceFriendly: true,
   },
   {
+    // 2026-09-22 新增：Index-1.9B-Character 的**同规模替代**
+    //
+    // 背景：选型调研曾推荐本地用 Index-1.9B-Character（RAG few-shot 角色扮演）。
+    // 但核实 WebLLM 预构建模型列表（mlc-ai/web-llm 的 config.ts）后确认：
+    // **Index 系列不在其中** —— WebLLM 只能加载预编译的 MLC 权重，不是任意
+    // HuggingFace 模型都能跑。故改用同规模、中文能力相当的 Qwen3-1.7B。
+    //
+    // 选它的理由：
+    // - 1.7B，与 Index-1.9B 规模接近，`low_resource_required: true`（低配可跑）
+    // - Qwen3 为 **Apache-2.0**，在项目的许可安全区内（Index 权重走自定义协议）
+    // - Qwen3 自带推理能力，且 REASONING_MODEL_RE 已包含 `qwen3`
+    //
+    // vramMb 取自 WebLLM config 的 `vram_required_MB: 2036.66`（取整）；
+    // downloadSizeMb 按同族比例估算（Qwen2.5-1.5B 的 download/vram ≈ 0.679）。
+    id: 'Qwen3-1.7B-q4f16_1-MLC',
+    name: 'Qwen3 1.7B',
+    size: 'small',
+    downloadSizeMb: 1400,
+    vramMb: 2037,
+    contextLength: 4096,
+    version: '0.2.84',
+    description: t('lme.descQwen3'),
+    defaultTemperature: 0.7,
+    lowResourceFriendly: true,
+  },
+  {
     id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
     name: 'Llama 3.2 1B',
     size: 'small',

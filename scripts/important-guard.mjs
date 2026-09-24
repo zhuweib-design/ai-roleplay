@@ -3,7 +3,7 @@
  * important-guard.mjs — 跨端评审 S-1 的「棘轮」守卫（Web SOP 评审 P2-4）
  *
  * 背景：S-1 的评审目标是把 `responsive.css` 的 `!important` 降到个位数，并在 CI 加一条
- *   「禁止 !important 增量」的检查。实测目标未达成（`responsive.css` 仍有 18 处），
+ *   「禁止 !important 增量」的检查。实测目标未达成（`responsive.css` 仍有 4 处），
  *   且该检查从未建立 —— 属于「评审建议未转门禁」的典型。
  *
  * 本守卫采取**棘轮（ratchet）策略**，而不是一步到位：
@@ -26,8 +26,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const SRC = join(ROOT, 'src');
 
-/** 当前存量基线（2026-09-18 实测，已剥离注释）。只允许下调，不允许上调。 */
-const BASELINE_TOTAL = 46;
+/** 当前存量基线（2026-09-22 实测，已剥离注释）。只允许下调，不允许上调。 */
+const BASELINE_TOTAL = 26;
 /** S-1 的历史目标（responsive.css 收敛到个位数）—— 仅作提示，不阻断 */
 const RESPONSIVE_TARGET_FILE = 'src/styles/responsive.css';
 const RESPONSIVE_TARGET_MAX = 9;
