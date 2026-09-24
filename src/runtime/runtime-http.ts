@@ -2,6 +2,7 @@ import type {
   RuntimeApi,
   RuntimeApiRequest,
   RuntimeApiResponse,
+  RuntimeBatchCreateResult,
   RuntimeRoute,
 } from './runtime-api';
 import { handleRuntimeRequest } from './runtime-api';
@@ -9,9 +10,15 @@ import type {
   CharacterCompileInput,
   RuntimeContext,
   RuntimeContextRequest,
+  RuntimeConversationTurnInput,
+  RuntimeConversationTurnResult,
+  RuntimeConversationTurnEventInput,
+  RuntimeConversationTurnCommitResult,
   RuntimeEventInput,
   RuntimeReduceResult,
   RuntimeSnapshot,
+  RuntimeCharacterListRequest,
+  RuntimeCharacterListResult,
 } from './types';
 
 export type RuntimeFetch = (
@@ -66,8 +73,19 @@ export class HttpRuntimeApi implements RuntimeApi {
     this.headers = options.headers;
   }
 
+  async listCharacters(input: RuntimeCharacterListRequest): Promise<RuntimeCharacterListResult> {
+    const query = new URLSearchParams({ tenantId: input.tenantId });
+    if (input.limit !== undefined) query.set('limit', String(input.limit));
+    if (input.cursor !== undefined) query.set('cursor', input.cursor);
+    return this.request(`/v1/runtime/characters?${query}`, 'GET');
+  }
+
   async createCharacter(input: CharacterCompileInput): Promise<RuntimeSnapshot> {
     return this.request('/v1/runtime/characters', 'POST', input);
+  }
+
+  async createCharacters(inputs: CharacterCompileInput[]): Promise<RuntimeBatchCreateResult> {
+    return this.request('/v1/runtime/characters/batch', 'POST', { characters: inputs });
   }
 
   async getCharacter(characterId: string): Promise<RuntimeSnapshot> {
@@ -80,6 +98,28 @@ export class HttpRuntimeApi implements RuntimeApi {
   ): Promise<RuntimeReduceResult> {
     return this.request(
       '/v1/runtime/characters/' + encodeURIComponent(characterId) + '/events',
+      'POST',
+      input
+    );
+  }
+
+  async recordConversationTurn(
+    characterId: string,
+    input: Omit<RuntimeConversationTurnInput, 'characterId'>
+  ): Promise<RuntimeConversationTurnResult> {
+    return this.request(
+      '/v1/runtime/characters/' + encodeURIComponent(characterId) + '/turns',
+      'POST',
+      input
+    );
+  }
+
+  async recordChatTurn(
+    characterId: string,
+    input: RuntimeConversationTurnEventInput
+  ): Promise<RuntimeConversationTurnCommitResult> {
+    return this.request(
+      '/v1/runtime/characters/' + encodeURIComponent(characterId) + '/turns',
       'POST',
       input
     );
@@ -157,8 +197,19 @@ export function createRuntimeHttpHandler(
       } catch {
         return jsonResponse({ status: 400, body: { error: 'INVALID_JSON' } });
       }
+      if (options.tenantId && url.pathname === '/v1/runtime/characters/batch' &&
+        body && typeof body === 'object' && !Array.isArray(body)) {
+        const payload = body as Record<string, unknown>;
+        if (Array.isArray(payload.characters)) {
+          body = { ...payload, characters: payload.characters.map((item) =>
+            item && typeof item === 'object' && !Array.isArray(item)
+              ? { ...(item as Record<string, unknown>), tenantId: options.tenantId }
+              : item
+          ) };
+        }
+      }
       const isTenantBoundWrite =
-        url.pathname === '/v1/runtime/characters' || url.pathname.endsWith('/events');
+        url.pathname === '/v1/runtime/characters' || url.pathname.endsWith('/events') || url.pathname.endsWith('/turns');
       if (options.tenantId && isTenantBoundWrite && body && typeof body === 'object' && !Array.isArray(body)) {
         body = { ...(body as Record<string, unknown>), tenantId: options.tenantId };
       }
@@ -167,6 +218,7 @@ export function createRuntimeHttpHandler(
       method,
       path: url.pathname as RuntimeRoute,
       body,
+      query: { ...Object.fromEntries(url.searchParams), ...(options.tenantId ? { tenantId: options.tenantId } : {}) },
     });
     return jsonResponse(result);
   };

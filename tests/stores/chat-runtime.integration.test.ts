@@ -1,0 +1,290 @@
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
+import 'fake-indexeddb/auto';
+import { useChatStore } from '../../src/stores/chat';
+import { createProjectRuntime } from '../../src/runtime/project-runtime';
+import type { UICharacter } from '@/types';
+import type { StorageAdapter } from '@/storage/storage-adapter';
+import type { GroupChat } from '@/core/group-chat';
+import { uiCharToCard } from '@/services/type-adapters';
+import { buildChatRuntimeContext } from '@/runtime/chat-bridge';
+import { RuntimeApiAdapter } from '@/runtime/runtime-api';
+import { RuntimeCore } from '@/runtime/runtime-core';
+import { InMemoryRuntimeStore } from '@/runtime/store';
+import { createRuntimeHttpHandler } from '@/runtime/runtime-http';
+import { createGroupRuntimeHttpHandler, type GroupRuntimeApi } from '@/runtime/runtime-group-http';
+import { GroupRuntimeError } from '@/runtime/group-runtime-contract';
+
+function makeCharacter(id = `runtime-chat-${Date.now()}-${Math.random().toString(16).slice(2)}`): UICharacter {
+  return {
+    id,
+    name: 'Runtime 测试角色',
+    avatarType: 'gradient',
+    gradientFrom: '#123456',
+    gradientTo: '#654321',
+    initial: 'R',
+    lastActive: '刚刚',
+    favorite: false,
+    tags: [],
+    description: '一个用于验证 Runtime 注入的测试角色。',
+    personality: '温和、稳定',
+    scenario: '测试场景',
+    model: 'gpt-4o',
+    profileId: null,
+    conversations: [],
+    messages: [],
+    authorNote: '',
+    authorDepth: 4,
+    temperature: 0.7,
+    maxTokens: 256,
+    worldEntries: [],
+    tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
+  };
+}
+
+function makeResponse(content: string): Response {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+        id: 'runtime-chat-test',
+        object: 'chat.completion.chunk',
+        choices: [{ index: 0, delta: { content }, finish_reason: 'stop' }],
+      })}\n\n`));
+      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      controller.close();
+    },
+  });
+  return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+}
+
+describe('Chat Store — Runtime 实际链路', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('ai-roleplay:runtime-tenant-id:')) localStorage.removeItem(key);
+    }
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it('批量创建两个独立角色，重试不覆盖快照，超出单批上限则拒绝', async () => {
+    const store = useChatStore();
+    const first = makeCharacter();
+    const second = makeCharacter();
+    second.name = '另一个角色';
+
+    const created = await store.createRuntimeCharactersBatch([first, second]);
+    expect(created?.items.map((item) => item.status)).toEqual(['created', 'created']);
+    expect(created?.items[0]?.characterId).not.toBe(created?.items[1]?.characterId);
+
+    const tenantId = localStorage.getItem('ai-roleplay:runtime-tenant-id:default');
+    expect(tenantId).toBeTruthy();
+    const api = createProjectRuntime();
+    const listed = await api.listCharacters({ tenantId: tenantId! });
+    expect(listed.items.map((item) => item.profile.displayName)).toEqual(
+      expect.arrayContaining([first.name, second.name])
+    );
+
+    const retried = await store.createRuntimeCharactersBatch([first, second]);
+    expect(retried?.items.map((item) => item.status)).toEqual(['already_exists', 'already_exists']);
+    expect((await api.getCharacter(created!.items[0]!.characterId)).version).toBe(created!.items[0]!.snapshot?.version);
+
+    expect(await store.createRuntimeCharactersBatch(Array.from({ length: 51 }, (_, i) =>
+      makeCharacter(`over-limit-${i}`)
+    ))).toBeNull();
+    expect(store.runtimeStatus?.phase).toBe('initialize');
+  });
+
+  it('普通发送与重新生成都注入同一 Runtime 角色上下文', async () => {
+    const requests: RequestInit[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {
+      requests.push(init ?? {});
+      return makeResponse('Runtime 回复');
+    });
+
+    const store = useChatStore();
+    store.setApiProfile({
+      id: 'runtime-test-profile',
+      name: 'Runtime Test',
+      provider: 'openai',
+      baseUrl: 'https://api.example.com',
+      apiKey: 'test-key',
+      model: 'gpt-4o',
+    });
+    const character = makeCharacter();
+
+    await store.sendMessage(character, '你好');
+    expect(character.messages).toHaveLength(2);
+    await store.regenerateMessage(character, character.messages[1]!.id);
+
+    expect(requests).toHaveLength(2);
+    for (const request of requests) {
+      const payload = JSON.parse(String(request.body)) as { messages: Array<{ role: string; content: string }> };
+      const system = payload.messages.find((message) => message.role === 'system');
+      expect(system?.content).toContain('[Virtual Character Runtime State]');
+      expect(system?.content).toContain('Runtime 测试角色');
+    }
+    expect(store.runtimeStatus).toBeNull();
+  });
+  function setupGroupRemote() {
+    vi.stubEnv('VITE_RUNTIME_BASE_URL', 'http://runtime.test');
+    const characters = [makeCharacter('group-a'), makeCharacter('group-b')];
+    characters[1]!.name = '另一个群聊角色';
+    const group: GroupChat = {
+      id: 'group-one', name: '远程测试群', description: '', mode: 'natural', firstMessage: '',
+      messages: [], lastSpeakerId: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      members: characters.map((c) => ({ characterId: c.id, name: c.name, joinedAt: new Date().toISOString(), allowAutoSelect: true })),
+    };
+    const characterApi = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const context = vi.fn<GroupRuntimeApi['buildMemberContext']>(async (_groupId, memberId, request) => characterApi.buildContext(memberId, request));
+    const create = vi.fn<GroupRuntimeApi['createGroup']>(async () => {});
+    const getGroupState = vi.fn<GroupRuntimeApi['getGroupState']>(async (groupId) => ({
+      groupId, name: '远程测试群', status: 'active', version: 3, memberIds: ['group-a', 'group-b'],
+    }));
+    const addMember = vi.fn<GroupRuntimeApi['addMember']>(async (groupId, characterId) => ({
+      groupId, name: '远程测试群', status: 'active', version: 4, memberIds: ['group-a', 'group-b', characterId],
+    }));
+    const removeMember = vi.fn<GroupRuntimeApi['removeMember']>(async (groupId) => ({
+      groupId, name: '远程测试群', status: 'active', version: 4, memberIds: ['group-a'],
+    }));
+    const commit = vi.fn<GroupRuntimeApi['commitTurn']>(async (input) => ({
+      ...input, id: 'turn-id', sequenceNo: 0, occurredAt: '2026-09-23T00:00:00.000Z', eventIds: {},
+    }));
+    const groups = createGroupRuntimeHttpHandler({
+      createGroup: create, getGroupState, commitTurn: commit, buildMemberContext: context,
+      addMember, removeMember, listTurns: async () => [],
+    });
+    const single = createRuntimeHttpHandler(characterApi);
+    const paths: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const request = new Request(input, init);
+      const pathname = new URL(request.url).pathname;
+      paths.push(pathname);
+      return pathname.startsWith('/v1/runtime/groups') ? groups(request) : single(request);
+    });
+    const store = useChatStore();
+    const input = { group, characters, speakerCharacterId: characters[0]!.id };
+    return { store, input, paths, context, create, addMember, removeMember, commit };
+  }
+
+  it('远程群聊先确认群组，再走成员限定上下文，且不污染缓存的单角色 API', async () => {
+    const { store, input, paths, context, create, commit } = setupGroupRemote();
+    const runtime = await store.ensureGroupRuntimeIntegration(input);
+    expect(create).toHaveBeenCalledOnce();
+    expect(runtime?.requireContext).toBe(true);
+    const block = await buildChatRuntimeContext(runtime!);
+    expect(block).toContain('Identity: Runtime 测试角色');
+    expect(context).toHaveBeenCalledWith(create.mock.calls[0]![0].groupId, runtime!.characterId,
+      { maxEvents: 12, maxMemories: 8, maxEpisodes: 5 });
+    expect(paths.filter((path) => path.endsWith('/context'))).toEqual([
+      '/v1/runtime/groups/' + create.mock.calls[0]![0].groupId + '/context',
+    ]);
+    const cached = await store.ensureRuntimeIntegration(input.characters[0]!, uiCharToCard(input.characters[0]!), 'group-' + input.group.id);
+    expect(cached?.requireContext).toBeUndefined();
+    expect(cached?.api.recordChatTurn).toBeTypeOf('function');
+    expect(runtime!.api.recordChatTurn).toBeUndefined();
+    await expect(runtime!.api.ingestEvent(runtime!.characterId, { tenantId: runtime!.tenantId, eventType: 'unexpected', importance: 0.5, payload: {} }))
+      .rejects.toThrow('公共回合事务');
+    const committed = await store.commitRuntimeGroupTurn({ ...input, turnId: 'stable-turn', userMessage: '问', assistantMessage: '答' });
+    expect(committed).toEqual({ enabled: true, committed: true });
+    expect(commit).toHaveBeenCalledOnce();
+    expect(commit.mock.calls[0]![0]).toMatchObject({ groupId: create.mock.calls[0]![0].groupId, speakerId: runtime!.characterId, turnId: 'stable-turn' });
+    expect(paths.some((path) => path.includes('/characters/') && (path.endsWith('/events') || path.endsWith('/turns')))).toBe(false);
+  });
+
+  it.each([401, 403, 500])('成员限定 Context 返回 %i 时传播失败而不降级', async (status) => {
+    const { store, input, context, paths } = setupGroupRemote();
+    const runtime = await store.ensureGroupRuntimeIntegration(input);
+    context.mockRejectedValue(new GroupRuntimeError(status, 'CONTEXT_DENIED', '群组上下文不可读取'));
+    await expect(buildChatRuntimeContext(runtime!)).rejects.toMatchObject({ status, code: 'CONTEXT_DENIED' });
+    expect(store.runtimeStatus).toMatchObject({ phase: 'context', message: '群组上下文不可读取' });
+    expect(paths.some((path) => path.includes('/characters/') && path.endsWith('/context'))).toBe(false);
+  });
+
+  it('群组初始化冲突中止准备；不自动加入、移除或读取其他角色上下文', async () => {
+    const { store, input, create, context, paths } = setupGroupRemote();
+    create.mockRejectedValue(new GroupRuntimeError(409, 'GROUP_CONFLICT', '群组定义冲突'));
+    await expect(store.ensureGroupRuntimeIntegration(input)).rejects.toMatchObject({ status: 409 });
+    expect(store.runtimeStatus?.phase).toBe('initialize');
+    expect(context).not.toHaveBeenCalled();
+    expect(paths.some((path) => path.includes('/members'))).toBe(false);
+  });
+
+  it('远程提交失败后同键重试保留原始载荷，不回退单角色事件接口', async () => {
+    const { store, input, commit, paths } = setupGroupRemote();
+    commit.mockRejectedValueOnce(new GroupRuntimeError(503, 'TEMPORARY_FAILURE', '暂时不可用'));
+    const turn = { ...input, turnId: 'retry-same-turn', userMessage: '问题', assistantMessage: '原始回答' };
+    expect(await store.commitRuntimeGroupTurn(turn)).toEqual({ enabled: true, committed: false });
+    expect(store.runtimeStatus?.phase).toBe('event');
+    expect(await store.commitRuntimeGroupTurn(turn)).toEqual({ enabled: true, committed: true });
+    expect(commit.mock.calls[0]![0]).toEqual(commit.mock.calls[1]![0]);
+    expect(paths.some((path) => path.includes('/characters/') && (path.endsWith('/events') || path.endsWith('/turns')))).toBe(false);
+  });
+
+  it('成员变更先同步远端显式接口，失败时不要求调用方静默覆盖本地状态', async () => {
+    const { store, input, addMember, removeMember } = setupGroupRemote();
+    const extra = makeCharacter('group-c');
+    const characters = [...input.characters, extra];
+    const added = await store.syncRemoteGroupMember({
+      group: input.group, characters, memberCharacterId: extra.id, operation: 'add',
+    });
+    expect(added).toEqual({ enabled: true, synced: true });
+    expect(addMember).toHaveBeenCalledOnce();
+    expect(addMember.mock.calls[0]![0]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(input.group.members).toHaveLength(2);
+
+    const removed = await store.syncRemoteGroupMember({
+      group: input.group, characters, memberCharacterId: input.characters[1]!.id, operation: 'remove',
+    });
+    expect(removed).toEqual({ enabled: true, synced: true });
+    expect(removeMember).toHaveBeenCalledOnce();
+    expect(removeMember.mock.calls[0]![1]).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('远程提交失败会持久化待提交回合，刷新后可用同一载荷重试并清除队列', async () => {
+    const snapshots = new Map<string, unknown>();
+    const adapter = {
+      saveSnapshot: vi.fn(async (key: string, value: unknown) => { snapshots.set(key, structuredClone(value)); }),
+      loadSnapshot: vi.fn(async <T>(key: string) => (snapshots.get(key) as T | undefined) ?? null),
+    } as unknown as StorageAdapter;
+    const first = setupGroupRemote();
+    first.store.setStorageAdapter(adapter);
+    first.commit.mockRejectedValueOnce(new GroupRuntimeError(503, 'TEMPORARY_FAILURE', '网络暂时不可用'));
+    const original = { ...first.input, turnId: 'persistent-retry', userMessage: '保留问题', assistantMessage: '保留回答' };
+    expect(await first.store.commitRuntimeGroupTurn(original)).toEqual({ enabled: true, committed: false });
+    expect(first.store.pendingGroupRuntimeTurns).toHaveLength(1);
+    expect(adapter.saveSnapshot).toHaveBeenCalledWith('runtime:pending-group-turns:v1', expect.any(Array));
+    const raw = snapshots.get('runtime:pending-group-turns:v1');
+    expect(raw).toBeDefined();
+    const saved = (raw as Array<Record<string, unknown>>).map((item) => ({ ...item }));
+    expect(saved[0]).toMatchObject({ groupId: original.group.id, turnId: original.turnId, userMessage: original.userMessage, assistantMessage: original.assistantMessage, attempts: 1 });
+
+    setActivePinia(createPinia());
+    const refreshed = useChatStore();
+    refreshed.setStorageAdapter(adapter);
+    await refreshed.loadRuntimePendingGroupTurns();
+    expect(refreshed.pendingGroupRuntimeTurns).toHaveLength(1);
+    expect(refreshed.pendingGroupRuntimeTurns[0]).toMatchObject({ turnId: 'persistent-retry', assistantMessage: '保留回答' });
+    const beforeRetry = first.commit.mock.calls.length;
+    const retry = await refreshed.retryPendingGroupRuntimeTurn({ ...first.input, groupTurnId: 'persistent-retry' });
+    expect(retry).toEqual({ enabled: true, committed: true });
+    expect(first.commit.mock.calls.length).toBe(beforeRetry + 1);
+    expect(first.commit.mock.calls.at(-1)?.[0]).toMatchObject({ turnId: 'persistent-retry', userMessage: '保留问题', assistantMessage: '保留回答' });
+    expect(refreshed.pendingGroupRuntimeTurns).toHaveLength(0);
+  });
+
+  it('远程准备拒绝非成员和本地归档群组，且不发出 HTTP 请求', async () => {
+    const { store, input, paths } = setupGroupRemote();
+    await expect(store.ensureGroupRuntimeIntegration({ ...input, speakerCharacterId: 'outsider' })).rejects.toThrow('不是群组成员');
+    input.group.lifecycleStatus = 'archived';
+    await expect(store.ensureGroupRuntimeIntegration(input)).rejects.toThrow('已归档');
+    expect(paths).toHaveLength(0);
+  });
+
+});
+
+

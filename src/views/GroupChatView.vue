@@ -18,6 +18,12 @@
 import { ref, computed, watch, nextTick, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGroupChatStore } from '@/stores/group-chat';
+import { useChatStore } from '@/stores/chat';
+import { ChatManager } from '@/services/chat-manager';
+import { createApiClient } from '@/api';
+import { uiCharToCard } from '@/services/type-adapters';
+import { buildGroupHistory, buildGroupSystemPrompt } from '@/services/group-chat-prompt';
+import { recordGroupObservation } from '@/services/group-chat-runtime';
 import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
@@ -47,6 +53,7 @@ const filteredGroups = computed(() => {
 });
 
 const groupStore = useGroupChatStore();
+const chatStore = useChatStore();
 const characterStore = useCharacterStore();
 const settingsStore = useSettingsStore();
 const router = useRouter();
@@ -97,16 +104,17 @@ const currentGroup = computed(() => groupStore.currentGroup);
 const currentMessages = computed(() => groupStore.currentMessages);
 const currentMembers = computed(() => groupStore.currentMembers);
 
+const pendingRuntimeTurns = computed(() => {
+  const groupId = currentGroup.value?.id;
+  return groupId
+    ? chatStore.pendingGroupRuntimeTurns.filter((item) => item.groupId === groupId)
+    : [];
+});
+
 // 创建群聊时可选的角色卡（排除已选中的）
 const availableCharacters = computed(() => characterStore.characters);
 
-/**
- * P1：各成员的"当前状态"快照（按 characterId 分组后纯派生，零持久化）
- *
- * TODO：群聊当前仍是 mock 链路（本文件 simulateAiReply 用 setTimeout 造回复），
- * 无法产出真实的 `<status>` 块 → 本计算恒为空、UI 不渲染。
- * 待群聊接入 chat-manager 真实流式链路后，ChatMessage.status 会被自动填充，此处即生效。
- */
+/** 各成员当前状态按 characterId 从公开回复中派生。 */
 const memberStatuses = computed(() => {
   const group = currentGroup.value;
   if (!group) return [];
@@ -228,7 +236,9 @@ function deleteGroup(id: string) {
 
 function confirmDeleteGroup() {
   if (deleteGroupTargetId.value) {
-    groupStore.deleteGroup(deleteGroupTargetId.value);
+    const id = deleteGroupTargetId.value;
+    groupStore.deleteGroup(id);
+    void chatStore.discardPendingGroupRuntimeTurns(id);
   }
   deleteModalOpen.value = false;
   deleteGroupTargetId.value = null;
@@ -267,27 +277,46 @@ function toggleAddMemberCandidate(charId: string) {
   }
 }
 
-function confirmAddMembers() {
-  if (!addMemberTargetGroupId.value) return;
-  const targets = characterStore.characters.filter((c) =>
-    addMemberCandidates.value.has(c.id)
-  );
-  targets.forEach((char) => {
-    const card = characterToCard(char);
-    groupStore.addMember(addMemberTargetGroupId.value!, card);
-  });
+async function confirmAddMembers(): Promise<void> {
+  const group = currentGroup.value;
+  if (!addMemberTargetGroupId.value || !group || group.id !== addMemberTargetGroupId.value) return;
+  const targets = characterStore.characters.filter((c) => addMemberCandidates.value.has(c.id));
+  for (const char of targets) {
+    const synced = await chatStore.syncRemoteGroupMember({
+      group,
+      characters: characterStore.characters,
+      memberCharacterId: char.id,
+      operation: 'add',
+    });
+    if (!synced.synced) {
+      showToast('error', t('group.runtimeMemberSyncFailed'));
+      break;
+    }
+    groupStore.addMember(group.id, characterToCard(char));
+  }
   addMemberModalOpen.value = false;
   addMemberTargetGroupId.value = null;
 }
 
-function removeMember(member: GroupMember, e: Event) {
+async function removeMember(member: GroupMember, e: Event): Promise<void> {
   e.stopPropagation();
-  if (!currentGroup.value) return;
-  if (currentGroup.value.members.length <= 2) {
+  const group = currentGroup.value;
+  if (!group) return;
+  if (group.members.length <= 2) {
     showToast('error', t('group.minMembers'));
     return;
   }
-  groupStore.removeMember(currentGroup.value.id, member.characterId);
+  const synced = await chatStore.syncRemoteGroupMember({
+    group,
+    characters: characterStore.characters,
+    memberCharacterId: member.characterId,
+    operation: 'remove',
+  });
+  if (!synced.synced) {
+    showToast('error', t('group.runtimeMemberSyncFailed'));
+    return;
+  }
+  groupStore.removeMember(group.id, member.characterId);
 }
 
 // ── F10.3 随机 NPC 生成 ──
@@ -349,57 +378,151 @@ function restoreCurrentGroup() {
   }
 }
 
+async function retryPendingRuntimeTurns(): Promise<void> {
+  const group = currentGroup.value;
+  if (!group || groupStore.isStreaming || pendingRuntimeTurns.value.length === 0) return;
+  for (const pending of [...pendingRuntimeTurns.value]) {
+    const result = await chatStore.retryPendingGroupRuntimeTurn({
+      group,
+      characters: characterStore.characters,
+      groupTurnId: pending.turnId,
+    });
+    if (!result.committed) {
+      showToast('error', t('group.runtimeRetryFailed'));
+      return;
+    }
+  }
+  showToast('success', t('group.runtimeRetrySucceeded'));
+}
+
 // ── 消息发送 ──
 function sendMessage() {
-  if (!currentGroup.value) return;
-  // F10.4 归档群聊为只读状态
-  if (currentGroup.value.lifecycleStatus === 'archived') {
+  const group = currentGroup.value;
+  if (!group || groupStore.isStreaming) return;
+  if (group.lifecycleStatus === 'archived') {
     showToast('error', t('group.archivedReadonly'));
     return;
   }
   const text = groupStore.inputText.trim();
   if (!text) return;
-
-  const ok = groupStore.addUserMessage(currentGroup.value.id, text);
-  if (!ok) {
+  const speaker = group.mode === 'natural'
+    ? groupStore.pickNextSpeaker(group.id)
+    : group.members.find((member) => member.characterId === group.designatedSpeakerId && member.allowAutoSelect);
+  if (!speaker) {
+    showToast('info', t('group.selectSpeaker'));
+    return;
+  }
+  const character = characterStore.characters.find((item) => item.id === speaker.characterId);
+  if (!character) {
+    showToast('error', t('group.memberMissing'));
+    return;
+  }
+  const profile = settingsStore.activeProfile;
+  if (!profile) {
+    showToast('error', t('group.apiRequired'));
+    return;
+  }
+  if (!groupStore.addUserMessage(group.id, text)) {
     if (groupStore.lastError) showToast('error', groupStore.lastError);
     return;
   }
+  const userMessageId = group.messages.at(-1)!.id;
   groupStore.setInput('');
-
-  // 模拟 AI 回复（实际应调用 chat-manager + api-client）
-  void simulateAiReply();
+  void generateGroupReply(group.id, speaker, character, userMessageId, text, profile);
 }
 
-async function simulateAiReply() {
-  if (!currentGroup.value) return;
-  const groupId = currentGroup.value.id;
-
-  // 选择下一位发言者
-  const speaker =
-    currentGroup.value.mode === 'natural'
-      ? groupStore.pickNextSpeaker(groupId)
-      : null;
-
-  if (!speaker) {
-    // 指定模式下等待用户 @
-    return;
+async function generateGroupReply(
+  groupId: string,
+  speaker: GroupMember,
+  character: UICharacter,
+  userMessageId: string,
+  text: string,
+  profile: NonNullable<ReturnType<typeof useSettingsStore>['activeProfile']>
+): Promise<void> {
+  const current = groupStore.groups.find((item) => item.id === groupId);
+  if (!current) return;
+  // 固定本轮的群组定义与历史，避免生成期间 UI 变更导致上下文和提交使用不同成员。
+  const group = { ...current, members: current.members.map((member) => ({ ...member })),
+    messages: current.messages.map((message) => ({ ...message })) };
+  groupStore.setStreaming(true);
+  const card = uiCharToCard(character);
+  let messageId: string | null = null;
+  let thinking = '';
+  const generationErrors: Error[] = [];
+  try {
+    const runtime = await chatStore.ensureGroupRuntimeIntegration({
+      group, characters: characterStore.characters, speakerCharacterId: speaker.characterId,
+    });
+    const manager = new ChatManager({
+      apiClient: createApiClient(profile),
+      model: profile.model,
+      maxTokens: profile.maxTokens,
+      systemPrompt: buildGroupSystemPrompt(group, speaker),
+    });
+    const reply = await manager.sendMessage({
+      card,
+      history: buildGroupHistory(group, speaker, userMessageId),
+      userMessage: text,
+      runtimeTurnId: userMessageId,
+      // 服务端群聊模式下由公共 Turn 事务统一写入所有成员 Event。
+      persistRuntime: !(typeof import.meta.env.VITE_RUNTIME_BASE_URL === 'string' && import.meta.env.VITE_RUNTIME_BASE_URL.trim()),
+      runtime: runtime ?? undefined,
+    }, {
+      onThinking: (_delta, full) => { thinking = full; },
+      onDelta: (_delta, full) => {
+        if (!full) return;
+        if (!messageId) messageId = groupStore.addAssistantMessage(groupId, speaker.characterId, speaker.name, full);
+        else groupStore.updateAssistantMessage(groupId, messageId, { content: full, thinking });
+      },
+      onStatus: (status) => {
+        if (messageId && status) groupStore.updateAssistantMessage(groupId, messageId, { status });
+      },
+      onError: (error) => { generationErrors.push(error); },
+    });
+    if (reply) {
+      if (!messageId) messageId = groupStore.addAssistantMessage(groupId, speaker.characterId, speaker.name, reply);
+      if (messageId) groupStore.updateAssistantMessage(groupId, messageId, { content: reply, thinking });
+      const runtimeCommit = generationErrors.length === 0 && messageId
+        ? await chatStore.commitRuntimeGroupTurn({
+          group,
+          characters: characterStore.characters,
+          speakerCharacterId: speaker.characterId,
+          turnId: userMessageId,
+          userMessage: text,
+          assistantMessage: reply,
+        })
+        : { enabled: false, committed: false };
+      if (runtimeCommit.enabled) {
+        if (runtimeCommit.committed && group.mode === 'designated') {
+          groupStore.clearDesignatedSpeaker(groupId, speaker.characterId);
+        }
+        if (!runtimeCommit.committed) showToast('error', t('group.runtimeCommitFailed'));
+      } else if (generationErrors.length === 0 && messageId) {
+        if (group.mode === 'designated') groupStore.clearDesignatedSpeaker(groupId, speaker.characterId);
+        // 本地 Runtime 模式下保留原有逐成员旁听路径；远程模式由服务端事务统一扇出。
+        await Promise.allSettled(group.members
+          .filter((member) => member.characterId !== speaker.characterId)
+          .map(async (member) => {
+            const listener = characterStore.characters.find((item) => item.id === member.characterId);
+            if (!listener) return;
+            const integration = await chatStore.ensureRuntimeIntegration(listener, uiCharToCard(listener), 'group-' + groupId);
+            if (!integration) return;
+            await recordGroupObservation(integration, {
+              groupId,
+              assistantMessageId: messageId!,
+              speakerId: speaker.characterId,
+              userMessage: text,
+              assistantMessage: reply,
+            });
+          }));
+      }
+    }
+    if (generationErrors.length > 0 || !reply) showToast('error', generationErrors[0]?.message ?? t('group.emptyReply'));
+  } catch (error) {
+    showToast('error', error instanceof Error ? error.message : String(error));
+  } finally {
+    groupStore.setStreaming(false);
   }
-
-  // 添加占位 AI 消息
-  groupStore.addAssistantMessage(
-    groupId,
-    speaker.characterId,
-    speaker.name,
-    '...'
-  );
-
-  // 模拟流式输出
-  // 实际实现应调用 chat-manager.streamChat()
-  setTimeout(() => {
-    const reply = t('group.mockReply', { name: speaker.name });
-    groupStore.updateLastAssistantMessage(groupId, reply);
-  }, 500);
 }
 
 function onInputKeydown(e: KeyboardEvent) {
@@ -450,26 +573,10 @@ function setMode(mode: GroupChatMode) {
 
 // ── 辅助 ──
 function characterToCard(c: UICharacter): import('@core/character-card').CharacterCard {
-  // 通过 type-adapters 转换（这里简化使用 uiCharToCard）
-  // 直接 import 会有循环依赖风险，所以通过 store 间接获取
-  // 这里临时构造一个最小化结构用于群聊创建
   return {
-    id: c.id,
-    name: c.name,
-    avatar: c.avatar,
-    description: c.description,
-    personality: '',
-    scenario: '',
+    ...uiCharToCard(c),
     firstMessage: c.messages[0]?.content ?? '',
-    alternateGreetings: c.messages.slice(1).map((m) => m.content),
-    exampleMessages: '',
-    characterNote: null,
-    talkativeness: 50,
-    tags: c.tags,
-    favorite: c.favorite,
-    version: '1.0',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    alternateGreetings: c.messages.slice(1).map((message) => message.content),
   };
 }
 
@@ -728,6 +835,23 @@ type="button"
               </div>
             </div>
 
+            <div
+              v-if="pendingRuntimeTurns.length > 0"
+              class="runtime-retry-banner"
+              role="status"
+              aria-live="polite"
+            >
+              <span>{{ t('group.runtimePending', { count: pendingRuntimeTurns.length }) }}</span>
+              <button
+                type="button"
+                class="action-btn"
+                :disabled="groupStore.isStreaming"
+                @click="retryPendingRuntimeTurns"
+              >
+                {{ t('group.runtimeRetry') }}
+              </button>
+            </div>
+
             <!-- 发言模式切换 -->
             <div class="mode-switcher" role="radiogroup" :aria-label="t('group.modeAria')">
               <button
@@ -753,12 +877,6 @@ type="button"
                 <span>{{ t('group.modeDesignated') }}</span>
               </button>
             </div>
-
-            <!--
-              P1 成员状态：按 characterId 分组派生。
-              TODO：群聊 mock 链路无真实状态输出（见 memberStatuses 注释），
-              接入真实流式链路后此处自动渲染。
-            -->
             <div
               v-if="memberStatuses.length > 0"
               class="member-status-bar"
@@ -809,13 +927,6 @@ type="button"
                   <div v-if="msg.role === 'assistant'" class="msg-sender">
                     {{ msg.characterName }}
                   </div>
-                  <!--
-                    P0-1：群聊复用 ThinkingBlock 渲染思维链。
-                    TODO(群聊真实流式)：当前群聊 AI 回复仍是 mock
-                    （见本文件 simulateAiReply 的 setTimeout + t('group.mockReply')），
-                    未接入 ChatManager 流式链路，因此 thinking 暂无数据来源。
-                    待群聊接入真实流式后，此处无需改动即可生效。
-                  -->
                   <ThinkingBlock
                     v-if="msg.role === 'assistant'"
                     :thinking="msg.thinking"
@@ -880,6 +991,7 @@ type="button"
             >
               <Icon name="send" :size="16" />
             </button>
+            <span v-if="groupStore.isStreaming" role="status" aria-live="polite">{{ t('bubble.generatingText') }}</span>
           </footer>
         </div>
       </main>
@@ -1640,7 +1752,7 @@ type="button"
   margin-bottom: 10px;
 }
 
-/* P1 成员状态条（mock 链路下恒空，接入真实流式后生效） */
+/* 成员状态条 */
 .member-status-bar {
   display: flex;
   flex-wrap: wrap;
@@ -2050,6 +2162,24 @@ type="button"
   margin: 0 0 10px 0;
   font-size: 12px;
   color: var(--muted-foreground);
+}
+
+.runtime-retry-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--warning, var(--border));
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  background: var(--card-elevated);
+  font-size: 12px;
+}
+
+.runtime-retry-banner .action-btn {
+  flex: 0 0 auto;
 }
 
 /* 响应式 */

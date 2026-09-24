@@ -139,6 +139,19 @@ describe('group-chat store', () => {
       expect(g.messages[0]!.characterId).toBe('c1'); // 第一个成员
     });
 
+    it('候选首消息来自第二个成员时正确标记发言者', () => {
+      const store = useGroupChatStore();
+      store.createGroup(
+        { name: '第二位问候群', memberIds: ['c1', 'c2'] },
+        [
+          makeCard({ id: 'c1', name: 'Alice', alternateGreetings: [] }),
+          makeCard({ id: 'c2', name: 'Bob', alternateGreetings: ['我是 Bob'] }),
+        ]
+      );
+      expect(store.groups[0]?.messages[0]).toMatchObject({
+        content: '我是 Bob', characterId: 'c2', characterName: 'Bob',
+      });
+    });
     it('无 alternateGreetings 时使用第一个成员的 firstMessage 兜底', () => {
       const store = useGroupChatStore();
       store.createGroup(
@@ -355,6 +368,29 @@ describe('group-chat store', () => {
       expect(g.lastSpeakerId).toBe('c1');
     });
 
+    it('指定发言可持久使用，按消息 ID 更新不会误改另一群组', () => {
+      const store = useGroupChatStore();
+      const first = store.createGroup(
+        { name: '甲组', memberIds: ['c1', 'c2'], mode: 'designated' },
+        [makeCard({ id: 'c1' }), makeCard({ id: 'c2' })]
+      )!;
+      const second = store.createGroup(
+        { name: '乙组', memberIds: ['c1', 'c2'] },
+        [makeCard({ id: 'c1' }), makeCard({ id: 'c2' })]
+      )!;
+      store.designateSpeaker(first, 'c2');
+      expect(store.groups.find((group) => group.id === first)?.designatedSpeakerId).toBe('c2');
+      const firstMessageId = store.addAssistantMessage(first, 'c2', '乙', '旧回复')!;
+      const secondMessageId = store.addAssistantMessage(second, 'c1', '甲', '另一组回复')!;
+      store.updateAssistantMessage(first, firstMessageId, { content: '新回复' });
+      expect(store.groups.find((group) => group.id === first)?.messages.at(-1)?.content).toBe('新回复');
+      expect(store.groups.find((group) => group.id === second)?.messages.at(-1)?.content).toBe('另一组回复');
+      expect(firstMessageId).not.toBe(secondMessageId);
+      store.clearDesignatedSpeaker(first, 'c1');
+      expect(store.groups.find((group) => group.id === first)?.designatedSpeakerId).toBe('c2');
+      store.clearDesignatedSpeaker(first, 'c2');
+      expect(store.groups.find((group) => group.id === first)?.designatedSpeakerId).toBeNull();
+    });
     it('updateLastAssistantMessage 更新最近的 AI 消息内容', () => {
       const { store, id } = setupEmptyGroup();
       store.addUserMessage(id!, '你好');

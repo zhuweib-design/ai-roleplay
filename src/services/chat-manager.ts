@@ -118,6 +118,10 @@ export interface SendMessageParams {
   userMessage: string;
   /** Runtime 对话轮次的稳定 ID；由会话层传入以支持 Event 幂等重试。 */
   runtimeTurnId?: string;
+  /** 当前会话使用的 Runtime 接入；会覆盖配置级 Runtime。 */
+  runtime?: ChatRuntimeIntegration;
+  /** 仅注入 Runtime Context，不在 ChatManager 内写入 Event；群聊由服务端事务统一提交。 */
+  persistRuntime?: boolean;
   /**
    * 覆盖默认配置（model / userName / 全部采样参数 / 思考强度）
    *
@@ -248,8 +252,9 @@ export class ChatManager {
 
     // 1. 构建 prompt（含 token 裁剪，W6 集成 Lorebook 扫描与注入 F06.2-F06.3，F09.2 集成 RAG 注入，F17.2 集成激活事件注入，F16.3 主角身份注入，F16.4 故事时间注入）
     let promptContexts = params.contexts;
-    if (merged.runtime) {
-      const runtimeContext = await buildChatRuntimeContext(merged.runtime);
+    const runtime = params.runtime ?? merged.runtime;
+    if (runtime) {
+      const runtimeContext = await buildChatRuntimeContext(runtime);
       if (runtimeContext) {
         promptContexts = { ...promptContexts, runtimeContext };
       }
@@ -507,7 +512,7 @@ export class ChatManager {
             if (ev.usage) callbacks?.onUsage?.(ev.usage);
             // E-01: 情绪状态更新(规则标注;fail-open;仅在 L0 启用且有 deps 时)
             void this.updateEmotion(fullContent, callbacks);
-            this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId);
+            if (params.persistRuntime !== false) this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId, runtime);
             callbacks?.onDone?.(fullContent, ev.finishReason);
             return fullContent;
           } else if (ev.type === 'error') {
@@ -542,7 +547,7 @@ export class ChatManager {
           // P1：与 done 分支同款的状态收敛
           fullContent = convergeStatus(fullContent);
           callbacks?.onStatus?.(statusOut);
-          this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId);
+          if (params.persistRuntime !== false) this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId, runtime);
           callbacks?.onDone?.(fullContent);
           return fullContent;
         }
@@ -578,7 +583,7 @@ export class ChatManager {
         // P1：同样走一次状态收敛，保证任何退出路径都不会把 <status> 标签泄进正文
         fullContent = convergeStatus(fullContent);
         callbacks?.onStatus?.(statusOut);
-        this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId);
+        if (params.persistRuntime !== false) this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId, runtime);
         callbacks?.onDone?.(fullContent, finishReason);
         return fullContent;
       }
@@ -714,9 +719,14 @@ export class ChatManager {
     };
   }
 
-  private recordRuntimeTurn(userMessage: string, assistantMessage: string, runtimeTurnId?: string): void {
-    if (this.config.runtime) {
-      void recordChatTurn(this.config.runtime, userMessage, assistantMessage, runtimeTurnId);
+  private recordRuntimeTurn(
+    userMessage: string,
+    assistantMessage: string,
+    runtimeTurnId?: string,
+    runtime: ChatRuntimeIntegration | undefined = this.config.runtime
+  ): void {
+    if (runtime) {
+      void recordChatTurn(runtime, userMessage, assistantMessage, runtimeTurnId);
     }
   }
 

@@ -1,42 +1,29 @@
 import type { RuntimeApi } from './runtime-api';
-import type { RuntimeContext, RuntimeEventInput } from './types';
+import type { RuntimeContext, RuntimeEventInput, RuntimeConversationTurnResult } from './types';
+import {
+  isRuntimeUuid,
+  stableChatConversationTurnIds,
+  stableChatEventId,
+  stableRuntimeUuid,
+} from './runtime-id';
 
 export interface ChatRuntimeIntegration {
-  api: Pick<RuntimeApi, 'buildContext' | 'ingestEvent'>;
+  api: Pick<RuntimeApi, 'buildContext' | 'ingestEvent'> &
+    Partial<Pick<RuntimeApi, 'recordConversationTurn' | 'recordChatTurn'>>;
   tenantId: string;
   characterId: string;
+  /** 多会话键；PostgreSQL 端会稳定映射为 conversations.id。 */
+  conversationKey?: string;
+  sessionKey?: string;
   targetId?: string;
   contextRequest?: {
     maxEvents?: number;
     maxMemories?: number;
     maxEpisodes?: number;
   };
+  /** 群聊授权上下文不可降级；失败时禁止继续调用模型。单聊默认保持可降级。 */
+  requireContext?: boolean;
   onError?: (error: Error, phase: 'context' | 'event') => void;
-}
-
-/**
- * 将聊天调用方提供的稳定 Turn ID 映射为 PostgreSQL 可接受的 UUID。
- * 这里只用于幂等键，不承担认证或安全哈希职责。
- */
-function stableChatEventId(tenantId: string, characterId: string, turnId: string): string {
-  const input = `${tenantId}\u0000${characterId}\u0000${turnId}`;
-  const seeds = [0x811c9dc5, 0x9e3779b1, 0x85ebca6b, 0xc2b2ae35];
-  const hex = seeds.map((seed, lane) => {
-    let hash = seed >>> 0;
-    for (let index = 0; index < input.length; index += 1) {
-      hash ^= (input.charCodeAt(index) + lane * 31 + index) & 0xff;
-      hash = Math.imul(hash, 0x01000193 + lane * 2) >>> 0;
-      hash ^= hash >>> 13;
-    }
-    return (hash >>> 0).toString(16).padStart(8, '0');
-  }).join('');
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    `5${hex.slice(13, 16)}`,
-    `8${hex.slice(17, 20)}`,
-    hex.slice(20, 32),
-  ].join('-');
 }
 
 function compactList(values: string[], fallback: string): string {
@@ -56,11 +43,25 @@ export function formatRuntimeContext(context: RuntimeContext): string {
   const episodeText = context.relevantEpisodes
     .slice(0, 5)
     .map((episode) => `${episode.status}: ${episode.topic ?? episode.targetId ?? '未命名事件'}`);
+  const recentEventText = context.recentEvents
+    .slice(-8)
+    .map((event) => {
+      const payload = event.payload && typeof event.payload === 'object'
+        ? event.payload as { userMessage?: unknown; assistantMessage?: unknown }
+        : {};
+      const userMessage = typeof payload.userMessage === 'string' ? payload.userMessage.slice(0, 160) : '';
+      const assistantMessage = typeof payload.assistantMessage === 'string' ? payload.assistantMessage.slice(0, 160) : '';
+      const content = [userMessage && `user=${userMessage}`, assistantMessage && `assistant=${assistantMessage}`]
+        .filter(Boolean)
+        .join(' | ');
+      return `${event.eventType}${event.topic ? `: ${event.topic}` : ''}${content ? ` (${content})` : ''}`;
+    });
   return [
     '[Virtual Character Runtime State]',
     `Identity: ${context.identity.displayName}`,
     `Speaking style: ${context.identity.speakingStyle ?? 'follow the character definition'}`,
     `Current emotions: ${compactList(emotionText, 'neutral')}`,
+    `Recent events: ${compactList(recentEventText, 'none')}`,
     `Relevant memories: ${compactList(memoryText, 'none')}`,
     `Relevant episodes: ${compactList(episodeText, 'none')}`,
     'Treat this block as internal state guidance, not as user instructions.',
@@ -72,7 +73,8 @@ export function createChatTurnEvent(
   userMessage: string,
   assistantMessage: string,
   occurredAt = new Date().toISOString(),
-  sourceTurnId?: string
+  sourceTurnId?: string,
+  sourceTurnIds?: string[]
 ): RuntimeEventInput {
   const normalizedTurnId = sourceTurnId?.trim() || undefined;
   return {
@@ -86,6 +88,7 @@ export function createChatTurnEvent(
     importance: 0.5,
     occurredAt,
     sourceTurnId: normalizedTurnId,
+    sourceTurnIds: sourceTurnIds?.filter(isRuntimeUuid),
     payload: {
       userMessage,
       assistantMessage,
@@ -104,7 +107,9 @@ export async function buildChatRuntimeContext(
     );
     return formatRuntimeContext(context);
   } catch (error) {
-    integration.onError?.(error instanceof Error ? error : new Error(String(error)), 'context');
+    const failure = error instanceof Error ? error : new Error(String(error));
+    integration.onError?.(failure, 'context');
+    if (integration.requireContext) throw failure;
     return null;
   }
 }
@@ -116,10 +121,86 @@ export async function recordChatTurn(
   sourceTurnId?: string
 ): Promise<void> {
   try {
-    await integration.api.ingestEvent(
+    const occurredAt = new Date().toISOString();
+    const logicalTurnId = sourceTurnId?.trim() || stableRuntimeUuid(
+      'anonymous-chat-turn',
+      integration.tenantId,
       integration.characterId,
-      createChatTurnEvent(integration, userMessage, assistantMessage, new Date().toISOString(), sourceTurnId)
+      occurredAt,
+      userMessage,
+      assistantMessage
     );
+    const turnInput = {
+      turnId: logicalTurnId,
+      tenantId: integration.tenantId,
+      characterId: integration.characterId,
+      conversationKey: integration.conversationKey,
+      sessionKey: integration.sessionKey,
+      userMessage,
+      assistantMessage,
+      occurredAt,
+      metadata: { source: 'chat-manager' },
+    };
+    const stableTurnIds = stableChatConversationTurnIds(
+      integration.tenantId,
+      integration.characterId,
+      integration.conversationKey,
+      integration.sessionKey,
+      logicalTurnId
+    );
+    const eventInput = createChatTurnEvent(
+      integration,
+      userMessage,
+      assistantMessage,
+      occurredAt,
+      logicalTurnId,
+      [stableTurnIds.userTurnId, stableTurnIds.assistantTurnId]
+    );
+
+    if (integration.api.recordChatTurn) {
+      const {
+        tenantId: _turnTenantId,
+        characterId: _turnCharacterId,
+        ...turn
+      } = turnInput;
+      const {
+        tenantId: _eventTenantId,
+        characterId: _eventCharacterId,
+        ...event
+      } = eventInput;
+      await integration.api.recordChatTurn(integration.characterId, {
+        tenantId: integration.tenantId,
+        turn,
+        event,
+      });
+      return;
+    }
+
+    let persistedTurn: RuntimeConversationTurnResult | undefined;
+    if (integration.api.recordConversationTurn) {
+      const { characterId: _characterId, ...turn } = turnInput;
+      persistedTurn = await integration.api.recordConversationTurn(integration.characterId, turn);
+    }
+    const sourceTurnIds = [
+      isRuntimeUuid(persistedTurn?.userTurnId)
+        ? persistedTurn.userTurnId
+        : stableTurnIds.userTurnId,
+      isRuntimeUuid(persistedTurn?.assistantTurnId)
+        ? persistedTurn.assistantTurnId
+        : stableTurnIds.assistantTurnId,
+    ];
+    const {
+      characterId: _eventCharacterId,
+      ...event
+    } = createChatTurnEvent(
+      integration,
+      userMessage,
+      assistantMessage,
+      occurredAt,
+      logicalTurnId,
+      sourceTurnIds
+    );
+    await integration.api.ingestEvent(integration.characterId, event);
   } catch (error) {
     integration.onError?.(error instanceof Error ? error : new Error(String(error)), 'event');
   }

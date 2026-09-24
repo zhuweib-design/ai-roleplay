@@ -167,6 +167,11 @@ function createTauriMock() {
     if (cmd === 'load_snapshot_file') {
       return store.get(`snapshot:${args!.key}`) ?? null;
     }
+    if (cmd === 'list_snapshot_files') {
+      return [...store.entries()]
+        .filter(([key]) => key.startsWith(`snapshot:${args!.prefix}`))
+        .map(([, value]) => value);
+    }
 
     const m = cmd.match(/^(save|load|list|delete)_(.+?)_files?$/);
     if (!m) throw new Error(`未知命令: ${cmd}`);
@@ -343,6 +348,10 @@ function runContractTests(
       expect(await adapter.loadSnapshot('snap-favs')).toEqual(['a', 'b']);
       // 键隔离
       expect(await adapter.loadSnapshot('other-key')).toBeNull();
+      await adapter.saveSnapshot('runtime:one', { id: 'one' });
+      await adapter.saveSnapshot('runtime:two', { id: 'two' });
+      expect((await adapter.listSnapshotsByPrefix?.<{ id: string }>('runtime:'))?.map((item) => item.id).sort())
+        .toEqual(['one', 'two']);
     });
   });
 }

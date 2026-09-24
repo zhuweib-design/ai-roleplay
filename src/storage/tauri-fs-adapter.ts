@@ -314,6 +314,10 @@ export class TauriFSAdapter implements StorageAdapter {
     await TauriFSAdapter.invoke<void>('save_snapshot_file', { key, value: plain });
   }
 
+  async listSnapshotsByPrefix<T>(prefix: string): Promise<T[]> {
+    return TauriFSAdapter.invoke<T[]>('list_snapshot_files', { prefix });
+  }
+
   async loadSnapshot<T>(key: string): Promise<T | null> {
     const result = await TauriFSAdapter.invoke<T | null>('load_snapshot_file', {
       key,

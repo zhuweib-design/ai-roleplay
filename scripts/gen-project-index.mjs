@@ -120,6 +120,13 @@ const CURATED = {
   'src/runtime/character-compiler.ts': 'Virtual Character OS Archetype + Delta + Seed Memories 编译器',
   'src/runtime/store.ts': 'Virtual Character OS Runtime Snapshot 存储接口与适配器',
   'src/runtime/postgres-store.ts': 'Virtual Character OS PostgreSQL RuntimeStore 与事务边界',
+  'src/runtime/postgres-group-runtime.ts': 'Virtual Character OS PostgreSQL 群组事务、成员授权与多角色 Event 证据关联',
+  'src/runtime/server-runtime.ts': 'Virtual Character OS 服务端 Runtime 与群聊事务组合入口',
+  'src/runtime/group-runtime-contract.ts': 'Virtual Character OS 浏览器与服务端共享群聊类型及领域错误，不含 SQL 依赖',
+  'src/runtime/runtime-group-http.ts': 'Virtual Character OS 群聊 HTTP 客户端与 Fetch Handler',
+  'tests/runtime/group-runtime-http.test.ts': '群聊 HTTP 客户端与 Fetch Handler 边界测试',
+  'tests/runtime/postgres-group.integration.test.ts': '真实 PostgreSQL 群聊原子性、授权、并发及回滚集成测试',
+  'src/runtime/runtime-id.ts': 'Virtual Character OS 跨适配器稳定 UUID 与会话 Turn ID 规则',
   'src/runtime/chat-bridge.ts': 'Virtual Character OS 聊天链路 Runtime Context 与 Event 桥接',
   'src/runtime/context-builder.ts': 'Virtual Character OS 上下文构建器',
   'src/runtime/runtime-core.ts': 'Virtual Character OS Runtime Core 状态归约主链',
@@ -304,6 +311,7 @@ const CURATED = {
   'scripts/gen-project-index.mjs': '工具：生成本索引文件',
 
   'tests/setup.ts': 'Vitest 全局测试环境初始化',
+  'tests/stores/chat-runtime.integration.test.ts': 'Chat Store 到 Runtime Context 的实际链路集成测试',
   'e2e/storage-state.json': 'E2E 预置 localStorage（跳过新手引导）',
 
   'docs/design/design-system-specification.md': '设计文档：设计系统规范（令牌 / 组件 / 移动端）',
@@ -323,6 +331,7 @@ const CURATED = {
   'docs/fixes/goal-tracker.md': '修复文档：跨端一致性 28 项缺陷修复进度台账',
   'docs/fixes/web-sop-review-2026-09-18.md': '修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维）',
   'docs/fixes/runtime-core-baseline-verification-2026-09-22.md': '验证记录：Runtime Core 基线自动化验证',
+  'docs/fixes/runtime-chat-store-integration-2026-09-22.md': '验证记录：Runtime 聊天、原始 Turn 与 PostgreSQL 原子持久化接线',
   'docs/assets/test-gradient.jpg': '设计文档：渐变测试图（本地验证用）',
 
   'docs/fixes/cross-client-review-2026-09-07.md': '修复文档：跨客户端评审报告（28 项缺陷来源）',

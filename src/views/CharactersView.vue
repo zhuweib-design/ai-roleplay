@@ -13,6 +13,8 @@
 import { ref, computed, useTemplateRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCharacterStore } from '@/stores/character';
+import { useChatStore } from '@/stores/chat';
+import { getActiveProfileId } from '@/storage/storage-factory';
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
@@ -28,6 +30,7 @@ import { t } from '@/i18n';
 
 const router = useRouter();
 const characterStore = useCharacterStore();
+const chatStore = useChatStore();
 const settingsStore = useSettingsStore();
 
 // 删除确认对话框
@@ -44,6 +47,28 @@ const fileInput = useTemplateRef<HTMLInputElement>('fileInput');
 
 // 拖拽状态
 const isDragging = ref(false);
+const importBusy = ref(false);
+const importProgress = ref(0);
+const importTotal = ref(0);
+const pendingRuntimeKey = `ai-roleplay:pending-runtime-imports:${getActiveProfileId()}`;
+function loadPendingRuntimeIds(): string[] {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(pendingRuntimeKey) ?? '[]');
+    return Array.isArray(value) ? [...new Set(value.filter((id): id is string =>
+      typeof id === 'string' && id.length > 0 && id.length <= 200))].slice(0, 1000) : [];
+  } catch {
+    return [];
+  }
+}
+const pendingRuntimeIds = ref<string[]>(loadPendingRuntimeIds());
+watch(pendingRuntimeIds, (ids) => {
+  try {
+    if (ids.length) localStorage.setItem(pendingRuntimeKey, JSON.stringify(ids));
+    else localStorage.removeItem(pendingRuntimeKey);
+  } catch {
+    // 本地存储不可用时，本页仍允许重试。
+  }
+});
 
 // 当前操作中的角色（用于 UI 反馈）
 const busyCharacterId = ref<string | null>(null);
@@ -70,13 +95,13 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 watch(
   () => characterStore.lastError,
   (err) => {
-    if (err) showToast('error', err);
+    if (err && !importBusy.value) showToast('error', err);
   }
 );
 watch(
   () => characterStore.lastInfo,
   (info) => {
-    if (info) showToast('success', info);
+    if (info && !importBusy.value) showToast('success', info);
   }
 );
 
@@ -140,6 +165,7 @@ function executeDelete() {
   if (!deleteTarget.value) return;
   const name = deleteTarget.value.name;
   characterStore.deleteCharacter(deleteTarget.value.id);
+  pendingRuntimeIds.value = pendingRuntimeIds.value.filter((id) => id !== deleteTarget.value?.id);
   deleteModalOpen.value = false;
   deleteTarget.value = null;
   showToast('success', t('characters.deleted', { name }));
@@ -190,31 +216,87 @@ function triggerFileInput() {
   fileInput.value?.click();
 }
 
+async function syncImportedCharacters(ids: string[]): Promise<number> {
+  const characters = ids.map((id) => characterStore.characters.find((character) => character.id === id))
+    .filter((character): character is UICharacter => Boolean(character));
+  const failed: string[] = [];
+  let synced = 0;
+  for (let index = 0; index < characters.length; index += 50) {
+    const batch = characters.slice(index, index + 50);
+    const result = await chatStore.createRuntimeCharactersBatch(batch);
+    if (!result) {
+      failed.push(...batch.map((character) => character.id));
+      continue;
+    }
+    failed.push(...result.items.filter((item) => item.status === 'invalid')
+      .map((item) => batch[item.index]?.id)
+      .filter((id): id is string => Boolean(id)));
+    synced += result.items.filter((item) => item.status !== 'invalid').length;
+  }
+  pendingRuntimeIds.value = [...new Set([...pendingRuntimeIds.value.filter((id) => !ids.includes(id)), ...failed])];
+  return synced;
+}
+
+async function importFiles(files: File[]): Promise<void> {
+  if (importBusy.value || files.length === 0) return;
+  if (files.length > 50) {
+    showToast('error', t('characters.importLimit'));
+    return;
+  }
+  importBusy.value = true;
+  importTotal.value = files.length;
+  importProgress.value = 0;
+  const importedIds: string[] = [];
+  let failed = 0;
+  try {
+    for (const file of files) {
+      if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+        failed += 1;
+      } else {
+        const id = await characterStore.importV2File(file);
+        if (id) importedIds.push(id);
+        else failed += 1;
+      }
+      importProgress.value += 1;
+    }
+    const synced = importedIds.length ? await syncImportedCharacters(importedIds) : 0;
+    if (failed > 0 || synced < importedIds.length) {
+      showToast('error', t('characters.importSummary', {
+        count: importedIds.length, synced, failed: failed + importedIds.length - synced,
+      }));
+    } else {
+      showToast('success', t('characters.importSummary', { count: importedIds.length, synced, failed: 0 }));
+    }
+  } finally {
+    importBusy.value = false;
+  }
+}
+
+async function retryRuntimeSync(): Promise<void> {
+  if (importBusy.value || pendingRuntimeIds.value.length === 0) return;
+  importBusy.value = true;
+  try {
+    const ids = [...pendingRuntimeIds.value];
+    const synced = await syncImportedCharacters(ids);
+    showToast(pendingRuntimeIds.value.length ? 'error' : 'success', t('characters.importSummary', {
+      count: ids.length, synced, failed: pendingRuntimeIds.value.length,
+    }));
+  } finally {
+    importBusy.value = false;
+  }
+}
+
 async function handleFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
-  if (!input.files || input.files.length === 0) return;
-  const file = input.files[0]!;
-  const id = await characterStore.importV2File(file);
-  if (id) {
-    showToast('success', t('characters.imported', { name: characterStore.characters.find((c) => c.id === id)?.name ?? '' }));
-  }
-  // 重置 input 允许重复选择同一文件
+  const files = [...(input.files ?? [])];
   input.value = '';
+  await importFiles(files);
 }
 
 async function handleDrop(e: DragEvent) {
   e.preventDefault();
   isDragging.value = false;
-  if (!e.dataTransfer || e.dataTransfer.files.length === 0) return;
-  const file = e.dataTransfer.files[0]!;
-  if (!file.name.endsWith('.json') && file.type !== 'application/json') {
-    showToast('error', t('characters.dropJsonOnly'));
-    return;
-  }
-  const id = await characterStore.importV2File(file);
-  if (id) {
-    showToast('success', t('characters.imported', { name: characterStore.characters.find((c) => c.id === id)?.name ?? '' }));
-  }
+  await importFiles([...(e.dataTransfer?.files ?? [])]);
 }
 
 function handleDragOver(e: DragEvent) {
@@ -297,6 +379,7 @@ function tagsPreview(tags: string[]): string {
           type="button"
           class="header-btn import-btn"
           :aria-label="t('characters.importAria')"
+          :disabled="importBusy"
           @click="triggerFileInput"
         >
           <Icon name="upload" :size="16" />
@@ -306,11 +389,22 @@ function tagsPreview(tags: string[]): string {
           ref="fileInput"
           type="file"
           accept=".json,application/json"
+          multiple
           class="hidden-file-input"
           aria-hidden="true"
           tabindex="-1"
           @change="handleFileSelected"
         />
+        <span v-if="importBusy" role="status" aria-live="polite">{{ t('characters.importProgress', { done: importProgress, total: importTotal }) }}</span>
+        <button
+          v-if="pendingRuntimeIds.length > 0"
+          type="button"
+          class="header-btn import-btn"
+          :disabled="importBusy"
+          @click="retryRuntimeSync"
+        >
+          {{ t('characters.retryRuntime', { count: pendingRuntimeIds.length }) }}
+        </button>
         <button
           type="button"
           class="header-btn generate-btn"

@@ -1,7 +1,7 @@
 # Virtual Character OS v1.0 实现基线
 
 > 版本：v1.0 baseline
-> 状态：已落地到 AI 酒馆工程，可通过单元测试验证
+> 状态：已落地到 AI 酒馆工程，已通过自动化回归与真实 PostgreSQL 16 集成验证（2026-09-23）
 > 范围：数据库 Schema、Runtime Core、Emotion Engine、Character Compiler、运行时 API、PostgreSQL 持久化端口、聊天链路接入
 
 ## 1. 目标与边界
@@ -31,6 +31,7 @@ src/runtime/
 ├── runtime-core.ts          Event → StateReducer → Projection 主链与 Replay
 ├── runtime-api.ts           运行时 API 与请求路由适配器
 ├── context-builder.ts        Runtime Context 构建
+├── runtime-id.ts            跨适配器稳定 UUID 与会话 Turn ID 规则
 ├── chat-bridge.ts           Runtime Context / conversation_turn 聊天桥接
 ├── runtime-http.ts          Fetch 客户端与 HTTP Handler
 ├── server-runtime.ts        PostgreSQL Runtime 服务端组合入口
@@ -111,8 +112,9 @@ Tauri Rust command 或其他服务端 RPC 也可以继续实现同一端口。
 1. 锁定租户内角色行并读取 `state_version`。
 2. 对比 `expectedVersion`，不一致时抛出 `OptimisticLockError`。
 3. 读取最新 Snapshot，按 Event ID 和 StateChange ID 去重追加明细。
-4. 写入新的 Snapshot，更新 `characters.state_version`。
-5. 写入前后状态和版本原因到 `state_audit_logs`。
+4. 同步写入角色规范化状态投影、Memory、Episode 关联和 `character_versions`。
+5. 写入新的 Snapshot，更新 `characters.state_version`。
+6. 写入前后状态和版本原因到 `state_audit_logs`。
 
 PostgreSQL UUID 字段要求由适配器边界校验；浏览器端的 IndexedDB / Tauri 路径仍可使用本地 ID 生成策略。
 ### 4.3 幂等、重试与 Replay
@@ -241,9 +243,11 @@ Replay 不写数据库，也不绕过 RuntimeStore 的事务边界。需要落�
 1. 发送消息前调用 `RuntimeApi.buildContext`。
 2. 将上下文追加到系统提示词末尾，格式以 `[Virtual Character Runtime State]` 开始。
 3. 明确标记该区块是内部状态指导，不是用户指令。
-4. 回复完成后异步发送 `conversation_turn` Event，payload 包含原始用户消息、助手回复和 `source: chat-manager`。
-5. 会话层通过 `SendMessageParams.runtimeTurnId` 传入稳定轮次 ID；聊天桥接据此生成稳定 `eventId`，支持异步写入重试和 PostgreSQL UUID 边界。
-6. Context 读取或 Event 写入异常通过 `onError` 上报，但不阻塞聊天请求、流式回调和 `onDone`。
+4. 回复完成后优先调用 `RuntimeApi.recordChatTurn`，一次提交 `conversation/session/user turn/character turn` 原始记录与 `conversation_turn` Event；旧 Runtime 实现保留双调用兼容回退。
+5. 会话层通过 `SendMessageParams.runtimeTurnId` 传入稳定轮次 ID；`runtime-id.ts` 据此生成稳定 `eventId` 和规范化 Conversation、Session、Turn UUID。
+6. PostgreSQL 适配器把 Conversation、Session、双 Turn、Event、StateChange、状态投影、Snapshot、Version 和 Audit 放在同一事务内提交。
+7. Event 通过 `event_turn_links` 关联同租户、同角色的用户 Turn 和角色 Turn；Memory/Event 与 Episode/Event 证据关联也要校验租户和角色，幂等重试不会增加状态版本。
+8. Context 读取或原子 Event 写入异常通过 `onError` 上报，但不阻塞聊天请求、流式回调和 `onDone`。
 
 Context 注入内容包括：
 
@@ -283,7 +287,7 @@ const poolApi = createPgPoolRuntimeApi(pool, tenantId);
 const poolHandler = createPgPoolRuntimeHttpHandler(pool, tenantId);
 ```
 
-其中 `tenantId` 必须来自认证中间件；HTTP Handler 会覆盖写请求体中的伪造租户字段。`createPgPoolRuntimeApi` 和 `createPgPoolRuntimeHttpHandler` 接受真实 `pg.Pool`，事务内固定使用同一个 client。认证中间件和部署路由仍由宿主服务负责。
+其中 `tenantId` 必须来自认证中间件；HTTP Handler 会覆盖写请求体中的伪造租户字段，并在入口校验基础请求结构、对内部 500 消息脱敏。`createPgPoolRuntimeApi` 和 `createPgPoolRuntimeHttpHandler` 接受真实 `pg.Pool`，事务内固定使用同一个 client。认证中间件和部署路由仍由宿主服务负责。
 
 该工厂会自动复用现有存储：
 
@@ -312,6 +316,9 @@ npm run typecheck
 npm test -- --run tests/runtime/runtime-core.test.ts
 npm test -- --run tests/services/chat-manager.test.ts
 npm test
+$env:RUNTIME_PG_TEST_URL = 'postgres://...'
+$env:RUNTIME_PG_APPLY_SCHEMA = '1'
+npm test -- --run tests/runtime/postgres-runtime.integration.test.ts
 npm run build
 npm run lint
 git diff --check
@@ -326,9 +333,10 @@ git diff --check
 - Episode active → cooling → dormant → reopened。
 - Salience 与喜欢、信任、亲密度解耦。
 - Runtime Replay。
-- PostgreSQL 事务边界、版本锁、租户隔离和审计记录。
+- PostgreSQL 原子聊天事务、版本锁、幂等修复、并发重试、租户隔离和审计记录。
 - API 健康检查、角色创建、事件接收、上下文构建。
 - ChatManager Runtime Context 注入、conversation_turn 记录和 fail-open 行为。
+- 真实 PostgreSQL 16 的迁移、原子提交、幂等、并发冲突重试、事务回滚、租户隔离和连接池释放。
 
 ## 12. PostgreSQL 适配器约束
 
@@ -337,10 +345,13 @@ git diff --check
 1. 保留原始 Turn，不允许用摘要替代。
 2. Event、StateChange、MemorySource 使用追加写入。
 3. 使用角色级版本号或数据库行锁解决并发更新。
-4. 在同一事务中提交 Event、StateChange、状态投影和 Snapshot。
-5. 对 tenantId、characterId 做强制隔离。
+4. 在同一事务中提交 Conversation、Session、双 Turn、Event、StateChange、状态投影、Snapshot、Version 和 Audit。
+5. 对 tenantId、characterId 及所有可选证据关联做强制隔离，不能仅凭外键存在建立跨租户或跨角色关联。
 6. 保持 API 409 版本冲突语义。
-7. 将审计日志与状态提交放在同一事务中，记录 before/after 状态和提交原因。
+7. 幂等重试不得重复增加状态版本、Snapshot 或 Audit，并应校验 Turn 内容、修复缺失的 Event-Turn 关联。
 8. 不在浏览器端伪装 PostgreSQL 已连接；浏览器/Tauri 仍使用各自的本地存储适配器。
-9. 真实 PostgreSQL 部署使用 `migrations/001_virtual_character_os.sql`；
-   `npm run runtime:db:schema:check` 用于校验迁移文件与权威 Schema 文档没有漂移。
+9. 将审计日志与状态提交放在同一事务中，记录 before/after 状态和提交原因。
+10. 真实 PostgreSQL 部署使用 `migrations/001_virtual_character_os.sql`；
+    `npm run runtime:db:schema:check` 用于校验迁移文件与权威 Schema 文档没有漂移。
+
+2026-09-23 已在官方 `postgres:16-alpine` 临时容器中执行上述迁移与真实集成测试，测试通过后删除容器。`pg` 作为开发依赖仅用于服务端适配和条件集成测试，不进入浏览器运行时调用链。

@@ -194,6 +194,8 @@ export interface DomainEvent {
   effects?: EventEffects;
   occurredAt: string;
   sourceTurnId?: string;
+  /** 可选的规范化 Turn UUID 列表，用于建立一个 Event 与多条原始 Turn 的关联。 */
+  sourceTurnIds?: string[];
 }
 
 export interface StateChange {
@@ -259,10 +261,58 @@ export interface RuntimeContext {
   relevantEpisodes: Episode[];
 }
 
+export interface RuntimeCharacterListRequest {
+  tenantId: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface RuntimeCharacterListResult {
+  items: CharacterDefinition[];
+  nextCursor?: string;
+}
+
 export interface RuntimeSnapshotStore {
+  listCharacters?(request: RuntimeCharacterListRequest): Promise<RuntimeCharacterListResult>;
+  /** 服务端可选的原始对话持久化端口；本地快照实现可不提供。 */
+  recordConversationTurn?(input: RuntimeConversationTurnInput): Promise<RuntimeConversationTurnResult>;
+  /** 将原始双 Turn 和 Runtime Event 放入同一个服务端事务。 */
+  commitConversationTurn?(snapshot: RuntimeSnapshot, expectedVersion: number, input: RuntimeConversationTurnInput): Promise<RuntimeConversationTurnResult>;
   load(characterId: string): Promise<RuntimeSnapshot | null>;
   commit(snapshot: RuntimeSnapshot, expectedVersion: number): Promise<void>;
   initialize?(snapshot: RuntimeSnapshot): Promise<void>;
+}
+
+export interface RuntimeConversationTurnInput {
+  /** 客户端稳定轮次键；服务端据此生成 user/character 两条 UUID Turn。 */
+  turnId: string;
+  tenantId: string;
+  characterId: string;
+  /** 多会话键；未提供时按租户和角色使用默认会话。 */
+  conversationKey?: string;
+  sessionKey?: string;
+  userMessage: string;
+  assistantMessage: string;
+  occurredAt?: string;
+  metadata?: Metadata;
+}
+
+export interface RuntimeConversationTurnResult {
+  conversationId: string;
+  sessionId: string;
+  userTurnId: string;
+  assistantTurnId: string;
+}
+
+export interface RuntimeConversationTurnEventInput {
+  tenantId: string;
+  turn: Omit<RuntimeConversationTurnInput, 'characterId' | 'tenantId'>;
+  event: Omit<RuntimeEventInput, 'characterId' | 'tenantId'>;
+}
+
+export interface RuntimeConversationTurnCommitResult {
+  turn: RuntimeConversationTurnResult;
+  result: RuntimeReduceResult;
 }
 
 export interface RuntimeEventInput {
@@ -279,6 +329,7 @@ export interface RuntimeEventInput {
   effects?: EventEffects;
   occurredAt?: string;
   sourceTurnId?: string;
+  sourceTurnIds?: string[];
 }
 
 export interface RuntimeReduceResult {

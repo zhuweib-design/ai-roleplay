@@ -2,6 +2,7 @@ import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { UIMessage, UICharacter, ApiProfile } from '@/types';
+import type { GroupChat } from '@/core/group-chat';
 import {
   DEFAULT_MAX_CONTEXT_TOKENS,
   DEFAULT_RESERVED_TOKENS,
@@ -13,6 +14,7 @@ import { createApiClient } from '../api';
 import { ApiError, type ApiErrorKind, type ReasoningEffort } from '../api/types';
 import { resolveReasoningCapability } from '../api/reasoning-capability';
 import type { StorageAdapter } from '../storage/storage-adapter';
+import { getActiveProfileId, getStorageAdapter } from '../storage/storage-factory';
 import type { Chat } from '../storage/types';
 import {
   uiCharToCard,
@@ -41,6 +43,32 @@ import { useDataBankStore } from './data-bank';
 import { OptimizationPipeline, loadOptimizationConfig } from '@/core/optimization-pipeline';
 import { MemoryStore, CharacterRegistry, EmotionTracker } from '@/core/memory-store';
 import type { L0L2Deps } from '@/core/l0-l2-runtime';
+import {
+  createProjectRuntime,
+  stableChatCharacterId,
+  stableChatTargetId,
+  stableRuntimeUuid,
+  HttpGroupRuntimeApi,
+  type ChatRuntimeIntegration,
+  type RuntimeApi,
+  type CharacterCompileInput,
+  type RuntimeBatchCreateResult,
+} from '@/runtime';
+import { RuntimeApiError } from '@/runtime/runtime-http';
+
+/** 远程群聊公共回合的本地可靠投递记录。内容一旦入队不可被同键新载荷覆盖。 */
+export interface PendingGroupRuntimeTurn {
+  groupId: string;
+  turnId: string;
+  speakerCharacterId: string;
+  userMessage: string;
+  assistantMessage: string;
+  createdAt: string;
+  attempts: number;
+  lastError?: string;
+}
+
+const PENDING_GROUP_RUNTIME_TURNS_KEY = 'runtime:pending-group-turns:v1';
 
 /**
  * 将任意错误对象转换为 lastError 记录
@@ -200,6 +228,376 @@ export const useChatStore = defineStore('chat', () => {
     registry: new CharacterRegistry(l0Store),
     tracker: new EmotionTracker(),
   };
+
+  // Virtual Character OS Runtime：默认使用本地快照，配置 VITE_RUNTIME_BASE_URL 后切换为服务端 HTTP。
+  // 单聊 Runtime 允许降级；远程群聊初始化和成员限定上下文失败时必须中止生成。
+  let runtimeApi: RuntimeApi | null = null;
+  let groupRuntimeApi: HttpGroupRuntimeApi | null | undefined;
+  let runtimeTenantId: string | null = null;
+  const runtimeIntegrations = new Map<string, Promise<ChatRuntimeIntegration | null>>();
+  const runtimeStatus = ref<{ phase: 'initialize' | 'context' | 'event'; message: string; at: number } | null>(null);
+  const pendingGroupRuntimeTurns = ref<PendingGroupRuntimeTurn[]>([]);
+  function runtimeTenantStorageKey(): string {
+    return `ai-roleplay:runtime-tenant-id:${getActiveProfileId()}`;
+  }
+
+  function reportRuntimeError(error: unknown, phase: 'initialize' | 'context' | 'event'): void {
+    const message = error instanceof Error ? error.message : String(error);
+    runtimeStatus.value = { phase, message, at: Date.now() };
+  }
+
+  function isPendingGroupRuntimeTurn(value: unknown): value is PendingGroupRuntimeTurn {
+    if (!value || typeof value !== 'object') return false;
+    const item = value as Record<string, unknown>;
+    return ['groupId', 'turnId', 'speakerCharacterId', 'userMessage', 'assistantMessage', 'createdAt']
+      .every((key) => typeof item[key] === 'string' && (item[key] as string).length > 0)
+      && Number.isSafeInteger(item.attempts) && (item.attempts as number) >= 0;
+  }
+
+  async function persistPendingGroupRuntimeTurns(): Promise<void> {
+    if (!storageAdapter) return;
+    try {
+      await storageAdapter.saveSnapshot(
+        PENDING_GROUP_RUNTIME_TURNS_KEY,
+        pendingGroupRuntimeTurns.value.map((item) => ({ ...item })),
+      );
+    } catch (error) {
+      reportRuntimeError(error, 'event');
+    }
+  }
+
+  async function loadRuntimePendingGroupTurns(): Promise<void> {
+    if (!storageAdapter) return;
+    try {
+      const saved = await storageAdapter.loadSnapshot<unknown>(PENDING_GROUP_RUNTIME_TURNS_KEY);
+      pendingGroupRuntimeTurns.value = Array.isArray(saved)
+        ? saved.filter(isPendingGroupRuntimeTurn).map((item) => ({ ...item }))
+        : [];
+    } catch (error) {
+      reportRuntimeError(error, 'initialize');
+    }
+  }
+
+  async function enqueuePendingGroupRuntimeTurn(input: {
+    groupId: string;
+    turnId: string;
+    speakerCharacterId: string;
+    userMessage: string;
+    assistantMessage: string;
+    error?: unknown;
+  }): Promise<void> {
+    const existing = pendingGroupRuntimeTurns.value.find((item) =>
+      item.groupId === input.groupId && item.turnId === input.turnId);
+    const errorText = input.error instanceof Error ? input.error.message : String(input.error ?? '提交失败');
+    if (existing) {
+      existing.attempts += 1;
+      existing.lastError = errorText;
+    } else {
+      pendingGroupRuntimeTurns.value.push({
+        groupId: input.groupId,
+        turnId: input.turnId,
+        speakerCharacterId: input.speakerCharacterId,
+        userMessage: input.userMessage,
+        assistantMessage: input.assistantMessage,
+        createdAt: new Date().toISOString(),
+        attempts: 1,
+        lastError: errorText,
+      });
+    }
+    pendingGroupRuntimeTurns.value.sort((a, b) =>
+      (a.createdAt + a.groupId + a.turnId).localeCompare(b.createdAt + b.groupId + b.turnId));
+    await persistPendingGroupRuntimeTurns();
+  }
+
+  async function removePendingGroupRuntimeTurn(groupId: string, turnId: string): Promise<void> {
+    pendingGroupRuntimeTurns.value = pendingGroupRuntimeTurns.value.filter((item) =>
+      item.groupId !== groupId || item.turnId !== turnId);
+    await persistPendingGroupRuntimeTurns();
+  }
+
+  async function discardPendingGroupRuntimeTurns(groupId: string): Promise<void> {
+    pendingGroupRuntimeTurns.value = pendingGroupRuntimeTurns.value.filter((item) => item.groupId !== groupId);
+    await persistPendingGroupRuntimeTurns();
+  }
+
+  function resolveRuntimeTenantId(): string {
+    if (runtimeTenantId) return runtimeTenantId;
+    try {
+      const saved = localStorage.getItem(runtimeTenantStorageKey());
+      if (saved && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(saved)) {
+        runtimeTenantId = saved;
+        return saved;
+      }
+    } catch {
+      // 存储不可用时使用当前进程内的租户标识。
+    }
+    const generated = globalThis.crypto?.randomUUID?.() ?? stableChatCharacterId('local-runtime', `${Date.now()}-${Math.random()}`);
+    runtimeTenantId = generated;
+    try {
+      localStorage.setItem(runtimeTenantStorageKey(), generated);
+    } catch {
+      // 隐私模式或 Tauri 环境存储不可用时忽略。
+    }
+    return generated;
+  }
+
+  async function getRuntimeApi(): Promise<RuntimeApi> {
+    if (runtimeApi) return runtimeApi;
+    const baseUrl = import.meta.env.VITE_RUNTIME_BASE_URL;
+    if (typeof baseUrl === 'string' && baseUrl.trim()) {
+      // 服务端 Runtime 不依赖浏览器本地存储，避免远程模式被 IndexedDB 初始化阻断。
+      runtimeApi = createProjectRuntime({ server: { baseUrl: baseUrl.trim() } });
+      return runtimeApi;
+    }
+    // App.vue 通常会提前初始化并注入适配器；直接调用 store 的测试/嵌入场景也应自举完成初始化。
+    if (!storageAdapter) {
+      const adapter = getStorageAdapter();
+      await adapter.init();
+    }
+    runtimeApi = createProjectRuntime();
+    return runtimeApi;
+  }
+
+  function isRuntimeNotFound(error: unknown): boolean {
+    return error instanceof RuntimeApiError
+      ? error.status === 404
+      : error instanceof Error && /不存在|NOT_FOUND|404/.test(error.message);
+  }
+
+  function isRuntimeAlreadyExists(error: unknown): boolean {
+    return error instanceof RuntimeApiError
+      ? error.status === 409 || /已存在|ALREADY_EXISTS/.test(error.message)
+      : error instanceof Error && /已存在|already exists|ALREADY_EXISTS/.test(error.message);
+  }
+
+  function runtimeInputForCard(tenantId: string, character: UICharacter, card: CharacterCard): CharacterCompileInput {
+    return {
+      tenantId,
+      id: stableChatCharacterId(tenantId, character.id),
+      profile: {
+        displayName: card.name.trim() || character.id,
+        description: card.description,
+        speakingStyle: card.personality,
+      },
+      seedMemories: [
+        ...(card.description.trim()
+          ? [{ type: 'semantic' as const, content: card.description.trim(), importance: 0.5 }]
+          : []),
+        ...(card.scenario.trim()
+          ? [{ type: 'episodic' as const, content: `场景：${card.scenario.trim()}`, importance: 0.4 }]
+          : []),
+      ],
+    };
+  }
+
+  async function createRuntimeCharactersBatch(characters: UICharacter[]): Promise<RuntimeBatchCreateResult | null> {
+    if (characters.length === 0) return { items: [] };
+    if (characters.length > 50) {
+      reportRuntimeError(new Error('单批最多创建 50 个角色'), 'initialize');
+      return null;
+    }
+    try {
+      const tenantId = resolveRuntimeTenantId();
+      const api = await getRuntimeApi();
+      return await api.createCharacters(characters.map((character) =>
+        runtimeInputForCard(tenantId, character, uiCharToCard(character))
+      ));
+    } catch (error) {
+      reportRuntimeError(error, 'initialize');
+      return null;
+    }
+  }
+
+  function getGroupRuntimeApi(): HttpGroupRuntimeApi | null {
+    const baseUrl = import.meta.env.VITE_RUNTIME_BASE_URL;
+    if (typeof baseUrl !== 'string' || !baseUrl.trim()) return null;
+    if (groupRuntimeApi === undefined) groupRuntimeApi = new HttpGroupRuntimeApi({ baseUrl: baseUrl.trim() });
+    return groupRuntimeApi;
+  }
+
+  /** 创建必须在读取群组上下文之前完成；重试只确认定义一致，不覆盖服务端成员。 */
+  async function prepareRemoteGroupRuntime(input: {
+    group: GroupChat;
+    characters: UICharacter[];
+    speakerCharacterId: string;
+  }, api: HttpGroupRuntimeApi) {
+    if (input.group.lifecycleStatus === 'archived') throw new Error('已归档群组不能发言');
+    if (!input.group.members.some((member) => member.characterId === input.speakerCharacterId)) {
+      throw new Error('发言角色不是群组成员');
+    }
+    const tenantId = resolveRuntimeTenantId();
+    const integrations = new Map<string, ChatRuntimeIntegration>();
+    for (const member of input.group.members) {
+      const character = input.characters.find((item) => item.id === member.characterId);
+      if (!character) throw new Error('群聊成员角色卡不存在：' + member.characterId);
+      const integration = await ensureRuntimeIntegration(character, uiCharToCard(character), 'group-' + input.group.id);
+      if (!integration) throw new Error('群聊成员 Runtime 初始化失败：' + character.name);
+      integrations.set(member.characterId, integration);
+    }
+    const runtimeGroupId = stableRuntimeUuid('group-runtime', tenantId, input.group.id);
+    await api.createGroup({
+      groupId: runtimeGroupId,
+      name: input.group.name,
+      memberIds: input.group.members.map((member) => integrations.get(member.characterId)!.characterId),
+    });
+    return { runtimeGroupId, speaker: integrations.get(input.speakerCharacterId)! };
+  }
+
+  async function ensureGroupRuntimeIntegration(input: {
+    group: GroupChat;
+    characters: UICharacter[];
+    speakerCharacterId: string;
+  }): Promise<ChatRuntimeIntegration | null> {
+    const api = getGroupRuntimeApi();
+    if (!api) {
+      const character = input.characters.find((item) => item.id === input.speakerCharacterId);
+      return character ? ensureRuntimeIntegration(character, uiCharToCard(character), 'group-' + input.group.id) : null;
+    }
+    try {
+      const { runtimeGroupId, speaker } = await prepareRemoteGroupRuntime(input, api);
+      // 不修改缓存的单角色 Integration，避免群聊绑定污染普通单聊或其他群组。
+      return {
+        ...speaker,
+        requireContext: true,
+        api: {
+          buildContext: (characterId, request) => {
+            if (characterId !== speaker.characterId) throw new Error('群聊上下文角色不匹配');
+            return api.buildMemberContext(runtimeGroupId, speaker.characterId, request);
+          },
+          ingestEvent: async () => { throw new Error('远程群聊必须通过公共回合事务提交事件'); },
+        },
+      };
+    } catch (error) {
+      reportRuntimeError(error, 'initialize');
+      // 远端初始化失败必须中止生成，不能退回无授权的普通单角色上下文。
+      throw error;
+    }
+  }
+
+  async function syncRemoteGroupMember(input: {
+    group: GroupChat;
+    characters: UICharacter[];
+    memberCharacterId: string;
+    operation: 'add' | 'remove';
+  }): Promise<{ enabled: boolean; synced: boolean }> {
+    const api = getGroupRuntimeApi();
+    if (!api) return { enabled: false, synced: true };
+    try {
+      if (input.group.members.length < 2 || !input.group.members.some((member) =>
+        member.characterId === input.memberCharacterId)) {
+        if (input.operation === 'remove') throw new Error('待移除角色不是当前群组成员');
+      }
+      const anchor = input.group.members[0];
+      if (!anchor) throw new Error('群组没有可用成员');
+      const { runtimeGroupId } = await prepareRemoteGroupRuntime({
+        group: input.group,
+        characters: input.characters,
+        speakerCharacterId: anchor.characterId,
+      }, api);
+      // 读取版本后以 CAS 执行显式成员变更；并发客户端修改会得到 409，而不会静默覆盖。
+      const state = await api.getGroupState(runtimeGroupId);
+      const target = input.characters.find((character) => character.id === input.memberCharacterId);
+      if (!target) throw new Error('成员角色卡不存在：' + input.memberCharacterId);
+      const targetIntegration = await ensureRuntimeIntegration(target, uiCharToCard(target), 'group-' + input.group.id);
+      if (!targetIntegration) throw new Error('成员 Runtime 初始化失败：' + target.name);
+      if (input.operation === 'add') {
+        await api.addMember(runtimeGroupId, targetIntegration.characterId, state.version);
+      } else {
+        await api.removeMember(runtimeGroupId, targetIntegration.characterId, state.version);
+      }
+      runtimeStatus.value = null;
+      return { enabled: true, synced: true };
+    } catch (error) {
+      reportRuntimeError(error, 'event');
+      return { enabled: true, synced: false };
+    }
+  }
+
+  async function commitRuntimeGroupTurn(input: {
+    group: GroupChat;
+    characters: UICharacter[];
+    speakerCharacterId: string;
+    turnId: string;
+    userMessage: string;
+    assistantMessage: string;
+  }): Promise<{ enabled: boolean; committed: boolean }> {
+    const api = getGroupRuntimeApi();
+    if (!api) return { enabled: false, committed: false };
+    try {
+      const { runtimeGroupId, speaker } = await prepareRemoteGroupRuntime(input, api);
+      await api.commitTurn({
+        groupId: runtimeGroupId,
+        turnId: input.turnId,
+        speakerId: speaker.characterId,
+        userMessage: input.userMessage,
+        assistantMessage: input.assistantMessage,
+      });
+      await removePendingGroupRuntimeTurn(input.group.id, input.turnId);
+      runtimeStatus.value = null;
+      return { enabled: true, committed: true };
+    } catch (error) {
+      reportRuntimeError(error, 'event');
+      await enqueuePendingGroupRuntimeTurn({
+        groupId: input.group.id,
+        turnId: input.turnId,
+        speakerCharacterId: input.speakerCharacterId,
+        userMessage: input.userMessage,
+        assistantMessage: input.assistantMessage,
+        error,
+      });
+      return { enabled: true, committed: false };
+    }
+  }
+
+  async function ensureRuntimeIntegration(
+    character: UICharacter,
+    card: CharacterCard,
+    conversationKey = activeChatId.value ?? `chat-${character.id}`
+  ): Promise<ChatRuntimeIntegration | null> {
+    const integrationKey = `${character.id}\u0000${conversationKey}`;
+    const existing = runtimeIntegrations.get(integrationKey);
+    if (existing) return existing;
+    const pending = (async (): Promise<ChatRuntimeIntegration | null> => {
+      const tenantId = resolveRuntimeTenantId();
+      const api = await getRuntimeApi();
+      const runtimeCharacterId = stableChatCharacterId(tenantId, character.id);
+      try {
+        try {
+          await api.getCharacter(runtimeCharacterId);
+        } catch (error) {
+          if (!isRuntimeNotFound(error)) throw error;
+          try {
+            await api.createCharacter(runtimeInputForCard(tenantId, character, card));
+          } catch (createError) {
+            // 并发初始化时可能由另一请求先创建，重新读取即可继续。
+            if (!isRuntimeAlreadyExists(createError)) throw createError;
+            await api.getCharacter(runtimeCharacterId);
+          }
+        }
+        return {
+          api,
+          tenantId,
+          characterId: runtimeCharacterId,
+          conversationKey,
+          sessionKey: conversationKey,
+          // UI 角色 ID 未必是 UUID；远程 PostgreSQL 需要稳定的 Target UUID。
+          targetId: stableChatTargetId(tenantId, character.id),
+          contextRequest: { maxEvents: 12, maxMemories: 8, maxEpisodes: 5 },
+          onError: reportRuntimeError,
+        };
+      } catch (error) {
+        reportRuntimeError(error, 'initialize');
+        return null;
+      }
+    })();
+    runtimeIntegrations.set(integrationKey, pending);
+    const resolved = await pending;
+    // 初始化失败不缓存 null，允许临时网络/存储故障在下一轮自动恢复。
+    if (!resolved && runtimeIntegrations.get(integrationKey) === pending) {
+      runtimeIntegrations.delete(integrationKey);
+    }
+    return resolved;
+  }
   // 生成中切换的 API Profile 暂存，任务结束后应用（修复：原实现直接丢弃）
   let pendingProfile: {
     profile: ApiProfile | null;
@@ -556,12 +954,14 @@ export const useChatStore = defineStore('chat', () => {
       await applyRuntimeLlmControls();
       // E-01: 种入角色 standing 事实(首次;字节稳定前缀数据源)
       await seedStandingFacts(card, character.id);
+      const runtime = await ensureRuntimeIntegration(character, card);
       await chatManager.sendMessage(
         {
           card,
           history,
           userMessage: text,
           runtimeTurnId: userMsg.id,
+          runtime: runtime ?? undefined,
           overrides: {
             ...buildCharacterOverrides(character),
             userName: ctx.userName,
@@ -875,12 +1275,15 @@ export const useChatStore = defineStore('chat', () => {
       await applyRuntimeLlmControls();
       // E-01: 种入角色 standing 事实(首次;字节稳定前缀数据源)
       await seedStandingFacts(card, character.id);
+      const runtime = await ensureRuntimeIntegration(character, card);
       await chatManager.sendMessage(
         {
           card,
           history,
           userMessage: userText,
-          runtimeTurnId: historyBefore[lastUserIdx]!.id,
+          // 重新生成是新的候选回复，不与原始发送共用幂等键，避免内容冲突被误判为重试。
+          runtimeTurnId: `${historyBefore[lastUserIdx]!.id}:regenerate:${target.id}:${Date.now()}`,
+          runtime: runtime ?? undefined,
           overrides: {
             ...buildCharacterOverrides(character),
             userName: ctx.userName,
@@ -1308,6 +1711,7 @@ export const useChatStore = defineStore('chat', () => {
     isGenerating,
     streamingContent,
     lastError,
+    runtimeStatus,
     // 多会话（§14.2）
     activeChatId,
     sessions,
@@ -1324,6 +1728,27 @@ export const useChatStore = defineStore('chat', () => {
     // 依赖注入
     setStorageAdapter,
     setApiProfile,
+    ensureRuntimeIntegration,
+    ensureGroupRuntimeIntegration,
+    syncRemoteGroupMember,
+    commitRuntimeGroupTurn,
+    pendingGroupRuntimeTurns,
+    loadRuntimePendingGroupTurns,
+    discardPendingGroupRuntimeTurns,
+    async retryPendingGroupRuntimeTurn(input: { group: GroupChat; characters: UICharacter[]; groupTurnId: string }) {
+      const pending = pendingGroupRuntimeTurns.value.find((item) =>
+        item.groupId === input.group.id && item.turnId === input.groupTurnId);
+      if (!pending) return { enabled: true, committed: false };
+      return commitRuntimeGroupTurn({
+        group: input.group,
+        characters: input.characters,
+        speakerCharacterId: pending.speakerCharacterId,
+        turnId: pending.turnId,
+        userMessage: pending.userMessage,
+        assistantMessage: pending.assistantMessage,
+      });
+    },
+    createRuntimeCharactersBatch,
     // 消息操作
     sendMessage,
     stop,

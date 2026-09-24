@@ -276,6 +276,24 @@ pub fn load_snapshot_file(app: AppHandle, key: String) -> AppResult<Option<serde
     read_json_file(&path)
 }
 
+/// 按键名前缀枚举快照内容。文件名经过安全化，调用方仍需校验快照租户与角色。
+#[tauri::command]
+pub fn list_snapshot_files(app: AppHandle, prefix: String) -> AppResult<Vec<serde_json::Value>> {
+    let data_dir = get_data_dir(&app)?;
+    let dir = data_dir.join("snapshots");
+    let safe_prefix = id_to_filename(&prefix);
+    let mut values = Vec::new();
+    for filename in list_json_files(&dir)? {
+        if filename.starts_with(&safe_prefix) {
+            let path = dir.join(format!("{}.json", filename));
+            if let Some(value) = read_json_file(&path)? {
+                values.push(value);
+            }
+        }
+    }
+    Ok(values)
+}
+
 // ── Lorebook CRUD (F06) ──
 // 文件位于 {data_dir}/lorebooks/{id}.json
 fs_crud!(

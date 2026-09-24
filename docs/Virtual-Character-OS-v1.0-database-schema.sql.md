@@ -229,12 +229,19 @@ CREATE TABLE IF NOT EXISTS character_mood (
     character_id UUID PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,
     valence NUMERIC(6,4) NOT NULL CHECK (valence BETWEEN -1 AND 1),
     arousal NUMERIC(6,4) NOT NULL CHECK (arousal BETWEEN 0 AND 1),
+    dominance NUMERIC(6,4) NOT NULL DEFAULT 0.5 CHECK (dominance BETWEEN 0 AND 1),
     baseline_valence NUMERIC(6,4) NOT NULL DEFAULT 0 CHECK (baseline_valence BETWEEN -1 AND 1),
     baseline_arousal NUMERIC(6,4) NOT NULL DEFAULT 0.3 CHECK (baseline_arousal BETWEEN 0 AND 1),
+    baseline_dominance NUMERIC(6,4) NOT NULL DEFAULT 0.5 CHECK (baseline_dominance BETWEEN 0 AND 1),
     half_life_seconds BIGINT NOT NULL DEFAULT 21600 CHECK (half_life_seconds > 0),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     version BIGINT NOT NULL DEFAULT 0
 );
+
+ALTER TABLE character_mood
+    ADD COLUMN IF NOT EXISTS dominance NUMERIC(6,4) NOT NULL DEFAULT 0.5 CHECK (dominance BETWEEN 0 AND 1);
+ALTER TABLE character_mood
+    ADD COLUMN IF NOT EXISTS baseline_dominance NUMERIC(6,4) NOT NULL DEFAULT 0.5 CHECK (baseline_dominance BETWEEN 0 AND 1);
 
 -- ============================================================
 -- 4. Conversation / Context Storage
@@ -285,6 +292,76 @@ CREATE INDEX IF NOT EXISTS idx_turns_session_created
 
 CREATE INDEX IF NOT EXISTS idx_turns_speaker
     ON conversation_turns (speaker_id, created_at DESC);
+
+-- 群组公共历史独立于单角色 conversations，成员与角色共享同一租户。
+CREATE UNIQUE INDEX IF NOT EXISTS idx_characters_id_tenant
+    ON characters (id, tenant_id);
+
+CREATE TABLE IF NOT EXISTS group_chats (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    name TEXT NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 50),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+    version BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT group_chats_version_nonnegative CHECK (version >= 0),
+    next_sequence BIGINT NOT NULL DEFAULT 0 CHECK (next_sequence >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (id, tenant_id)
+);
+-- 兼容已存在但尚未拥有群组版本列的旧部署；新建表时该语句为幂等空操作。
+ALTER TABLE group_chats
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'group_chats_version_nonnegative'
+          AND conrelid = 'group_chats'::regclass
+    ) THEN
+        ALTER TABLE group_chats
+            ADD CONSTRAINT group_chats_version_nonnegative CHECK (version >= 0);
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS group_chat_members (
+    group_id UUID NOT NULL,
+    tenant_id UUID NOT NULL,
+    character_id UUID NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'left')),
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    left_at TIMESTAMPTZ NULL,
+    PRIMARY KEY (group_id, character_id),
+    FOREIGN KEY (group_id, tenant_id) REFERENCES group_chats(id, tenant_id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id, tenant_id) REFERENCES characters(id, tenant_id) ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_group_members_character
+    ON group_chat_members (tenant_id, character_id, status);
+
+CREATE TABLE IF NOT EXISTS group_chat_turns (
+    id UUID PRIMARY KEY,
+    group_id UUID NOT NULL,
+    tenant_id UUID NOT NULL,
+    logical_turn_id TEXT NOT NULL CHECK (length(trim(logical_turn_id)) BETWEEN 1 AND 200),
+    sequence_no BIGINT NOT NULL CHECK (sequence_no >= 0),
+    speaker_id UUID NOT NULL,
+    user_message TEXT NOT NULL,
+    assistant_message TEXT NOT NULL,
+    occurred_at TIMESTAMPTZ NOT NULL,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    UNIQUE (group_id, logical_turn_id),
+    UNIQUE (group_id, sequence_no),
+    FOREIGN KEY (group_id, tenant_id) REFERENCES group_chats(id, tenant_id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id, speaker_id) REFERENCES group_chat_members(group_id, character_id) ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_group_turns_group_sequence
+    ON group_chat_turns (group_id, sequence_no DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_group_turns_id_group
+    ON group_chat_turns (id, group_id);
 
 CREATE TABLE IF NOT EXISTS conversation_segments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -349,6 +426,22 @@ CREATE TABLE IF NOT EXISTS event_turn_links (
 
 CREATE INDEX IF NOT EXISTS idx_event_turn_links_turn
     ON event_turn_links (turn_id);
+
+-- 公共回合与每位成员私有 Event 的证据关系；Event 必须归属该成员。
+CREATE UNIQUE INDEX IF NOT EXISTS idx_events_id_character
+    ON events (id, character_id);
+
+CREATE TABLE IF NOT EXISTS group_event_links (
+    group_turn_id UUID NOT NULL,
+    group_id UUID NOT NULL,
+    character_id UUID NOT NULL,
+    event_id UUID NOT NULL,
+    PRIMARY KEY (group_turn_id, character_id),
+    UNIQUE (event_id),
+    FOREIGN KEY (group_turn_id, group_id) REFERENCES group_chat_turns(id, group_id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id, character_id) REFERENCES group_chat_members(group_id, character_id) ON DELETE RESTRICT,
+    FOREIGN KEY (event_id, character_id) REFERENCES events(id, character_id) ON DELETE RESTRICT
+);
 
 CREATE TABLE IF NOT EXISTS state_changes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

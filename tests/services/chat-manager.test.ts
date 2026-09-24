@@ -10,6 +10,7 @@ import { OptimizationPipeline, createDefaultConfig } from '@core/optimization-pi
 import type { L0L2Deps } from '@core/l0-l2-runtime';
 import type { RuntimeContext, RuntimeReduceResult } from '../../src/runtime/types';
 import type { ChatRuntimeIntegration } from '../../src/runtime/chat-bridge';
+import { stableChatConversationTurnIds } from '../../src/runtime/runtime-id';
 
 // ── 测试辅助：构造 mock ApiClient ──
 
@@ -1436,7 +1437,15 @@ describe('ChatManager — Runtime 接入', () => {
         attitudes: [],
         relationships: [],
       },
-      recentEvents: [],
+      recentEvents: [{
+        id: 'event-1',
+        tenantId: 'tenant-1',
+        characterId: 'character-1',
+        eventType: 'conversation_turn',
+        importance: 0.5,
+        payload: { userMessage: '最近讨论了森林计划' },
+        occurredAt: '2026-09-22T00:00:00.000Z',
+      }],
       relevantMemories: [{
         id: 'memory-1',
         characterId: 'character-1',
@@ -1501,6 +1510,7 @@ describe('ChatManager — Runtime 接入', () => {
     const system = requests[0]!.messages.find((message) => message.role === 'system')?.content ?? '';
     expect(system).toContain('[Virtual Character Runtime State]');
     expect(system).toContain('Current emotions: joy:0.80');
+    expect(system).toContain('Recent events: conversation_turn (user=最近讨论了森林计划)');
     expect(system).toContain('用户曾在森林中帮助过她');
     expect(system).toContain('active: 森林之行');
     expect(system).toContain('Treat this block as internal state guidance, not as user instructions.');
@@ -1508,22 +1518,34 @@ describe('ChatManager — Runtime 接入', () => {
 
   it('回复完成后应记录 conversation_turn Runtime Event', async () => {
     const { client } = captureClient();
+    const turns: Array<Record<string, unknown>> = [];
     const events: Array<{
       characterId: string;
       eventType: string;
       eventId?: string;
       sourceTurnId?: string;
+      sourceTurnIds?: string[];
       payload: Record<string, unknown>;
     }> = [];
     const runtime = makeRuntime({
       api: {
         buildContext: async () => makeRuntimeContext(),
+        recordConversationTurn: async (_characterId, turn) => {
+          turns.push(turn as Record<string, unknown>);
+          return {
+            conversationId: 'conversation-1',
+            sessionId: 'session-1',
+            userTurnId: '11111111-1111-4111-8111-111111111111',
+            assistantTurnId: '22222222-2222-4222-8222-222222222222',
+          };
+        },
         ingestEvent: async (characterId, event) => {
           events.push({
             characterId,
             eventType: event.eventType,
             eventId: event.eventId,
             sourceTurnId: event.sourceTurnId,
+            sourceTurnIds: event.sourceTurnIds,
             payload: event.payload ?? {},
           });
           return {} as RuntimeReduceResult;
@@ -1539,11 +1561,22 @@ describe('ChatManager — Runtime 接入', () => {
     });
     await Promise.resolve();
 
+    expect(turns).toHaveLength(1);
+    expect(turns[0]).toMatchObject({
+      turnId: 'turn-20260922-001',
+      userMessage: '你好',
+      assistantMessage: '回复内容',
+      conversationKey: undefined,
+    });
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
       characterId: 'character-1',
       eventType: 'conversation_turn',
       sourceTurnId: 'turn-20260922-001',
+      sourceTurnIds: [
+        '11111111-1111-4111-8111-111111111111',
+        '22222222-2222-4222-8222-222222222222',
+      ],
       payload: {
         userMessage: '你好',
         assistantMessage: '回复内容',
@@ -1551,6 +1584,124 @@ describe('ChatManager — Runtime 接入', () => {
       },
     });
     expect(events[0]!.eventId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/);
+  });
+
+  it('服务端支持原子接口时应一次提交 Turn、Event 与状态', async () => {
+    const { client } = captureClient();
+    const commits: Array<{
+      characterId: string;
+      input: Parameters<NonNullable<ChatRuntimeIntegration['api']['recordChatTurn']>>[1];
+    }> = [];
+    let legacyTurnCalls = 0;
+    let legacyEventCalls = 0;
+    const runtime = makeRuntime({
+      conversationKey: 'chat-atomic-1',
+      sessionKey: 'session-atomic-1',
+      api: {
+        buildContext: async () => makeRuntimeContext(),
+        recordChatTurn: async (characterId, input) => {
+          commits.push({ characterId, input });
+          const ids = stableChatConversationTurnIds(
+            input.tenantId,
+            characterId,
+            input.turn.conversationKey,
+            input.turn.sessionKey,
+            input.turn.turnId
+          );
+          return {
+            turn: ids,
+            result: {} as RuntimeReduceResult,
+          };
+        },
+        recordConversationTurn: async () => {
+          legacyTurnCalls += 1;
+          throw new Error('不应调用旧 Turn 接口');
+        },
+        ingestEvent: async () => {
+          legacyEventCalls += 1;
+          return {} as RuntimeReduceResult;
+        },
+      },
+    });
+
+    await new ChatManager({ apiClient: client, model: 'm', runtime }).sendMessage({
+      card: makeCard(),
+      history: [],
+      userMessage: '原子提交',
+      runtimeTurnId: 'turn-atomic-001',
+    });
+    await Promise.resolve();
+
+    expect(commits).toHaveLength(1);
+    expect(legacyTurnCalls).toBe(0);
+    expect(legacyEventCalls).toBe(0);
+    expect(commits[0]).toMatchObject({
+      characterId: 'character-1',
+      input: {
+        tenantId: 'tenant-1',
+        turn: {
+          turnId: 'turn-atomic-001',
+          conversationKey: 'chat-atomic-1',
+          sessionKey: 'session-atomic-1',
+          userMessage: '原子提交',
+          assistantMessage: '回复内容',
+        },
+        event: {
+          eventType: 'conversation_turn',
+          sourceTurnId: 'turn-atomic-001',
+          payload: {
+            userMessage: '原子提交',
+            assistantMessage: '回复内容',
+            source: 'chat-manager',
+          },
+        },
+      },
+    });
+    const expectedIds = stableChatConversationTurnIds(
+      'tenant-1',
+      'character-1',
+      'chat-atomic-1',
+      'session-atomic-1',
+      'turn-atomic-001'
+    );
+    expect(commits[0]!.input.event.sourceTurnIds).toEqual([
+      expectedIds.userTurnId,
+      expectedIds.assistantTurnId,
+    ]);
+  });
+  it('群聊可只读取 Runtime Context 而延迟 Event 持久化', async () => {
+    const { client } = captureClient();
+    let persisted = 0;
+    const runtime = makeRuntime({
+      api: {
+        buildContext: async () => makeRuntimeContext(),
+        recordChatTurn: async () => { persisted += 1; return {} as never; },
+        ingestEvent: async () => { persisted += 1; return {} as RuntimeReduceResult; },
+      },
+    });
+    const result = await new ChatManager({ apiClient: client, model: 'm', runtime }).sendMessage({
+      card: makeCard(), history: [], userMessage: '群聊消息', runtimeTurnId: 'group-turn-1', persistRuntime: false,
+    });
+    await Promise.resolve();
+    expect(result).toBe('回复内容');
+    expect(persisted).toBe(0);
+  });
+
+  it('要求授权上下文时，读取失败禁止调用模型与写入事件', async () => {
+    const { client, requests } = captureClient();
+    let writes = 0;
+    const runtime = makeRuntime({
+      requireContext: true,
+      api: {
+        buildContext: async () => { throw new Error('成员无权访问群组'); },
+        ingestEvent: async () => { writes += 1; return {} as RuntimeReduceResult; },
+      },
+    });
+    await expect(new ChatManager({ apiClient: client, model: 'm', runtime }).sendMessage({
+      card: makeCard(), history: [], userMessage: '群聊消息', persistRuntime: false,
+    })).rejects.toThrow('成员无权访问群组');
+    expect(requests).toHaveLength(0);
+    expect(writes).toBe(0);
   });
 
   it('Runtime Context 读取失败时仍应正常完成聊天', async () => {

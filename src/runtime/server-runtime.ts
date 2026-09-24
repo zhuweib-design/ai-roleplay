@@ -6,6 +6,8 @@ import {
 import { PostgresRuntimeStore, type SqlExecutor } from './postgres-store';
 import { createPgPoolExecutor, type PgPoolLike } from './postgres-executor';
 import { RuntimeCore, type RuntimeCoreOptions } from './runtime-core';
+import { PostgresGroupRuntime } from './postgres-group-runtime';
+import { createGroupRuntimeHttpHandler } from './runtime-group-http';
 
 export interface PostgresRuntimeApiOptions {
   auditActorType?: 'system' | 'migration';
@@ -33,9 +35,14 @@ export function createPostgresRuntimeHttpHandler(
   tenantId: string,
   options: PostgresRuntimeApiOptions = {}
 ): RuntimeHttpHandler {
-  return createRuntimeHttpHandler(createPostgresRuntimeApi(sql, tenantId, options), {
-    tenantId,
-  });
+  const characters = createRuntimeHttpHandler(createPostgresRuntimeApi(sql, tenantId, options), { tenantId });
+  const groups = createPostgresGroupRuntimeHttpHandler(sql, tenantId);
+  return (request) => {
+    const pathname = new URL(request.url).pathname;
+    return pathname === '/v1/runtime/groups' || pathname.startsWith('/v1/runtime/groups/')
+      ? groups(request)
+      : characters(request);
+  };
 }
 
 /** 使用真实 node-postgres Pool 的服务端 Runtime 组合入口。 */
@@ -54,4 +61,30 @@ export function createPgPoolRuntimeHttpHandler(
   options: PostgresRuntimeApiOptions = {}
 ): RuntimeHttpHandler {
   return createPostgresRuntimeHttpHandler(createPgPoolExecutor(pool), tenantId, options);
+}
+
+/** 服务端群聊事务入口；组与成员身份由已认证的租户作用域约束。 */
+export function createPostgresGroupRuntime(sql: SqlExecutor, tenantId: string): PostgresGroupRuntime {
+  return new PostgresGroupRuntime(sql, tenantId);
+}
+
+/** node-postgres Pool 的群聊事务入口。 */
+export function createPgPoolGroupRuntime(pool: PgPoolLike, tenantId: string): PostgresGroupRuntime {
+  return createPostgresGroupRuntime(createPgPoolExecutor(pool), tenantId);
+}
+
+/** 将已认证租户作用域内的群聊 Runtime 暴露为 Fetch Handler。 */
+export function createPostgresGroupRuntimeHttpHandler(
+  sql: SqlExecutor,
+  tenantId: string
+): RuntimeHttpHandler {
+  return createGroupRuntimeHttpHandler(createPostgresGroupRuntime(sql, tenantId));
+}
+
+/** 使用 node-postgres Pool 的群聊 HTTP Handler。 */
+export function createPgPoolGroupRuntimeHttpHandler(
+  pool: PgPoolLike,
+  tenantId: string
+): RuntimeHttpHandler {
+  return createPostgresGroupRuntimeHttpHandler(createPgPoolExecutor(pool), tenantId);
 }

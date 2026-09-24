@@ -24,6 +24,17 @@ export function buildRuntimeContext(
     .filter((episode) => !request.targetId || episode.targetId === request.targetId)
     .sort((a, b) => b.salience - a.salience || Date.parse(b.lastEventAt) - Date.parse(a.lastEventAt))
     .slice(0, maxEpisodes);
+  const recentEvents = [...snapshot.events]
+    .filter((event) => !request.targetId || event.targetId === request.targetId)
+    .filter((event) => {
+      if (!query) return true;
+      const payloadText = JSON.stringify(event.payload ?? {}).toLocaleLowerCase();
+      return [event.eventType, event.topic ?? '', payloadText].some((value) =>
+        value.toLocaleLowerCase().includes(query)
+      );
+    })
+    .sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt) || a.id.localeCompare(b.id))
+    .slice(-maxEvents);
   return {
     identity: snapshot.character.profile,
     traits: snapshot.character.traits,
@@ -35,7 +46,7 @@ export function buildRuntimeContext(
       attitudes: snapshot.character.attitudes,
       relationships: snapshot.character.relationships,
     },
-    recentEvents: snapshot.events.slice(-maxEvents),
+    recentEvents,
     relevantMemories,
     relevantEpisodes,
   };

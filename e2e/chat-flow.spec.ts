@@ -18,9 +18,11 @@ function sseBody(): string {
 
 test('配置 API → 新建角色 → 对话流式回复', async ({ page }) => {
   const name = `E2E对话-${Date.now()}`;
+  const outgoingRequests: Array<{ messages: Array<{ role: string; content: string }> }> = [];
 
   // Mock：拦截发送到本地 mock 端点的 chat completions
   await page.route('**/mock/v1/chat/completions', (route) => {
+    outgoingRequests.push(route.request().postDataJSON());
     void route.fulfill({
       status: 200,
       contentType: 'text/event-stream',
@@ -71,4 +73,44 @@ test('配置 API → 新建角色 → 对话流式回复', async ({ page }) => {
   await expect(assistantBubble).toContainText('你好，旅人！欢迎来到 AI 酒馆');
   // 用户消息已上屏
   await expect(page.locator('.msg-bubble.msg-user')).toContainText('你好，介绍一下自己');
+  expect(outgoingRequests).toHaveLength(1);
+  const runtimeSystemMessage = outgoingRequests[0]!.messages.find((message) =>
+    message.role === 'system' && message.content.includes('[Virtual Character Runtime State]')
+  );
+  expect(runtimeSystemMessage?.content).toContain(name);
+
+  // 等待异步 Runtime Event 持久化，再验证下一轮上下文确实包含上一轮事实。
+  await expect.poll(() => page.evaluate(() => new Promise<boolean>((resolve, reject) => {
+    const open = indexedDB.open('ai-roleplay');
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      const snapshots = db.transaction('snapshots', 'readonly').objectStore('snapshots').getAll();
+      snapshots.onerror = () => { db.close(); reject(snapshots.error); };
+      snapshots.onsuccess = () => {
+        const records = snapshots.result as Array<{
+          key: string;
+          value?: { events?: Array<{ payload?: { userMessage?: string; assistantMessage?: string } }> };
+        }>;
+        const found = records.some((record) =>
+          record.key.startsWith('virtual-character-runtime:') &&
+          record.value?.events?.some((event) =>
+            event.payload?.userMessage === '你好，介绍一下自己' &&
+            event.payload?.assistantMessage === '你好，旅人！欢迎来到 AI 酒馆'
+          )
+        );
+        db.close();
+        resolve(Boolean(found));
+      };
+    };
+  })), { timeout: 10_000 }).toBe(true);
+
+  await input.fill('请记住刚才的对话');
+  await page.getByRole('button', { name: '发送消息' }).click();
+  await expect.poll(() => outgoingRequests.length).toBe(2);
+  const secondSystemMessage = outgoingRequests[1]!.messages.find((message) =>
+    message.role === 'system' && message.content.includes('[Virtual Character Runtime State]')
+  );
+  expect(secondSystemMessage?.content).toContain('Recent events: conversation_turn');
+  expect(secondSystemMessage?.content).toContain('你好，介绍一下自己');
 });

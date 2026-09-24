@@ -13,8 +13,9 @@ import {
   updateEpisodeStatus,
 } from './emotion-engine';
 import { compileCharacter } from './character-compiler';
-import { createRuntimeSnapshot, OptimisticLockError } from './store';
+import { createRuntimeSnapshot, OptimisticLockError, RuntimeAlreadyExistsError, RuntimeConflictError } from './store';
 import { buildRuntimeContext } from './context-builder';
+import { stableChatConversationTurnIds } from './runtime-id';
 import type {
   AttitudeState,
   CharacterCompileInput,
@@ -27,8 +28,14 @@ import type {
   RuntimeContext,
   RuntimeContextRequest,
   RuntimeEventInput,
+  RuntimeConversationTurnInput,
+  RuntimeConversationTurnResult,
+  RuntimeConversationTurnEventInput,
+  RuntimeConversationTurnCommitResult,
   RuntimeReduceResult,
   RuntimeSnapshot,
+  RuntimeCharacterListRequest,
+  RuntimeCharacterListResult,
   RuntimeSnapshotStore,
   StateChange,
 } from './types';
@@ -79,7 +86,13 @@ function canonicalize(value: unknown): unknown {
 }
 
 function sameEvent(left: DomainEvent, right: DomainEvent): boolean {
-  return JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right));
+  // sourceTurnIds 是可重建的规范化证据关联，不属于 Event 事实本身；忽略它可以
+  // 兼容升级前已经落库、但尚未带有多 Turn 关联的同一幂等 Event。
+  const comparable = (event: DomainEvent) => {
+    const { sourceTurnIds: _sourceTurnIds, ...fact } = event;
+    return fact;
+  };
+  return JSON.stringify(canonicalize(comparable(left))) === JSON.stringify(canonicalize(comparable(right)));
 }
 
 
@@ -247,7 +260,7 @@ function duplicateEventResult(snapshot: RuntimeSnapshot, event: DomainEvent): Ru
   const existing = snapshot.events.find((item) => item.id === event.id);
   if (!existing) return null;
   if (!sameEvent(existing, event)) {
-    throw new Error('事件 ID 已存在但内容不一致：' + event.id);
+    throw new RuntimeConflictError('事件 ID 已存在但内容不一致：' + event.id);
   }
   const stateChange = [...snapshot.stateChanges].reverse().find((item) => item.eventId === event.id);
   if (!stateChange) throw new Error('事件 ' + event.id + ' 已存在但缺少 StateChange');
@@ -343,6 +356,34 @@ export function replayRuntimeEvents(
   return snapshot;
 }
 
+function toDomainEvent(input: RuntimeEventInput): DomainEvent {
+  return {
+    id: input.eventId?.trim() || id(),
+    tenantId: input.tenantId,
+    characterId: input.characterId,
+    actorId: input.actorId,
+    targetId: input.targetId,
+    eventType: input.eventType,
+    topic: input.topic,
+    importance: clamp(input.importance ?? 0.5),
+    payload: input.payload ?? {},
+    effects: input.effects,
+    occurredAt: nowOr(input.occurredAt),
+    sourceTurnId: input.sourceTurnId,
+    sourceTurnIds: input.sourceTurnIds,
+  };
+}
+
+function fallbackConversationTurnResult(input: RuntimeConversationTurnInput): RuntimeConversationTurnResult {
+  return stableChatConversationTurnIds(
+    input.tenantId,
+    input.characterId,
+    input.conversationKey,
+    input.sessionKey,
+    input.turnId.trim()
+  );
+}
+
 export interface RuntimeCoreOptions {
   /** PostgreSQL 多实例并发冲突后的自动重试次数。 */
   maxCommitRetries?: number;
@@ -358,13 +399,26 @@ export class RuntimeCore {
 
   async createCharacter(input: CharacterCompileInput): Promise<CharacterDefinition> {
     const character = compileCharacter(input);
-    if (await this.store.load(character.id)) {
-      throw new Error(`角色已存在：${character.id}`);
-    }
-    const snapshot = createRuntimeSnapshot(character);
-    if (this.store.initialize) await this.store.initialize(snapshot);
-    else await this.store.commit(snapshot, 0);
-    return character;
+    return this.enqueue(character.id, async () => {
+      if (await this.store.load(character.id)) {
+        throw new RuntimeAlreadyExistsError(character.id);
+      }
+      const snapshot = createRuntimeSnapshot(character);
+      try {
+        if (this.store.initialize) await this.store.initialize(snapshot);
+        else await this.store.commit(snapshot, 0);
+      } catch (error) {
+        // 跨实例同时初始化：唯一键或乐观锁冲突后重新读取已提交的角色。
+        if (await this.store.load(character.id)) throw new RuntimeAlreadyExistsError(character.id);
+        throw error;
+      }
+      return character;
+    });
+  }
+
+  async listCharacters(request: RuntimeCharacterListRequest): Promise<RuntimeCharacterListResult> {
+    if (!this.store.listCharacters) throw new Error('Runtime Store 不支持角色列表');
+    return this.store.listCharacters(request);
   }
 
   async getSnapshot(characterId: string): Promise<RuntimeSnapshot | null> {
@@ -372,20 +426,7 @@ export class RuntimeCore {
   }
 
   async ingestEvent(input: RuntimeEventInput): Promise<RuntimeReduceResult> {
-    let event: DomainEvent = {
-      id: input.eventId?.trim() || id(),
-      tenantId: input.tenantId,
-      characterId: input.characterId,
-      actorId: input.actorId,
-      targetId: input.targetId,
-      eventType: input.eventType,
-      topic: input.topic,
-      importance: clamp(input.importance ?? 0.5),
-      payload: input.payload ?? {},
-      effects: input.effects,
-      occurredAt: nowOr(input.occurredAt),
-      sourceTurnId: input.sourceTurnId,
-    };
+    let event: DomainEvent = toDomainEvent(input);
     return this.enqueue(input.characterId, async () => {
       let attempt = 0;
       while (true) {
@@ -403,6 +444,91 @@ export class RuntimeCore {
         try {
           await this.store.commit(result.snapshot, snapshot.version);
           return result;
+        } catch (error) {
+          if (!(error instanceof OptimisticLockError) || attempt >= this.maxCommitRetries) throw error;
+          attempt += 1;
+        }
+      }
+    });
+  }
+
+  async recordConversationTurn(
+    input: RuntimeConversationTurnInput
+  ): Promise<RuntimeConversationTurnResult> {
+    return this.enqueue(input.characterId, async () => {
+      const snapshot = await this.store.load(input.characterId);
+      if (!snapshot) throw new Error(`角色不存在：${input.characterId}`);
+      if (snapshot.character.tenantId !== input.tenantId) throw new Error('租户隔离校验失败');
+      if (this.store.recordConversationTurn) {
+        return this.store.recordConversationTurn(input);
+      }
+      // 本地快照不保存规范化 Turn，但返回与服务端一致的稳定证据 ID。
+      return fallbackConversationTurnResult(input);
+    });
+  }
+
+  async ingestConversationTurn(
+    input: RuntimeConversationTurnEventInput & { characterId: string }
+  ): Promise<RuntimeConversationTurnCommitResult> {
+    const turnInput: RuntimeConversationTurnInput = {
+      ...input.turn,
+      turnId: input.turn.turnId.trim(),
+      tenantId: input.tenantId,
+      characterId: input.characterId,
+    };
+    if (!turnInput.turnId) throw new Error('conversation turn 缺少稳定 turnId');
+    const stableTurnIds = stableChatConversationTurnIds(
+      input.tenantId,
+      input.characterId,
+      turnInput.conversationKey,
+      turnInput.sessionKey,
+      turnInput.turnId
+    );
+    const eventInput: RuntimeEventInput = {
+      ...input.event,
+      tenantId: input.tenantId,
+      characterId: turnInput.characterId,
+      // 原子提交的证据由 Turn 键推导，不能信任客户端传入的其他 Turn UUID。
+      sourceTurnId: turnInput.turnId,
+      sourceTurnIds: [stableTurnIds.userTurnId, stableTurnIds.assistantTurnId],
+    };
+    let event: DomainEvent = toDomainEvent(eventInput);
+    return this.enqueue(turnInput.characterId, async () => {
+      if (turnInput.tenantId !== input.tenantId) throw new Error('租户隔离校验失败');
+      let attempt = 0;
+      while (true) {
+        const snapshot = await this.store.load(turnInput.characterId);
+        if (!snapshot) throw new Error(`角色不存在：${turnInput.characterId}`);
+        if (snapshot.character.tenantId !== input.tenantId) throw new Error('租户隔离校验失败');
+        const existing = event.id
+          ? snapshot.events.find((item) => item.id === event.id)
+          : undefined;
+        if (existing && eventInput.occurredAt === undefined) {
+          event = { ...event, occurredAt: existing.occurredAt };
+        }
+        const reduced = reduceRuntimeState(snapshot, event);
+        try {
+          if (reduced.snapshot === snapshot) {
+            const turn = this.store.commitConversationTurn
+              ? await this.store.commitConversationTurn(snapshot, snapshot.version, turnInput)
+              : (this.store.recordConversationTurn
+                ? await this.store.recordConversationTurn(turnInput)
+                : fallbackConversationTurnResult(turnInput));
+            return { turn, result: reduced };
+          }
+          const turn = this.store.commitConversationTurn
+            ? await this.store.commitConversationTurn(
+              reduced.snapshot,
+              snapshot.version,
+              turnInput
+            )
+            : (this.store.recordConversationTurn
+              ? await this.store.recordConversationTurn(turnInput)
+              : fallbackConversationTurnResult(turnInput));
+          if (!this.store.commitConversationTurn) {
+            await this.store.commit(reduced.snapshot, snapshot.version);
+          }
+          return { turn, result: reduced };
         } catch (error) {
           if (!(error instanceof OptimisticLockError) || attempt >= this.maxCommitRetries) throw error;
           attempt += 1;
