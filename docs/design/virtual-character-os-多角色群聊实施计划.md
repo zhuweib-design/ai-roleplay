@@ -351,3 +351,9 @@
 
 - 本轮验证为本地浏览器（Edge）与移动视口仿真，不是真实移动设备或独立虚拟机镜像；移动端真机验收仍需在发布前补做。
 - 桌面端与移动端均在 Chromium 内核（Edge）下验证，未覆盖 WebKit / Gecko。
+
+### 补充修复（CI 对比度门禁）
+
+- 冲突提示条与群聊停止按钮初版使用了低对比度配色，CI `Contrast audit` 报出 4 处新增回归（`.conflict-banner` 浅色 4.26:1；`.send-btn.stop-btn` dark 2.83 / midnight 1.90 / oled 1.90）。
+- 改为项目既有语义 token：提示条使用 `--warning-bg` + `--warning-text` + `--warning-border`（`--warning-text` 是 tokens.css 专为「警示色作文字」派生的可读变体）；停止按钮改用 danger 三件套 `--danger-bg` / `--danger-fg` / `--danger-border`，不用实心 `--danger`（深色主题下为浅红，白字不足）。
+- 复验：`a11y:contrast` 回到基线持平（131 = 131）并判定通过；`a11y:contrast:self-test` 正负样本可区分；群聊与对比度 E2E 7 项通过。

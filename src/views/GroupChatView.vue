@@ -1930,8 +1930,11 @@ type="button"
   padding: 8px 10px;
   margin-bottom: 10px;
   border-radius: var(--radius-md, 8px);
-  background: var(--warning-bg, rgba(245, 158, 11, 0.12));
-  color: var(--text-primary);
+  background: var(--warning-bg);
+  /* 用 warning-text：tokens.css 中专门为「警示色作文字」派生的可读变体，
+     直接使用 --warning-fg 在当前主题下仅 4.26:1，未达 AA 4.5:1。 */
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
   font-size: 13px;
 }
 
@@ -2208,10 +2211,13 @@ type="button"
   cursor: not-allowed;
 }
 
-/* 生成中：同一按钮切换为中止动作，用危险色与发送区分 */
+/* 生成中：同一按钮切换为中止动作，用危险语义色与发送区分。
+   注：不用实心 --danger（在深色主题下为浅红，白字对比度不足），
+   改用 danger 三件套（bg/fg/border），与既有警示文本一致。 */
 .send-btn.stop-btn {
-  background: var(--danger, #dc2626);
-  color: var(--on-primary);
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  border: 1px solid var(--danger-border);
 }
 
 /* @提及下拉 */
