@@ -24,6 +24,23 @@ jobs:
   quality-gates:
     name: Quality Gates
     runs-on: ubuntu-latest
+
+    # 覆盖率门禁需要真实 PostgreSQL：Runtime 集成测试在缺少 RUNTIME_PG_TEST_URL 时会跳过，
+    # 被跳过的模块会被 v8 计为 0% 覆盖，导致 statements 低于 78% 阈值而误判失败。
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: runtime_test
+          POSTGRES_DB: runtime_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d runtime_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -83,6 +100,9 @@ jobs:
       # （statements 78 / branches 73 / functions 78 / lines 78），未达标则非零退出
       # 注：Linux 路径大小写一致, 无 Windows 本地盘符重复误报, 门禁正常生效
       - name: Test + coverage gate (78/73/78/78)
+        env:
+          RUNTIME_PG_TEST_URL: postgresql://postgres:runtime_test@127.0.0.1:5432/runtime_test
+          RUNTIME_PG_APPLY_SCHEMA: '1'
         run: npm run test:coverage
 
       # 构建门禁：vue-tsc 类型检查 + vite 生产构建

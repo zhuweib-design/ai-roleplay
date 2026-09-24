@@ -208,3 +208,23 @@
 ### 当前边界
 
 - 该迁移兼容性测试验证的是当前单文件迁移在隔离 Schema 中的升级行为；生产数据库仍需在备份、锁等待、回滚和发布窗口策略下执行正式迁移演练。
+
+## 2026-09-24 CI 门禁与群聊 Runtime 文案修复
+
+### 本轮实现
+
+- CI `quality-gates` 增加 `postgres:16-alpine` service，覆盖率门禁注入 `RUNTIME_PG_TEST_URL`。此前真实集成测试因缺少连接串被跳过，被跳过的 Runtime 模块被 v8 计为 0% 覆盖，导致 statements 77.89% 低于 78% 阈值而误判失败。
+- 新增独立 `runtime-postgres` job 时保留在同一 workflow；`tauri-release` 依赖补上该 job，避免发布绕过数据库门禁。
+- 修复群聊 Runtime 接入后引入的 19 处硬编码中文：用户可见错误改为 `t()` 查表并补齐中英双语；群聊提示词、消息投影标签、服务端错误码匹配正则与场景种子记忆按既有约定加 i18n 豁免。
+- 修复 `scripts/i18n-scan.mjs` 的 CRLF 缺陷：按 `\n` 切分会让行尾残留 `\r`，使 `// i18n-ignore` 行尾豁免与行尾判断失效；现于 `effectiveCode` 入口剥离行尾 `\r`。场景种子记忆同时改用块级豁免，不依赖行尾匹配。
+
+### 验证记录
+
+- 覆盖率门禁在接入 PostgreSQL 后恢复：`All files 79.75 / 75.1 / 82.16 / 81.46`，高于 78/73/78/78 阈值；全量 3430 项通过。
+- 无数据库条件下覆盖率会降至 statements 77.89%，已由 CI service 消除该差异。
+- `i18n:check:strict` 通过（src 全部 159 个文件）；`vue-tsc --noEmit`、ESLint 通过。
+- 群聊与 i18n 专项 60 项通过；全量 3427 项通过、3 项跳过。
+
+### 当前边界
+
+- 覆盖率门禁现依赖 CI service 容器；本地不提供 `RUNTIME_PG_TEST_URL` 时会因跳过集成测试而低于阈值，属预期行为，需本地起库或只跑 `npm run test`。
