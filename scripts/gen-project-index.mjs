@@ -37,6 +37,8 @@ const EXCLUDE_REL_DIRS = new Set([
   '.reasonix/attachments',
   '.reasonix/reports',
   'src-tauri/gen',
+  // 本地专用产品文档：仅在本机保存历史（refs/local/docs-product），不进入版本控制与索引
+  'docs/product',
 ]);
 
 /** 按文件名排除（密钥、证书、数据库、日志、大二进制、锁文件） */
@@ -331,8 +333,6 @@ const CURATED = {
   'docs/design/virtual-character-os-实现基线.md': '设计文档：Virtual Character OS 实现基线（Schema → Runtime → Emotion → Compiler → API）',
   'docs/design/virtual-character-os-多角色群聊实施计划.md': '设计文档：多角色群聊与 PostgreSQL 群组事务实施计划及验证记录',
   'docs/design/runtime-core-基线设计.md': '设计文档：Runtime Core 基线设计与并发、回放、审计边界',
-  'docs/product/AI酒馆开发计划文档.md': '产品文档：开发计划与任务台账',
-  'docs/product/AI酒馆项目规划书-2026-09-23.md': '产品文档：项目规划书与阶段路线图（含 Virtual Character OS 目标）',
   'docs/other/项目文档结构.md': '其他：项目文档分类规范',
   'docs/dev/b-type-findings.md': '开发文档：`!` 非空断言治理审计记录',
   'docs/dev/mobile-pwa-plan.md': '开发文档：手机端 PWA 实现计划',
@@ -416,7 +416,6 @@ const DOC_DIR_CATEGORY = {
   'docs/design/': '设计文档',
   'docs/dev/': '开发文档',
   'docs/fixes/': '修复文档',
-  'docs/product/': '产品文档',
   'docs/other/': '其他',
 };
 
@@ -693,7 +692,7 @@ function main() {
   const catNote = {
     '程序': 'src/ 前端源码与 src-tauri/src/ Rust 源码、index.html',
     '测试': 'tests/ 单元与组件测试、e2e/ Playwright 场景',
-    '产品文档': 'docs/product/ 产品与项目规划材料',
+    '产品文档': 'public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除）',
     '开发文档': 'docs/dev/ 实现计划、Runbook、审计记录',
     '修复文档': 'docs/fixes/ 缺陷评审、修复交付与进度台账',
     '设计文档': 'docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档',

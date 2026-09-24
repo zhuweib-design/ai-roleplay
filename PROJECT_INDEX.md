@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-24 15:06（本地时区）
+- **生成时间**：2026-09-24 15:52（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v0.2.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：485 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：29 个
+- **收录文件**：483 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：29 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -19,7 +19,7 @@ ai-roleplay/
   - `memory/`  — 9 个文件
 - `.workbuddy-ai/`  — 5 个文件
   - `memory/`  — 5 个文件
-- `docs/`  — 170 个文件
+- `docs/`  — 168 个文件
   - `assets/`  — 110 个文件
     - `screenshots/`  — 110 个文件
       - `themes/`  — 84 个文件
@@ -31,7 +31,6 @@ ai-roleplay/
   - `dev/`  — 17 个文件
   - `fixes/`  — 17 个文件
   - `other/`  — 6 个文件
-  - `product/`  — 2 个文件
 - `e2e/`  — 13 个文件
   - `mobile/`  — 1 个文件
 - `market/`  — 8 个文件
@@ -450,23 +449,21 @@ ai-roleplay/
 | `tests/views/story-engine-quicksetup.test.ts` | ts | 测试 | 单元测试：story-engine-quicksetup 模块 | 已跟踪 |  |
 | `tests/views/thinking-tokens-inline-status.qa-independent.test.ts` | ts | 测试 | 单元测试：thinking-tokens-inline-status.qa-independent 模块 | 已跟踪 |  |
 
-### 2.3 产品文档（3）
+### 2.3 产品文档（1）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `docs/product/AI酒馆开发计划文档.md` | md | 产品文档 | 产品文档：开发计划与任务台账 | 已忽略 |  |
-| `docs/product/AI酒馆项目规划书-2026-09-23.md` | md | 产品文档 | 产品文档：项目规划书与阶段路线图（含 Virtual Character OS 目标） | 未跟踪 |  |
 | `public/sillytavern-vs-airoleplay.html` | html | 产品文档 | 静态页：SillyTavern vs ai-roleplay 系统化对比报告 | 已忽略 |  |
 
 ### 2.4 开发文档（23）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已修改 |  |
-| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已修改 |  |
-| `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已修改 |  |
-| `README.md` | md | 开发文档 | 项目主说明（中文） | 已修改 |  |
-| `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已修改 |  |
+| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
+| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
+| `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已跟踪 |  |
+| `README.md` | md | 开发文档 | 项目主说明（中文） | 已跟踪 |  |
+| `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已跟踪 |  |
 | `docs/dev/2026-09-20-LLM控制能力交付总览.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已跟踪 |  |
 | `docs/dev/b-type-findings.md` | md | 开发文档 | 开发文档：`!` 非空断言治理审计记录 | 已跟踪 |  |
@@ -557,7 +554,7 @@ ai-roleplay/
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `.gitattributes` | gitattributes | 配置 | Git 属性（换行符与 LFS 规则，本地保留） | 已忽略 |  |
-| `.github/workflows/ci.yml` | yml | 配置 | CI 流水线：i18n / 断点 / 对比度 / 覆盖率 / 构建 / E2E / Tauri 七道门禁 | 已修改 |  |
+| `.github/workflows/ci.yml` | yml | 配置 | CI 流水线：i18n / 断点 / 对比度 / 覆盖率 / 构建 / E2E / Tauri 七道门禁 | 已跟踪 |  |
 | `.gitignore` | gitignore | 配置 | Git 忽略规则（本地保留，不提交） | 已忽略 |  |
 | `.i18nignore` | i18nignore | 配置 | i18n 扫描忽略清单 | 已忽略 |  |
 | `eslint.config.js` | js | 配置 | ESLint 扁平配置（Vue + TS） | 已跟踪 |  |
@@ -633,7 +630,7 @@ ai-roleplay/
 | `public/pwa-192x192.png` | png | 其他 | PWA 图标 192×192 | 已跟踪 |  |
 | `public/pwa-512x512.png` | png | 其他 | PWA 图标 512×512 | 已跟踪 |  |
 | `public/pwa-icon.svg` | svg | 其他 | PWA 图标（矢量） | 已跟踪 |  |
-| `未命名.base` | base | 其他 | 待确认 | 未跟踪 | 用途待确认 |
+| `未命名.base` | base | 其他 | 待确认 | 已忽略 | 用途待确认 |
 
 ## 三、分类汇总
 
@@ -641,7 +638,7 @@ ai-roleplay/
 | --- | --- | --- |
 | 程序 | 201 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 144 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
-| 产品文档 | 3 | docs/product/ 产品与项目规划材料 |
+| 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
 | 开发文档 | 23 | docs/dev/ 实现计划、Runbook、审计记录 |
 | 修复文档 | 17 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
 | 设计文档 | 14 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
@@ -650,7 +647,7 @@ ai-roleplay/
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 19 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 32 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **485** | 与「收录文件」数一致 |
+| **合计** | **483** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 
