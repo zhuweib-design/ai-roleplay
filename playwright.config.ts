@@ -55,6 +55,25 @@ export default defineConfig({
         : { ...devices['Desktop Chrome'], channel: 'msedge' },
     },
     {
+      // WebKit（Safari 近似内核）：桌面核心功能回归。
+      // 覆盖 Chromium 之外的第二个内核，重点暴露 iOS/Safari 的样式与交互差异。
+      // 本地需先 `npx playwright install webkit`；CI 由 workflow 安装。
+      name: 'webkit',
+      testMatch: [
+        '**/chat-flow.spec.ts',
+        '**/group-chat-flow.spec.ts',
+        '**/character-batch-import.spec.ts',
+        '**/character-crud.spec.ts',
+        '**/backup-restore.spec.ts',
+        '**/worldbook-flow.spec.ts',
+      ],
+      testIgnore: '**/mobile/**',
+      use: { ...devices['Desktop Safari'] },
+      // WebKit 冷启动与 IndexedDB 明显慢于 Chromium；与其它 project 并行时会因负载
+      // 出现「每次失败点不同」的假失败，故该 project 串行执行（用例数少，成本可接受）。
+      fullyParallel: false,
+    },
+    {
       // 移动视口功能回归：把核心用户旅程的桌面用例放到 Pixel 5 视口下重跑，
       // 补齐「手机端全功能」验证。仅纳入无视觉基线快照的功能用例；
       // 对比度与视觉快照用例仍在桌面 project 执行，避免视口差异造成误判。

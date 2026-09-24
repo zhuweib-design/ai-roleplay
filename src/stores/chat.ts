@@ -55,6 +55,7 @@ import {
   type RuntimeBatchCreateResult,
 } from '@/runtime';
 import { RuntimeApiError } from '@/runtime/runtime-http';
+import type { RuntimeGroupTurn } from '@/runtime/group-runtime-contract';
 import { replayRuntimeEvents } from '@/runtime/runtime-core';
 
 /** 远程群聊公共回合的本地可靠投递记录。内容一旦入队不可被同键新载荷覆盖。 */
@@ -716,6 +717,36 @@ export const useChatStore = defineStore('chat', () => {
     } catch (error) {
       reportRuntimeError(error, 'event');
       return { enabled: true, attempted: 0, committed: 0 };
+    }
+  }
+
+  /**
+   * 拉取服务端群聊公共回合历史（跨设备历史同步）。
+   *
+   * - 以群组任一有效成员身份读取（服务端要求成员限定）。
+   * - 远端模式未启用时返回 enabled=false，调用方保持纯本地历史。
+   * - 只读，不写服务端；合并去重由调用方（group-chat store）负责。
+   */
+  async function fetchRemoteGroupTurns(input: {
+    group: GroupChat;
+    characters: UICharacter[];
+  }): Promise<{ enabled: boolean; turns: RuntimeGroupTurn[] }> {
+    const api = getGroupRuntimeApi();
+    if (!api) return { enabled: false, turns: [] };
+    try {
+      const anchor = input.group.members[0];
+      if (!anchor) throw new Error(t('group.runtimeNoAnchorMember'));
+      const { runtimeGroupId, speaker } = await prepareRemoteGroupRuntime({
+        group: input.group,
+        characters: input.characters,
+        speakerCharacterId: anchor.characterId,
+      }, api);
+      const turns = await api.listTurns(runtimeGroupId, speaker.characterId);
+      return { enabled: true, turns };
+    } catch (error) {
+      if (isRuntimeNotFound(error)) return { enabled: true, turns: [] };
+      reportRuntimeError(error, 'context');
+      return { enabled: true, turns: [] };
     }
   }
 
@@ -2002,6 +2033,7 @@ export const useChatStore = defineStore('chat', () => {
     verifyRuntimeReplay,
     commitRuntimeGroupTurn,
     retryRemoteGroupOutbox,
+    fetchRemoteGroupTurns,
     pendingGroupRuntimeTurns,
     groupRuntimeConflict,
     clearGroupRuntimeConflict,

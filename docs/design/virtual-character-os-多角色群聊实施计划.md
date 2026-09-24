@@ -357,3 +357,71 @@
 - 冲突提示条与群聊停止按钮初版使用了低对比度配色，CI `Contrast audit` 报出 4 处新增回归（`.conflict-banner` 浅色 4.26:1；`.send-btn.stop-btn` dark 2.83 / midnight 1.90 / oled 1.90）。
 - 改为项目既有语义 token：提示条使用 `--warning-bg` + `--warning-text` + `--warning-border`（`--warning-text` 是 tokens.css 专为「警示色作文字」派生的可读变体）；停止按钮改用 danger 三件套 `--danger-bg` / `--danger-fg` / `--danger-border`，不用实心 `--danger`（深色主题下为浅红，白字不足）。
 - 复验：`a11y:contrast` 回到基线持平（131 = 131）并判定通过；`a11y:contrast:self-test` 正负样本可区分；群聊与对比度 E2E 7 项通过。
+
+## 2026-09-25 B1：服务端群聊历史回合接入 UI（跨设备历史同步）
+
+### 本轮实现
+
+- `group-chat` store 新增 `mergeRemoteTurns(groupId, turns, runtimeToLocalCharacterId)`：按 `logicalTurnId` 幂等合并服务端公共回合到本地消息历史。服务端来源消息使用稳定 ID `remote:<turnId>:user|assistant`，重复拉取与跨刷新不会产生重复消息；只追加、不删除、不覆盖本地已有消息，并在合并后按时间重排。
+- Chat Store 新增 `fetchRemoteGroupTurns({ group, characters })`：以群组任一有效成员身份调用 `listTurns`（服务端要求成员限定），远端模式未启用时返回 `enabled=false`，调用方保持纯本地历史；只读，不写服务端。
+- 群聊页在 `currentGroupId` 变化（含首次进入）时触发同步，把服务端成员 Runtime UUID 映射回本地角色卡后合并。
+
+### 验证记录
+
+- `group-chat` store 测试 38 项通过，新增覆盖：合并 2 个服务端回合产生 4 条消息、重复合并幂等返回 0、发言人正确映射到本地角色卡、消息按时间排序。
+- Chat Store Runtime 集成测试 15 项通过，新增覆盖：本地模式返回 `enabled=false`；远端模式经 `listTurns` 透传服务端回合。
+- 全量 Vitest 3437 项通过、3 项跳过；`vue-tsc --noEmit`、ESLint、`i18n:check:strict`（160 文件）通过。
+
+### 当前边界
+
+- 合并为「只追加」策略：本地与服务端对同一回合内容不一致时不做冲突判定，以本地已有记录为准。
+- 未实现分页拉取，`listTurns` 一次返回该群组全部公共回合；回合量很大时需补游标分页。
+- 服务端历史不含群聊系统消息（加入/离开/归档），这些仍只存在本地。
+
+## 2026-09-25 C1：CI 增加 WebKit（Safari 近似内核）
+
+### 本轮实现
+
+- `playwright.config.ts` 新增 `webkit` project（`Desktop Safari`），覆盖桌面核心功能：对话、群聊、批量导入、角色 CRUD、备份恢复、世界书。
+- CI `e2e` job 安装浏览器改为 `chromium webkit`；此前只装 chromium。
+- 该 project 设 `fullyParallel: false`：WebKit 冷启动与 IndexedDB 明显慢于 Chromium，与其它 project 并行时会出现「每次失败点不同」的假失败（实测两次分别倒在批量导入重试与世界书条目断言，单独与串行均通过）。
+- 为批量导入重试断言补显式 15s 超时，说明为 WebKit 冷启动开销而非产品行为变化。
+
+### 验证记录
+
+- WebKit 专项：9 项通过（无真实兼容性缺陷）。
+- 全量 Playwright E2E：**40 项通过**，覆盖桌面 19（Edge/Chromium）+ 手机功能 9（Pixel 5）+ 手机布局 3 + WebKit 9。
+- `vue-tsc`、ESLint、`i18n:check:strict`、CSS 约定守卫通过。
+
+### 当前边界
+
+- 覆盖 Chromium 与 WebKit 两个内核，仍未覆盖 Gecko（Firefox）。
+- WebKit project 串行执行，CI 时长增加约 20 秒；用例数量增长后需重新评估并行策略。
+
+
+## 2026-09-25 A3：数据库迁移演练 Runbook
+
+### 本轮实现
+
+- 新增 `docs/dev/runtime-database-migration-runbook.md`：面向部署方的迁移演练文档，覆盖迁移范围（37 张表按八组分类）、幂等性保证、执行前检查（Schema 漂移校验 / 迁移前状态记录 / `pg_dump` 备份 / 长事务与锁等待评估）、执行命令（强制 `ON_ERROR_STOP=1`）、执行后验证（结构 / 隔离 Schema 集成测试 / 历史数据完整性）、回滚路径（首选备份恢复，局部回退仅限非生产）、11 项演练清单与已知边界。
+- 文档明确项目**不提供自动迁移编排**：`migrations/001_virtual_character_os.sql` 是单文件幂等全量脚本，未来结构性变更需新增独立迁移文件，不能改写历史迁移。
+- 索引生成器登记该文档，`PROJECT_INDEX.md` 收录。
+
+### 验证记录
+
+- 静态核对：Runbook 列出的 37 张表全部存在于迁移文件；`group_turn_outbox`、`group_chats_version_nonnegative`、`pgcrypto` 声明与迁移一致；表数量与 `CREATE TABLE IF NOT EXISTS` 计数一致（37）。
+- `npm run runtime:db:schema:check` 通过。
+
+### 当前边界
+
+- 本机 Docker 守护进程未运行，Runbook 中的 `pg_dump` / `psql` / 恢复命令**未在本轮实机演练**；正式发布前需在预发库按清单完整走一遍。
+- 文档假设使用 `psql` 与 `pg_dump` 标准工具，未覆盖托管数据库（如 RDS）的控制台备份方式。
+
+
+## 2026-09-25 A2：0.3.0 发布说明
+
+### 本轮实现
+
+- 新增 `docs/dev/release-notes-0.3.0.md`：面向用户与部署方的发布说明，覆盖六项新能力（服务端群聊历史、outbox 可靠投递、归档状态远端同步与 CAS、群组冲突恢复、Runtime 状态查看与回放自检、群聊生成可中止）、验证结果表（3437 单测 / 40 E2E / 双内核 / 真实 PostgreSQL / 全门禁）、升级与部署步骤（引用迁移 Runbook）、8 项已知限制与相关文档索引。
+- README 双语版新增发布说明与迁移 Runbook 链接；索引生成器登记该文档，`PROJECT_INDEX.md` 更新为 486 个文件。
+- 相对链接校验通过（README 中英、发布说明、Runbook 均无失效链接）。

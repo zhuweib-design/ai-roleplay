@@ -624,6 +624,85 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     void persistGroup(groupId);
   }
 
+  /**
+   * 合并服务端公共回合到本地消息历史（跨设备历史同步）。
+   *
+   * 语义：
+   * - 以 `logicalTurnId` 为幂等键：本地已存在同一回合（任一侧）则跳过，重复拉取不会产生重复消息。
+   * - 服务端回合没有「本地消息 ID」概念，这里用 `remote:${turnId}:user|assistant` 作为稳定 ID，
+   *   保证多次拉取与跨刷新后仍是同一条消息。
+   * - 只追加，不删除、不覆盖本地已有消息；本地未同步的回合在下次提交后自然补齐。
+   *
+   * @returns 新增的消息条数（0 表示已是最新）
+   */
+  function mergeRemoteTurns(
+    groupId: string,
+    turns: Array<{
+      id: string;
+      turnId: string;
+      speakerId: string;
+      userMessage: string;
+      assistantMessage: string;
+      occurredAt: string;
+    }>,
+    runtimeToLocalCharacterId: Map<string, string>
+  ): number {
+    const g = groups.value.find((x) => x.id === groupId);
+    if (!g || turns.length === 0) return 0;
+
+    // 已是本地的回合键（用户消息 ID 即逻辑回合键）
+    const knownTurnIds = new Set<string>();
+    for (const message of g.messages) {
+      if (message.role === 'user') knownTurnIds.add(message.id);
+      // 服务端来源的消息 ID 形如 remote:<turnId>:user|assistant
+      const remoteMatch = /^remote:(.+):(?:user|assistant)$/.exec(message.id);
+      if (remoteMatch) knownTurnIds.add(remoteMatch[1]!);
+    }
+
+    let added = 0;
+    const ordered = turns
+      .slice()
+      .sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt));
+
+    for (const turn of ordered) {
+      if (knownTurnIds.has(turn.turnId)) continue;
+      const localCharacterId = runtimeToLocalCharacterId.get(turn.speakerId) ?? turn.speakerId;
+      const member = g.members.find((item) => item.characterId === localCharacterId);
+      const speakerName = member?.name ?? localCharacterId;
+
+      g.messages.push({
+        id: `remote:${turn.turnId}:user`,
+        role: 'user',
+        content: turn.userMessage,
+        timestamp: turn.occurredAt,
+        swipes: [],
+        swipeIndex: 0,
+        eventType: 'none',
+      });
+      g.messages.push({
+        id: `remote:${turn.turnId}:assistant`,
+        role: 'assistant',
+        content: turn.assistantMessage,
+        timestamp: turn.occurredAt,
+        swipes: [],
+        swipeIndex: 0,
+        characterId: localCharacterId,
+        characterName: speakerName,
+        eventType: 'none',
+      });
+      knownTurnIds.add(turn.turnId);
+      added += 2;
+    }
+
+    if (added > 0) {
+      // 保持按时间排序，服务端历史可能早于本地首条消息
+      g.messages.sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+      g.lastSpeakerId = g.messages.filter((m) => m.role === 'assistant').at(-1)?.characterId ?? g.lastSpeakerId;
+      void persistGroup(groupId);
+    }
+    return added;
+  }
+
   // ── 消息动作 ──
 
   /**
@@ -881,6 +960,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     addMember,
     removeMember,
     replaceMembers,
+    mergeRemoteTurns,
     // F10.4 临时群聊生命周期
     archiveGroup,
     restoreGroup,
