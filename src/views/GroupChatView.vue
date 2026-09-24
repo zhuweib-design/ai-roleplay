@@ -189,6 +189,15 @@ watch(
   }
 );
 
+// 首次进入或切换群聊时同步服务端历史（远端模式生效，本地模式为 no-op）
+watch(
+  () => groupStore.currentGroupId,
+  (id) => {
+    if (id) void syncRemoteTurnsForGroup(id);
+  },
+  { immediate: true }
+);
+
 // 监听消息列表变化，自动滚动到底部
 watch(
   () => currentMessages.value.length,
@@ -208,6 +217,30 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 // ── 群聊列表操作 ──
 function selectGroup(id: string) {
   groupStore.selectGroup(id);
+  void syncRemoteTurnsForGroup(id);
+}
+
+/**
+ * 拉取服务端公共回合并合并到本地历史（跨设备历史同步）。
+ * 只在远端模式生效；合并按逻辑回合键幂等，重复切换不会产生重复消息。
+ */
+async function syncRemoteTurnsForGroup(groupId: string): Promise<void> {
+  const group = groupStore.groups.find((item) => item.id === groupId);
+  if (!group || group.members.length === 0) return;
+  const result = await chatStore.fetchRemoteGroupTurns({
+    group,
+    characters: characterStore.characters,
+  });
+  if (!result.enabled || result.turns.length === 0) return;
+
+  // 服务端成员 ID 是 Runtime UUID，需映射回本地角色卡
+  const runtimeToLocal = new Map(
+    characterStore.characters.map((character) => [
+      chatStore.runtimeCharacterIdFor(character),
+      character.id,
+    ]),
+  );
+  groupStore.mergeRemoteTurns(groupId, result.turns, runtimeToLocal);
 }
 
 function openCreateModal() {

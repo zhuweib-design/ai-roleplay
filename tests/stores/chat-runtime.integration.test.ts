@@ -211,6 +211,7 @@ describe('Chat Store — Runtime 实际链路', () => {
       occurredAt: input.occurredAt ?? '2026-09-23T00:00:00.000Z', status: 'pending' as const,
       attempts: 0, createdAt: '2026-09-23T00:00:00.000Z', updatedAt: '2026-09-23T00:00:00.000Z',
     }));
+    const listTurns = vi.fn<GroupRuntimeApi['listTurns']>(async () => []);
     const listPendingTurns = vi.fn<GroupRuntimeApi['listPendingTurns']>(async () => []);
     const retryPendingTurns = vi.fn<GroupRuntimeApi['retryPendingTurns']>(async () => []);
     const setGroupStatus = vi.fn<GroupRuntimeApi['setGroupStatus']>(async (input) => ({
@@ -223,7 +224,7 @@ describe('Chat Store — Runtime 实际链路', () => {
     const groups = createGroupRuntimeHttpHandler({
       createGroup: create, getGroupState, setGroupStatus, commitTurn: commit, buildMemberContext: context,
       enqueueTurn, listPendingTurns, retryPendingTurns,
-      addMember, removeMember, listTurns: async () => [],
+      addMember, removeMember, listTurns,
     });
     const single = createRuntimeHttpHandler(characterApi);
     const paths: string[] = [];
@@ -235,7 +236,7 @@ describe('Chat Store — Runtime 实际链路', () => {
     });
     const store = useChatStore();
     const input = { group, characters, speakerCharacterId: characters[0]!.id };
-    return { store, input, paths, context, create, getGroupState, addMember, removeMember, setGroupStatus, commit };
+    return { store, input, paths, context, create, getGroupState, addMember, removeMember, setGroupStatus, listTurns, commit };
   }
 
   it('远程群聊先确认群组，再走成员限定上下文，且不污染缓存的单角色 API', async () => {
@@ -310,6 +311,36 @@ describe('Chat Store — Runtime 实际链路', () => {
     expect(removed).toEqual({ enabled: true, synced: true });
     expect(removeMember).toHaveBeenCalledOnce();
     expect(removeMember.mock.calls[0]![1]).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('拉取服务端群聊公共回合，远端模式未启用时返回 enabled=false', async () => {
+    // 无 VITE_RUNTIME_BASE_URL → 纯本地模式
+    const localStore = useChatStore();
+    const localCharacter = makeCharacter('local-only');
+    const localGroup: GroupChat = {
+      id: 'local-group', name: '本地群', description: '', mode: 'natural', firstMessage: '',
+      messages: [], lastSpeakerId: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      members: [{ characterId: localCharacter.id, name: localCharacter.name, joinedAt: new Date().toISOString(), allowAutoSelect: true }],
+    };
+    const localResult = await localStore.fetchRemoteGroupTurns({
+      group: localGroup, characters: [localCharacter],
+    });
+    expect(localResult).toEqual({ enabled: false, turns: [] });
+
+    // 远端模式 → 走 listTurns 并透传服务端回合
+    const { store, input, listTurns } = setupGroupRemote();
+    listTurns.mockResolvedValueOnce([{
+      id: 'server-turn', groupId: 'g', turnId: 'turn-x', sequenceNo: 0,
+      speakerId: 'runtime-a', userMessage: '远地问', assistantMessage: '远地回答',
+      occurredAt: '2026-09-24T03:00:00.000Z', eventIds: {},
+    }]);
+    const remoteResult = await store.fetchRemoteGroupTurns({
+      group: input.group, characters: input.characters,
+    });
+    expect(remoteResult.enabled).toBe(true);
+    expect(remoteResult.turns).toHaveLength(1);
+    expect(remoteResult.turns[0]?.turnId).toBe('turn-x');
+    expect(listTurns).toHaveBeenCalledOnce();
   });
 
   it('群组归档状态先同步远端，服务端失败时本地生命周期不变', async () => {

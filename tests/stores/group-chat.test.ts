@@ -227,6 +227,35 @@ describe('group-chat store', () => {
       expect(store.lastError).toContain('上限');
     });
 
+    it('mergeRemoteTurns 按逻辑回合键幂等合并服务端历史', () => {
+      const { store, id } = setupGroup();
+      const g = store.groups[0]!;
+      // 模拟 Runtime UUID → 本地角色 ID 的映射
+      const map = new Map<string, string>([['rt-c1', 'c1'], ['rt-c2', 'c2']]);
+      const turns = [
+        { id: 't1', turnId: 'turn-1', speakerId: 'rt-c1',
+          userMessage: '第一问', assistantMessage: '第一答', occurredAt: '2026-09-24T01:00:00.000Z' },
+        { id: 't2', turnId: 'turn-2', speakerId: 'rt-c2',
+          userMessage: '第二问', assistantMessage: '第二答', occurredAt: '2026-09-24T02:00:00.000Z' },
+      ];
+
+      const before = g.messages.length;
+      expect(store.mergeRemoteTurns(id!, turns, map)).toBe(4);
+      expect(store.groups[0]!.messages.length).toBe(before + 4);
+
+      // 重复合并同一批回合：幂等，不再新增
+      expect(store.mergeRemoteTurns(id!, turns, map)).toBe(0);
+      expect(store.groups[0]!.messages.length).toBe(before + 4);
+
+      // 发言人映射到本地角色卡，并保留稳定 ID
+      const merged = store.groups[0]!.messages.filter((m) => m.id.startsWith('remote:'));
+      const assistant = merged.find((m) => m.id === 'remote:turn-1:assistant')!;
+      expect(assistant.characterId).toBe('c1');
+      expect(assistant.characterName).toBe('Alice');
+      // 按时间排序
+      expect(merged.map((m) => m.timestamp)).toEqual([...merged.map((m) => m.timestamp)].sort());
+    });
+
     it('replaceMembers 按服务端定义同步成员并拒绝非法成员数', () => {
       const { store, id } = setupGroup();
       const g = store.groups[0]!;

@@ -357,3 +357,23 @@
 - 冲突提示条与群聊停止按钮初版使用了低对比度配色，CI `Contrast audit` 报出 4 处新增回归（`.conflict-banner` 浅色 4.26:1；`.send-btn.stop-btn` dark 2.83 / midnight 1.90 / oled 1.90）。
 - 改为项目既有语义 token：提示条使用 `--warning-bg` + `--warning-text` + `--warning-border`（`--warning-text` 是 tokens.css 专为「警示色作文字」派生的可读变体）；停止按钮改用 danger 三件套 `--danger-bg` / `--danger-fg` / `--danger-border`，不用实心 `--danger`（深色主题下为浅红，白字不足）。
 - 复验：`a11y:contrast` 回到基线持平（131 = 131）并判定通过；`a11y:contrast:self-test` 正负样本可区分；群聊与对比度 E2E 7 项通过。
+
+## 2026-09-25 B1：服务端群聊历史回合接入 UI（跨设备历史同步）
+
+### 本轮实现
+
+- `group-chat` store 新增 `mergeRemoteTurns(groupId, turns, runtimeToLocalCharacterId)`：按 `logicalTurnId` 幂等合并服务端公共回合到本地消息历史。服务端来源消息使用稳定 ID `remote:<turnId>:user|assistant`，重复拉取与跨刷新不会产生重复消息；只追加、不删除、不覆盖本地已有消息，并在合并后按时间重排。
+- Chat Store 新增 `fetchRemoteGroupTurns({ group, characters })`：以群组任一有效成员身份调用 `listTurns`（服务端要求成员限定），远端模式未启用时返回 `enabled=false`，调用方保持纯本地历史；只读，不写服务端。
+- 群聊页在 `currentGroupId` 变化（含首次进入）时触发同步，把服务端成员 Runtime UUID 映射回本地角色卡后合并。
+
+### 验证记录
+
+- `group-chat` store 测试 38 项通过，新增覆盖：合并 2 个服务端回合产生 4 条消息、重复合并幂等返回 0、发言人正确映射到本地角色卡、消息按时间排序。
+- Chat Store Runtime 集成测试 15 项通过，新增覆盖：本地模式返回 `enabled=false`；远端模式经 `listTurns` 透传服务端回合。
+- 全量 Vitest 3437 项通过、3 项跳过；`vue-tsc --noEmit`、ESLint、`i18n:check:strict`（160 文件）通过。
+
+### 当前边界
+
+- 合并为「只追加」策略：本地与服务端对同一回合内容不一致时不做冲突判定，以本地已有记录为准。
+- 未实现分页拉取，`listTurns` 一次返回该群组全部公共回合；回合量很大时需补游标分页。
+- 服务端历史不含群聊系统消息（加入/离开/归档），这些仍只存在本地。
