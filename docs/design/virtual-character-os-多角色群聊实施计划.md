@@ -202,7 +202,8 @@
 ### 验证记录
 
 - 真实 PostgreSQL 16 迁移兼容性测试通过：先创建缺少 `version` 的旧版 `group_chats` 表和历史群组，再执行完整迁移；历史记录版本恢复为 0，约束存在，负版本写入被拒绝。
-- 群聊 PostgreSQL 集成测试共 2 项通过，包含旧部署升级、CAS 并发冲突、事务回滚、租户隔离、幂等及成员限定 Context。`r`n- 单角色 RuntimeStore 与群聊 Runtime 联合真实 PostgreSQL 集成测试：2 个测试文件、3 项通过，覆盖角色 Event/Snapshot/审计链路及群聊多角色原子提交。
+- 群聊 PostgreSQL 集成测试共 2 项通过，包含旧部署升级、CAS 并发冲突、事务回滚、租户隔离、幂等及成员限定 Context。
+- 单角色 RuntimeStore 与群聊 Runtime 联合真实 PostgreSQL 集成测试：2 个测试文件、3 项通过，覆盖角色 Event/Snapshot/审计链路及群聊多角色原子提交。
 
 ### 当前边界
 
