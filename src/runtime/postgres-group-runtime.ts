@@ -1,9 +1,24 @@
-import { GroupRuntimeError, type CreateRuntimeGroupInput, type CommitRuntimeGroupTurnInput, type SetRuntimeGroupStatusInput, type RuntimeGroupState, type RuntimeGroupTurn } from './group-runtime-contract';
-export { GroupRuntimeError, type CreateRuntimeGroupInput, type CommitRuntimeGroupTurnInput, type SetRuntimeGroupStatusInput, type RuntimeGroupTurn } from './group-runtime-contract';
+import { GroupRuntimeError, type CreateRuntimeGroupInput, type CommitRuntimeGroupTurnInput, type SetRuntimeGroupStatusInput, type RuntimeGroupState, type RuntimeGroupOutboxEntry, type RuntimeGroupTurn } from './group-runtime-contract';
+export { GroupRuntimeError, type CreateRuntimeGroupInput, type CommitRuntimeGroupTurnInput, type SetRuntimeGroupStatusInput, type RuntimeGroupOutboxEntry, type RuntimeGroupTurn } from './group-runtime-contract';
 import { RuntimeCore, reduceRuntimeState } from './runtime-core';
 import { isRuntimeUuid, stableRuntimeUuid } from './runtime-id';
 import { PostgresRuntimeStore, type SqlExecutor } from './postgres-store';
 import type { DomainEvent, RuntimeContext, RuntimeContextRequest, RuntimeSnapshot } from './types';
+
+interface OutboxRow {
+  group_id: string;
+  logical_turn_id: string;
+  speaker_id: string;
+  user_message: string;
+  assistant_message: string;
+  occurred_at: Date | string;
+  status: 'pending' | 'committed' | 'failed';
+  attempts: number | string;
+  last_error: string | null;
+  committed_turn_id: string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
 
 interface TurnRow {
   id: string;
@@ -86,6 +101,129 @@ export class PostgresGroupRuntime {
           [input.groupId, this.tenantId, characterId]
         );
       }
+    });
+  }
+
+  /**
+   * 入队一个待提交的群聊公共回合。
+   * 这是单条 INSERT，客户端可在调用原子提交之前先落库，避免标签页崩溃导致回合丢失。
+   * 同一 (groupId, logicalTurnId) 重复入队为幂等：只刷新内容与 updated_at，不重置 attempts。
+   */
+  async enqueueTurn(input: CommitRuntimeGroupTurnInput): Promise<RuntimeGroupOutboxEntry> {
+    uuid(input.groupId, '群组 ID');
+    uuid(input.speakerId, '发言角色 ID');
+    const logicalId = input.turnId.trim();
+    if (!logicalId || logicalId.length > 200) {
+      throw new GroupRuntimeError(400, 'INVALID_TURN_ID', '群组回合键长度须为 1 至 200');
+    }
+    if (!input.userMessage.trim() || !input.assistantMessage.trim()) {
+      throw new GroupRuntimeError(400, 'INVALID_MESSAGE', '群组消息不可为空');
+    }
+    const occurredAt = input.occurredAt ?? new Date().toISOString();
+    if (!Number.isFinite(Date.parse(occurredAt))) {
+      throw new GroupRuntimeError(400, 'INVALID_TIME', '群组时间格式无效');
+    }
+    return this.sql.transaction(async (tx) => {
+      await this.lockActiveGroup(tx, input.groupId);
+      const member = await tx.query(
+        `SELECT 1 FROM group_chat_members WHERE group_id = $1 AND tenant_id = $2
+           AND character_id = $3 AND status = 'active'`,
+        [input.groupId, this.tenantId, input.speakerId]
+      );
+      if (!member.rowCount) throw new GroupRuntimeError(403, 'MEMBER_FORBIDDEN', '发言角色不是有效群组成员');
+      const row = await tx.query<OutboxRow>(
+        `INSERT INTO group_turn_outbox
+           (group_id, tenant_id, logical_turn_id, speaker_id, user_message, assistant_message, occurred_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (group_id, logical_turn_id) DO UPDATE SET
+           speaker_id = EXCLUDED.speaker_id,
+           user_message = EXCLUDED.user_message,
+           assistant_message = EXCLUDED.assistant_message,
+           occurred_at = EXCLUDED.occurred_at,
+           updated_at = now()
+         RETURNING *`,
+        [input.groupId, this.tenantId, logicalId, input.speakerId,
+          input.userMessage, input.assistantMessage, occurredAt]
+      );
+      return this.toOutboxEntry(row.rows[0]!);
+    });
+  }
+
+  /** 读取待处理（pending / failed）的队列条目，按创建时间排序。 */
+  async listPendingTurns(groupId: string, limit = 50): Promise<RuntimeGroupOutboxEntry[]> {
+    uuid(groupId, '群组 ID');
+    const safeLimit = Number.isSafeInteger(limit) && limit > 0 && limit <= 200 ? limit : 50;
+    return this.sql.transaction(async (tx) => {
+      await this.requireGroup(tx, groupId);
+      const rows = await tx.query<OutboxRow>(
+        `SELECT * FROM group_turn_outbox
+          WHERE group_id = $1 AND tenant_id = $2 AND status IN ('pending', 'failed')
+          ORDER BY created_at, logical_turn_id LIMIT $3`,
+        [groupId, this.tenantId, safeLimit]
+      );
+      return rows.rows.map((row) => this.toOutboxEntry(row));
+    });
+  }
+
+  /**
+   * 服务端重放：尝试提交队列中所有 pending / failed 条目。
+   * 每个条目独立提交，失败只影响自身（标记 failed 并保留载荷），成功标记 committed。
+   * 由于 commitTurn 使用稳定逻辑回合键，重复调用是幂等的。
+   */
+  async retryPendingTurns(
+    groupId: string,
+    limit = 50
+  ): Promise<Array<{ turnId: string; status: 'committed' | 'failed'; error?: string }>> {
+    const entries = await this.listPendingTurns(groupId, limit);
+    const results: Array<{ turnId: string; status: 'committed' | 'failed'; error?: string }> = [];
+    for (const entry of entries) {
+      try {
+        await this.commitTurn({
+          groupId,
+          turnId: entry.turnId,
+          speakerId: entry.speakerId,
+          userMessage: entry.userMessage,
+          assistantMessage: entry.assistantMessage,
+          occurredAt: entry.occurredAt,
+        });
+        results.push({ turnId: entry.turnId, status: 'committed' });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        await this.markGroupTurnFailed(groupId, entry.turnId, message);
+        results.push({ turnId: entry.turnId, status: 'failed', error: message });
+      }
+    }
+    return results;
+  }
+
+  /** 把队列条目标记为已提交，并关联到公共回合。 */
+  async markGroupTurnCommitted(groupId: string, turnId: string, committedTurnId: string): Promise<void> {
+    uuid(groupId, '群组 ID');
+    uuid(committedTurnId, '回合 ID');
+    const logicalId = turnId.trim();
+    await this.sql.transaction(async (tx) => {
+      const result = await tx.query(
+        `UPDATE group_turn_outbox
+            SET status = 'committed', committed_turn_id = $4, last_error = NULL, updated_at = now()
+          WHERE group_id = $1 AND tenant_id = $2 AND logical_turn_id = $3`,
+        [groupId, this.tenantId, logicalId, committedTurnId]
+      );
+      if (!result.rowCount) throw new GroupRuntimeError(404, 'OUTBOX_NOT_FOUND', '队列条目不存在');
+    });
+  }
+
+  /** 记录一次提交失败，保留 pending 载荷供重试。 */
+  async markGroupTurnFailed(groupId: string, turnId: string, message: string): Promise<void> {
+    uuid(groupId, '群组 ID');
+    const logicalId = turnId.trim();
+    await this.sql.transaction(async (tx) => {
+      const result = await tx.query(
+        `UPDATE group_turn_outbox
+            SET status = 'failed', attempts = attempts + 1, last_error = $4, updated_at = now()
+          WHERE group_id = $1 AND tenant_id = $2 AND logical_turn_id = $3`,
+        [groupId, this.tenantId, logicalId, message.slice(0, 2000)]
+      );
+      if (!result.rowCount) throw new GroupRuntimeError(404, 'OUTBOX_NOT_FOUND', '队列条目不存在');
     });
   }
 
@@ -315,10 +453,43 @@ export class PostgresGroupRuntime {
       }
       await tx.query('UPDATE group_chats SET next_sequence = $3 WHERE id = $1 AND tenant_id = $2',
         [input.groupId, this.tenantId, sequenceNo + 1]);
+      // 若该回合已进入服务端 outbox，原子提交成功后在同事务内标记为已提交
+      await tx.query(
+        `UPDATE group_turn_outbox
+            SET status = 'committed', committed_turn_id = $4, last_error = NULL, updated_at = now()
+          WHERE group_id = $1 AND tenant_id = $2 AND logical_turn_id = $3`,
+        [input.groupId, this.tenantId, logicalId, turnId]
+      );
       return { id: turnId, groupId: input.groupId, turnId: logicalId, sequenceNo,
         speakerId: input.speakerId, userMessage: input.userMessage,
         assistantMessage: input.assistantMessage, occurredAt, eventIds };
     });
+  }
+
+  private toOutboxEntry(row: OutboxRow): RuntimeGroupOutboxEntry {
+    return {
+      groupId: row.group_id,
+      turnId: row.logical_turn_id,
+      speakerId: row.speaker_id,
+      userMessage: row.user_message,
+      assistantMessage: row.assistant_message,
+      occurredAt: new Date(row.occurred_at).toISOString(),
+      status: row.status,
+      attempts: Number(row.attempts),
+      ...(row.last_error === null ? {} : { lastError: row.last_error }),
+      ...(row.committed_turn_id === null ? {} : { committedTurnId: row.committed_turn_id }),
+      createdAt: new Date(row.created_at).toISOString(),
+      updatedAt: new Date(row.updated_at).toISOString(),
+    };
+  }
+
+  /** 读取队列相关操作所需的群组存在性校验（允许归档群组读取队列）。 */
+  private async requireGroup(tx: SqlExecutor, groupId: string): Promise<void> {
+    const group = await tx.query(
+      'SELECT 1 FROM group_chats WHERE id = $1 AND tenant_id = $2',
+      [groupId, this.tenantId]
+    );
+    if (!group.rowCount) throw new GroupRuntimeError(404, 'GROUP_NOT_FOUND', '群组不存在或不属于当前租户');
   }
 
   private async toTurn(tx: SqlExecutor, row: TurnRow): Promise<RuntimeGroupTurn> {

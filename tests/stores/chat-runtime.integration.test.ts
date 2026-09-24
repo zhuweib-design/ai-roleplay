@@ -151,6 +151,14 @@ describe('Chat Store — Runtime 实际链路', () => {
     const removeMember = vi.fn<GroupRuntimeApi['removeMember']>(async (groupId) => ({
       groupId, name: '远程测试群', status: 'active', version: 4, memberIds: ['group-a'],
     }));
+    const enqueueTurn = vi.fn<GroupRuntimeApi['enqueueTurn']>(async (input) => ({
+      groupId: input.groupId, turnId: input.turnId, speakerId: input.speakerId,
+      userMessage: input.userMessage, assistantMessage: input.assistantMessage,
+      occurredAt: input.occurredAt ?? '2026-09-23T00:00:00.000Z', status: 'pending' as const,
+      attempts: 0, createdAt: '2026-09-23T00:00:00.000Z', updatedAt: '2026-09-23T00:00:00.000Z',
+    }));
+    const listPendingTurns = vi.fn<GroupRuntimeApi['listPendingTurns']>(async () => []);
+    const retryPendingTurns = vi.fn<GroupRuntimeApi['retryPendingTurns']>(async () => []);
     const setGroupStatus = vi.fn<GroupRuntimeApi['setGroupStatus']>(async (input) => ({
       groupId: input.groupId, name: '远程测试群', status: input.status, version: 5,
       memberIds: ['group-a', 'group-b'],
@@ -160,6 +168,7 @@ describe('Chat Store — Runtime 实际链路', () => {
     }));
     const groups = createGroupRuntimeHttpHandler({
       createGroup: create, getGroupState, setGroupStatus, commitTurn: commit, buildMemberContext: context,
+      enqueueTurn, listPendingTurns, retryPendingTurns,
       addMember, removeMember, listTurns: async () => [],
     });
     const single = createRuntimeHttpHandler(characterApi);

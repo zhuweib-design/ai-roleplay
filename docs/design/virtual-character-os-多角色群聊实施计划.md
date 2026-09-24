@@ -288,3 +288,23 @@
 
 - 「以服务端为准」只对齐成员与生命周期，不处理本地消息历史与服务端回合历史的差异；历史同步仍待后续阶段。
 - 冲突提示依赖当前群组视图，跨群组的冲突需切换到对应群聊处理。
+
+## 2026-09-24 0.3.0 阶段四：服务端可靠投递队列（outbox）
+
+### 本轮实现
+
+- 新增 `group_turn_outbox` 表：租户隔离、`(group_id, logical_turn_id)` 唯一、状态机 `pending / committed / failed`、`attempts` 与 `last_error`、`committed_turn_id` 关联公共回合；权威 Schema 与迁移文件经 `runtime:db:schema:sync` 同步。
+- `PostgresGroupRuntime` 新增 `enqueueTurn`、`listPendingTurns`、`retryPendingTurns`，并保留 `markGroupTurnCommitted` / `markGroupTurnFailed` 内部能力：入队为单条 INSERT 且幂等（重复入队刷新内容但不重置 `attempts`）；`commitTurn` 成功时在同一事务内把对应条目标记为 `committed`。
+- 群聊 HTTP 新增 `POST /v1/runtime/groups/:id/outbox`、`GET /v1/runtime/groups/:id/outbox`、`POST /v1/runtime/groups/:id/outbox/retry`，客户端同步暴露三个方法。
+- Chat Store 的公共回合提交改为「先入队持久化，再原子提交」：标签页在提交前崩溃时，服务端仍保留 pending 记录；新增 `retryRemoteGroupOutbox` 触发服务端重放，并清理本地已提交条目。
+
+### 验证记录
+
+- 群聊 HTTP 测试 22 项通过，新增覆盖 outbox 入队/查询/重放路由与客户端请求方法。
+- 真实 PostgreSQL 集成测试通过：入队幂等、提交成功后自动出清并关联 `committed_turn_id`、故障导致提交失败后条目保留 pending、故障解除后服务端重放成功并出清。
+- 全量 Vitest 3433 项通过、3 项跳过；`vue-tsc --noEmit`、ESLint、`i18n:check:strict`、Schema 漂移检查通过。
+
+### 当前边界
+
+- 服务端 outbox 提供持久化与显式重放，但尚未接入后台自动重试调度；目前由客户端或运维显式触发。
+- 本地 StorageAdapter 队列仍保留作为离线兜底，两套队列通过稳定逻辑回合键对齐，不做双向同步。

@@ -31,6 +31,26 @@ export interface CommitRuntimeGroupTurnInput {
   occurredAt?: string;
 }
 
+/**
+ * 服务端可靠投递队列条目。
+ * 客户端先入队（单条 INSERT 即可持久化），再尝试原子提交；
+ * 提交失败时保留 pending，供显式重试。
+ */
+export interface RuntimeGroupOutboxEntry {
+  groupId: string;
+  turnId: string;
+  speakerId: string;
+  userMessage: string;
+  assistantMessage: string;
+  occurredAt: string;
+  status: 'pending' | 'committed' | 'failed';
+  attempts: number;
+  lastError?: string;
+  committedTurnId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface RuntimeGroupTurn {
   id: string;
   groupId: string;
