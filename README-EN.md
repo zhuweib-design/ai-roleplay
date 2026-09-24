@@ -91,7 +91,7 @@ npm run a11y:contrast # Accessibility contrast (≥ AA 4.5:1)
 npm run tauri:build   # Desktop build check
 ```
 
-> CI (`.github/workflows/ci.yml`) runs lint → runtime schema drift → i18n → coverage/build → contrast → Playwright e2e → Tauri build; `v*` tags or manual trigger produce signed installers.
+> CI (`.github/workflows/ci.yml`) runs lint → runtime schema drift → i18n → coverage/build → contrast, plus an isolated Runtime PostgreSQL job (postgres:16 service) → Playwright e2e → Tauri build; `v*` tags or manual trigger produce signed installers.
 
 **Runtime changes (`src/runtime/`, `migrations/`) add:**
 

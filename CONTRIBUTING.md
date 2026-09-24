@@ -38,7 +38,7 @@
    npm run typecheck                # Runtime 类型与契约检查
    ```
 
-   改动 Runtime 事务、群聊或 Schema 时，除单元测试外还需真实 PostgreSQL 验证（本地 Docker 或 CI 服务）：
+   改动 Runtime 事务、群聊或 Schema 时，除单元测试外还需真实 PostgreSQL 验证。CI 的 `runtime-postgres` job 已用 `postgres:16-alpine` service 自动执行；本地复现命令如下：
 
    ```bash
    # macOS / Linux / CI
