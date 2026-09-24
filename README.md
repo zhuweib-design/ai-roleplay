@@ -85,7 +85,7 @@ npm run build
 **Web 端（改动前端资源时必跑）**
 
 ```bash
-npm run lint               # ESLint（0 error）
+npm run lint               # ESLint（0 error / 0 warning）
 npm run i18n:check:strict  # i18n 严格扫描（无硬编码中文）
 npm run check:css-conventions  # CSS 约定守卫（5 项合一：断点单一来源 / 动态视口 / 触屏 hover / !important 棘轮 / 可编辑控件字号 I-7）
 npm run a11y:contrast      # 无障碍对比度（≥ AA 4.5:1）
@@ -100,9 +100,9 @@ npm run check:csp          # Web 端 CSP 契约守卫（CSP 未被移除/削弱 
 npm run tauri:build        # 桌面端编译验证（需 Rust 工具链，耗时较长）
 ```
 
-> CI（`.github/workflows/ci.yml`）的 `quality-gates` 按序执行：lint → i18n strict → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7，五项合一）→ 对比度审计 → 覆盖率 → 构建 → CSP 守卫。另有独立 job：Playwright E2E（桌面 + 移动双 project）、Tauri 编译、Tauri 发布（打 `v*` tag 或手动触发时产出签名安装包）。
+> CI（`.github/workflows/ci.yml`）的 `quality-gates` 按序执行：lint → Runtime Schema 漂移检查 → i18n strict → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7，五项合一）→ 对比度审计 → 覆盖率 → 构建 → CSP 守卫。另有独立 job：Playwright E2E（桌面 + 移动双 project）、Tauri 编译、Tauri 发布（打 `v*` tag 或手动触发时产出签名安装包）。
 
-**Runtime 改动（`src/runtime/`、`migrations/` 时追加）**
+**Runtime 改动（`src/runtime/`、`migrations/` 时追加；Schema 漂移检查已并入 CI `quality-gates`）**
 
 ```bash
 npm run runtime:db:schema:check  # 迁移文件与权威 Schema 文档漂移检查

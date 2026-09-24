@@ -82,7 +82,7 @@ npm run build
 Commands mirror CI; run them locally before committing:
 
 ```bash
-npm run lint          # ESLint (0 errors)
+npm run lint          # ESLint (0 errors / 0 warnings)
 npm run typecheck     # vue-tsc --noEmit
 npm run test          # Vitest unit tests
 npm run test:coverage # Coverage (statements ≥78 / branches ≥73)
@@ -91,7 +91,7 @@ npm run a11y:contrast # Accessibility contrast (≥ AA 4.5:1)
 npm run tauri:build   # Desktop build check
 ```
 
-> CI (`.github/workflows/ci.yml`) runs lint → i18n → coverage/build → contrast → Playwright e2e → Tauri build; `v*` tags or manual trigger produce signed installers.
+> CI (`.github/workflows/ci.yml`) runs lint → runtime schema drift → i18n → coverage/build → contrast → Playwright e2e → Tauri build; `v*` tags or manual trigger produce signed installers.
 
 **Runtime changes (`src/runtime/`, `migrations/`) add:**
 

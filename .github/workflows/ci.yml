@@ -47,6 +47,10 @@ jobs:
       - name: Lint (eslint .)
         run: npm run lint
 
+      # Runtime Schema 漂移门禁：迁移文件必须与权威 Schema 文档逐字一致
+      - name: Runtime schema drift check
+        run: npm run runtime:db:schema:check
+
       # i18n 扫描门禁：strict 模式, 全量无硬编码中文残留才通过
       - name: i18n check (strict)
         run: npm run i18n:check:strict
