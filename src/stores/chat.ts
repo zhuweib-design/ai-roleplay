@@ -381,14 +381,16 @@ export const useChatStore = defineStore('chat', () => {
         description: card.description,
         speakingStyle: card.personality,
       },
+      // i18n-ignore-start  // 写入 Runtime 的种子记忆内容属模型面文本，非 UI 文案
       seedMemories: [
         ...(card.description.trim()
           ? [{ type: 'semantic' as const, content: card.description.trim(), importance: 0.5 }]
           : []),
         ...(card.scenario.trim()
-          ? [{ type: 'episodic' as const, content: `场景：${card.scenario.trim()}`, importance: 0.4 }] // i18n-ignore
+          ? [{ type: 'episodic' as const, content: `场景：${card.scenario.trim()}`, importance: 0.4 }]
           : []),
       ],
+      // i18n-ignore-end
     };
   }
 

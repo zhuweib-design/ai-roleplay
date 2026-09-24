@@ -81,7 +81,8 @@ function isIgnored(rel, ignoreList) {
  * 返回 '' 表示该行整体为注释/日志，跳过。
  */
 function effectiveCode(line, state) {
-  let text = line;
+  // Windows 检出为 CRLF：行尾会残留 \r，导致「行尾 // i18n-ignore」与其它行尾判断失效
+  let text = line.endsWith('\r') ? line.slice(0, -1) : line;
 
   // ⓪ 显式豁免标记（LLM 提示词 / mock 数据，非 UI 文案）
   //  - 行尾 // i18n-ignore            → 本行跳过
