@@ -2591,6 +2591,10 @@ function strategyLabel(s: LorebookStrategy): string {
   }
   .entries-list-panel {
     display: flex;
+    /* 必须显式指定列方向：默认 row 会让 .entries-list 的 flex:1 被头部挤压为 0 宽，
+       导致条目树在移动端实际不可见、不可点选（移动视口 E2E 已捕获该回归）。 */
+    flex-direction: column;
+    min-height: 0;
     max-height: 38vh;
     overflow-y: auto;
   }

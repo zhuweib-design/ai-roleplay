@@ -100,7 +100,7 @@ npm run check:csp          # Web 端 CSP 契约守卫（CSP 未被移除/削弱 
 npm run tauri:build        # 桌面端编译验证（需 Rust 工具链，耗时较长）
 ```
 
-> CI（`.github/workflows/ci.yml`）的 `quality-gates` 按序执行：lint → Runtime Schema 漂移检查 → i18n strict → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7，五项合一）→ 对比度审计 → 覆盖率 → 构建 → CSP 守卫。另有独立 job：Runtime PostgreSQL 集成（postgres:16 service，真实事务/并发/回滚）、Playwright E2E（桌面 + 移动双 project）、Tauri 编译、Tauri 发布（打 `v*` tag 或手动触发时产出签名安装包）。
+> CI（`.github/workflows/ci.yml`）的 `quality-gates` 按序执行：lint → Runtime Schema 漂移检查 → i18n strict → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7，五项合一）→ 对比度审计 → 覆盖率 → 构建 → CSP 守卫。另有独立 job：Runtime PostgreSQL 集成（postgres:16 service，真实事务/并发/回滚）、Playwright E2E（桌面功能 + 移动端布局 + 移动端核心功能三 project）、Tauri 编译、Tauri 发布（打 `v*` tag 或手动触发时产出签名安装包）。
 
 **Runtime 改动（`src/runtime/`、`migrations/` 时追加；Schema 漂移检查已并入 CI `quality-gates`）**
 

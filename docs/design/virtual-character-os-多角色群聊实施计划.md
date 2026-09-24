@@ -327,3 +327,27 @@
 
 - 状态面板只读展示，尚不支持在界面上编辑情绪、关系或记忆；写入仍必须经过 Reducer 与受控事件入口。
 - 回放自检以空事件基准重放当前事件流，用于校验 Reducer 确定性；不替代离线审计所需的初始快照归档。
+
+## 2026-09-24 0.3.0 阶段六：全流程全功能全 UI 验证与移动端缺陷修复
+
+### 本轮实现
+
+- 新增 `mobile-functional` Playwright project：把核心用户旅程（对话、群聊、批量导入、角色 CRUD、备份恢复、世界书）在 Pixel 5 视口下重跑，补齐此前仅覆盖布局的「手机端全功能」缺口。
+- `e2e/chat-flow.spec.ts` 按视口宽度适配：移动端先展开角色抽屉再选择角色，桌面端路径不变。
+
+### 本轮修复（由移动视口回归捕获的真实缺陷）
+
+1. **世界书条目树在移动端宽度坍缩**：`.entries-list-panel` 仅在移动断点定义为 `display:flex`，默认 `flex-direction:row` 使 `flex:1` 的 `.entries-list` 被头部挤压为 0 宽，条目树实际不可见、不可点选。修复为显式 `flex-direction:column` + `min-height:0`。修复前实测 `entry-tree-item` 宽度 0，修复后 393。
+2. **移动端选中角色后抽屉不关闭**：`selectCharacter` 只切换角色不关闭抽屉，覆盖层拦截对话发送按钮。修复为角色列表选中后调用 `closeAllDrawers()`（桌面端抽屉常驻，关闭为无操作）。
+
+### 验证记录
+
+- 全量 Playwright E2E：**31 项通过**，覆盖桌面 19 项、手机功能 9 项、手机布局 3 项；使用本地 Edge（桌面）与 Pixel 5 视口（393×851 / DPR 2.75 / isMobile / hasTouch）。
+- 全量 Vitest：3435 项通过、3 项跳过。
+- 生产构建通过（仍有既有大分包告警）。
+- `vue-tsc --noEmit`、ESLint、`i18n:check:strict`（160 个文件）、CSS 约定守卫（5/5）、Schema 漂移检查通过。
+
+### 当前边界
+
+- 本轮验证为本地浏览器（Edge）与移动视口仿真，不是真实移动设备或独立虚拟机镜像；移动端真机验收仍需在发布前补做。
+- 桌面端与移动端均在 Chromium 内核（Edge）下验证，未覆盖 WebKit / Gecko。

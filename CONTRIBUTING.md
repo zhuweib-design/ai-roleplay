@@ -63,6 +63,13 @@
    npm run test:e2e           # Playwright（本地复用系统 Edge；CI 用自带 chromium）
    ```
 
+   Playwright 现包含三个 project：桌面功能（`msedge`）、移动端布局（Pixel 5，`e2e/mobile/`）、移动端核心功能（Pixel 5，对话/群聊/批量导入/角色 CRUD/备份恢复/世界书）。
+   仅跑移动端核心功能回归：
+
+   ```bash
+   npx playwright test --project=mobile-functional-msedge
+   ```
+
    > 快速迭代时，`npm run typecheck` 可替代 `npm run build` 单独做类型检查；`npm run test` 可替代 `npm run test:coverage` 跳过覆盖率统计。
    > 完整门禁链与顺序请直接查阅 `.github/workflows/ci.yml`，本清单不再复述阈值以外的细节。
 
