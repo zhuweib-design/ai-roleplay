@@ -3,6 +3,21 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 版本格式：`0.Y.Z`。`0` 为里程碑，`Y` 为功能/发布，`Z` 为修复。
 
+## [0.6.0] - 2026-09-27
+
+### 新增
+- **Appraisal Engine**：根据事件、人格特质、价值观、目标、对象态度、关系和历史评价重要性、目标相关性、价值冲突、背叛、威胁、损失、社会显著性、意外性与目标显著性，并生成可审计的影响强度。
+- **Behavior Planner**：根据评价和状态输出目标、策略、强势度、温度、直接度、情绪表达、边界约束、语音指令和置信度；不生成自然语言、不直接修改状态。
+- **长期状态惰性衰减**：Attitude 与 Relationship 支持按对象配置半衰期和基线，未配置时继续保持旧数据行为。
+
+### 强化
+- Runtime State Reducer 先评价再应用缺省事件影响；显式事件 effects 优先，旧事件可继续 Replay。
+- Appraisal 写入 StateChange 审计摘要，Runtime Context 自动提供最近评价与 Behavior Plan，聊天桥接将其作为内部状态指导传给模型。
+- 背叛、价值冲突、威胁、失去和积极事件可在没有显式 effects 时产生温和的默认情绪、态度和关系影响。
+
+### 兼容
+- 没有新增数据库迁移；旧 Runtime Snapshot、事件和对话数据可继续加载，旧态度与关系未配置 half-life 时不自动衰减。
+
 ## [0.5.0] - 2026-09-27
 
 ### 新增
@@ -109,6 +124,8 @@
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储。
 - 扩展沙箱默认拒绝权限，社区扩展默认不自动执行。
 
+[0.6.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.6.0
+[0.5.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.5.0
 [0.3.1]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.3.1
 [0.5.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.5.0
 [0.4.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.4.0

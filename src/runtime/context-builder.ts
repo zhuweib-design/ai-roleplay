@@ -1,5 +1,7 @@
-import { decayEmotions, decayMood, nowIso } from './emotion-engine';
-import type { RuntimeContext, RuntimeContextRequest, RuntimeSnapshot } from './types';
+import { decayAttitudes, decayEmotions, decayMood, decayRelationships, nowIso } from './emotion-engine';
+import { evaluateAppraisal } from './appraisal-engine';
+import { planBehavior } from './behavior-planner';
+import type { AppraisalResult, BehaviorPlan, DomainEvent, RuntimeContext, RuntimeContextRequest, RuntimeSnapshot } from './types';
 
 /**
  * 从 Runtime Snapshot 组装送入行为规划器/LLM 的上下文。
@@ -24,6 +26,25 @@ export function buildRuntimeContext(
     .filter((episode) => !request.targetId || episode.targetId === request.targetId)
     .sort((a, b) => b.salience - a.salience || Date.parse(b.lastEventAt) - Date.parse(a.lastEventAt))
     .slice(0, maxEpisodes);
+  const targetEvents = [...snapshot.events]
+    .filter((event) => !request.targetId || event.targetId === request.targetId)
+    .sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt) || a.id.localeCompare(b.id));
+  const contextEvent: DomainEvent | undefined = targetEvents.at(-1);
+  const latestChange = contextEvent
+    ? [...snapshot.stateChanges].reverse().find((change) => change.eventId === contextEvent.id)
+    : undefined;
+  const stored = latestChange?.changes.appraisal;
+  const appraisal: AppraisalResult | undefined = stored && typeof stored === 'object'
+    ? stored as AppraisalResult
+    : contextEvent
+      ? evaluateAppraisal({ snapshot, event: contextEvent })
+      : undefined;
+  const behaviorPlan: BehaviorPlan = planBehavior({
+    snapshot,
+    event: contextEvent,
+    appraisal,
+    memories: relevantMemories,
+  });
   const recentEvents = [...snapshot.events]
     .filter((event) => !request.targetId || event.targetId === request.targetId)
     .filter((event) => {
@@ -43,11 +64,13 @@ export function buildRuntimeContext(
     currentState: {
       emotions: decayEmotions(snapshot.character.emotions, now),
       mood: decayMood(snapshot.character.mood, now),
-      attitudes: snapshot.character.attitudes,
-      relationships: snapshot.character.relationships,
+      attitudes: decayAttitudes(snapshot.character.attitudes, now),
+      relationships: decayRelationships(snapshot.character.relationships, now),
     },
     recentEvents,
     relevantMemories,
     relevantEpisodes,
+    appraisal,
+    behaviorPlan,
   };
 }

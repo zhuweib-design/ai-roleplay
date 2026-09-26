@@ -1,5 +1,7 @@
 export * from './types';
 export * from './emotion-engine';
+export * from './appraisal-engine';
+export * from './behavior-planner';
 export * from './character-compiler';
 export * from './store';
 export * from './runtime-core';

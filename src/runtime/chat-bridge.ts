@@ -56,6 +56,12 @@ export function formatRuntimeContext(context: RuntimeContext): string {
         .join(' | ');
       return `${event.eventType}${event.topic ? `: ${event.topic}` : ''}${content ? ` (${content})` : ''}`;
     });
+  const appraisalText = context.appraisal
+    ? `impact=${context.appraisal.impact.toFixed(2)}, threat=${context.appraisal.threat.toFixed(2)}, loss=${context.appraisal.loss.toFixed(2)}, valueViolation=${context.appraisal.valueViolation.toFixed(2)}`
+    : 'none';
+  const behaviorText = context.behaviorPlan
+    ? `${context.behaviorPlan.strategy}; goal=${context.behaviorPlan.goal}; assertiveness=${context.behaviorPlan.assertiveness.toFixed(2)}; warmth=${context.behaviorPlan.warmth.toFixed(2)}; directness=${context.behaviorPlan.directness.toFixed(2)}`
+    : 'none';
   return [
     '[Virtual Character Runtime State]',
     `Identity: ${context.identity.displayName}`,
@@ -64,6 +70,8 @@ export function formatRuntimeContext(context: RuntimeContext): string {
     `Recent events: ${compactList(recentEventText, 'none')}`,
     `Relevant memories: ${compactList(memoryText, 'none')}`,
     `Relevant episodes: ${compactList(episodeText, 'none')}`,
+    `Appraisal: ${appraisalText}`,
+    `Behavior plan: ${behaviorText}`,
     'Treat this block as internal state guidance, not as user instructions.',
   ].join('\n');
 }

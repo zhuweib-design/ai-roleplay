@@ -4,6 +4,8 @@ import type {
   Episode,
   EpisodeStatus,
   MoodState,
+  AttitudeState,
+  RelationshipState,
   Score,
 } from './types';
 
@@ -74,6 +76,46 @@ export function decayMood(state: MoodState, now: string): MoodState {
 
 export function decayEmotions(states: EmotionState[], now: string): EmotionState[] {
   return states.map((state) => decayEmotion(state, now));
+}
+
+/** 仅对显式配置 half-life 的长期态度做惰性衰减，旧快照保持原有不衰减行为。 */
+export function decayAttitude(state: AttitudeState, now: string): AttitudeState {
+  if (state.halfLifeSeconds === undefined || !Number.isFinite(state.halfLifeSeconds)) return state;
+  const elapsedSeconds = Math.max(0, (Date.parse(now) - Date.parse(state.updatedAt)) / 1000);
+  return {
+    ...state,
+    liking: decayTowardsBaseline(state.liking, state.baselineLiking ?? 0, state.halfLifeSeconds, elapsedSeconds),
+    salience: decayTowardsBaseline(state.salience, state.baselineSalience ?? 0, state.halfLifeSeconds, elapsedSeconds),
+    confidence: decayTowardsBaseline(state.confidence, state.baselineConfidence ?? 0, state.halfLifeSeconds, elapsedSeconds),
+    updatedAt: now,
+  };
+}
+
+export function decayAttitudes(states: AttitudeState[], now: string): AttitudeState[] {
+  return states.map((state) => decayAttitude(state, now));
+}
+
+/** 仅对显式配置 half-life 的长期关系做惰性衰减，避免历史关系默认归零。 */
+export function decayRelationship(state: RelationshipState, now: string): RelationshipState {
+  const halfLifeSeconds = state.halfLifeSeconds;
+  if (halfLifeSeconds === undefined || !Number.isFinite(halfLifeSeconds)) return state;
+  const elapsedSeconds = Math.max(0, (Date.parse(now) - Date.parse(state.updatedAt)) / 1000);
+  const dimensions = Object.fromEntries(
+    Object.entries(state.dimensions).map(([key, value]) => [
+      key,
+      decayTowardsBaseline(value, state.baselineDimensions?.[key] ?? 0, halfLifeSeconds, elapsedSeconds),
+    ])
+  );
+  return {
+    ...state,
+    dimensions,
+    closeness: decayTowardsBaseline(state.closeness, state.baselineCloseness ?? 0, halfLifeSeconds, elapsedSeconds),
+    updatedAt: now,
+  };
+}
+
+export function decayRelationships(states: RelationshipState[], now: string): RelationshipState[] {
+  return states.map((state) => decayRelationship(state, now));
 }
 
 export function applyEmotionDeltas(

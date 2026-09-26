@@ -37,6 +37,11 @@ export interface AttitudeState {
   salience: Score;
   confidence: Score;
   evidenceCount: number;
+  /** 可选的长期态度半衰期；未配置时保持历史行为，不自动衰减。 */
+  halfLifeSeconds?: number;
+  baselineLiking?: Score;
+  baselineSalience?: Score;
+  baselineConfidence?: Score;
   updatedAt: string;
 }
 
@@ -44,6 +49,10 @@ export interface RelationshipState {
   targetId: string;
   dimensions: Record<string, Score>;
   closeness: Score;
+  /** 可选的关系半衰期；未配置时保持历史行为，不自动衰减。 */
+  halfLifeSeconds?: number;
+  baselineCloseness?: Score;
+  baselineDimensions?: Record<string, Score>;
   updatedAt: string;
 }
 
@@ -166,11 +175,18 @@ export interface EventEffects {
     liking?: Score;
     salience?: Score;
     confidence?: Score;
+    halfLifeSeconds?: number;
+    baselineLiking?: Score;
+    baselineSalience?: Score;
+    baselineConfidence?: Score;
   };
   relationshipDelta?: {
     targetId?: string;
     dimensions?: Record<string, Score>;
     closeness?: Score;
+    halfLifeSeconds?: number;
+    baselineCloseness?: Score;
+    baselineDimensions?: Record<string, Score>;
   };
   resolveEpisodeId?: string;
   memory?: {
@@ -196,6 +212,38 @@ export interface DomainEvent {
   sourceTurnId?: string;
   /** 可选的规范化 Turn UUID 列表，用于建立一个 Event 与多条原始 Turn 的关联。 */
   sourceTurnIds?: string[];
+}
+
+/**
+ * Appraisal Engine 的结构化评价结果。
+ * 评价是事件到状态之间的中间产物，不等同于最终情绪，也不直接写入 Prompt。
+ */
+export interface AppraisalResult {
+  importance: Score;
+  goalRelevance: Score;
+  valueViolation: Score;
+  betrayal: Score;
+  threat: Score;
+  loss: Score;
+  socialSignificance: Score;
+  surprise: Score;
+  targetSalience: Score;
+  /** 按人格敏感度、关系和目标相关性合成的本轮影响强度。 */
+  impact: Score;
+  reasons: string[];
+}
+
+/** Behavior Planner 输出的表达策略，不生成自然语言。 */
+export interface BehaviorPlan {
+  goal: string;
+  strategy: string;
+  assertiveness: Score;
+  warmth: Score;
+  directness: Score;
+  emotionExpression: Record<string, Score>;
+  constraints: string[];
+  speechDirectives: Record<string, unknown>;
+  confidence: Score;
 }
 
 export interface StateChange {
@@ -259,6 +307,8 @@ export interface RuntimeContext {
   recentEvents: DomainEvent[];
   relevantMemories: MemoryRecord[];
   relevantEpisodes: Episode[];
+  appraisal?: AppraisalResult;
+  behaviorPlan?: BehaviorPlan;
 }
 
 export interface RuntimeCharacterListRequest {
@@ -338,4 +388,6 @@ export interface RuntimeReduceResult {
   stateChange: StateChange;
   createdMemory?: MemoryRecord;
   changedEpisode?: Episode;
+  appraisal?: AppraisalResult;
+  behaviorPlan?: BehaviorPlan;
 }

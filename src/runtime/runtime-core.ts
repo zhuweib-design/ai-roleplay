@@ -3,8 +3,10 @@ import {
   applyMoodDelta,
   clamp,
   computeSalience,
+  decayAttitudes,
   decayEmotions,
   decayMood,
+  decayRelationships,
   maxEmotionIntensity,
   nowIso,
   residualInfluence,
@@ -12,12 +14,16 @@ import {
   shouldStartEpisode,
   updateEpisodeStatus,
 } from './emotion-engine';
+import { deriveAppraisalEffects, evaluateAppraisal } from './appraisal-engine';
+import { planBehavior } from './behavior-planner';
 import { compileCharacter } from './character-compiler';
 import { createRuntimeSnapshot, OptimisticLockError, RuntimeAlreadyExistsError, RuntimeConflictError } from './store';
 import { buildRuntimeContext } from './context-builder';
 import { stableChatConversationTurnIds } from './runtime-id';
 import type {
   AttitudeState,
+  AppraisalResult,
+  BehaviorPlan,
   CharacterCompileInput,
   CharacterDefinition,
   DomainEvent,
@@ -71,10 +77,6 @@ function stableId(namespace: string, ...parts: string[]): string {
   ].join('-');
 }
 
-function asEffects(event: DomainEvent): EventEffects {
-  return event.effects ?? {};
-}
-
 function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (!value || typeof value !== 'object') return value;
@@ -122,6 +124,18 @@ function updateAttitude(
     salience: clamp((previous?.salience ?? 0) + (input?.salience ?? 0)),
     confidence: clamp((previous?.confidence ?? 0) + (input?.confidence ?? 0)),
     evidenceCount: (previous?.evidenceCount ?? 0) + 1,
+    ...(input?.halfLifeSeconds !== undefined || previous?.halfLifeSeconds !== undefined
+      ? { halfLifeSeconds: Math.max(0, input?.halfLifeSeconds ?? previous?.halfLifeSeconds ?? 0) }
+      : {}),
+    ...(input?.baselineLiking !== undefined || previous?.baselineLiking !== undefined
+      ? { baselineLiking: clamp(input?.baselineLiking ?? previous?.baselineLiking ?? 0) }
+      : {}),
+    ...(input?.baselineSalience !== undefined || previous?.baselineSalience !== undefined
+      ? { baselineSalience: clamp(input?.baselineSalience ?? previous?.baselineSalience ?? 0) }
+      : {}),
+    ...(input?.baselineConfidence !== undefined || previous?.baselineConfidence !== undefined
+      ? { baselineConfidence: clamp(input?.baselineConfidence ?? previous?.baselineConfidence ?? 0) }
+      : {}),
     updatedAt: now,
   };
   return [...attitudes.filter((item) => item.targetId !== targetId), next];
@@ -142,12 +156,23 @@ function updateRelationship(
   for (const [key, value] of Object.entries(input?.dimensions ?? {})) {
     dimensions[key] = clamp((dimensions[key] ?? 0) + value);
   }
+  const baselineDimensions = {
+    ...(previous?.baselineDimensions ?? {}),
+    ...(input?.baselineDimensions ?? {}),
+  };
   return [
     ...relationships.filter((item) => item.targetId !== targetId),
     {
       targetId,
       dimensions,
       closeness: clamp((previous?.closeness ?? 0) + (input?.closeness ?? 0)),
+      ...(input?.halfLifeSeconds !== undefined || previous?.halfLifeSeconds !== undefined
+        ? { halfLifeSeconds: Math.max(0, input?.halfLifeSeconds ?? previous?.halfLifeSeconds ?? 0) }
+        : {}),
+      ...(input?.baselineCloseness !== undefined || previous?.baselineCloseness !== undefined
+        ? { baselineCloseness: clamp(input?.baselineCloseness ?? previous?.baselineCloseness ?? 0) }
+        : {}),
+      ...(Object.keys(baselineDimensions).length > 0 ? { baselineDimensions } : {}),
       updatedAt: now,
     },
   ];
@@ -244,7 +269,7 @@ function createMemoryIfRequested(
   };
 }
 
-function diffSummary(before: RuntimeSnapshot, after: RuntimeSnapshot): Record<string, unknown> {
+function diffSummary(before: RuntimeSnapshot, after: RuntimeSnapshot, appraisal: AppraisalResult): Record<string, unknown> {
   return {
     emotionCount: after.character.emotions.length,
     attitudeCount: after.character.attitudes.length,
@@ -253,7 +278,14 @@ function diffSummary(before: RuntimeSnapshot, after: RuntimeSnapshot): Record<st
     memoryCount: after.memories.length,
     previousVersion: before.version,
     nextVersion: after.version,
+    appraisal,
   };
+}
+
+function storedAppraisal(change: StateChange | undefined): AppraisalResult | undefined {
+  const candidate = change?.changes.appraisal;
+  if (!candidate || typeof candidate !== 'object') return undefined;
+  return candidate as AppraisalResult;
 }
 
 function duplicateEventResult(snapshot: RuntimeSnapshot, event: DomainEvent): RuntimeReduceResult | null {
@@ -270,6 +302,7 @@ function duplicateEventResult(snapshot: RuntimeSnapshot, event: DomainEvent): Ru
     stateChange,
     createdMemory: snapshot.memories.find((item) => item.sourceEventId === event.id),
     changedEpisode: snapshot.episodes.find((item) => item.eventIds.includes(event.id)),
+    appraisal: storedAppraisal(stateChange),
   };
 }
 
@@ -277,20 +310,21 @@ export function reduceRuntimeState(snapshot: RuntimeSnapshot, event: DomainEvent
   const duplicate = duplicateEventResult(snapshot, event);
   if (duplicate) return duplicate;
   const now = event.occurredAt;
-  const effects = asEffects(event);
+  const appraisal = evaluateAppraisal({ snapshot, event });
+  const effects = deriveAppraisalEffects(event, appraisal);
   const before = snapshot;
   const emotions = applyEmotionDeltas(snapshot.character.emotions, effects.emotionDeltas ?? {}, now);
   const mood = applyMoodDelta(snapshot.character.mood, effects.moodDelta ?? {}, now);
-  const attitudes = updateAttitude(snapshot.character.attitudes, effects, event, now);
-  const relationships = updateRelationship(snapshot.character.relationships, effects, event, now);
-  const emotionalImpact = maxEmotionIntensity(emotions);
+  const attitudes = updateAttitude(decayAttitudes(snapshot.character.attitudes, now), effects, event, now);
+  const relationships = updateRelationship(decayRelationships(snapshot.character.relationships, now), effects, event, now);
+  const emotionalImpact = Math.max(maxEmotionIntensity(emotions), appraisal.impact);
   const attitude = event.targetId ? attitudes.find((item) => item.targetId === event.targetId) : undefined;
   const relationship = event.targetId ? relationships.find((item) => item.targetId === event.targetId) : undefined;
   const salience = computeSalience({
     interaction: attitude ? Math.min(1, attitude.evidenceCount / 10) : 0,
     emotionalImpact,
-    eventImportance: event.importance,
-    relationshipRelevance: relationship?.closeness ?? 0,
+    eventImportance: Math.max(event.importance, appraisal.importance),
+    relationshipRelevance: Math.max(relationship?.closeness ?? 0, appraisal.socialSignificance),
     recency: 1,
   });
   const provisional: RuntimeSnapshot = {
@@ -324,11 +358,12 @@ export function reduceRuntimeState(snapshot: RuntimeSnapshot, event: DomainEvent
     stateType: 'runtime',
     dimension: 'projection',
     delta: 0,
-    changes: diffSummary(before, next),
+    changes: diffSummary(before, next, appraisal),
   };
   next.stateChanges = [...snapshot.stateChanges, stateChange];
   const changedEpisode = episodes.find((episode) => episode.eventIds.includes(event.id));
-  return { snapshot: next, event, stateChange, createdMemory: memory, changedEpisode };
+  const behaviorPlan: BehaviorPlan = planBehavior({ snapshot: next, event, appraisal });
+  return { snapshot: next, event, stateChange, createdMemory: memory, changedEpisode, appraisal, behaviorPlan };
 }
 
 /**
