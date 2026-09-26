@@ -79,7 +79,8 @@ describe('buildChatSessionContext 对话上下文深模块', () => {
     });
 
     expect(ctx.lorebooks).toHaveLength(2);
-    expect(ctx.userName).toBe('玩家甲');
+    // 没有绑定世界内用户资料时使用中性默认值，旧 Persona 不再作为全局身份。
+    expect(ctx.userName).toBe('User');
     expect(ctx.ragContext).toBe('检索到的文档上下文');
     expect(ctx.protagonistContext).toContain('主角');
     expect(ctx.storyTimeContext).toContain('第三天');

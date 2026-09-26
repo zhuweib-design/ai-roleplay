@@ -108,6 +108,7 @@ describe('{{setvar}} 宏支持 (F11.2)', () => {
       { user: '勇者', char: 'Seraphina' },
       variables
     );
-    expect(result).toBe('Seraphina认识了{{user}}');
+    // {{user}} 不再作为全局身份宏；变量宏仍按原值展开。
+    expect(result).toBe('Seraphina认识了勇者');
   });
 });

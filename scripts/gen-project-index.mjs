@@ -351,6 +351,7 @@ const CURATED = {
   'docs/dev/0.3.1-baseline.md': '开发文档：0.3.1 C-D-A 阶段基线与提交记录',
   'docs/dev/0.3.1-c-runtime-auth.md': '开发文档：0.3.1 C 阶段 Runtime 认证与租户边界',
   'docs/dev/0.3.1-d-runtime-delivery.md': '开发文档：0.3.1 D 阶段 Runtime 可靠投递与群聊数据契约',
+  'docs/dev/0.3.1-a-release-gates.md': '开发文档：0.3.1 A 阶段质量门禁与发布验收',
   'docs/dev/release-notes-0.3.0.md': '开发文档：0.3.0 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制）',
   'docs/fixes/goal-tracker.md': '修复文档：跨端一致性 28 项缺陷修复进度台账',
   'docs/fixes/web-sop-review-2026-09-18.md': '修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维）',

@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-26 18:17（本地时区）
+- **生成时间**：2026-09-26 18:38（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v0.3.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：491 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：30 个
+- **收录文件**：492 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：30 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -19,7 +19,7 @@ ai-roleplay/
   - `memory/`  — 10 个文件
 - `.workbuddy-ai/`  — 5 个文件
   - `memory/`  — 5 个文件
-- `docs/`  — 173 个文件
+- `docs/`  — 174 个文件
   - `assets/`  — 110 个文件
     - `screenshots/`  — 110 个文件
       - `themes/`  — 84 个文件
@@ -28,7 +28,7 @@ ai-roleplay/
         - `oled/`  — 21 个文件
         - `theatre/`  — 21 个文件
   - `design/`  — 14 个文件
-  - `dev/`  — 22 个文件
+  - `dev/`  — 23 个文件
   - `fixes/`  — 17 个文件
   - `other/`  — 6 个文件
 - `e2e/`  — 13 个文件
@@ -221,8 +221,8 @@ ai-roleplay/
 | `src/core/world-setting-chunker.ts` | ts | 程序 | 世界设定分块器 | 已跟踪 |  |
 | `src/data/mock-data.ts` | ts | 程序 | 开发/测试用示例数据 | 已跟踪 |  |
 | `src/i18n/index.ts` | ts | 程序 | i18n 初始化（vue-i18n） | 已跟踪 |  |
-| `src/i18n/locales/en.ts` | ts | 程序 | 英文文案表 | 已修改 |  |
-| `src/i18n/locales/zh.ts` | ts | 程序 | 中文文案表 | 已修改 |  |
+| `src/i18n/locales/en.ts` | ts | 程序 | 英文文案表 | 已跟踪 |  |
+| `src/i18n/locales/zh.ts` | ts | 程序 | 中文文案表 | 已跟踪 |  |
 | `src/main.ts` | ts | 程序 | 应用引导入口：创建 Vue 实例、注册 Pinia 与路由 | 已跟踪 |  |
 | `src/router/index.ts` | ts | 程序 | Vue Router 路由表 | 已跟踪 |  |
 | `src/runtime/character-compiler.ts` | ts | 程序 | Virtual Character OS Archetype + Delta + Seed Memories 编译器 | 已跟踪 |  |
@@ -232,7 +232,7 @@ ai-roleplay/
 | `src/runtime/group-runtime-contract.ts` | ts | 程序 | Virtual Character OS 浏览器与服务端共享群聊类型及领域错误，不含 SQL 依赖 | 已跟踪 |  |
 | `src/runtime/index.ts` | ts | 程序 | Virtual Character OS Runtime 统一出口 | 已跟踪 |  |
 | `src/runtime/postgres-executor.ts` | ts | 程序 | node-postgres Pool 到 SqlExecutor 的事务适配器（服务端专用） | 已跟踪 |  |
-| `src/runtime/postgres-group-runtime.ts` | ts | 程序 | Virtual Character OS PostgreSQL 群组事务、成员授权与多角色 Event 证据关联 | 已修改 |  |
+| `src/runtime/postgres-group-runtime.ts` | ts | 程序 | Virtual Character OS PostgreSQL 群组事务、成员授权与多角色 Event 证据关联 | 已跟踪 |  |
 | `src/runtime/postgres-store.ts` | ts | 程序 | Virtual Character OS PostgreSQL RuntimeStore 与事务边界 | 已跟踪 |  |
 | `src/runtime/project-runtime.ts` | ts | 程序 | AI 酒馆项目级 Runtime 工厂 | 已跟踪 |  |
 | `src/runtime/runtime-api.ts` | ts | 程序 | Virtual Character OS 运行时 API 适配器 | 已跟踪 |  |
@@ -263,7 +263,7 @@ ai-roleplay/
 | `src/stores/character-version.ts` | ts | 程序 | 状态存储：角色卡版本历史 | 已跟踪 |  |
 | `src/stores/character.ts` | ts | 程序 | 状态存储：角色卡列表与当前角色 | 已跟踪 |  |
 | `src/stores/chat-context.ts` | ts | 程序 | 状态存储：对话上下文绑定（角色 / 世界书） | 已跟踪 |  |
-| `src/stores/chat.ts` | ts | 程序 | 状态存储：会话与消息管理 | 已修改 |  |
+| `src/stores/chat.ts` | ts | 程序 | 状态存储：会话与消息管理 | 已跟踪 |  |
 | `src/stores/community-market.ts` | ts | 程序 | 状态存储：社区市场 | 已跟踪 |  |
 | `src/stores/data-bank.ts` | ts | 程序 | 状态存储：数据银行素材 | 已跟踪 |  |
 | `src/stores/events.ts` | ts | 程序 | 状态存储：全局事件总线 | 已跟踪 |  |
@@ -292,7 +292,7 @@ ai-roleplay/
 | `src/views/ChatView.vue` | vue | 程序 | 页面：对话主界面 | 已跟踪 |  |
 | `src/views/CommunityMarketView.vue` | vue | 程序 | 页面：社区市场 | 已跟踪 |  |
 | `src/views/DataBankView.vue` | vue | 程序 | 页面：数据银行 | 已跟踪 |  |
-| `src/views/GroupChatView.vue` | vue | 程序 | 页面：群聊 | 已修改 |  |
+| `src/views/GroupChatView.vue` | vue | 程序 | 页面：群聊 | 已跟踪 |  |
 | `src/views/ImageGeneratorView.vue` | vue | 程序 | 页面：图像生成 | 已跟踪 |  |
 | `src/views/LocalModelView.vue` | vue | 程序 | 页面：本地模型管理 | 已跟踪 |  |
 | `src/views/ProfileView.vue` | vue | 程序 | 页面：用户档案 | 已跟踪 |  |
@@ -352,7 +352,7 @@ ai-roleplay/
 | `tests/core/local-model-engine.test.ts` | ts | 测试 | 单元测试：local-model-engine 模块 | 已跟踪 |  |
 | `tests/core/lorebook-hierarchy.test.ts` | ts | 测试 | 单元测试：lorebook-hierarchy 模块 | 已跟踪 |  |
 | `tests/core/lorebook-scanner.test.ts` | ts | 测试 | 单元测试：lorebook-scanner 模块 | 已跟踪 |  |
-| `tests/core/macro.test.ts` | ts | 测试 | 单元测试：macro 模块 | 已跟踪 |  |
+| `tests/core/macro.test.ts` | ts | 测试 | 单元测试：macro 模块 | 已修改 |  |
 | `tests/core/market-index-integration.test.ts` | ts | 测试 | 单元测试：market-index-integration 模块 | 已跟踪 |  |
 | `tests/core/market-index.test.ts` | ts | 测试 | 单元测试：market-index 模块 | 已跟踪 |  |
 | `tests/core/memory-store.test.ts` | ts | 测试 | 单元测试：memory-store 模块 | 已跟踪 |  |
@@ -400,7 +400,7 @@ ai-roleplay/
 | `tests/i18n.test.ts` | ts | 测试 | 单元测试：i18n 模块 | 已跟踪 |  |
 | `tests/runtime/group-runtime-http.test.ts` | ts | 测试 | 群聊 HTTP 客户端与 Fetch Handler 边界测试 | 已跟踪 |  |
 | `tests/runtime/postgres-executor.test.ts` | ts | 测试 | 单元测试：postgres-executor 模块 | 已跟踪 |  |
-| `tests/runtime/postgres-group.integration.test.ts` | ts | 测试 | 真实 PostgreSQL 群聊原子性、授权、并发及回滚集成测试 | 已修改 |  |
+| `tests/runtime/postgres-group.integration.test.ts` | ts | 测试 | 真实 PostgreSQL 群聊原子性、授权、并发及回滚集成测试 | 已跟踪 |  |
 | `tests/runtime/postgres-runtime.integration.test.ts` | ts | 测试 | 单元测试：postgres-runtime.integration 模块 | 已跟踪 |  |
 | `tests/runtime/runtime-core.test.ts` | ts | 测试 | 单元测试：runtime-core 模块 | 已跟踪 |  |
 | `tests/runtime/runtime-http.test.ts` | ts | 测试 | 单元测试：runtime-http 模块 | 已跟踪 |  |
@@ -422,10 +422,10 @@ ai-roleplay/
 | `tests/stores/character-generate.test.ts` | ts | 测试 | 单元测试：character-generate 模块 | 已跟踪 |  |
 | `tests/stores/character-version.test.ts` | ts | 测试 | 单元测试：character-version 模块 | 已跟踪 |  |
 | `tests/stores/character.test.ts` | ts | 测试 | 单元测试：character 模块 | 已跟踪 |  |
-| `tests/stores/chat-context.test.ts` | ts | 测试 | 单元测试：chat-context 模块 | 已跟踪 |  |
+| `tests/stores/chat-context.test.ts` | ts | 测试 | 单元测试：chat-context 模块 | 已修改 |  |
 | `tests/stores/chat-llm-controls.test.ts` | ts | 测试 | 单元测试：chat-llm-controls 模块 | 已跟踪 |  |
 | `tests/stores/chat-p0-thinking.qa-independent.test.ts` | ts | 测试 | 单元测试：chat-p0-thinking.qa-independent 模块 | 已跟踪 |  |
-| `tests/stores/chat-runtime.integration.test.ts` | ts | 测试 | Chat Store 到 Runtime Context 的实际链路集成测试 | 已修改 |  |
+| `tests/stores/chat-runtime.integration.test.ts` | ts | 测试 | Chat Store 到 Runtime Context 的实际链路集成测试 | 已跟踪 |  |
 | `tests/stores/chat.test.ts` | ts | 测试 | 单元测试：chat 模块 | 已跟踪 |  |
 | `tests/stores/community-market.test.ts` | ts | 测试 | 单元测试：community-market 模块 | 已跟踪 |  |
 | `tests/stores/context-length.test.ts` | ts | 测试 | 单元测试：context-length 模块 | 已跟踪 |  |
@@ -446,7 +446,7 @@ ai-roleplay/
 | `tests/views/chat-ime.test.ts` | ts | 测试 | 单元测试：chat-ime 模块 | 已跟踪 |  |
 | `tests/views/chat-main-window.test.ts` | ts | 测试 | 单元测试：chat-main-window 模块 | 已跟踪 |  |
 | `tests/views/llm-controls-ui.test.ts` | ts | 测试 | 单元测试：llm-controls-ui 模块 | 已跟踪 |  |
-| `tests/views/settings-local-model.test.ts` | ts | 测试 | 单元测试：settings-local-model 模块 | 已跟踪 |  |
+| `tests/views/settings-local-model.test.ts` | ts | 测试 | 单元测试：settings-local-model 模块 | 已修改 |  |
 | `tests/views/status-hud-ui.test.ts` | ts | 测试 | 单元测试：status-hud-ui 模块 | 已跟踪 |  |
 | `tests/views/story-engine-quicksetup.test.ts` | ts | 测试 | 单元测试：story-engine-quicksetup 模块 | 已跟踪 |  |
 | `tests/views/thinking-tokens-inline-status.qa-independent.test.ts` | ts | 测试 | 单元测试：thinking-tokens-inline-status.qa-independent 模块 | 已跟踪 |  |
@@ -457,18 +457,19 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `public/sillytavern-vs-airoleplay.html` | html | 产品文档 | 静态页：SillyTavern vs ai-roleplay 系统化对比报告 | 已忽略 |  |
 
-### 2.4 开发文档（28）
+### 2.4 开发文档（29）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已修改 |  |
+| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
 | `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
 | `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已跟踪 |  |
 | `README.md` | md | 开发文档 | 项目主说明（中文） | 已跟踪 |  |
 | `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已跟踪 |  |
+| `docs/dev/0.3.1-a-release-gates.md` | md | 开发文档 | 开发文档：0.3.1 A 阶段质量门禁与发布验收 | 未跟踪 |  |
 | `docs/dev/0.3.1-baseline.md` | md | 开发文档 | 开发文档：0.3.1 C-D-A 阶段基线与提交记录 | 已修改 |  |
 | `docs/dev/0.3.1-c-runtime-auth.md` | md | 开发文档 | 开发文档：0.3.1 C 阶段 Runtime 认证与租户边界 | 已跟踪 |  |
-| `docs/dev/0.3.1-d-runtime-delivery.md` | md | 开发文档 | 开发文档：0.3.1 D 阶段 Runtime 可靠投递与群聊数据契约 | 未跟踪 |  |
+| `docs/dev/0.3.1-d-runtime-delivery.md` | md | 开发文档 | 开发文档：0.3.1 D 阶段 Runtime 可靠投递与群聊数据契约 | 已跟踪 |  |
 | `docs/dev/2026-09-20-LLM控制能力交付总览.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已跟踪 |  |
 | `docs/dev/b-type-findings.md` | md | 开发文档 | 开发文档：`!` 非空断言治理审计记录 | 已跟踪 |  |
@@ -609,7 +610,7 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `LICENSE` | (无扩展名) | 其他 | Apache-2.0 许可证全文 | 已跟踪 |  |
 | `MIGRATION_LOG.md` | md | 其他 | 目录整理迁移日志 | 已跟踪 |  |
-| `PROJECT_INDEX.md` | md | 其他 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已修改 | 索引文件（不递归展开） |
+| `PROJECT_INDEX.md` | md | 其他 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已跟踪 | 索引文件（不递归展开） |
 | `docs/Virtual-Character-OS-v1.0-database-schema.sql.md` | md | 其他 | 设计文档：Virtual Character OS 权威 Schema（迁移文件的事实源） | 已跟踪 |  |
 | `docs/Virtual-Character-OS-v1.0-技术规格.md` | md | 其他 | 设计文档：Virtual Character OS v1.0 技术规格 | 已跟踪 |  |
 | `docs/Virtual-Character-OS-v1.0-数据库-Schema-设计说明.md` | md | 其他 | 设计文档：Virtual Character OS 数据库 Schema 设计说明 | 已跟踪 |  |
@@ -647,7 +648,7 @@ ai-roleplay/
 | 程序 | 203 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 144 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
-| 开发文档 | 28 | docs/dev/ 实现计划、Runbook、审计记录 |
+| 开发文档 | 29 | docs/dev/ 实现计划、Runbook、审计记录 |
 | 修复文档 | 17 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
 | 设计文档 | 14 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
 | AI记忆 | 15 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
@@ -655,7 +656,7 @@ ai-roleplay/
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 19 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 32 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **491** | 与「收录文件」数一致 |
+| **合计** | **492** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 
