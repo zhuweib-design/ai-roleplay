@@ -31,7 +31,7 @@
 
 ## 💡 项目介绍
 
-> AI 酒馆是一款 AI 角色扮演聊天应用，让你与自建角色对话、管理世界设定、组织多人群聊，并通过故事引擎推进剧本。既可**在浏览器降级运行**，也可用 **Tauri 2 原生桌面封装**（含系统托盘、全局快捷键与自动更新）。
+> AI 酒馆是一款 AI 角色扮演聊天应用，让你与自建角色对话、管理世界设定、组织多人群聊，并通过故事引擎推进剧本。既可**在浏览器降级运行**，也可用 **Tauri 2 原生桌面封装**（含系统托盘与全局快捷键）。
 
 **AI 酒馆** 面向角色扮演与叙事创作，目标不只是「生成回复」，而是围绕 **角色、设定与世界的一致性** 提供完整的叙事工作流：从单个角色的性格与开场，到多人群聊的发言调度，再到由故事引擎推进的剧本走向。
 
@@ -56,7 +56,7 @@
 | **故事引擎** | 剧本结构分析、主角配置、时间推进、随机事件 |
 | **社区市场** | 基于 GitHub 索引的模板 / 角色卡 / 世界书下载，含哈希校验与离线回退 |
 | **扩展系统** | 沙箱执行、按需权限（默认拒绝），社区扩展默认不自动执行 |
-| **桌面强化** | 系统托盘、全局快捷键（`Ctrl+Alt+Space`）、拖拽导入、断网提示、自动更新 |
+| **桌面强化** | 系统托盘、全局快捷键（`Ctrl+Alt+Space`）、拖拽导入、断网提示 |
 
 ## 🖼️ 预览
 
@@ -100,7 +100,7 @@ npm run check:csp          # Web 端 CSP 契约守卫（CSP 未被移除/削弱 
 npm run tauri:build        # 桌面端编译验证（需 Rust 工具链，耗时较长）
 ```
 
-> CI（`.github/workflows/ci.yml`）的 `quality-gates` 按序执行：lint → Runtime Schema 漂移检查 → i18n strict → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7，五项合一）→ 对比度审计 → 覆盖率 → 构建 → CSP 守卫。另有独立 job：Runtime PostgreSQL 集成（postgres:16 service，真实事务/并发/回滚）、Playwright E2E（桌面功能 + 移动端布局 + 移动端核心功能三 project）、Tauri 编译、Tauri 发布（打 `v*` tag 或手动触发时产出签名安装包）。
+> CI（`.github/workflows/ci.yml`）的 `quality-gates` 按序执行：lint → Runtime Schema 漂移检查 → i18n strict → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7，五项合一）→ 对比度审计 → 覆盖率 → 构建 → CSP 守卫。另有独立 job：Runtime PostgreSQL 集成（postgres:16 service，真实事务/并发/回滚）、Playwright E2E（桌面功能 + 移动端布局 + 移动端核心功能三 project）和 Tauri 无打包编译检查。GitHub Release 只保留自动生成的源码归档。
 
 **Runtime 改动（`src/runtime/`、`migrations/` 时追加；Schema 漂移检查已并入 CI `quality-gates`）**
 
@@ -246,7 +246,7 @@ src/stores/          Pinia 状态（对话、设置、用户向量模型…）
 src/components/      组件（聊天、设置、通用 Modal/Icon…）
 src/views/           页面视图
 src/i18n/locales/    zh / en 国际化
-src-tauri/           Tauri 原生壳（托盘、快捷键、updater、capabilities/ACL）
+src-tauri/           Tauri 原生壳（托盘、快捷键、capabilities/ACL）
 tests/               单元 / 组件 / 无障碍测试（Vitest）
 e2e/                 Playwright 端到端用例
 scripts/             自研门禁与工具脚本（i18n 扫描、断点守卫、视口守卫、对比度审计、截图…）
@@ -257,7 +257,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 ## 🛣️ 路线图
 
 - [x] **0.3.0** — Runtime 与群聊 MVP：服务端群聊历史跨设备同步、可靠投递队列、冲突恢复、Runtime 状态查看（已发布）
-- [x] **0.2.0** — 自定义向量模型 + RAG、自定义主题、自动更新、社区市场、系统托盘/快捷键（已发布）
+- [x] **0.2.0** — 自定义向量模型 + RAG、自定义主题、社区市场、系统托盘/快捷键（已发布）
 - [x] **Virtual Character OS Runtime** — 批量多角色、多角色群聊、PostgreSQL 事务持久化、版本 CAS 与 Replay 审计（已落地）
 - [ ] **v1.0.0** — 首个稳定版本（规划）
 - [ ] **RAG 增强** — 更多预置嵌入模型、检索性能基准（规划）
@@ -280,15 +280,15 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 
 - **Web 端（静态托管）**：完整流程见 [`docs/dev/web-deployment-sop.md`](docs/dev/web-deployment-sop.md) —— 含部署前验证清单、6 项硬性要求（HTTPS / `frame-ancestors` 响应头 / **`.wasm` MIME** / SPA 回退排除 / 缓存策略 / 剔除 source map）、Nginx / Caddy / Vercel / Netlify / 对象存储+CDN 的具体配置、12 项部署后验证清单与常见坑。
   - 部署前必须跑：`npm run build && npm run check:csp`，并在 `vite preview` 下跑 `npm run csp:audit`（逐路由 CSP 违规 + 负向对照 + **WASM/blob Worker 能力探针**）。
-- **桌面端（Tauri）**：打 `v*` tag 或手动触发 `tauri-release` workflow 产出签名安装包；更新签名公钥内置于 `tauri.conf.json`。
+- **桌面端（Tauri）**：GitHub 发布不上传安装包；本地桌面构建使用 `npm run tauri:build`，GitHub Release 只保留源码归档。
 - **版本发布说明**：见 [`docs/dev/release-notes-0.3.0.md`](docs/dev/release-notes-0.3.0.md)（0.3.0 新能力、升级步骤与已知限制）；数据库迁移演练见 [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md)。
 
 ### 隐私与安全
 
-- 客户端最小权限：capabilities 仅授予 `core:default` + `updater:default`，未启用 `fs/shell/http/dialog/os` 插件
+- 客户端最小权限：capabilities 仅授予 `core:default`，未启用 updater、`fs/shell/http/dialog/os` 插件
 - CSP（双端分别定义）：
   - **桌面端**：由 `src-tauri/tauri.conf.json` 管控，`script-src 'self'` 禁内联脚本，`freezePrototype` 开启
   - **Web 端**：生产构建由 `vite.config.ts` 的 `webCspPlugin()` 注入 `<meta>` CSP（`script-src 'self' 'wasm-unsafe-eval'`、`object-src 'none'`、`base-uri 'self'` 等 12 条指令），并由 `npm run check:csp` 作为 CI 契约守卫；`frame-ancestors` 等 meta 不支持的指令需在托管侧配置响应头，见 [Web 端已知限制](#️-web-端已知限制)
 - XSS 纵深防御：CSP（浏览器侧拦截）+ `src/core/sanitize.ts` 的 DOMPurify 封装（渲染侧净化，新增 `v-html` 前必须接线）
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储
-- 自动更新签名公钥内置于 `tauri.conf.json`，私钥存放于仓库 Secrets，不进入二进制
+- GitHub Release 仅保留自动生成的源码归档，不上传桌面安装包或更新器清单；桌面应用需从源码本地构建

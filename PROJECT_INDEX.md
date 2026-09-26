@@ -1,8 +1,8 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-25 02:41（本地时区）
+- **生成时间**：2026-09-26 13:57（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
-- **项目标识**：`ai-roleplay` v0.2.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
+- **项目标识**：`ai-roleplay` v0.3.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
 - **收录文件**：486 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：29 个
 
@@ -106,7 +106,7 @@ ai-roleplay/
 | `src-tauri/src/commands/fs_commands.rs` | rs | 程序 | 命令：文件系统读写 | 已跟踪 |  |
 | `src-tauri/src/commands/mod.rs` | rs | 程序 | Tauri 命令模块出口 | 已跟踪 |  |
 | `src-tauri/src/error.rs` | rs | 程序 | Rust 统一错误类型 | 已跟踪 |  |
-| `src-tauri/src/lib.rs` | rs | 程序 | Rust 库入口与命令注册 | 已跟踪 |  |
+| `src-tauri/src/lib.rs` | rs | 程序 | Rust 库入口与命令注册 | 已修改 |  |
 | `src-tauri/src/main.rs` | rs | 程序 | Rust 主入口 | 已跟踪 |  |
 | `src-tauri/src/shortcut.rs` | rs | 程序 | 全局快捷键 | 已跟踪 |  |
 | `src-tauri/src/storage/mod.rs` | rs | 程序 | Rust 侧文件存储模块 | 已跟踪 |  |
@@ -221,8 +221,8 @@ ai-roleplay/
 | `src/core/world-setting-chunker.ts` | ts | 程序 | 世界设定分块器 | 已跟踪 |  |
 | `src/data/mock-data.ts` | ts | 程序 | 开发/测试用示例数据 | 已跟踪 |  |
 | `src/i18n/index.ts` | ts | 程序 | i18n 初始化（vue-i18n） | 已跟踪 |  |
-| `src/i18n/locales/en.ts` | ts | 程序 | 英文文案表 | 已跟踪 |  |
-| `src/i18n/locales/zh.ts` | ts | 程序 | 中文文案表 | 已跟踪 |  |
+| `src/i18n/locales/en.ts` | ts | 程序 | 英文文案表 | 已修改 |  |
+| `src/i18n/locales/zh.ts` | ts | 程序 | 中文文案表 | 已修改 |  |
 | `src/main.ts` | ts | 程序 | 应用引导入口：创建 Vue 实例、注册 Pinia 与路由 | 已跟踪 |  |
 | `src/router/index.ts` | ts | 程序 | Vue Router 路由表 | 已跟踪 |  |
 | `src/runtime/character-compiler.ts` | ts | 程序 | Virtual Character OS Archetype + Delta + Seed Memories 编译器 | 已跟踪 |  |
@@ -296,7 +296,7 @@ ai-roleplay/
 | `src/views/LocalModelView.vue` | vue | 程序 | 页面：本地模型管理 | 已跟踪 |  |
 | `src/views/ProfileView.vue` | vue | 程序 | 页面：用户档案 | 已跟踪 |  |
 | `src/views/RandomEventsView.vue` | vue | 程序 | 页面：随机事件 | 已跟踪 |  |
-| `src/views/SettingsView.vue` | vue | 程序 | 页面：设置中心（含数据管理与安全） | 已跟踪 |  |
+| `src/views/SettingsView.vue` | vue | 程序 | 页面：设置中心（含数据管理与安全） | 已修改 |  |
 | `src/views/StoryEngineView.vue` | vue | 程序 | 页面：剧情引擎 | 已跟踪 |  |
 | `src/views/WorldBookView.vue` | vue | 程序 | 页面：世界书管理 | 已跟踪 |  |
 | `src/vite-env.d.ts` | ts | 程序 | Vite 环境变量与静态资源类型声明 | 已跟踪 |  |
@@ -460,8 +460,8 @@ ai-roleplay/
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
-| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
+| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已修改 |  |
+| `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已修改 |  |
 | `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已修改 |  |
 | `README.md` | md | 开发文档 | 项目主说明（中文） | 已修改 |  |
 | `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已跟踪 |  |
@@ -477,7 +477,7 @@ ai-roleplay/
 | `docs/dev/llm-controls-收尾三项记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/mobile-pwa-plan.md` | md | 开发文档 | 开发文档：手机端 PWA 实现计划 | 已跟踪 |  |
 | `docs/dev/rag-enhancement-plan.md` | md | 开发文档 | 开发文档：RAG 增强实现计划 | 已跟踪 |  |
-| `docs/dev/release-notes-0.3.0.md` | md | 开发文档 | 开发文档：0.3.0 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制） | 未跟踪 |  |
+| `docs/dev/release-notes-0.3.0.md` | md | 开发文档 | 开发文档：0.3.0 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制） | 已修改 |  |
 | `docs/dev/runtime-database-migration-runbook.md` | md | 开发文档 | 开发文档：Virtual Character OS 数据库迁移演练 Runbook（备份 / 锁等待 / 回滚 / 演练清单） | 已跟踪 |  |
 | `docs/dev/web-deployment-sop.md` | md | 开发文档 | 开发文档：Web 端部署 SOP（部署前验证 / 硬性要求 / 5 类托管配置 / 部署后验证 / 常见坑 / 回滚） | 已跟踪 |  |
 | `docs/dev/优化效果评估脚本-使用说明.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
@@ -557,19 +557,19 @@ ai-roleplay/
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `.gitattributes` | gitattributes | 配置 | Git 属性（换行符与 LFS 规则，本地保留） | 已忽略 |  |
-| `.github/workflows/ci.yml` | yml | 配置 | CI 流水线：i18n / 断点 / 对比度 / 覆盖率 / 构建 / E2E / Tauri 七道门禁 | 已跟踪 |  |
+| `.github/workflows/ci.yml` | yml | 配置 | CI 流水线：i18n / 断点 / 对比度 / 覆盖率 / 构建 / E2E / Tauri 七道门禁 | 已修改 |  |
 | `.gitignore` | gitignore | 配置 | Git 忽略规则（本地保留，不提交） | 已忽略 |  |
 | `.i18nignore` | i18nignore | 配置 | i18n 扫描忽略清单 | 已忽略 |  |
 | `eslint.config.js` | js | 配置 | ESLint 扁平配置（Vue + TS） | 已跟踪 |  |
-| `package-lock.json` | json | 配置 | npm 依赖锁定文件（自动生成） | 已跟踪 |  |
-| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.2.0） | 已跟踪 |  |
+| `package-lock.json` | json | 配置 | npm 依赖锁定文件（自动生成） | 已修改 |  |
+| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.3.0） | 已修改 |  |
 | `playwright.config.ts` | ts | 配置 | Playwright E2E 配置：testDir=e2e、本地 msedge / CI chromium | 已跟踪 |  |
 | `reasonix.toml` | toml | 配置 | Reasonix 工具工作区配置 | 已跟踪 |  |
 | `src-tauri/.gitignore` | gitignore | 配置 | 桌面端专属忽略规则 | 已跟踪 |  |
-| `src-tauri/Cargo.toml` | toml | 配置 | Rust 依赖与 crate 元信息 | 已跟踪 |  |
-| `src-tauri/capabilities/default.json` | json | 配置 | Tauri 2 权限能力声明 | 已跟踪 |  |
+| `src-tauri/Cargo.toml` | toml | 配置 | Rust 依赖与 crate 元信息 | 已修改 |  |
+| `src-tauri/capabilities/default.json` | json | 配置 | Tauri 2 权限能力声明 | 已修改 |  |
 | `src-tauri/icons/` | 目录聚合 | 配置 | Tauri 应用图标资源（桌面 / Android / iOS 多尺寸 PNG / ICO / ICNS）（共 49 个文件） | 未跟踪 |  |
-| `src-tauri/tauri.conf.json` | json | 配置 | Tauri 应用配置（窗口 / 打包 / 更新签名公钥） | 已跟踪 |  |
+| `src-tauri/tauri.conf.json` | json | 配置 | Tauri 应用配置（窗口 / 本地打包） | 已修改 |  |
 | `tsconfig.json` | json | 配置 | TypeScript 编译选项与路径映射 | 已跟踪 |  |
 | `vite.config.ts` | ts | 配置 | Vite 构建配置：别名、代码分包、PWA 插件 | 已跟踪 |  |
 | `vitest.config.ts` | ts | 配置 | Vitest 单测配置：jsdom 环境、覆盖率阈值门禁 | 已跟踪 |  |
@@ -604,7 +604,7 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `LICENSE` | (无扩展名) | 其他 | Apache-2.0 许可证全文 | 已跟踪 |  |
 | `MIGRATION_LOG.md` | md | 其他 | 目录整理迁移日志 | 已跟踪 |  |
-| `PROJECT_INDEX.md` | md | 其他 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已跟踪 | 索引文件（不递归展开） |
+| `PROJECT_INDEX.md` | md | 其他 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已修改 | 索引文件（不递归展开） |
 | `docs/Virtual-Character-OS-v1.0-database-schema.sql.md` | md | 其他 | 设计文档：Virtual Character OS 权威 Schema（迁移文件的事实源） | 已跟踪 |  |
 | `docs/Virtual-Character-OS-v1.0-技术规格.md` | md | 其他 | 设计文档：Virtual Character OS v1.0 技术规格 | 已跟踪 |  |
 | `docs/Virtual-Character-OS-v1.0-数据库-Schema-设计说明.md` | md | 其他 | 设计文档：Virtual Character OS 数据库 Schema 设计说明 | 已跟踪 |  |

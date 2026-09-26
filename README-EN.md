@@ -30,7 +30,7 @@
 
 ## 💡 Introduction
 
-> AI 酒馆 (AI Tavern) is an AI role-playing chat app: chat with your own characters, build world settings, run multi-character group chats, and drive the plot with a story engine. It runs in the browser and also ships as a native Tauri 2 desktop app (system tray, global shortcuts, drag-and-drop import, auto-update).
+> AI 酒馆 (AI Tavern) is an AI role-playing chat app: chat with your own characters, build world settings, run multi-character group chats, and drive the plot with a story engine. It runs in the browser and also ships as a native Tauri 2 desktop app (system tray, global shortcuts, drag-and-drop import).
 
 Built for role-playing and narrative creation, **AI 酒馆** focuses on more than just "generating a reply" — it provides a coherent, character-first storytelling workflow: from a single character's personality and opener, to turn scheduling across a group chat, to story-arc progression.
 
@@ -55,7 +55,7 @@ Built for role-playing and narrative creation, **AI 酒馆** focuses on more tha
 | **Story engine** | Script analysis, protagonist config, time progression, random events |
 | **Community market** | GitHub-indexed templates / cards / lorebooks with hash check & offline fallback |
 | **Extension system** | Sandboxed execution, permission-gated (deny by default), not auto-run |
-| **Desktop enhancements** | System tray, global shortcut (`Ctrl+Alt+Space`), drag-drop import, offline banner, auto-update |
+| **Desktop enhancements** | System tray, global shortcut (`Ctrl+Alt+Space`), drag-drop import, offline banner |
 
 ## 🖼️ Preview
 
@@ -91,7 +91,7 @@ npm run a11y:contrast # Accessibility contrast (≥ AA 4.5:1)
 npm run tauri:build   # Desktop build check
 ```
 
-> CI (`.github/workflows/ci.yml`) runs lint → runtime schema drift → i18n → coverage/build → contrast, plus an isolated Runtime PostgreSQL job (postgres:16 service) → Playwright e2e (desktop, mobile layout, mobile core journeys) → Tauri build; `v*` tags or manual trigger produce signed installers.
+> CI (`.github/workflows/ci.yml`) runs lint → runtime schema drift → i18n → coverage/build → contrast, plus an isolated Runtime PostgreSQL job (postgres:16 service) → Playwright e2e (desktop, mobile layout, mobile core journeys) → Tauri no-bundle build; GitHub Releases keep only the automatically generated source archives.
 
 **Runtime changes (`src/runtime/`, `migrations/`) add:**
 
@@ -177,14 +177,14 @@ src/stores/          Pinia stores (chat, settings, user vector models…)
 src/components/      Components (chat, settings, common Modal/Icon…)
 src/views/           Views
 src/i18n/locales/    zh / en
-src-tauri/           Tauri shell (tray, shortcut, updater, capabilities/ACL)
+src-tauri/           Tauri shell (tray, shortcut, capabilities/ACL)
 tests/               Unit / a11y / E2E
 ```
 
 ## 🛣️ Roadmap
 
 - [x] **0.3.0** — Runtime and group chat MVP: cross-device group history, reliable outbox, conflict recovery, Runtime state inspector (released)
-- [x] **0.2.0** — custom vector model + RAG, custom themes, auto-update, market, tray/shortcut (released)
+- [x] **0.2.0** — custom vector model + RAG, custom themes, market, tray/shortcut (released)
 - [x] **Virtual Character OS Runtime** — batch characters, multi-character group chat, PostgreSQL transactions, version CAS and replay audit (landed)
 - [ ] **v1.0.0** — first stable release (planned)
 - [ ] **RAG** — more preset embedding models, retrieval benchmarks (planned)
@@ -209,7 +209,7 @@ This project is open-sourced under the **Apache License 2.0**. See [LICENSE](LIC
 
 ### Security & Privacy
 
-- Least-privilege client: capabilities only `core:default` + `updater:default`; no `fs/shell/http/dialog/os` permission
+- Least-privilege client: capabilities only `core:default`; updater, `fs/shell/http/dialog/os` permissions are not enabled
 - Tightened CSP: `script-src 'self'`, `freezePrototype` enabled
 - API keys encrypted at rest (PBKDF2 + AES-GCM); master password never stored locally
-- Auto-update uses embedded public key; private key lives in repo Secrets, never in the binary
+- GitHub Releases contain only the automatically generated source archives; desktop installers and updater manifests are not uploaded, so build the desktop app locally from source

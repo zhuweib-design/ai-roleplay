@@ -428,24 +428,11 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   toastOpen.value = true;
 }
 
-// ── About / 自动更新（T-15 updater） ──
+// ── About ──
 const appVersion = ref('');
-const updateState = ref<'idle' | 'checking' | 'updating' | 'latest' | 'error'>('idle');
-const updateDetail = ref('');
-
-const updateLabel = computed(() => {
-  switch (updateState.value) {
-    case 'checking':
-      return t('settings.updateChecking');
-    case 'updating':
-      return t('settings.updateInstalling');
-    default:
-      return t('settings.updateCheck');
-  }
-});
 
 onMounted(async () => {
-  // 仅 Tauri 运行时存在原生版本信息与更新能力；Web 模式降级隐藏
+  // 仅 Tauri 运行时提供原生版本信息；Web 模式下保留空版本占位
   if (!isTauriEnv()) return;
   try {
     const { invoke } = await import('@tauri-apps/api/core');
@@ -454,35 +441,6 @@ onMounted(async () => {
     // 版本获取失败不阻塞设置页
   }
 });
-
-async function handleCheckUpdate() {
-  if (!isTauriEnv()) {
-    showToast('info', t('settings.updateWebUnsupported'));
-    return;
-  }
-  if (updateState.value === 'checking' || updateState.value === 'updating') return;
-  updateState.value = 'checking';
-  updateDetail.value = '';
-  try {
-    const { check } = await import('@tauri-apps/plugin-updater');
-    const update = await check();
-    if (update) {
-      updateState.value = 'updating';
-      showToast('info', t('settings.updateAvailable'));
-      // 下载并安装（Windows 安装完成后由 updater 处理重启）
-      await update.downloadAndInstall();
-      updateState.value = 'idle';
-      showToast('success', t('settings.updateInstalled'));
-    } else {
-      updateState.value = 'latest';
-      showToast('info', t('settings.updateLatest'));
-    }
-  } catch (err) {
-    updateState.value = 'error';
-    updateDetail.value = err instanceof Error ? err.message : String(err);
-    showToast('error', t('settings.updateError'));
-  }
-}
 
 watch(
   () => settings.lastError,
@@ -2496,7 +2454,7 @@ URL
     />
     </div>
 
-    <!-- About / 自动更新 -->
+    <!-- About -->
     <div v-show="activeCategory === 'about'">
       <section
         class="settings-section data-mgmt-section"
@@ -2515,25 +2473,8 @@ URL
             <h3 class="data-mgmt-subtitle">AI 酒馆</h3>
             <p class="data-mgmt-hint">
               {{ t('settings.versionLabel') }}：{{ appVersion || '—' }}
-              <span v-if="!isTauriEnv()">（{{ t('settings.updateWebUnsupported') }}）</span>
             </p>
-            <div class="data-mgmt-actions">
-              <button
-                type="button"
-                class="data-mgmt-btn"
-                :disabled="updateState === 'checking' || updateState === 'updating' || !isTauriEnv()"
-                @click="handleCheckUpdate"
-              >
-                <Icon name="refresh-cw" :size="14" />
-                <span>{{ updateLabel }}</span>
-              </button>
-            </div>
-            <p v-if="updateState === 'latest'" class="data-mgmt-hint" role="status">
-              {{ t('settings.updateLatest') }}
-            </p>
-            <p v-else-if="updateState === 'error'" class="data-mgmt-hint" role="alert">
-              {{ t('settings.updateError') }}<span v-if="updateDetail">：{{ updateDetail }}</span>
-            </p>
+            <p class="data-mgmt-hint">{{ t('settings.releaseSourceOnly') }}</p>
           </div>
         </div>
       </section>

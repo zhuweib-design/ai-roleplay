@@ -37,7 +37,7 @@
 - 底部导航 Tab 文案与设计短名对齐（会话/角色/市场/世界书/设置）。
 
 ### 修复
-- Tauri 发布：安装包改用 ASCII 资产名，串行合并并验证 `latest.json` 的 Windows/macOS 平台签名；手动发布时必须指定目标 tag。
+- GitHub 发布流程改为仅保留源码归档，不再构建或上传安装包，也不再执行 `latest.json` 更新器清单发布。
 - 群聊 Runtime HTTP 边界：群组根路径非 GET 请求与未知子路由不再被误判为可调用领域操作，避免触发未授权写入路径。
 - 旧部署 Schema 升级：`group_chats` 缺少 `version` 列时，迁移会幂等补齐非空版本列、默认值与非负约束，不要求删除或重建既有群组数据。
 - 移动端世界书：列表/条目面板被隐藏导致无法新建/选择/编辑 → 改为堆叠+限高滚动。
@@ -51,7 +51,7 @@
 
 ### 新增
 - **自定义向量模型 + RAG**：支持上传 ZIP 或登记本地磁盘目录添加自定义向量模型；接入双通道（动态记忆 / 静态世界设定）语义检索，可在设置页为 RAG 动态/静态层指定模型。
-- **自动更新**：集成 Tauri updater，从 GitHub Releases 拉取签名安装包（打 `v*` tag 触发 `tauri-release` 产出）。
+- **桌面端发布**：移除 Tauri updater 与更新检查入口；当前 GitHub 发布策略仅保留源码归档，桌面应用需从源码本地构建。
 - **32 项主力功能里程碑**：详见 `AI酒馆开发计划文档.md`（本地保留，不入仓库）。
 
 ### 强化
@@ -70,7 +70,7 @@
 - 若干静态分析（`noUncheckedIndexedAccess`）类型告警收敛。
 
 ### 安全
-- 客户端最小权限（capabilities 仅 `core:default` + `updater:default`）、CSP 收紧、`freezePrototype`。
+- 客户端最小权限（capabilities 仅 `core:default`）、CSP 收紧、`freezePrototype`。
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储。
 - 扩展沙箱默认拒绝权限，社区扩展默认不自动执行。
 
