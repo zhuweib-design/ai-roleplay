@@ -143,4 +143,31 @@ describe('ChatMain 消息窗口化渲染 (T-03)', () => {
 
     expect(wrapper.findAll('.msg-stub').length).toBe(50); // 无变化
   });
+
+  it('全文搜索可以命中未渲染的历史消息并重定位窗口', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const charStore = useCharacterStore();
+    const messages = makeMessages(1000);
+    messages[12]!.content = '很早以前的目标历史消息';
+    charStore.characters.push(makeCharacter('c-search', messages));
+    charStore.selectCharacter('c-search');
+
+    const wrapper = await mountChatMain(pinia);
+    expect(wrapper.findAll('.msg-stub').length).toBe(100);
+
+    await wrapper.find('button[aria-label="搜索对话消息"]').trigger('click');
+    const input = wrapper.find('#chat-history-search');
+    await input.setValue('目标历史');
+    await flushPromises();
+
+    expect(wrapper.find('.chat-search-status').text()).toContain('0/1');
+    await wrapper.find('button[aria-label="下一个匹配"]').trigger('click');
+    await wrapper.vm.$nextTick();
+    await flushPromises();
+
+    expect(wrapper.find('.chat-search-status').text()).toContain('1/1');
+    expect(wrapper.findAll('.msg-stub').length).toBe(200);
+    expect(wrapper.findAll('.message-search-active')).toHaveLength(1);
+  });
 });

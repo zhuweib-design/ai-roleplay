@@ -23,6 +23,11 @@ import { ttsService, isTTSSupported } from '@services/tts-service';
 import { translateText, TranslationError } from '@services/translator';
 import { t } from '@/i18n';
 import { useViewport } from '@/core/viewport';
+import {
+  getMessageWindow,
+  searchMessages,
+  type MessageSearchResult,
+} from '@core/message-search';
 
 const router = useRouter();
 const characterStore = useCharacterStore();
@@ -148,6 +153,55 @@ let suppressScroll = false;
 // 双向防重入(滚动事件高频触发)
 const windowLoading = ref(false);
 
+// ── 0.5.0 全文搜索 ──
+// 搜索状态独立于虚拟化窗口，始终在完整消息数组上计算，长对话不会漏查。
+const searchOpen = ref(false);
+const searchInput = ref<HTMLInputElement | null>(null);
+const searchQuery = ref('');
+const activeSearchIndex = ref(-1);
+const highlightedMessageId = ref<string | null>(null);
+const searchResults = computed(() =>
+  searchMessages(char.value?.messages ?? [], searchQuery.value),
+);
+const activeSearchResult = computed<MessageSearchResult | null>(() => {
+  const index = activeSearchIndex.value;
+  return index >= 0 ? searchResults.value[index] ?? null : null;
+});
+
+function toggleSearch(): void {
+  searchOpen.value = !searchOpen.value;
+  if (searchOpen.value) {
+    void nextTick(() => searchInput.value?.focus());
+  } else {
+    closeSearch();
+  }
+}
+
+function closeSearch(): void {
+  searchOpen.value = false;
+  searchQuery.value = '';
+  activeSearchIndex.value = -1;
+  highlightedMessageId.value = null;
+}
+
+function handleSearchKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeSearch();
+    return;
+  }
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    navigateSearch(event.shiftKey ? -1 : 1);
+  }
+}
+
+function sumMessageHeights(start: number, end: number): number {
+  let total = 0;
+  for (let i = start; i < end; i++) total += msgHeightAt(i);
+  return total;
+}
+
 function resetWindow(): void {
   cachedWidth = msgArea.value?.clientWidth ?? cachedWidth;
   const len = char.value.messages.length;
@@ -155,6 +209,52 @@ function resetWindow(): void {
   windowStart.value = Math.max(0, len - RENDER_WINDOW);
   topSpacerHeight.value = 0;
   bottomSpacerHeight.value = 0;
+}
+
+/** 将虚拟化窗口重定位到搜索命中的消息，并把目标滚入可视区域。 */
+async function jumpToMessage(result: MessageSearchResult): Promise<void> {
+  if (windowLoading.value) return;
+  const el = msgArea.value;
+  const messages = char.value.messages;
+  if (!el || result.index < 0 || result.index >= messages.length) return;
+
+  const nextWindow = getMessageWindow(result.index, messages.length, RENDER_WINDOW * 2);
+  suppressScroll = true;
+  windowStart.value = nextWindow.start;
+  windowEnd.value = nextWindow.end;
+  topSpacerHeight.value = sumMessageHeights(0, nextWindow.start);
+  bottomSpacerHeight.value = sumMessageHeights(nextWindow.end, messages.length);
+  highlightedMessageId.value = result.id;
+
+  try {
+    await nextTick();
+    const target = [...el.querySelectorAll<HTMLElement>('[data-message-id]')].find(
+      (node) => node.dataset.messageId === result.id,
+    );
+    if (target) {
+      if (typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        el.scrollTop = Math.max(0, target.offsetTop - el.clientHeight / 2);
+      }
+    }
+    atBottom.value = result.index >= messages.length - 1;
+  } finally {
+    suppressScroll = false;
+  }
+}
+
+/** 按搜索结果循环前进或后退，并跳转到目标消息。 */
+function navigateSearch(direction: 1 | -1): void {
+  const results = searchResults.value;
+  if (results.length === 0) return;
+  const current = activeSearchIndex.value;
+  const next = current < 0
+    ? direction > 0 ? 0 : results.length - 1
+    : (current + direction + results.length) % results.length;
+  activeSearchIndex.value = next;
+  const result = results[next];
+  if (result) void jumpToMessage(result);
 }
 
 // 消息加载就绪后初始化窗口(初始显示尾部窗口)
@@ -261,10 +361,24 @@ watch(
   () => char.value.id,
   () => {
     windowInitialized = false;
+    closeSearch();
     resetWindow();
   },
   { immediate: true }
 );
+
+watch(searchQuery, () => {
+  activeSearchIndex.value = -1;
+  highlightedMessageId.value = null;
+});
+
+watch(searchResults, (results) => {
+  if (results.length === 0) {
+    activeSearchIndex.value = -1;
+  } else if (activeSearchIndex.value >= results.length) {
+    activeSearchIndex.value = results.length - 1;
+  }
+});
 
 /** 渲染后缓存消息真实高度(回收恢复时用缓存替代估算) */
 function cacheMsgHeight(el: unknown, id: string): void {
@@ -630,6 +744,16 @@ function startWithExample(text: string) {
         <button
           type="button"
           class="hover-surface panel-toggle-btn"
+          :aria-label="t('chat.searchMessages')"
+          :title="t('chat.searchMessagesTitle')"
+          :aria-expanded="searchOpen"
+          @click="toggleSearch"
+        >
+          <Icon name="search" :size="20" />
+        </button>
+        <button
+          type="button"
+          class="hover-surface panel-toggle-btn"
           :aria-label="t('chat.exportChat')"
           :title="t('chat.exportChatTitle')"
           @click="handleExportChat"
@@ -647,6 +771,63 @@ function startWithExample(text: string) {
         </button>
       </div>
     </header>
+
+    <!-- 0.5.0：全文搜索栏在顶栏下方展开，结果跨越完整历史消息。 -->
+    <div v-if="searchOpen" class="chat-search-bar" role="search">
+      <Icon name="search" :size="16" aria-hidden="true" />
+      <label class="sr-only" for="chat-history-search">{{ t('chat.searchMessages') }}</label>
+      <input
+        id="chat-history-search"
+        ref="searchInput"
+        v-model="searchQuery"
+        class="chat-search-input"
+        type="search"
+        :placeholder="t('chat.searchPlaceholder')"
+        :aria-label="t('chat.searchMessages')"
+        :aria-describedby="searchResults.length > 0 ? 'chat-search-status' : undefined"
+        @keydown="handleSearchKeydown"
+      />
+      <span id="chat-search-status" class="chat-search-status" role="status" aria-live="polite">
+        <template v-if="searchQuery && searchResults.length > 0">
+          {{ t('chat.searchCount', { current: activeSearchIndex >= 0 ? activeSearchIndex + 1 : 0, total: searchResults.length }) }}
+        </template>
+        <template v-else-if="searchQuery">
+          {{ t('chat.searchNoResults') }}
+        </template>
+      </span>
+      <span v-if="activeSearchResult" class="chat-search-snippet" :title="activeSearchResult.snippet">
+        {{ activeSearchResult.snippet }}
+      </span>
+      <button
+        type="button"
+        class="chat-search-btn"
+        :aria-label="t('chat.searchPrevious')"
+        :title="t('chat.searchPrevious')"
+        :disabled="searchResults.length === 0"
+        @click="navigateSearch(-1)"
+      >
+        <Icon name="chevron-up" :size="16" />
+      </button>
+      <button
+        type="button"
+        class="chat-search-btn"
+        :aria-label="t('chat.searchNext')"
+        :title="t('chat.searchNext')"
+        :disabled="searchResults.length === 0"
+        @click="navigateSearch(1)"
+      >
+        <Icon name="chevron-down" :size="16" />
+      </button>
+      <button
+        type="button"
+        class="chat-search-btn"
+        :aria-label="t('chat.closeSearch')"
+        :title="t('chat.closeSearch')"
+        @click="closeSearch"
+      >
+        <Icon name="close" :size="16" />
+      </button>
+    </div>
 
     <!-- P1 会话级状态条：截至当前的最新状态（纯 computed 派生，零持久化） -->
     <StatusHud v-if="showStatusHud" variant="sticky" :status="latestStatus" />
@@ -690,7 +871,9 @@ function startWithExample(text: string) {
         <MessageBubble
           v-for="msg in visibleMessages"
           :key="msg.id"
-          v-memo="[msg.content, msg.thinking, msg.reasoningTokens, msg.status, msg.generating, msg.narration, msg.narrationAfter]"
+          :data-message-id="msg.id"
+          :class="{ 'message-search-active': highlightedMessageId === msg.id }"
+          v-memo="[msg.content, msg.thinking, msg.reasoningTokens, msg.status, msg.generating, msg.narration, msg.narrationAfter, highlightedMessageId === msg.id]"
           :msg="msg"
           @action="handleMessageAction"
           :ref="(el) => cacheMsgHeight(el, msg.id)"
@@ -1024,6 +1207,106 @@ function startWithExample(text: string) {
   cursor: pointer;
   background: none;
   border: none;
+}
+
+/* 0.5.0：历史消息全文搜索工具条 */
+.chat-search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 44px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+}
+
+.chat-search-input {
+  flex: 1 1 180px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--video-bg);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 13px;
+}
+
+.chat-search-input:focus-visible {
+  border-color: var(--ring);
+  outline: 2px solid color-mix(in srgb, var(--ring) 30%, transparent);
+  outline-offset: 1px;
+}
+
+.chat-search-status {
+  flex: 0 0 auto;
+  min-width: 56px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.chat-search-snippet {
+  flex: 0 1 min(32vw, 280px);
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-search-btn {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.chat-search-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chat-search-btn:hover:not(:disabled) {
+    border-color: var(--ring);
+    color: var(--foreground);
+  }
+}
+
+.chat-search-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+/* 搜索跳转后的轻量定位提示，不改变消息尺寸，避免虚拟化滚动跳动。 */
+:deep(.message-search-active .msg-bubble) {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 65%, transparent);
+}
+
+@media (max-width: 640px) {
+  .chat-search-bar {
+    flex-wrap: wrap;
+  }
+
+  .chat-search-input {
+    flex-basis: 130px;
+    font-size: 16px;
+  }
+
+  .chat-search-snippet {
+    display: none;
+  }
 }
 
 /* F11.3 Quick Reply 按钮组 */

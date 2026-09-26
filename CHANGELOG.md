@@ -3,6 +3,19 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 版本格式：`0.Y.Z`。`0` 为里程碑，`Y` 为功能/发布，`Z` 为修复。
 
+## [0.5.0] - 2026-09-27
+
+### 新增
+- **聊天全文搜索**：搜索覆盖当前角色的完整消息历史，支持中英文大小写、全角字符和空白归一化，并显示命中片段。
+- **历史消息跳转**：搜索结果导航会重定位双向虚拟化窗口，把目标消息滚入视口并提供定位提示。
+
+### 强化
+- 搜索与虚拟化窗口解耦，长对话不会因为只渲染最近消息而漏掉历史结果。
+- 搜索条支持键盘前进、后退和关闭，移动端输入字号遵循 16px 规范。
+
+### 兼容
+- 没有新增数据库迁移；既有角色、会话、消息和设置继续使用原存储格式。
+
 ## [0.4.0] - 2026-09-26
 
 ### 新增
@@ -97,6 +110,7 @@
 - 扩展沙箱默认拒绝权限，社区扩展默认不自动执行。
 
 [0.3.1]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.3.1
+[0.5.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.5.0
 [0.4.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.4.0
 [0.3.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.3.0
 [0.2.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.2.0
