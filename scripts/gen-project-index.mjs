@@ -354,6 +354,7 @@ const CURATED = {
   'docs/dev/0.3.1-a-release-gates.md': '开发文档：0.3.1 A 阶段质量门禁与发布验收',
   'docs/dev/release-notes-0.3.0.md': '开发文档：0.3.0 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制）',
   'docs/dev/release-notes-0.3.1.md': '开发文档：0.3.1 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制）',
+  'docs/dev/release-notes-0.4.0.md': '开发文档：0.4.0 发布说明（新能力 / 数据兼容 / 验证结果）',
   'docs/fixes/goal-tracker.md': '修复文档：跨端一致性 28 项缺陷修复进度台账',
   'docs/fixes/web-sop-review-2026-09-18.md': '修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维）',
   'docs/fixes/runtime-core-baseline-verification-2026-09-22.md': '验证记录：Runtime Core 基线自动化验证',

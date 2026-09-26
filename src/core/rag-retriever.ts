@@ -21,23 +21,40 @@ import { DEFAULT_RAG_CONFIG } from './data-bank';
 // i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 // ── P1-10 性能：检索结果缓存 ──
-// 纯函数结果缓存：key = 文档指纹 + 消息内容。
+// 纯函数结果缓存：key = 文档指纹 + 检索配置 + 消息内容。
 // 文档字段或消息内容变化即失效；容量受限防内存膨胀。
 const RETRIEVE_CACHE_MAX = 50;
 const retrieveCache = new Map<string, RetrievedChunk[]>();
 
-/** 文档集指纹：id + updatedAt + chunk 数量与内容长度，文档更新时变化 */
+/** 轻量稳定哈希，避免把完整文档正文复制到缓存键中。 */
+function hashText(value: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index++) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16);
+}
+
+/** 文档集指纹：正文和关键元数据均参与计算，等长替换也会使缓存失效。 */
 function docsFingerprint(documents: DataBankDocument[]): string {
-  return documents
-    .map((d) =>
-      [
-        d.id,
-        d.updatedAt ?? '',
-        d.chunks?.length ?? 0,
-        d.chunks?.reduce((sum, c) => sum + c.content.length, 0) ?? 0,
-      ].join(':')
-    )
-    .join('|');
+  const payload = documents
+    .map((document) => [
+      document.id,
+      document.name,
+      document.scope,
+      document.characterId ?? '',
+      document.chatId ?? '',
+      document.updatedAt ?? '',
+      ...(document.chunks ?? []).map((chunk) => [
+        chunk.id,
+        chunk.index,
+        chunk.content,
+        chunk.tokenCount,
+      ].join('\u0001')),
+    ].join('\u0000'))
+    .join('\u0002');
+  return hashText(payload);
 }
 
 /** 清除缓存（测试与文档删除/重建时使用） */
@@ -200,9 +217,13 @@ export function retrieveRelevantChunks(
   const recentCount = config?.recentMessageCount ?? DEFAULT_RAG_CONFIG.recentMessageCount;
 
   // P1-10：缓存命中直接返回（文档/消息不变时结果恒定）
-  const cacheKey = `${docsFingerprint(documents)}::${recentMessages
-    .slice(-recentCount)
-    .join('\u0000')}`;
+  const cacheKey = [
+    docsFingerprint(documents),
+    `recent=${recentCount}`,
+    `keywords=${maxKeywords}`,
+    `chunks=${maxChunks}`,
+    recentMessages.slice(-recentCount).join('\u0000'),
+  ].join('::');
   const cached = retrieveCache.get(cacheKey);
   if (cached) return cached;
 

@@ -57,6 +57,34 @@ describe('VectorRagRuntime', () => {
     }
   });
 
+  it('syncSources 增量复用索引并移除已删除来源', async () => {
+    setVectorRagEnabled(true);
+    const runtime = VectorRagRuntime.get();
+    const timestamp = String(Date.now());
+    await runtime.syncSources('dynamic', [
+      { id: 'm1', text: '主角在酒馆找到线索', meta: { timestamp } },
+      { id: 'm2', text: '队伍准备离开城门', meta: { timestamp } },
+    ]);
+    const first = runtime.dynamicStore.get('m1');
+    expect(runtime.dynamicStore.size()).toBe(2);
+    await runtime.syncSources('dynamic', [
+      { id: 'm1', text: '主角在酒馆找到线索', meta: { timestamp } },
+    ]);
+    expect(runtime.dynamicStore.size()).toBe(1);
+    expect(runtime.dynamicStore.get('m1')).toBe(first);
+  });
+
+  it('模型选择 auto 不会作为非法模型 id 传给 provider', async () => {
+    setVectorRagEnabled(true);
+    const runtime = VectorRagRuntime.get({ dynamicModel: 'auto', staticModel: 'auto' });
+    await runtime.syncSources('dynamic', [{ id: 'm1', text: '火龙谷的线索' }]);
+    const result = await buildVectorRagInjection('火龙谷', false, {
+      dynamicModel: 'auto',
+      dynamicEntries: [{ id: 'm1', text: '火龙谷的线索' }],
+    });
+    expect(result.ran).toBe(true);
+  });
+
   it('fail-open:无模型配置时异常不阻断(返回空,不抛)', async () => {
     setVectorRagEnabled(true);
     VectorRagRuntime.reset();

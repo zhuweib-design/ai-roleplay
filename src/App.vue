@@ -167,6 +167,9 @@ onMounted(async () => {
     const adapter = getStorageAdapter();
     await adapter.init();
     chatStore.setStorageAdapter(adapter);
+    await chatStore.loadLocalMemoryStore().catch((err) => {
+      console.error('从存储加载本地长期记忆失败：', err);
+    });
     await chatStore.loadRuntimePendingGroupTurns().catch((err) => {
       console.error('从存储加载群聊 Runtime 待提交回合失败：', err);
     });

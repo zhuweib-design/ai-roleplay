@@ -58,6 +58,8 @@ export interface PromptContexts {
   ragContext?: string;
   /** F09.2 RAG 注入深度（默认 0，与作者笔记规则相同：用户消息之前） */
   ragDepth?: number;
+  /** 0.4.0 本地长期记忆检索结果，仅注入动态段，不修改角色前缀。 */
+  memoryContext?: string;
   /** F17.2 当前激活事件的注入文本（由 trigger-engine.buildActiveEventsInjection 生成） */
   eventsContext?: string;
   /** F16.3 主角身份上下文文本（由 protagonist.buildProtagonistPrompt 生成） */
@@ -93,6 +95,7 @@ export async function buildPrompt(
     lorebooks,
     ragContext,
     ragDepth,
+    memoryContext,
     eventsContext,
     protagonistContext,
     storyTimeContext,
@@ -262,6 +265,15 @@ export async function buildPrompt(
     messages.splice(insertIdx, 0, ragMsg);
   }
 
+  // 0.4.0：本地长期记忆与 RAG 一样放在动态消息段，避免改变可缓存的角色定义前缀。
+  // 单独成消息也便于后续按预算裁剪，不把记忆混入用户原话。
+  if (memoryContext) {
+    const memoryMsg: BuiltMessage = { role: 'system', content: memoryContext };
+    const memoryDepth = ragDepth ?? 0;
+    const insertIdx = Math.max(1, messages.length - memoryDepth);
+    messages.splice(insertIdx, 0, memoryMsg);
+  }
+
   // 7. 添加用户消息
   messages.push({ role: 'user', content: userMessage });
 
@@ -270,10 +282,18 @@ export async function buildPrompt(
   let tokenCount = await countMessageTokens(messages);
   let trimmed = false;
 
-  // 从最早的历史消息开始裁剪（保留 system 消息和最后的 user 消息）
-  // 低 insertionOrder 的 Lorebook 条目优先裁剪（F06.3 规则约束）
+  // 从最早的历史消息开始裁剪（保留基础 system 消息和最后的 user 消息）。
+  // RAG / 本地记忆是动态 system 消息，只有没有历史可删时才作为最后的降级项裁剪，
+  // 避免长对话一到预算边界就把刚检索到的事实丢掉。
   while (tokenCount > budget && messages.length > 2) {
-    messages.splice(1, 1); // 移除 system 之后的第一条历史消息
+    const historyIndex = messages.findIndex(
+      (message, index) => index > 0 && (message.role === 'user' || message.role === 'assistant')
+    );
+    const removableIndex = historyIndex >= 0
+      ? historyIndex
+      : messages.findIndex((message, index) => index > 0 && message.role === 'system');
+    if (removableIndex < 0) break;
+    messages.splice(removableIndex, 1);
     tokenCount = await countMessageTokens(messages);
     trimmed = true;
   }

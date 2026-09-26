@@ -150,6 +150,18 @@ describe('Token 预算裁剪 (F03.2/F03.3)', () => {
     // 所有历史消息都应保留
     expect(result.messages.length).toBe(sampleHistory.length + 2); // +system +user
   });
+
+  test('本地长期记忆作为动态消息注入，并在裁剪时优先于历史保留', async () => {
+    const result = await buildPrompt(
+      makeCard(),
+      [{ role: 'assistant', content: 'a'.repeat(800), id: 'old', timestamp: '', swipes: [], swipeIndex: 0 }],
+      '新消息',
+      makeSettings({ maxContextTokens: 170, reservedTokens: 20 }),
+      { memoryContext: '[本地长期记忆]\n翡翠酒馆的钥匙在主角手中' },
+    );
+    expect(result.messages.some((message) => message.content.includes('翡翠酒馆的钥匙'))).toBe(true);
+    expect(result.trimmed).toBe(true);
+  });
 });
 
 describe('作者笔记注入 (F03.5)', () => {

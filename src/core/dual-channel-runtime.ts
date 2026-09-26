@@ -93,6 +93,17 @@ export interface VectorRagOptions {
   staticTopK?: number;
   /** 分数阈值(低于不注入;默认 0.3) */
   minScore?: number;
+  /** 动态层索引来源；每轮仅同步内容发生变化的条目。 */
+  dynamicEntries?: VectorRagSource[];
+  /** 静态层索引来源；每轮仅同步内容发生变化的条目。 */
+  staticEntries?: VectorRagSource[];
+}
+
+/** 交给向量索引的最小来源结构。 */
+export interface VectorRagSource {
+  id: string;
+  text: string;
+  meta?: Record<string, string>;
 }
 
 /** 双通道检索注入结果 */
@@ -116,10 +127,15 @@ export class VectorRagRuntime {
   private readonly manager: VectorModelManager;
   /** 按模型 id 缓存的本地 ONNX provider(支持预置与用户自定义) */
   private readonly onnxProviders = new Map<string, EmbeddingProvider>();
-  private readonly opts: Required<Pick<VectorRagOptions, 'dynamicTopK' | 'staticTopK' | 'minScore'>> & {
+  private opts: Required<Pick<VectorRagOptions, 'dynamicTopK' | 'staticTopK' | 'minScore'>> & {
     dynamicModel?: string;
     staticModel?: string;
   };
+  private readonly indexedFingerprints = {
+    dynamic: new Map<string, string>(),
+    static: new Map<string, string>(),
+  };
+  private providerKeys: { dynamic?: string; static?: string } = {};
   private readonly adapter = createModelFileAdapter();
 
   private constructor(opts: VectorRagOptions) {
@@ -127,8 +143,8 @@ export class VectorRagRuntime {
       dynamicTopK: opts.dynamicTopK ?? 3,
       staticTopK: opts.staticTopK ?? 3,
       minScore: opts.minScore ?? 0.3,
-      dynamicModel: opts.dynamicModel,
-      staticModel: opts.staticModel,
+      dynamicModel: normalizeModelChoice(opts.dynamicModel),
+      staticModel: normalizeModelChoice(opts.staticModel),
     };
     this.manager = VectorModelManager.defaultFactory();
   }
@@ -141,8 +157,24 @@ export class VectorRagRuntime {
   static get(opts: VectorRagOptions = {}): VectorRagRuntime {
     if (!VectorRagRuntime.instance) {
       VectorRagRuntime.instance = new VectorRagRuntime(opts);
+    } else {
+      VectorRagRuntime.instance.configure(opts);
     }
     return VectorRagRuntime.instance;
+  }
+
+  private configure(opts: VectorRagOptions): void {
+    if (opts.dynamicTopK !== undefined && Number.isSafeInteger(opts.dynamicTopK) && opts.dynamicTopK > 0) {
+      this.opts.dynamicTopK = opts.dynamicTopK;
+    }
+    if (opts.staticTopK !== undefined && Number.isSafeInteger(opts.staticTopK) && opts.staticTopK > 0) {
+      this.opts.staticTopK = opts.staticTopK;
+    }
+    if (opts.minScore !== undefined && Number.isFinite(opts.minScore)) {
+      this.opts.minScore = Math.max(0, Math.min(1, opts.minScore));
+    }
+    if (opts.dynamicModel !== undefined) this.opts.dynamicModel = normalizeModelChoice(opts.dynamicModel);
+    if (opts.staticModel !== undefined) this.opts.staticModel = normalizeModelChoice(opts.staticModel);
   }
 
   /**
@@ -247,6 +279,64 @@ export class VectorRagRuntime {
     this.staticStore.add({ ...entry, vector });
   }
 
+  /**
+   * 同步一个通道的来源集合。
+   *
+   * 指纹相同的条目不会再次嵌入；删除的来源会从索引移除。
+   * 当模型提供者改变时清空该通道，避免不同维度的向量混用。
+   */
+  async syncSources(channel: 'dynamic' | 'static', sources: VectorRagSource[]): Promise<void> {
+    const providerChoice = channel === 'dynamic' ? this.opts.dynamicModel : this.opts.staticModel;
+    const provider = channel === 'dynamic'
+      ? await this.getDynamicProvider(providerChoice)
+      : await this.getStaticProvider(providerChoice);
+    const providerKey = `${provider.name}:${provider.dim}:${providerChoice ?? 'auto'}`;
+    const previousProviderKey = this.providerKeys[channel];
+    const store = channel === 'dynamic' ? this.dynamicStore : this.staticStore;
+    const fingerprints = this.indexedFingerprints[channel];
+    if (previousProviderKey !== providerKey) {
+      store.clear();
+      fingerprints.clear();
+      this.providerKeys[channel] = providerKey;
+    }
+
+    const normalized = new Map<string, VectorRagSource>();
+    for (const source of sources) {
+      const id = source.id.trim();
+      const text = source.text.trim();
+      if (!id || !text) continue;
+      normalized.set(id, { id, text, meta: { ...(source.meta ?? {}) } });
+    }
+
+    for (const id of fingerprints.keys()) {
+      if (!normalized.has(id)) {
+        store.remove(id);
+        fingerprints.delete(id);
+      }
+    }
+
+    const pending = Array.from(normalized.values()).filter((source) => {
+      const fingerprint = sourceFingerprint(source);
+      return fingerprints.get(source.id) !== fingerprint;
+    });
+    if (pending.length > 0) {
+      const vectors = await provider.embedBatch(pending.map((source) => source.text));
+      for (let index = 0; index < pending.length; index++) {
+        const source = pending[index]!;
+        const vector = vectors[index];
+        if (!vector || vector.dim !== provider.dim || vector.values.length !== vector.dim) continue;
+        store.add({
+          id: source.id,
+          text: source.text,
+          meta: source.meta ?? {},
+          vector,
+          fingerprint: sourceFingerprint(source),
+        });
+        fingerprints.set(source.id, sourceFingerprint(source));
+      }
+    }
+  }
+
   /** 双通道检索:动态每轮 + 静态(关键词门控) */
   async retrieve(query: string, staticGate: boolean): Promise<Array<{ entry: VectorEntry; score: number; channel: 'dynamic' | 'static' }>> {
     const out: Array<{ entry: VectorEntry; score: number; channel: 'dynamic' | 'static' }> = [];
@@ -278,6 +368,14 @@ export class VectorRagRuntime {
   }
 }
 
+function sourceFingerprint(source: VectorRagSource): string {
+  return `${source.id}\u0000${source.text}\u0000${JSON.stringify(source.meta ?? {})}`;
+}
+
+function normalizeModelChoice(choice: string | undefined): string | undefined {
+  return !choice || choice === 'auto' ? undefined : choice;
+}
+
 /** 每轮双通道检索并组装注入(失败静默返回空;guard + minScore 见 VectorRagOptions) */
 export async function buildVectorRagInjection(
   query: string,
@@ -287,6 +385,8 @@ export async function buildVectorRagInjection(
   if (!isVectorRagEnabled()) return EMPTY;
   try {
     const runtime = VectorRagRuntime.get(opts);
+    if (opts.dynamicEntries) await runtime.syncSources('dynamic', opts.dynamicEntries);
+    if (opts.staticEntries) await runtime.syncSources('static', opts.staticEntries);
     const hits = await runtime.retrieve(query, staticGate);
     if (hits.length === 0) return { text: '', hits: [], ran: true };
     const parts: string[] = [];

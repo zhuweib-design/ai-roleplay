@@ -65,6 +65,35 @@ describe('MemoryStore (E-01)', () => {
     expect(diffs).toHaveLength(1);
     expect(diffs[0]).toContain('第二行');
   });
+
+  it('search 按关键词返回 scoped 记忆并过滤 standing', async () => {
+    const store = new MemoryStore();
+    await store.put({ id: 'standing', scope: 'standing', kind: 'character', body: '角色住在翡翠酒馆' });
+    await store.put({ id: 'm1', scope: 'scoped', kind: 'session', body: '用户在翡翠酒馆答应寻找失踪的信使' });
+    await store.put({ id: 'm2', scope: 'scoped', kind: 'session', body: '队伍离开了北境哨塔' });
+    const results = await store.search('翡翠酒馆', { scope: 'scoped', limit: 3 });
+    expect(results).toHaveLength(1);
+    expect(results[0]!.fact.id).toBe('m1');
+    expect(results[0]!.score).toBeGreaterThan(0);
+  });
+
+  it('toJSON/fromJSON 保留修订链且跳过损坏条目', async () => {
+    const source = new MemoryStore();
+    await source.put({ id: 'm1', scope: 'scoped', kind: 'session', body: '第一版' });
+    await source.put({ id: 'm1', scope: 'scoped', kind: 'session', body: '第二版' }, 'optimizer');
+    const snapshot = source.toJSON();
+    snapshot.facts.push({
+      id: 'broken',
+      scope: 'scoped',
+      kind: 'session',
+      snapshots: [{ revision: 0, body: '', updatedAt: Number.NaN, author: 'human' }],
+    });
+    const restored = new MemoryStore();
+    restored.fromJSON(snapshot);
+    expect((await restored.get('m1'))?.body).toBe('第二版');
+    expect(await restored.revisions('m1')).toHaveLength(2);
+    expect(await restored.get('broken')).toBeNull();
+  });
 });
 
 describe('CharacterRegistry (E-01)', () => {
@@ -131,5 +160,13 @@ describe('EmotionTracker (E-01)', () => {
     await t.update('s2', '紧张', '');
     expect((await t.current('s1'))?.label).toBe('平静');
     expect((await t.current('s2'))?.label).toBe('紧张');
+  });
+
+  it('toJSON/fromJSON 保留会话情绪修订', async () => {
+    const source = new EmotionTracker();
+    await source.update('s1', '紧张', '发现线索');
+    const restored = new EmotionTracker();
+    restored.fromJSON(source.toJSON());
+    expect(await restored.current('s1')).toMatchObject({ label: '紧张', reason: '发现线索', revision: 1 });
   });
 });

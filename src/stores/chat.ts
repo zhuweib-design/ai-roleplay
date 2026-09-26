@@ -22,7 +22,12 @@ import {
 } from '../services/type-adapters';
 import { useEventsStore } from './events';
 import { buildChatSessionContext, collectLorebooksForCharacter } from './chat-context';
-import { buildVectorRagInjection, getRagDynamicModel, getRagStaticModel } from '@/core/dual-channel-runtime';
+import {
+  buildVectorRagInjection,
+  getRagDynamicModel,
+  getRagStaticModel,
+  type VectorRagSource,
+} from '@/core/dual-channel-runtime';
 import {
   buildRandomEventMessages,
   parseGeneratedRandomEvent,
@@ -40,7 +45,7 @@ import { getBuiltinToolDefinitions, executeBuiltinTool } from '@/core/tool-regis
 import { loadGlobalVariables, setGlobalVariable } from '@/core/variable-store';
 import { useDataBankStore } from './data-bank';
 import { OptimizationPipeline, loadOptimizationConfig } from '@/core/optimization-pipeline';
-import { MemoryStore, CharacterRegistry, EmotionTracker } from '@/core/memory-store';
+import { MemoryStore, CharacterRegistry, EmotionTracker, type MemoryFact } from '@/core/memory-store';
 import type { L0L2Deps } from '@/core/l0-l2-runtime';
 import {
   createProjectRuntime,
@@ -75,7 +80,92 @@ export interface PendingGroupRuntimeTurn {
   nextRetryAt?: string;
 }
 
+export type ChatSummaryStatusPhase = 'none' | 'ready' | 'updating';
+
+/** 当前会话摘要的可视化状态，供上下文面板显示。 */
+export interface ChatSummaryStatus {
+  phase: ChatSummaryStatusPhase;
+  coveredMessageCount: number;
+  lastCoveredMessageIndex: number;
+  createdAt?: number;
+  tokenCount?: number;
+}
+
 const PENDING_GROUP_RUNTIME_TURNS_KEY = 'runtime:pending-group-turns:v1';
+const LOCAL_MEMORY_SNAPSHOT_KEY = 'runtime:local-memory-store:v1';
+
+function clipContextText(value: string, maxChars: number): string {
+  const text = value.trim();
+  if (text.length <= maxChars) return text;
+  return `${text.slice(0, Math.max(0, maxChars - 1))}…`;
+}
+
+/** 合并关键词 RAG 与向量 RAG，按正文去重并控制动态上下文上限。 */
+function mergeRagContext(base: string | undefined, extra: string, maxChars = 12_000): string | undefined {
+  const blocks = [base ?? '', extra]
+    .flatMap((value) => value.split(/\n\n+/))
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  let length = 0;
+  for (const block of blocks) {
+    const key = block.replace(/\s+/g, ' ');
+    if (seen.has(key)) continue;
+    const nextLength = length + block.length + (unique.length > 0 ? 2 : 0);
+    if (nextLength > maxChars) break;
+    seen.add(key);
+    unique.push(block);
+    length = nextLength;
+  }
+  return unique.length > 0 ? unique.join('\n\n') : undefined;
+}
+
+function staticVectorSources(
+  documents: ReturnType<typeof useDataBankStore>['documents'],
+  lorebooks: NonNullable<ReturnType<typeof buildChatSessionContext>['lorebooks']>,
+  characterId: string,
+  chatId: string | null,
+): VectorRagSource[] {
+  const sources: VectorRagSource[] = [];
+  const seen = new Set<string>();
+  for (const doc of documents) {
+    if (doc.scope === 'character' && doc.characterId !== characterId) continue;
+    if (doc.scope === 'chat' && doc.chatId !== chatId) continue;
+    for (const chunk of doc.chunks ?? []) {
+      const id = `document:${doc.id}:${chunk.id}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      sources.push({
+        id,
+        text: `${doc.name}\n${chunk.content}`,
+        meta: { scope: 'document', documentId: doc.id, chunkId: chunk.id },
+      });
+    }
+  }
+  for (const book of lorebooks) {
+    if (book.worldDescription?.content) {
+      const id = `world:${book.id}:description`;
+      sources.push({
+        id,
+        text: `${book.worldDescription.name ?? book.name}\n${book.worldDescription.content}`,
+        meta: { scope: 'world', lorebookId: book.id },
+      });
+    }
+    for (const entry of book.entries ?? []) {
+      if (!entry.enabled || !entry.content.trim()) continue;
+      const id = `lorebook:${book.id}:${entry.id}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      sources.push({
+        id,
+        text: `${entry.title}\n${entry.content}`,
+        meta: { scope: 'world', lorebookId: book.id, entryId: entry.id },
+      });
+    }
+  }
+  return sources;
+}
 
 /**
  * 将任意错误对象转换为 lastError 记录
@@ -176,6 +266,10 @@ export const useChatStore = defineStore('chat', () => {
   const activeChatId = ref<string | null>(null);
   /** 会话索引缓存（移动端会话 Tab / 桌面侧边栏展示；含全部角色，归档由 UI 过滤） */
   const sessions = ref<Chat[]>([]);
+  /** 同一会话的摘要任务串行化，避免快速连续发送时旧摘要覆盖新摘要。 */
+  const summaryJobs = new Map<string, Promise<void>>();
+  /** 任务串行化使用 Map，面板状态使用响应式快照。 */
+  const summaryPendingIds = ref<Record<string, true>>({});
   // 前缀缓存统计(usage 带 cache 拆解时累积)
   const cacheUsage = ref({ hitTokens: 0, missTokens: 0, reported: 0 });
   const totalTokenUsage = computed(() => tokenUsage.value.prompt + tokenUsage.value.completion);
@@ -190,6 +284,21 @@ export const useChatStore = defineStore('chat', () => {
   const prefixStableRate = computed<number | null>(() => {
     if (prefixStability.value.total <= 0) return null;
     return prefixStability.value.stable / prefixStability.value.total;
+  });
+
+  const summaryStatus = computed<ChatSummaryStatus>(() => {
+    const chatId = activeChatId.value;
+    const summary = chatId ? sessions.value.find((session) => session.id === chatId)?.summary : undefined;
+    const pending = chatId ? summaryPendingIds.value[chatId] === true : false;
+    const base = {
+      coveredMessageCount: summary?.coveredMessageCount ?? 0,
+      lastCoveredMessageIndex: summary?.lastCoveredMessageIndex ?? -1,
+      createdAt: summary?.createdAt,
+      tokenCount: summary?.tokenCount,
+    };
+    if (pending) return { phase: 'updating', ...base };
+    if (summary) return { phase: 'ready', ...base };
+    return { phase: 'none', ...base };
   });
   // 首 token 延迟统计(TTFT;命中缓存时显著降低,启发式观测)
   const ttftStats = ref({ lastMs: 0, avgMs: 0, count: 0 });
@@ -235,6 +344,79 @@ export const useChatStore = defineStore('chat', () => {
     registry: new CharacterRegistry(l0Store),
     tracker: new EmotionTracker(),
   };
+  let localMemoryLoaded = false;
+  let localMemoryLoadPromise: Promise<void> | null = null;
+
+  function localMemorySnapshotKey(): string {
+    return `${LOCAL_MEMORY_SNAPSHOT_KEY}:${getActiveProfileId()}`;
+  }
+
+  /** 加载本地长期记忆；重复调用共享同一个 Promise，避免启动和首轮发送并发读写。 */
+  async function loadLocalMemoryStore(): Promise<void> {
+    if (localMemoryLoaded) return;
+    if (localMemoryLoadPromise) return localMemoryLoadPromise;
+    localMemoryLoadPromise = (async () => {
+      if (!storageAdapter) return;
+      try {
+        const saved = await storageAdapter.loadSnapshot<unknown>(localMemorySnapshotKey());
+        if (saved && typeof saved === 'object' && 'memory' in saved) {
+          const snapshot = saved as { memory?: unknown; emotions?: unknown };
+          if (snapshot.memory) l0Store.fromJSON(snapshot.memory);
+          if (snapshot.emotions) l0l2Deps.tracker.fromJSON(snapshot.emotions);
+        } else if (saved) {
+          // 0.4.0 之前的实验快照可能直接保存 MemoryStore JSON。
+          l0Store.fromJSON(saved);
+        }
+      } catch (error) {
+        reportRuntimeError(error, 'initialize');
+      } finally {
+        localMemoryLoaded = true;
+        localMemoryLoadPromise = null;
+      }
+    })();
+    return localMemoryLoadPromise;
+  }
+
+  async function persistLocalMemoryStore(): Promise<void> {
+    if (!storageAdapter || !localMemoryLoaded) return;
+    try {
+      await storageAdapter.saveSnapshot(localMemorySnapshotKey(), {
+        version: 1,
+        memory: l0Store.toJSON(),
+        emotions: l0l2Deps.tracker.toJSON(),
+      });
+    } catch (error) {
+      reportRuntimeError(error, 'event');
+    }
+  }
+
+  async function buildLocalMemoryContext(query: string): Promise<string | undefined> {
+    await loadLocalMemoryStore();
+    const results = await l0Store.search(query, { scope: 'scoped', kind: 'session', limit: 5 });
+    if (results.length === 0) return undefined;
+    const lines = results.map(({ fact }) => `- ${clipContextText(fact.body, 900)}`);
+    return clipContextText(`${t('memory.promptTitle')}\n${lines.join('\n')}`, 5_000);
+  }
+
+  async function recordLocalConversationMemory(
+    character: UICharacter,
+    userMessage: string,
+    assistantMessage: string,
+    turnId?: string,
+  ): Promise<void> {
+    await loadLocalMemoryStore();
+    const normalizedTurnId = turnId?.trim() || `${Date.now()}`;
+    const id = `session-${character.id}-${normalizedTurnId}`;
+    const body = clipContextText(
+      `${t('memory.userLabel')}：${userMessage}\n${t('memory.characterLabel')}：${assistantMessage}`,
+      4_000,
+    );
+    const existing = await l0Store.get(id);
+    if (!existing || existing.body !== body) {
+      await l0Store.put({ id, scope: 'scoped', kind: 'session', body }, 'human');
+      await persistLocalMemoryStore();
+    }
+  }
 
   // Virtual Character OS Runtime：默认使用本地快照，配置 VITE_RUNTIME_BASE_URL 后切换为服务端 HTTP。
   // 单聊 Runtime 允许降级；远程群聊初始化和成员限定上下文失败时必须中止生成。
@@ -1052,6 +1234,8 @@ export const useChatStore = defineStore('chat', () => {
    */
   function setStorageAdapter(adapter: StorageAdapter | null): void {
     storageAdapter = adapter;
+    localMemoryLoaded = false;
+    localMemoryLoadPromise = null;
   }
 
   /**
@@ -1274,6 +1458,7 @@ export const useChatStore = defineStore('chat', () => {
         { id: `char-${characterId}`, scope: 'standing', kind: 'character', body },
         'human'
       );
+      await persistLocalMemoryStore();
     } catch {
       /* fail-open:种入失败不影响主链路 */
     }
@@ -1353,14 +1538,36 @@ export const useChatStore = defineStore('chat', () => {
       ragMessages: [...history.map((m) => m.content), text],
       allowEventTrigger: true,
     });
+    await loadLocalMemoryStore();
+    ctx.memoryContext = await buildLocalMemoryContext(
+      [...history.slice(-4).map((m) => m.content), text].join('\n')
+    );
+    const dataBankStore = useDataBankStore();
+    const staticEntries = staticVectorSources(
+      dataBankStore.documents,
+      ctx.lorebooks ?? [],
+      character.id,
+      activeChatId.value,
+    );
+    const dynamicEntries: VectorRagSource[] = (await l0Store.listFacts({ scope: 'scoped' }))
+      .map((fact: MemoryFact) => ({
+        id: `memory:${fact.id}`,
+        text: fact.body,
+        meta: { scope: 'memory', kind: fact.kind, timestamp: String(fact.updatedAt) },
+      }));
     // 双通道向量检索注入（默认关；只进 ragContext 动态段，不碰 standing 前缀）
     const vectorRag = await buildVectorRagInjection(
       text,
       (ctx.lorebooks?.length ?? 0) > 0,
-      { dynamicModel: getRagDynamicModel(), staticModel: getRagStaticModel() }
+      {
+        dynamicModel: getRagDynamicModel(),
+        staticModel: getRagStaticModel(),
+        dynamicEntries,
+        staticEntries,
+      }
     );
     if (vectorRag.text) {
-      ctx.ragContext = ctx.ragContext ? `${ctx.ragContext}\n${vectorRag.text}` : vectorRag.text;
+      ctx.ragContext = mergeRagContext(ctx.ragContext, vectorRag.text);
     }
 
     try {
@@ -1388,6 +1595,9 @@ export const useChatStore = defineStore('chat', () => {
         {
           onPromptBuilt: (info) => {
             tokenUsage.value.prompt += info.tokenCount;
+          },
+          onEmotionUpdated: () => {
+            void persistLocalMemoryStore();
           },
           onDelta: (_delta, fullContent) => {
             // TTFT:首个 delta 到达时记录(命中缓存时显著降低)
@@ -1434,6 +1644,9 @@ export const useChatStore = defineStore('chat', () => {
             liveMsg.content = fullContent;
             liveMsg.generating = false;
             streamingContent.value = '';
+
+            // 0.4.0：本地模式也保留可检索的会话事实；远程 Runtime 仍按自己的事件/记忆模型落盘。
+            void recordLocalConversationMemory(character, text, fullContent, userMsg.id);
 
             // F16.4: AI 回复完成后，按策略推进故事时间
             const sid = character.storyId ?? null;
@@ -1631,6 +1844,7 @@ export const useChatStore = defineStore('chat', () => {
     if (idx < 0) return;
     const target = character.messages[idx]!;
     if (target.role !== 'assistant') return;
+    invalidateActiveSummary();
 
     // 取该消息之前的全部消息作为 history
     const historyBefore = character.messages.slice(0, idx);
@@ -1674,14 +1888,36 @@ export const useChatStore = defineStore('chat', () => {
       ragMessages: historyBefore.map((m) => m.content),
       allowEventTrigger: false, // 重新生成不触发/完成新事件，仅注入已激活事件
     });
+    await loadLocalMemoryStore();
+    ctx.memoryContext = await buildLocalMemoryContext(
+      [...history.slice(-4).map((m) => m.content), userText].join('\n')
+    );
+    const dataBankStore = useDataBankStore();
+    const staticEntries = staticVectorSources(
+      dataBankStore.documents,
+      ctx.lorebooks ?? [],
+      character.id,
+      activeChatId.value,
+    );
+    const dynamicEntries: VectorRagSource[] = (await l0Store.listFacts({ scope: 'scoped' }))
+      .map((fact: MemoryFact) => ({
+        id: `memory:${fact.id}`,
+        text: fact.body,
+        meta: { scope: 'memory', kind: fact.kind, timestamp: String(fact.updatedAt) },
+      }));
     // 双通道向量检索注入（默认关；fail-open 不阻断重新生成）
     const vectorRag = await buildVectorRagInjection(
       userText,
       (ctx.lorebooks?.length ?? 0) > 0,
-      { dynamicModel: getRagDynamicModel(), staticModel: getRagStaticModel() }
+      {
+        dynamicModel: getRagDynamicModel(),
+        staticModel: getRagStaticModel(),
+        dynamicEntries,
+        staticEntries,
+      }
     );
     if (vectorRag.text) {
-      ctx.ragContext = ctx.ragContext ? `${ctx.ragContext}\n${vectorRag.text}` : vectorRag.text;
+      ctx.ragContext = mergeRagContext(ctx.ragContext, vectorRag.text);
     }
 
     try {
@@ -1710,6 +1946,9 @@ export const useChatStore = defineStore('chat', () => {
         {
           onPromptBuilt: (info) => {
             tokenUsage.value.prompt += info.tokenCount;
+          },
+          onEmotionUpdated: () => {
+            void persistLocalMemoryStore();
           },
           onDelta: (_delta, fullContent) => {
             // TTFT:首个 delta 到达时记录(命中缓存时显著降低)
@@ -1741,6 +1980,12 @@ export const useChatStore = defineStore('chat', () => {
             target.content = fullContent;
             target.generating = false;
             streamingContent.value = '';
+            void recordLocalConversationMemory(
+              character,
+              userText,
+              fullContent,
+              historyBefore[lastUserIdx]?.id,
+            );
           },
           onError: (err) => {
             const type = classifyChatError(err);
@@ -1776,12 +2021,14 @@ export const useChatStore = defineStore('chat', () => {
   function deleteMessage(character: UICharacter, msgId: string): void {
     const idx = character.messages.findIndex((m) => m.id === msgId);
     if (idx >= 0) {
+      invalidateActiveSummary();
       character.messages.splice(idx, 1);
       void persistChat(character);
     }
   }
 
   function editMessage(msg: UIMessage, newContent: string): void {
+    invalidateActiveSummary();
     msg.content = newContent;
     // P0-1：正文被改写后旧思考即失效，必须清空，避免"旧思考 + 新正文"错配（§7.4）
     if (msg.thinking) msg.thinking = '';
@@ -1817,31 +2064,60 @@ export const useChatStore = defineStore('chat', () => {
    * —— persistChat 已透传 `existing?.summary`，因此不会被落盘抹掉。
    */
   async function maybeGenerateSummary(character: UICharacter): Promise<void> {
-    try {
-      const mgr = chatManager;
-      if (!mgr || !storageAdapter) return;
-      const { useSettingsStore } = await import('./settings');
-      const settings = useSettingsStore();
-      const config = settings.summarizationConfig;
-      if (!config?.enabled) return;
-
-      const chatId = activeChatId.value ?? `chat-${character.id}`;
-      const existing = sessions.value.find((s) => s.id === chatId);
-      const messages = uiMsgsToChatMsgs(character.messages);
-      const summary = await mgr.summarizeIfNeeded(messages, config, existing?.summary ?? null);
-      if (!summary) return;
-
-      if (existing) {
-        existing.summary = summary;
+    const chatId = activeChatId.value ?? `chat-${character.id}`;
+    const previous = summaryJobs.get(chatId) ?? Promise.resolve();
+    summaryPendingIds.value = { ...summaryPendingIds.value, [chatId]: true };
+    const current = previous
+      .catch(() => undefined)
+      .then(async () => {
         try {
-          await storageAdapter.saveChat(existing);
+          const mgr = chatManager;
+          if (!mgr || !storageAdapter) return;
+          const { useSettingsStore } = await import('./settings');
+          const settings = useSettingsStore();
+          const config = settings.summarizationConfig;
+          if (!config?.enabled) return;
+
+          const existing = sessions.value.find((s) => s.id === chatId);
+          const messages = uiMsgsToChatMsgs(character.messages);
+          const baselineSummary = existing?.summary ?? null;
+          const summary = await mgr.summarizeIfNeeded(messages, config, baselineSummary);
+          if (!summary) return;
+
+          // 编辑/重新生成可能在摘要请求期间使消息历史失效；只有基线仍是当前摘要时才写回。
+          const latest = sessions.value.find((s) => s.id === chatId);
+          if (!latest || latest.summary !== baselineSummary) return;
+          latest.summary = summary;
+          try {
+            await storageAdapter.saveChat(latest);
+          } catch {
+            /* 落盘失败不阻断：内存态已更新，下一轮注入仍可用 */
+          }
         } catch {
-          /* 落盘失败不阻断：内存态已更新，下一轮注入仍可用 */
+          /* fail-open：摘要整条链路静默失败 */
         }
+      });
+    summaryJobs.set(chatId, current);
+    try {
+      await current;
+    } finally {
+      if (summaryJobs.get(chatId) === current) {
+        summaryJobs.delete(chatId);
+        const next = { ...summaryPendingIds.value };
+        delete next[chatId];
+        summaryPendingIds.value = next;
       }
-    } catch {
-      /* fail-open：摘要整条链路静默失败 */
     }
+  }
+
+  /** 历史内容被编辑或重新生成后，旧摘要不再可信，必须从会话元数据中失效。 */
+  function invalidateActiveSummary(): void {
+    const chatId = activeChatId.value;
+    if (!chatId) return;
+    const existing = sessions.value.find((s) => s.id === chatId);
+    if (!existing?.summary) return;
+    existing.summary = undefined;
+    if (storageAdapter) void storageAdapter.saveChat(existing).catch(() => undefined);
   }
 
   async function persistChat(character: UICharacter): Promise<void> {
@@ -2142,8 +2418,10 @@ export const useChatStore = defineStore('chat', () => {
     prefixStability,
     prefixStableRate,
     ttftStats,
+    summaryStatus,
     // 依赖注入
     setStorageAdapter,
+    loadLocalMemoryStore,
     setApiProfile,
     ensureRuntimeIntegration,
     ensureGroupRuntimeIntegration,

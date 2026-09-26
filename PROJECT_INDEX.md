@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-26 22:01（本地时区）
+- **生成时间**：2026-09-27 00:04（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
-- **项目标识**：`ai-roleplay` v0.3.1 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
+- **项目标识**：`ai-roleplay` v0.4.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：494 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：30 个
+- **收录文件**：495 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：30 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -19,7 +19,7 @@ ai-roleplay/
   - `memory/`  — 10 个文件
 - `.workbuddy-ai/`  — 6 个文件
   - `memory/`  — 6 个文件
-- `docs/`  — 175 个文件
+- `docs/`  — 176 个文件
   - `assets/`  — 110 个文件
     - `screenshots/`  — 110 个文件
       - `themes/`  — 84 个文件
@@ -28,7 +28,7 @@ ai-roleplay/
         - `oled/`  — 21 个文件
         - `theatre/`  — 21 个文件
   - `design/`  — 14 个文件
-  - `dev/`  — 24 个文件
+  - `dev/`  — 25 个文件
   - `fixes/`  — 17 个文件
   - `other/`  — 6 个文件
 - `e2e/`  — 13 个文件
@@ -111,7 +111,7 @@ ai-roleplay/
 | `src-tauri/src/shortcut.rs` | rs | 程序 | 全局快捷键 | 已跟踪 |  |
 | `src-tauri/src/storage/mod.rs` | rs | 程序 | Rust 侧文件存储模块 | 已跟踪 |  |
 | `src-tauri/src/tray.rs` | rs | 程序 | 系统托盘 | 已跟踪 |  |
-| `src/App.vue` | vue | 程序 | 根组件：全局布局、主题注入、移动端适配 | 已跟踪 |  |
+| `src/App.vue` | vue | 程序 | 根组件：全局布局、主题注入、移动端适配 | 已修改 |  |
 | `src/api/anthropic-client.ts` | ts | 程序 | Anthropic 协议客户端 | 已跟踪 |  |
 | `src/api/anthropic-protocol.ts` | ts | 程序 | Anthropic 协议报文构造与解析 | 已跟踪 |  |
 | `src/api/api-client.ts` | ts | 程序 | 统一 API 客户端抽象 | 已跟踪 |  |
@@ -140,7 +140,7 @@ ai-roleplay/
 | `src/components/common/Toast.vue` | vue | 程序 | 通用组件：轻提示 | 已跟踪 |  |
 | `src/components/common/icons.ts` | ts | 程序 | 图标路径常量表 | 已跟踪 |  |
 | `src/components/layout/CharacterList.vue` | vue | 程序 | 布局：角色列表侧栏 | 已跟踪 |  |
-| `src/components/layout/ContextPanel.vue` | vue | 程序 | 布局：上下文信息面板 | 已跟踪 |  |
+| `src/components/layout/ContextPanel.vue` | vue | 程序 | 布局：上下文信息面板 | 已修改 |  |
 | `src/components/layout/NavRail.vue` | vue | 程序 | 布局：桌面端侧边导航 | 已跟踪 |  |
 | `src/components/mobile/BottomNav.vue` | vue | 程序 | 布局：移动端底部导航 | 已跟踪 |  |
 | `src/components/random-events/SceneConfigModal.vue` | vue | 程序 | 组件：随机事件场景配置 | 已跟踪 |  |
@@ -162,7 +162,7 @@ ai-roleplay/
 | `src/core/compression.ts` | ts | 程序 | 内容压缩算法 | 已跟踪 |  |
 | `src/core/data-bank.ts` | ts | 程序 | 数据银行（素材库） | 已跟踪 |  |
 | `src/core/document-chunker.ts` | ts | 程序 | 文档分块器 | 已跟踪 |  |
-| `src/core/dual-channel-runtime.ts` | ts | 程序 | 双通道运行时 | 已跟踪 |  |
+| `src/core/dual-channel-runtime.ts` | ts | 程序 | 双通道运行时 | 已修改 |  |
 | `src/core/embedding.ts` | ts | 程序 | 嵌入向量计算封装 | 已跟踪 |  |
 | `src/core/event-types.ts` | ts | 程序 | 事件类型定义 | 已跟踪 |  |
 | `src/core/extension-loader.ts` | ts | 程序 | 扩展加载器 | 已跟踪 |  |
@@ -178,17 +178,17 @@ ai-roleplay/
 | `src/core/lorebook.ts` | ts | 程序 | 世界书（Lorebook）数据模型 | 已跟踪 |  |
 | `src/core/macro.ts` | ts | 程序 | 宏变量替换（{{char}} / {{user}} 等） | 已跟踪 |  |
 | `src/core/market-index.ts` | ts | 程序 | 社区市场索引解析 | 已跟踪 |  |
-| `src/core/memory-store.ts` | ts | 程序 | 长期记忆存储 | 已跟踪 |  |
+| `src/core/memory-store.ts` | ts | 程序 | 长期记忆存储 | 已修改 |  |
 | `src/core/mobile-nav.ts` | ts | 程序 | 移动端导航状态管理 | 已跟踪 |  |
 | `src/core/model-file-adapter.ts` | ts | 程序 | 模型文件读写适配（AppData/model 目录） | 已跟踪 |  |
 | `src/core/npc-generator.ts` | ts | 程序 | NPC 生成 | 已跟踪 |  |
 | `src/core/onnx-embedding-provider.ts` | ts | 程序 | ONNX Runtime Web 嵌入提供方 | 已跟踪 |  |
 | `src/core/optimization-pipeline.ts` | ts | 程序 | 上下文优化流水线 | 已跟踪 |  |
 | `src/core/output-discipline.ts` | ts | 程序 | 输出纪律约束（L2） | 已跟踪 |  |
-| `src/core/prompt-builder.ts` | ts | 程序 | 提示词组装（角色 / 世界书 / 记忆拼接） | 已跟踪 |  |
+| `src/core/prompt-builder.ts` | ts | 程序 | 提示词组装（角色 / 世界书 / 记忆拼接） | 已修改 |  |
 | `src/core/protagonist.ts` | ts | 程序 | 主角设定管理 | 已跟踪 |  |
 | `src/core/rag-benchmark.ts` | ts | 程序 | RAG 检索质量基准测试 | 已跟踪 |  |
-| `src/core/rag-retriever.ts` | ts | 程序 | RAG 检索器：向量召回与上下文注入 | 已跟踪 |  |
+| `src/core/rag-retriever.ts` | ts | 程序 | RAG 检索器：向量召回与上下文注入 | 已修改 |  |
 | `src/core/random-event-generator.ts` | ts | 程序 | 随机事件生成 | 已跟踪 |  |
 | `src/core/sanitize.ts` | ts | 程序 | HTML 净化（DOMPurify 封装，防 XSS） | 已跟踪 |  |
 | `src/core/slash-command.ts` | ts | 程序 | 斜杠命令解析与执行 | 已跟踪 |  |
@@ -221,8 +221,8 @@ ai-roleplay/
 | `src/core/world-setting-chunker.ts` | ts | 程序 | 世界设定分块器 | 已跟踪 |  |
 | `src/data/mock-data.ts` | ts | 程序 | 开发/测试用示例数据 | 已跟踪 |  |
 | `src/i18n/index.ts` | ts | 程序 | i18n 初始化（vue-i18n） | 已跟踪 |  |
-| `src/i18n/locales/en.ts` | ts | 程序 | 英文文案表 | 已跟踪 |  |
-| `src/i18n/locales/zh.ts` | ts | 程序 | 中文文案表 | 已跟踪 |  |
+| `src/i18n/locales/en.ts` | ts | 程序 | 英文文案表 | 已修改 |  |
+| `src/i18n/locales/zh.ts` | ts | 程序 | 中文文案表 | 已修改 |  |
 | `src/main.ts` | ts | 程序 | 应用引导入口：创建 Vue 实例、注册 Pinia 与路由 | 已跟踪 |  |
 | `src/router/index.ts` | ts | 程序 | Vue Router 路由表 | 已跟踪 |  |
 | `src/runtime/character-compiler.ts` | ts | 程序 | Virtual Character OS Archetype + Delta + Seed Memories 编译器 | 已跟踪 |  |
@@ -263,7 +263,7 @@ ai-roleplay/
 | `src/stores/character-version.ts` | ts | 程序 | 状态存储：角色卡版本历史 | 已跟踪 |  |
 | `src/stores/character.ts` | ts | 程序 | 状态存储：角色卡列表与当前角色 | 已跟踪 |  |
 | `src/stores/chat-context.ts` | ts | 程序 | 状态存储：对话上下文绑定（角色 / 世界书） | 已跟踪 |  |
-| `src/stores/chat.ts` | ts | 程序 | 状态存储：会话与消息管理 | 已跟踪 |  |
+| `src/stores/chat.ts` | ts | 程序 | 状态存储：会话与消息管理 | 已修改 |  |
 | `src/stores/community-market.ts` | ts | 程序 | 状态存储：社区市场 | 已跟踪 |  |
 | `src/stores/data-bank.ts` | ts | 程序 | 状态存储：数据银行素材 | 已跟踪 |  |
 | `src/stores/events.ts` | ts | 程序 | 状态存储：全局事件总线 | 已跟踪 |  |
@@ -341,7 +341,7 @@ ai-roleplay/
 | `tests/core/community-market.test.ts` | ts | 测试 | 单元测试：community-market 模块 | 已跟踪 |  |
 | `tests/core/compression.test.ts` | ts | 测试 | 单元测试：compression 模块 | 已跟踪 |  |
 | `tests/core/document-chunker.test.ts` | ts | 测试 | 单元测试：document-chunker 模块 | 已跟踪 |  |
-| `tests/core/dual-channel-runtime.test.ts` | ts | 测试 | 单元测试：dual-channel-runtime 模块 | 已跟踪 |  |
+| `tests/core/dual-channel-runtime.test.ts` | ts | 测试 | 单元测试：dual-channel-runtime 模块 | 已修改 |  |
 | `tests/core/embedding.test.ts` | ts | 测试 | 单元测试：embedding 模块 | 已跟踪 |  |
 | `tests/core/event-types.test.ts` | ts | 测试 | 单元测试：event-types 模块 | 已跟踪 |  |
 | `tests/core/extension-loader.test.ts` | ts | 测试 | 单元测试：extension-loader 模块 | 已跟踪 |  |
@@ -355,17 +355,17 @@ ai-roleplay/
 | `tests/core/macro.test.ts` | ts | 测试 | 单元测试：macro 模块 | 已跟踪 |  |
 | `tests/core/market-index-integration.test.ts` | ts | 测试 | 单元测试：market-index-integration 模块 | 已跟踪 |  |
 | `tests/core/market-index.test.ts` | ts | 测试 | 单元测试：market-index 模块 | 已跟踪 |  |
-| `tests/core/memory-store.test.ts` | ts | 测试 | 单元测试：memory-store 模块 | 已跟踪 |  |
+| `tests/core/memory-store.test.ts` | ts | 测试 | 单元测试：memory-store 模块 | 已修改 |  |
 | `tests/core/mobile-nav.test.ts` | ts | 测试 | 单元测试：mobile-nav 模块 | 已跟踪 |  |
 | `tests/core/npc-generator.test.ts` | ts | 测试 | 单元测试：npc-generator 模块 | 已跟踪 |  |
 | `tests/core/onnx-real-model.test.ts` | ts | 测试 | 单元测试：onnx-real-model 模块 | 已跟踪 |  |
 | `tests/core/optimization-pipeline.test.ts` | ts | 测试 | 单元测试：optimization-pipeline 模块 | 已跟踪 |  |
 | `tests/core/output-discipline.test.ts` | ts | 测试 | 单元测试：output-discipline 模块 | 已跟踪 |  |
 | `tests/core/prompt-builder.lorebook.test.ts` | ts | 测试 | 单元测试：prompt-builder.lorebook 模块 | 已跟踪 |  |
-| `tests/core/prompt-builder.test.ts` | ts | 测试 | 单元测试：prompt-builder 模块 | 已跟踪 |  |
+| `tests/core/prompt-builder.test.ts` | ts | 测试 | 单元测试：prompt-builder 模块 | 已修改 |  |
 | `tests/core/protagonist.test.ts` | ts | 测试 | 单元测试：protagonist 模块 | 已跟踪 |  |
 | `tests/core/rag-benchmark.test.ts` | ts | 测试 | 单元测试：rag-benchmark 模块 | 已跟踪 |  |
-| `tests/core/rag-retriever.test.ts` | ts | 测试 | 单元测试：rag-retriever 模块 | 已跟踪 |  |
+| `tests/core/rag-retriever.test.ts` | ts | 测试 | 单元测试：rag-retriever 模块 | 已修改 |  |
 | `tests/core/random-event-generator.test.ts` | ts | 测试 | 单元测试：random-event-generator 模块 | 已跟踪 |  |
 | `tests/core/random-event-templates.test.ts` | ts | 测试 | 单元测试：random-event-templates 模块 | 已跟踪 |  |
 | `tests/core/sanitize.test.ts` | ts | 测试 | 单元测试：sanitize 模块 | 已跟踪 |  |
@@ -457,11 +457,11 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `public/sillytavern-vs-airoleplay.html` | html | 产品文档 | 静态页：SillyTavern vs ai-roleplay 系统化对比报告 | 已忽略 |  |
 
-### 2.4 开发文档（30）
+### 2.4 开发文档（31）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
+| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已修改 |  |
 | `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
 | `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已修改 |  |
 | `README.md` | md | 开发文档 | 项目主说明（中文） | 已修改 |  |
@@ -483,7 +483,8 @@ ai-roleplay/
 | `docs/dev/mobile-pwa-plan.md` | md | 开发文档 | 开发文档：手机端 PWA 实现计划 | 已跟踪 |  |
 | `docs/dev/rag-enhancement-plan.md` | md | 开发文档 | 开发文档：RAG 增强实现计划 | 已跟踪 |  |
 | `docs/dev/release-notes-0.3.0.md` | md | 开发文档 | 开发文档：0.3.0 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制） | 已跟踪 |  |
-| `docs/dev/release-notes-0.3.1.md` | md | 开发文档 | 开发文档：0.3.1 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制） | 未跟踪 |  |
+| `docs/dev/release-notes-0.3.1.md` | md | 开发文档 | 开发文档：0.3.1 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制） | 已跟踪 |  |
+| `docs/dev/release-notes-0.4.0.md` | md | 开发文档 | 开发文档：0.4.0 发布说明（新能力 / 数据兼容 / 验证结果） | 未跟踪 |  |
 | `docs/dev/runtime-database-migration-runbook.md` | md | 开发文档 | 开发文档：Virtual Character OS 数据库迁移演练 Runbook（备份 / 锁等待 / 回滚 / 演练清单） | 已跟踪 |  |
 | `docs/dev/web-deployment-sop.md` | md | 开发文档 | 开发文档：Web 端部署 SOP（部署前验证 / 硬性要求 / 5 类托管配置 / 部署后验证 / 常见坑 / 回滚） | 已跟踪 |  |
 | `docs/dev/优化效果评估脚本-使用说明.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
@@ -569,15 +570,15 @@ ai-roleplay/
 | `.gitignore` | gitignore | 配置 | Git 忽略规则（本地保留，不提交） | 已忽略 |  |
 | `.i18nignore` | i18nignore | 配置 | i18n 扫描忽略清单 | 已忽略 |  |
 | `eslint.config.js` | js | 配置 | ESLint 扁平配置（Vue + TS） | 已跟踪 |  |
-| `package-lock.json` | json | 配置 | npm 依赖锁定文件（自动生成） | 已跟踪 |  |
-| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.3.1） | 已跟踪 |  |
+| `package-lock.json` | json | 配置 | npm 依赖锁定文件（自动生成） | 已修改 |  |
+| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.4.0） | 已修改 |  |
 | `playwright.config.ts` | ts | 配置 | Playwright E2E 配置：testDir=e2e、本地 msedge / CI chromium | 已跟踪 |  |
 | `reasonix.toml` | toml | 配置 | Reasonix 工具工作区配置 | 已跟踪 |  |
 | `src-tauri/.gitignore` | gitignore | 配置 | 桌面端专属忽略规则 | 已跟踪 |  |
-| `src-tauri/Cargo.toml` | toml | 配置 | Rust 依赖与 crate 元信息 | 已跟踪 |  |
+| `src-tauri/Cargo.toml` | toml | 配置 | Rust 依赖与 crate 元信息 | 已修改 |  |
 | `src-tauri/capabilities/default.json` | json | 配置 | Tauri 2 权限能力声明 | 已跟踪 |  |
 | `src-tauri/icons/` | 目录聚合 | 配置 | Tauri 应用图标资源（桌面 / Android / iOS 多尺寸 PNG / ICO / ICNS）（共 49 个文件） | 未跟踪 |  |
-| `src-tauri/tauri.conf.json` | json | 配置 | Tauri 应用配置（窗口 / 本地打包） | 已跟踪 |  |
+| `src-tauri/tauri.conf.json` | json | 配置 | Tauri 应用配置（窗口 / 本地打包） | 已修改 |  |
 | `tsconfig.json` | json | 配置 | TypeScript 编译选项与路径映射 | 已跟踪 |  |
 | `vite.config.ts` | ts | 配置 | Vite 构建配置：别名、代码分包、PWA 插件 | 已跟踪 |  |
 | `vitest.config.ts` | ts | 配置 | Vitest 单测配置：jsdom 环境、覆盖率阈值门禁 | 已跟踪 |  |
@@ -650,7 +651,7 @@ ai-roleplay/
 | 程序 | 203 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 144 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
-| 开发文档 | 30 | docs/dev/ 实现计划、Runbook、审计记录 |
+| 开发文档 | 31 | docs/dev/ 实现计划、Runbook、审计记录 |
 | 修复文档 | 17 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
 | 设计文档 | 14 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
 | AI记忆 | 16 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
@@ -658,7 +659,7 @@ ai-roleplay/
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 19 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 32 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **494** | 与「收录文件」数一致 |
+| **合计** | **495** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

@@ -459,6 +459,31 @@ function onCtxTouchEnd(e: TouchEvent) {
         </p>
       </section>
 
+      <!-- 当前会话摘要状态：让摘要是否生效、覆盖范围和更新状态可见。 -->
+      <section class="ctx-section" aria-labelledby="ctx-summary-title">
+        <header class="ctx-section-header">
+          <span id="ctx-summary-title" class="ctx-section-title">{{ t('ctx.summaryTitle') }}</span>
+          <span class="ctx-section-value">
+            {{
+              chatStore.summaryStatus.phase === 'updating'
+                ? t('ctx.summaryUpdatingShort')
+                : chatStore.summaryStatus.phase === 'ready'
+                  ? t('ctx.summaryReadyShort')
+                  : t('ctx.summaryNoneShort')
+            }}
+          </span>
+        </header>
+        <p class="ctx-param-hint">
+          {{
+            chatStore.summaryStatus.phase === 'updating'
+              ? t('ctx.summaryUpdating', { count: chatStore.summaryStatus.coveredMessageCount })
+              : chatStore.summaryStatus.phase === 'ready'
+                ? t('ctx.summaryCovered', { count: chatStore.summaryStatus.coveredMessageCount })
+                : t('ctx.summaryNotReady')
+          }}
+        </p>
+      </section>
+
       <!-- Token 预算 -->
       <section class="ctx-section" aria-labelledby="ctx-token-title">
         <header class="ctx-section-header">

@@ -3,6 +3,25 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 版本格式：`0.Y.Z`。`0` 为里程碑，`Y` 为功能/发布，`Z` 为修复。
 
+## [0.4.0] - 2026-09-26
+
+### 新增
+- **本地长期记忆持久化**：记忆事实与情绪快照复用现有 `StorageAdapter`，按当前 Profile 隔离；应用重启后自动恢复，旧对话数据不被覆盖。
+- **动态记忆提示词注入**：每轮检索相关的本地会话记忆，作为独立动态 system 段注入，保持角色前缀稳定。
+- **双通道向量 RAG 增量同步**：数据银行、世界书和会话记忆按来源指纹增量嵌入；内容删除、内容替换和模型切换都会同步清理旧索引。
+- **长对话摘要状态**：摘要任务按会话串行化，编辑、删除和重新生成会使旧摘要失效；上下文面板显示摘要是否生成、覆盖消息数和更新中状态。
+
+### 强化
+- **RAG 检索缓存**：文档正文、作用域和分块元数据参与指纹计算，等长内容替换也会失效；缓存键纳入最近消息数、关键词数和结果数配置。
+- **提示词预算裁剪**：上下文超预算时优先裁剪历史消息，尽量保留本轮 RAG 与本地记忆动态段。
+- **兼容已有数据**：没有新增数据库迁移；已有角色、世界书、对话和设置继续使用原存储，新增记忆快照按需创建。
+
+### 验证
+- 全量 Vitest：3456 项通过、3 项跳过；127 个测试文件通过、2 个跳过。
+- `npm run typecheck`、`npm run lint`、`npm run i18n:check` 通过。
+- Vite 生产构建与 PWA 资源生成通过。
+- 断点、视口、触屏 hover、`!important`、移动端控件字号、对比度和 CSP 门禁通过。
+
 ## [0.3.1] - 2026-09-26
 
 ### 新增
@@ -78,5 +97,6 @@
 - 扩展沙箱默认拒绝权限，社区扩展默认不自动执行。
 
 [0.3.1]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.3.1
+[0.4.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.4.0
 [0.3.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.3.0
 [0.2.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.2.0

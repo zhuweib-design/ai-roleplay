@@ -230,6 +230,32 @@ describe('RAG 关键词检索器 (F09.2)', () => {
       // 新文档内容可被检索到
       expect(third[0]!.chunk.content).toContain('修订版');
     });
+
+    test('等长替换文档正文也会使缓存失效', () => {
+      const doc = makeDocument('d1', '魔法指南', ['火球术是基础魔法']);
+      const messages = ['我想学习雷电术'];
+      const first = retrieveRelevantChunks([doc], messages);
+      expect(first).toEqual([]);
+
+      // 保持 updatedAt 与正文长度不变，验证缓存指纹确实读取正文内容。
+      doc.chunks[0]!.content = '雷电术是基础魔法';
+      const second = retrieveRelevantChunks([doc], messages);
+      expect(second.length).toBeGreaterThan(0);
+      expect(second[0]!.chunk.content).toContain('雷电术');
+    });
+
+    test('检索配置变化不会复用旧缓存结果', () => {
+      const doc = makeDocument('d1', '魔法指南', [
+        '火球术是基础魔法',
+        '火球术需要咒语',
+      ]);
+      const messages = ['我想学习火球术'];
+      const one = retrieveRelevantChunks([doc], messages, { maxChunks: 1 });
+      const two = retrieveRelevantChunks([doc], messages, { maxChunks: 2 });
+      expect(one).toHaveLength(1);
+      expect(two).toHaveLength(2);
+      expect(two).not.toBe(one);
+    });
   });
 
   describe('buildRagContext 构建注入文本', () => {

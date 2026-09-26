@@ -51,6 +51,33 @@ export interface EmotionState {
   revision: number;
 }
 
+/** 记忆存储的可持久化快照格式。版本字段用于未来迁移。 */
+export interface SerializedMemoryStore {
+  version: 1;
+  facts: Array<{
+    id: string;
+    scope: MemoryScope;
+    kind: MemoryKind;
+    snapshots: Array<{
+      revision: number;
+      body: string;
+      updatedAt: number;
+      author: 'human' | 'optimizer';
+    }>;
+  }>;
+}
+
+export interface MemorySearchOptions {
+  scope?: MemoryScope;
+  kind?: MemoryKind;
+  limit?: number;
+}
+
+export interface MemorySearchResult {
+  fact: MemoryFact;
+  score: number;
+}
+
 /** 前缀组装结果 */
 export interface AssembledPrefix {
   /** 组装后的前缀文本(字节稳定:同输入必同输出) */
@@ -146,6 +173,46 @@ export class MemoryStore {
     };
   }
 
+  /** 列出当前修订的事实。返回值按更新时间倒序，避免暴露内部快照引用。 */
+  async listFacts(options: Pick<MemorySearchOptions, 'scope' | 'kind'> = {}): Promise<MemoryFact[]> {
+    const facts: MemoryFact[] = [];
+    for (const id of this.facts.keys()) {
+      const fact = await this.get(id);
+      if (!fact) continue;
+      if (options.scope && fact.scope !== options.scope) continue;
+      if (options.kind && fact.kind !== options.kind) continue;
+      facts.push(fact);
+    }
+    return facts.sort((a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id));
+  }
+
+  /**
+   * 从本地查询中挑选相关事实。
+   *
+   * 这是轻量级的确定性检索，用于没有向量模型时的本地降级链路；
+   * 向量 RAG 仍可在更大的语料上提供语义召回。结果不修改事实本身。
+   */
+  async search(query: string, options: MemorySearchOptions = {}): Promise<MemorySearchResult[]> {
+    const facts = await this.listFacts(options);
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    if (!normalizedQuery) {
+      return facts.slice(0, Math.max(0, options.limit ?? facts.length)).map((fact) => ({ fact, score: 0 }));
+    }
+
+    const queryTerms = memoryTerms(normalizedQuery);
+    const scored: MemorySearchResult[] = [];
+    for (const fact of facts) {
+      const body = fact.body.toLocaleLowerCase();
+      const matchedTerms = queryTerms.filter((term) => body.includes(term));
+      const exact = body.includes(normalizedQuery) ? 1 : 0;
+      const score = exact * 2 + matchedTerms.length / Math.max(1, queryTerms.length);
+      if (score > 0) scored.push({ fact, score });
+    }
+
+    scored.sort((a, b) => b.score - a.score || b.fact.updatedAt - a.fact.updatedAt || a.fact.id.localeCompare(b.fact.id));
+    return scored.slice(0, Math.max(0, options.limit ?? 8));
+  }
+
   /** 修订快照列表(新→旧) */
   async revisions(mid: string): Promise<RevisionMeta[]> {
     const history = this.facts.get(mid);
@@ -185,10 +252,98 @@ export class MemoryStore {
     return out;
   }
 
+  /** 导出不含内部 Map 的可持久化快照。 */
+  toJSON(): SerializedMemoryStore {
+    return {
+      version: 1,
+      facts: Array.from(this.facts.values()).map((history) => ({
+        id: history.id,
+        scope: history.scope,
+        kind: history.kind,
+        snapshots: history.snapshots.map((snapshot) => ({ ...snapshot })),
+      })),
+    };
+  }
+
+  /**
+   * 导入快照。损坏的单条记录会被跳过，整个快照不会阻塞聊天主链路。
+   * 导入前替换当前内容，避免残留已经删除的事实。
+   */
+  fromJSON(value: unknown): void {
+    const parsed = parseSerializedMemoryStore(value);
+    if (!parsed) return;
+    this.facts.clear();
+    for (const history of parsed.facts) {
+      this.facts.set(history.id, {
+        id: history.id,
+        scope: history.scope,
+        kind: history.kind,
+        snapshots: history.snapshots.map((snapshot) => ({ ...snapshot })),
+      });
+    }
+  }
+
+  /** 清空当前存储，主要用于切换账户或测试隔离。 */
+  clear(): void {
+    this.facts.clear();
+  }
+
   /** 列出全部事实 id(供注册表组装) */
   listIds(): string[] {
     return Array.from(this.facts.keys());
   }
+}
+
+function memoryTerms(text: string): string[] {
+  const terms = new Set<string>();
+  for (const token of text.match(/[a-z0-9]+/gi) ?? []) {
+    if (token.length >= 2) terms.add(token.toLocaleLowerCase());
+  }
+  const cjk = text.replace(/[^\u3400-\u9fff]/g, '');
+  for (let i = 0; i < cjk.length - 1; i++) terms.add(cjk.slice(i, i + 2));
+  for (let i = 0; i < cjk.length - 2; i++) terms.add(cjk.slice(i, i + 3));
+  return Array.from(terms);
+}
+
+function parseSerializedMemoryStore(value: unknown): SerializedMemoryStore | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as { version?: unknown; facts?: unknown };
+  if (raw.version !== 1 || !Array.isArray(raw.facts)) return null;
+  const facts: SerializedMemoryStore['facts'] = [];
+  for (const candidate of raw.facts) {
+    if (!candidate || typeof candidate !== 'object') continue;
+    const item = candidate as Record<string, unknown>;
+    if (
+      typeof item.id !== 'string' ||
+      (item.scope !== 'standing' && item.scope !== 'scoped') ||
+      !['character', 'world', 'emotion', 'session'].includes(String(item.kind)) ||
+      !Array.isArray(item.snapshots)
+    ) continue;
+    const snapshots = item.snapshots
+      .filter((snapshot): snapshot is Record<string, unknown> => !!snapshot && typeof snapshot === 'object')
+      .filter((snapshot) =>
+        Number.isSafeInteger(snapshot.revision) &&
+        (snapshot.revision as number) > 0 &&
+        typeof snapshot.body === 'string' &&
+        Number.isFinite(snapshot.updatedAt) &&
+        (snapshot.author === 'human' || snapshot.author === 'optimizer')
+      )
+      .map((snapshot) => ({
+        revision: snapshot.revision as number,
+        body: snapshot.body as string,
+        updatedAt: snapshot.updatedAt as number,
+        author: snapshot.author as 'human' | 'optimizer',
+      }))
+      .sort((a, b) => a.revision - b.revision);
+    if (snapshots.length === 0) continue;
+    facts.push({
+      id: item.id,
+      scope: item.scope as MemoryScope,
+      kind: item.kind as MemoryKind,
+      snapshots,
+    });
+  }
+  return { version: 1, facts };
 }
 
 // ── CharacterRegistry ──
@@ -263,6 +418,37 @@ export class EmotionTracker {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /** 导出情绪状态，供本地会话快照持久化。 */
+  toJSON(): Record<string, EmotionState> {
+    return Object.fromEntries(
+      Array.from(this.states.entries()).map(([id, state]) => [id, { ...state }])
+    );
+  }
+
+  /** 从快照恢复情绪状态；非法条目跳过。 */
+  fromJSON(value: unknown): void {
+    if (!value || typeof value !== 'object') return;
+    this.states.clear();
+    for (const [id, raw] of Object.entries(value as Record<string, unknown>)) {
+      if (!raw || typeof raw !== 'object') continue;
+      const state = raw as Partial<EmotionState>;
+      if (
+        typeof state.label === 'string' &&
+        typeof state.reason === 'string' &&
+        Number.isFinite(state.updatedAt) &&
+        Number.isSafeInteger(state.revision) &&
+        (state.revision as number) > 0
+      ) {
+        this.states.set(id, {
+          label: state.label,
+          reason: state.reason,
+          updatedAt: state.updatedAt as number,
+          revision: state.revision as number,
+        });
+      }
     }
   }
 }
