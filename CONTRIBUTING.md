@@ -7,7 +7,7 @@
 本项目建立在以下优秀的开源技术之上，向它们的作者与社区致敬：
 
 - **[Vue.js](https://github.com/vuejs/core)** — 前端 UI 框架
-- **[Tauri](https://github.com/tauri-apps/tauri)** — 桌面应用壳（含自动更新/托盘/快捷键）
+- **[Tauri](https://github.com/tauri-apps/tauri)** — 桌面应用壳（托盘/快捷键）
 - **[SillyTavern](https://github.com/SillyTavern/SillyTavern)** — 本项目基于其角色扮演聊天架构
 - **[Vite](https://github.com/vitejs/vite)** — 前端构建与开发服务器
 - **[Rust](https://github.com/rust-lang/rust)** — 桌面端系统编程语言

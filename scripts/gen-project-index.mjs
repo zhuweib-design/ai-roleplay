@@ -20,6 +20,14 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_FILE = path.join(ROOT, 'PROJECT_INDEX.md');
+const PROJECT_VERSION = (() => {
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+    return typeof packageJson.version === 'string' ? packageJson.version : 'unknown';
+  } catch {
+    return 'unknown';
+  }
+})();
 
 /** 按目录名排除（含依赖、构建产物、缓存、测试输出） */
 const EXCLUDE_DIR_NAMES = new Set([
@@ -65,7 +73,7 @@ const AGGREGATE_DIRS = {
 /** 人工核对过的用途说明（优先级最高，避免用文件名臆测） */
 const CURATED = {
   'index.html': 'Vite 入口 HTML，挂载 #app',
-  'package.json': 'npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.2.0）',
+  'package.json': `npm 清单：依赖、脚本、项目元信息（ai-roleplay v${PROJECT_VERSION}）`,
   'package-lock.json': 'npm 依赖锁定文件（自动生成）',
   'vite.config.ts': 'Vite 构建配置：别名、代码分包、PWA 插件',
   'vitest.config.ts': 'Vitest 单测配置：jsdom 环境、覆盖率阈值门禁',
@@ -284,7 +292,7 @@ const CURATED = {
 
   'src-tauri/Cargo.toml': 'Rust 依赖与 crate 元信息',
   'src-tauri/build.rs': 'Tauri 构建脚本（tauri-build）',
-  'src-tauri/tauri.conf.json': 'Tauri 应用配置（窗口 / 打包 / 更新签名公钥）',
+  'src-tauri/tauri.conf.json': 'Tauri 应用配置（窗口 / 本地打包）',
   'src-tauri/capabilities/default.json': 'Tauri 2 权限能力声明',
   'src-tauri/.gitignore': '桌面端专属忽略规则',
   'src-tauri/src/main.rs': 'Rust 主入口',
@@ -646,7 +654,7 @@ function main() {
   parts.push('');
   parts.push(`- **生成时间**：${stamp}（本地时区）`);
   parts.push('- **项目根目录**：`.`（本文件所在目录；全文均为相对路径）');
-  parts.push('- **项目标识**：`ai-roleplay` v0.2.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）');
+  parts.push(`- **项目标识**：\`ai-roleplay\` v${PROJECT_VERSION} — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）`);
   parts.push('- **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）');
   parts.push(`- **收录文件**：${sorted.length} 个 ｜ **忽略目录**：${ignoredDirs.length} 类 ｜ **待确认用途**：${todo.length} 个`);
   parts.push('');
