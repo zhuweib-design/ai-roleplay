@@ -216,7 +216,10 @@ export async function handleRuntimeRequest(
     const characterId = characterIdFrom(request.path);
     if (!characterId) return { status: 404, body: { error: 'NOT_FOUND' } };
     if (request.method === 'GET' && request.path === `/v1/runtime/characters/${characterId}`) {
-      return { status: 200, body: await api.getCharacter(characterId) };
+      const snapshot = await api.getCharacter(characterId);
+      const tenantId = request.query?.tenantId;
+      if (tenantId && snapshot.character.tenantId !== tenantId) throw new Error('租户隔离校验失败');
+      return { status: 200, body: snapshot };
     }
     if (request.method === 'POST' && request.path === `/v1/runtime/characters/${characterId}/events`) {
       const body = record(request.body, '事件输入');
@@ -251,6 +254,10 @@ export async function handleRuntimeRequest(
     }
     if (request.method === 'POST' && request.path === `/v1/runtime/characters/${characterId}/context`) {
       const body = request.body === undefined ? {} : record(request.body, '上下文输入');
+      if (request.query?.tenantId) {
+        const snapshot = await api.getCharacter(characterId);
+        if (snapshot.character.tenantId !== request.query.tenantId) throw new Error('租户隔离校验失败');
+      }
       return { status: 200, body: await api.buildContext(characterId, body as RuntimeContextRequest) };
     }
     return { status: 404, body: { error: 'NOT_FOUND' } };

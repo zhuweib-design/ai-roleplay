@@ -3,7 +3,9 @@ import type { CreateRuntimeGroupInput, CommitRuntimeGroupTurnInput, SetRuntimeGr
 import { GroupRuntimeError } from './group-runtime-contract';
 import { RuntimeApiError, type RuntimeFetch, type RuntimeHttpApiOptions, type RuntimeHttpHandler } from './runtime-http';
 import {
+  authorizeRuntimeRequest,
   resolveRuntimePrincipal,
+  runtimeAuthorizationResponse,
   runtimeAuthenticationResponse,
   type RuntimeTenantBindingOptions,
 } from './runtime-auth';
@@ -162,6 +164,9 @@ export function createGroupRuntimeHttpHandler(
       if (options.requireAuthentication && !principal) return runtimeAuthenticationResponse();
       const url = new URL(request.url);
       const method = request.method.toUpperCase();
+      if (principal && options.tenantId && principal.tenantId !== options.tenantId) {
+        return runtimeAuthorizationResponse();
+      }
       let body: Record<string, unknown> | undefined;
       if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
         try {
@@ -171,6 +176,14 @@ export function createGroupRuntimeHttpHandler(
           if (error instanceof GroupRuntimeError) throw error;
           invalid('JSON 格式无效');
         }
+      }
+      if (!await authorizeRuntimeRequest(request, principal, options, {
+        path: url.pathname,
+        method,
+        body,
+        query: url.searchParams,
+      })) {
+        return runtimeAuthorizationResponse('MEMBER_FORBIDDEN');
       }
       if (url.pathname === '/v1/runtime/groups') {
         if (method !== 'POST') return respond(405, { error: 'METHOD_NOT_ALLOWED' });

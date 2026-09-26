@@ -212,6 +212,38 @@ describe('Runtime HTTP 持久化边界', () => {
     expect(response.status).toBe(200);
   });
 
+  it('认证租户不能读取其他租户的角色或 Context', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const created = await api.createCharacter({
+      tenantId: 'tenant-owner',
+      profile: { displayName: '私有角色' },
+    });
+    const handler = createRuntimeHttpHandler(api, {
+      requireAuthentication: true,
+      authenticate: () => ({ subject: 'user-other', tenantId: 'tenant-other' }),
+    });
+    const get = await handler(new Request(`http://runtime.test/v1/runtime/characters/${created.character.id}`));
+    expect(get.status).toBe(403);
+    const context = await handler(new Request(
+      `http://runtime.test/v1/runtime/characters/${created.character.id}/context`,
+      { method: 'POST', body: JSON.stringify({ query: '私有' }) }
+    ));
+    expect(context.status).toBe(403);
+  });
+
+  it('可以注入成员授权器并拒绝未授权请求', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const handler = createRuntimeHttpHandler(api, {
+      requireAuthentication: true,
+      authenticate: () => ({ subject: 'user-1', tenantId: 'tenant-a' }),
+      authorize: (_request, principal, context) =>
+        principal.subject === 'user-1' && context.path === '/v1/runtime/characters',
+    });
+    const denied = await handler(new Request('http://runtime.test/v1/runtime/characters/not-owned'));
+    expect(denied.status).toBe(403);
+    expect(await denied.json()).toMatchObject({ error: 'MEMBER_FORBIDDEN' });
+  });
+
   it('HttpRuntimeApi 保留服务端路径、认证头和错误语义', async () => {
     const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
     const api = new HttpRuntimeApi({

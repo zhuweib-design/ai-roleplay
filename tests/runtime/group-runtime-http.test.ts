@@ -87,6 +87,30 @@ describe('群聊 Runtime HTTP 边界', () => {
     expect(seen).toEqual(['', 'Bearer valid']);
   });
 
+  it('静态租户绑定拒绝 tenant 不匹配的认证 principal', async () => {
+    const api = fakeApi();
+    const handler = createGroupRuntimeHttpHandler(api, {
+      tenantId: 'tenant-a',
+      requireAuthentication: true,
+      authenticate: () => ({ subject: 'user-1', tenantId: 'tenant-b' }),
+    });
+    const response = await handler(new Request('http://runtime.test/v1/runtime/groups/g'));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ error: 'TENANT_FORBIDDEN' });
+  });
+
+  it('可以注入成员授权器并拒绝群聊资源访问', async () => {
+    const api = fakeApi();
+    const handler = createGroupRuntimeHttpHandler(api, {
+      requireAuthentication: true,
+      authenticate: () => ({ subject: 'user-1', tenantId: 'tenant-a' }),
+      authorize: (_request, _principal, context) => context.path === '/v1/runtime/groups',
+    });
+    const denied = await handler(new Request('http://runtime.test/v1/runtime/groups/g'));
+    expect(denied.status).toBe(403);
+    expect(await denied.json()).toMatchObject({ error: 'MEMBER_FORBIDDEN' });
+  });
+
   it('Handler 路由全部群组操作并映射领域错误', async () => {
     const api = fakeApi();
     const handler = createGroupRuntimeHttpHandler(api);

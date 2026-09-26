@@ -9,6 +9,20 @@ export type RuntimeAuthenticator = (
   request: Request
 ) => RuntimePrincipal | null | Promise<RuntimePrincipal | null>;
 
+export interface RuntimeAuthorizationContext {
+  path: string;
+  method: string;
+  body?: unknown;
+  query: URLSearchParams;
+}
+
+/** 成员授权由宿主服务注入，避免 Runtime 核心绑定具体账户系统。 */
+export type RuntimeAuthorizer = (
+  request: Request,
+  principal: RuntimePrincipal,
+  context: RuntimeAuthorizationContext
+) => boolean | Promise<boolean>;
+
 export interface RuntimeAuthOptions {
   /** 服务端注入的认证解析器；解析失败时应返回 null。 */
   authenticate?: RuntimeAuthenticator;
@@ -16,6 +30,8 @@ export interface RuntimeAuthOptions {
   principal?: RuntimePrincipal;
   /** 开启后，除公开健康检查外的请求必须有可信 principal。 */
   requireAuthentication?: boolean;
+  /** 可选的成员/资源授权器；返回 false 时拒绝请求。 */
+  authorize?: RuntimeAuthorizer;
 }
 
 export interface RuntimeTenantBindingOptions extends RuntimeAuthOptions {
@@ -56,4 +72,28 @@ export function runtimeAuthenticationResponse(code = 'AUTHENTICATION_REQUIRED'):
     status: 401,
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   });
+}
+
+export function runtimeAuthorizationResponse(code = 'TENANT_FORBIDDEN'): Response {
+  return new Response(JSON.stringify({
+    error: code,
+    message: code === 'TENANT_FORBIDDEN' ? 'Runtime 资源不属于当前租户' : 'Runtime 请求未通过授权',
+  }), {
+    status: 403,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+  });
+}
+
+export async function authorizeRuntimeRequest(
+  request: Request,
+  principal: RuntimePrincipal | null,
+  options: RuntimeAuthOptions,
+  context: RuntimeAuthorizationContext
+): Promise<boolean> {
+  if (!principal || !options.authorize) return true;
+  try {
+    return await options.authorize(request, principal, context);
+  } catch {
+    return false;
+  }
 }

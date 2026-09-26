@@ -21,7 +21,9 @@ import type {
   RuntimeCharacterListResult,
 } from './types';
 import {
+  authorizeRuntimeRequest,
   resolveRuntimePrincipal,
+  runtimeAuthorizationResponse,
   runtimeAuthenticationResponse,
   type RuntimeTenantBindingOptions,
 } from './runtime-auth';
@@ -196,6 +198,9 @@ export function createRuntimeHttpHandler(
     if (options.requireAuthentication && url.pathname !== '/v1/runtime/health' && !principal) {
       return runtimeAuthenticationResponse();
     }
+    if (principal && options.tenantId && principal.tenantId !== options.tenantId) {
+      return runtimeAuthorizationResponse();
+    }
     const boundTenantId = principal?.tenantId ?? options.tenantId;
     let body: unknown;
     if (method === 'POST') {
@@ -220,6 +225,14 @@ export function createRuntimeHttpHandler(
       if (boundTenantId && isTenantBoundWrite && body && typeof body === 'object' && !Array.isArray(body)) {
         body = { ...(body as Record<string, unknown>), tenantId: boundTenantId };
       }
+    }
+    if (!await authorizeRuntimeRequest(request, principal, options, {
+      path: url.pathname,
+      method,
+      body,
+      query: url.searchParams,
+    })) {
+      return runtimeAuthorizationResponse('MEMBER_FORBIDDEN');
     }
     const result = await handleRuntimeRequest(api, {
       method,
