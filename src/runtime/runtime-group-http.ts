@@ -2,6 +2,11 @@ import type { RuntimeContext, RuntimeContextRequest } from './types';
 import type { CreateRuntimeGroupInput, CommitRuntimeGroupTurnInput, SetRuntimeGroupStatusInput, RuntimeGroupState, RuntimeGroupOutboxEntry, RuntimeGroupTurn } from './group-runtime-contract';
 import { GroupRuntimeError } from './group-runtime-contract';
 import { RuntimeApiError, type RuntimeFetch, type RuntimeHttpApiOptions, type RuntimeHttpHandler } from './runtime-http';
+import {
+  resolveRuntimePrincipal,
+  runtimeAuthenticationResponse,
+  type RuntimeTenantBindingOptions,
+} from './runtime-auth';
 
 export interface GroupRuntimeApi {
   createGroup(input: CreateRuntimeGroupInput): Promise<void>;
@@ -146,10 +151,15 @@ function optionalVersion(value: unknown): number | undefined {
   return value;
 }
 
-/** 认证和租户解析必须在外层完成；此 Handler 仅复用已绑定租户的 GroupRuntimeApi。 */
-export function createGroupRuntimeHttpHandler(api: GroupRuntimeApi): RuntimeHttpHandler {
+/** 复用已绑定租户的 GroupRuntimeApi，并按宿主配置执行认证边界。 */
+export function createGroupRuntimeHttpHandler(
+  api: GroupRuntimeApi,
+  options: RuntimeTenantBindingOptions = {}
+): RuntimeHttpHandler {
   return async (request) => {
     try {
+      const principal = await resolveRuntimePrincipal(request, options);
+      if (options.requireAuthentication && !principal) return runtimeAuthenticationResponse();
       const url = new URL(request.url);
       const method = request.method.toUpperCase();
       let body: Record<string, unknown> | undefined;

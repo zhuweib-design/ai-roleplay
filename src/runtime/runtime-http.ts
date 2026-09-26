@@ -20,6 +20,11 @@ import type {
   RuntimeCharacterListRequest,
   RuntimeCharacterListResult,
 } from './types';
+import {
+  resolveRuntimePrincipal,
+  runtimeAuthenticationResponse,
+  type RuntimeTenantBindingOptions,
+} from './runtime-auth';
 
 export type RuntimeFetch = (
   input: RequestInfo | URL,
@@ -162,10 +167,7 @@ export class HttpRuntimeApi implements RuntimeApi {
 
 export type RuntimeHttpHandler = (request: Request) => Promise<Response>;
 
-export interface RuntimeHttpHandlerOptions {
-  /** 由认证中间件解析出的租户 ID；设置后覆盖请求体中的 tenantId。 */
-  tenantId?: string;
-}
+export type RuntimeHttpHandlerOptions = RuntimeTenantBindingOptions;
 
 function jsonResponse(response: RuntimeApiResponse): Response {
   return new Response(JSON.stringify(response.body), {
@@ -177,8 +179,8 @@ function jsonResponse(response: RuntimeApiResponse): Response {
 /**
  * 把框架无关的 RuntimeApiRequest 适配成标准 Fetch Handler。
  *
- * 该 Handler 不承担认证；生产服务必须在外层中间件完成身份验证、租户解析、
- * 限流和日志，再将已认证请求交给这里。数据库连接和事务只存在于 api 实例。
+ * 认证解析器由宿主服务注入。开启 requireAuthentication 后，除健康检查外的
+ * 请求必须携带可信 principal；数据库连接和事务只存在于 api 实例。
  */
 export function createRuntimeHttpHandler(
   api: RuntimeApi,
@@ -190,6 +192,11 @@ export function createRuntimeHttpHandler(
       return jsonResponse({ status: 405, body: { error: 'METHOD_NOT_ALLOWED' } });
     }
     const url = new URL(request.url);
+    const principal = await resolveRuntimePrincipal(request, options);
+    if (options.requireAuthentication && url.pathname !== '/v1/runtime/health' && !principal) {
+      return runtimeAuthenticationResponse();
+    }
+    const boundTenantId = principal?.tenantId ?? options.tenantId;
     let body: unknown;
     if (method === 'POST') {
       try {
@@ -197,28 +204,28 @@ export function createRuntimeHttpHandler(
       } catch {
         return jsonResponse({ status: 400, body: { error: 'INVALID_JSON' } });
       }
-      if (options.tenantId && url.pathname === '/v1/runtime/characters/batch' &&
+      if (boundTenantId && url.pathname === '/v1/runtime/characters/batch' &&
         body && typeof body === 'object' && !Array.isArray(body)) {
         const payload = body as Record<string, unknown>;
         if (Array.isArray(payload.characters)) {
           body = { ...payload, characters: payload.characters.map((item) =>
             item && typeof item === 'object' && !Array.isArray(item)
-              ? { ...(item as Record<string, unknown>), tenantId: options.tenantId }
+              ? { ...(item as Record<string, unknown>), tenantId: boundTenantId }
               : item
           ) };
         }
       }
       const isTenantBoundWrite =
         url.pathname === '/v1/runtime/characters' || url.pathname.endsWith('/events') || url.pathname.endsWith('/turns');
-      if (options.tenantId && isTenantBoundWrite && body && typeof body === 'object' && !Array.isArray(body)) {
-        body = { ...(body as Record<string, unknown>), tenantId: options.tenantId };
+      if (boundTenantId && isTenantBoundWrite && body && typeof body === 'object' && !Array.isArray(body)) {
+        body = { ...(body as Record<string, unknown>), tenantId: boundTenantId };
       }
     }
     const result = await handleRuntimeRequest(api, {
       method,
       path: url.pathname as RuntimeRoute,
       body,
-      query: { ...Object.fromEntries(url.searchParams), ...(options.tenantId ? { tenantId: options.tenantId } : {}) },
+      query: { ...Object.fromEntries(url.searchParams), ...(boundTenantId ? { tenantId: boundTenantId } : {}) },
     });
     return jsonResponse(result);
   };

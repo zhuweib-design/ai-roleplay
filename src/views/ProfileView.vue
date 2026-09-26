@@ -1,186 +1,30 @@
 <script setup lang="ts">
-/**
- * ProfileView — 个人中心 (需求6)
- *
- * 功能：
- * - 展示当前激活 Persona 的昵称与描述
- * - 支持昵称内联编辑（含校验）+ 保存 / 取消
- * - 切换激活 Persona（多身份管理）
- * - 数据通过 persona store 自动持久化到 IndexedDB / Tauri FS
- *
- * 无障碍：
- * - 编辑表单使用 label + aria-describedby 关联错误
- * - 输入校验失败时 role="alert" 反馈
- * - 键盘可达（Tab 顺序：编辑 → 保存 → 取消）
- */
-import { ref, computed, watch, nextTick } from 'vue';
+/** 个人中心只管理真实账户；世界内昵称和角色资料位于世界书。 */
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { usePersonaStore, MAX_PERSONA_NAME_LENGTH, MAX_PERSONA_DESCRIPTION_LENGTH, validatePersona } from '@/stores/persona';
+import { usePersonaStore } from '@/stores/persona';
 import Icon from '@/components/common/Icon.vue';
 import { t } from '@/i18n';
 
-/** {{user}} 宏字面量（模板内嵌套双花括号会破坏编译，故提为常量） */
-const USER_MACRO = '{{user}}';
-
-const personaStore = usePersonaStore();
 const router = useRouter();
+const personaStore = usePersonaStore();
+const showLoginPanel = ref(false);
+const hasLocalAccount = computed(() => personaStore.personas.length > 0);
 
-// I-10：返回优先 router.back()，尊重浏览器/系统返回栈；无历史时回退到对话页
 function goBack(): void {
-  if (window.history.state?.back) {
-    void router.back();
-  } else {
-    void router.push({ name: 'chat' });
-  }
+  if (window.history.state?.back) void router.back();
+  else void router.push({ name: 'chat' });
 }
 
-// ── 编辑状态 ──
-const isEditing = ref(false);
-const editName = ref('');
-const editDescription = ref('');
-const errors = ref<{ name?: string; description?: string }>({});
-const nameInputRef = ref<HTMLInputElement | null>(null);
-
-// ── 计算属性 ──
-const activePersona = computed(() => personaStore.activePersona);
-const hasPersona = computed(() => !!activePersona.value);
-
-/** 头像首字母（取昵称首字，回退 "U"） */
-const avatarInitial = computed(() => {
-  const name = activePersona.value?.name?.trim();
-  if (!name) return 'U';
-  return name.charAt(0).toUpperCase();
-});
-
-/** 创建时间格式化 */
-const formattedCreatedAt = computed(() => {
-  if (!activePersona.value?.createdAt) return '—';
-  try {
-    return new Date(activePersona.value.createdAt).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  } catch {
-    return '—';
-  }
-});
-
-/** 更新时间格式化 */
-const formattedUpdatedAt = computed(() => {
-  if (!activePersona.value?.updatedAt) return '—';
-  try {
-    return new Date(activePersona.value.updatedAt).toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return '—';
-  }
-});
-
-/** 保存按钮可用性（昵称非空 + 无错误） */
-const canSave = computed(() => {
-  return editName.value.trim().length > 0 && Object.keys(errors.value).length === 0;
-});
-
-// ── 动作 ──
-
-/** 进入编辑模式：拷贝当前值到编辑缓冲区 */
-function startEdit(): void {
-  if (!activePersona.value) return;
-  editName.value = activePersona.value.name;
-  editDescription.value = activePersona.value.description;
-  errors.value = {};
-  isEditing.value = true;
-  void nextTick(() => {
-    nameInputRef.value?.focus();
-    nameInputRef.value?.select();
-  });
-}
-
-/** 取消编辑：丢弃缓冲区并退出 */
-function cancelEdit(): void {
-  isEditing.value = false;
-  editName.value = '';
-  editDescription.value = '';
-  errors.value = {};
-}
-
-/** 实时校验输入 */
-function validateField(field: 'name' | 'description'): void {
-  const next: { name?: string; description?: string } = {};
-  // 独立校验各字段，避免依赖消息文本判断（i18n 后消息语言可变）
-  if (field === 'name' || field === 'description') {
-    const nameResult = validatePersona({ name: editName.value });
-    const descResult = validatePersona({ description: editDescription.value });
-    if (nameResult.length > 0) next.name = nameResult[0];
-    if (descResult.length > 0) next.description = descResult[0];
-  }
-  if (field === 'name' && !next.name && editName.value.trim() === '') {
-    next.name = t('profile.nameRequired');
-  }
-  errors.value = next;
-}
-
-/** 保存：校验通过后调用 store.updatePersona（自动持久化） */
-function saveEdit(): void {
-  if (!activePersona.value) return;
-  validateField('name');
-  if (!canSave.value) return;
-
-  const trimmedName = editName.value.trim();
-  const trimmedDesc = editDescription.value.trim();
-
-  const ok = personaStore.updatePersona(activePersona.value.id, {
-    name: trimmedName,
-    description: trimmedDesc,
-  });
-
-  if (ok) {
-    isEditing.value = false;
-    editName.value = '';
-    editDescription.value = '';
-    errors.value = {};
-  } else {
-    // store 校验失败，提取 lastError
-    if (personaStore.lastError) {
-      errors.value.name = personaStore.lastError;
-    }
-  }
-}
-
-// 监听 store 错误，反馈到表单
-watch(
-  () => personaStore.lastError,
-  (msg) => {
-    if (isEditing.value && msg) {
-      errors.value.name = msg;
-    }
-  }
-);
-
-// ── 切换激活 Persona ──
-function switchPersona(id: string): void {
-  if (id === activePersona.value?.id) return;
-  personaStore.setActivePersona(id);
+function toggleLoginPanel(): void {
+  showLoginPanel.value = !showLoginPanel.value;
 }
 </script>
 
 <template>
   <main id="main-content" class="profile-view tk-scroll" :aria-label="t('profile.aria')" tabindex="-1">
-    <!-- 头部 -->
     <header class="profile-header">
-      <!-- I-10：移动端无独立返回入口，补返回按钮（桌面亦可用，优先 router.back） -->
-      <button
-        type="button"
-        class="profile-back-btn"
-        :aria-label="t('profile.backAria')"
-        @click="goBack"
-      >
+      <button type="button" class="profile-back-btn" :aria-label="t('profile.backAria')" @click="goBack">
         <Icon name="arrow-left" :size="18" aria-hidden="true" />
         <span>{{ t('profile.back') }}</span>
       </button>
@@ -191,595 +35,61 @@ function switchPersona(id: string): void {
       <p class="profile-subtitle">{{ t('profile.subtitle') }}</p>
     </header>
 
-    <!-- 无 Persona 兜底（理论上 store 会自动创建默认 User） -->
-    <p v-if="!hasPersona" class="empty-hint">{{ t('profile.noPersona') }}</p>
-
-    <!-- 当前身份卡片 -->
-    <section v-else class="settings-section profile-card-section" aria-labelledby="current-profile-title">
+    <section class="settings-section profile-card-section" aria-labelledby="account-title">
       <header class="section-header">
-        <h2 id="current-profile-title" class="section-title">
+        <h2 id="account-title" class="section-title">
           <Icon name="user" :size="18" aria-hidden="true" />
-          <span>{{ t('profile.currentIdentity') }}</span>
+          <span>{{ t('profile.accountTitle') }}</span>
         </h2>
-        <button
-          v-if="!isEditing"
-          type="button"
-          class="action-btn primary"
-          @click="startEdit"
-        >
-          <Icon name="pencil" :size="14" aria-hidden="true" />
-          <span>{{ t('profile.edit') }}</span>
-        </button>
+        <div class="identity-header-actions">
+          <span class="account-status">{{ t('profile.localUser') }}</span>
+          <button type="button" class="action-btn primary" @click="toggleLoginPanel">
+            <Icon name="lock-keyhole" :size="14" aria-hidden="true" />
+            <span>{{ t('profile.login') }}</span>
+          </button>
+        </div>
       </header>
 
-      <!-- 展示模式 -->
-      <div v-if="!isEditing" class="profile-card">
-        <div class="profile-avatar" aria-hidden="true">{{ avatarInitial }}</div>
+      <div class="profile-card">
+        <div class="profile-avatar" aria-hidden="true">U</div>
         <div class="profile-info">
           <div class="profile-name-row">
-            <span class="profile-name">{{ activePersona?.name }}</span>
-            <span class="badge-active" :aria-label="t('profile.active')">{{ t('profile.active') }}</span>
+            <span class="profile-name">{{ t('profile.localUser') }}</span>
+            <span v-if="hasLocalAccount" class="badge-active">{{ t('profile.active') }}</span>
           </div>
-          <p class="profile-description">
-            {{ activePersona?.description || t('profile.noDescription') }}
-          </p>
-          <dl class="profile-meta">
-            <div class="meta-item">
-              <dt>{{ t('profile.createdAt') }}</dt>
-              <dd>{{ formattedCreatedAt }}</dd>
-            </div>
-            <div class="meta-item">
-              <dt>{{ t('profile.updatedAt') }}</dt>
-              <dd>{{ formattedUpdatedAt }}</dd>
-            </div>
-            <div class="meta-item">
-              <dt>{{ t('profile.macroReplace') }}</dt>
-              <dd><code v-pre>{{user}}</code> → <strong>{{ activePersona?.name }}</strong></dd>
-            </div>
-          </dl>
+          <p class="profile-description">{{ t('profile.localUserHint') }}</p>
+          <p class="account-hint">{{ t('profile.worldProfileHint') }}</p>
         </div>
       </div>
 
-      <!-- 编辑模式 -->
-      <form v-else class="profile-edit-form" novalidate @submit.prevent="saveEdit">
-        <div class="form-field">
-          <label for="profile-name" class="field-label">
-            {{ t('profile.nameLabel') }} <span class="required" :aria-label="t('common.required')">*</span>
-          </label>
-          <input
-            id="profile-name"
-            ref="nameInputRef"
-            v-model="editName"
-            type="text"
-            class="field-input"
-            :class="{ 'has-error': errors.name }"
-            :aria-invalid="!!errors.name"
-            :aria-describedby="errors.name ? 'err-name' : 'name-help'"
-            :maxlength="MAX_PERSONA_NAME_LENGTH"
-            :placeholder="t('profile.namePlaceholder')"
-            autocomplete="off"
-            @input="validateField('name')"
-          />
-          <p v-if="errors.name" id="err-name" class="field-error" role="alert">
-            <Icon name="alert-triangle" :size="12" aria-hidden="true" />
-            <span>{{ errors.name }}</span>
-          </p>
-          <p v-else id="name-help" class="field-hint">
-            {{ t('profile.nameHint', { len: editName.length, max: MAX_PERSONA_NAME_LENGTH, macro: USER_MACRO }) }}
-          </p>
-        </div>
-
-        <div class="form-field">
-          <label for="profile-description" class="field-label">{{ t('profile.descLabel') }}</label>
-          <textarea
-            id="profile-description"
-            v-model="editDescription"
-            class="field-input field-textarea"
-            :class="{ 'has-error': errors.description }"
-            :aria-invalid="!!errors.description"
-            :aria-describedby="errors.description ? 'err-desc' : 'desc-help'"
-            :maxlength="MAX_PERSONA_DESCRIPTION_LENGTH * 2"
-            rows="4"
-            :placeholder="t('profile.descPlaceholder')"
-            @input="validateField('description')"
-          ></textarea>
-          <p v-if="errors.description" id="err-desc" class="field-error" role="alert">
-            <Icon name="alert-triangle" :size="12" aria-hidden="true" />
-            <span>{{ errors.description }}</span>
-          </p>
-          <p v-else id="desc-help" class="field-hint">
-            {{ t('profile.descHint', { max: MAX_PERSONA_DESCRIPTION_LENGTH }) }}
-          </p>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="action-btn" @click="cancelEdit">{{ t('profile.cancel') }}</button>
-          <button type="submit" class="action-btn primary" :disabled="!canSave">
-            <Icon name="save" :size="14" aria-hidden="true" />
-            <span>{{ t('profile.save') }}</span>
-          </button>
-        </div>
-      </form>
-    </section>
-
-    <!-- 身份切换列表 -->
-    <section v-if="hasPersona && personaStore.personas.length > 1" class="settings-section" aria-labelledby="persona-switch-title">
-      <header class="section-header">
-        <h2 id="persona-switch-title" class="section-title">
-          <Icon name="users" :size="18" aria-hidden="true" />
-          <span>{{ t('profile.switchTitle') }}</span>
-        </h2>
-        <p class="section-hint">{{ t('profile.switchHint') }}</p>
-      </header>
-      <ul class="profile-list" role="list">
-        <li
-          v-for="p in personaStore.personas"
-          :key="p.id"
-          class="profile-item"
-          :class="{ active: p.id === activePersona?.id }"
-        >
-          <button
-            type="button"
-            class="profile-info"
-            :aria-pressed="p.id === activePersona?.id"
-            :aria-label="t('profile.switchTo', { name: p.name })"
-            @click="switchPersona(p.id)"
-          >
-            <div class="profile-name">
-              {{ p.name }}
-              <span v-if="p.id === activePersona?.id" class="badge-active" :aria-label="t('profile.active')">{{ t('profile.active') }}</span>
-            </div>
-            <div class="profile-baseurl">{{ p.description || t('profile.noDesc') }}</div>
-          </button>
-        </li>
-      </ul>
+      <div v-if="showLoginPanel" class="login-panel" role="status">
+        <p>{{ t('profile.loginUnavailable') }}</p>
+        <button type="button" class="action-btn" @click="toggleLoginPanel">{{ t('profile.closeLogin') }}</button>
+      </div>
     </section>
   </main>
 </template>
 
 <style scoped>
-.profile-view {
-  padding: 24px;
-  max-width: 880px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.profile-header {
-  margin-bottom: 24px;
-}
-
-/* I-10：返回按钮（移动端/桌面通用，优先 router.back） */
-.profile-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  background: var(--card-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--foreground);
-  font-size: 13px;
-  font-family: var(--font-sans);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .profile-back-btn:hover {
-    background: var(--background);
-    border-color: var(--muted-foreground);
-  }
-}
-
-.profile-back-btn:active {
-  transform: translateY(1px);
-}
-
-.profile-back-btn:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.profile-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--foreground);
-  margin: 0 0 4px 0;
-}
-
-.profile-subtitle {
-  font-size: 14px;
-  color: var(--muted-foreground);
-  margin: 0;
-}
-
-/* 复用 settings 页一致的 section 样式 */
-.settings-section {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--foreground);
-  margin: 0;
-}
-
-.section-hint {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  margin: 0;
-}
-
-/* 当前身份卡片 */
-.profile-card {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.profile-avatar {
-  flex-shrink: 0;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  color: var(--on-accent);
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-}
-
-.profile-info {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.profile-name-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-  flex-wrap: wrap;
-}
-
-.profile-name {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--foreground);
-  word-break: break-word;
-}
-
-.profile-description {
-  font-size: 14px;
-  color: var(--muted-foreground);
-  line-height: 1.6;
-  margin: 0 0 12px 0;
-  word-break: break-word;
-  white-space: pre-wrap;
-}
-
-.profile-meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 8px 16px;
-  margin: 0;
-}
-
-.meta-item {
-  display: flex;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.meta-item dt {
-  color: var(--muted-foreground);
-  flex-shrink: 0;
-}
-
-.meta-item dd {
-  margin: 0;
-  color: var(--foreground);
-  word-break: break-word;
-}
-
-.meta-item code {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  background: var(--card-elevated);
-  padding: 1px 4px;
-  border-radius: var(--radius-xs);
-  /* --secondary 作文字在 theatre 的 --card-elevated 上仅 4.37:1；
-     改用派生 token --secondary-text（与 .card-tags 同源）。 */
-  color: var(--secondary-text);
-}
-
-/* 激活徽章 */
-.badge-active {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  background: var(--primary);
-  color: var(--on-primary);
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: var(--radius-pill);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* 编辑表单 */
-.profile-edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--foreground);
-}
-
-.required {
-  color: var(--primary-fg);
-}
-
-.field-input {
-  width: 100%;
-  padding: 10px 12px;
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--foreground);
-  font-size: 14px;
-  font-family: var(--font-sans);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.field-input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(220, 20, 52, 0.18);
-}
-
-.field-input.has-error {
-  border-color: var(--error-fg);
-}
-
-.field-input.has-error:focus {
-  box-shadow: 0 0 0 3px rgba(255, 100, 133, 0.18);
-}
-
-.field-textarea {
-  resize: vertical;
-  min-height: 96px;
-  font-family: var(--font-sans);
-}
-
-.field-hint {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  margin: 0;
-}
-
-.field-hint code {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  background: var(--card-elevated);
-  padding: 1px 4px;
-  border-radius: var(--radius-xs);
-  /* --secondary 作文字在 theatre 的 --card-elevated 上仅 4.37:1；
-     改用派生 token --secondary-text（与 .card-tags 同源）。 */
-  color: var(--secondary-text);
-}
-
-.field-error {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--error-fg);
-  margin: 0;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-/* 按钮样式（复用 settings action-btn 风格） */
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: var(--card-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--foreground);
-  font-size: 13px;
-  font-family: var(--font-sans);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .action-btn:hover:not(:disabled) {
-    background: var(--background);
-    border-color: var(--muted-foreground);
-  }
-}
-
-.action-btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.action-btn:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.action-btn.primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  /* primary 背景须配 --on-primary。原用 --on-accent（深色），在 dark/midnight/oled
-     的 primary 上仅 3.52~4.21:1；on-primary/primary 为门禁已覆盖的达标配对。 */
-  color: var(--on-primary);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .action-btn.primary:hover:not(:disabled) {
-    background: var(--destructive);
-    border-color: var(--destructive);
-    /* hover 背景切换为 destructive 后，文字须改用 --on-accent（深色）配对；
-       实测 on-accent/destructive 在 5 主题下均 ≥4.5:1。 */
-    color: var(--on-accent);
-  }
-}
-
-/* 身份列表 */
-.profile-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.profile-item {
-  display: flex;
-  align-items: stretch;
-  background: var(--card-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  transition: border-color 0.15s ease;
-}
-
-.profile-item.active {
-  border-color: var(--primary);
-}
-
-.profile-info {
-  flex: 1 1 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
-  background: transparent;
-  border: none;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  font-family: var(--font-sans);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .profile-info:hover {
-    background: var(--background);
-  }
-}
-
-.profile-info:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
-}
-
-.profile-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.profile-baseurl {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  word-break: break-word;
-}
-
-.empty-hint {
-  text-align: center;
-  padding: 32px 16px;
-  color: var(--muted-foreground);
-  font-size: 14px;
-}
-
-/* 响应式：小屏紧凑布局（统一移动断点 640） */
-@media (max-width: 640px) {
-  .profile-view {
-    padding: 16px;
-  }
-
-  .profile-card {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .profile-name-row {
-    justify-content: center;
-  }
-
-  .profile-meta {
-    grid-template-columns: 1fr;
-  }
-
-  .meta-item {
-    flex-direction: column;
-    gap: 2px;
-  }
-}
-
-@media (max-width: 640px) {
-  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
-  .field-input {
-    font-size: 16px;
-  }
-}
+.profile-view { padding: 24px; max-width: 880px; margin: 0 auto; width: 100%; }
+.profile-header { margin-bottom: 24px; }
+.profile-back-btn, .action-btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.profile-back-btn { margin-bottom: 12px; padding: 8px 12px; background: var(--card-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--foreground); }
+.profile-title { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; font-size: 24px; color: var(--foreground); }
+.profile-subtitle, .account-hint, .login-panel p { margin: 0; color: var(--muted-foreground); font-size: 13px; line-height: 1.5; }
+.settings-section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.section-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px; color: var(--foreground); }
+.identity-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.account-status { color: var(--muted-foreground); font-size: 12px; }
+.action-btn { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card-elevated); color: var(--foreground); }
+.action-btn.primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.profile-card { display: flex; gap: 16px; align-items: flex-start; }
+.profile-avatar { width: 64px; height: 64px; flex: 0 0 auto; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 600; }
+.profile-info { min-width: 0; flex: 1; }
+.profile-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.profile-name { font-size: 20px; font-weight: 600; color: var(--foreground); }
+.profile-description { margin: 0 0 8px; color: var(--muted-foreground); line-height: 1.6; }
+.badge-active { padding: 2px 8px; border-radius: var(--radius-pill); background: var(--primary); color: var(--on-primary); font-size: 11px; }
+.login-panel { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 </style>

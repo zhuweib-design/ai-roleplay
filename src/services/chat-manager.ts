@@ -49,7 +49,7 @@ export interface ChatManagerConfig {
   apiClient: ApiClient;
   /** 模型名，如 'gpt-4o' / 'claude-3-5-sonnet-20241022' */
   model: string;
-  /** 用户名（用于宏替换 {{user}}） */
+  /** 当前世界内昵称（兼容旧调用方；{{user}} 不再作为宏替换） */
   userName?: string;
   /** 系统提示词前缀（可空，角色定义会拼接到其后） */
   systemPrompt?: string;

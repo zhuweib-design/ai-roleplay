@@ -8,10 +8,13 @@ import { createPgPoolExecutor, type PgPoolLike } from './postgres-executor';
 import { RuntimeCore, type RuntimeCoreOptions } from './runtime-core';
 import { PostgresGroupRuntime } from './postgres-group-runtime';
 import { createGroupRuntimeHttpHandler } from './runtime-group-http';
+import type { RuntimeAuthOptions } from './runtime-auth';
 
 export interface PostgresRuntimeApiOptions {
   auditActorType?: 'system' | 'migration';
   core?: RuntimeCoreOptions;
+  /** HTTP 宿主注入的认证解析器；未配置时保持已绑定租户的兼容模式。 */
+  httpAuth?: RuntimeAuthOptions;
 }
 
 /**
@@ -35,8 +38,9 @@ export function createPostgresRuntimeHttpHandler(
   tenantId: string,
   options: PostgresRuntimeApiOptions = {}
 ): RuntimeHttpHandler {
-  const characters = createRuntimeHttpHandler(createPostgresRuntimeApi(sql, tenantId, options), { tenantId });
-  const groups = createPostgresGroupRuntimeHttpHandler(sql, tenantId);
+  const httpOptions = { ...options.httpAuth, tenantId };
+  const characters = createRuntimeHttpHandler(createPostgresRuntimeApi(sql, tenantId, options), httpOptions);
+  const groups = createPostgresGroupRuntimeHttpHandler(sql, tenantId, options.httpAuth);
   return (request) => {
     const pathname = new URL(request.url).pathname;
     return pathname === '/v1/runtime/groups' || pathname.startsWith('/v1/runtime/groups/')
@@ -76,15 +80,20 @@ export function createPgPoolGroupRuntime(pool: PgPoolLike, tenantId: string): Po
 /** 将已认证租户作用域内的群聊 Runtime 暴露为 Fetch Handler。 */
 export function createPostgresGroupRuntimeHttpHandler(
   sql: SqlExecutor,
-  tenantId: string
+  tenantId: string,
+  authOptions: RuntimeAuthOptions = {}
 ): RuntimeHttpHandler {
-  return createGroupRuntimeHttpHandler(createPostgresGroupRuntime(sql, tenantId));
+  return createGroupRuntimeHttpHandler(createPostgresGroupRuntime(sql, tenantId), {
+    ...authOptions,
+    tenantId,
+  });
 }
 
 /** 使用 node-postgres Pool 的群聊 HTTP Handler。 */
 export function createPgPoolGroupRuntimeHttpHandler(
   pool: PgPoolLike,
-  tenantId: string
+  tenantId: string,
+  authOptions: RuntimeAuthOptions = {}
 ): RuntimeHttpHandler {
-  return createPostgresGroupRuntimeHttpHandler(createPgPoolExecutor(pool), tenantId);
+  return createPostgresGroupRuntimeHttpHandler(createPgPoolExecutor(pool), tenantId, authOptions);
 }

@@ -70,9 +70,29 @@ describe('提示词构建引擎 (F03.1)', () => {
     const result = await buildPrompt(card, [], '', settings);
 
     const systemContent = result.messages[0]!.content;
-    expect(systemContent).toContain('勇者在Seraphina的小屋中');
-    expect(systemContent).not.toContain('{{user}}');
+    expect(systemContent).toContain('{{user}}在Seraphina的小屋中');
     expect(systemContent).not.toContain('{{char}}');
+  });
+
+  test('注入当前世界的用户资料', async () => {
+    const result = await buildPrompt(
+      makeCard(),
+      [],
+      '',
+      makeSettings(),
+      {
+        worldUserProfile: {
+          name: '林澈',
+          description: '王都医师',
+          gender: '女',
+          occupation: '医师',
+        },
+      }
+    );
+    const systemContent = result.messages[0]!.content;
+    expect(systemContent).toContain('[User Profile in This World]');
+    expect(systemContent).toContain('Name: 林澈');
+    expect(systemContent).toContain('Gender: 女');
   });
 
   test('返回 Token 计数', async () => {

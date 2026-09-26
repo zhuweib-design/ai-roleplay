@@ -30,6 +30,7 @@ import type {
   LorebookInsertionPosition,
   LorebookLogic,
   WorldDescription,
+  WorldUserProfile,
   WorldType,
 } from '@/core/lorebook';
 import { MAX_WORLD_DESCRIPTION_LENGTH } from '@/core/lorebook';
@@ -414,6 +415,7 @@ function onNameInput(e: Event) {
 
 // ── F06.7 整体世界描述 ──
 const worldDescDraft = ref<WorldDescription | null>(null);
+const worldUserProfileDraft = ref<WorldUserProfile | null>(null);
 
 const worldTypeOptions: { value: WorldType; label: string }[] = [
   { value: 'fantasy', label: t('wb.worldTypeFantasy') },
@@ -435,9 +437,48 @@ watch(
     worldDescDraft.value = wd
       ? { ...wd, keys: [...wd.keys] }
       : null;
+    const profile = currentLorebook.value?.userProfile;
+    worldUserProfileDraft.value = profile
+      ? { ...profile }
+      : null;
   },
   { immediate: true }
 );
+
+function addWorldUserProfile() {
+  worldUserProfileDraft.value = {
+    name: '',
+    description: '',
+    gender: '',
+    pronouns: '',
+    age: '',
+    occupation: '',
+    appearance: '',
+    background: '',
+    notes: '',
+  };
+  if (currentLorebook.value) {
+    store.updateWorldUserProfile(currentLorebook.value.id, worldUserProfileDraft.value);
+  }
+}
+
+function clearWorldUserProfile() {
+  if (!currentLorebook.value) return;
+  worldUserProfileDraft.value = null;
+  store.updateWorldUserProfile(currentLorebook.value.id, null);
+}
+
+function commitWorldUserProfile() {
+  if (!currentLorebook.value || !worldUserProfileDraft.value) return;
+  store.updateWorldUserProfile(currentLorebook.value.id, worldUserProfileDraft.value);
+}
+
+function onWorldUserProfileInput(field: keyof WorldUserProfile, e: Event) {
+  if (!worldUserProfileDraft.value) return;
+  const value = (e.target as HTMLInputElement | HTMLTextAreaElement).value;
+  (worldUserProfileDraft.value as unknown as Record<string, string | undefined>)[field] = value;
+  commitWorldUserProfile();
+}
 
 function addWorldDesc() {
   worldDescDraft.value = {
@@ -1069,6 +1110,74 @@ function strategyLabel(s: LorebookStrategy): string {
                 >
                   <Icon name="trash-2" :size="14" />
                   <span>{{ t('wb.clearWorldDesc') }}</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- 世界内用户资料：与真实账户分离，每本世界书独立保存 -->
+          <section class="world-user-profile-section" :aria-label="t('wb.worldUserProfileAria')">
+            <header class="world-desc-header">
+              <h2>
+                <Icon name="user" :size="14" />
+                <span>{{ t('wb.worldUserProfileTitle') }}</span>
+              </h2>
+              <span class="world-desc-tag">{{ t('wb.worldUserProfileTag') }}</span>
+            </header>
+
+            <div v-if="!worldUserProfileDraft" class="world-desc-empty">
+              <p>{{ t('wb.worldUserProfileEmpty') }}</p>
+              <button type="button" class="action-btn add-world-btn" @click="addWorldUserProfile">
+                <Icon name="plus" :size="14" />
+                <span>{{ t('wb.addWorldUserProfile') }}</span>
+              </button>
+            </div>
+
+            <div v-else class="world-desc-form">
+              <div class="world-desc-row">
+                <div class="world-desc-cell">
+                  <label class="form-label" :for="`wup-name-${currentLorebook.id}`">{{ t('wb.userName') }}</label>
+                  <input :id="`wup-name-${currentLorebook.id}`" type="text" class="form-input" :value="worldUserProfileDraft.name" :placeholder="t('wb.userNamePlaceholder')" maxlength="100" @input="onWorldUserProfileInput('name', $event)" />
+                </div>
+                <div class="world-desc-cell">
+                  <label class="form-label" :for="`wup-gender-${currentLorebook.id}`">{{ t('wb.userGender') }}</label>
+                  <input :id="`wup-gender-${currentLorebook.id}`" type="text" class="form-input" :value="worldUserProfileDraft.gender" :placeholder="t('wb.userGenderPlaceholder')" @input="onWorldUserProfileInput('gender', $event)" />
+                </div>
+              </div>
+              <div class="world-desc-row">
+                <div class="world-desc-cell">
+                  <label class="form-label" :for="`wup-pronouns-${currentLorebook.id}`">{{ t('wb.userPronouns') }}</label>
+                  <input :id="`wup-pronouns-${currentLorebook.id}`" type="text" class="form-input" :value="worldUserProfileDraft.pronouns" :placeholder="t('wb.userPronounsPlaceholder')" @input="onWorldUserProfileInput('pronouns', $event)" />
+                </div>
+                <div class="world-desc-cell">
+                  <label class="form-label" :for="`wup-age-${currentLorebook.id}`">{{ t('wb.userAge') }}</label>
+                  <input :id="`wup-age-${currentLorebook.id}`" type="text" class="form-input" :value="worldUserProfileDraft.age" :placeholder="t('wb.userAgePlaceholder')" @input="onWorldUserProfileInput('age', $event)" />
+                </div>
+              </div>
+              <div class="world-desc-row">
+                <label class="form-label" :for="`wup-occupation-${currentLorebook.id}`">{{ t('wb.userOccupation') }}</label>
+                <input :id="`wup-occupation-${currentLorebook.id}`" type="text" class="form-input" :value="worldUserProfileDraft.occupation" :placeholder="t('wb.userOccupationPlaceholder')" @input="onWorldUserProfileInput('occupation', $event)" />
+              </div>
+              <div class="world-desc-row">
+                <label class="form-label" :for="`wup-description-${currentLorebook.id}`">{{ t('wb.userDescription') }}</label>
+                <textarea :id="`wup-description-${currentLorebook.id}`" class="form-textarea" :value="worldUserProfileDraft.description" :placeholder="t('wb.userDescriptionPlaceholder')" rows="3" @input="onWorldUserProfileInput('description', $event)" />
+              </div>
+              <div class="world-desc-row">
+                <label class="form-label" :for="`wup-appearance-${currentLorebook.id}`">{{ t('wb.userAppearance') }}</label>
+                <textarea :id="`wup-appearance-${currentLorebook.id}`" class="form-textarea" :value="worldUserProfileDraft.appearance" :placeholder="t('wb.userAppearancePlaceholder')" rows="2" @input="onWorldUserProfileInput('appearance', $event)" />
+              </div>
+              <div class="world-desc-row">
+                <label class="form-label" :for="`wup-background-${currentLorebook.id}`">{{ t('wb.userBackground') }}</label>
+                <textarea :id="`wup-background-${currentLorebook.id}`" class="form-textarea" :value="worldUserProfileDraft.background" :placeholder="t('wb.userBackgroundPlaceholder')" rows="3" @input="onWorldUserProfileInput('background', $event)" />
+              </div>
+              <div class="world-desc-row">
+                <label class="form-label" :for="`wup-notes-${currentLorebook.id}`">{{ t('wb.userNotes') }}</label>
+                <textarea :id="`wup-notes-${currentLorebook.id}`" class="form-textarea" :value="worldUserProfileDraft.notes" :placeholder="t('wb.userNotesPlaceholder')" rows="2" @input="onWorldUserProfileInput('notes', $event)" />
+              </div>
+              <div class="world-desc-actions">
+                <button type="button" class="action-btn delete" @click="clearWorldUserProfile">
+                  <Icon name="trash-2" :size="14" />
+                  <span>{{ t('wb.clearWorldUserProfile') }}</span>
                 </button>
               </div>
             </div>
@@ -2016,6 +2125,13 @@ function strategyLabel(s: LorebookStrategy): string {
 
 /* F06.7 整体世界描述 */
 .world-desc-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  flex-shrink: 0;
+}
+
+.world-user-profile-section {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--card);

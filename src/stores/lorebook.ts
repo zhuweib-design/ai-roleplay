@@ -8,6 +8,7 @@ import {
   type LorebookCreateInput,
   type LorebookEntryCreateInput,
   type WorldDescription,
+  type WorldUserProfile,
   type LorebookHierarchyEntry,
   validateLorebook,
   validateLorebookEntry,
@@ -182,6 +183,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
       chatId: input?.chatId,
       // 迭代22 · F06.7: 整体世界描述
       worldDescription: input?.worldDescription ?? null,
+      userProfile: input?.userProfile ?? null,
       createdAt: now,
       updatedAt: now,
     };
@@ -253,6 +255,26 @@ export const useLorebookStore = defineStore('lorebook', () => {
     lastInfo.value = wd
       ? t('lb.worldDescSaved', { name: wd.name || t('lb.unnamed') })
       : t('lb.worldDescCleared');
+    return true;
+  }
+
+  /** 更新当前世界中的用户资料；传 null 清除资料。 */
+  function updateWorldUserProfile(
+    lorebookId: string,
+    profile: WorldUserProfile | null
+  ): boolean {
+    const lb = lorebooks.value.find((l) => l.id === lorebookId);
+    if (!lb) return false;
+    lb.userProfile = profile;
+    const errors = validateLorebook(lb);
+    if (errors.length > 0) {
+      lastError.value = t('lb.worldUserProfileValidateFailed', { errors: errors.join('；') });
+      return false;
+    }
+    void persistLorebook(lorebookId);
+    lastInfo.value = profile
+      ? t('lb.worldUserProfileSaved')
+      : t('lb.worldUserProfileCleared');
     return true;
   }
 
@@ -777,6 +799,8 @@ export const useLorebookStore = defineStore('lorebook', () => {
     if (hasHierarchy) {
       payload.hierarchy = hierarchy;
     }
+    if (lb.worldDescription) payload.worldDescription = lb.worldDescription;
+    if (lb.userProfile) payload.userProfile = lb.userProfile;
 
     return JSON.stringify(payload, null, 2);
   }
@@ -797,6 +821,8 @@ export const useLorebookStore = defineStore('lorebook', () => {
         name?: string;
         entries?: unknown;
         hierarchy?: Record<string, unknown>;
+        worldDescription?: WorldDescription | null;
+        userProfile?: WorldUserProfile | null;
       };
 
       const id = `lorebook-${Date.now()}`;
@@ -849,6 +875,8 @@ export const useLorebookStore = defineStore('lorebook', () => {
         description: '',
         entries,
         scope: 'global',
+        worldDescription: json.worldDescription ?? null,
+        userProfile: json.userProfile ?? null,
         createdAt: now,
         updatedAt: now,
       };
@@ -1239,6 +1267,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
     createLorebook,
     updateLorebook,
     updateWorldDescription,
+    updateWorldUserProfile,
     deleteLorebook,
     // 条目动作
     selectEntry,

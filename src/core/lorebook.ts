@@ -132,6 +132,8 @@ export interface Lorebook {
    * 未设置时为 null/undefined（向后兼容）。
    */
   worldDescription?: WorldDescription | null;
+  /** 世界内用户资料；同一真实账户可在不同世界使用不同资料。 */
+  userProfile?: WorldUserProfile | null;
 }
 
 /** Lorebook 创建时的可选字段 */
@@ -165,6 +167,10 @@ export interface LorebookExportFormat {
    * 导入时若无此字段，所有条目按扁平（顶层）处理。
    */
   hierarchy?: Record<string, LorebookHierarchyEntry>;
+  /** 本项目扩展：导出时保留整体世界描述。 */
+  worldDescription?: WorldDescription | null;
+  /** 本项目扩展：导出时保留世界内用户资料。 */
+  userProfile?: WorldUserProfile | null;
 }
 
 /**
@@ -247,6 +253,24 @@ export interface WorldDescription {
   content: string;
 }
 
+/**
+ * 用户在单个世界中的扮演资料。
+ * 所有字段均存放在 Lorebook 内，不代表真实账户信息。
+ */
+export interface WorldUserProfile {
+  name: string;
+  description: string;
+  gender: string;
+  pronouns?: string;
+  age?: string;
+  occupation?: string;
+  appearance?: string;
+  background?: string;
+  notes?: string;
+}
+
+export const MAX_WORLD_USER_PROFILE_TEXT_LENGTH = 2000;
+
 /** 验证 Lorebook 条目，返回错误消息数组（空表示通过） */
 export function validateLorebookEntry(entry: Partial<LorebookEntry>): string[] {
   const errors: string[] = [];
@@ -308,6 +332,19 @@ export function validateLorebook(lorebook: Partial<Lorebook>): string[] {
     }
     if (wd.name && wd.name.length > 100) {
       errors.push(t('lorebook.worldNameTooLong'));
+    }
+  }
+
+  if (lorebook.userProfile) {
+    const profile = lorebook.userProfile;
+    if (profile.name && profile.name.length > 100) {
+      errors.push(t('lorebook.userProfileNameTooLong'));
+    }
+    for (const value of Object.values(profile)) {
+      if (typeof value === 'string' && value.length > MAX_WORLD_USER_PROFILE_TEXT_LENGTH) {
+        errors.push(t('lorebook.userProfileTextTooLong', { max: MAX_WORLD_USER_PROFILE_TEXT_LENGTH }));
+        break;
+      }
     }
   }
 

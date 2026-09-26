@@ -66,6 +66,27 @@ function fakeApi(): GroupRuntimeApi & { calls: Array<{ method: string; args: unk
 }
 
 describe('群聊 Runtime HTTP 边界', () => {
+  it('开启强制认证后拒绝匿名请求，并向认证解析器传递原始 Request', async () => {
+    const api = fakeApi();
+    const seen: string[] = [];
+    const handler = createGroupRuntimeHttpHandler(api, {
+      requireAuthentication: true,
+      authenticate: (request) => {
+        seen.push(request.headers.get('Authorization') ?? '');
+        return request.headers.get('Authorization') === 'Bearer valid'
+          ? { subject: 'user-1', tenantId: 'tenant-a' }
+          : null;
+      },
+    });
+    const anonymous = await handler(new Request('http://runtime.test/v1/runtime/groups/g'));
+    expect(anonymous.status).toBe(401);
+    const authenticated = await handler(new Request('http://runtime.test/v1/runtime/groups/g', {
+      headers: { Authorization: 'Bearer valid' },
+    }));
+    expect(authenticated.status).toBe(200);
+    expect(seen).toEqual(['', 'Bearer valid']);
+  });
+
   it('Handler 路由全部群组操作并映射领域错误', async () => {
     const api = fakeApi();
     const handler = createGroupRuntimeHttpHandler(api);

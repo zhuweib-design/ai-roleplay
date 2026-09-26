@@ -22,3 +22,4 @@ export * from './postgres-executor';
 export * from './postgres-group-runtime';
 
 export * from './runtime-group-http';
+export * from './runtime-auth';

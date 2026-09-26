@@ -19,7 +19,7 @@ export interface SlashCommandContext {
   globalVariables: VariableMap;
   /** 当前角色名（用于 {{char}} 宏替换） */
   charName: string;
-  /** 当前用户名（用于 {{user}} 宏替换） */
+  /** 当前世界内昵称（旧命令上下文兼容字段） */
   userName: string;
   /** 中断生成回调（/abort 调用） */
   onAbort?: () => void;
@@ -709,7 +709,7 @@ export function getBuiltinCommands(): BuiltInCommand[] {
 // ─────────────────────────────────────────────────────────────
 
 /**
- * 对参数进行宏替换（{{pipe}}/{{user}}/{{char}}/{{getvar}}/{{setvar}}）
+ * 对参数进行宏替换（{{pipe}}/{{char}}/{{getvar}}/{{setvar}}）
  * {{pipe}} 替换为上一条命令的管道输出
  */
 function applyMacrosToArgs(
@@ -722,7 +722,7 @@ function applyMacrosToArgs(
   return args.map((arg) => {
     // 先替换 {{pipe}}
     let result = arg.replace(/\{\{pipe\}\}/g, pipe);
-    // 再替换其他宏（{{user}}/{{char}}/{{getvar}}/{{setvar}}）
+    // 再替换其他宏（{{char}}/{{getvar}}/{{setvar}}）
     result = replaceMacros(result, macroCtx, mergedVars);
     // setvar 可能修改了 mergedVars，回写到 ctx.localVariables（保持局部优先）
     for (const key of Object.keys(mergedVars)) {

@@ -20,7 +20,6 @@ import {
   uiCharToCard,
   uiMsgsToChatMsgs,
 } from '../services/type-adapters';
-import { usePersonaStore } from './persona';
 import { useEventsStore } from './events';
 import { buildChatSessionContext, collectLorebooksForCharacter } from './chat-context';
 import { buildVectorRagInjection, getRagDynamicModel, getRagStaticModel } from '@/core/dual-channel-runtime';
@@ -1372,8 +1371,8 @@ export const useChatStore = defineStore('chat', () => {
    * @param text 用户输入的命令文本（以 / 开头）
    */
   async function executeSlashCommand(character: UICharacter, text: string): Promise<void> {
-    const personaStore = usePersonaStore();
-    const userName = personaStore.activeUserName;
+    const userName = collectLorebooksForCharacter(character.id)
+      .find((lb) => lb.userProfile?.name?.trim())?.userProfile?.name?.trim() || 'User';
 
     // F16.4: 构造故事时间命令上下文（若角色关联了故事）
     const storyStore = useStoryStore();

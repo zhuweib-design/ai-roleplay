@@ -1151,9 +1151,9 @@ describe('executePipeline', () => {
     expect(result.message).toContain('无效');
   });
 
-  test('{{user}} 宏替换', async () => {
+  test('{{user}} 宏保留原文', async () => {
     const result = await executePipeline('/echo hello {{user}}', makeCtx());
-    expect(result.message).toBe('hello 勇者');
+    expect(result.message).toBe('hello {{user}}');
   });
 
   test('{{char}} 宏替换', async () => {

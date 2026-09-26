@@ -1,4 +1,5 @@
 export interface MacroContext {
+  /** 旧 Persona 上下文字段，仅为兼容旧调用方；{{user}} 不再替换。 */
   user: string;
   char: string;
 }
@@ -7,7 +8,8 @@ export type VariableMap = Record<string, string>;
 
 /**
  * 宏替换系统 (F01.5 / F11.2)
- * 替换 {{user}}, {{char}}, {{getvar::name}}, {{setvar::name::value}} 宏。
+ * 替换 {{char}}, {{getvar::name}}, {{setvar::name::value}} 宏。
+ * {{user}} 会按原文保留；世界内用户资料由世界书上下文单独注入。
  * 不递归替换（避免无限循环）。
  *
  * 注意：{{setvar::name::value}} 会原地修改传入的 variables 对象，
@@ -21,7 +23,6 @@ export function replaceMacros(
   return text.replace(
     /\{\{([^}]+)\}\}/g,
     (match, content: string) => {
-      if (content === 'user') return ctx.user;
       if (content === 'char') return ctx.char;
 
       if (content.startsWith('getvar::')) {

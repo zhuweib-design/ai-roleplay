@@ -94,7 +94,7 @@ export function mergeVariables(local: VariableMap, global: VariableMap): Variabl
  *
  * @param localVariables 当前对话的局部变量
  * @param charName 当前角色名（用于 {{char}} 宏）
- * @param userName 当前用户名（用于 {{user}} 宏）
+ * @param userName 当前世界内昵称（旧命令上下文兼容字段）
  * @param options.onAbort 中断生成回调（/abort 调用）
  */
 export function createSlashCommandContext(

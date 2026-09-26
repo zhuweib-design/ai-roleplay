@@ -3,9 +3,9 @@ import { replaceMacros } from '@core/macro';
 import type { VariableMap } from '@core/macro';
 
 describe('宏替换系统 (F01.5)', () => {
-  test('{{user}} 替换为当前 Persona 名称', () => {
+  test('{{user}} 不再替换并保留原文', () => {
     const result = replaceMacros('你好，{{user}}！', { user: '勇者', char: 'Seraphina' });
-    expect(result).toBe('你好，勇者！');
+    expect(result).toBe('你好，{{user}}！');
   });
 
   test('{{char}} 替换为角色名称', () => {
@@ -16,7 +16,7 @@ describe('宏替换系统 (F01.5)', () => {
   test('同时替换多个宏', () => {
     const template = '{{char}}对{{user}}说："欢迎来到翡翠森林。"';
     const result = replaceMacros(template, { user: '勇者', char: 'Seraphina' });
-    expect(result).toBe('Seraphina对勇者说："欢迎来到翡翠森林。"');
+    expect(result).toBe('Seraphina对{{user}}说："欢迎来到翡翠森林。"');
   });
 
   test('{{getvar::name}} 替换为变量值', () => {
@@ -41,7 +41,7 @@ describe('宏替换系统 (F01.5)', () => {
       '{{user}}',
       { user: '{{char}}', char: 'Seraphina' }
     );
-    expect(result).toBe('{{char}}');
+    expect(result).toBe('{{user}}');
   });
 
   test('无宏的文本原样返回', () => {
@@ -52,7 +52,7 @@ describe('宏替换系统 (F01.5)', () => {
   test('同一宏多次出现全部替换', () => {
     const template = '{{char}}说："{{user}}，{{char}}一直在等你。"';
     const result = replaceMacros(template, { user: '勇者', char: 'Seraphina' });
-    expect(result).toBe('Seraphina说："勇者，Seraphina一直在等你。"');
+    expect(result).toBe('Seraphina说："{{user}}，Seraphina一直在等你。"');
   });
 });
 
@@ -108,6 +108,6 @@ describe('{{setvar}} 宏支持 (F11.2)', () => {
       { user: '勇者', char: 'Seraphina' },
       variables
     );
-    expect(result).toBe('Seraphina认识了勇者');
+    expect(result).toBe('Seraphina认识了{{user}}');
   });
 });

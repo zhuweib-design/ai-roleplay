@@ -14,7 +14,7 @@ import { buildProtagonistPrompt } from '@core/protagonist';
  * 1. Persona 列表 CRUD（内存 + 持久化）
  * 2. 当前激活 Persona 状态管理（与 settings store.activePersonaId 同步）
  * 3. 默认 Persona 兜底：首次启动时自动创建名称 "User" 的默认 Persona
- * 4. {{user}} 宏替换值来源：activePersona.name
+ * 4. 为旧版本 Persona 数据提供兼容读取
  *
  * 不负责：
  * - 设置持久化（由 settings store 负责 activePersonaId 字段）
@@ -41,7 +41,7 @@ export const usePersonaStore = defineStore('persona', () => {
     return personas.value.find((p) => p.id === settings.activePersonaId) ?? null;
   });
 
-  /** 用于 {{user}} 宏替换的用户名（无激活 Persona 时为 "User"） */
+  /** 旧版本兼容用户名；新的聊天身份来自当前世界书资料。 */
   const activeUserName = computed<string>(() => {
     return activePersona.value?.name ?? 'User';
   });

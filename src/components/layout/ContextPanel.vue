@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useCharacterStore } from '@/stores/character';
-import { usePersonaStore } from '@/stores/persona';
 import { useLorebookStore } from '@/stores/lorebook';
 import { useChatStore } from '@/stores/chat';
 import { useSettingsStore } from '@/stores/settings';
@@ -26,7 +25,6 @@ import {
 } from '@core/status-schema';
 
 const characterStore = useCharacterStore();
-const personaStore = usePersonaStore();
 const lorebookStore = useLorebookStore();
 const chatStore = useChatStore();
 const settingsStore = useSettingsStore();
@@ -50,27 +48,21 @@ const modelLabel = computed(() =>
   effectiveProfile.value ? effectiveProfile.value.model : t('chat.modelNotConfigured')
 );
 
-/** {{user}} 宏字面量（模板内嵌套双花括号会破坏编译，故提为常量） */
-const USER_MACRO = '{{user}}';
-
 // 角色页绑定的世界书（需求7：唯一数据源 boundWorldBookIds）
 const boundLorebooks = computed(() => {
   const bound = char.value.boundWorldBookIds ?? [];
   return lorebookStore.lorebooks.filter((lb) => bound.includes(lb.id));
 });
 
-// F07 Persona：当前激活的用户身份
-const activePersonaName = computed(() => personaStore.activeUserName);
-const personas = computed(() => personaStore.personas);
-const activePersonaId = computed(() => {
-  const settings = personaStore.activePersona;
-  return settings?.id ?? '';
+// 当前角色关联世界书中的用户资料，全球世界书作为兜底。
+const worldUserProfile = computed(() => {
+  const candidates = [
+    ...boundLorebooks.value,
+    ...lorebookStore.lorebooks.filter((lb) => lb.scope === 'global'),
+  ];
+  return candidates.find((lb) => lb.userProfile)?.userProfile ?? null;
 });
-
-function onPersonaChange(e: Event) {
-  const v = (e.target as HTMLSelectElement).value;
-  personaStore.setActivePersona(v || null);
-}
+const worldUserProfileName = computed(() => worldUserProfile.value?.name?.trim() || t('ctx.worldUserProfileUnset'));
 
 /**
  * Token 预算总量：取全局设置的上下文窗口上限（**响应式**，配置改动即时反映）。
@@ -456,31 +448,14 @@ function onCtxTouchEnd(e: TouchEvent) {
         </div>
       </section>
 
-      <!-- F07 Persona 切换 -->
+      <!-- 当前世界用户资料：在世界书中编辑 -->
       <section class="ctx-section" aria-labelledby="ctx-persona-title">
         <header class="ctx-section-header">
-          <span id="ctx-persona-title" class="ctx-section-title">{{ t('ctx.personaTitle') }}</span>
-          <span class="ctx-section-value">{{ activePersonaName }}</span>
+          <span id="ctx-persona-title" class="ctx-section-title">{{ t('ctx.worldUserProfileTitle') }}</span>
+          <span class="ctx-section-value">{{ worldUserProfileName }}</span>
         </header>
-        <label class="ctx-persona-select-label">
-          <span class="visually-hidden">{{ t('ctx.switchPersona') }}</span>
-          <select
-            class="tk-input ctx-persona-select"
-            :value="activePersonaId"
-            :aria-label="t('ctx.selectPersona')"
-            @change="onPersonaChange"
-          >
-            <option
-              v-for="p in personas"
-              :key="p.id"
-              :value="p.id"
-            >
-              {{ p.name }}
-            </option>
-          </select>
-        </label>
         <p class="ctx-persona-hint">
-          {{ t('ctx.personaHint', { macro: USER_MACRO }) }}
+          {{ t('ctx.personaHint') }}
         </p>
       </section>
 

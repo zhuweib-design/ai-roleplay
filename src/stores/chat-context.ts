@@ -18,7 +18,7 @@ import { useEventsStore } from './events';
 import { scanTriggers, buildActiveEventsInjection } from '@/core/trigger-engine';
 import { buildProtagonistPrompt } from '@core/protagonist';
 import type { UICharacter } from '@/types';
-import type { Lorebook } from '@/core/lorebook';
+import type { Lorebook, WorldUserProfile } from '@/core/lorebook';
 import type { StoryEvent } from '@/core/event-types';
 import type { PromptContexts } from '@core/prompt-builder';
 
@@ -34,8 +34,10 @@ export interface ChatSessionContextOptions {
 }
 
 export interface ChatSessionContext extends PromptContexts {
-  /** 当前激活 Persona 的 {{user}} 宏替换值 */
+  /** 当前世界资料中的昵称，仅供斜杠命令等兼容接口使用。 */
   userName: string;
+  /** 当前角色关联世界书中的用户资料。 */
+  worldUserProfile: WorldUserProfile | null;
 }
 
 /**
@@ -148,8 +150,9 @@ export function buildChatSessionContext(
   // W6 · F06.2-F06.3: 收集与当前角色相关的 Lorebook
   const lorebooks = collectLorebooksForCharacter(character.id);
 
-  // 迭代22 · F07: 当前激活 Persona 的 userName 作为 {{user}} 宏替换值
-  const userName = usePersonaStore().activeUserName;
+  // 世界内用户资料按当前角色关联的世界书生效；旧世界没有资料时使用中性默认值。
+  const worldUserProfile = lorebooks.find((lb) => lb.userProfile)?.userProfile ?? null;
+  const userName = worldUserProfile?.name?.trim() || 'User';
 
   // 迭代26 · F09.2: RAG 检索
   const ragContext = useDataBankStore().retrieveAndBuildContext(
@@ -182,6 +185,7 @@ export function buildChatSessionContext(
   return {
     lorebooks,
     userName,
+    worldUserProfile,
     ragContext: ragContext || undefined,
     eventsContext: eventsContext || undefined,
     protagonistContext: protagonistContext || undefined,

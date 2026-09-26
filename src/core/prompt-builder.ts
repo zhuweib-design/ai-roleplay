@@ -1,5 +1,5 @@
 import type { CharacterCard, ChatMessage } from './character-card';
-import type { Lorebook } from './lorebook';
+import type { Lorebook, WorldUserProfile } from './lorebook';
 import { replaceMacros } from './macro';
 import { countMessageTokens } from './token-counter';
 // i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
@@ -71,6 +71,8 @@ export interface PromptContexts {
   statusContext?: string;
   /** Virtual Character OS 当前运行时上下文。 */
   runtimeContext?: string;
+  /** 当前世界中的用户资料。 */
+  worldUserProfile?: WorldUserProfile | null;
 }
 
 /**
@@ -96,6 +98,7 @@ export async function buildPrompt(
     storyTimeContext,
     statusContext,
     runtimeContext,
+    worldUserProfile,
   } = contexts;
   const macroCtx = { user: settings.userName, char: card.name };
 
@@ -179,8 +182,26 @@ export async function buildPrompt(
     }
   }
 
+  let worldUserProfileText = '';
+  if (worldUserProfile) {
+    const profileLines = [
+      worldUserProfile.name && `Name: ${worldUserProfile.name}`,
+      worldUserProfile.description && `Description: ${worldUserProfile.description}`,
+      worldUserProfile.gender && `Gender: ${worldUserProfile.gender}`,
+      worldUserProfile.pronouns && `Pronouns: ${worldUserProfile.pronouns}`,
+      worldUserProfile.age && `Age: ${worldUserProfile.age}`,
+      worldUserProfile.occupation && `Role: ${worldUserProfile.occupation}`,
+      worldUserProfile.appearance && `Appearance: ${worldUserProfile.appearance}`,
+      worldUserProfile.background && `Background: ${worldUserProfile.background}`,
+      worldUserProfile.notes && `Notes: ${worldUserProfile.notes}`,
+    ].filter(Boolean);
+    if (profileLines.length > 0) {
+      worldUserProfileText = `[User Profile in This World]\n${profileLines.join('\n')}\n\n`;
+    }
+  }
+
   const systemContent = replaceMacros(
-    `${settings.systemPrompt}\n\n${worldDescText}${beforeText}${charDef}${attributesText}${afterText}${eventsContext ? '\n\n' + eventsContext : ''}${protagonistContext ? '\n\n' + protagonistContext : ''}${storyTimeContext ? '\n\n' + storyTimeContext : ''}${statusContext ? '\n\n' + statusContext : ''}${runtimeContext ? '\n\n' + runtimeContext : ''}`,
+    `${settings.systemPrompt}\n\n${worldDescText}${worldUserProfileText}${beforeText}${charDef}${attributesText}${afterText}${eventsContext ? '\n\n' + eventsContext : ''}${protagonistContext ? '\n\n' + protagonistContext : ''}${storyTimeContext ? '\n\n' + storyTimeContext : ''}${statusContext ? '\n\n' + statusContext : ''}${runtimeContext ? '\n\n' + runtimeContext : ''}`,
     macroCtx
   );
 

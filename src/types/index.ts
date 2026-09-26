@@ -356,16 +356,16 @@ export interface QuickReplyButton {
  * 用户 Persona (F07.1)
  *
  * 规则约束：
- * - 名称 1-30 字符
- * - 描述建议 ≤500 字符（占用永久 Token）
+ * - 名称 1-30 字符（旧数据兼容）
+ * - 描述建议 ≤500 字符（旧数据兼容；新的世界内资料存放在 Lorebook）
  * - 至少 1 个 Persona（默认名称 "User"）
  */
 export interface Persona {
   /** 唯一 ID */
   id: string;
-  /** Persona 名称（{{user}} 宏替换为此值） */
+  /** 旧 Persona 名称，保留用于历史数据兼容 */
   name: string;
-  /** Persona 描述（外貌/性格/背景等，注入提示词） */
+  /** 旧 Persona 描述，保留用于历史数据兼容 */
   description: string;
   createdAt: string;
   updatedAt: string;

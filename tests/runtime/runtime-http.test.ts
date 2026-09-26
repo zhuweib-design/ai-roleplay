@@ -183,6 +183,35 @@ describe('Runtime HTTP 持久化边界', () => {
     expect(snapshot.character.tenantId).toBe('tenant-authenticated');
   });
 
+  it('开启强制认证后拒绝匿名 Runtime 请求，并使用认证 principal 的租户', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const handler = createRuntimeHttpHandler(api, {
+      requireAuthentication: true,
+      authenticate: async (request) => request.headers.get('Authorization') === 'Bearer valid'
+        ? { subject: 'user-1', tenantId: 'tenant-trusted' }
+        : null,
+    });
+    const anonymous = await handler(new Request('http://runtime.test/v1/runtime/characters', {
+      method: 'POST', body: JSON.stringify({ tenantId: 'tenant-forged', profile: { displayName: '匿名' } }),
+    }));
+    expect(anonymous.status).toBe(401);
+    expect(await anonymous.json()).toMatchObject({ error: 'AUTHENTICATION_REQUIRED' });
+
+    const authenticated = await handler(new Request('http://runtime.test/v1/runtime/characters', {
+      method: 'POST', headers: { Authorization: 'Bearer valid' },
+      body: JSON.stringify({ tenantId: 'tenant-forged', profile: { displayName: '可信身份' } }),
+    }));
+    expect(authenticated.status).toBe(201);
+    expect((await authenticated.json()).character.tenantId).toBe('tenant-trusted');
+  });
+
+  it('健康检查在强制认证模式下保持公开', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const handler = createRuntimeHttpHandler(api, { requireAuthentication: true });
+    const response = await handler(new Request('http://runtime.test/v1/runtime/health'));
+    expect(response.status).toBe(200);
+  });
+
   it('HttpRuntimeApi 保留服务端路径、认证头和错误语义', async () => {
     const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
     const api = new HttpRuntimeApi({
