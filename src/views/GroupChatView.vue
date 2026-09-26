@@ -231,16 +231,17 @@ async function syncRemoteTurnsForGroup(groupId: string): Promise<void> {
     group,
     characters: characterStore.characters,
   });
-  if (!result.enabled || result.turns.length === 0) return;
-
-  // 服务端成员 ID 是 Runtime UUID，需映射回本地角色卡
-  const runtimeToLocal = new Map(
-    characterStore.characters.map((character) => [
-      chatStore.runtimeCharacterIdFor(character),
-      character.id,
-    ]),
-  );
-  groupStore.mergeRemoteTurns(groupId, result.turns, runtimeToLocal);
+  if (result.enabled && result.turns.length > 0) {
+    // 服务端成员 ID 是 Runtime UUID，需映射回本地角色卡
+    const runtimeToLocal = new Map(
+      characterStore.characters.map((character) => [
+        chatStore.runtimeCharacterIdFor(character),
+        character.id,
+      ]),
+    );
+    groupStore.mergeRemoteTurns(groupId, result.turns, runtimeToLocal);
+  }
+  await chatStore.recoverRemoteGroupOutbox({ group, characters: characterStore.characters });
 }
 
 function openCreateModal() {

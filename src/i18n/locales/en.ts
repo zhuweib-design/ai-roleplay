@@ -857,6 +857,8 @@ const en: Record<MessageKey, string> = {
   'group.selectSpeaker': 'Select a speaker first',
   'group.memberMissing': 'The speaker no longer exists',
   'group.runtimeCommitFailed': 'Failed to commit the group Runtime turn. Please retry',
+  'group.runtimeLocalOutboxConflict': 'This group turn key already has different pending content; the original record was kept',
+  'group.runtimeOutboxSpeakerUnavailable': 'The speaker for a pending server turn is unavailable in this group',
   'group.runtimePending': '{count} group Runtime turn(s) pending submission',
   'group.runtimeRetry': 'Retry submission',
   'group.runtimeRetryFailed': 'Runtime retry failed; the original turn was kept',

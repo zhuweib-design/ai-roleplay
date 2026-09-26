@@ -64,9 +64,15 @@ export interface PendingGroupRuntimeTurn {
   speakerCharacterId: string;
   userMessage: string;
   assistantMessage: string;
+  /** 首次提交时固定的时间；重试必须复用，避免同键被判定为内容冲突。 */
+  occurredAt: string;
   createdAt: string;
   attempts: number;
+  status: 'pending' | 'failed';
   lastError?: string;
+  lastErrorCode?: string;
+  lastErrorStatus?: number;
+  nextRetryAt?: string;
 }
 
 const PENDING_GROUP_RUNTIME_TURNS_KEY = 'runtime:pending-group-turns:v1';
@@ -275,7 +281,12 @@ export const useChatStore = defineStore('chat', () => {
     const item = value as Record<string, unknown>;
     return ['groupId', 'turnId', 'speakerCharacterId', 'userMessage', 'assistantMessage', 'createdAt']
       .every((key) => typeof item[key] === 'string' && (item[key] as string).length > 0)
-      && Number.isSafeInteger(item.attempts) && (item.attempts as number) >= 0;
+      && Number.isFinite(Date.parse((typeof item.occurredAt === 'string' ? item.occurredAt : item.createdAt) as string))
+      && Number.isSafeInteger(item.attempts) && (item.attempts as number) >= 0
+      && (item.status === undefined || item.status === 'pending' || item.status === 'failed')
+      && (item.lastErrorCode === undefined || typeof item.lastErrorCode === 'string')
+      && (item.lastErrorStatus === undefined || (Number.isSafeInteger(item.lastErrorStatus) && (item.lastErrorStatus as number) >= 100))
+      && (item.nextRetryAt === undefined || (typeof item.nextRetryAt === 'string' && Number.isFinite(Date.parse(item.nextRetryAt))));
   }
 
   async function persistPendingGroupRuntimeTurns(): Promise<void> {
@@ -295,7 +306,12 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const saved = await storageAdapter.loadSnapshot<unknown>(PENDING_GROUP_RUNTIME_TURNS_KEY);
       pendingGroupRuntimeTurns.value = Array.isArray(saved)
-        ? saved.filter(isPendingGroupRuntimeTurn).map((item) => ({ ...item }))
+        ? saved.filter(isPendingGroupRuntimeTurn).map((item) => ({
+          ...item,
+          // 兼容 0.3.0 快照：旧记录没有 occurredAt 与状态。
+          occurredAt: item.occurredAt ?? item.createdAt,
+          status: item.status ?? 'failed',
+        }))
         : [];
     } catch (error) {
       reportRuntimeError(error, 'initialize');
@@ -308,14 +324,26 @@ export const useChatStore = defineStore('chat', () => {
     speakerCharacterId: string;
     userMessage: string;
     assistantMessage: string;
+    occurredAt: string;
     error?: unknown;
   }): Promise<void> {
     const existing = pendingGroupRuntimeTurns.value.find((item) =>
       item.groupId === input.groupId && item.turnId === input.turnId);
     const errorText = input.error instanceof Error ? input.error.message : String(input.error ?? t('group.runtimeSubmitFailed'));
+    const errorRecord = input.error instanceof Error
+      ? input.error as Error & { code?: string; status?: number; statusCode?: number }
+      : null;
+    const errorCode = typeof errorRecord?.code === 'string' ? errorRecord.code : undefined;
+    const errorStatus = Number.isSafeInteger(errorRecord?.status)
+      ? errorRecord?.status
+      : Number.isSafeInteger(errorRecord?.statusCode) ? errorRecord?.statusCode : undefined;
     if (existing) {
       existing.attempts += 1;
       existing.lastError = errorText;
+      existing.lastErrorCode = errorCode;
+      existing.lastErrorStatus = errorStatus;
+      existing.status = 'failed';
+      existing.nextRetryAt = new Date(Date.now() + Math.min(60_000, 2_000 * (2 ** Math.min(existing.attempts - 1, 5)))).toISOString();
     } else {
       pendingGroupRuntimeTurns.value.push({
         groupId: input.groupId,
@@ -323,9 +351,14 @@ export const useChatStore = defineStore('chat', () => {
         speakerCharacterId: input.speakerCharacterId,
         userMessage: input.userMessage,
         assistantMessage: input.assistantMessage,
+        occurredAt: input.occurredAt,
         createdAt: new Date().toISOString(),
         attempts: 1,
+        status: 'failed',
         lastError: errorText,
+        lastErrorCode: errorCode,
+        lastErrorStatus: errorStatus,
+        nextRetryAt: new Date(Date.now() + 2_000).toISOString(),
       });
     }
     pendingGroupRuntimeTurns.value.sort((a, b) =>
@@ -649,26 +682,40 @@ export const useChatStore = defineStore('chat', () => {
     turnId: string;
     userMessage: string;
     assistantMessage: string;
+    occurredAt?: string;
   }): Promise<{ enabled: boolean; committed: boolean }> {
     const api = getGroupRuntimeApi();
     if (!api) return { enabled: false, committed: false };
+    const pending = pendingGroupRuntimeTurns.value.find((item) =>
+      item.groupId === input.group.id && item.turnId === input.turnId);
+    let occurredAt = pending?.occurredAt ?? input.occurredAt ?? new Date().toISOString();
+    if (pending && (pending.speakerCharacterId !== input.speakerCharacterId
+      || pending.userMessage !== input.userMessage || pending.assistantMessage !== input.assistantMessage)) {
+      const conflict = new RuntimeApiError(409, 'OUTBOX_CONFLICT', t('group.runtimeLocalOutboxConflict'));
+      reportRuntimeError(conflict, 'event');
+      return { enabled: true, committed: false };
+    }
     try {
       const { runtimeGroupId, speaker } = await prepareRemoteGroupRuntime(input, api);
       // 服务端可靠投递：先入队持久化，再尝试原子提交。
       // 若标签页在提交前崩溃，服务端仍保留 pending 记录，可由 outbox 重放。
-      await api.enqueueTurn({
+      const enqueued = await api.enqueueTurn({
         groupId: runtimeGroupId,
         turnId: input.turnId,
         speakerId: speaker.characterId,
         userMessage: input.userMessage,
         assistantMessage: input.assistantMessage,
+        occurredAt,
       });
+      // 服务端首次入队生成的时间是权威值；重复请求必须复用该时间。
+      occurredAt = enqueued.occurredAt;
       await api.commitTurn({
         groupId: runtimeGroupId,
         turnId: input.turnId,
         speakerId: speaker.characterId,
         userMessage: input.userMessage,
         assistantMessage: input.assistantMessage,
+        occurredAt,
       });
       await removePendingGroupRuntimeTurn(input.group.id, input.turnId);
       runtimeStatus.value = null;
@@ -681,6 +728,7 @@ export const useChatStore = defineStore('chat', () => {
         speakerCharacterId: input.speakerCharacterId,
         userMessage: input.userMessage,
         assistantMessage: input.assistantMessage,
+        occurredAt,
         error,
       });
       return { enabled: true, committed: false };
@@ -716,6 +764,80 @@ export const useChatStore = defineStore('chat', () => {
     } catch (error) {
       reportRuntimeError(error, 'event');
       return { enabled: true, attempted: 0, committed: 0 };
+    }
+  }
+
+  /** 恢复本地快照之外仍保存在服务端 outbox 的回合，交给现有的显式重试入口处理。 */
+  async function recoverRemoteGroupOutbox(input: {
+    group: GroupChat;
+    characters: UICharacter[];
+  }): Promise<{ enabled: boolean; recovered: number }> {
+    const api = getGroupRuntimeApi();
+    if (!api) return { enabled: false, recovered: 0 };
+    if (input.group.lifecycleStatus === 'archived') return { enabled: true, recovered: 0 };
+    try {
+      const anchor = input.group.members[0];
+      if (!anchor) throw new Error(t('group.runtimeNoAnchorMember'));
+      const { runtimeGroupId } = await prepareRemoteGroupRuntime({
+        group: input.group,
+        characters: input.characters,
+        speakerCharacterId: anchor.characterId,
+      }, api);
+      const remoteEntries = await api.listPendingTurns(runtimeGroupId);
+      const localIdByRuntimeId = new Map(input.characters.map((character) => [
+        runtimeCharacterIdFor(character), character.id,
+      ]));
+      let recovered = 0;
+      let changed = false;
+      for (const entry of remoteEntries) {
+        const speakerCharacterId = localIdByRuntimeId.get(entry.speakerId);
+        if (!speakerCharacterId || !input.group.members.some((member) => member.characterId === speakerCharacterId)) {
+          reportRuntimeError(new RuntimeApiError(409, 'OUTBOX_SPEAKER_UNAVAILABLE', t('group.runtimeOutboxSpeakerUnavailable')), 'event');
+          continue;
+        }
+        const existing = pendingGroupRuntimeTurns.value.find((item) =>
+          item.groupId === input.group.id && item.turnId === entry.turnId);
+        if (existing && (existing.speakerCharacterId !== speakerCharacterId
+          || existing.userMessage !== entry.userMessage || existing.assistantMessage !== entry.assistantMessage)) {
+          reportRuntimeError(new RuntimeApiError(409, 'OUTBOX_CONFLICT', t('group.runtimeLocalOutboxConflict')), 'event');
+          continue;
+        }
+        const recoveredTurn: PendingGroupRuntimeTurn = {
+          groupId: input.group.id,
+          turnId: entry.turnId,
+          speakerCharacterId,
+          userMessage: entry.userMessage,
+          assistantMessage: entry.assistantMessage,
+          occurredAt: entry.occurredAt,
+          createdAt: entry.createdAt,
+          attempts: entry.attempts,
+          status: entry.status === 'failed' ? 'failed' : 'pending',
+          ...(entry.lastError === undefined ? {} : { lastError: entry.lastError }),
+        };
+        if (existing) {
+          Object.assign(existing, recoveredTurn, {
+            attempts: Math.max(existing.attempts, entry.attempts),
+            status: entry.status === 'failed' ? 'failed' : existing.status,
+            lastError: entry.lastError ?? existing.lastError,
+            lastErrorCode: existing.lastErrorCode,
+            lastErrorStatus: existing.lastErrorStatus,
+            nextRetryAt: existing.nextRetryAt,
+          });
+        } else {
+          pendingGroupRuntimeTurns.value.push(recoveredTurn);
+        }
+        recovered += 1;
+        changed = true;
+      }
+      if (changed) {
+        pendingGroupRuntimeTurns.value.sort((a, b) =>
+          (a.createdAt + a.groupId + a.turnId).localeCompare(b.createdAt + b.groupId + b.turnId));
+        await persistPendingGroupRuntimeTurns();
+      }
+      return { enabled: true, recovered };
+    } catch (error) {
+      reportRuntimeError(error, 'event');
+      return { enabled: true, recovered: 0 };
     }
   }
 
@@ -2032,6 +2154,7 @@ export const useChatStore = defineStore('chat', () => {
     verifyRuntimeReplay,
     commitRuntimeGroupTurn,
     retryRemoteGroupOutbox,
+    recoverRemoteGroupOutbox,
     fetchRemoteGroupTurns,
     pendingGroupRuntimeTurns,
     groupRuntimeConflict,
@@ -2042,6 +2165,9 @@ export const useChatStore = defineStore('chat', () => {
       const pending = pendingGroupRuntimeTurns.value.find((item) =>
         item.groupId === input.group.id && item.turnId === input.groupTurnId);
       if (!pending) return { enabled: true, committed: false };
+      pending.status = 'pending';
+      pending.nextRetryAt = undefined;
+      await persistPendingGroupRuntimeTurns();
       return commitRuntimeGroupTurn({
         group: input.group,
         characters: input.characters,
@@ -2049,6 +2175,7 @@ export const useChatStore = defineStore('chat', () => {
         turnId: pending.turnId,
         userMessage: pending.userMessage,
         assistantMessage: pending.assistantMessage,
+        occurredAt: pending.occurredAt,
       });
     },
     createRuntimeCharactersBatch,

@@ -857,6 +857,8 @@ export default {
   'group.selectSpeaker': '请先指定发言角色',
   'group.memberMissing': '发言角色已不存在',
   'group.runtimeCommitFailed': '群聊 Runtime 公共回合提交失败，请重试',
+  'group.runtimeLocalOutboxConflict': '此群聊回合键已对应另一份待提交内容，未覆盖原记录',
+  'group.runtimeOutboxSpeakerUnavailable': '服务器待提交回合的发言角色在当前群聊中不可用',
   'group.runtimePending': '有 {count} 个群聊回合等待 Runtime 提交',
   'group.runtimeRetry': '重试提交',
   'group.runtimeRetryFailed': 'Runtime 回合重试仍失败，原回合已保留',

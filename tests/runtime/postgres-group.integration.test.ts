@@ -240,13 +240,16 @@ integration('PostgreSQL 群聊公共回合与多角色原子事务', () => {
       ]);
       // 服务端可靠投递队列：先入队持久化，再原子提交；提交成功自动标记 committed
       const outboxTurn = { groupId, turnId: 'outbox-1', speakerId: a,
-        userMessage: '队列问题', assistantMessage: '队列回答' };
+        userMessage: '队列问题', assistantMessage: '队列回答', occurredAt: '2026-09-23T00:00:00.000Z' };
       const enqueued = await http.enqueueTurn(outboxTurn);
       expect(enqueued.status).toBe('pending');
       expect(enqueued.attempts).toBe(0);
-      // 重复入队幂等：不新增条目、不重置 attempts
-      const enqueuedAgain = await http.enqueueTurn(outboxTurn);
+      // 重复入队不覆盖首次载荷或时间，也不重置 attempts。
+      const enqueuedAgain = await http.enqueueTurn({ ...outboxTurn, occurredAt: '2026-09-24T00:00:00.000Z' });
       expect(enqueuedAgain.turnId).toBe('outbox-1');
+      expect(enqueuedAgain.occurredAt).toBe(outboxTurn.occurredAt);
+      await expect(http.enqueueTurn({ ...outboxTurn, assistantMessage: '篡改队列回答' }))
+        .rejects.toMatchObject({ code: 'OUTBOX_CONFLICT', status: 409 });
       expect(await http.listPendingTurns(groupId)).toHaveLength(1);
       // 原子提交成功后队列自动出清
       const committed = await http.commitTurn(outboxTurn);
@@ -271,6 +274,11 @@ integration('PostgreSQL 群聊公共回合与多角色原子事务', () => {
       await expect(http.commitTurn(retryTurn)).rejects.toThrow('群聊 Runtime 内部错误');
       const pendingAfterFailure = await http.listPendingTurns(groupId);
       expect(pendingAfterFailure.map((item) => item.turnId)).toContain('outbox-retry');
+      const failedReplay = await http.retryPendingTurns(groupId);
+      expect(failedReplay).toContainEqual(expect.objectContaining({ turnId: 'outbox-retry', status: 'failed' }));
+      const failedEntry = (await http.listPendingTurns(groupId)).find((item) => item.turnId === 'outbox-retry');
+      expect(failedEntry).toMatchObject({ status: 'failed', attempts: 1 });
+      expect(failedEntry?.lastError).toBeTruthy();
       await pool.query('DROP TRIGGER reject_outbox_link ON group_event_links');
       // 服务端重放：队列条目提交成功并出清
       const replayed = await http.retryPendingTurns(groupId);
@@ -302,6 +310,8 @@ integration('PostgreSQL 群聊公共回合与多角色原子事务', () => {
       await http.setGroupStatus({ groupId, status: 'archived', expectedVersion: beforeReArchive.version });
       await expect(http.createGroup({ groupId, name: '原子群聊', memberIds: [a, b] }))
         .rejects.toMatchObject({ status: 404, code: 'GROUP_NOT_FOUND' });
+      // 客户端若没收到提交成功响应，归档后重复确认已完成的逻辑回合仍应可幂等读取。
+      await expect(http.enqueueTurn(outboxTurn)).resolves.toMatchObject({ status: 'committed', turnId: 'outbox-1' });
     } finally {
       if (server?.listening) {
         await new Promise<void>((resolve, reject) => server!.close((error) => error ? reject(error) : resolve()));

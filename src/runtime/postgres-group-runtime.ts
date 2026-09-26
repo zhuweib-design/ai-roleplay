@@ -123,29 +123,63 @@ export class PostgresGroupRuntime {
     if (!Number.isFinite(Date.parse(occurredAt))) {
       throw new GroupRuntimeError(400, 'INVALID_TIME', '群组时间格式无效');
     }
+    const normalizedOccurredAt = new Date(occurredAt).toISOString();
     return this.sql.transaction(async (tx) => {
-      await this.lockActiveGroup(tx, input.groupId);
+      // 群组先锁、outbox 后锁，与 commitTurn 保持相同顺序并避免重复确认时形成死锁。
+      await this.lockActiveOrArchivedGroup(tx, input.groupId);
+      const group = await tx.query<{ status: 'active' | 'archived' }>(
+        'SELECT status FROM group_chats WHERE id = $1 AND tenant_id = $2',
+        [input.groupId, this.tenantId]
+      );
+      if (!group.rows[0]) throw new GroupRuntimeError(404, 'GROUP_NOT_FOUND', '群组不存在或不属于当前租户');
       const member = await tx.query(
         `SELECT 1 FROM group_chat_members WHERE group_id = $1 AND tenant_id = $2
            AND character_id = $3 AND status = 'active'`,
         [input.groupId, this.tenantId, input.speakerId]
       );
+      const existing = await tx.query<OutboxRow>(
+        `SELECT * FROM group_turn_outbox
+           WHERE group_id = $1 AND tenant_id = $2 AND logical_turn_id = $3
+           FOR UPDATE`, [input.groupId, this.tenantId, logicalId]
+      );
+      const current = existing.rows[0];
+      if (current?.status === 'committed') {
+        const samePayload = current.speaker_id === input.speakerId
+          && current.user_message === input.userMessage
+          && current.assistant_message === input.assistantMessage;
+        if (!samePayload) {
+          throw new GroupRuntimeError(409, 'OUTBOX_CONFLICT', '群组回合键已存在但队列载荷不一致');
+        }
+        return this.toOutboxEntry(current);
+      }
+      if (group.rows[0].status !== 'active') {
+        throw new GroupRuntimeError(404, 'GROUP_NOT_FOUND', '群组不存在、已归档或不属于当前租户');
+      }
       if (!member.rowCount) throw new GroupRuntimeError(403, 'MEMBER_FORBIDDEN', '发言角色不是有效群组成员');
       const row = await tx.query<OutboxRow>(
         `INSERT INTO group_turn_outbox
            (group_id, tenant_id, logical_turn_id, speaker_id, user_message, assistant_message, occurred_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (group_id, logical_turn_id) DO UPDATE SET
-           speaker_id = EXCLUDED.speaker_id,
-           user_message = EXCLUDED.user_message,
-           assistant_message = EXCLUDED.assistant_message,
-           occurred_at = EXCLUDED.occurred_at,
-           updated_at = now()
+         ON CONFLICT (group_id, logical_turn_id) DO NOTHING
          RETURNING *`,
         [input.groupId, this.tenantId, logicalId, input.speakerId,
-          input.userMessage, input.assistantMessage, occurredAt]
+          input.userMessage, input.assistantMessage, normalizedOccurredAt]
       );
-      return this.toOutboxEntry(row.rows[0]!);
+      if (row.rows[0]) return this.toOutboxEntry(row.rows[0]);
+      const duplicate = await tx.query<OutboxRow>(
+        `SELECT * FROM group_turn_outbox
+           WHERE group_id = $1 AND tenant_id = $2 AND logical_turn_id = $3
+           FOR UPDATE`, [input.groupId, this.tenantId, logicalId]
+      );
+      const duplicateEntry = duplicate.rows[0];
+      if (!duplicateEntry) throw new GroupRuntimeError(500, 'OUTBOX_READ_FAILED', '队列条目写入后无法读取');
+      const samePayload = duplicateEntry.speaker_id === input.speakerId
+        && duplicateEntry.user_message === input.userMessage
+        && duplicateEntry.assistant_message === input.assistantMessage;
+      if (!samePayload) {
+        throw new GroupRuntimeError(409, 'OUTBOX_CONFLICT', '群组回合键已存在但队列载荷不一致');
+      }
+      return this.toOutboxEntry(duplicateEntry);
     });
   }
 

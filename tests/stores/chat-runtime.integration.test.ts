@@ -236,7 +236,7 @@ describe('Chat Store — Runtime 实际链路', () => {
     });
     const store = useChatStore();
     const input = { group, characters, speakerCharacterId: characters[0]!.id };
-    return { store, input, paths, context, create, getGroupState, addMember, removeMember, setGroupStatus, listTurns, commit };
+    return { store, input, paths, context, create, getGroupState, addMember, removeMember, setGroupStatus, listTurns, listPendingTurns, enqueueTurn, commit };
   }
 
   it('远程群聊先确认群组，再走成员限定上下文，且不污染缓存的单角色 API', async () => {
@@ -283,14 +283,34 @@ describe('Chat Store — Runtime 实际链路', () => {
   });
 
   it('远程提交失败后同键重试保留原始载荷，不回退单角色事件接口', async () => {
-    const { store, input, commit, paths } = setupGroupRemote();
+    const { store, input, enqueueTurn, commit, paths } = setupGroupRemote();
     commit.mockRejectedValueOnce(new GroupRuntimeError(503, 'TEMPORARY_FAILURE', '暂时不可用'));
     const turn = { ...input, turnId: 'retry-same-turn', userMessage: '问题', assistantMessage: '原始回答' };
     expect(await store.commitRuntimeGroupTurn(turn)).toEqual({ enabled: true, committed: false });
     expect(store.runtimeStatus?.phase).toBe('event');
+    expect(store.pendingGroupRuntimeTurns[0]).toMatchObject({
+      occurredAt: enqueueTurn.mock.calls[0]![0].occurredAt,
+      status: 'failed', attempts: 1, lastErrorCode: 'TEMPORARY_FAILURE', lastErrorStatus: 503,
+    });
     expect(await store.commitRuntimeGroupTurn(turn)).toEqual({ enabled: true, committed: true });
     expect(commit.mock.calls[0]![0]).toEqual(commit.mock.calls[1]![0]);
+    expect(enqueueTurn.mock.calls[0]![0].occurredAt).toBe(enqueueTurn.mock.calls[1]![0].occurredAt);
     expect(paths.some((path) => path.includes('/characters/') && (path.endsWith('/events') || path.endsWith('/turns')))).toBe(false);
+  });
+
+  it('同一逻辑回合键遇到不同本地载荷时拒绝覆盖，也不发送远端请求', async () => {
+    const { store, input, enqueueTurn, commit } = setupGroupRemote();
+    const turn = { ...input, turnId: 'immutable-local-turn', userMessage: '原问题', assistantMessage: '原回答' };
+    commit.mockRejectedValueOnce(new GroupRuntimeError(503, 'TEMPORARY_FAILURE', '暂时不可用'));
+    expect(await store.commitRuntimeGroupTurn(turn)).toEqual({ enabled: true, committed: false });
+    const enqueueCount = enqueueTurn.mock.calls.length;
+    const commitCount = commit.mock.calls.length;
+
+    expect(await store.commitRuntimeGroupTurn({ ...turn, assistantMessage: '不同回答' }))
+      .toEqual({ enabled: true, committed: false });
+    expect(enqueueTurn).toHaveBeenCalledTimes(enqueueCount);
+    expect(commit).toHaveBeenCalledTimes(commitCount);
+    expect(store.pendingGroupRuntimeTurns[0]?.assistantMessage).toBe('原回答');
   });
 
   it('成员变更先同步远端显式接口，失败时不要求调用方静默覆盖本地状态', async () => {
@@ -382,7 +402,8 @@ describe('Chat Store — Runtime 实际链路', () => {
     const raw = snapshots.get('runtime:pending-group-turns:v1');
     expect(raw).toBeDefined();
     const saved = (raw as Array<Record<string, unknown>>).map((item) => ({ ...item }));
-    expect(saved[0]).toMatchObject({ groupId: original.group.id, turnId: original.turnId, userMessage: original.userMessage, assistantMessage: original.assistantMessage, attempts: 1 });
+    expect(saved[0]).toMatchObject({ groupId: original.group.id, turnId: original.turnId, userMessage: original.userMessage, assistantMessage: original.assistantMessage, attempts: 1, status: 'failed', lastErrorCode: 'TEMPORARY_FAILURE', lastErrorStatus: 503 });
+    expect(saved[0]?.occurredAt).toBe(first.enqueueTurn.mock.calls[0]![0].occurredAt);
 
     setActivePinia(createPinia());
     const refreshed = useChatStore();
@@ -395,7 +416,51 @@ describe('Chat Store — Runtime 实际链路', () => {
     expect(retry).toEqual({ enabled: true, committed: true });
     expect(first.commit.mock.calls.length).toBe(beforeRetry + 1);
     expect(first.commit.mock.calls.at(-1)?.[0]).toMatchObject({ turnId: 'persistent-retry', userMessage: '保留问题', assistantMessage: '保留回答' });
+    expect(first.commit.mock.calls.at(-1)?.[0].occurredAt).toBe(saved[0]?.occurredAt);
     expect(refreshed.pendingGroupRuntimeTurns).toHaveLength(0);
+  });
+
+  it('升级时保留 0.3.0 队列快照并补齐缺失的回合时间和失败状态', async () => {
+    const createdAt = '2026-09-24T03:00:00.000Z';
+    const adapter = {
+      loadSnapshot: vi.fn(async () => [{
+        groupId: 'legacy-group', turnId: 'legacy-turn', speakerCharacterId: 'legacy-speaker',
+        userMessage: '旧问题', assistantMessage: '旧回答', createdAt, attempts: 1,
+      }]),
+    } as unknown as StorageAdapter;
+    const store = useChatStore();
+    store.setStorageAdapter(adapter);
+
+    await store.loadRuntimePendingGroupTurns();
+    expect(store.pendingGroupRuntimeTurns).toEqual([expect.objectContaining({
+      turnId: 'legacy-turn', occurredAt: createdAt, status: 'failed',
+    })]);
+  });
+
+  it('进入群聊时从服务端恢复本地缺失的待处理回合，并可用原载荷显式重试', async () => {
+    const { store, input, listPendingTurns, enqueueTurn, commit } = setupGroupRemote();
+    const occurredAt = '2026-09-24T03:00:00.000Z';
+    listPendingTurns.mockResolvedValueOnce([{
+      groupId: 'remote-group', turnId: 'server-only-turn',
+      speakerId: store.runtimeCharacterIdFor(input.characters[0]!),
+      userMessage: '服务器保留的问题', assistantMessage: '服务器保留的回答', occurredAt,
+      status: 'failed', attempts: 2, lastError: '上次提交失败',
+      createdAt: occurredAt, updatedAt: occurredAt,
+    }]);
+
+    expect(await store.recoverRemoteGroupOutbox(input)).toEqual({ enabled: true, recovered: 1 });
+    expect(store.pendingGroupRuntimeTurns[0]).toMatchObject({
+      groupId: input.group.id, turnId: 'server-only-turn',
+      speakerCharacterId: input.characters[0]!.id, occurredAt,
+      attempts: 2, status: 'failed', lastError: '上次提交失败',
+    });
+    expect(await store.retryPendingGroupRuntimeTurn({ ...input, groupTurnId: 'server-only-turn' }))
+      .toEqual({ enabled: true, committed: true });
+    expect(enqueueTurn.mock.calls.at(-1)?.[0]).toMatchObject({
+      turnId: 'server-only-turn', userMessage: '服务器保留的问题',
+      assistantMessage: '服务器保留的回答', occurredAt,
+    });
+    expect(commit.mock.calls.at(-1)?.[0]).toMatchObject({ turnId: 'server-only-turn', occurredAt });
   });
 
   it('远程准备拒绝非成员和本地归档群组，且不发出 HTTP 请求', async () => {
