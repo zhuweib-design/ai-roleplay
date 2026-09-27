@@ -1,7 +1,7 @@
 # RAG 增强实现计划 — 停用词过滤 + 嵌入模型自动择优
 
 > 关联设计文档：`docs/design/rag-enhancement-design.md`
-> 状态：待执行
+> 状态：已实现，作为 1.0.0 稳定性基线
 > 方法：TDD（先写测试后实现），每个任务含独立验证。
 > 分支约定：实现前需在非 master 分支进行（除非用户明确允许在 master）。
 
@@ -139,3 +139,10 @@
 | 3 | 择优用 14 组中文评测集、recall@3+耗时 | 跑分单测全绿 |
 | 4 | 择优结果驱动 `selectVectorModel`，失效回退 | manager 单测 |
 | 5 | 全量门禁通过（lint/i18n/typecheck/test） | CI 7 重门禁 |
+
+## 6. 实现回写
+
+- 停用词过滤、否定词/数字/专名保护及设置开关已落地到 `src/core/stopword-filter.ts`，并由三类嵌入提供者统一调用。
+- 自动择优已落地到 `src/core/rag-benchmark.ts` 与 `VectorModelPanel.vue`，使用 14 组中文评测集计算 recall@3 和耗时，并按“显式选择 > 择优结果 > 平台默认”生效。
+- Web 模型文件列举已统一兼容 `model/<id>/...` 当前键和 `models/embedding/<id>/...` 历史键，避免已安装模型在自动择优中漏检。
+- 自定义主题应用前新增运行时对比度预检；生成令牌的纯函数审计由 `auditThemeContrast()` 提供，内置主题静态门禁仍作为发布门禁。

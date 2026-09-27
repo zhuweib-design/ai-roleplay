@@ -20,6 +20,7 @@ import {
   kMeans,
   extractPaletteFromPixels,
   generateThemeTokens,
+  auditThemeContrast,
   tokensToCss,
   buildCustomThemeCss,
 } from '@core/theme-extractor';
@@ -230,6 +231,20 @@ describe('generateThemeTokens', () => {
 });
 
 describe('序列化', () => {
+  it('auditThemeContrast 能发现运行时令牌中的低对比度组合', () => {
+    const tokens = generateThemeTokens({
+      colors: ['#101522', '#202b44', '#4c6fff'],
+      ratios: [0.5, 0.3, 0.2],
+      avgLuminance: 0.08,
+    });
+    expect(auditThemeContrast(tokens)).toHaveLength(0);
+    expect(auditThemeContrast({ ...tokens, foreground: '#777777', background: '#777777' })).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ foreground: 'foreground', background: 'background' }),
+      ])
+    );
+  });
+
   it('tokensToCss 生成 --key: value; 格式', () => {
     const css = tokensToCss({ background: '#0b0b10', card: '#1a1c2b' });
     expect(css).toContain('--background: #0b0b10;');

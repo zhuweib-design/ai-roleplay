@@ -2178,6 +2178,7 @@ const en: Record<MessageKey, string> = {
   'settingsView.customThemeClear': 'Clear custom theme',
   'settingsView.customThemeCleared': 'Custom theme cleared, reverted to dark',
   'settingsView.customThemeNoData': 'Upload an image and extract colors first',
+  'settingsView.customThemeContrastFailed': '{count} custom theme color pairs do not meet the readability contrast threshold; the theme was not applied',
   // P2-1 Data management & Persona section i18n
   'settingsView.personaTitle': 'Persona Identity',
   'settingsView.personaCreate': 'New',

@@ -2178,6 +2178,7 @@ export default {
   'settingsView.customThemeClear': '清除自定义主题',
   'settingsView.customThemeCleared': '已清除自定义主题，切回默认深色主题',
   'settingsView.customThemeNoData': '请先上传图片并提取主色',
+  'settingsView.customThemeContrastFailed': '自定义主题有 {count} 组颜色对比度未达到可读标准，未应用',
   // P2-1 数据管理与 Persona 区块 i18n
   'settingsView.personaTitle': 'Persona 用户身份',
   'settingsView.personaCreate': '新建',

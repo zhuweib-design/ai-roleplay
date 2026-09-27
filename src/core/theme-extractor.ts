@@ -143,6 +143,53 @@ export function contrastRatio(a: Rgb, b: Rgb): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+/** 自定义主题运行时对比度检查结果。 */
+export interface ThemeContrastIssue {
+  foreground: string;
+  background: string;
+  ratio: number;
+}
+
+/**
+ * 检查主题令牌中实际使用的前景/背景组合。
+ * 该检查供运行时应用用户上传主题前调用，避免仅依赖内置主题静态门禁。
+ */
+export function auditThemeContrast(tokens: ThemeTokens, minimum = 4.5): ThemeContrastIssue[] {
+  const pairs: Array<[string, string]> = [
+    ['foreground', 'background'],
+    ['foreground', 'card'],
+    ['muted-foreground', 'background'],
+    ['muted-foreground', 'card'],
+    ['muted-foreground', 'card-elevated'],
+    ['secondary', 'background'],
+    ['secondary', 'card'],
+    ['primary-fg', 'background'],
+    ['primary-fg', 'card'],
+    ['destructive', 'card'],
+    ['on-primary', 'primary'],
+    ['on-accent', 'secondary'],
+    ['on-accent', 'accent-blue'],
+    ['on-accent', 'accent-orange'],
+    ['error-fg', 'error-bg'],
+    ['success-fg', 'success-bg'],
+    ['accent-blue', 'background'],
+    ['accent-blue', 'card'],
+    ['accent-orange', 'background'],
+    ['accent-orange', 'card'],
+    ['warning-fg', 'background'],
+    ['warning-fg', 'card'],
+  ];
+  const issues: ThemeContrastIssue[] = [];
+  for (const [foreground, background] of pairs) {
+    const fg = tokens[foreground];
+    const bg = tokens[background];
+    if (!fg || !bg || !/^#[0-9a-f]{6}$/i.test(fg) || !/^#[0-9a-f]{6}$/i.test(bg)) continue;
+    const ratio = contrastRatio(hexToRgb(fg), hexToRgb(bg));
+    if (ratio < minimum) issues.push({ foreground, background, ratio });
+  }
+  return issues;
+}
+
 /** adjustContrast 的搜索方向：auto 自动判定；lighten 提亮；darken 压暗 */
 export type ContrastDirection = 'auto' | 'lighten' | 'darken';
 

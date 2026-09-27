@@ -45,8 +45,15 @@ export class WebFileAdapter implements ModelFileAdapter {
     const db = await openModelDb();
     return new Promise((resolve) => {
       const tx = db.transaction(STORE, 'readonly');
-      const req = tx.objectStore(STORE).getKey(`model/${modelId}/model.onnx`);
-      req.onsuccess = () => resolve(req.result !== undefined);
+      const store = tx.objectStore(STORE);
+      const req = store.getAllKeys();
+      req.onsuccess = () => {
+        const prefix = `model/${modelId}/`;
+        resolve((req.result as IDBValidKey[]).some((key) => {
+          const name = String(key);
+          return name.startsWith(prefix) && /\/(?:model\.onnx|model_int8\.onnx)$/.test(name);
+        }));
+      };
       req.onerror = () => resolve(false);
     });
   }
@@ -101,10 +108,14 @@ export class WebFileAdapter implements ModelFileAdapter {
         const keys = (req.result as IDBValidKey[]).map(String);
         const ids = new Set<VectorModelId>();
         for (const k of keys) {
-          const m = k.match(/^models\/embedding\/([^/]+)\/model\.onnx$/);
-          if (m) ids.add(m[1] as VectorModelId);
+          // WebFileAdapter.importFromDir 使用 model/<id>/<file> 作为统一键。
+          // 兼容早期版本遗留的 models/embedding/<id>/model.onnx 键，避免升级后丢失已安装模型。
+          const current = k.match(/^model\/([^/]+)\/(?:model\.onnx|model_int8\.onnx)$/);
+          const legacy = k.match(/^models\/embedding\/([^/]+)\/model\.onnx$/);
+          const id = current?.[1] ?? legacy?.[1];
+          if (id) ids.add(id as VectorModelId);
         }
-        resolve([...ids]);
+        resolve([...ids].sort() as VectorModelId[]);
       };
       req.onerror = () => resolve([]);
     });

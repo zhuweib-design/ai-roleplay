@@ -27,7 +27,7 @@ import SettingsModelPanel from '@/components/settings/SettingsModelPanel.vue';
 import VectorModelPanel from '@/components/settings/VectorModelPanel.vue';
 import type { ThemeName } from '@/types';
 import type { CustomTheme } from '@/types';
-import { extractPaletteFromImage, generateThemeTokens } from '@/core/theme-extractor';
+import { auditThemeContrast, extractPaletteFromImage, generateThemeTokens } from '@/core/theme-extractor';
 import { FONT_SIZE_PRESETS } from '@/types';
 import { t, type Locale } from '@/i18n';
 
@@ -397,6 +397,11 @@ function fileToDataUrl(file: File): Promise<string> {
 function applyCustomTheme() {
   if (!customThemeResult.value) {
     showToast('error', t('settingsView.customThemeNoData'));
+    return;
+  }
+  const issues = auditThemeContrast(customThemeResult.value.tokens);
+  if (issues.length > 0) {
+    showToast('error', t('settingsView.customThemeContrastFailed', { count: issues.length }));
     return;
   }
   settings.setCustomTheme(customThemeResult.value);
