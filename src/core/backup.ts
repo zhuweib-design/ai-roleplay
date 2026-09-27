@@ -17,6 +17,7 @@ import type { Chat } from '../storage/types';
 import type { Persona, AppSettings } from '@/types';
 import type { StoryAnalysisResult } from './story-types';
 import type { StoryEvent } from './event-types';
+import type { RuntimeSnapshot } from '@/runtime/types';
 
 /** 备份格式版本号（不向后兼容时递增） */
 import { t } from '@/i18n';
@@ -52,6 +53,8 @@ export interface BackupData extends BackupMeta {
   stories?: StoryAnalysisResult[];
   /** 事件（世界书事件/触发器，F17；运行时内存，随备份带出便于跨端恢复） */
   events?: StoryEvent[];
+  /** Virtual Character Runtime 角色快照（可选，旧备份缺省为空） */
+  runtimeSnapshots?: RuntimeSnapshot[];
   /** 全局设置（部分字段） */
   settings: Partial<AppSettings>;
 }
@@ -80,6 +83,8 @@ export interface ImportOptions {
   importStories?: boolean;
   /** 是否导入设置 */
   importSettings?: boolean;
+  /** 是否导入 Runtime 角色快照 */
+  importRuntimeSnapshots?: boolean;
 }
 
 /** 导入结果统计 */
@@ -90,6 +95,7 @@ export interface ImportResult {
   groupChats: { added: number; skipped: number; overwritten: number };
   personas: { added: number; skipped: number; overwritten: number };
   stories: { added: number; skipped: number; overwritten: number };
+  runtimeSnapshots: { added: number; skipped: number; overwritten: number };
   /** 备份内携带的事件（世界书事件，由调用方写回内存 store） */
   events?: StoryEvent[];
   settingsUpdated: boolean;
@@ -127,6 +133,7 @@ export function validateBackup(data: unknown): string[] {
     'personas',
     'stories',
     'events',
+    'runtimeSnapshots',
   ];
   for (const field of arrayFields) {
     if (obj[field] !== undefined && !Array.isArray(obj[field])) {

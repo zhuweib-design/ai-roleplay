@@ -2562,6 +2562,8 @@ export default {
   'backup.personaImportFailed': 'Persona {name} 导入失败：{error}',
   'backup.storyImportFailed': '故事 {id} 导入失败：{error}',
   'backup.settingsImportFailed': '设置导入失败：{error}',
+  'backup.runtimeSnapshotUnsupported': '当前存储不支持恢复 Runtime 快照',
+  'backup.runtimeSnapshotImportFailed': 'Runtime 快照 {id} 导入失败：{error}',
   'backup.importResult': '新增 {added} / 覆盖 {overwritten} / 跳过 {skipped}{failures}',
   'backup.failuresSuffix': ';{count} 项失败',
   'backup.decryptFailed': '备份解密或解析失败：{error}',

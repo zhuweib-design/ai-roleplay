@@ -18,6 +18,7 @@ import { exportV2Card, importV2Card } from '@/core/character-card';
 import type { Chat } from '@/storage/types';
 import type { AppSettings } from '@/types';
 import type { StoryEvent } from '@/core/event-types';
+import type { RuntimeSnapshot } from '@/runtime/types';
 import {
   type BackupData,
   type ImportOptions,
@@ -104,8 +105,24 @@ export async function exportAll(
     personas,
     stories,
     events: extra?.events ?? [],
+    runtimeSnapshots: await loadRuntimeSnapshots(adapter),
     settings,
   };
+}
+
+/** 导出 Runtime 角色快照；不包含上下文审计记录等非角色快照。 */
+async function loadRuntimeSnapshots(adapter: StorageAdapter): Promise<RuntimeSnapshot[]> {
+  if (!adapter.listSnapshotsByPrefix) return [];
+  try {
+    const values = await adapter.listSnapshotsByPrefix<RuntimeSnapshot>('virtual-character-runtime:');
+    return values.filter((value): value is RuntimeSnapshot => Boolean(
+      value && typeof value === 'object' &&
+      value.character && typeof value.character.id === 'string' &&
+      Array.isArray(value.events) && Array.isArray(value.stateChanges)
+    ));
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -142,6 +159,7 @@ export async function importBackup(
     groupChats: { added: 0, skipped: 0, overwritten: 0 },
     personas: { added: 0, skipped: 0, overwritten: 0 },
     stories: { added: 0, skipped: 0, overwritten: 0 },
+    runtimeSnapshots: { added: 0, skipped: 0, overwritten: 0 },
     settingsUpdated: false,
     errors,
   };
@@ -303,6 +321,36 @@ export async function importBackup(
     result.events = data.events;
   }
 
+  // Runtime 角色快照
+  if (options.importRuntimeSnapshots !== false && data.runtimeSnapshots?.length) {
+    if (!adapter.saveSnapshot) {
+      errors.push(t('backup.runtimeSnapshotUnsupported'));
+    } else {
+      for (const snapshot of data.runtimeSnapshots) {
+        try {
+          const key = `virtual-character-runtime:${snapshot.character.id}`;
+          const existing = await adapter.loadSnapshot<RuntimeSnapshot>(key);
+          if (existing) {
+            if (strategy === 'skip' || strategy === 'merge') {
+              result.runtimeSnapshots.skipped++;
+            } else {
+              await adapter.saveSnapshot(key, snapshot);
+              result.runtimeSnapshots.overwritten++;
+            }
+          } else {
+            await adapter.saveSnapshot(key, snapshot);
+            result.runtimeSnapshots.added++;
+          }
+        } catch (err) {
+          errors.push(t('backup.runtimeSnapshotImportFailed', {
+            id: snapshot.character.id,
+            error: err instanceof Error ? err.message : String(err),
+          }));
+        }
+      }
+    }
+  }
+
   // 设置
   if (options.importSettings !== false && data.settings) {
     try {
@@ -320,13 +368,16 @@ export async function importBackup(
   // T-06 审计:导入结果摘要
   const totalAdded =
     result.characters.added + result.chats.added + result.lorebooks.added +
-    result.groupChats.added + result.personas.added + result.stories.added;
+    result.groupChats.added + result.personas.added + result.stories.added +
+    result.runtimeSnapshots.added;
   const totalOverwritten =
     result.characters.overwritten + result.chats.overwritten + result.lorebooks.overwritten +
-    result.groupChats.overwritten + result.personas.overwritten + result.stories.overwritten;
+    result.groupChats.overwritten + result.personas.overwritten + result.stories.overwritten +
+    result.runtimeSnapshots.overwritten;
   const totalSkipped =
     result.characters.skipped + result.chats.skipped + result.lorebooks.skipped +
-    result.groupChats.skipped + result.personas.skipped + result.stories.skipped;
+    result.groupChats.skipped + result.personas.skipped + result.stories.skipped +
+    result.runtimeSnapshots.skipped;
   auditLogger.record(
     'backup_import',
     t('backup.importResult', {

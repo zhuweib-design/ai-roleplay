@@ -2562,6 +2562,8 @@ const en: Record<MessageKey, string> = {
   'backup.personaImportFailed': 'Persona {name} import failed: {error}',
   'backup.storyImportFailed': 'Story {id} import failed: {error}',
   'backup.settingsImportFailed': 'Settings import failed: {error}',
+  'backup.runtimeSnapshotUnsupported': 'The current storage does not support Runtime snapshot restore',
+  'backup.runtimeSnapshotImportFailed': 'Runtime snapshot {id} import failed: {error}',
   'backup.importResult': '{added} added / {overwritten} overwritten / {skipped} skipped{failures}',
   'backup.failuresSuffix': '; {count} failed',
   'backup.decryptFailed': 'Backup decryption or parsing failed: {error}',

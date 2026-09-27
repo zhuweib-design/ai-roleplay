@@ -26,6 +26,7 @@ import type { Lorebook } from '../../src/core/lorebook';
 import type { GroupChat } from '../../src/core/group-chat';
 import type { Persona, AppSettings } from '@/types';
 import type { StoryAnalysisResult } from '../../src/core/story-types';
+import type { RuntimeSnapshot } from '@/runtime/types';
 
 // ── Mock 存储适配器 ──
 
@@ -46,6 +47,7 @@ class MockStorageAdapter implements Partial<StorageAdapter> {
   public savedPersonas: Persona[] = [];
   public savedStories: StoryAnalysisResult[] = [];
   public savedSettings: Partial<AppSettings> | null = null;
+  public snapshots = new Map<string, unknown>();
 
   async init(): Promise<void> {}
   async close(): Promise<void> {}
@@ -153,6 +155,19 @@ class MockStorageAdapter implements Partial<StorageAdapter> {
   async deleteStory(id: string): Promise<void> {
     this.stories = this.stories.filter((s) => s.id !== id);
   }
+
+  async saveSnapshot(key: string, value: unknown): Promise<void> {
+    this.snapshots.set(key, structuredClone(value));
+  }
+  async loadSnapshot<T>(key: string): Promise<T | null> {
+    const value = this.snapshots.get(key);
+    return value === undefined ? null : structuredClone(value) as T;
+  }
+  async listSnapshotsByPrefix<T>(prefix: string): Promise<T[]> {
+    return [...this.snapshots.entries()]
+      .filter(([key]) => key.startsWith(prefix))
+      .map(([, value]) => structuredClone(value) as T);
+  }
 }
 
 // ── 测试夹具 ──
@@ -244,6 +259,27 @@ function makeBackupData(overrides: Partial<BackupData> = {}): BackupData {
   };
 }
 
+function makeRuntimeSnapshot(id = 'runtime-1'): RuntimeSnapshot {
+  const now = '2026-09-27T00:00:00.000Z';
+  return {
+    character: {
+      id,
+      tenantId: 'tenant-a',
+      profile: { displayName: 'Runtime 角色' },
+      traits: [], values: [], beliefs: [], goals: [], preferences: {},
+      emotions: [],
+      mood: {
+        valence: 0, arousal: 0, dominance: 0,
+        baselineValence: 0, baselineArousal: 0, baselineDominance: 0,
+        halfLifeSeconds: 3600, updatedAt: now,
+      },
+      attitudes: [], relationships: [], seedMemories: [],
+      version: 0, createdAt: now, updatedAt: now,
+    },
+    events: [], stateChanges: [], memories: [], episodes: [], version: 0, updatedAt: now,
+  };
+}
+
 // ── 测试用例 ──
 
 describe('backup-service — F13 单元测试', () => {
@@ -261,6 +297,11 @@ describe('backup-service — F13 单元测试', () => {
       adapter.groupChats = [makeGroupChat({ id: 'gc1' })];
       adapter.personas = [makePersona({ id: 'p1' })];
       adapter.settingsData = { theme: 'light' } as Partial<AppSettings>;
+      adapter.snapshots.set('virtual-character-runtime:runtime-1', makeRuntimeSnapshot('runtime-1'));
+      adapter.snapshots.set(
+        'virtual-character-runtime:context-build:build-1',
+        { id: 'build-1', context: [] },
+      );
 
       const data = await exportAll(adapter as unknown as StorageAdapter);
 
@@ -271,6 +312,8 @@ describe('backup-service — F13 单元测试', () => {
       expect(data.lorebooks).toHaveLength(1);
       expect(data.groupChats).toHaveLength(1);
       expect(data.personas).toHaveLength(1);
+      expect(data.runtimeSnapshots).toHaveLength(1);
+      expect(data.runtimeSnapshots?.[0]?.character.id).toBe('runtime-1');
       expect(data.settings.theme).toBe('light');
     });
 
@@ -308,6 +351,56 @@ describe('backup-service — F13 单元测试', () => {
   });
 
   describe('importBackup · overwrite 策略', () => {
+    it('Runtime 快照不存在时被添加', async () => {
+      const snapshot = makeRuntimeSnapshot('runtime-new');
+      const result = await importBackup(
+        adapter as unknown as StorageAdapter,
+        makeBackupData({ runtimeSnapshots: [snapshot] }),
+        { conflictStrategy: 'overwrite' },
+      );
+
+      expect(result.runtimeSnapshots).toEqual({ added: 1, skipped: 0, overwritten: 0 });
+      await expect(
+        adapter.loadSnapshot<RuntimeSnapshot>('virtual-character-runtime:runtime-new'),
+      ).resolves.toEqual(snapshot);
+    });
+
+    it('Runtime 快照 overwrite 策略覆盖已有版本', async () => {
+      const oldSnapshot = makeRuntimeSnapshot('runtime-existing');
+      const newSnapshot = makeRuntimeSnapshot('runtime-existing');
+      newSnapshot.character.profile.displayName = '更新后的角色';
+      await adapter.saveSnapshot('virtual-character-runtime:runtime-existing', oldSnapshot);
+
+      const result = await importBackup(
+        adapter as unknown as StorageAdapter,
+        makeBackupData({ runtimeSnapshots: [newSnapshot] }),
+        { conflictStrategy: 'overwrite' },
+      );
+
+      expect(result.runtimeSnapshots).toEqual({ added: 0, skipped: 0, overwritten: 1 });
+      await expect(
+        adapter.loadSnapshot<RuntimeSnapshot>('virtual-character-runtime:runtime-existing'),
+      ).resolves.toEqual(newSnapshot);
+    });
+
+    it('Runtime 快照 skip 策略保留已有版本', async () => {
+      const oldSnapshot = makeRuntimeSnapshot('runtime-existing');
+      const newSnapshot = makeRuntimeSnapshot('runtime-existing');
+      newSnapshot.character.profile.displayName = '不应覆盖';
+      await adapter.saveSnapshot('virtual-character-runtime:runtime-existing', oldSnapshot);
+
+      const result = await importBackup(
+        adapter as unknown as StorageAdapter,
+        makeBackupData({ runtimeSnapshots: [newSnapshot] }),
+        { conflictStrategy: 'skip' },
+      );
+
+      expect(result.runtimeSnapshots).toEqual({ added: 0, skipped: 1, overwritten: 0 });
+      await expect(
+        adapter.loadSnapshot<RuntimeSnapshot>('virtual-character-runtime:runtime-existing'),
+      ).resolves.toEqual(oldSnapshot);
+    });
+
     it('新数据被添加', async () => {
       adapter.characters = [];
       const data = makeBackupData({
