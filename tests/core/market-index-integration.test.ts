@@ -227,7 +227,7 @@ describe('downloadMarketItem (integration)', () => {
   });
 
   it('should handle HTTP error during download', async () => {
-    const item = makeItem();
+    const item = makeItem({ sha256: 'a'.repeat(64) });
     const mockFetch = vi.fn().mockResolvedValue(
       new Response('not found', { status: 404 })
     );
@@ -240,6 +240,7 @@ describe('downloadMarketItem (integration)', () => {
     const largeContent = 'x'.repeat(5 * 1024 * 1024); // > 4MB limit
     const item = makeItem({
       size: largeContent.length,
+      sha256: 'a'.repeat(64),
     });
     const mockFetch = vi.fn().mockResolvedValue(
       new Response(largeContent, { status: 200 })
