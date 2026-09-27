@@ -482,6 +482,18 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
     for (const memory of next.memories.filter((item) => !knownMemoryIds.has(item.id))) {
       await this.insertMemory(tx, memory);
     }
+    const previousMemories = new Map((current?.memories ?? []).map((memory) => [memory.id, memory]));
+    for (const memory of next.memories) {
+      const previous = previousMemories.get(memory.id);
+      if (previous && (previous.reviewStatus !== memory.reviewStatus || previous.reviewedAt !== memory.reviewedAt)) {
+        await tx.query(
+          `UPDATE memories
+              SET review_status = $3, reviewed_at = $4, updated_at = now()
+            WHERE id = $1 AND character_id = $2`,
+          [memory.id, next.character.id, memory.reviewStatus ?? 'confirmed', memory.reviewedAt ?? null]
+        );
+      }
+    }
 
     const knownEpisodeIds = new Set(current?.episodes.map((episode) => episode.id) ?? []);
     for (const episode of next.episodes) {
@@ -667,8 +679,8 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
     const targetId = await this.ensureTarget(tx, memory.targetId);
     await tx.query(
       `INSERT INTO memories
-        (id, character_id, memory_type, content, target_id, importance, confidence, salience, occurred_at, valid_from, valid_until, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
+        (id, character_id, memory_type, content, target_id, importance, confidence, salience, occurred_at, valid_from, valid_until, review_status, reviewed_at, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb)
        ON CONFLICT (id) DO NOTHING`,
       [
         memory.id,
@@ -682,6 +694,8 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
         memory.occurredAt,
         memory.validFrom ?? null,
         memory.validUntil ?? null,
+        memory.reviewStatus ?? 'confirmed',
+        memory.reviewedAt ?? null,
         json({ sourceEventId: memory.sourceEventId, lastAccessedAt: memory.lastAccessedAt }),
       ]
     );

@@ -30,6 +30,8 @@ const loading = ref(false);
 const summary = ref<RuntimeSummary | null>(null);
 const replay = ref<ReplayResult | null>(null);
 const replaying = ref(false);
+const reviewingMemoryId = ref<string | null>(null);
+const memoryReviewFailed = ref(false);
 
 const title = computed(() => props.label ?? props.character.name);
 
@@ -49,6 +51,18 @@ async function runReplay(): Promise<void> {
     replay.value = await chatStore.verifyRuntimeReplay(props.character);
   } finally {
     replaying.value = false;
+  }
+}
+
+async function reviewMemory(memoryId: string, action: 'confirm' | 'reject' | 'forget'): Promise<void> {
+  reviewingMemoryId.value = memoryId;
+  memoryReviewFailed.value = false;
+  try {
+    const saved = await chatStore.reviewRuntimeMemory(props.character, memoryId, action);
+    memoryReviewFailed.value = !saved;
+    if (saved) await refresh();
+  } finally {
+    reviewingMemoryId.value = null;
   }
 }
 
@@ -142,6 +156,34 @@ function toggle(): void {
               <span class="runtime-value">{{ event.importance.toFixed(2) }}</span>
             </li>
           </ul>
+        </div>
+
+        <div v-if="summary.memories.length" class="runtime-block">
+          <div class="runtime-block-title">{{ t('runtime.memoryReview') }}</div>
+          <ul class="runtime-memory-list">
+            <li v-for="memory in summary.memories" :key="memory.id" class="runtime-memory-item">
+              <p class="runtime-memory-content">{{ memory.content }}</p>
+              <div class="runtime-memory-meta">
+                <span>{{ t(`runtime.memoryStatus.${memory.reviewStatus ?? 'confirmed'}`) }}</span>
+                <span v-if="memory.confidence !== undefined">{{ t('runtime.memoryConfidence', { value: memory.confidence.toFixed(2) }) }}</span>
+                <span v-if="memory.sourceEventId">{{ t('runtime.memorySource', { id: memory.sourceEventId.slice(0, 8) }) }}</span>
+              </div>
+              <div v-if="memory.reviewStatus !== 'forgotten'" class="runtime-memory-actions">
+                <template v-if="memory.reviewStatus === 'candidate'">
+                  <button type="button" class="runtime-btn" :disabled="reviewingMemoryId !== null" @click="reviewMemory(memory.id, 'confirm')">
+                    {{ t('runtime.memoryConfirm') }}
+                  </button>
+                  <button type="button" class="runtime-btn" :disabled="reviewingMemoryId !== null" @click="reviewMemory(memory.id, 'reject')">
+                    {{ t('runtime.memoryReject') }}
+                  </button>
+                </template>
+                <button type="button" class="runtime-btn" :disabled="reviewingMemoryId !== null" @click="reviewMemory(memory.id, 'forget')">
+                  {{ t('runtime.memoryDisable') }}
+                </button>
+              </div>
+            </li>
+          </ul>
+          <p v-if="memoryReviewFailed" class="runtime-hint" role="alert">{{ t('runtime.memoryReviewFailed') }}</p>
         </div>
 
         <div class="runtime-actions">
@@ -275,6 +317,49 @@ function toggle(): void {
   justify-content: space-between;
   gap: 8px;
   font-size: 12px;
+}
+
+.runtime-memory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.runtime-memory-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.runtime-memory-content {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.runtime-memory-meta,
+.runtime-memory-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 8px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.runtime-memory-actions .runtime-btn {
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .runtime-key {

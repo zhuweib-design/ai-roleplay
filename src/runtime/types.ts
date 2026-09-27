@@ -11,6 +11,8 @@ export type Metadata = Record<string, unknown>;
 export type EmotionName = string;
 export type EpisodeStatus = 'active' | 'cooling' | 'dormant' | 'reopened' | 'resolved';
 export type MemoryType = 'semantic' | 'episodic' | 'relational' | 'procedural';
+export type MemoryReviewStatus = 'candidate' | 'confirmed' | 'rejected' | 'forgotten';
+export type MemoryReviewAction = 'confirm' | 'reject' | 'forget';
 
 export interface EmotionState {
   emotion: EmotionName;
@@ -201,6 +203,10 @@ export interface EventEffects {
     validFrom?: string;
     validUntil?: string;
   };
+  memoryReview?: {
+    memoryId: string;
+    action: MemoryReviewAction;
+  };
 }
 
 export interface DomainEvent {
@@ -280,6 +286,8 @@ export interface MemoryRecord {
   occurredAt: string;
   validFrom?: string;
   validUntil?: string;
+  reviewStatus?: MemoryReviewStatus;
+  reviewedAt?: string;
   lastAccessedAt?: string;
 }
 

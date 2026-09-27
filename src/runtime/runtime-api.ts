@@ -14,6 +14,7 @@ import type {
   RuntimeSnapshot,
   RuntimeCharacterListRequest,
   RuntimeCharacterListResult,
+  MemoryReviewAction,
 } from './types';
 
 export type RuntimeRoute =
@@ -23,7 +24,8 @@ export type RuntimeRoute =
   | `/v1/runtime/characters/${string}`
   | `/v1/runtime/characters/${string}/events`
   | `/v1/runtime/characters/${string}/turns`
-  | `/v1/runtime/characters/${string}/context`;
+  | `/v1/runtime/characters/${string}/context`
+  | `/v1/runtime/characters/${string}/memories/${string}/review`;
 
 export interface RuntimeApiRequest {
   method: 'GET' | 'POST';
@@ -58,6 +60,7 @@ export interface RuntimeApi {
   recordConversationTurn(characterId: string, input: Omit<RuntimeConversationTurnInput, 'characterId'>): Promise<RuntimeConversationTurnResult>;
   recordChatTurn(characterId: string, input: RuntimeConversationTurnEventInput): Promise<RuntimeConversationTurnCommitResult>;
   buildContext(characterId: string, input?: RuntimeContextRequest): Promise<RuntimeContext>;
+  reviewMemory(characterId: string, input: { tenantId: string; memoryId: string; action: MemoryReviewAction }): Promise<RuntimeSnapshot>;
 }
 
 export class RuntimeApiAdapter implements RuntimeApi {
@@ -101,6 +104,7 @@ export class RuntimeApiAdapter implements RuntimeApi {
   }
 
   async ingestEvent(characterId: string, input: Omit<RuntimeEventInput, 'characterId'>): Promise<RuntimeReduceResult> {
+    if (input.effects?.memoryReview) throw new Error('记忆审核必须通过专用复核接口提交');
     return this.core.ingestEvent({ ...input, characterId });
   }
 
@@ -125,6 +129,11 @@ export class RuntimeApiAdapter implements RuntimeApi {
 
   async buildContext(characterId: string, input?: RuntimeContextRequest) {
     return this.core.buildContext(characterId, input);
+  }
+
+  async reviewMemory(characterId: string, input: { tenantId: string; memoryId: string; action: MemoryReviewAction }): Promise<RuntimeSnapshot> {
+    const result = await this.core.reviewMemory({ ...input, characterId });
+    return result.snapshot;
   }
 }
 
@@ -152,7 +161,12 @@ function validateEvent(body: Record<string, unknown>, tenantRequired: boolean): 
   if (tenantRequired) requiredString(body, 'tenantId');
   requiredString(body, 'eventType');
   if (body.payload !== undefined) record(body.payload, 'payload');
-  if (body.effects !== undefined) record(body.effects, 'effects');
+  if (body.effects !== undefined) {
+    const effects = record(body.effects, 'effects');
+    if (effects.memoryReview !== undefined) {
+      throw new RuntimeRequestError(['记忆审核必须通过专用复核接口提交']);
+    }
+  }
 }
 
 function validateTurn(body: Record<string, unknown>, tenantRequired: boolean): void {
@@ -259,6 +273,20 @@ export async function handleRuntimeRequest(
         if (snapshot.character.tenantId !== request.query.tenantId) throw new Error('租户隔离校验失败');
       }
       return { status: 200, body: await api.buildContext(characterId, body as RuntimeContextRequest) };
+    }
+    const memoryReview = request.path.match(/^\/v1\/runtime\/characters\/[^/]+\/memories\/([^/]+)\/review$/);
+    if (request.method === 'POST' && memoryReview) {
+      const body = record(request.body, '记忆复核输入');
+      requiredString(body, 'tenantId');
+      const memoryId = decodeURIComponent(memoryReview[1]!);
+      const action = body.action;
+      if (action !== 'confirm' && action !== 'reject' && action !== 'forget') {
+        throw new RuntimeRequestError(['action 必须是 confirm、reject 或 forget']);
+      }
+      return {
+        status: 200,
+        body: await api.reviewMemory(characterId, { tenantId: body.tenantId as string, memoryId, action }),
+      };
     }
     return { status: 404, body: { error: 'NOT_FOUND' } };
   } catch (error) {

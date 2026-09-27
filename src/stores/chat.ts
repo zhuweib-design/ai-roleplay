@@ -57,10 +57,12 @@ import {
   type RuntimeApi,
   type CharacterCompileInput,
   type RuntimeBatchCreateResult,
+  type MemoryReviewAction,
+  type MemoryRecord,
 } from '@/runtime';
 import { RuntimeApiError } from '@/runtime/runtime-http';
 import type { RuntimeGroupTurn } from '@/runtime/group-runtime-contract';
-import { replayRuntimeEvents } from '@/runtime/runtime-core';
+import { createRuntimeReplayBaseline, replayRuntimeEvents } from '@/runtime/runtime-core';
 
 /** 远程群聊公共回合的本地可靠投递记录。内容一旦入队不可被同键新载荷覆盖。 */
 export interface PendingGroupRuntimeTurn {
@@ -1068,6 +1070,7 @@ export const useChatStore = defineStore('chat', () => {
         memoryCount: number;
         episodeCount: number;
         stateChangeCount: number;
+        memories: Array<Pick<MemoryRecord, 'id' | 'type' | 'content' | 'confidence' | 'sourceEventId' | 'occurredAt' | 'reviewStatus'>>;
         emotions: Array<{ emotion: string; intensity: number }>;
         mood: { valence: number; arousal: number; dominance: number } | null;
         recentEvents: Array<{ id: string; eventType: string; occurredAt: string; importance: number }>;
@@ -1105,9 +1108,26 @@ export const useChatStore = defineStore('chat', () => {
         updatedAt: snapshot.updatedAt,
         displayName: snapshot.character.profile?.displayName ?? character.name,
         eventCount: snapshot.events?.length ?? 0,
-        memoryCount: snapshot.memories?.length ?? 0,
+        memoryCount: (snapshot.memories ?? []).filter((memory) =>
+          memory.reviewStatus !== 'rejected' && memory.reviewStatus !== 'forgotten'
+        ).length,
         episodeCount: snapshot.episodes?.length ?? 0,
         stateChangeCount: snapshot.stateChanges?.length ?? 0,
+        memories: (snapshot.memories ?? [])
+          .filter((memory) => memory.reviewStatus !== 'forgotten')
+          .slice()
+          .sort((a, b) => Number(a.reviewStatus !== 'candidate') - Number(b.reviewStatus !== 'candidate') ||
+            Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
+          .slice(0, 20)
+          .map((memory) => ({
+            id: memory.id,
+            type: memory.type,
+            content: memory.content,
+            confidence: memory.confidence,
+            sourceEventId: memory.sourceEventId,
+            occurredAt: memory.occurredAt,
+            reviewStatus: memory.reviewStatus,
+          })),
         emotions,
         mood,
         recentEvents,
@@ -1116,6 +1136,22 @@ export const useChatStore = defineStore('chat', () => {
       if (isRuntimeNotFound(error)) return { enabled: false };
       reportRuntimeError(error, 'context');
       return { enabled: false };
+    }
+  }
+
+  async function reviewRuntimeMemory(
+    character: UICharacter,
+    memoryId: string,
+    action: MemoryReviewAction
+  ): Promise<boolean> {
+    try {
+      const tenantId = resolveRuntimeTenantId();
+      const api = await getRuntimeApi();
+      await api.reviewMemory(stableChatCharacterId(tenantId, character.id), { tenantId, memoryId, action });
+      return true;
+    } catch (error) {
+      reportRuntimeError(error, 'event');
+      return false;
     }
   }
 
@@ -1131,8 +1167,7 @@ export const useChatStore = defineStore('chat', () => {
       const tenantId = resolveRuntimeTenantId();
       const api = await getRuntimeApi();
       const snapshot = await api.getCharacter(stableChatCharacterId(tenantId, character.id));
-      // 以空事件快照为基准重放全部事件，避免依赖“初始快照”的历史副本。
-      const baseline = { ...snapshot, events: [], stateChanges: [], version: 0 };
+      const baseline = createRuntimeReplayBaseline(snapshot);
       const replayed = replayRuntimeEvents(baseline, snapshot.events ?? []);
       return {
         enabled: true,
@@ -2429,6 +2464,7 @@ export const useChatStore = defineStore('chat', () => {
     syncRemoteGroupStatus,
     runtimeCharacterIdFor,
     inspectRuntimeState,
+    reviewRuntimeMemory,
     verifyRuntimeReplay,
     commitRuntimeGroupTurn,
     retryRemoteGroupOutbox,

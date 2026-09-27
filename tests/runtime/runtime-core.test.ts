@@ -549,10 +549,12 @@ describe('Virtual Character OS Runtime Core', () => {
     const characterId = '22222222-2222-4222-8222-222222222222';
     let persisted: RuntimeSnapshot | null = null;
     let version = 0;
+    let memoryReviewUpdates = 0;
     const queries: string[] = [];
     const fakeSql: SqlExecutor = {
       async query<Row = Record<string, unknown>>(text: string, params: readonly unknown[] = []) {
         queries.push(text);
+        if (text.includes('UPDATE memories')) memoryReviewUpdates += 1;
         if (text.includes('SELECT state_version')) {
           return { rows: [{ state_version: version }] as Row[], rowCount: 1 };
         }
@@ -656,6 +658,40 @@ describe('Virtual Character OS Runtime Core', () => {
     expect(queries.some((query) => query.includes('emotion_episodes'))).toBe(true);
     expect(queries.some((query) => query.includes('emotion_episode_events'))).toBe(true);
     await expect(store.commit(next, 0)).rejects.toBeInstanceOf(Error);
+
+    const reviewEvent: DomainEvent = {
+      id: '88888888-8888-4888-8888-888888888888',
+      tenantId,
+      characterId,
+      eventType: 'memory.review',
+      importance: 0,
+      payload: {},
+      effects: { memoryReview: { memoryId: memory.id, action: 'confirm' } },
+      occurredAt: '2026-09-22T00:02:00.000Z',
+    };
+    const reviewChange: StateChange = {
+      id: '99999999-9999-4999-8999-999999999999',
+      eventId: reviewEvent.id,
+      characterId,
+      occurredAt: reviewEvent.occurredAt,
+      stateVersion: 2,
+      stateType: 'runtime',
+      dimension: 'memory_review',
+      delta: 0,
+      changes: { memoryReview: { memoryId: memory.id, action: 'confirm', reviewStatus: 'confirmed' } },
+    };
+    const reviewed = {
+      ...next,
+      character: { ...next.character, version: 2, updatedAt: reviewEvent.occurredAt },
+      events: [...next.events, reviewEvent],
+      stateChanges: [...next.stateChanges, reviewChange],
+      memories: [{ ...memory, reviewStatus: 'confirmed' as const, reviewedAt: reviewEvent.occurredAt }],
+      version: 2,
+      updatedAt: reviewEvent.occurredAt,
+    };
+    await store.commit(reviewed, 1);
+    expect(await store.load(characterId)).toEqual(reviewed);
+    expect(memoryReviewUpdates).toBe(1);
   });
   it('PostgreSQL 边界在进入事务前拒绝非 UUID 角色或租户', async () => {
     let transactionCalls = 0;
@@ -896,6 +932,7 @@ describe('Virtual Character OS Runtime Core', () => {
       },
     });
     expect(event.status).toBe(200);
+    const createdMemory = (event.body as { createdMemory: MemoryRecord }).createdMemory;
 
     const context = await handleRuntimeRequest(api, {
       method: 'POST',
@@ -903,7 +940,19 @@ describe('Virtual Character OS Runtime Core', () => {
       body: { query: '问候' },
     });
     expect(context.status).toBe(200);
-    expect((context.body as { relevantMemories: unknown[] }).relevantMemories).toHaveLength(1);
+    expect((context.body as { relevantMemories: unknown[] }).relevantMemories).toHaveLength(0);
+    const review = await handleRuntimeRequest(api, {
+      method: 'POST',
+      path: `/v1/runtime/characters/${snapshot.character.id}/memories/${createdMemory.id}/review`,
+      body: { tenantId: 'tenant-a', action: 'confirm' },
+    });
+    expect(review.status).toBe(200);
+    const reviewedContext = await handleRuntimeRequest(api, {
+      method: 'POST',
+      path: `/v1/runtime/characters/${snapshot.character.id}/context`,
+      body: { query: '问候' },
+    });
+    expect((reviewedContext.body as { relevantMemories: unknown[] }).relevantMemories).toHaveLength(1);
   });
 });
 

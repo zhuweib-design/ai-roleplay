@@ -12,7 +12,7 @@ import {
 describe('Runtime HTTP 持久化边界', () => {
   it('Fetch Handler 可以承载角色、Event、Snapshot 和 Context 的完整请求链', async () => {
     const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
-    const handler = createRuntimeHttpHandler(api);
+    const handler = createRuntimeHttpHandler(api, { tenantId: 'tenant-a' });
 
     const createResponse = await handler(
       new Request('http://runtime.test/v1/runtime/characters', {
@@ -41,7 +41,20 @@ describe('Runtime HTTP 持久化边界', () => {
       })
     );
     expect(eventResponse.status).toBe(200);
-    expect((await eventResponse.json()).event.id).toBe('http-turn-1');
+    const eventPayload = await eventResponse.json();
+    expect(eventPayload.event.id).toBe('http-turn-1');
+
+    const bypassReviewResponse = await handler(
+      new Request(`http://runtime.test/v1/runtime/characters/${created.character.id}/events`, {
+        method: 'POST',
+        body: JSON.stringify({
+          tenantId: 'tenant-a',
+          eventType: 'memory.review',
+          effects: { memoryReview: { memoryId: eventPayload.createdMemory.id, action: 'confirm' } },
+        }),
+      })
+    );
+    expect(bypassReviewResponse.status).toBe(422);
 
     const turnResponse = await handler(
       new Request('http://runtime.test/v1/runtime/characters/' + created.character.id + '/turns', {
@@ -57,6 +70,18 @@ describe('Runtime HTTP 持久化边界', () => {
       })
     );
     expect(turnResponse.status).toBe(200);
+
+    const memoryId = eventPayload.createdMemory.id as string;
+    const client = new HttpRuntimeApi({
+      baseUrl: 'http://runtime.test',
+      fetch: (input, init) => handler(new Request(input, init)),
+    });
+    const reviewedSnapshot = await client.reviewMemory(created.character.id, {
+      tenantId: 'forged-tenant',
+      memoryId,
+      action: 'confirm',
+    });
+    expect(reviewedSnapshot.memories[0]?.reviewStatus).toBe('confirmed');
     const turn = await turnResponse.json() as { conversationId: string; sessionId: string };
     expect(turn).toMatchObject(stableChatConversationTurnIds(
       'tenant-a', created.character.id, 'chat-http-1', undefined, 'http-turn-1'
@@ -75,7 +100,7 @@ describe('Runtime HTTP 持久化边界', () => {
       new Request('http://runtime.test/v1/runtime/characters/' + created.character.id)
     );
     expect(getResponse.status).toBe(200);
-    expect((await getResponse.json()).version).toBe(1);
+    expect((await getResponse.json()).version).toBe(2);
   });
 
   it('批量创建多个角色返回逐项结果，可用稳定 ID 重试并隔离状态', async () => {

@@ -69,6 +69,7 @@ export function buildRuntimeContext(
   const query = request.query?.toLocaleLowerCase().trim();
   const match = (value: string): boolean => !query || value.toLocaleLowerCase().includes(query);
   const relevantMemories = [...snapshot.memories]
+    .filter((memory) => memory.reviewStatus === undefined || memory.reviewStatus === 'confirmed')
     .filter((memory) => validAt(memory, now))
     .filter((memory) => (!request.targetId || memory.targetId === request.targetId) && match(memory.content))
     .sort((a, b) => b.salience - a.salience || Date.parse(b.occurredAt) - Date.parse(a.occurredAt))

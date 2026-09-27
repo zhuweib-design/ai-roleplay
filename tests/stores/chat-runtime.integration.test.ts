@@ -153,6 +153,36 @@ describe('Chat Store — Runtime 实际链路', () => {
     expect(replay.replayedVersion).toBe(2);
   });
 
+  it('聊天 Runtime 记忆审核会持久化并通过事件回放自检', async () => {
+    const store = useChatStore();
+    const character = makeCharacter('memory-review-target');
+    const created = await store.createRuntimeCharactersBatch([character]);
+    expect(created?.items[0]?.status).toBe('created');
+    const tenantId = localStorage.getItem('ai-roleplay:runtime-tenant-id:default');
+    expect(tenantId).toBeTruthy();
+
+    const api = createProjectRuntime();
+    const runtimeCharacterId = created!.items[0]!.characterId;
+    const event = await api.ingestEvent(runtimeCharacterId, {
+      tenantId: tenantId!,
+      eventType: 'conversation_turn',
+      importance: 0.7,
+      effects: { memory: { type: 'semantic', content: '需要用户审核的聊天事实' } },
+    });
+    expect(event.createdMemory?.reviewStatus).toBe('candidate');
+    await expect(store.reviewRuntimeMemory(character, event.createdMemory!.id, 'confirm')).resolves.toBe(true);
+
+    const summary = await store.inspectRuntimeState(character);
+    expect(summary.enabled).toBe(true);
+    if (!summary.enabled) throw new Error('Runtime state unavailable');
+    expect(summary.memories[0]?.reviewStatus).toBe('confirmed');
+    const replay = await store.verifyRuntimeReplay(character);
+    expect(replay.enabled).toBe(true);
+    if (!replay.enabled) throw new Error('Runtime replay unavailable');
+    expect(replay.consistent).toBe(true);
+    expect(replay.eventCount).toBe(2);
+  });
+
   it('普通发送与重新生成都注入同一 Runtime 角色上下文', async () => {
     const requests: RequestInit[] = [];
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   compileCharacter,
+  createRuntimeReplayBaseline,
   createRuntimeSnapshot,
   decayAttitude,
   decayRelationship,
@@ -159,6 +160,13 @@ describe('Appraisal Engine 与 Behavior Planner', () => {
         },
       },
     });
+    await core.reviewMemory({
+      tenantId: 'tenant-a',
+      characterId: character.id,
+      memoryId: event.createdMemory!.id,
+      action: 'confirm',
+      occurredAt: '2026-09-22T00:02:00.000Z',
+    });
     const before = await core.buildContext(character.id, { now: '2026-09-22T00:30:00.000Z' });
     const after = await core.buildContext(character.id, { now: '2026-09-22T02:00:00.000Z' });
 
@@ -167,7 +175,52 @@ describe('Appraisal Engine 与 Behavior Planner', () => {
     expect(before.contextBuild?.items.some((item) => item.sourceType === 'memory' && item.sourceId === event.createdMemory?.id)).toBe(true);
     expect(before.contextBuild?.totalTokenCount).toBeGreaterThan(0);
     expect((await store.getContextBuild(before.contextBuild!.id))?.characterId).toBe(character.id);
-    expect((await core.getSnapshot(character.id))?.version).toBe(1);
+    expect((await core.getSnapshot(character.id))?.version).toBe(2);
+  });
+
+  it('自动记忆在确认前不进入上下文，审核动作可回放并阻止已处理候选再次确认', async () => {
+    const store = new InMemoryRuntimeStore();
+    const core = new RuntimeCore(store);
+    const character = await core.createCharacter({
+      tenantId: 'tenant-a',
+      id: '44444444-4444-4444-8444-444444444444',
+      profile: { displayName: '记忆审核角色' },
+      now: '2026-09-22T00:00:00.000Z',
+    });
+    const created = await core.ingestEvent({
+      tenantId: 'tenant-a',
+      characterId: character.id,
+      eventType: 'conversation_turn',
+      importance: 0.7,
+      occurredAt: '2026-09-22T00:01:00.000Z',
+      effects: { memory: { type: 'semantic', content: '未经确认的候选事实' } },
+    });
+    const memoryId = created.createdMemory!.id;
+    expect(created.createdMemory?.reviewStatus).toBe('candidate');
+    expect((await core.buildContext(character.id, { now: '2026-09-22T00:01:30.000Z' })).relevantMemories).toHaveLength(0);
+
+    await core.reviewMemory({
+      tenantId: 'tenant-a', characterId: character.id, memoryId, action: 'confirm',
+      occurredAt: '2026-09-22T00:02:00.000Z',
+    });
+    const confirmedVersion = (await core.getSnapshot(character.id))!.version;
+    await core.reviewMemory({ tenantId: 'tenant-a', characterId: character.id, memoryId, action: 'confirm' });
+    expect((await core.getSnapshot(character.id))?.version).toBe(confirmedVersion);
+    const confirmed = await core.getSnapshot(character.id);
+    expect(confirmed?.memories[0]?.reviewStatus).toBe('confirmed');
+    expect((await core.buildContext(character.id, { now: '2026-09-22T00:02:01.000Z' })).relevantMemories).toHaveLength(1);
+    expect(() => reduceRuntimeState(confirmed!, {
+      id: 'review-again', tenantId: 'tenant-a', characterId: character.id,
+      eventType: 'memory.review', importance: 0, payload: {}, occurredAt: '2026-09-22T00:03:00.000Z',
+      effects: { memoryReview: { memoryId, action: 'reject' } },
+    })).toThrow('只有待确认记忆可以确认或拒绝');
+
+    const baseline = createRuntimeReplayBaseline(confirmed!);
+    const replayed = replayRuntimeEvents(baseline, confirmed!.events);
+    expect(replayed.version).toBe(confirmed!.version);
+    expect(replayed.memories[0]?.reviewStatus).toBe('confirmed');
+    await core.reviewMemory({ tenantId: 'tenant-a', characterId: character.id, memoryId, action: 'forget' });
+    expect((await core.buildContext(character.id)).relevantMemories).toHaveLength(0);
   });
 
   it('上下文审计失败时仍返回上下文，不改变聊天主链路', async () => {

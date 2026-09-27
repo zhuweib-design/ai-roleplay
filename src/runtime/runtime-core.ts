@@ -30,6 +30,7 @@ import type {
   Episode,
   EventEffects,
   MemoryRecord,
+  MemoryReviewAction,
   RelationshipState,
   RuntimeContext,
   RuntimeContextRequest,
@@ -267,6 +268,7 @@ function createMemoryIfRequested(
     targetId: effects.memory.targetId ?? event.targetId,
     sourceEventId: event.id,
     occurredAt: now,
+    reviewStatus: 'candidate',
     ...(effects.memory.validFrom ? { validFrom: effects.memory.validFrom } : {}),
     ...(effects.memory.validUntil ? { validUntil: effects.memory.validUntil } : {}),
   };
@@ -314,6 +316,46 @@ export function reduceRuntimeState(snapshot: RuntimeSnapshot, event: DomainEvent
   if (duplicate) return duplicate;
   const now = event.occurredAt;
   const appraisal = evaluateAppraisal({ snapshot, event });
+  if (event.effects?.memoryReview) {
+    const { memoryId, action } = event.effects.memoryReview;
+    const memory = snapshot.memories.find((item) => item.id === memoryId);
+    if (!memory) throw new Error(`记忆不存在：${memoryId}`);
+    if (action !== 'forget' && memory.reviewStatus !== undefined && memory.reviewStatus !== 'candidate') {
+      throw new RuntimeConflictError('只有待确认记忆可以确认或拒绝');
+    }
+    const reviewStatus = action === 'confirm'
+      ? 'confirmed'
+      : action === 'reject'
+        ? 'rejected'
+        : 'forgotten';
+    const next: RuntimeSnapshot = {
+      ...snapshot,
+      character: { ...snapshot.character, version: snapshot.version + 1, updatedAt: now },
+      events: [...snapshot.events, event],
+      memories: snapshot.memories.map((item) => item.id === memoryId
+        ? { ...item, reviewStatus, reviewedAt: now }
+        : item),
+      version: snapshot.version + 1,
+      updatedAt: now,
+    };
+    const stateChange: StateChange = {
+      id: stableId('state-change', event.id, String(next.version)),
+      eventId: event.id,
+      characterId: event.characterId,
+      occurredAt: now,
+      stateVersion: next.version,
+      stateType: 'runtime',
+      dimension: 'memory_review',
+      delta: 0,
+      changes: {
+        previousVersion: snapshot.version,
+        nextVersion: next.version,
+        memoryReview: { memoryId, action, reviewStatus },
+      },
+    };
+    next.stateChanges = [...snapshot.stateChanges, stateChange];
+    return { snapshot: next, event, stateChange, appraisal, behaviorPlan: planBehavior({ snapshot: next, event, appraisal }) };
+  }
   const effects = deriveAppraisalEffects(event, appraisal);
   const before = snapshot;
   const emotions = applyEmotionDeltas(snapshot.character.emotions, effects.emotionDeltas ?? {}, now);
@@ -392,6 +434,38 @@ export function replayRuntimeEvents(
     snapshot = reduceRuntimeState(snapshot, event).snapshot;
   }
   return snapshot;
+}
+
+export function createRuntimeReplayBaseline(snapshot: RuntimeSnapshot): RuntimeSnapshot {
+  const createdAt = snapshot.character.createdAt;
+  const character: CharacterDefinition = {
+    ...snapshot.character,
+    version: 0,
+    updatedAt: createdAt,
+    emotions: snapshot.character.emotions.map((emotion) => ({
+      ...emotion,
+      intensity: emotion.baseline,
+      updatedAt: createdAt,
+    })),
+    mood: {
+      ...snapshot.character.mood,
+      valence: snapshot.character.mood.baselineValence,
+      arousal: snapshot.character.mood.baselineArousal,
+      dominance: snapshot.character.mood.baselineDominance,
+      updatedAt: createdAt,
+    },
+    attitudes: [],
+    relationships: [],
+  };
+  return {
+    character,
+    events: [],
+    stateChanges: [],
+    memories: [],
+    episodes: [],
+    version: 0,
+    updatedAt: createdAt,
+  };
 }
 
 function toDomainEvent(input: RuntimeEventInput): DomainEvent {
@@ -487,6 +561,25 @@ export class RuntimeCore {
           attempt += 1;
         }
       }
+    });
+  }
+
+  async reviewMemory(input: {
+    tenantId: string;
+    characterId: string;
+    memoryId: string;
+    action: MemoryReviewAction;
+    occurredAt?: string;
+  }): Promise<RuntimeReduceResult> {
+    return this.ingestEvent({
+      tenantId: input.tenantId,
+      characterId: input.characterId,
+      eventId: stableId('memory-review', input.characterId, input.memoryId, input.action),
+      eventType: 'memory.review',
+      importance: 0,
+      payload: { memoryId: input.memoryId, action: input.action },
+      occurredAt: input.occurredAt,
+      effects: { memoryReview: { memoryId: input.memoryId, action: input.action } },
     });
   }
 

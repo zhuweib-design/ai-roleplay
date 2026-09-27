@@ -3,6 +3,23 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 版本格式：`0.Y.Z`。`0` 为里程碑，`Y` 为功能/发布，`Z` 为修复。
 
+## [0.8.0] - 2026-09-27
+
+### 新增
+- **Runtime 记忆审核**：事件自动生成的记忆以候选状态保存；只有确认后的记忆会进入对话上下文，可在 Runtime 状态面板查看内容、置信度和来源事件，并确认、拒绝或停用。
+- **可回放审核事件**：记忆审核写入 Runtime Event 与 StateChange；稳定事件 ID 支持请求重试幂等，审核变化可由事件流重放恢复。
+- **审核状态持久化**：PostgreSQL 增加审核状态和时间字段；旧数据迁移默认为已确认，兼容原有记忆注入行为。
+
+### 强化
+- Runtime 上下文忽略待确认、已拒绝和已停用记忆；角色状态面板提供单聊与群聊共用审核入口。
+- Runtime Replay 自检从角色初始状态重建，纳入审核事件，不沿用当前记忆列表作为回放起点。
+- 服务端审核请求使用绑定租户覆盖客户端提交值，继续经过现有认证与成员授权检查。
+- 通用事件接口拒绝直接提交记忆审核 effects，避免绕过专用审核授权路径。
+
+### 兼容
+- 旧快照缺少 `reviewStatus` 时按已确认处理；新 PostgreSQL 列默认 `confirmed`。
+- “停用”阻止记忆继续注入，但保留记录以支持审计与确定性回放。
+
 ## [0.7.0] - 2026-09-27
 
 ### 新增
@@ -139,6 +156,7 @@
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储。
 - 扩展沙箱默认拒绝权限，社区扩展默认不自动执行。
 
+[0.8.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.8.0
 [0.7.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.7.0
 [0.6.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.6.0
 [0.3.1]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.3.1

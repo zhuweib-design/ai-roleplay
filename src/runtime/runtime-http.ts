@@ -19,6 +19,7 @@ import type {
   RuntimeSnapshot,
   RuntimeCharacterListRequest,
   RuntimeCharacterListResult,
+  MemoryReviewAction,
 } from './types';
 import {
   authorizeRuntimeRequest,
@@ -140,6 +141,14 @@ export class HttpRuntimeApi implements RuntimeApi {
     );
   }
 
+  async reviewMemory(characterId: string, input: { tenantId: string; memoryId: string; action: MemoryReviewAction }): Promise<RuntimeSnapshot> {
+    return this.request(
+      `/v1/runtime/characters/${encodeURIComponent(characterId)}/memories/${encodeURIComponent(input.memoryId)}/review`,
+      'POST',
+      input
+    );
+  }
+
   private async request<T>(
     path: string,
     method: RuntimeApiRequest['method'],
@@ -221,7 +230,8 @@ export function createRuntimeHttpHandler(
         }
       }
       const isTenantBoundWrite =
-        url.pathname === '/v1/runtime/characters' || url.pathname.endsWith('/events') || url.pathname.endsWith('/turns');
+        url.pathname === '/v1/runtime/characters' || url.pathname.endsWith('/events') ||
+        url.pathname.endsWith('/turns') || url.pathname.endsWith('/review');
       if (boundTenantId && isTenantBoundWrite && body && typeof body === 'object' && !Array.isArray(body)) {
         body = { ...(body as Record<string, unknown>), tenantId: boundTenantId };
       }

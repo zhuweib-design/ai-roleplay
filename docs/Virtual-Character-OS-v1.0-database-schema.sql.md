@@ -537,11 +537,20 @@ CREATE TABLE IF NOT EXISTS memories (
     occurred_at TIMESTAMPTZ NULL,
     valid_from TIMESTAMPTZ NULL,
     valid_until TIMESTAMPTZ NULL,
+    review_status TEXT NOT NULL DEFAULT 'confirmed'
+        CHECK (review_status IN ('candidate', 'confirmed', 'rejected', 'forgotten')),
+    reviewed_at TIMESTAMPTZ NULL,
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK (valid_until IS NULL OR valid_from IS NULL OR valid_until >= valid_from)
 );
+
+ALTER TABLE memories
+    ADD COLUMN IF NOT EXISTS review_status TEXT NOT NULL DEFAULT 'confirmed'
+        CHECK (review_status IN ('candidate', 'confirmed', 'rejected', 'forgotten'));
+ALTER TABLE memories
+    ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ NULL;
 
 CREATE INDEX IF NOT EXISTS idx_memories_character_type_time
     ON memories (character_id, memory_type, occurred_at DESC);
@@ -551,6 +560,9 @@ CREATE INDEX IF NOT EXISTS idx_memories_character_target
 
 CREATE INDEX IF NOT EXISTS idx_memories_validity
     ON memories (character_id, valid_from, valid_until);
+
+CREATE INDEX IF NOT EXISTS idx_memories_review_status
+    ON memories (character_id, review_status, salience DESC);
 
 CREATE INDEX IF NOT EXISTS idx_memories_importance
     ON memories (character_id, importance DESC, salience DESC);
