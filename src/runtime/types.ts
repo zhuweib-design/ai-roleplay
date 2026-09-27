@@ -8,6 +8,10 @@
 export type Score = number;
 export type Metadata = Record<string, unknown>;
 
+/** Runtime 事件与 reducer 的当前契约版本。缺省版本的历史事件按 1 解释。 */
+export const RUNTIME_EVENT_SCHEMA_VERSION = 1 as const;
+export const RUNTIME_REDUCER_VERSION = 1 as const;
+
 export type EmotionName = string;
 export type EpisodeStatus = 'active' | 'cooling' | 'dormant' | 'reopened' | 'resolved';
 export type MemoryType = 'semantic' | 'episodic' | 'relational' | 'procedural';
@@ -216,6 +220,10 @@ export interface DomainEvent {
   actorId?: string;
   targetId?: string;
   eventType: string;
+  /** 事件结构版本；旧快照缺省时按 RUNTIME_EVENT_SCHEMA_VERSION 解释。 */
+  schemaVersion?: number;
+  /** 产生该状态的 reducer 版本；旧快照缺省时按 RUNTIME_REDUCER_VERSION 解释。 */
+  reducerVersion?: number;
   topic?: string;
   importance: Score;
   payload: Metadata;
@@ -426,6 +434,8 @@ export interface RuntimeEventInput {
   tenantId: string;
   characterId: string;
   eventType: string;
+  schemaVersion?: number;
+  reducerVersion?: number;
   importance?: Score;
   targetId?: string;
   topic?: string;

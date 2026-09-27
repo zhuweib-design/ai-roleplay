@@ -16,6 +16,7 @@ import type {
   RuntimeCharacterListResult,
   MemoryReviewAction,
 } from './types';
+import { RUNTIME_EVENT_SCHEMA_VERSION, RUNTIME_REDUCER_VERSION } from './types';
 
 export type RuntimeRoute =
   | '/v1/runtime/health'
@@ -157,9 +158,18 @@ function requiredString(body: Record<string, unknown>, field: string, allowEmpty
   }
 }
 
+function optionalVersion(body: Record<string, unknown>, field: string, current: number): void {
+  if (body[field] === undefined) return;
+  if (typeof body[field] !== 'number' || !Number.isInteger(body[field]) || body[field] !== current) {
+    throw new RuntimeRequestError([`${field} 版本不受支持：当前为 ${current}`]);
+  }
+}
+
 function validateEvent(body: Record<string, unknown>, tenantRequired: boolean): void {
   if (tenantRequired) requiredString(body, 'tenantId');
   requiredString(body, 'eventType');
+  optionalVersion(body, 'schemaVersion', RUNTIME_EVENT_SCHEMA_VERSION);
+  optionalVersion(body, 'reducerVersion', RUNTIME_REDUCER_VERSION);
   if (body.payload !== undefined) record(body.payload, 'payload');
   if (body.effects !== undefined) {
     const effects = record(body.effects, 'effects');

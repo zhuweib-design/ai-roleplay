@@ -816,7 +816,14 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
         targetId,
         event.eventType,
         event.importance,
-        json({ ...event.payload, topic: event.topic, effects: event.effects, targetId: event.targetId }),
+        json({
+          ...event.payload,
+          topic: event.topic,
+          effects: event.effects,
+          targetId: event.targetId,
+          schemaVersion: event.schemaVersion,
+          reducerVersion: event.reducerVersion,
+        }),
         event.occurredAt,
       ]
     );

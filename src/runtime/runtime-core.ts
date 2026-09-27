@@ -20,6 +20,7 @@ import { compileCharacter } from './character-compiler';
 import { createRuntimeSnapshot, OptimisticLockError, RuntimeAlreadyExistsError, RuntimeConflictError } from './store';
 import { buildRuntimeContext } from './context-builder';
 import { stableChatConversationTurnIds } from './runtime-id';
+import { RUNTIME_EVENT_SCHEMA_VERSION, RUNTIME_REDUCER_VERSION } from './types';
 import type {
   AttitudeState,
   AppraisalResult,
@@ -93,9 +94,24 @@ function sameEvent(left: DomainEvent, right: DomainEvent): boolean {
   // 兼容升级前已经落库、但尚未带有多 Turn 关联的同一幂等 Event。
   const comparable = (event: DomainEvent) => {
     const { sourceTurnIds: _sourceTurnIds, ...fact } = event;
-    return fact;
+    return {
+      ...fact,
+      schemaVersion: event.schemaVersion ?? RUNTIME_EVENT_SCHEMA_VERSION,
+      reducerVersion: event.reducerVersion ?? RUNTIME_REDUCER_VERSION,
+    };
   };
   return JSON.stringify(canonicalize(comparable(left))) === JSON.stringify(canonicalize(comparable(right)));
+}
+
+export function validateRuntimeEventVersion(event: Pick<DomainEvent, 'schemaVersion' | 'reducerVersion'>): void {
+  const schemaVersion = event.schemaVersion ?? RUNTIME_EVENT_SCHEMA_VERSION;
+  const reducerVersion = event.reducerVersion ?? RUNTIME_REDUCER_VERSION;
+  if (schemaVersion !== RUNTIME_EVENT_SCHEMA_VERSION) {
+    throw new Error(`不支持的 Runtime Event Schema 版本：${schemaVersion}`);
+  }
+  if (reducerVersion !== RUNTIME_REDUCER_VERSION) {
+    throw new Error(`不支持的 Runtime Reducer 版本：${reducerVersion}`);
+  }
 }
 
 
@@ -312,6 +328,7 @@ function duplicateEventResult(snapshot: RuntimeSnapshot, event: DomainEvent): Ru
 }
 
 export function reduceRuntimeState(snapshot: RuntimeSnapshot, event: DomainEvent): RuntimeReduceResult {
+  validateRuntimeEventVersion(event);
   const duplicate = duplicateEventResult(snapshot, event);
   if (duplicate) return duplicate;
   const now = event.occurredAt;
@@ -476,6 +493,8 @@ function toDomainEvent(input: RuntimeEventInput): DomainEvent {
     actorId: input.actorId,
     targetId: input.targetId,
     eventType: input.eventType,
+    schemaVersion: input.schemaVersion ?? RUNTIME_EVENT_SCHEMA_VERSION,
+    reducerVersion: input.reducerVersion ?? RUNTIME_REDUCER_VERSION,
     topic: input.topic,
     importance: clamp(input.importance ?? 0.5),
     payload: input.payload ?? {},
