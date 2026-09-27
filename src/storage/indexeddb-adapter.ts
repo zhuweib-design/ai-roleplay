@@ -38,6 +38,9 @@ const SETTINGS_KEY = 'app';
 export class IndexedDBAdapter implements StorageAdapter {
   private dbName: string;
   private db: IDBDatabase | null = null;
+  private readonly storeTransactions = new WeakMap<IDBObjectStore, IDBTransaction>();
+  private lastTransaction: IDBTransaction | null = null;
+  private lastStoreName: string | null = null;
 
   constructor(dbName = 'ai-roleplay') {
     this.dbName = dbName;
@@ -122,8 +125,80 @@ export class IndexedDBAdapter implements StorageAdapter {
   /** 将 IDBRequest 包装为 Promise */
   private wrap<T>(request: IDBRequest<T>): Promise<T> {
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      // WebKit 某些请求不会暴露 request.transaction；从创建请求的对象存储回查事务。
+      const source = request.source;
+      const sourceStore = source && 'objectStore' in source ? source.objectStore : source;
+      const sourceStoreName = sourceStore && typeof sourceStore === 'object' && 'name' in sourceStore
+        ? String((sourceStore as { name: string }).name)
+        : this.lastStoreName;
+      const transaction = request.transaction ?? this.lastTransaction ??
+        (sourceStore && typeof sourceStore === 'object'
+          ? this.storeTransactions.get(sourceStore as IDBObjectStore) ?? null
+          : null);
+      let requestCompleted = false;
+      // 读事务的结果在 request success 时已经可用；写事务还要等 complete
+      // 才能确保刷新页面时数据已经提交。
+      let transactionCompleted =
+        !transaction || transaction.mode === 'readonly';
+      let result: T;
+      let settled = false;
+      let commitCheckStarted = false;
+
+      const fail = (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        reject(error instanceof Error ? error : new Error('IndexedDB request failed'));
+      };
+
+      const resolveWhenCommitted = () => {
+        if (settled || !requestCompleted || !transactionCompleted) return;
+        settled = true;
+        resolve(result);
+      };
+
+      const confirmCommit = () => {
+        if (
+          settled ||
+          commitCheckStarted ||
+          transactionCompleted ||
+          !transaction ||
+          transaction.mode === 'readonly' ||
+          !sourceStoreName
+        ) return;
+        commitCheckStarted = true;
+        try {
+          // 某些 WebKit 版本可能漏发 transaction complete 事件；同一对象存储的
+          // 只读请求会排在当前写事务之后，用它确认写入已经真正提交。
+          const verifyTransaction = this.requireDB().transaction(sourceStoreName, 'readonly');
+          const verifyRequest = verifyTransaction.objectStore(sourceStoreName).count();
+          verifyRequest.onsuccess = () => {
+            transactionCompleted = true;
+            resolveWhenCommitted();
+          };
+          verifyRequest.onerror = () => fail(verifyRequest.error);
+          verifyTransaction.onerror = () => fail(verifyTransaction.error);
+          verifyTransaction.onabort = () => fail(verifyTransaction.error);
+        } catch (error) {
+          fail(error instanceof Error ? error : new Error(String(error)));
+        }
+      };
+
+      request.onsuccess = () => {
+        result = request.result;
+        requestCompleted = true;
+        confirmCommit();
+        resolveWhenCommitted();
+      };
+      request.onerror = () => fail(request.error);
+
+      if (transaction && transaction.mode !== 'readonly') {
+        transaction.addEventListener('complete', () => {
+          transactionCompleted = true;
+          resolveWhenCommitted();
+        });
+        transaction.addEventListener('abort', () => fail(transaction.error));
+        transaction.addEventListener('error', () => fail(transaction.error));
+      }
     });
   }
 
@@ -138,7 +213,12 @@ export class IndexedDBAdapter implements StorageAdapter {
 
   /** 获取对象存储 */
   private store(name: string, mode: IDBTransactionMode): IDBObjectStore {
-    return this.requireDB().transaction(name, mode).objectStore(name);
+    const transaction = this.requireDB().transaction(name, mode);
+    const objectStore = transaction.objectStore(name);
+    this.lastTransaction = transaction;
+    this.lastStoreName = name;
+    this.storeTransactions.set(objectStore, transaction);
+    return objectStore;
   }
 
   // ── 角色卡 CRUD ──

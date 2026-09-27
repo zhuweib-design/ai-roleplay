@@ -4,6 +4,7 @@ import { ref, computed } from 'vue';
 import type { UICharacter, NavKey } from '@/types';
 import { mockCharacters } from '../data/mock-data';
 import type { StorageAdapter } from '../storage/storage-adapter';
+import { getStorageAdapter } from '../storage/storage-factory';
 import {
   uiCharToCard,
   cardToUiChar,
@@ -129,6 +130,19 @@ export const useCharacterStore = defineStore('character', () => {
    */
   function setStorageAdapter(adapter: StorageAdapter | null): void {
     storageAdapter = adapter;
+  }
+
+  /** 导入可能发生在 App 启动注入适配器之前，主动完成一次存储自举。 */
+  async function ensureStorageAdapter(): Promise<StorageAdapter | null> {
+    if (storageAdapter) return storageAdapter;
+    try {
+      const adapter = getStorageAdapter();
+      await adapter.init();
+      storageAdapter = adapter;
+      return adapter;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -431,7 +445,8 @@ export const useCharacterStore = defineStore('character', () => {
       }
 
       // 导入必须先确认落盘成功，避免容量或权限错误后 UI 显示成功、刷新却丢失角色。
-      if (storageAdapter) await storageAdapter.saveCharacter(uiCharToCard(ui));
+      const adapter = await ensureStorageAdapter();
+      if (adapter) await adapter.saveCharacter(uiCharToCard(ui));
       characters.value.push(ui);
       currentCharacterId.value = ui.id;
       lastInfo.value = t('char.imported2', { name: ui.name });
