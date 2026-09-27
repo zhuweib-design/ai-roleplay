@@ -1,6 +1,6 @@
 import { OptimisticLockError, RuntimeConflictError } from './store';
 import { stableChatConversationTurnIds, stableRuntimeUuid } from './runtime-id';
-import type { DomainEvent, Episode, MemoryRecord, RuntimeConversationTurnInput, RuntimeConversationTurnResult, RuntimeSnapshot, RuntimeSnapshotStore, RuntimeCharacterListRequest, RuntimeCharacterListResult, StateChange } from './types';
+import type { ContextBuildRecord, DomainEvent, Episode, MemoryRecord, RuntimeConversationTurnInput, RuntimeConversationTurnResult, RuntimeSnapshot, RuntimeSnapshotStore, RuntimeCharacterListRequest, RuntimeCharacterListResult, StateChange } from './types';
 
 export interface SqlResult<Row = Record<string, unknown>> {
   rows: Row[];
@@ -69,6 +69,43 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
   ): Promise<RuntimeConversationTurnResult> {
     this.validateConversationTurnInput(input);
     return this.sql.transaction((tx) => this.persistConversationTurn(tx, input));
+  }
+
+  async recordContextBuild(record: ContextBuildRecord): Promise<void> {
+    this.assertUuidBoundary(record.characterId, '角色 ID');
+    this.assertUuidBoundary(this.tenantId, '租户 ID');
+    if (!isUuid(record.id)) throw new Error('PostgreSQL ContextBuild 要求 id 使用 UUID');
+    await this.sql.transaction(async (tx) => {
+      await tx.query(
+        `INSERT INTO context_builds
+          (id, character_id, conversation_id, turn_id, model_provider, model_name, total_token_count, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          record.id,
+          record.characterId,
+          record.conversationId && isUuid(record.conversationId) ? record.conversationId : null,
+          record.turnId && isUuid(record.turnId) ? record.turnId : null,
+          record.modelProvider ?? null,
+          record.modelName ?? null,
+          record.totalTokenCount ?? null,
+          record.createdAt,
+        ]
+      );
+      for (const source of record.items) {
+        const sourceId = source.sourceId && isUuid(source.sourceId) ? source.sourceId : null;
+        if (sourceId === null && source.sourceType !== 'identity' && source.sourceType !== 'state' && source.sourceType !== 'goal' && source.sourceType !== 'behavior_plan' && source.sourceType !== 'summary') {
+          continue;
+        }
+        await tx.query(
+          `INSERT INTO context_build_items
+            (context_build_id, source_type, source_id, rank, relevance_score, token_count)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT DO NOTHING`,
+          [record.id, source.sourceType, sourceId ?? record.characterId, source.rank, source.relevanceScore ?? null, source.tokenCount ?? null]
+        );
+      }
+    });
   }
 
   private async persistConversationTurn(
@@ -630,8 +667,8 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
     const targetId = await this.ensureTarget(tx, memory.targetId);
     await tx.query(
       `INSERT INTO memories
-        (id, character_id, memory_type, content, target_id, importance, salience, occurred_at, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
+        (id, character_id, memory_type, content, target_id, importance, confidence, salience, occurred_at, valid_from, valid_until, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
        ON CONFLICT (id) DO NOTHING`,
       [
         memory.id,
@@ -640,8 +677,11 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
         memory.content,
         targetId,
         memory.importance,
+        memory.confidence ?? 1,
         memory.salience,
         memory.occurredAt,
+        memory.validFrom ?? null,
+        memory.validUntil ?? null,
         json({ sourceEventId: memory.sourceEventId, lastAccessedAt: memory.lastAccessedAt }),
       ]
     );

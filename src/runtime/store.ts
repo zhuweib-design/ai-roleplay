@@ -1,5 +1,12 @@
 import type { StorageAdapter } from '@storage/storage-adapter';
-import type { CharacterDefinition, RuntimeCharacterListRequest, RuntimeCharacterListResult, RuntimeSnapshot, RuntimeSnapshotStore } from './types';
+import type {
+  CharacterDefinition,
+  ContextBuildRecord,
+  RuntimeCharacterListRequest,
+  RuntimeCharacterListResult,
+  RuntimeSnapshot,
+  RuntimeSnapshotStore,
+} from './types';
 
 export class RuntimeConflictError extends Error {
   constructor(message: string) {
@@ -60,6 +67,7 @@ function listCharactersFromSnapshots(
 
 export class InMemoryRuntimeStore implements RuntimeSnapshotStore {
   private readonly snapshots = new Map<string, RuntimeSnapshot>();
+  private readonly contextBuilds = new Map<string, ContextBuildRecord>();
 
   async listCharacters(request: RuntimeCharacterListRequest): Promise<RuntimeCharacterListResult> {
     return listCharactersFromSnapshots([...this.snapshots.values()], request);
@@ -87,12 +95,22 @@ export class InMemoryRuntimeStore implements RuntimeSnapshotStore {
     this.snapshots.set(snapshot.character.id, clone(snapshot));
   }
 
+  async recordContextBuild(record: ContextBuildRecord): Promise<void> {
+    this.contextBuilds.set(record.id, clone(record));
+  }
+
+  async getContextBuild(buildId: string): Promise<ContextBuildRecord | null> {
+    const record = this.contextBuilds.get(buildId);
+    return record ? clone(record) : null;
+  }
+
   seed(snapshot: RuntimeSnapshot): void {
     this.snapshots.set(snapshot.character.id, clone(snapshot));
   }
 
   clear(): void {
     this.snapshots.clear();
+    this.contextBuilds.clear();
   }
 }
 
@@ -112,6 +130,10 @@ export class SnapshotRuntimeStore implements RuntimeSnapshotStore {
 
   private key(characterId: string): string {
     return `${this.namespace}:${characterId}`;
+  }
+
+  private contextBuildKey(buildId: string): string {
+    return `${this.namespace}:context-build:${buildId}`;
   }
 
   async listCharacters(request: RuntimeCharacterListRequest): Promise<RuntimeCharacterListResult> {
@@ -162,5 +184,9 @@ export class SnapshotRuntimeStore implements RuntimeSnapshotStore {
       if (current && snapshot.version === 0) throw new RuntimeAlreadyExistsError(characterId);
       await this.storage.saveSnapshot(this.key(characterId), clone(snapshot));
     });
+  }
+
+  async recordContextBuild(record: ContextBuildRecord): Promise<void> {
+    await this.storage.saveSnapshot(this.contextBuildKey(record.id), clone(record));
   }
 }

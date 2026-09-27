@@ -109,8 +109,11 @@ export interface SeedMemory {
   type: MemoryType;
   content: string;
   importance?: Score;
+  confidence?: Score;
   targetId?: string;
   occurredAt?: string;
+  validFrom?: string;
+  validUntil?: string;
 }
 
 export interface CharacterDefinition {
@@ -193,7 +196,10 @@ export interface EventEffects {
     type: MemoryType;
     content: string;
     importance?: Score;
+    confidence?: Score;
     targetId?: string;
+    validFrom?: string;
+    validUntil?: string;
   };
 }
 
@@ -267,11 +273,45 @@ export interface MemoryRecord {
   type: MemoryType;
   content: string;
   importance: Score;
+  confidence?: Score;
   salience: Score;
   targetId?: string;
   sourceEventId?: string;
   occurredAt: string;
+  validFrom?: string;
+  validUntil?: string;
   lastAccessedAt?: string;
+}
+
+export type ContextSourceType =
+  | 'identity'
+  | 'state'
+  | 'turn'
+  | 'memory'
+  | 'event'
+  | 'episode'
+  | 'goal'
+  | 'behavior_plan'
+  | 'summary';
+
+export interface ContextBuildItem {
+  sourceType: ContextSourceType;
+  sourceId?: string;
+  rank: number;
+  relevanceScore?: Score;
+  tokenCount?: number;
+}
+
+export interface ContextBuildRecord {
+  id: string;
+  characterId: string;
+  conversationId?: string;
+  turnId?: string;
+  modelProvider?: string;
+  modelName?: string;
+  totalTokenCount?: number;
+  createdAt: string;
+  items: ContextBuildItem[];
 }
 
 export interface RuntimeSnapshot {
@@ -291,6 +331,10 @@ export interface RuntimeContextRequest {
   maxEvents?: number;
   maxMemories?: number;
   maxEpisodes?: number;
+  conversationId?: string;
+  turnId?: string;
+  modelProvider?: string;
+  modelName?: string;
 }
 
 export interface RuntimeContext {
@@ -309,6 +353,7 @@ export interface RuntimeContext {
   relevantEpisodes: Episode[];
   appraisal?: AppraisalResult;
   behaviorPlan?: BehaviorPlan;
+  contextBuild?: ContextBuildRecord;
 }
 
 export interface RuntimeCharacterListRequest {
@@ -328,6 +373,8 @@ export interface RuntimeSnapshotStore {
   recordConversationTurn?(input: RuntimeConversationTurnInput): Promise<RuntimeConversationTurnResult>;
   /** 将原始双 Turn 和 Runtime Event 放入同一个服务端事务。 */
   commitConversationTurn?(snapshot: RuntimeSnapshot, expectedVersion: number, input: RuntimeConversationTurnInput): Promise<RuntimeConversationTurnResult>;
+  /** 记录上下文组装来源；失败不应阻塞聊天主链路。 */
+  recordContextBuild?(record: ContextBuildRecord): Promise<void>;
   load(characterId: string): Promise<RuntimeSnapshot | null>;
   commit(snapshot: RuntimeSnapshot, expectedVersion: number): Promise<void>;
   initialize?(snapshot: RuntimeSnapshot): Promise<void>;

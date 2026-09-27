@@ -262,10 +262,13 @@ function createMemoryIfRequested(
     type: effects.memory.type,
     content: effects.memory.content.trim(),
     importance: clamp(effects.memory.importance ?? event.importance),
+    confidence: clamp(effects.memory.confidence ?? 1),
     salience: clamp(effects.memory.importance ?? event.importance),
     targetId: effects.memory.targetId ?? event.targetId,
     sourceEventId: event.id,
     occurredAt: now,
+    ...(effects.memory.validFrom ? { validFrom: effects.memory.validFrom } : {}),
+    ...(effects.memory.validUntil ? { validUntil: effects.memory.validUntil } : {}),
   };
 }
 
@@ -575,7 +578,15 @@ export class RuntimeCore {
   async buildContext(characterId: string, request: RuntimeContextRequest = {}): Promise<RuntimeContext> {
     const snapshot = await this.store.load(characterId);
     if (!snapshot) throw new Error(`角色不存在：${characterId}`);
-    return buildRuntimeContext(snapshot, request);
+    const context = buildRuntimeContext(snapshot, request);
+    if (context.contextBuild && this.store.recordContextBuild) {
+      try {
+        await this.store.recordContextBuild(context.contextBuild);
+      } catch {
+        // 上下文审计属于可观测性增强，不能阻塞正常对话。
+      }
+    }
+    return context;
   }
 
   private enqueue<T>(characterId: string, operation: () => Promise<T>): Promise<T> {

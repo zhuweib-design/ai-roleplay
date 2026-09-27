@@ -6,7 +6,7 @@
 
 **An AI role-playing chat app built on the SillyTavern architecture: multi-model chat · character cards · world books · group chat · story engine · community market · custom themes · custom vector-model RAG · Virtual Character OS Runtime**
 
-[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.6.0)
+[![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.7.0)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6.svg)]()
 [![Tauri 2](https://img.shields.io/badge/Tauri-2.0-24c8db.svg)]()
@@ -186,6 +186,7 @@ tests/               Unit / a11y / E2E
 - [x] **0.4.0** — local long-term memory persistence, incremental dual-channel vector RAG, conversation summaries and context status (complete)
 - [x] **0.5.0** — full-text search, historical message navigation, and virtualized-window integration for long chats (complete)
 - [x] **0.6.0** — deterministic appraisal, behavior planning, and configurable long-term state decay (complete)
+- [x] **0.7.0** — memory validity windows and auditable runtime context sources (complete)
 - [x] **0.3.1** — Runtime and group chat productionization: tenant/member authorization, server-side reliable outbox, group definition CAS conflict recovery, state inspector and replay self-check (released)
 - [x] **0.3.0** — Runtime and group chat MVP: cross-device group history, reliable outbox, conflict recovery, Runtime state inspector (released)
 - [x] **0.2.0** — custom vector model + RAG, custom themes, market, tray/shortcut (released)
@@ -208,7 +209,7 @@ This project is open-sourced under the **Apache License 2.0**. See [LICENSE](LIC
 
 ### Release notes
 
-- **0.6.0**: see [`docs/dev/release-notes-0.6.0.md`](docs/dev/release-notes-0.6.0.md) for appraisal, behavior planning and runtime validation. Previous: [`docs/dev/release-notes-0.5.0.md`](docs/dev/release-notes-0.5.0.md).
+- **0.7.0**: see [`docs/dev/release-notes-0.7.0.md`](docs/dev/release-notes-0.7.0.md) for memory validity and context source auditing. Previous: [`docs/dev/release-notes-0.6.0.md`](docs/dev/release-notes-0.6.0.md).
 - **0.4.0**: see [`docs/dev/release-notes-0.4.0.md`](docs/dev/release-notes-0.4.0.md) for new capabilities, data compatibility and validation results.
 - **0.3.1**: see [`docs/dev/release-notes-0.3.1.md`](docs/dev/release-notes-0.3.1.md) for new capabilities, upgrade steps and known limitations.
 - **0.3.0**: see [`docs/dev/release-notes-0.3.0.md`](docs/dev/release-notes-0.3.0.md) for new capabilities, upgrade steps and known limitations.

@@ -3,6 +3,21 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 版本格式：`0.Y.Z`。`0` 为里程碑，`Y` 为功能/发布，`Z` 为修复。
 
+## [0.7.0] - 2026-09-27
+
+### 新增
+- **记忆有效期**：Runtime Memory 支持 `validFrom`、`validUntil` 和 `confidence`；上下文检索按请求时间过滤未来记忆和已过期记忆，没有有效期的旧记忆继续永久有效。
+- **上下文来源审计**：Runtime Context 生成 `contextBuild`，记录身份、状态、轮次、事件、记忆、Episode、目标和行为计划的来源、排名、相关性与估算 token 数。
+- **审计持久化端口**：InMemory、现有 StorageAdapter 和 PostgreSQL RuntimeStore 均支持独立保存上下文构建记录，不推进角色状态版本。
+
+### 强化
+- Context Builder 对数量参数做非负整数归一化，避免异常输入造成意外切片行为。
+- 上下文审计写入失败自动降级，不阻塞正常聊天、Runtime Context 返回或状态提交。
+- PostgreSQL 记忆投影补齐 `confidence`、`valid_from` 和 `valid_until` 字段，复用现有 Schema，无新增迁移。
+
+### 兼容
+- 旧快照中缺少有效期的记忆保持有效；旧 MemoryRecord 缺少 `confidence` 时按 1 处理。
+
 ## [0.6.0] - 2026-09-27
 
 ### 新增
@@ -124,8 +139,8 @@
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储。
 - 扩展沙箱默认拒绝权限，社区扩展默认不自动执行。
 
+[0.7.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.7.0
 [0.6.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.6.0
-[0.5.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.5.0
 [0.3.1]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.3.1
 [0.5.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.5.0
 [0.4.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.4.0

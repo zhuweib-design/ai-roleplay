@@ -5,6 +5,8 @@ import {
   decayAttitude,
   decayRelationship,
   evaluateAppraisal,
+  InMemoryRuntimeStore,
+  RuntimeCore,
   planBehavior,
   reduceRuntimeState,
   replayRuntimeEvents,
@@ -132,5 +134,52 @@ describe('Appraisal Engine 与 Behavior Planner', () => {
     expect(relationship.closeness).toBeCloseTo(0.5);
     expect(legacy.liking).toBe(1);
   });
-});
 
+  it('上下文只召回当前有效记忆，并把来源与预算写入独立审计记录', async () => {
+    const store = new InMemoryRuntimeStore();
+    const core = new RuntimeCore(store);
+    const character = await core.createCharacter({
+      tenantId: 'tenant-a',
+      id: '33333333-3333-4333-8333-333333333333',
+      profile: { displayName: '有效期角色' },
+      now: '2026-09-22T00:00:00.000Z',
+    });
+    const event = await core.ingestEvent({
+      tenantId: 'tenant-a',
+      characterId: character.id,
+      eventType: 'fact',
+      importance: 0.8,
+      occurredAt: '2026-09-22T00:01:00.000Z',
+      effects: {
+        memory: {
+          type: 'semantic',
+          content: '只在今天有效的事实',
+          validFrom: '2026-09-22T00:00:00.000Z',
+          validUntil: '2026-09-22T01:00:00.000Z',
+        },
+      },
+    });
+    const before = await core.buildContext(character.id, { now: '2026-09-22T00:30:00.000Z' });
+    const after = await core.buildContext(character.id, { now: '2026-09-22T02:00:00.000Z' });
+
+    expect(before.relevantMemories).toHaveLength(1);
+    expect(after.relevantMemories).toHaveLength(0);
+    expect(before.contextBuild?.items.some((item) => item.sourceType === 'memory' && item.sourceId === event.createdMemory?.id)).toBe(true);
+    expect(before.contextBuild?.totalTokenCount).toBeGreaterThan(0);
+    expect((await store.getContextBuild(before.contextBuild!.id))?.characterId).toBe(character.id);
+    expect((await core.getSnapshot(character.id))?.version).toBe(1);
+  });
+
+  it('上下文审计失败时仍返回上下文，不改变聊天主链路', async () => {
+    const base = new InMemoryRuntimeStore();
+    const store = {
+      load: (characterId: string) => base.load(characterId),
+      initialize: (snapshot: ReturnType<typeof createRuntimeSnapshot>) => base.initialize(snapshot),
+      commit: (snapshot: ReturnType<typeof createRuntimeSnapshot>, expectedVersion: number) => base.commit(snapshot, expectedVersion),
+      recordContextBuild: async () => { throw new Error('audit unavailable'); },
+    };
+    const core = new RuntimeCore(store);
+    const character = await core.createCharacter({ tenantId: 'tenant-a', profile: { displayName: '审计降级角色' }, now: '2026-09-22T00:00:00.000Z' });
+    await expect(core.buildContext(character.id, { now: '2026-09-22T00:00:01.000Z' })).resolves.toMatchObject({ identity: { displayName: '审计降级角色' } });
+  });
+});
