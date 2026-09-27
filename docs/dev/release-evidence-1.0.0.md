@@ -11,6 +11,7 @@
 - `npm run i18n:check:strict`、`npm run runtime:db:schema:check`、`npm run check:csp`：通过。
 - `npm run csp:audit`：8 条生产路由无 CSP 违规，负向对照和能力探针通过。
 - `npm run opt:eval:strict`：离线门禁通过。
+- `node scripts/p11-scroll-fps.mjs`：1 万条消息连续滚动 3 秒为 58fps，DOM 保持 200 个气泡 / 3309 个节点，堆内存约 56MB。
 - PostgreSQL 迁移恢复演练：37 张表，备份删除重建恢复成功，角色、群聊、成员计数一致。
 
 ## 尚需真实环境执行
