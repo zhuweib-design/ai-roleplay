@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-27 11:14（本地时区）
+- **生成时间**：2026-09-27 13:27（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
-- **项目标识**：`ai-roleplay` v0.9.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
+- **项目标识**：`ai-roleplay` v1.0.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：506 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：36 个
+- **收录文件**：517 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：41 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -19,7 +19,7 @@ ai-roleplay/
   - `memory/`  — 10 个文件
 - `.workbuddy-ai/`  — 6 个文件
   - `memory/`  — 6 个文件
-- `docs/`  — 181 个文件
+- `docs/`  — 187 个文件
   - `assets/`  — 110 个文件
     - `screenshots/`  — 110 个文件
       - `themes/`  — 84 个文件
@@ -28,7 +28,7 @@ ai-roleplay/
         - `oled/`  — 21 个文件
         - `theatre/`  — 21 个文件
   - `design/`  — 14 个文件
-  - `dev/`  — 30 个文件
+  - `dev/`  — 36 个文件
   - `fixes/`  — 17 个文件
   - `other/`  — 6 个文件
 - `e2e/`  — 14 个文件
@@ -42,8 +42,8 @@ ai-roleplay/
     - `icons/`  — 12 个文件
       - `dl_builtin_tik_tok/`  — 12 个文件
   - `fonts/`  — 106 个文件
-- `scripts/`  — 19 个文件
-- `src/`  — 193 个文件
+- `scripts/`  — 20 个文件
+- `src/`  — 194 个文件
   - `api/`  — 11 个文件
   - `components/`  — 26 个文件
     - `chat/`  — 6 个文件
@@ -55,7 +55,7 @@ ai-roleplay/
     - `story/`  — 1 个文件
     - `worldbook/`  — 1 个文件
   - `composables/`  — 1 个文件
-  - `core/`  — 70 个文件
+  - `core/`  — 71 个文件
   - `data/`  — 1 个文件
   - `i18n/`  — 3 个文件
     - `locales/`  — 2 个文件
@@ -81,11 +81,11 @@ ai-roleplay/
   - `src/`  — 11 个文件
     - `commands/`  — 5 个文件
     - `storage/`  — 1 个文件
-- `tests/`  — 133 个文件
+- `tests/`  — 136 个文件
   - `accessibility/`  — 3 个文件
   - `api/`  — 8 个文件
-  - `core/`  — 68 个文件
-  - `runtime/`  — 7 个文件
+  - `core/`  — 70 个文件
+  - `runtime/`  — 8 个文件
   - `services/`  — 10 个文件
   - `storage/`  — 4 个文件
   - `stores/`  — 23 个文件
@@ -94,7 +94,7 @@ ai-roleplay/
 
 ## 二、文件索引
 
-### 2.1 程序（206）
+### 2.1 程序（207）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -192,6 +192,7 @@ ai-roleplay/
 | `src/core/rag-retriever.ts` | ts | 程序 | RAG 检索器：向量召回与上下文注入 | 未跟踪 |  |
 | `src/core/random-event-generator.ts` | ts | 程序 | 随机事件生成 | 未跟踪 |  |
 | `src/core/sanitize.ts` | ts | 程序 | HTML 净化（DOMPurify 封装，防 XSS） | 未跟踪 |  |
+| `src/core/schema-contract.ts` | ts | 程序 | 模块：schema-contract（待确认具体功能） | 未跟踪 | 用途待确认 |
 | `src/core/slash-command.ts` | ts | 程序 | 斜杠命令解析与执行 | 未跟踪 |  |
 | `src/core/st-compat.ts` | ts | 程序 | SillyTavern 数据格式兼容层 | 未跟踪 |  |
 | `src/core/status-parser.ts` | ts | 程序 | 模块：status-parser（待确认具体功能） | 未跟踪 | 用途待确认 |
@@ -305,7 +306,7 @@ ai-roleplay/
 | `src/views/WorldBookView.vue` | vue | 程序 | 页面：世界书管理 | 未跟踪 |  |
 | `src/vite-env.d.ts` | ts | 程序 | Vite 环境变量与静态资源类型声明 | 未跟踪 |  |
 
-### 2.2 测试（147）
+### 2.2 测试（150）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -362,6 +363,7 @@ ai-roleplay/
 | `tests/core/memory-store.test.ts` | ts | 测试 | 单元测试：memory-store 模块 | 未跟踪 |  |
 | `tests/core/message-search.test.ts` | ts | 测试 | 单元测试：message-search 模块 | 未跟踪 |  |
 | `tests/core/mobile-nav.test.ts` | ts | 测试 | 单元测试：mobile-nav 模块 | 未跟踪 |  |
+| `tests/core/model-file-adapter.test.ts` | ts | 测试 | 单元测试：model-file-adapter 模块 | 未跟踪 |  |
 | `tests/core/npc-generator.test.ts` | ts | 测试 | 单元测试：npc-generator 模块 | 未跟踪 |  |
 | `tests/core/onnx-real-model.test.ts` | ts | 测试 | 单元测试：onnx-real-model 模块 | 未跟踪 |  |
 | `tests/core/optimization-pipeline.test.ts` | ts | 测试 | 单元测试：optimization-pipeline 模块 | 未跟踪 |  |
@@ -374,6 +376,7 @@ ai-roleplay/
 | `tests/core/random-event-generator.test.ts` | ts | 测试 | 单元测试：random-event-generator 模块 | 未跟踪 |  |
 | `tests/core/random-event-templates.test.ts` | ts | 测试 | 单元测试：random-event-templates 模块 | 未跟踪 |  |
 | `tests/core/sanitize.test.ts` | ts | 测试 | 单元测试：sanitize 模块 | 未跟踪 |  |
+| `tests/core/schema-contract.test.ts` | ts | 测试 | 单元测试：schema-contract 模块 | 未跟踪 |  |
 | `tests/core/slash-command.test.ts` | ts | 测试 | 单元测试：slash-command 模块 | 未跟踪 |  |
 | `tests/core/st-compat.test.ts` | ts | 测试 | 单元测试：st-compat 模块 | 未跟踪 |  |
 | `tests/core/status-parser.qa-independent.test.ts` | ts | 测试 | 单元测试：status-parser.qa-independent 模块 | 未跟踪 |  |
@@ -410,6 +413,7 @@ ai-roleplay/
 | `tests/runtime/postgres-runtime.integration.test.ts` | ts | 测试 | 单元测试：postgres-runtime.integration 模块 | 未跟踪 |  |
 | `tests/runtime/runtime-core.test.ts` | ts | 测试 | 单元测试：runtime-core 模块 | 未跟踪 |  |
 | `tests/runtime/runtime-http.test.ts` | ts | 测试 | 单元测试：runtime-http 模块 | 未跟踪 |  |
+| `tests/runtime/runtime-versioning.test.ts` | ts | 测试 | 单元测试：runtime-versioning 模块 | 未跟踪 |  |
 | `tests/services/backup-service.test.ts` | ts | 测试 | 单元测试：backup-service 模块 | 未跟踪 |  |
 | `tests/services/chat-error.test.ts` | ts | 测试 | 单元测试：chat-error 模块 | 未跟踪 |  |
 | `tests/services/chat-manager.test.ts` | ts | 测试 | 单元测试：chat-manager 模块 | 未跟踪 |  |
@@ -463,7 +467,7 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `public/sillytavern-vs-airoleplay.html` | html | 产品文档 | 静态页：SillyTavern vs ai-roleplay 系统化对比报告 | 未跟踪 |  |
 
-### 2.4 开发文档（36）
+### 2.4 开发文档（42）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -481,6 +485,7 @@ ai-roleplay/
 | `docs/dev/b-type-findings.md` | md | 开发文档 | 开发文档：`!` 非空断言治理审计记录 | 未跟踪 |  |
 | `docs/dev/character-status-hud-落地记录.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/contrast-存量分类与收敛建议.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/dev/core-data-contract.md` | md | 开发文档 | 开发文档：1.0.0 核心数据契约基线与版本兼容规则 | 未跟踪 |  |
 | `docs/dev/data-backup-restore.md` | md | 开发文档 | 开发文档：备份恢复与灾备演练 Runbook（P2-#3 修复交付） | 未跟踪 |  |
 | `docs/dev/dialogue-pipeline-分析.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/embedding-optimization-实现对照.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
@@ -488,6 +493,8 @@ ai-roleplay/
 | `docs/dev/llm-controls-收尾三项记录.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/mobile-pwa-plan.md` | md | 开发文档 | 开发文档：手机端 PWA 实现计划 | 未跟踪 |  |
 | `docs/dev/rag-enhancement-plan.md` | md | 开发文档 | 开发文档：RAG 增强实现计划 | 未跟踪 |  |
+| `docs/dev/release-evidence-0.9.0.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/dev/release-evidence-1.0.0.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/release-notes-0.3.0.md` | md | 开发文档 | 开发文档：0.3.0 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制） | 未跟踪 |  |
 | `docs/dev/release-notes-0.3.1.md` | md | 开发文档 | 开发文档：0.3.1 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制） | 未跟踪 |  |
 | `docs/dev/release-notes-0.4.0.md` | md | 开发文档 | 开发文档：0.4.0 发布说明（新能力 / 数据兼容 / 验证结果） | 未跟踪 |  |
@@ -496,7 +503,10 @@ ai-roleplay/
 | `docs/dev/release-notes-0.7.0.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/release-notes-0.8.0.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/release-notes-0.9.0.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/dev/release-notes-1.0.0.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/dev/resource-security.md` | md | 开发文档 | 开发文档：外部资源许可证、来源、依赖与权限边界 | 未跟踪 |  |
 | `docs/dev/runtime-database-migration-runbook.md` | md | 开发文档 | 开发文档：Virtual Character OS 数据库迁移演练 Runbook（备份 / 锁等待 / 回滚 / 演练清单） | 未跟踪 |  |
+| `docs/dev/runtime-event-contract.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/web-deployment-sop.md` | md | 开发文档 | 开发文档：Web 端部署 SOP（部署前验证 / 硬性要求 / 5 类托管配置 / 部署后验证 / 常见坑 / 回滚） | 未跟踪 |  |
 | `docs/dev/优化效果评估脚本-使用说明.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/优化能力激活-交付总结.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
@@ -582,7 +592,7 @@ ai-roleplay/
 | `.i18nignore` | i18nignore | 配置 | i18n 扫描忽略清单 | 未跟踪 |  |
 | `eslint.config.js` | js | 配置 | ESLint 扁平配置（Vue + TS） | 未跟踪 |  |
 | `package-lock.json` | json | 配置 | npm 依赖锁定文件（自动生成） | 未跟踪 |  |
-| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.9.0） | 未跟踪 |  |
+| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v1.0.0） | 未跟踪 |  |
 | `playwright.config.ts` | ts | 配置 | Playwright E2E 配置：testDir=e2e、本地 msedge / CI chromium | 未跟踪 |  |
 | `reasonix.toml` | toml | 配置 | Reasonix 工具工作区配置 | 未跟踪 |  |
 | `src-tauri/.gitignore` | gitignore | 配置 | 桌面端专属忽略规则 | 未跟踪 |  |
@@ -594,7 +604,7 @@ ai-roleplay/
 | `vite.config.ts` | ts | 配置 | Vite 构建配置：别名、代码分包、PWA 插件 | 未跟踪 |  |
 | `vitest.config.ts` | ts | 配置 | Vitest 单测配置：jsdom 环境、覆盖率阈值门禁 | 未跟踪 |  |
 
-### 2.10 脚本（19）
+### 2.10 脚本（20）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -614,6 +624,7 @@ ai-roleplay/
 | `scripts/opt-eval.mjs` | mjs | 脚本 | 待确认 | 未跟踪 | 用途待确认 |
 | `scripts/p11-baseline.mjs` | mjs | 脚本 | 测量：P11 性能基线采集 | 未跟踪 |  |
 | `scripts/p11-scroll-fps.mjs` | mjs | 脚本 | 测量：滚动帧率采集 | 未跟踪 |  |
+| `scripts/release-evidence.mjs` | mjs | 脚本 | 门禁：生成绑定当前 commit 的 1.0.0 发布证据清单 | 未跟踪 |  |
 | `scripts/sync-runtime-schema.mjs` | mjs | 脚本 | 门禁：校验迁移文件与权威 Schema 文档无漂移（--check 只读比对） | 未跟踪 |  |
 | `scripts/ui-shot.mjs` | mjs | 脚本 | 工具：遍历路由批量截图到 docs/assets/screenshots/ | 未跟踪 |  |
 | `scripts/vendor-fonts.mjs` | mjs | 脚本 | 工具：把 Google Fonts 镜像到 public/fonts/，消除第三方字体请求（支持 --check 供校验） | 未跟踪 |  |
@@ -659,18 +670,18 @@ ai-roleplay/
 
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
-| 程序 | 206 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
-| 测试 | 147 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
+| 程序 | 207 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
+| 测试 | 150 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
-| 开发文档 | 36 | docs/dev/ 实现计划、Runbook、审计记录 |
+| 开发文档 | 42 | docs/dev/ 实现计划、Runbook、审计记录 |
 | 修复文档 | 17 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
 | 设计文档 | 14 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
 | AI记忆 | 16 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
 | 截图 | 1 | docs/assets/screenshots/ 下 UI 冒烟截图 |
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
-| 脚本 | 19 | scripts/ 门禁、审计与工具脚本 |
+| 脚本 | 20 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 32 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **506** | 与「收录文件」数一致 |
+| **合计** | **517** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

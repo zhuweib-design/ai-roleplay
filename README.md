@@ -6,7 +6,7 @@
 
 **基于 SillyTavern 架构的 AI 角色扮演聊天应用：多模型对话 · 角色卡 · 世界书 · 群聊 · 故事引擎 · 社区市场 · 自定义主题 · 自定义向量模型 RAG · Virtual Character OS Runtime**
 
-[![Version](https://img.shields.io/badge/version-0.9.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.9.0)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v1.0.0)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6.svg)]()
 [![Tauri 2](https://img.shields.io/badge/Tauri-2.0-24c8db.svg)]()
@@ -266,7 +266,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 - [x] **0.3.0** — Runtime 与群聊 MVP：服务端群聊历史跨设备同步、可靠投递队列、冲突恢复、Runtime 状态查看（已发布）
 - [x] **0.2.0** — 自定义向量模型 + RAG、自定义主题、社区市场、系统托盘/快捷键（已发布）
 - [x] **Virtual Character OS Runtime** — 批量多角色、多角色群聊、PostgreSQL 事务持久化、版本 CAS 与 Replay 审计（已落地）
-- [ ] **v1.0.0** — 首个稳定版本（开发中）
+- [x] **v1.0.0** — 首个稳定版本（已完成）
 - [x] **RAG 增强** — 停用词过滤、已安装模型自动择优与 recall@3 基准（已完成）
 - [x] **无障碍** — 自定义主题运行时对比度预检（已完成）
 
@@ -288,7 +288,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 - **Web 端（静态托管）**：完整流程见 [`docs/dev/web-deployment-sop.md`](docs/dev/web-deployment-sop.md) —— 含部署前验证清单、6 项硬性要求（HTTPS / `frame-ancestors` 响应头 / **`.wasm` MIME** / SPA 回退排除 / 缓存策略 / 剔除 source map）、Nginx / Caddy / Vercel / Netlify / 对象存储+CDN 的具体配置、12 项部署后验证清单与常见坑。
   - 部署前必须跑：`npm run build && npm run check:csp`，并在 `vite preview` 下跑 `npm run csp:audit`（逐路由 CSP 违规 + 负向对照 + **WASM/blob Worker 能力探针**）。
 - **桌面端（Tauri）**：GitHub 发布不上传安装包；本地桌面构建使用 `npm run tauri:build`，GitHub Release 只保留源码归档。
-  - **版本发布说明**：最新见 [`docs/dev/release-notes-0.9.0.md`](docs/dev/release-notes-0.9.0.md)（单一本地用户与世界内扮演资料），上一版见 [`docs/dev/release-notes-0.8.0.md`](docs/dev/release-notes-0.8.0.md)；数据库迁移演练见 [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md)。
+  - **版本发布说明**：最新见 [`docs/dev/release-notes-1.0.0.md`](docs/dev/release-notes-1.0.0.md)（稳定版边界与验证结果），上一版见 [`docs/dev/release-notes-0.9.0.md`](docs/dev/release-notes-0.9.0.md)；数据库迁移演练见 [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md)。
 
 ### 隐私与安全
 

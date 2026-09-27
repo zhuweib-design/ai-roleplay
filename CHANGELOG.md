@@ -1,7 +1,20 @@
 # Changelog
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
-版本格式：`0.Y.Z`。`0` 为里程碑，`Y` 为功能/发布，`Z` 为修复。
+版本格式遵循语义化版本：主版本用于稳定版契约，次版本用于功能发布，修订版本用于兼容性修复。
+
+## [1.0.0] - 2026-09-27
+
+### 稳定版边界
+- 完成 0.4.0 至 0.9.0 的长对话、搜索虚拟化、Runtime 状态演化、记忆审核和世界内用户资料能力。
+- 冻结核心数据契约、Runtime Event/Reducer、备份恢复、资源安全与 PostgreSQL 迁移边界。
+- 完成真实 PostgreSQL 集成、迁移备份恢复演练、桌面 Edge、移动端和 WebKit 浏览器回归。
+- Web 生产构建通过 CSP 静态与运行时审计；Tauri 桌面构建继续由本地 `--no-bundle` 门禁验证。
+
+### 验证
+- Vitest 全量 3490 项通过；Playwright 全量 41 项通过。
+- `npm audit --audit-level=high`、类型检查、ESLint、生产构建、国际化、Schema、CSP 门禁通过。
+- 真实 Provider 指标仍需配置外部凭据后执行，未将离线评估结果冒充网络回归。
 
 ## 未发布
 
@@ -177,6 +190,7 @@
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储。
 - 扩展沙箱默认拒绝权限，社区扩展默认不自动执行。
 
+[1.0.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v1.0.0
 [0.9.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.9.0
 [0.8.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.8.0
 [0.7.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.7.0
