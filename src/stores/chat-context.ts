@@ -5,12 +5,11 @@
  * 共用的唯一流水线入口。此前 regenerateMessage 遗漏 RAG / 主角 / 故事时间
  * 注入（真实 bug），由本模块统一修复。
  *
- * 依赖 5 个 store（lorebook / persona / data-bank / story / events），属编排层；
+ * 依赖 4 个 store（lorebook / data-bank / story / events），属编排层；
  * 核心引擎函数（scanTriggers / buildActiveEventsInjection / buildProtagonistPrompt）
  * 全部复用，不在本模块内重复实现。
  */
 import { useLorebookStore } from './lorebook';
-import { usePersonaStore } from './persona';
 import { useCharacterStore } from './character';
 import { useDataBankStore } from './data-bank';
 import { useStoryStore } from './story';
@@ -47,7 +46,7 @@ export interface ChatSessionContext extends PromptContexts {
  * - scope === 'global' 的世界书
  * - 角色页绑定（boundWorldBookIds，唯一正向数据源）的世界书
  * - 兼容旧数据：scope === 'character' 且 characterId === character.id 的世界书
- * - scope === 'persona' 且 personaId === 当前激活 Persona ID 的世界书（迭代22 · F07.2）
+ * - 不再按全局 Persona 激活状态筛选世界书；用户扮演资料只从当前世界书读取
  *
  * 不包含：
  * - 仅绑定到 chat 的世界书（避免在错误上下文中激活）
@@ -55,9 +54,7 @@ export interface ChatSessionContext extends PromptContexts {
  */
 export function collectLorebooksForCharacter(characterId: string): Lorebook[] {
   const lorebookStore = useLorebookStore();
-  const personaStore = usePersonaStore();
   const characterStore = useCharacterStore();
-  const activePersona = personaStore.activePersona;
   // 角色页绑定的世界书 ID 集合（角色 ↔ 世界书 双向绑定的正向数据源）
   const boundIds = new Set(
     characterStore.characters.find((c) => c.id === characterId)?.boundWorldBookIds ?? []
@@ -68,16 +65,24 @@ export function collectLorebooksForCharacter(characterId: string): Lorebook[] {
     if (boundIds.has(lb.id)) return true;
     // 兼容旧数据: lorebook 自身标记的 character scope
     if (lb.scope === 'character' && lb.characterId === characterId) return true;
-    // 迭代22 · F07.2: Persona scope 激活
-    if (
-      lb.scope === 'persona' &&
-      activePersona &&
-      lb.personaId === activePersona.id
-    ) {
-      return true;
-    }
     return false;
   });
+}
+
+/**
+ * 读取当前角色对应世界中的用户扮演资料。
+ *
+ * 用户账户是全局唯一的；昵称、性别、描述等扮演信息属于世界书，
+ * 因此这里不再读取任何全局 Persona 或“当前身份”状态。
+ */
+export function getWorldUserProfileForCharacter(characterId: string): WorldUserProfile | null {
+  return collectLorebooksForCharacter(characterId)
+    .find((lorebook) => lorebook.userProfile)?.userProfile ?? null;
+}
+
+/** 用于导出等非提示词场景的世界内用户显示名。 */
+export function getWorldUserDisplayName(characterId: string): string {
+  return getWorldUserProfileForCharacter(characterId)?.name?.trim() || 'User';
 }
 
 /**
@@ -135,7 +140,7 @@ function scanAndApplyTriggers(
  * 为"一次 AI 生成"组装全部注入上下文
  *
  * sendMessage 与 regenerateMessage 共用此唯一流水线，保证两种入口
- * 注入一致：Lorebook / Persona / RAG / 事件 / 主角身份 / 故事时间。
+ * 注入一致：Lorebook / 世界内用户资料 / RAG / 事件 / 故事主角 / 故事时间。
  *
  * @param character 当前角色（仅需 id 与 storyId）
  * @param options ragMessages 为参与检索/扫描的最近消息；allowEventTrigger
@@ -151,7 +156,7 @@ export function buildChatSessionContext(
   const lorebooks = collectLorebooksForCharacter(character.id);
 
   // 世界内用户资料按当前角色关联的世界书生效；旧世界没有资料时使用中性默认值。
-  const worldUserProfile = lorebooks.find((lb) => lb.userProfile)?.userProfile ?? null;
+  const worldUserProfile = getWorldUserProfileForCharacter(character.id);
   const userName = worldUserProfile?.name?.trim() || 'User';
 
   // 迭代26 · F09.2: RAG 检索

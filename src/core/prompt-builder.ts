@@ -166,7 +166,7 @@ export async function buildPrompt(
     : '';
 
   // F06.7: 收集 Lorebook 顶层 worldDescription，作为常量注入 beforeCharDefs 之前
-  // 多个 Lorebook 的 worldDescription 按顺序拼接（全局 → 角色 → Persona）
+  // 多个 Lorebook 的 worldDescription 按顺序拼接（全局 → 角色 → 兼容范围）
   let worldDescText = '';
   if (lorebooks && lorebooks.length > 0) {
     const worldDescs = lorebooks

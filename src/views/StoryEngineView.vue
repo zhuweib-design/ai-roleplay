@@ -48,20 +48,17 @@ import {
   validateProtagonist,
   addRelation as addRelationCore,
   removeRelation as removeRelationCore,
-  buildProtagonistPrompt,
   MAX_PROTAGONIST_NAME_LENGTH,
   MAX_PROTAGONIST_DESCRIPTION_LENGTH,
   MAX_RELATION_DESC_LENGTH,
   MAX_RELATIONS_COUNT,
 } from '@core/protagonist';
-import { usePersonaStore } from '@/stores/persona';
 import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useStoryStore();
 const settingsStore = useSettingsStore();
 const lorebookStore = useLorebookStore();
-const personaStore = usePersonaStore();
 const characterStore = useCharacterStore();
 
 // ── T-08: 一键生成设定（世界书 + 主角角色卡）──
@@ -742,22 +739,11 @@ function handleSaveProtagonist() {
   }
 
   if (ok) {
-    // 同步创建/更新故事主角 Persona
+    // 故事主角是故事内容，不再创建或切换全局用户 Persona。
+    // 清理旧版本留下的关联 ID，避免继续把故事角色当成用户身份。
     const story = store.stories.find((s) => s.id === storyId);
     if (story?.protagonist) {
-      const existingPersonaId = story.protagonist.personaId;
-      // 如果已有 Persona，更新描述；否则创建新 Persona
-      if (existingPersonaId) {
-        personaStore.updatePersona(existingPersonaId, {
-          name: story.protagonist.name,
-          description: buildProtagonistPromptForPersona(story.protagonist),
-        });
-      } else {
-        const newPersonaId = personaStore.createStoryProtagonistPersona(story.protagonist);
-        if (newPersonaId) {
-          store.setProtagonistPersonaId(storyId, newPersonaId);
-        }
-      }
+      if (story.protagonist.personaId) store.setProtagonistPersonaId(storyId, null);
     }
     if (store.lastInfo) showToast('success', store.lastInfo);
     if (store.lastError) showToast('error', store.lastError);
@@ -775,23 +761,6 @@ function handleClearProtagonist(storyId: string) {
   } else if (store.lastError) {
     showToast('error', store.lastError);
   }
-}
-
-/** 切换激活 Persona 到故事主角 Persona */
-function handleActivateProtagonistPersona(storyId: string) {
-  const story = store.stories.find((s) => s.id === storyId);
-  if (!story?.protagonist?.personaId) {
-    showToast('error', t('story.personaNotLinked'));
-    return;
-  }
-  personaStore.setActivePersona(story.protagonist.personaId);
-  if (personaStore.lastInfo) showToast('success', personaStore.lastInfo);
-  if (personaStore.lastError) showToast('error', personaStore.lastError);
-}
-
-/** 工具：构建 Persona 描述（与 createStoryProtagonistPersona 一致） */
-function buildProtagonistPromptForPersona(config: ProtagonistConfig): string {
-  return buildProtagonistPrompt(config);
 }
 
 function getProtagonistRoleLabel(role: ProtagonistRole): string {
@@ -1135,10 +1104,6 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                     </li>
                   </ul>
                 </div>
-                <div v-if="story.protagonist.personaId" class="protagonist-meta">
-                  <span class="meta-label">{{ t('story.personaLinked') }}</span>
-                  <span class="meta-value">{{ t('story.personaCreated') }}</span>
-                </div>
                 <div class="protagonist-actions">
                   <button
                     type="button"
@@ -1147,15 +1112,6 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
                   >
                     <Icon name="pencil" :size="12" />
                     {{ t('story.editProtagonist') }}
-                  </button>
-                  <button
-                    v-if="story.protagonist.personaId"
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    @click="handleActivateProtagonistPersona(story.id)"
-                  >
-                    <Icon name="check" :size="12" />
-                    {{ t('story.activatePersona') }}
                   </button>
                   <button
                     type="button"

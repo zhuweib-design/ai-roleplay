@@ -8,17 +8,15 @@ import type { ProtagonistConfig } from '@core/story-types';
 import { buildProtagonistPrompt } from '@core/protagonist';
 
 /**
- * Persona Store (迭代22 · F07)
+ * Persona Store (旧版兼容层)
  *
  * 职责：
- * 1. Persona 列表 CRUD（内存 + 持久化）
- * 2. 当前激活 Persona 状态管理（与 settings store.activePersonaId 同步）
- * 3. 默认 Persona 兜底：首次启动时自动创建名称 "User" 的默认 Persona
- * 4. 为旧版本 Persona 数据提供兼容读取
+ * 0.9.0 起聊天身份不再从这里读取。该 store 仅保留旧备份/快照的读写能力，
+ * 避免升级时丢失历史数据；新的世界内昵称、描述和角色资料全部位于 Lorebook。
  *
  * 不负责：
  * - 设置持久化（由 settings store 负责 activePersonaId 字段）
- * - Lorebook persona scope 激活（由 chat store.collectLorebooksForCharacter 处理）
+ * - 世界内用户资料激活（由 chat-context 从当前世界书读取）
  */
 export const usePersonaStore = defineStore('persona', () => {
   // ── 状态 ──

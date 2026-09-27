@@ -60,10 +60,9 @@ const boundCharacters = computed(() => {
 
 // ── 需求1：分类 Tab 筛选（按世界书 scope） ──────────────────────────
 /** scope 标签映射 */
-const SCOPE_LABELS: Record<'global' | 'character' | 'persona' | 'chat', string> = {
+const SCOPE_LABELS: Record<'global' | 'character' | 'chat', string> = {
   global: t('wb.scopeGlobal'),
   character: t('wb.scopeCharacter'),
-  persona: t('wb.scopePersona'),
   chat: t('wb.scopeChat'),
 };
 
@@ -81,7 +80,7 @@ const scopeFilterTabs = computed<FilterTab[]>(() => {
 
 const filterScope = computed({
   get: () => store.filterScope,
-  set: (v: string) => store.setFilterScope(v as 'global' | 'character' | 'persona' | 'chat' | ''),
+  set: (v: string) => store.setFilterScope(v as 'global' | 'character' | 'chat' | ''),
 });
 
 /** 返回对话页 */

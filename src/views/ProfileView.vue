@@ -1,15 +1,12 @@
 <script setup lang="ts">
-/** 个人中心只管理真实账户；世界内昵称和角色资料位于世界书。 */
-import { ref, computed } from 'vue';
+/** 个人中心只管理唯一的真实账户；世界内扮演资料位于世界书。 */
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { usePersonaStore } from '@/stores/persona';
 import Icon from '@/components/common/Icon.vue';
 import { t } from '@/i18n';
 
 const router = useRouter();
-const personaStore = usePersonaStore();
 const showLoginPanel = ref(false);
-const hasLocalAccount = computed(() => personaStore.personas.length > 0);
 
 function goBack(): void {
   if (window.history.state?.back) void router.back();
@@ -55,7 +52,7 @@ function toggleLoginPanel(): void {
         <div class="profile-info">
           <div class="profile-name-row">
             <span class="profile-name">{{ t('profile.localUser') }}</span>
-            <span v-if="hasLocalAccount" class="badge-active">{{ t('profile.active') }}</span>
+            <span class="badge-active">{{ t('profile.active') }}</span>
           </div>
           <p class="profile-description">{{ t('profile.localUserHint') }}</p>
           <p class="account-hint">{{ t('profile.worldProfileHint') }}</p>

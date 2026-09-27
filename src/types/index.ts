@@ -282,7 +282,7 @@ export interface AppSettings {
   locale?: 'zh' | 'en';
   apiProfiles: ApiProfile[];
   activeApiProfileId: string | null;
-  /** F07 新增：当前激活的 Persona ID（null 表示使用默认 "User"） */
+  /** 旧版 Persona 激活 ID；0.9.0 不参与运行时身份，仅为设置快照兼容保留 */
   activePersonaId: string | null;
   /** F08.2 新增：聊天背景配置（v1.1） */
   chatBackground: ChatBackground;
@@ -353,12 +353,12 @@ export interface QuickReplyButton {
 }
 
 /**
- * 用户 Persona (F07.1)
+ * 旧版用户 Persona (F07.1)
  *
  * 规则约束：
  * - 名称 1-30 字符（旧数据兼容）
  * - 描述建议 ≤500 字符（旧数据兼容；新的世界内资料存放在 Lorebook）
- * - 至少 1 个 Persona（默认名称 "User"）
+ * 0.9.0 起不再作为聊天身份使用，仅保留类型以读取旧备份和旧快照。
  */
 export interface Persona {
   /** 唯一 ID */

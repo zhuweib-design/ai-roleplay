@@ -17,15 +17,19 @@ vi.mock('@/stores/lorebook', () => ({
   useLorebookStore: () => ({
     lorebooks: [
       { id: 'lb1', name: '全球世界书', scope: 'global' },
-      { id: 'lb2', name: '角色世界书', scope: 'character', characterId: 'char-1' },
+      {
+        id: 'lb2',
+        name: '角色世界书',
+        scope: 'character',
+        characterId: 'char-1',
+        userProfile: {
+          name: '林澈',
+          description: '王都医师',
+          gender: '女',
+        },
+      },
+      { id: 'legacy-persona', name: '旧身份世界书', scope: 'persona', personaId: 'per-1' },
     ],
-  }),
-}));
-
-vi.mock('@/stores/persona', () => ({
-  usePersonaStore: () => ({
-    activeUserName: '玩家甲',
-    activePersona: { id: 'per-1' },
   }),
 }));
 
@@ -61,7 +65,11 @@ vi.mock('@/stores/events', () => ({
   }),
 }));
 
-import { buildChatSessionContext } from '@/stores/chat-context';
+import {
+  buildChatSessionContext,
+  collectLorebooksForCharacter,
+  getWorldUserDisplayName,
+} from '@/stores/chat-context';
 
 const character = { id: 'char-1', storyId: 's1' };
 
@@ -79,8 +87,9 @@ describe('buildChatSessionContext 对话上下文深模块', () => {
     });
 
     expect(ctx.lorebooks).toHaveLength(2);
-    // 没有绑定世界内用户资料时使用中性默认值，旧 Persona 不再作为全局身份。
-    expect(ctx.userName).toBe('User');
+    // 用户资料来自当前角色关联的世界书，不受全局 Persona 状态影响。
+    expect(ctx.userName).toBe('林澈');
+    expect(ctx.worldUserProfile?.description).toBe('王都医师');
     expect(ctx.ragContext).toBe('检索到的文档上下文');
     expect(ctx.protagonistContext).toContain('主角');
     expect(ctx.storyTimeContext).toContain('第三天');
@@ -123,5 +132,13 @@ describe('buildChatSessionContext 对话上下文深模块', () => {
     });
 
     expect(ctx.ragContext).toBeUndefined();
+  });
+
+  it('旧 Persona 世界书不会重新成为当前身份来源', () => {
+    expect(collectLorebooksForCharacter('char-1').some((lb) => lb.id === 'legacy-persona')).toBe(false);
+  });
+
+  it('世界内用户资料缺失时回落为中性显示名', () => {
+    expect(getWorldUserDisplayName('char-2')).toBe('User');
   });
 });

@@ -902,7 +902,7 @@ export const useStoryStore = defineStore('story', () => {
   }
 
   /**
-   * 关联 Persona ID（在 persona store 创建 Persona 后调用）
+   * 旧版关联 Persona ID。0.9.0 仅用于清理旧故事数据，不创建新的用户身份。
    */
   function setProtagonistPersonaId(storyId: string, personaId: string | null): boolean {
     const story = stories.value.find((s) => s.id === storyId);

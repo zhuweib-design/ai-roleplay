@@ -295,7 +295,7 @@ export interface ProtagonistRelation {
  *
  * 规则约束：
  * - 主角身份绑定到当前故事，不影响其他对话
- * - 主角信息通过 F07 Persona 系统管理（自动创建"故事主角"Persona）
+ * - 主角信息属于当前故事，不会创建或切换全局用户账户
  * - 主角信息注入对话系统提示词，AI 以主角视角互动
  * - 起始场景需从故事分析结果 scenes 中选择，或留空表示不限定
  */
@@ -316,7 +316,7 @@ export interface ProtagonistConfig {
   startingScene?: string;
   /** 主角与原有人物的关系列表 */
   relations: ProtagonistRelation[];
-  /** 关联 Persona ID（创建 Persona 后填充，便于跨系统引用） */
+  /** 旧版关联 Persona ID；仅用于读取旧故事数据，0.9.0 不再写入 */
   personaId?: string | null;
   /** 创建时间戳 */
   createdAt: number;

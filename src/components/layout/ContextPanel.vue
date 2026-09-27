@@ -1082,36 +1082,6 @@ class="token-bar" role="progressbar"
   text-align: right;
 }
 
-/* F07 Persona 切换区域 */
-.ctx-persona-select-label {
-  display: block;
-  margin: 0;
-}
-
-.ctx-persona-select {
-  width: 100%;
-  height: 32px;
-  padding: 0 8px;
-  font-size: 13px;
-  color: var(--foreground);
-  background: var(--video-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  outline: none;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 28px;
-}
-
-.ctx-persona-select:focus-visible {
-  border-color: var(--tk-cyan-500);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tk-cyan-500) 35%, transparent);
-}
-
 .ctx-persona-hint {
   margin: 6px 0 0;
   font-size: 11px;
@@ -1187,8 +1157,7 @@ class="token-bar" role="progressbar"
 
 @media (max-width: 640px) {
   /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
-  .ctx-textarea,
-  .ctx-persona-select {
+  .ctx-textarea {
     font-size: 16px;
   }
 }

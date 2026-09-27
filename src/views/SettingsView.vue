@@ -582,15 +582,11 @@ function resetCustomCss() {
   showToast('info', t('settingsView.cssReset'));
 }
 
-// ── 用户身份（由个人中心统一编辑） ──
-import { usePersonaStore } from '@/stores/persona';
-
-const personaStore = usePersonaStore();
-
 // ── F13 数据管理 ──
 import { useCharacterStore } from '@/stores/character';
 import { useEventsStore } from '@/stores/events';
 import { useStoryStore } from '@/stores/story';
+import { getWorldUserDisplayName } from '@/stores/chat-context';
 import {
   exportAll,
   importBackup,
@@ -727,7 +723,6 @@ async function handleBackupFileSelected(e: Event) {
 
     // 重新加载所有 store 数据
     await characterStore.loadFromStorage();
-    await personaStore.loadFromStorage();
     await useStoryStore().loadFromStorage();
     // F17 事件为内存态：从备份恢复回事件 store
     if (result.events) {
@@ -945,8 +940,8 @@ async function handleExportChatMarkdown() {
 
     // 取最新的对话
     const latestChat = chats[0]!;
-    const userName = personaStore.activeUserName;
-    downloadChatMarkdown(latestChat, char.name, userName);
+    // 导出名称跟随该角色关联的世界资料，不再读取全局“当前身份”。
+    downloadChatMarkdown(latestChat, char.name, getWorldUserDisplayName(char.id));
     showToast('success', t('settingsView.mdExported', { name: char.name }));
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));

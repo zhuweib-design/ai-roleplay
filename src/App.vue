@@ -6,7 +6,6 @@ import { useChatStore } from '@/stores/chat';
 import { useCharacterStore } from '@/stores/character';
 import { useLorebookStore } from '@/stores/lorebook';
 import { useGroupChatStore } from '@/stores/group-chat';
-import { usePersonaStore } from '@/stores/persona';
 import { useDataBankStore } from '@/stores/data-bank';
 import { useStoryStore } from '@/stores/story';
 import { useCommunityMarketStore } from '@/stores/community-market';
@@ -31,7 +30,6 @@ const chatStore = useChatStore();
 const characterStore = useCharacterStore();
 const lorebookStore = useLorebookStore();
 const groupChatStore = useGroupChatStore();
-const personaStore = usePersonaStore();
 const dataBankStore = useDataBankStore();
 const storyStore = useStoryStore();
 const communityMarketStore = useCommunityMarketStore();
@@ -178,8 +176,6 @@ onMounted(async () => {
     // W3 新增：世界书与群聊 store 注入适配器
     lorebookStore.setStorageAdapter(adapter);
     groupChatStore.setStorageAdapter(adapter);
-    // 迭代22 新增：Persona store 注入适配器
-    personaStore.setStorageAdapter(adapter);
     // 迭代26 新增：DataBank store 注入适配器 (F09)
     dataBankStore.setStorageAdapter(adapter);
     // 迭代31 新增：Story store 注入适配器 (F16)
@@ -242,11 +238,6 @@ onMounted(async () => {
     });
     await groupChatStore.loadFromStorage().catch((err) => {
       console.error('从存储加载群聊失败：', err);
-    });
-
-    // 迭代22 新增：加载 Persona（首次启动会自动创建默认 User）
-    await personaStore.loadFromStorage().catch((err) => {
-      console.error('从存储加载 Persona 失败：', err);
     });
 
     // 迭代26 新增：加载数据银行文档 (F09)

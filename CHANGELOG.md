@@ -3,6 +3,18 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 版本格式：`0.Y.Z`。`0` 为里程碑，`Y` 为功能/发布，`Z` 为修复。
 
+## [0.9.0] - 2026-09-27
+
+### 变更
+- **统一本地用户**：个人中心只保留一个本地用户入口，不再把 Persona 列表作为当前身份或登录身份。
+- **世界内扮演资料**：昵称、描述、性别、代称、年龄、职业、外貌、背景和备注继续由每本世界书单独保存，并按当前角色关联的世界注入上下文。
+- **故事角色边界**：故事主角仍作为故事内容参与提示词，但保存或编辑主角不会创建、切换或激活全局 Persona。
+- **导出一致性**：聊天 Markdown 导出使用当前角色对应世界的用户昵称，没有资料时回落为 `User`。
+
+### 兼容
+- 旧 Persona 类型、存储接口和备份字段继续保留，用于读取旧快照和旧备份；0.9.0 的聊天上下文、个人中心和故事流程不再读取它们作为用户身份。
+- 旧世界书没有用户资料时保持中性默认值，不影响已有角色卡、聊天记录和 Runtime 数据。
+
 ## [0.8.0] - 2026-09-27
 
 ### 新增
@@ -156,6 +168,7 @@
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储。
 - 扩展沙箱默认拒绝权限，社区扩展默认不自动执行。
 
+[0.9.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.9.0
 [0.8.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.8.0
 [0.7.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.7.0
 [0.6.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.6.0

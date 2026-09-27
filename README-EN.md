@@ -6,7 +6,7 @@
 
 **An AI role-playing chat app built on the SillyTavern architecture: multi-model chat · character cards · world books · group chat · story engine · community market · custom themes · custom vector-model RAG · Virtual Character OS Runtime**
 
-[![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.8.0)
+[![Version](https://img.shields.io/badge/version-0.9.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.9.0)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6.svg)]()
 [![Tauri 2](https://img.shields.io/badge/Tauri-2.0-24c8db.svg)]()
@@ -188,6 +188,7 @@ tests/               Unit / a11y / E2E
 - [x] **0.6.0** — deterministic appraisal, behavior planning, and configurable long-term state decay (complete)
 - [x] **0.7.0** — memory validity windows and auditable runtime context sources (complete)
 - [x] **0.8.0** — Runtime memory confirmation, rejection, disabling, and replayable review events (complete)
+- [x] **0.9.0** — one local user account with world-specific roleplay profiles (complete)
 - [x] **0.3.1** — Runtime and group chat productionization: tenant/member authorization, server-side reliable outbox, group definition CAS conflict recovery, state inspector and replay self-check (released)
 - [x] **0.3.0** — Runtime and group chat MVP: cross-device group history, reliable outbox, conflict recovery, Runtime state inspector (released)
 - [x] **0.2.0** — custom vector model + RAG, custom themes, market, tray/shortcut (released)
@@ -210,7 +211,7 @@ This project is open-sourced under the **Apache License 2.0**. See [LICENSE](LIC
 
 ### Release notes
 
-- **0.8.0**: see [`docs/dev/release-notes-0.8.0.md`](docs/dev/release-notes-0.8.0.md) for Runtime memory review. Previous: [`docs/dev/release-notes-0.7.0.md`](docs/dev/release-notes-0.7.0.md).
+- **0.9.0**: see [`docs/dev/release-notes-0.9.0.md`](docs/dev/release-notes-0.9.0.md) for the single-account and world-profile changes. Previous: [`docs/dev/release-notes-0.8.0.md`](docs/dev/release-notes-0.8.0.md).
 - **0.4.0**: see [`docs/dev/release-notes-0.4.0.md`](docs/dev/release-notes-0.4.0.md) for new capabilities, data compatibility and validation results.
 - **0.3.1**: see [`docs/dev/release-notes-0.3.1.md`](docs/dev/release-notes-0.3.1.md) for new capabilities, upgrade steps and known limitations.
 - **0.3.0**: see [`docs/dev/release-notes-0.3.0.md`](docs/dev/release-notes-0.3.0.md) for new capabilities, upgrade steps and known limitations.

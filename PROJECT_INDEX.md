@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-27 10:47（本地时区）
+- **生成时间**：2026-09-27 11:14（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
-- **项目标识**：`ai-roleplay` v0.8.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
+- **项目标识**：`ai-roleplay` v0.9.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：505 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：35 个
+- **收录文件**：506 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：36 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -19,7 +19,7 @@ ai-roleplay/
   - `memory/`  — 10 个文件
 - `.workbuddy-ai/`  — 6 个文件
   - `memory/`  — 6 个文件
-- `docs/`  — 180 个文件
+- `docs/`  — 181 个文件
   - `assets/`  — 110 个文件
     - `screenshots/`  — 110 个文件
       - `themes/`  — 84 个文件
@@ -28,7 +28,7 @@ ai-roleplay/
         - `oled/`  — 21 个文件
         - `theatre/`  — 21 个文件
   - `design/`  — 14 个文件
-  - `dev/`  — 29 个文件
+  - `dev/`  — 30 个文件
   - `fixes/`  — 17 个文件
   - `other/`  — 6 个文件
 - `e2e/`  — 14 个文件
@@ -463,7 +463,7 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `public/sillytavern-vs-airoleplay.html` | html | 产品文档 | 静态页：SillyTavern vs ai-roleplay 系统化对比报告 | 未跟踪 |  |
 
-### 2.4 开发文档（35）
+### 2.4 开发文档（36）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -495,6 +495,7 @@ ai-roleplay/
 | `docs/dev/release-notes-0.6.0.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/release-notes-0.7.0.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/release-notes-0.8.0.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/dev/release-notes-0.9.0.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/runtime-database-migration-runbook.md` | md | 开发文档 | 开发文档：Virtual Character OS 数据库迁移演练 Runbook（备份 / 锁等待 / 回滚 / 演练清单） | 未跟踪 |  |
 | `docs/dev/web-deployment-sop.md` | md | 开发文档 | 开发文档：Web 端部署 SOP（部署前验证 / 硬性要求 / 5 类托管配置 / 部署后验证 / 常见坑 / 回滚） | 未跟踪 |  |
 | `docs/dev/优化效果评估脚本-使用说明.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
@@ -581,7 +582,7 @@ ai-roleplay/
 | `.i18nignore` | i18nignore | 配置 | i18n 扫描忽略清单 | 未跟踪 |  |
 | `eslint.config.js` | js | 配置 | ESLint 扁平配置（Vue + TS） | 未跟踪 |  |
 | `package-lock.json` | json | 配置 | npm 依赖锁定文件（自动生成） | 未跟踪 |  |
-| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.8.0） | 未跟踪 |  |
+| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v0.9.0） | 未跟踪 |  |
 | `playwright.config.ts` | ts | 配置 | Playwright E2E 配置：testDir=e2e、本地 msedge / CI chromium | 未跟踪 |  |
 | `reasonix.toml` | toml | 配置 | Reasonix 工具工作区配置 | 未跟踪 |  |
 | `src-tauri/.gitignore` | gitignore | 配置 | 桌面端专属忽略规则 | 未跟踪 |  |
@@ -661,7 +662,7 @@ ai-roleplay/
 | 程序 | 206 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 147 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
-| 开发文档 | 35 | docs/dev/ 实现计划、Runbook、审计记录 |
+| 开发文档 | 36 | docs/dev/ 实现计划、Runbook、审计记录 |
 | 修复文档 | 17 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
 | 设计文档 | 14 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
 | AI记忆 | 16 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
@@ -669,7 +670,7 @@ ai-roleplay/
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 19 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 32 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **505** | 与「收录文件」数一致 |
+| **合计** | **506** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

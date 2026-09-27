@@ -9,7 +9,7 @@
  * 5. 起始场景校验：必须在 story.scenes 内
  *
  * 不负责：
- * - Persona 创建（由 persona store.createStoryProtagonistPersona 处理）
+ * - 用户账户或世界内用户资料管理（由个人中心与世界书负责）
  * - 持久化（由 story store + storage adapter 处理）
  */
 

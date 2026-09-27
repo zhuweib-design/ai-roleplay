@@ -5,8 +5,8 @@ import { useCharacterStore } from '@/stores/character';
 import { useChatStore } from '@/stores/chat';
 import { useSettingsStore } from '@/stores/settings';
 import { useStoryStore } from '@/stores/story';
-import { usePersonaStore } from '@/stores/persona';
 import { uiMsgsToChatMsgs } from '@/services/type-adapters';
+import { getWorldUserDisplayName } from '@/stores/chat-context';
 import { resolveLatestStatus } from '@core/status-parser';
 import { downloadChatMarkdown } from '@/services/backup-service';
 import type { Chat } from '@/storage/types';
@@ -33,7 +33,6 @@ const router = useRouter();
 const characterStore = useCharacterStore();
 const chatStore = useChatStore();
 const settings = useSettingsStore();
-const personaStore = usePersonaStore();
 // F16.4 故事时间（用于顶栏显示）
 const storyStore = useStoryStore();
 // I-1：aria-expanded 随视口反映正确的面板状态（桌面 panelExpanded / 移动平板 contextDrawerOpen）
@@ -508,7 +507,7 @@ function handleExportChat() {
     createdAt: new Date(msgs[0]!.timestamp).toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  downloadChatMarkdown(chat, char.value.name, personaStore.activeUserName);
+  downloadChatMarkdown(chat, char.value.name, getWorldUserDisplayName(char.value.id));
   toastMessage.value = t('chat.exportedMarkdown');
   toastType.value = 'success';
   toastOpen.value = true;

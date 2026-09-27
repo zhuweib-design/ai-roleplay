@@ -97,7 +97,7 @@ export interface LorebookEntry {
  *
  * 规则约束：
  * - 每个 Lorebook 条目数上限 500 条
- * - 可绑定到角色（角色级）/Persona（Persona级）/特定聊天（聊天级）/全局
+ * - 可绑定到角色（角色级）/旧版 Persona（兼容）/特定聊天（聊天级）/全局
  */
 export interface Lorebook {
   /** 唯一 ID */
@@ -111,7 +111,7 @@ export interface Lorebook {
   /**
    * 绑定范围
    * - character: 绑定到指定角色（characterId 字段）
-   * - persona: 绑定到 Persona（personaId 字段）
+   * - persona: 旧版 Persona 绑定（仅兼容，不参与 0.9.0 用户身份）
    * - chat: 绑定到特定聊天（chatId 字段）
    * - global: 全局生效
    */

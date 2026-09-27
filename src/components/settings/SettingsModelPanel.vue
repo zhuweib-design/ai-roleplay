@@ -1945,20 +1945,6 @@ select.field-input {
   color: var(--destructive);
 }
 
-/* Persona 区段 (F07) */
-.badge-active {
-  display: inline-block;
-  padding: 1px 6px;
-  margin-left: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--on-accent);
-  background: var(--secondary);
-  border-radius: var(--radius-pill);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .field-textarea {
   resize: vertical;
   min-height: 80px;
