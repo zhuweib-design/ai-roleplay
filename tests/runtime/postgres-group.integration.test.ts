@@ -227,9 +227,17 @@ integration('PostgreSQL 群聊公共回合与多角色原子事务', () => {
       await expect(group.removeMember(groupId, a)).rejects.toThrow('至少保留 2 位成员');
       await expect(group.buildMemberContext(groupId, c)).rejects.toThrow('无权访问');
       await expect(foreignGroup.buildMemberContext(groupId, outsider)).rejects.toThrow('无权访问');
-      await api.ingestEvent(a, { tenantId: tenant, eventId: randomUUID(),
+      const privateEvent = await api.ingestEvent(a, { tenantId: tenant, eventId: randomUUID(),
         eventType: 'private-note', importance: 0.7, payload: { source: 'private' },
         effects: { memory: { type: 'semantic', content: '仅甲知道的私人线索', importance: 0.9 } } });
+      const pendingContext = await http.buildMemberContext(groupId, a, { query: '私人线索' });
+      expect(pendingContext.relevantMemories.some((memory) => memory.content.includes('仅甲知道'))).toBe(false);
+      expect(privateEvent.createdMemory?.reviewStatus).toBe('candidate');
+      await characterHttp.reviewMemory(a, {
+        tenantId: tenant,
+        memoryId: privateEvent.createdMemory!.id,
+        action: 'confirm',
+      });
       const ownContext = await http.buildMemberContext(groupId, a, { query: '私人线索' });
       const otherContext = await http.buildMemberContext(groupId, b, { query: '私人线索' });
       expect(ownContext.relevantMemories.some((memory) => memory.content.includes('仅甲知道'))).toBe(true);
