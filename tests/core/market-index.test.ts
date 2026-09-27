@@ -15,6 +15,7 @@ import {
   parseCharacterItem,
   parseWorldbookItem,
   parseTemplateItem,
+  validateMarketResource,
   type MarketIndexItem,
   type MarketIndexManifest,
 } from '@core/market-index';
@@ -31,6 +32,7 @@ function makeItem(overrides: Partial<MarketIndexItem> = {}): MarketIndexItem {
     size: 1024,
     sha256: 'a'.repeat(64),
     url: 'https://example.com/card.json',
+    license: 'Apache-2.0',
     ...overrides,
   };
 }
@@ -75,10 +77,11 @@ describe('parseMarketIndex (T-11)', () => {
     expect(parseMarketIndex(JSON.stringify({ ...rest }))).toBeNull();
   });
 
-  it('条目缺 id/sha256/url 拒绝', () => {
+  it('条目缺 id/sha256/url/license 拒绝', () => {
     expect(parseMarketIndex(JSON.stringify(makeManifest([makeItem({ id: '' })])))).toBeNull();
     expect(parseMarketIndex(JSON.stringify(makeManifest([makeItem({ sha256: '' })])))).toBeNull();
     expect(parseMarketIndex(JSON.stringify(makeManifest([makeItem({ url: '' })])))).toBeNull();
+    expect(parseMarketIndex(JSON.stringify(makeManifest([makeItem({ license: '' })])))).toBeNull();
   });
 
   it('条目非法 type 回退为 character', () => {
@@ -87,6 +90,12 @@ describe('parseMarketIndex (T-11)', () => {
     );
     expect(result).not.toBeNull();
     expect(result!.items[0]!.type).toBe('character');
+  });
+
+  it('资源缺少许可证或哈希时不具备安装资格', () => {
+    expect(validateMarketResource(makeItem({ license: '' }))).toContain('缺少许可证');
+    expect(validateMarketResource(makeItem({ sha256: 'bad' }))).toContain('SHA-256 格式无效');
+    expect(validateMarketResource(makeItem())).toEqual([]);
   });
 });
 

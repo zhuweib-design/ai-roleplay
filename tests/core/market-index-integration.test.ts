@@ -52,6 +52,7 @@ function makeItem(overrides: Partial<MarketIndexItem> = {}): MarketIndexItem {
     size: 100,
     sha256: '',
     url: ITEM_URL,
+    license: 'Apache-2.0',
     ...overrides,
   };
 }
@@ -405,6 +406,7 @@ describe('parseMarketIndex with real manifest', () => {
           size: 827,
           sha256: 'b2da8ee88b8ee6088aa1ca3ebaed9a0aeddc97a0d9eb466853298ec7d8987d9b',
           url: 'https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/cards/seraphina.json',
+          license: 'Apache-2.0',
         },
       ],
     };

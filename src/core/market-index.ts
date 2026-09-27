@@ -38,6 +38,14 @@ export interface MarketIndexItem {
   sha256: string;
   /** 内容直链 */
   url: string;
+  /** 内容许可证标识；缺失许可证的远程资源不得进入可信安装流 */
+  license: string;
+  /** 内容来源说明，默认使用 url */
+  source?: string;
+  /** 外部依赖声明，仅用于展示和安装前检查 */
+  dependencies?: string[];
+  /** 资源需要的宿主能力，默认空数组；不会自动授予权限 */
+  permissions?: string[];
 }
 
 /** 市场清单 */
@@ -110,9 +118,17 @@ export function parseMarketIndex(rawText: string): MarketIndexManifest | null {
       size: typeof rawItem.size === 'number' ? rawItem.size : 0,
       sha256: isString(rawItem.sha256) ? rawItem.sha256.toLowerCase() : '',
       url: isString(rawItem.url) ? rawItem.url : '',
+      license: isString(rawItem.license) ? rawItem.license.trim() : '',
+      source: isString(rawItem.source) ? rawItem.source.trim() : undefined,
+      dependencies: Array.isArray(rawItem.dependencies)
+        ? rawItem.dependencies.filter(isString)
+        : [],
+      permissions: Array.isArray(rawItem.permissions)
+        ? rawItem.permissions.filter(isString)
+        : [],
     };
     // 必填字段缺失 → 整清单非法
-    if (!item.id || !item.sha256 || !item.url) return null;
+    if (!item.id || !item.sha256 || !item.url || !item.license) return null;
     items.push(item);
   }
 
@@ -144,6 +160,7 @@ export async function downloadMarketItem(
   item: MarketIndexItem,
   onProgress?: DownloadProgressFn
 ): Promise<DownloadedMarketItem | null> {
+  if (validateMarketResource(item).length > 0) return null;
   const rawText = await fetchText(item.url, MAX_ITEM_BYTES, onProgress);
   const expectedHex = item.sha256.toLowerCase();
   if (expectedHex) {
@@ -157,6 +174,30 @@ export async function downloadMarketItem(
     return null;
   }
   return { item, rawText, content };
+}
+
+/**
+ * 检查资源是否具备进入安装流的最小信任元数据。
+ * 权限只做声明，不在这里自动授予；扩展加载仍必须经过 ExtensionLoader。
+ */
+export function validateMarketResource(item: Partial<MarketIndexItem>): string[] {
+  const errors: string[] = [];
+  if (typeof item.id !== 'string' || item.id.trim() === '') errors.push('缺少资源 ID');
+  if (typeof item.url !== 'string' || item.url.trim() === '') errors.push('缺少资源地址');
+  if (typeof item.sha256 !== 'string' || !/^[0-9a-f]{64}$/i.test(item.sha256)) {
+    errors.push('SHA-256 格式无效');
+  }
+  if (typeof item.license !== 'string' || item.license.trim() === '') errors.push('缺少许可证');
+  if (typeof item.source !== 'undefined' && typeof item.source !== 'string') {
+    errors.push('资源来源格式无效');
+  }
+  if (item.dependencies?.some((dependency) => typeof dependency !== 'string')) {
+    errors.push('依赖声明格式无效');
+  }
+  if (item.permissions?.some((permission) => typeof permission !== 'string')) {
+    errors.push('权限声明格式无效');
+  }
+  return errors;
 }
 
 /** 读取文本：流式读取并上报进度；限制字节数，超限或请求失败抛错 */

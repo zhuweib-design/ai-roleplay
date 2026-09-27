@@ -23,7 +23,7 @@ AI 酒馆的所有数据（角色卡、对话、世界书、群聊、Persona、�
 
 **入口**：设置 → 数据管理 → 全量备份与恢复 → `导出备份`
 
-- **导出内容**：角色卡、对话、世界书、群聊、Persona、全局设置，序列化为**单一 JSON 文件**。
+- **导出内容**：角色卡、对话、世界书、群聊、Persona、故事线、世界书事件、Runtime 角色快照和全局设置，序列化为**单一 JSON 文件**。
 - **加密规则**：
   - 若已设置并**解锁主密码** → 导出为加密文件 `ai-roleplay-backup-YYYY-MM-DD.enc.json`（AES 加密）。
   - 若未设置主密码 → 导出为明文文件 `ai-roleplay-backup-YYYY-MM-DD.json`。
@@ -110,6 +110,7 @@ AI 酒馆的所有数据（角色卡、对话、世界书、群聊、Persona、�
   "lorebooks": [ { "id": "...", "name": "...", "entries": [ "..." ] } ],
   "groupChats": [ { "id": "...", "name": "..." } ],
   "personas": [ { "id": "...", "name": "..." } ],
+  "runtimeSnapshots": [ { "character": { "id": "..." }, "events": [], "stateChanges": [] } ],
   "settings": { "theme": "dark", "...": "..." }
 }
 ```
@@ -126,6 +127,7 @@ AI 酒馆的所有数据（角色卡、对话、世界书、群聊、Persona、�
 | 触发下载（加密 / 明文） | `src/services/backup-service.ts` → `downloadBackupFile(data, masterPassword?)` |
 | 解析 / 解密备份文件 | `src/services/backup-service.ts` → `parseBackupFile(file, masterPassword?)` |
 | 执行导入（冲突策略） | `src/services/backup-service.ts` → `importBackup(adapter, data, options)` |
+| Runtime 快照备份 | `src/services/backup-service.ts` → `loadRuntimeSnapshots()`；仅导出角色快照，不导出 `context-build` 审计记录 |
 | 备份结构校验 | `src/core/backup.ts` → `validateBackup()` / `BackupData` / `ConflictStrategy` |
 | UI 入口 | `src/views/SettingsView.vue` → 数据管理 → 全量备份与恢复（导出 / 导入 / 冲突策略单选） |
 | 明文密钥拒绝导出 + 审计 | `src/services/backup-service.ts` `exportAll()` 内 `isEncrypted` 检查 + `auditLogger.record('backup_export', ..., 'blocked'｜'ok')` |

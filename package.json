@@ -30,6 +30,8 @@
     "csp:audit": "node scripts/csp-audit.mjs",
     "runtime:db:schema:sync": "node scripts/sync-runtime-schema.mjs",
     "runtime:db:schema:check": "node scripts/sync-runtime-schema.mjs --check",
+    "release:evidence": "node scripts/release-evidence.mjs --write",
+    "release:evidence:check": "node scripts/release-evidence.mjs --check --quiet",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

@@ -12,7 +12,11 @@
       "version": "1.0.0",
       "size": 827,
       "sha256": "b2da8ee88b8ee6088aa1ca3ebaed9a0aeddc97a0d9eb466853298ec7d8987d9b",
-      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/cards/seraphina.json"
+      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/cards/seraphina.json",
+      "license": "Apache-2.0",
+      "source": "ai-roleplay/market/cards/seraphina.json",
+      "dependencies": [],
+      "permissions": []
     }
   ]
 }
