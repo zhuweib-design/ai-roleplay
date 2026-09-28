@@ -3,15 +3,16 @@
  * PROJECT_INDEX.md 生成器
  *
  * 用法：node scripts/gen-project-index.mjs
- * 输出：<项目根>/PROJECT_INDEX.md
+ * 输出：<项目根>/docs/dev/PROJECT_INDEX.md
  *
- * 设计约束（见 PROJECT_INDEX.md「维护说明」）：
+ * 设计约束（见 docs/dev/PROJECT_INDEX.md「维护说明」）：
  * - 全部使用相对路径，不写入任何绝对路径，避免泄露本机目录信息
  * - 排除依赖目录、构建产物、证书密钥、数据库、大二进制与日志
  * - 对敏感文件只记录路径与分类，绝不读取内容
  * - 不执行任何 git 写操作（只读 git ls-files / status / check-ignore）
  *
- * 2026-09-18 目录整理时新增，变更记录见 MIGRATION_LOG.md
+ * 2026-09-18 目录整理时新增（输出根目录）；2026-09-28 输出迁至 docs/dev/。
+ * 变更记录见 docs/dev/MIGRATION_LOG.md
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,7 +20,9 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT_FILE = path.join(ROOT, 'PROJECT_INDEX.md');
+/** 索引输出相对路径（2026-09-28 由项目根迁入 docs/dev/，与迁移日志同目录） */
+const OUT_REL = 'docs/dev/PROJECT_INDEX.md';
+const OUT_FILE = path.join(ROOT, OUT_REL);
 const PROJECT_VERSION = (() => {
   try {
     const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
@@ -91,8 +94,8 @@ const CURATED = {
   'THIRD_PARTY_NOTICES.md': '第三方组件许可声明',
   'LICENSE': 'Apache-2.0 许可证全文',
   'icon-source.png': '应用图标设计源图（生成 PWA / Tauri 图标用）',
-  'PROJECT_INDEX.md': '本索引文件（由 scripts/gen-project-index.mjs 生成）',
-  'MIGRATION_LOG.md': '目录整理迁移日志',
+  'docs/dev/PROJECT_INDEX.md': '本索引文件（由 scripts/gen-project-index.mjs 生成）',
+  'docs/dev/MIGRATION_LOG.md': '目录整理迁移日志',
 
   '.github/workflows/ci.yml': 'CI 流水线：i18n / 断点 / 对比度 / 覆盖率 / 构建 / E2E / Tauri 七道门禁',
 
@@ -432,7 +435,7 @@ const ROOT_DEV_DOCS = new Set([
  * docs/ 下的分类子目录 → 索引分类。
  * 2026-09-18 起 docs/ 由「扁平」改为按用途分五类（design/dev/fixes/other/product），
  * 因此**目录即分类**：新增文档只要放进对应目录即被正确归类，无需再逐文件维护映射。
- * 归类规则与 MIGRATION_LOG.md 第十一节一致。
+ * 归类规则与 docs/dev/MIGRATION_LOG.md 第十一节一致。
  */
 const DOC_DIR_CATEGORY = {
   'docs/design/': '设计文档',
@@ -450,7 +453,6 @@ const DOC_CATEGORY = {
 
 function classify(rel) {
   const base = rel.split('/').pop();
-  if (rel === 'PROJECT_INDEX.md' || rel === 'MIGRATION_LOG.md') return '其他';
   if (rel.startsWith('tests/') || rel.startsWith('e2e/')) return '测试';
   if (/\.(test|spec)\.ts$/.test(base)) return '测试';
   if (rel.startsWith('docs/assets/screenshots/')) return '截图';
@@ -699,7 +701,7 @@ function main() {
         ? '目录聚合'
         : base.includes('.') ? base.split('.').pop().toLowerCase() : '(无扩展名)';
       const desc = describe(rel);
-      const note = rel === 'PROJECT_INDEX.md'
+      const note = rel === OUT_REL
         ? '索引文件（不递归展开）'
         : desc.includes('待确认') ? '用途待确认' : '';
       parts.push(`| \`${esc(rel)}\` | ${esc(ext)} | ${cat} | ${esc(desc)} | ${gitOf(rel)} | ${esc(note)} |`);
@@ -766,7 +768,8 @@ function main() {
   parts.push('4. 调整排除范围，修改脚本顶部的 `EXCLUDE_DIR_NAMES`、`EXCLUDE_REL_DIRS`、`EXCLUDE_FILE_RES`；同质化资源目录用 `AGGREGATE_DIRS` 聚合。');
   parts.push('5. 生成器只读 git（`ls-files` / `status` / `check-ignore`），不会执行 `add` / `commit` / `push`。');
   parts.push('6. 本文件全文使用相对路径；请勿在补充内容中写入绝对路径，以免泄露本机目录信息。');
-  parts.push('7. 目录结构变更请同步记录到 `MIGRATION_LOG.md`。');
+  parts.push('7. 目录结构变更请同步记录到 `docs/dev/MIGRATION_LOG.md`。');
+  fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
   fs.writeFileSync(OUT_FILE, `${parts.join('\n')}\n`, 'utf8');
 
   console.log(`[gen-project-index] 已生成 ${path.basename(OUT_FILE)}`);
