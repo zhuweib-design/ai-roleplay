@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --maxWorkers=2",
     "test:e2e": "playwright test",
+    "clean": "node scripts/clean.mjs",
     "a11y:contrast": "node scripts/check-contrast.mjs",
     "a11y:contrast:self-test": "node scripts/check-contrast.mjs --self-test",
     "opt:eval": "node scripts/opt-eval.mjs",
