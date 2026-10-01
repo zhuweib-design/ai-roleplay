@@ -313,6 +313,8 @@ export interface AppSettings {
   thinkingConfig?: ThinkingConfig;
   /** P0-3：全局采样默认值（本轮不提供 UI，仅留数据位与合并逻辑） */
   samplingDefaults?: SamplingOverrides | null;
+  /** MODEL-03：创作模式（Preset）；缺省视为 balanced */
+  creationPreset?: import('@core/creation-preset').PresetId;
   /** P1：状态栏全局偏好（缺省 → DEFAULT_STATUS_HUD_CONFIG） */
   statusHudConfig?: StatusHudConfig;
   /**

@@ -9,12 +9,19 @@ import { RuntimeCore, type RuntimeCoreOptions } from './runtime-core';
 import { PostgresGroupRuntime } from './postgres-group-runtime';
 import { createGroupRuntimeHttpHandler } from './runtime-group-http';
 import type { RuntimeAuthOptions } from './runtime-auth';
+import type { RuntimeTraceSink } from './runtime-trace';
 
 export interface PostgresRuntimeApiOptions {
   auditActorType?: 'system' | 'migration';
   core?: RuntimeCoreOptions;
   /** HTTP 宿主注入的认证解析器；未配置时保持已绑定租户的兼容模式。 */
   httpAuth?: RuntimeAuthOptions;
+  /**
+   * 关联事件接收器（OBS-01）；宿主注入后，每个 Runtime 请求的
+   * 关联 ID、方法、路径、状态与耗时都会回调，便于落日志与指标。
+   * 缺省不产生任何日志副作用，保持 runtime 层零依赖。
+   */
+  onTrace?: RuntimeTraceSink;
 }
 
 /**
@@ -38,9 +45,9 @@ export function createPostgresRuntimeHttpHandler(
   tenantId: string,
   options: PostgresRuntimeApiOptions = {}
 ): RuntimeHttpHandler {
-  const httpOptions = { ...options.httpAuth, tenantId };
+  const httpOptions = { ...options.httpAuth, tenantId, ...(options.onTrace ? { onTrace: options.onTrace } : {}) };
   const characters = createRuntimeHttpHandler(createPostgresRuntimeApi(sql, tenantId, options), httpOptions);
-  const groups = createPostgresGroupRuntimeHttpHandler(sql, tenantId, options.httpAuth);
+  const groups = createPostgresGroupRuntimeHttpHandler(sql, tenantId, options.httpAuth, options.onTrace);
   return (request) => {
     const pathname = new URL(request.url).pathname;
     return pathname === '/v1/runtime/groups' || pathname.startsWith('/v1/runtime/groups/')
@@ -81,11 +88,13 @@ export function createPgPoolGroupRuntime(pool: PgPoolLike, tenantId: string): Po
 export function createPostgresGroupRuntimeHttpHandler(
   sql: SqlExecutor,
   tenantId: string,
-  authOptions: RuntimeAuthOptions = {}
+  authOptions: RuntimeAuthOptions = {},
+  onTrace?: RuntimeTraceSink
 ): RuntimeHttpHandler {
   return createGroupRuntimeHttpHandler(createPostgresGroupRuntime(sql, tenantId), {
     ...authOptions,
     tenantId,
+    ...(onTrace ? { onTrace } : {}),
   });
 }
 
@@ -93,7 +102,8 @@ export function createPostgresGroupRuntimeHttpHandler(
 export function createPgPoolGroupRuntimeHttpHandler(
   pool: PgPoolLike,
   tenantId: string,
-  authOptions: RuntimeAuthOptions = {}
+  authOptions: RuntimeAuthOptions = {},
+  onTrace?: RuntimeTraceSink
 ): RuntimeHttpHandler {
-  return createPostgresGroupRuntimeHttpHandler(createPgPoolExecutor(pool), tenantId, authOptions);
+  return createPostgresGroupRuntimeHttpHandler(createPgPoolExecutor(pool), tenantId, authOptions, onTrace);
 }

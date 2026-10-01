@@ -24,6 +24,7 @@ import OnboardingModal from '@/components/common/OnboardingModal.vue';
 import { shouldShowOnboarding } from '@/utils/onboarding';
 import { t } from '@/i18n';
 import { useViewport } from '@/core/viewport';
+import { logger } from '@/utils/logger';
 
 const settings = useSettingsStore();
 const chatStore = useChatStore();
@@ -150,6 +151,25 @@ onBeforeUnmount(() => {
   window.removeEventListener('drop', (e) => void onDrop(e));
 });
 
+/**
+ * 当前角色实际应生效的 API Profile（computed 缓存）
+ * - 角色绑定了 profileId → 取绑定的 ApiProfile（per-role 模型绑定）
+ * - 未绑定 → 跟随全局激活 Profile
+ * - 未解锁（且设置过主密码）→ null（避免注入加密的 apiKey）
+ *
+ * 说明：替代原 `resolveCharacterProfile()` 普通函数（原实现被 3 处调用，
+ * 每次切换角色都重新 find 查找、且不参与响应式依赖追踪）。
+ */
+const activeProfile = computed(() => {
+  if (!(settings.isUnlocked || !settings.hasMasterPassword)) return null;
+  const c = characterStore.currentCharacter;
+  const pid = c?.profileId;
+  if (pid) {
+    return settings.apiProfiles.find((p) => p.id === pid) ?? null;
+  }
+  return settings.activeProfile;
+});
+
 onMounted(async () => {
   // T-15: 断网监听与全局拖拽监听
   window.addEventListener('online', handleOnline);
@@ -165,12 +185,15 @@ onMounted(async () => {
     const adapter = getStorageAdapter();
     await adapter.init();
     chatStore.setStorageAdapter(adapter);
-    await chatStore.loadLocalMemoryStore().catch((err) => {
-      console.error('从存储加载本地长期记忆失败：', err);
-    });
-    await chatStore.loadRuntimePendingGroupTurns().catch((err) => {
-      console.error('从存储加载群聊 Runtime 待提交回合失败：', err);
-    });
+    // 两个数据域互不依赖（本地长期记忆 / 群聊待提交回合），并行加载（原为串行 await）
+    await Promise.all([
+      chatStore.loadLocalMemoryStore().catch((err) => {
+        logger.error('Storage', '从存储加载本地长期记忆失败', err);
+      }),
+      chatStore.loadRuntimePendingGroupTurns().catch((err) => {
+        logger.error('Storage', '从存储加载群聊 Runtime 待提交回合失败', err);
+      }),
+    ]);
     characterStore.setStorageAdapter(adapter);
     settings.setStorageAdapter(adapter);
     // W3 新增：世界书与群聊 store 注入适配器
@@ -186,13 +209,13 @@ onMounted(async () => {
 
     // 控制台输出当前环境（便于诊断）
      
-    console.info(`[Storage] 当前环境: ${getStorageEnv()}`);
+    logger.info('Storage', `当前环境: ${getStorageEnv()}`);
 
     // P1-10：Web / PWA 端申请 IndexedDB 持久化授权，降低浏览器在存储压力下驱逐数据的风险。
     // 仅 Web 需要（Tauri 走本地文件系统，无此概念）；非阻塞，失败不阻断启动。
     if (getStorageEnv() === 'web') {
       void initStoragePersistence().then((state) => {
-        console.info(`[Storage] 持久化授权: ${state}`);
+        logger.info('Storage', `持久化授权: ${state}`);
       });
     }
 
@@ -201,14 +224,14 @@ onMounted(async () => {
       const missing = TauriFSAdapter.getUnimplementedFeatureNames();
       if (missing.length > 0) {
          
-        console.warn(`[Storage] 桌面版暂不支持：${missing.join('、')}`);
+        logger.warn('Storage', `桌面版暂不支持：${missing.join('、')}`);
         platformNotice.value = t('app.desktopUnsupported', { features: missing.join('、') });
       }
     }
 
     // 先加载设置（设置中包含主题与字号），再加载角色
     await settings.loadFromStorage().catch((err) => {
-      console.error('从存储加载设置失败：', err);
+      logger.error('Storage', '从存储加载设置失败', err);
     });
     // 应用初始主题与字号（loadFromStorage 内部已应用，这里冗余以确保生效）
     settings.setTheme(settings.theme);
@@ -218,7 +241,7 @@ onMounted(async () => {
     // AC20 安全：主密码仅存运行时内存，刷新后需重新解锁
     // hasMasterPassword=true → 显示解锁 Modal
     const autoUnlocked = await settings.restoreSession().catch((err) => {
-      console.error('恢复主密码会话失败：', err);
+      logger.error('Storage', '恢复主密码会话失败', err);
       return false;
     });
     if (!autoUnlocked && settings.hasMasterPassword) {
@@ -227,81 +250,65 @@ onMounted(async () => {
       mpModalVisible.value = true;
     }
 
-    // 从存储加载角色卡（chat store 按角色懒加载历史）
-    await characterStore.loadFromStorage().catch((err) => {
-      console.error('从存储加载角色失败：', err);
-    });
-
-    // W3 新增：加载世界书与群聊
-    await lorebookStore.loadFromStorage().catch((err) => {
-      console.error('从存储加载世界书失败：', err);
-    });
-    await groupChatStore.loadFromStorage().catch((err) => {
-      console.error('从存储加载群聊失败：', err);
-    });
-
-    // 迭代26 新增：加载数据银行文档 (F09)
-    await dataBankStore.loadFromStorage().catch((err) => {
-      console.error('从存储加载数据银行文档失败：', err);
-    });
-
-    // 迭代31 新增：加载故事引擎数据 (F16)
-    await storyStore.loadFromStorage().catch((err) => {
-      console.error('从存储加载故事失败：', err);
-    });
+    // 从存储加载角色卡/世界书/群聊/数据银行/故事：
+    // 各 store 的 loadFromStorage 之间无跨 store 依赖（函数体内无 useXxxStore 引用，已核实），
+    // 由串行 await 改为并行，把 5 段等待压缩为 1 段（取最慢项）。
+    await Promise.all([
+      characterStore.loadFromStorage().catch((err) => {
+        logger.error('Storage', '从存储加载角色失败', err);
+      }),
+      // W3 新增：加载世界书与群聊
+      lorebookStore.loadFromStorage().catch((err) => {
+        logger.error('Storage', '从存储加载世界书失败', err);
+      }),
+      groupChatStore.loadFromStorage().catch((err) => {
+        logger.error('Storage', '从存储加载群聊失败', err);
+      }),
+      // 迭代26 新增：加载数据银行文档 (F09)
+      dataBankStore.loadFromStorage().catch((err) => {
+        logger.error('Storage', '从存储加载数据银行文档失败', err);
+      }),
+      // 迭代31 新增：加载故事引擎数据 (F16)
+      storyStore.loadFromStorage().catch((err) => {
+        logger.error('Storage', '从存储加载故事失败', err);
+      }),
+    ]);
   } catch (err) {
-    console.error('存储适配器初始化失败：', err);
+    logger.error('Storage', '存储适配器初始化失败', err);
   }
 
   // 注入默认 API Profile（来自 settings store，空时跳过）
   // per-role 模型绑定：优先应用当前角色绑定的 profile，否则跟随全局激活 Profile
-  // AC20 安全：仅在已解锁（或未设置主密码）时注入，避免注入加密的 apiKey
-  if (settings.isUnlocked || !settings.hasMasterPassword) {
-    const profile = resolveCharacterProfile();
-    if (profile) {
-      chatStore.setApiProfile(profile);
-    }
+  // AC20 安全：activeProfile 内部已含解锁判断，未解锁时返回 null
+  const initialProfile = activeProfile.value;
+  if (initialProfile) {
+    chatStore.setApiProfile(initialProfile);
   }
 
   // P2-7 新手引导: 首次启动(未标记完成)且未在解锁流程时, 展示核心功能指引
   if (shouldShowOnboarding() && !mpModalVisible.value) {
     onboardingOpen.value = true;
   }
+
+  // 性能可观测性：存储初始化完成标记，供 scripts/measure-startup.mjs 量化启动时延（无 UI 副作用）
+  document.documentElement.dataset.appReady = '1';
 });
 
 // AC20 主密码弹窗：解锁成功后注入 API Profile（同样遵循 per-role 绑定）
 function handleMasterPasswordSuccess() {
-  const profile = resolveCharacterProfile();
+  const profile = activeProfile.value;
   if (profile) {
     chatStore.setApiProfile(profile);
   }
 }
 
-/**
- * 解析当前角色实际应生效的 API Profile：
- * - 角色绑定了 profileId → 取其绑定的 ApiProfile（per-role 模型绑定）
- * - 未绑定 → 跟随全局激活 Profile
- */
-function resolveCharacterProfile() {
-  const c = characterStore.currentCharacter;
-  const pid = c?.profileId;
-  if (pid) {
-    return settings.apiProfiles.find((p) => p.id === pid) ?? null;
+// 统一响应式注入：角色切换 / 解锁 / Profile 编辑 任一变化都会重算 activeProfile 并重新应用，
+// 保证「显示=发送」一致（替代原先只监听 currentCharacterId 的 watch）
+watch(activeProfile, (profile) => {
+  if (profile) {
+    chatStore.setApiProfile(profile);
   }
-  return settings.activeProfile;
-}
-
-// 切换角色时同步应用其绑定 Profile（或回退全局），保证显示=发送一致
-watch(
-  () => characterStore.currentCharacterId,
-  () => {
-    if (!(settings.isUnlocked || !settings.hasMasterPassword)) return;
-    const profile = resolveCharacterProfile();
-    if (profile) {
-      chatStore.setApiProfile(profile);
-    }
-  }
-);
+});
 </script>
 
 <template>

@@ -12,6 +12,9 @@ export default [
     ignores: [
       'node_modules/**',
       'dist/**',
+      // 临时/历史构建目录统一忽略（2026-09-28 性能优化引入 dist-preopt-* 时踩坑：
+      // 逐条列举的 dist-* 规则无法覆盖新命名的构建目录，会污染 lint 报数千条错误）
+      'dist-*/**',
       'coverage/**',
       // 2026-09-18 目录整理：历史 dist-*/coverage-ci 等一次性快照已统一归入 artifacts/
       // （原 dist-i18n-check / dist-p13-check / dist-qa / dist-measure / dist-opt* /

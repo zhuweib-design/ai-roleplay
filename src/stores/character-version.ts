@@ -41,6 +41,9 @@ import type { CharacterCard } from '@/core/character-card';
 import { useCharacterStore } from './character';
 import type { StorageAdapter } from '@storage/storage-adapter';
 import { migrateLegacyLocalStorage } from '@storage/legacy-migration';
+import { migrateSnapshot, wrapSnapshot } from '@storage/snapshot-migration';
+import { CHARACTER_VERSIONS_MIGRATION_PLAN } from '@storage/snapshot-plans';
+import { logger } from '@/utils/logger';
 
 // ── 常量 ──
 
@@ -144,9 +147,13 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   async function persist(): Promise<void> {
     if (!storageAdapter) return;
     try {
-      await storageAdapter.saveSnapshot(SNAPSHOT_KEY, engine.toJSON());
+      // MIG-01：写入带版本信封，配合前向迁移链支持后续结构演进。
+      await storageAdapter.saveSnapshot(
+        SNAPSHOT_KEY,
+        wrapSnapshot(engine.toJSON(), CHARACTER_VERSIONS_MIGRATION_PLAN.currentVersion),
+      );
     } catch (err) {
-      console.error('[character-version] 持久化失败：', err);
+      logger.error('character-version', '持久化失败', err);
     }
   }
 
@@ -205,14 +212,19 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     }
     await migrateLegacyLocalStorage(storageAdapter, SNAPSHOT_KEY);
     try {
-      const data = await storageAdapter.loadSnapshot<SerializedRepository[]>(
-        SNAPSHOT_KEY
-      );
-      if (data && data.length > 0) {
+      const raw = await storageAdapter.loadSnapshot<unknown>(SNAPSHOT_KEY);
+      // MIG-01：旧裸数组经迁移链补 activeLocks；链路断裂抛错而非静默丢弃。
+      const { data, report } = raw === null
+        ? { data: null, report: null }
+        : migrateSnapshot<SerializedRepository[]>(raw, CHARACTER_VERSIONS_MIGRATION_PLAN);
+      if (report?.changed) {
+        logger.info('character-version', `版本仓库已迁移：${report.fromVersion} → ${report.toVersion}`);
+      }
+      if (Array.isArray(data) && data.length > 0) {
         engine.loadFromJSON(data);
       }
     } catch (err) {
-      console.error('[character-version] 加载失败：', err);
+      logger.error('character-version', '加载失败', err);
     }
     engine.setAuthor(author.value);
     loaded.value = true;

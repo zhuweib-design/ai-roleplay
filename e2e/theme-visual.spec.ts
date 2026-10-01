@@ -7,7 +7,7 @@ import { test } from '@playwright/test';
  * 背景/卡片/边框层级、文本对比、按钮/输入框/焦点环、图标清晰度。
  * 截图输出至 test-results/theme-shots/{theme}-{page}.png
  */
-const themes = ['dark', 'midnight', 'oled', 'theatre'];
+const themes = ['dark', 'light', 'midnight', 'oled', 'theatre'];
 
 for (const theme of themes) {
   test(`视觉快照：${theme} 主题设置页与对话页`, async ({ page }) => {

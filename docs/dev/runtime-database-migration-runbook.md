@@ -220,3 +220,66 @@ ALTER TABLE group_chats DROP COLUMN IF EXISTS version;
 2. 迁移为幂等全量脚本，适合「首次部署」与「从旧版本补齐」；未来的结构性变更需要新增独立迁移文件，不能改写历史迁移。
 3. `group_turn_outbox` 尚无后台自动重试调度，`status = 'pending' / 'failed'` 的记录需由客户端或运维显式触发重放。
 4. 本 Runbook 未覆盖分库分表、逻辑复制或跨区域多主场景。
+
+---
+
+## 9. 客户端快照迁移套件（MIG-01）
+
+上述 1–8 节针对**服务端 PostgreSQL Schema**。前端本地快照（IndexedDB / Tauri 文件）
+是另一条独立的迁移线，由 `src/storage/snapshot-migration.ts` 与
+`src/storage/snapshot-plans.ts` 负责。
+
+### 9.1 为什么需要它
+
+历史上各 store 的 `saveSnapshot` 直接写入**裸数据**（数组或对象），没有版本标记。
+加载端只能靠"猜"结构（例如用 `'memory' in saved` 判断新旧形态）。一旦结构再变化，
+要么写更多猜测分支，要么悄悄丢掉读不懂的数据。MIG-01 引入**版本信封 + 前向迁移链**：
+
+```jsonc
+// 统一信封（写入端产出）
+{ "__snapshot": 1, "schemaVersion": 1, "data": /* 原载荷 */ }
+```
+
+### 9.2 已登记的三条真实升级路径
+
+| 快照键 | 旧形态 | 迁移动作 |
+| --- | --- | --- |
+| `runtime:local-memory-store:v1:*` | 0.4.0 前直接保存 MemoryStore 裸 JSON | 包进 `{version, memory, emotions}` 三段式 |
+| `runtime:pending-group-turns:v1` | 0.3.0 记录缺 `occurredAt` / `status` | 补 `occurredAt`（回落 `createdAt`）、`status='failed'` 待重试 |
+| `ai-roleplay:character-versions` | 早期仓库缺 `activeLocks` | 补空数组 |
+
+### 9.3 核心不变式：无静默删除
+
+`migrateSnapshot` 采取**宁可报错也不丢数据**的策略：
+
+- 链路缺一步 → 抛 `MISSING_STEP`，不返回残缺数据；
+- 数据版本高于当前代码 → 抛 `VERSION_AHEAD`，拒绝降级读取（防用户回退旧客户端后误删）；
+- 单条损坏记录（`null` / 非对象）**原样保留**，不静默过滤。
+
+### 9.4 验证与门禁
+
+```bash
+# 迁移套件单测：信封、前向迁移、无静默删除、计划自检
+npx vitest run tests/storage/snapshot-migration.test.ts
+
+# 恢复验证：旧快照经迁移后可被真实 store 加载消费
+npx vitest run tests/storage/snapshot-restore.test.ts
+
+# 兼容性报告（发布前归档）；--check 用于门禁，不自洽则非零退出
+npm run snapshot:migration:report
+npm run snapshot:migration:check
+```
+
+### 9.5 新增结构变更时的操作步骤
+
+1. 在 `src/storage/snapshot-plans.ts` 对应计划里**追加**一步 `{from, to, description, migrate}`，
+   并递增 `currentVersion`；**不要改写历史步骤**。
+2. 写出该形态的 fixture 测试（放入 `snapshot-migration.test.ts`）。
+3. 运行 `npm run snapshot:migration:check` 与两个测试文件，确认链路自洽且恢复可达。
+4. 若涉及备份格式（`src/core/backup.ts` 的 `BACKUP_VERSION`），同步在发布说明中记录。
+
+### 9.6 已知边界（客户端侧）
+
+1. 迁移只在**内存中完成**，是否立即写回由调用方决定（当前读路径不落盘，下次写入时自然落新格式）。
+2. 快速滚动发布：本套件提供前向迁移，**不提供降级脚本**；降级依赖备份恢复（见第 6 节）。
+3. 迁移链为**单步连续**设计（每个 `from` 一步），不支持"跳版本跨越"合并步骤。

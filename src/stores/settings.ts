@@ -13,6 +13,7 @@ import type {
 } from '@/types';
 import type { StatusHudConfig } from '@core/status-schema';
 import { DEFAULT_STATUS_HUD_CONFIG, normalizeStatusHudConfig } from '@core/status-schema';
+import { normalizePresetId, type PresetId } from '@core/creation-preset';
 import {
   DEFAULT_THINKING_CONFIG,
   DEFAULT_MAX_CONTEXT_TOKENS,
@@ -38,7 +39,7 @@ import {
   verifyMasterPassword,
   reencryptApiKey,
 } from '@core/api-key-crypto';
-import { setRemoteApiKeyState } from '@core/vector-model-manager';
+import { setRemoteApiKeyState } from '@core/remote-api-key-state';
 import { exportQuickRepliesToStJson, importQuickRepliesFromSt } from '@core/st-compat';
 import { setLocale as setI18nLocale, t as i18nT, detectLocale, type Locale } from '@/i18n';
 
@@ -113,6 +114,15 @@ export const useSettingsStore = defineStore('settings', () => {
    * 本轮**不提供 UI**，仅保留数据位与三档合并逻辑（角色级 ?? Profile 级 ?? 全局 ?? 不传）
    */
   const samplingDefaults = ref<SamplingOverrides | null>(null);
+
+  /**
+   * MODEL-03 创作模式（Preset）
+   *
+   * 面向创作意图的预设：把采样 + 上下文预算 + 输出约束打包为「自由/均衡/严谨」，
+   * 同时保留高级自定义（`custom` = 不套用任何建议值）。
+   * 仅作**建议层**：角色级 / Profile 级显式设置的参数仍优先。
+   */
+  const creationPreset = ref<PresetId>('balanced');
 
   /**
    * P1 角色状态栏全局偏好
@@ -828,7 +838,9 @@ export const useSettingsStore = defineStore('settings', () => {
         (saved.theme !== undefined ||
           saved.fontSize !== undefined ||
           (Array.isArray(saved.apiProfiles) && saved.apiProfiles.length > 0) ||
-          saved.activeApiProfileId !== undefined);
+          saved.activeApiProfileId !== undefined ||
+          // MODEL-03：仅设置了创作模式也应视为已有数据（否则该字段永远读不回来）
+          saved.creationPreset !== undefined);
       // P2-3：首访按浏览器语言兜底。此处先探测，若下方存在持久化语言则会被覆盖，
       // 因此「用户显式选择」始终优先，浏览器语言只作未选择时的默认值。
       const detected = detectLocale();
@@ -909,6 +921,10 @@ export const useSettingsStore = defineStore('settings', () => {
         // P0-3 加载全局采样默认值（null = 未设置）
         if (saved.samplingDefaults && typeof saved.samplingDefaults === 'object') {
           samplingDefaults.value = normalizeSamplingDefaults(saved.samplingDefaults);
+        }
+        // MODEL-03 加载创作模式（旧数据缺字段时保留默认 balanced）
+        if (saved.creationPreset !== undefined) {
+          creationPreset.value = normalizePresetId(saved.creationPreset);
         }
         // P1 加载状态栏偏好（向后兼容：无字段时保留默认值；脏字段回落默认）
         if (saved.statusHudConfig && typeof saved.statusHudConfig === 'object') {
@@ -1022,6 +1038,8 @@ export const useSettingsStore = defineStore('settings', () => {
         thinkingConfig: { ...toRaw(thinkingConfig.value) },
         // P0-3 全局采样默认值（null = 未设置）
         samplingDefaults: samplingDefaults.value ? { ...toRaw(samplingDefaults.value) } : null,
+        // MODEL-03 创作模式
+        creationPreset: creationPreset.value,
         // P1 状态栏偏好
         statusHudConfig: { ...toRaw(statusHudConfig.value) },
         // 上下文长度配置
@@ -1065,6 +1083,14 @@ export const useSettingsStore = defineStore('settings', () => {
    */
   function setSamplingDefaults(value: SamplingOverrides | null): void {
     samplingDefaults.value = value ? normalizeSamplingDefaults(value) : null;
+  }
+
+  /**
+   * MODEL-03：切换创作模式（Preset）
+   * 非法值由 normalizePresetId 归一，避免脏数据进入持久化。
+   */
+  function setCreationPreset(value: unknown): void {
+    creationPreset.value = normalizePresetId(value);
   }
 
   /**
@@ -1135,6 +1161,8 @@ export const useSettingsStore = defineStore('settings', () => {
     // P0-1 思维链偏好 / P0-3 全局采样默认值 / P1 状态栏偏好
     thinkingConfig,
     samplingDefaults,
+    // MODEL-03 创作模式
+    creationPreset,
     statusHudConfig,
     // 上下文长度配置
     maxContextTokens,
@@ -1188,6 +1216,7 @@ export const useSettingsStore = defineStore('settings', () => {
     // P0-1 思维链偏好 / P0-3 全局采样默认值
     setThinkingConfig,
     setSamplingDefaults,
+    setCreationPreset,
     setStatusHudConfig,
     // 上下文长度配置
     setMaxContextTokens,

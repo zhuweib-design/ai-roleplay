@@ -3119,6 +3119,25 @@ const en: Record<MessageKey, string> = {
   'proto.relationTargetRequired': 'Relationship {index}: target character name is required',
   'proto.relationDescRequired': 'Relationship {index}: relation description is required',
   'proto.relationDescTooLong': 'Relationship {index}: description length cannot exceed {max} characters',
+  // ── MODEL-03 creation mode / preset ──
+  'preset.title': 'Creation mode',
+  'preset.hint': 'Adjust sampling and output constraints by creative intent; advanced params can still be overridden below.',
+  'preset.label': 'Creation mode',
+  'preset.version': 'Preset v{version}',
+  'preset.applied': 'Switched to "{name}"',
+  'preset.customHint': 'Custom mode applies no suggestions and uses your parameters as-is.',
+  'preset.overridden': '{field} is overridden by your settings; preset value not applied',
+  'preset.free.label': 'Free',
+  'preset.free.description': 'More divergent: for brainstorming and improv',
+  'preset.balanced.label': 'Balanced',
+  'preset.balanced.description': 'Close to provider defaults: for everyday use',
+  'preset.strict.label': 'Strict',
+  'preset.strict.description': 'More convergent: narrower context and structured output for stable personas',
+  'preset.custom.label': 'Custom',
+  'preset.custom.description': 'No preset; full manual control',
+  'preset.inspectTitle': 'Effective parameters',
+  'preset.sourcePreset': 'From preset',
+  'preset.sourceInherit': 'Inherited from your settings',
 };
 
 export default en;

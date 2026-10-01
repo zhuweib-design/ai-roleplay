@@ -161,8 +161,10 @@ function effectiveCode(line, state) {
     }
   }
 
-  // ⑤ console.* 调试日志整行跳过
+  // ⑤ 调试日志整行跳过（console.* / logger.*）
+  //    日志文案不渲染到 UI，与 console 同等豁免；统一日志服务见 src/utils/logger.ts
   if (/console\.(log|warn|error|info|debug)\(/.test(text)) return '';
+  if (/\blogger\.(debug|info|warn|error)\(/.test(text)) return '';
 
   return text;
 }

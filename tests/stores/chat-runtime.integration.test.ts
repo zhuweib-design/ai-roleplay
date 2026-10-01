@@ -428,10 +428,14 @@ describe('Chat Store — Runtime 实际链路', () => {
     const original = { ...first.input, turnId: 'persistent-retry', userMessage: '保留问题', assistantMessage: '保留回答' };
     expect(await first.store.commitRuntimeGroupTurn(original)).toEqual({ enabled: true, committed: false });
     expect(first.store.pendingGroupRuntimeTurns).toHaveLength(1);
-    expect(adapter.saveSnapshot).toHaveBeenCalledWith('runtime:pending-group-turns:v1', expect.any(Array));
-    const raw = snapshots.get('runtime:pending-group-turns:v1');
+    // MIG-01：写入端产出带版本信封，载荷位于 data 字段。
+    expect(adapter.saveSnapshot).toHaveBeenCalledWith(
+      'runtime:pending-group-turns:v1',
+      expect.objectContaining({ schemaVersion: 1, data: expect.any(Array) }),
+    );
+    const raw = snapshots.get('runtime:pending-group-turns:v1') as { data: Array<Record<string, unknown>> };
     expect(raw).toBeDefined();
-    const saved = (raw as Array<Record<string, unknown>>).map((item) => ({ ...item }));
+    const saved = raw.data.map((item) => ({ ...item }));
     expect(saved[0]).toMatchObject({ groupId: original.group.id, turnId: original.turnId, userMessage: original.userMessage, assistantMessage: original.assistantMessage, attempts: 1, status: 'failed', lastErrorCode: 'TEMPORARY_FAILURE', lastErrorStatus: 503 });
     expect(saved[0]?.occurredAt).toBe(first.enqueueTurn.mock.calls[0]![0].occurredAt);
 

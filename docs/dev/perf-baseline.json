@@ -1,0 +1,144 @@
+{
+  "build": {
+    "totalSize": 58617326,
+    "totalFiles": 236,
+    "byType": {
+      "js": {
+        "count": 45,
+        "size": 8788922,
+        "largest": {
+          "path": "\\dist\\assets\\web-llm-DDxLgXZa.js",
+          "name": "web-llm-DDxLgXZa.js",
+          "size": 6043242,
+          "ext": ".js"
+        }
+      },
+      "css": {
+        "count": 20,
+        "size": 525531,
+        "largest": {
+          "path": "\\dist\\fonts\\fonts.css",
+          "name": "fonts.css",
+          "size": 219721,
+          "ext": ".css"
+        }
+      },
+      "html": {
+        "count": 3,
+        "size": 83128,
+        "largest": {
+          "path": "\\dist\\sillytavern-vs-airoleplay.html",
+          "name": "sillytavern-vs-airoleplay.html",
+          "size": 42753,
+          "ext": ".html"
+        }
+      },
+      "wasm": {
+        "count": 1,
+        "size": 26827543,
+        "largest": {
+          "path": "\\dist\\assets\\ort-wasm-simd-threaded.jsep-DC5y_g6C.wasm",
+          "name": "ort-wasm-simd-threaded.jsep-DC5y_g6C.wasm",
+          "size": 26827543,
+          "ext": ".wasm"
+        }
+      },
+      "other": {
+        "count": 167,
+        "size": 22392202,
+        "largest": {
+          "path": "\\dist\\assets\\web-llm-DDxLgXZa.js.map",
+          "name": "web-llm-DDxLgXZa.js.map",
+          "size": 7028251,
+          "ext": ".map"
+        }
+      }
+    }
+  },
+  "source": {
+    "totalFiles": 187,
+    "totalLines": 91723,
+    "avgLinesPerFile": 490,
+    "largeFiles": [
+      {
+        "path": "\\src\\views\\SettingsView.vue",
+        "name": "SettingsView.vue",
+        "size": 121940,
+        "ext": ".vue",
+        "lines": 4131
+      },
+      {
+        "path": "\\src\\views\\StoryEngineView.vue",
+        "name": "StoryEngineView.vue",
+        "size": 94750,
+        "ext": ".vue",
+        "lines": 3356
+      },
+      {
+        "path": "\\src\\i18n\\locales\\en.ts",
+        "name": "en.ts",
+        "size": 171879,
+        "ext": ".ts",
+        "lines": 3125
+      },
+      {
+        "path": "\\src\\i18n\\locales\\zh.ts",
+        "name": "zh.ts",
+        "size": 165943,
+        "ext": ".ts",
+        "lines": 3123
+      },
+      {
+        "path": "\\src\\views\\WorldBookView.vue",
+        "name": "WorldBookView.vue",
+        "size": 83374,
+        "ext": ".vue",
+        "lines": 2823
+      },
+      {
+        "path": "\\src\\stores\\chat.ts",
+        "name": "chat.ts",
+        "size": 103512,
+        "ext": ".ts",
+        "lines": 2517
+      },
+      {
+        "path": "\\src\\views\\GroupChatView.vue",
+        "name": "GroupChatView.vue",
+        "size": 73251,
+        "ext": ".vue",
+        "lines": 2493
+      },
+      {
+        "path": "\\src\\components\\settings\\SettingsModelPanel.vue",
+        "name": "SettingsModelPanel.vue",
+        "size": 65653,
+        "ext": ".vue",
+        "lines": 2269
+      },
+      {
+        "path": "\\src\\views\\CharacterEditorView.vue",
+        "name": "CharacterEditorView.vue",
+        "size": 61512,
+        "ext": ".vue",
+        "lines": 2224
+      }
+    ]
+  },
+  "stores": {
+    "totalStores": 16,
+    "avgLines": 749,
+    "largestStore": {
+      "path": "\\src\\stores\\chat.ts",
+      "name": "chat.ts",
+      "size": 103512,
+      "ext": ".ts",
+      "lines": 2517,
+      "asyncFunctions": 39,
+      "reactiveAPIs": 1
+    },
+    "totalAsyncFunctions": 110,
+    "totalReactiveAPIs": 37
+  },
+  "timestamp": 1790578427692
+}

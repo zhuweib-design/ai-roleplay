@@ -8,6 +8,7 @@ import type {
   ReasoningEffort,
 } from '@api/types';
 import { ApiError } from '@api/types';
+import { withStreamRetry, DEFAULT_RETRY_POLICY, type RetryPolicy } from '@api/llm-retry';
 import { buildPrompt, type PromptContexts, type PromptSettings } from '@core/prompt-builder';
 import type { CharacterCard, ChatMessage } from '@core/character-card';
 import { ThinkingSplitter, parseThinkingComplete } from '@core/thinking-parser';
@@ -107,6 +108,12 @@ export interface ChatManagerConfig {
   existingSummary?: ConversationSummary | null;
   /** 摘要生成完成回调（chat store 负责写回会话并持久化） */
   onSummaryGenerated?: (summary: ConversationSummary) => void;
+  /**
+   * MODEL-02：LLM 调用层自动重试策略。
+   * 只对**连接阶段**（尚未产出任何事件）的瞬时故障（限流/5xx/网络）重试；
+   * 已产出内容后失败一律交上层处理，避免正文重复。不传 = 使用默认策略。
+   */
+  retryPolicy?: RetryPolicy;
 }
 
 export interface SendMessageParams {
@@ -398,7 +405,8 @@ export class ChatManager {
 
       while (true) {
         request.messages = messages;
-        const stream = this.config.apiClient.chatStream(request);
+        // MODEL-02：连接阶段瞬时故障自动重试（已产出内容则不重试，见 withStreamRetry）
+        const stream = withStreamRetry(() => this.config.apiClient.chatStream(request), merged.retryPolicy ?? DEFAULT_RETRY_POLICY);
         let roundContent = '';
         let hasDone = false;
         let toolCalls: ToolCall[] | undefined;

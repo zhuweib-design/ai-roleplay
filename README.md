@@ -143,7 +143,14 @@ VITE_RUNTIME_BASE_URL=https://runtime.example.com npm run build
 
 ```ts
 // 服务端组合入口（租户 ID 必须来自认证中间件）
-const handler = createPgPoolRuntimeHttpHandler(pool, tenantId);
+const handler = createPgPoolRuntimeHttpHandler(pool, tenantId, {
+  // OBS-01：关联 ID 与耗时观测。每个请求都会带上 x-runtime-request-id，
+  // 该 ID 由客户端注入（缺失时服务端兜底生成）并在响应头回显。
+  // 失败时客户端 RuntimeApiError.traceId 即同一 ID，可用于对齐两端日志。
+  onTrace: ({ traceId, method, path, status, durationMs }) => {
+    logger.info('runtime-http', `${method} ${path} ${status} ${durationMs}ms trace=${traceId}`);
+  },
+});
 ```
 
 服务端对外路由：

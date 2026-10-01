@@ -252,8 +252,23 @@ export default defineConfig({
     // 不预加载其 chunk（ort.bundle.min），改为首次使用本地嵌入时按需加载，
     // 避免 ~107KB(gzip) 占首屏。web-llm/gpt-tokenizer 已拆为独立懒加载 chunk（见 rollupOptions）。
     modulePreload: {
+      // 首屏强预加载裁剪：本地向量/模型相关 chunk 均为按需功能（仅用户启用本地嵌入时才用），
+      // 不应进入首屏预加载。
+      //
+      // 已知未解决问题（2026-09-28 实测，需架构级方案）：
+      // rolldown(vite 8) 会把被多处引用的「动态导入」提升为静态 import，导致
+      // ort.bundle.min / onnx-embedding-provider 仍被 entry 等首屏 chunk 静态引用，
+      // ort(~104KB gzip) 依然进首屏。本排除规则只能去掉 <link rel=modulepreload>
+      // 标签（实测 index.html 已无这些 preload），无法阻断静态依赖链。
+      // 彻底解法需将 onnxruntime 访问隔离到独立入口 / Web Worker，另行排期。
       resolveDependencies: (_srcFileName, deps) =>
-        deps.filter((dep) => !/ort\.bundle\.min.*\.js$/.test(dep)),
+        deps.filter(
+          (dep) =>
+            !/ort\.bundle\.min.*\.js$/.test(dep) &&
+            !/onnx-embedding-provider.*\.js$/.test(dep) &&
+            !/vector-model-(storage|install).*\.js$/.test(dep) &&
+            !/rag-benchmark.*\.js$/.test(dep)
+        ),
     },
     rollupOptions: {
       output: {

@@ -48,6 +48,7 @@ import { cardToUiChar } from '@/services/type-adapters';
 import { useCharacterStore } from './character';
 import type { StorageAdapter } from '@storage/storage-adapter';
 import { migrateLegacyLocalStorage } from '@storage/legacy-migration';
+import { logger } from '@/utils/logger';
 
 // ── 常量 ──
 
@@ -182,7 +183,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     try {
       await storageAdapter.saveSnapshot(SNAPSHOT_KEY, engine.toJSON());
     } catch (err) {
-      console.error('[community-market] 持久化失败：', err);
+      logger.error('community-market', '持久化失败', err);
     }
   }
 
@@ -194,7 +195,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
       await storageAdapter.saveSnapshot(FAVORITES_KEY, favorites.value);
       await storageAdapter.saveSnapshot(ORIGINS_KEY, installedOrigins.value);
     } catch (err) {
-      console.error('[community-market] 持久化失败：', err);
+      logger.error('community-market', '持久化失败', err);
     }
   }
 
@@ -240,7 +241,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
         installedOrigins.value = origins;
       }
     } catch (err) {
-      console.error('[community-market] 加载失败：', err);
+      logger.error('community-market', '加载失败', err);
     }
     loaded.value = true;
     tick.value++;

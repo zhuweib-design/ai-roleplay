@@ -3,6 +3,13 @@ import type { CreateRuntimeGroupInput, CommitRuntimeGroupTurnInput, SetRuntimeGr
 import { GroupRuntimeError } from './group-runtime-contract';
 import { RuntimeApiError, type RuntimeFetch, type RuntimeHttpApiOptions, type RuntimeHttpHandler } from './runtime-http';
 import {
+  RUNTIME_TRACE_HEADER,
+  createTraceId,
+  normalizeTraceId,
+  resolveTraceId,
+  type RuntimeTraceSink,
+} from './runtime-trace';
+import {
   authorizeRuntimeRequest,
   resolveRuntimePrincipal,
   runtimeAuthorizationResponse,
@@ -29,12 +36,14 @@ export class HttpGroupRuntimeApi implements GroupRuntimeApi {
   private readonly baseUrl: string;
   private readonly fetcher: RuntimeFetch;
   private readonly headers?: HeadersInit;
+  private readonly generateTraceId: () => string;
 
   constructor(options: RuntimeHttpApiOptions) {
     if (!options.baseUrl.trim()) throw new Error('Runtime HTTP baseUrl 不能为空');
     this.baseUrl = options.baseUrl.replace(/\/+$/, '');
     this.fetcher = options.fetch ?? ((input, init) => fetch(input, init));
     this.headers = options.headers;
+    this.generateTraceId = options.traceId ?? createTraceId;
   }
 
   async createGroup(input: CreateRuntimeGroupInput): Promise<void> {
@@ -95,16 +104,22 @@ export class HttpGroupRuntimeApi implements GroupRuntimeApi {
     const headers = new Headers(this.headers);
     headers.set('Accept', 'application/json');
     if (body !== undefined) headers.set('Content-Type', 'application/json');
+    headers.set(RUNTIME_TRACE_HEADER, this.generateTraceId());
     const response = await this.fetcher(this.baseUrl + path, {
       method, headers, body: body === undefined ? undefined : JSON.stringify(body),
     });
     const payload: unknown = response.headers.get('content-type')?.includes('application/json')
       ? await response.json() : await response.text();
+    const traceId = normalizeTraceId(response.headers.get(RUNTIME_TRACE_HEADER))
+      ?? normalizeTraceId(headers.get(RUNTIME_TRACE_HEADER))
+      ?? undefined;
     if (!response.ok) {
       const details = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
       throw new RuntimeApiError(response.status,
         typeof details.error === 'string' ? details.error : 'GROUP_HTTP_ERROR',
-        typeof details.message === 'string' ? details.message : '群聊 Runtime 请求失败');
+        typeof details.message === 'string' ? details.message : '群聊 Runtime 请求失败',
+        details.issues,
+        traceId);
     }
     return payload as T;
   }
@@ -153,12 +168,39 @@ function optionalVersion(value: unknown): number | undefined {
   return value;
 }
 
+export type GroupRuntimeHandlerOptions = RuntimeTenantBindingOptions & {
+  /** 关联事件接收器；宿主据此落日志或指标。缺省时不产生任何日志副作用。 */
+  onTrace?: RuntimeTraceSink;
+};
+
 /** 复用已绑定租户的 GroupRuntimeApi，并按宿主配置执行认证边界。 */
 export function createGroupRuntimeHttpHandler(
   api: GroupRuntimeApi,
-  options: RuntimeTenantBindingOptions = {}
+  options: GroupRuntimeHandlerOptions = {}
 ): RuntimeHttpHandler {
   return async (request) => {
+    const startedAt = Date.now();
+    const traceId = resolveTraceId(request);
+    const response = await dispatchGroupRequest(api, options, request);
+    // 服务端回显关联 ID，并上报方法/路径/状态/耗时，便于按 ID 排障。
+    response.headers.set(RUNTIME_TRACE_HEADER, traceId);
+    options.onTrace?.({
+      traceId,
+      method: request.method.toUpperCase(),
+      path: new URL(request.url).pathname,
+      status: response.status,
+      durationMs: Date.now() - startedAt,
+    });
+    return response;
+  };
+}
+
+async function dispatchGroupRequest(
+  api: GroupRuntimeApi,
+  options: RuntimeTenantBindingOptions,
+  request: Request
+): Promise<Response> {
+  {
     try {
       const principal = await resolveRuntimePrincipal(request, options);
       if (options.requireAuthentication && !principal) return runtimeAuthenticationResponse();
@@ -266,5 +308,5 @@ export function createGroupRuntimeHttpHandler(
       if (error instanceof URIError) return respond(400, { error: 'INVALID_PATH' });
       return respond(500, { error: 'GROUP_INTERNAL_ERROR', message: '群聊 Runtime 内部错误' });
     }
-  };
+  }
 }

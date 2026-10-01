@@ -75,6 +75,48 @@ describe('useSettingsStore — F5 单元测试', () => {
 
   // ── 初始状态 ──
 
+  describe('MODEL-03 创作模式（Preset）', () => {
+    it('默认模式为 balanced', () => {
+      const store = useSettingsStore();
+      expect(store.creationPreset).toBe('balanced');
+    });
+
+    it('setCreationPreset 归一化非法值', () => {
+      const store = useSettingsStore();
+      store.setCreationPreset('strict');
+      expect(store.creationPreset).toBe('strict');
+      store.setCreationPreset('nonsense');
+      expect(store.creationPreset).toBe('balanced');
+    });
+
+    it('setCreationPreset 后经 persistSettings 落盘（与 setSamplingDefaults 同约定）', async () => {
+      const mock = new MockStorageAdapter();
+      const store = useSettingsStore();
+      store.setStorageAdapter(mock);
+      store.setCreationPreset('strict');
+      await store.persistSettings();
+      expect(mock.saved?.creationPreset).toBe('strict');
+    });
+
+    it('loadFromStorage 恢复已保存的创作模式', async () => {
+      const mock = new MockStorageAdapter();
+      mock.loadData = { creationPreset: 'free' } as Partial<AppSettings>;
+      const store = useSettingsStore();
+      store.setStorageAdapter(mock);
+      await store.loadFromStorage();
+      expect(store.creationPreset).toBe('free');
+    });
+
+    it('旧数据缺 creationPreset 时保留默认值（向后兼容）', async () => {
+      const mock = new MockStorageAdapter();
+      mock.loadData = { theme: 'dark' } as Partial<AppSettings>;
+      const store = useSettingsStore();
+      store.setStorageAdapter(mock);
+      await store.loadFromStorage();
+      expect(store.creationPreset).toBe('balanced');
+    });
+  });
+
   describe('初始状态', () => {
     it('默认主题为 dark', () => {
       const store = useSettingsStore();

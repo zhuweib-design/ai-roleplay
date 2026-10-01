@@ -17,6 +17,7 @@ import {
   MockEmbeddingProvider,
 } from './embedding';
 import { getBestEmbeddingModel } from './rag-benchmark';
+import { getRemoteApiKeyState } from './remote-api-key-state';
 import { isUserVectorModelId } from './vector-model-install';
 
 // ── P1-4：远程向量网关 apiKey 的内存态 ────────────────────────────────────
@@ -36,30 +37,24 @@ import { isUserVectorModelId } from './vector-model-install';
 // - 'unlocked' 已设且已解锁 → 使用解密后的明文
 // - 'locked'   已设但未解锁 → 不下发密钥（远程向量不可用，与 apiProfiles
 //                            未解锁时拿不到 apiKey 的语义一致）
-export type RemoteApiKeyState =
-  | { state: 'plain' }
-  | { state: 'unlocked'; key: string }
-  | { state: 'locked' };
-
-let remoteApiKeyState: RemoteApiKeyState = { state: 'plain' };
-
-/** 由 settings store 在解锁 / 锁定 / 设置或修改主密码时调用 */
-export function setRemoteApiKeyState(next: RemoteApiKeyState): void {
-  remoteApiKeyState = next;
-}
-
-/** 当前内存态（供测试与调试使用） */
-export function getRemoteApiKeyState(): RemoteApiKeyState {
-  return remoteApiKeyState;
-}
+// 实现已抽离至零依赖模块 ./remote-api-key-state（2026-09-28 性能优化）：
+// 原实现让 settings store（首屏必需 chunk）经本模块静态引入 rag-benchmark /
+// vector-model-install → onnxruntime-web（~104KB gzip），把 ort 拖入首屏。
+// 此处 re-export 保持既有调用方与测试兼容。
+export {
+  setRemoteApiKeyState,
+  getRemoteApiKeyState,
+  type RemoteApiKeyState,
+} from './remote-api-key-state';
 
 /** 把内存态解析为实际可用密钥；fallback 为 localStorage 中的存储值 */
 function resolveRemoteApiKey(fallback: string): string {
-  switch (remoteApiKeyState.state) {
+  const s = getRemoteApiKeyState();
+  switch (s.state) {
     case 'plain':
       return fallback;
     case 'unlocked':
-      return remoteApiKeyState.key;
+      return s.key;
     case 'locked':
       return '';
   }

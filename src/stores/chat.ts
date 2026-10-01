@@ -15,6 +15,8 @@ import { ApiError, type ApiErrorKind, type ReasoningEffort } from '../api/types'
 import { resolveReasoningCapability } from '../api/reasoning-capability';
 import type { StorageAdapter } from '../storage/storage-adapter';
 import { getActiveProfileId, getStorageAdapter } from '../storage/storage-factory';
+import { migrateSnapshot, wrapSnapshot } from '../storage/snapshot-migration';
+import { LOCAL_MEMORY_MIGRATION_PLAN, PENDING_GROUP_TURNS_MIGRATION_PLAN } from '../storage/snapshot-plans';
 import type { Chat } from '../storage/types';
 import {
   uiCharToCard,
@@ -63,6 +65,13 @@ import {
 import { RuntimeApiError } from '@/runtime/runtime-http';
 import type { RuntimeGroupTurn } from '@/runtime/group-runtime-contract';
 import { createRuntimeReplayBaseline, replayRuntimeEvents } from '@/runtime/runtime-core';
+import { logger } from '@/utils/logger';
+import {
+  PRESET_SCHEMA_VERSION,
+  normalizePresetId,
+  presetSamplingOverrides,
+  type PresetId,
+} from '@/core/creation-preset';
 
 /** 远程群聊公共回合的本地可靠投递记录。内容一旦入队不可被同键新载荷覆盖。 */
 export interface PendingGroupRuntimeTurn {
@@ -79,6 +88,8 @@ export interface PendingGroupRuntimeTurn {
   lastError?: string;
   lastErrorCode?: string;
   lastErrorStatus?: number;
+  /** OBS-01：上次失败的关联 ID，便于按同一 ID 回查服务端日志。 */
+  lastErrorTrace?: string;
   nextRetryAt?: string;
 }
 
@@ -360,14 +371,20 @@ export const useChatStore = defineStore('chat', () => {
     localMemoryLoadPromise = (async () => {
       if (!storageAdapter) return;
       try {
-        const saved = await storageAdapter.loadSnapshot<unknown>(localMemorySnapshotKey());
-        if (saved && typeof saved === 'object' && 'memory' in saved) {
-          const snapshot = saved as { memory?: unknown; emotions?: unknown };
-          if (snapshot.memory) l0Store.fromJSON(snapshot.memory);
-          if (snapshot.emotions) l0l2Deps.tracker.fromJSON(snapshot.emotions);
-        } else if (saved) {
-          // 0.4.0 之前的实验快照可能直接保存 MemoryStore JSON。
-          l0Store.fromJSON(saved);
+        const raw = await storageAdapter.loadSnapshot<unknown>(localMemorySnapshotKey());
+        if (raw !== null) {
+          // MIG-01：旧裸 MemoryStore JSON 由迁移链升级为三段式，不丢事实。
+          const { data, report } = migrateSnapshot<{ memory?: unknown; emotions?: unknown }>(
+            raw,
+            LOCAL_MEMORY_MIGRATION_PLAN,
+          );
+          if (report.changed) {
+            logger.info('chat', `本地记忆快照已迁移：${report.fromVersion} → ${report.toVersion}`);
+          }
+          if (data && typeof data === 'object') {
+            if (data.memory) l0Store.fromJSON(data.memory);
+            if (data.emotions) l0l2Deps.tracker.fromJSON(data.emotions);
+          }
         }
       } catch (error) {
         reportRuntimeError(error, 'initialize');
@@ -382,11 +399,12 @@ export const useChatStore = defineStore('chat', () => {
   async function persistLocalMemoryStore(): Promise<void> {
     if (!storageAdapter || !localMemoryLoaded) return;
     try {
-      await storageAdapter.saveSnapshot(localMemorySnapshotKey(), {
+      // MIG-01：写入带版本信封，后续结构变更可由迁移链识别并升级。
+      await storageAdapter.saveSnapshot(localMemorySnapshotKey(), wrapSnapshot({
         version: 1,
         memory: l0Store.toJSON(),
         emotions: l0l2Deps.tracker.toJSON(),
-      });
+      }, LOCAL_MEMORY_MIGRATION_PLAN.currentVersion));
     } catch (error) {
       reportRuntimeError(error, 'event');
     }
@@ -427,6 +445,11 @@ export const useChatStore = defineStore('chat', () => {
   let runtimeTenantId: string | null = null;
   const runtimeIntegrations = new Map<string, Promise<ChatRuntimeIntegration | null>>();
   const runtimeStatus = ref<{ phase: 'initialize' | 'context' | 'event'; message: string; at: number } | null>(null);
+  /**
+   * MODEL-03：最近一轮实际生效的创作模式与版本。
+   * 记录 Preset 变更，满足计划验收"Preset 变更可追溯"；UI 可据此展示。
+   */
+  const activePresetInfo = ref<{ presetId: PresetId; presetVersion: number; at: number } | null>(null);
   const pendingGroupRuntimeTurns = ref<PendingGroupRuntimeTurn[]>([]);
   /**
    * 群组定义 CAS 冲突：远端成员/状态已被其他客户端修改。
@@ -448,6 +471,13 @@ export const useChatStore = defineStore('chat', () => {
   function reportRuntimeError(error: unknown, phase: 'initialize' | 'context' | 'event'): void {
     const message = error instanceof Error ? error.message : String(error);
     runtimeStatus.value = { phase, message, at: Date.now() };
+    // OBS-01：失败时打印关联 ID，便于用同一 ID 与服务端日志对齐排障。
+    const traceId = error instanceof RuntimeApiError ? error.traceId : undefined;
+    if (traceId) {
+      logger.warn('runtime', `${phase} 失败 code=${error instanceof RuntimeApiError ? error.code : 'unknown'} trace=${traceId}: ${message}`);
+    } else {
+      logger.warn('runtime', `${phase} 失败: ${message}`);
+    }
   }
 
   function isGroupVersionConflict(error: unknown): boolean {
@@ -470,15 +500,20 @@ export const useChatStore = defineStore('chat', () => {
       && (item.status === undefined || item.status === 'pending' || item.status === 'failed')
       && (item.lastErrorCode === undefined || typeof item.lastErrorCode === 'string')
       && (item.lastErrorStatus === undefined || (Number.isSafeInteger(item.lastErrorStatus) && (item.lastErrorStatus as number) >= 100))
+      && (item.lastErrorTrace === undefined || typeof item.lastErrorTrace === 'string')
       && (item.nextRetryAt === undefined || (typeof item.nextRetryAt === 'string' && Number.isFinite(Date.parse(item.nextRetryAt))));
   }
 
   async function persistPendingGroupRuntimeTurns(): Promise<void> {
     if (!storageAdapter) return;
     try {
+      // MIG-01：写入带版本信封，旧裸数组仍可被迁移链读取。
       await storageAdapter.saveSnapshot(
         PENDING_GROUP_RUNTIME_TURNS_KEY,
-        pendingGroupRuntimeTurns.value.map((item) => ({ ...item })),
+        wrapSnapshot(
+          pendingGroupRuntimeTurns.value.map((item) => ({ ...item })),
+          PENDING_GROUP_TURNS_MIGRATION_PLAN.currentVersion,
+        ),
       );
     } catch (error) {
       reportRuntimeError(error, 'event');
@@ -488,14 +523,16 @@ export const useChatStore = defineStore('chat', () => {
   async function loadRuntimePendingGroupTurns(): Promise<void> {
     if (!storageAdapter) return;
     try {
-      const saved = await storageAdapter.loadSnapshot<unknown>(PENDING_GROUP_RUNTIME_TURNS_KEY);
-      pendingGroupRuntimeTurns.value = Array.isArray(saved)
-        ? saved.filter(isPendingGroupRuntimeTurn).map((item) => ({
-          ...item,
-          // 兼容 0.3.0 快照：旧记录没有 occurredAt 与状态。
-          occurredAt: item.occurredAt ?? item.createdAt,
-          status: item.status ?? 'failed',
-        }))
+      const raw = await storageAdapter.loadSnapshot<unknown>(PENDING_GROUP_RUNTIME_TURNS_KEY);
+      // MIG-01：0.3.0 旧记录由迁移链补 occurredAt/status，不做静默丢弃。
+      const { data, report } = raw === null
+        ? { data: null, report: null }
+        : migrateSnapshot<unknown>(raw, PENDING_GROUP_TURNS_MIGRATION_PLAN);
+      if (report?.changed) {
+        logger.info('chat', `群聊投递队列已迁移：${report.fromVersion} → ${report.toVersion}`);
+      }
+      pendingGroupRuntimeTurns.value = Array.isArray(data)
+        ? data.filter(isPendingGroupRuntimeTurn).map((item) => ({ ...item }))
         : [];
     } catch (error) {
       reportRuntimeError(error, 'initialize');
@@ -515,17 +552,19 @@ export const useChatStore = defineStore('chat', () => {
       item.groupId === input.groupId && item.turnId === input.turnId);
     const errorText = input.error instanceof Error ? input.error.message : String(input.error ?? t('group.runtimeSubmitFailed'));
     const errorRecord = input.error instanceof Error
-      ? input.error as Error & { code?: string; status?: number; statusCode?: number }
+      ? input.error as Error & { code?: string; status?: number; statusCode?: number; traceId?: string }
       : null;
     const errorCode = typeof errorRecord?.code === 'string' ? errorRecord.code : undefined;
     const errorStatus = Number.isSafeInteger(errorRecord?.status)
       ? errorRecord?.status
       : Number.isSafeInteger(errorRecord?.statusCode) ? errorRecord?.statusCode : undefined;
+    const errorTrace = typeof errorRecord?.traceId === 'string' ? errorRecord.traceId : undefined;
     if (existing) {
       existing.attempts += 1;
       existing.lastError = errorText;
       existing.lastErrorCode = errorCode;
       existing.lastErrorStatus = errorStatus;
+      existing.lastErrorTrace = errorTrace;
       existing.status = 'failed';
       existing.nextRetryAt = new Date(Date.now() + Math.min(60_000, 2_000 * (2 ** Math.min(existing.attempts - 1, 5)))).toISOString();
     } else {
@@ -542,6 +581,7 @@ export const useChatStore = defineStore('chat', () => {
         lastError: errorText,
         lastErrorCode: errorCode,
         lastErrorStatus: errorStatus,
+        lastErrorTrace: errorTrace,
         nextRetryAt: new Date(Date.now() + 2_000).toISOString(),
       });
     }
@@ -1005,6 +1045,7 @@ export const useChatStore = defineStore('chat', () => {
             lastError: entry.lastError ?? existing.lastError,
             lastErrorCode: existing.lastErrorCode,
             lastErrorStatus: existing.lastErrorStatus,
+            lastErrorTrace: existing.lastErrorTrace,
             nextRetryAt: existing.nextRetryAt,
           });
         } else {
@@ -1454,6 +1495,28 @@ export const useChatStore = defineStore('chat', () => {
             patch.frequencyPenalty = defaults.frequencyPenalty;
           }
         }
+      }
+
+      // MODEL-03：创作模式（Preset）作为**最低优先级**兜底。
+      // 仅在 config 对应字段仍为空时补齐 —— 角色级 / Profile 级 / 全局采样默认值优先。
+      // 同时把生效的 preset 与版本记入 activePresetInfo，满足"Preset 变更可追溯"。
+      const presetId = normalizePresetId(settingsStore.creationPreset);
+      activePresetInfo.value = { presetId, presetVersion: PRESET_SCHEMA_VERSION, at: Date.now() };
+      const presetSampling = presetSamplingOverrides(presetId);
+      if (presetSampling) {
+        const cfg = chatManager?.currentConfig;
+        if (cfg) {
+          if (cfg.topP === undefined && typeof presetSampling.topP === 'number') patch.topP = presetSampling.topP;
+          if (cfg.presencePenalty === undefined && typeof presetSampling.presencePenalty === 'number') {
+            patch.presencePenalty = presetSampling.presencePenalty;
+          }
+          if (cfg.frequencyPenalty === undefined && typeof presetSampling.frequencyPenalty === 'number') {
+            patch.frequencyPenalty = presetSampling.frequencyPenalty;
+          }
+        }
+        // 输出约束：Preset 的 statusInstruction 仅供参考展示，**不**在运行时覆盖
+        // 用户显式的 statusHudConfig（该开关是显式布尔值而非"空档"，按"高级用户覆盖"
+        // 原则，用户设置优先）。UI 可通过 resolvePresetParams 展示该建议值。
       }
 
       chatManager?.updateConfig(patch);
@@ -2232,7 +2295,7 @@ export const useChatStore = defineStore('chat', () => {
       if (!decision.shouldTrigger) {
         // 记录跳过原因（仅 console，不污染结果历史）
         if (decision.reason) {
-          console.debug(`[F17.3] 随机事件未触发：${decision.reason}`);
+          logger.debug('F17.3', `随机事件未触发：${decision.reason}`);
         }
         return;
       }
@@ -2242,7 +2305,7 @@ export const useChatStore = defineStore('chat', () => {
       const settingsStore = useSettingsStore();
       const profile = settingsStore.activeProfile;
       if (!profile) {
-        console.debug('[F17.3] 随机事件决策触发但未配置 API，跳过 LLM 生成');
+        logger.debug('F17.3', '随机事件决策触发但未配置 API，跳过 LLM 生成');
         return;
       }
 
@@ -2252,7 +2315,7 @@ export const useChatStore = defineStore('chat', () => {
         .getActiveEvents()
         .some((e) => e.id.startsWith('rand-evt-'));
       if (existingActive) {
-        console.debug('[F17.3] 已有激活的随机事件，跳过本次生成');
+        logger.debug('F17.3', '已有激活的随机事件，跳过本次生成');
         return;
       }
 
@@ -2290,7 +2353,7 @@ export const useChatStore = defineStore('chat', () => {
 
       const generated = parseGeneratedRandomEvent(raw);
       if (!generated) {
-        console.debug('[F17.3] LLM 返回内容解析失败，跳过记录');
+        logger.debug('F17.3', 'LLM 返回内容解析失败，跳过记录');
         return;
       }
 
@@ -2308,14 +2371,15 @@ export const useChatStore = defineStore('chat', () => {
       const storyEvent = generatedRandomEventToStoryEvent(generated, lbId);
       eventsStore.events.push(storyEvent);
 
-      console.info(
-        `[F17.3] Random event generated: ${generated.name} (template=${
+      logger.info(
+        'F17.3',
+        `Random event generated: ${generated.name} (template=${
           tpl?.name ?? '(instant)'
         }, probability=${decision.effectiveProbability}%)`
       );
     } catch (err) {
       // 集成失败不影响主对话流程
-      console.warn('[F17.3] 随机事件生成失败：', err);
+      logger.warn('F17.3', '随机事件生成失败', err);
     }
   }
 
@@ -2470,6 +2534,7 @@ export const useChatStore = defineStore('chat', () => {
     retryRemoteGroupOutbox,
     recoverRemoteGroupOutbox,
     fetchRemoteGroupTurns,
+    activePresetInfo,
     pendingGroupRuntimeTurns,
     groupRuntimeConflict,
     clearGroupRuntimeConflict,
