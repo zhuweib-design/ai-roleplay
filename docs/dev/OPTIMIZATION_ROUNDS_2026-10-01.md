@@ -157,6 +157,20 @@
 
 ## 二、第二轮记录
 
-（分支建立后填充）
+状态：**已完成**（2026-10-01，分支 `perf/ort-first-screen-isolation`）
+
+**范围**：O-1 ort 首屏彻底移除（架构级，PLAN_AUDIT §6.1 O-1 / 本文档第一轮计划第二轮项）。
+
+**流程记录**（按约束：先设计文档 → 评审修订 → 分步开发 + 逐步记录）：
+
+1. **分支**：`perf/ort-first-screen-isolation`（自 master `9a755d7` 切出）；
+2. **设计文档**：`docs/dev/ORT_ISOLATION_DESIGN.md`——根因（静态依赖链 + rolldown helper 共享）、目标验收（G-1~G-5）、方案 A/B/C 对比、两阶段决策（先 B 后 A、实测为闸门）、风险对策、步骤表（S1~S6）；
+3. **评审**：8 项逐条核实（链路逐边对照源码、唯一 ort 引用点、符号清单、时序），3 项修订（S4 算法精确化 / G-2 表述 / 工厂不做缓存）后通过；开发期新增 3 项修订（④ helper 共享根因 + S2b 单一动态入口、⑤ S2c vendor 外置定案、⑥ check:ort 口径），全部回写文档；
+4. **实施**：S1 rag-model-catalog 下沉 → S2/S3 链切割 → S2b 单一动态入口 → S2c vendor 外置（`public/vendor/ort/`，postinstall 生成、不入库、`--check` 防漂移）→ S4 `check:ort` 门禁并入证据包 → S5 实测 → S6 判定。每步验证结果见设计文档 §10 表格；
+5. **实测结果**：首屏传输 **551KB → 447KB（-104KB，与 ort gzip 体积吻合）**；构建产物零 ort 文件；全量 vitest 142 文件通过；onnx-real-model 7 项真实推理通过（node 回退路径）；证据包 15 项 **11 passed / 0 failed / 4 skipped**（真实 PG 下运行，含新增 ort-firstscreen 门禁）；
+6. **闸门判定**：G-1/G-2/G-3/G-5 全部达成，**方案 A（Web Worker）不启动**，"嵌入计算不阻塞主线程"另立后续排期备忘；
+7. **提交**：`258e430 perf: ort 首屏隔离——onnxruntime 退出构建 chunk 图（第二轮 O-1）`（12 文件，+452/-61），仅本地提交，不推送、不产出 exe/apk。
+
+**自行决断记录**：开发期实测推翻"单一动态入口即可"的预期（rolldown helper 共享导致静态边仍在），按设计文档闸门条款转 vendor 外置方案并回写设计文档，未中断流程。
 
 ---
