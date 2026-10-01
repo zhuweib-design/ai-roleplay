@@ -2,6 +2,7 @@ import type { CharacterCard, ChatMessage, CharacterExt } from '@core/character-c
 import type { ReasoningEffort } from '@api/types';
 import type { StatusSchema } from '@core/status-schema';
 import { normalizeStatusSchema } from '@core/status-schema';
+import { PRESET_IDS, type PresetId } from '@core/creation-preset';
 import type { UICharacter, UIMessage, WorldEntry, SamplingOverrides } from '@/types';
 import { t } from '@/i18n';
 
@@ -79,6 +80,8 @@ export function uiCharToCard(ui: UICharacter): CharacterCard {
       ...(statusSchema ? { statusSchema } : {}),
       // P1：角色级状态指令（'on'/'off' 才落盘；null = 继承全局，保持"未设置"语义）
       ...(statusInstruction ? { statusInstruction } : {}),
+      // EXP-01：角色级创作模式绑定（合法值才落盘；null = 跟随全局，保持"未绑定"语义）
+      ...(ui.boundPresetId ? { boundPresetId: ui.boundPresetId } : {}),
     },
   };
 }
@@ -170,6 +173,18 @@ function readStatusInstruction(
 }
 
 /**
+ * EXP-01：从角色卡读创作模式绑定（ext 优先 + 顶层 legacy 回退）。
+ * 非法值一律 → null（跟随全局设置），不静默改写为 balanced —— 覆盖层失效
+ * 不应改变用户在全局显式选择的意图（与 resolveEffectivePreset 同一语义）。
+ */
+function readBoundPresetId(ext: CharacterExt | undefined, card: CharacterCard): PresetId | null {
+  const raw = ext?.boundPresetId ?? (card as Record<string, unknown>)['boundPresetId'];
+  return typeof raw === 'string' && (PRESET_IDS as readonly string[]).includes(raw)
+    ? (raw as PresetId)
+    : null;
+}
+
+/**
  * CharacterCard → UICharacter
  * 用于从核心层加载角色卡时转换回 UI 格式
  */
@@ -244,6 +259,8 @@ export function cardToUiChar(
     // P1：角色状态 schema / 状态指令（ext 优先 + 顶层 legacy 回退；脏数据 → null）
     statusSchema: readStatusSchema(ext, card),
     statusInstruction: readStatusInstruction(ext, card),
+    // EXP-01：角色级创作模式绑定（ext 优先 + legacy 回退；非法/未绑 → null = 跟随全局）
+    boundPresetId: readBoundPresetId(ext, card),
   };
 
   return { ...base, ...overrides };

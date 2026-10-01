@@ -859,6 +859,7 @@ export default {
   'group.modeNatural': '自然轮换',
   'group.modeDesignated': '指定发言',
   'group.messagesAria': '群聊消息',
+  'group.loadEarlier': '加载更早的消息（还有 {count} 条）',
   'group.inputPlaceholder': '输入消息...（@角色名 指定发言）',
   'group.inputAria': '消息输入框',
   'group.mentionAria': '提及角色',
@@ -3139,4 +3140,10 @@ export default {
   'preset.inspectTitle': '实际生效参数',
   'preset.sourcePreset': '来自预设',
   'preset.sourceInherit': '沿用你的设置',
+  'preset.contextBudget': '上下文预算',
+  'preset.contextBudgetPercent': '全局预算的 {percent}%',
+  'preset.statusInstruction': '状态块输出',
+  'preset.statusOn': '要求输出状态块',
+  'preset.statusOff': '不要求',
+  'preset.followGlobal': '跟随全局',
 } as const;

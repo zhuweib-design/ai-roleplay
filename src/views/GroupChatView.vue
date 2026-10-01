@@ -207,6 +207,30 @@ watch(
   }
 );
 
+// ── UX-03：游标分页 —— 顶部触顶 / 手动按钮加载更早消息，scrollTop 补偿保持阅读位置 ──
+const messagesAreaRef = ref<HTMLElement | null>(null);
+const loadingOlderTurns = ref(false);
+
+async function loadEarlier(): Promise<void> {
+  if (loadingOlderTurns.value || !groupStore.hasOlderTurns) return;
+  loadingOlderTurns.value = true;
+  try {
+    const beforeHeight = messagesAreaRef.value?.scrollHeight ?? 0;
+    groupStore.loadOlderTurns();
+    await nextTick();
+    // 更早的消息在顶部展开，按新增高度补偿 scrollTop，避免阅读位置跳变
+    const el = messagesAreaRef.value;
+    if (el) el.scrollTop += el.scrollHeight - beforeHeight;
+  } finally {
+    loadingOlderTurns.value = false;
+  }
+}
+
+function onMessagesScroll(): void {
+  const el = messagesAreaRef.value;
+  if (el && el.scrollTop <= 80) void loadEarlier();
+}
+
 // ── Toast ──
 function showToast(type: 'info' | 'success' | 'error', message: string) {
   toastType.value = type;
@@ -1091,13 +1115,26 @@ type="button"
 
           <!-- 消息列表 -->
           <section
+            ref="messagesAreaRef"
             class="messages-area tk-scroll"
             role="log"
             aria-live="polite"
             :aria-label="t('group.messagesAria')"
+            @scroll="onMessagesScroll"
           >
+            <!-- UX-03：游标分页 —— 窗口外更早的消息按页加载 -->
+            <div v-if="groupStore.hasOlderTurns" class="load-earlier-row">
+              <button
+                type="button"
+                class="load-earlier-btn"
+                :disabled="loadingOlderTurns"
+                @click="loadEarlier"
+              >
+                {{ t('group.loadEarlier', { count: groupStore.hiddenOlderCount }) }}
+              </button>
+            </div>
             <div
-              v-for="msg in currentMessages"
+              v-for="msg in groupStore.visibleMessages"
               :key="msg.id"
               class="msg-row"
               :class="{
@@ -2117,6 +2154,33 @@ type="button"
   overflow-y: auto;
   padding: 16px 20px;
   background: var(--background);
+}
+
+/* UX-03：加载更早消息 */
+.load-earlier-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.load-earlier-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full, 999px);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.load-earlier-btn:hover {
+  color: var(--foreground);
+  border-color: var(--secondary);
+}
+
+.load-earlier-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .msg-row {

@@ -10,6 +10,7 @@
 import { t } from '@/i18n';
 import type { ReasoningEffort, SamplingParams } from '@api/types';
 import type { CharacterStatus, StatusSchema } from '@core/status-schema';
+import type { PresetId } from '@core/creation-preset';
 
 /** 单个属性项（键值对，支持数值或文本类型） */
 export interface CharacterAttribute {
@@ -113,6 +114,11 @@ export interface CharacterExt {
    * 'on' / 'off' 显式覆盖；null / undefined = 继承全局 settings.statusHudConfig.enabled。
    */
   statusInstruction?: 'on' | 'off' | null;
+  /**
+   * EXP-01：角色级创作模式（Preset）绑定。
+   * null / undefined = 未绑定 = 跟随全局 settings.creationPreset（角色级 > 全局）。
+   */
+  boundPresetId?: PresetId | null;
 }
 
 export interface CharacterCard {

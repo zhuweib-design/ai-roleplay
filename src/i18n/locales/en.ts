@@ -859,6 +859,7 @@ const en: Record<MessageKey, string> = {
   'group.modeNatural': 'Natural Turn-taking',
   'group.modeDesignated': 'Designated Speaker',
   'group.messagesAria': 'Group chat messages',
+  'group.loadEarlier': 'Load earlier messages ({count} more)',
   'group.inputPlaceholder': 'Type a message... (@name to designate a speaker)',
   'group.inputAria': 'Message input',
   'group.mentionAria': 'Mention characters',
@@ -3138,6 +3139,12 @@ const en: Record<MessageKey, string> = {
   'preset.inspectTitle': 'Effective parameters',
   'preset.sourcePreset': 'From preset',
   'preset.sourceInherit': 'Inherited from your settings',
+  'preset.contextBudget': 'Context budget',
+  'preset.contextBudgetPercent': '{percent}% of global budget',
+  'preset.statusInstruction': 'Status block',
+  'preset.statusOn': 'Require status block',
+  'preset.statusOff': 'Not required',
+  'preset.followGlobal': 'Follow global',
 };
 
 export default en;

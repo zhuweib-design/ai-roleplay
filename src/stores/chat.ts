@@ -68,8 +68,8 @@ import { createRuntimeReplayBaseline, replayRuntimeEvents } from '@/runtime/runt
 import { logger } from '@/utils/logger';
 import {
   PRESET_SCHEMA_VERSION,
-  normalizePresetId,
   presetSamplingOverrides,
+  resolveEffectivePreset,
   type PresetId,
 } from '@/core/creation-preset';
 
@@ -1444,8 +1444,10 @@ export const useChatStore = defineStore('chat', () => {
    * - 采样：全局 samplingDefaults 仅在 Profile 级也未设置时兜底（最低优先级）
    *
    * settings store 在此处惰性导入（与既有 maybeGenerateRandomEvent 一致，避免循环依赖）。
+   *
+   * EXP-01：可选传入当前角色 —— 角色级创作模式绑定（boundPresetId）优先于全局设置。
    */
-  async function applyRuntimeLlmControls(): Promise<void> {
+  async function applyRuntimeLlmControls(character?: UICharacter): Promise<void> {
     try {
       const { useSettingsStore } = await import('./settings');
       const settingsStore = useSettingsStore();
@@ -1500,7 +1502,11 @@ export const useChatStore = defineStore('chat', () => {
       // MODEL-03：创作模式（Preset）作为**最低优先级**兜底。
       // 仅在 config 对应字段仍为空时补齐 —— 角色级 / Profile 级 / 全局采样默认值优先。
       // 同时把生效的 preset 与版本记入 activePresetInfo，满足"Preset 变更可追溯"。
-      const presetId = normalizePresetId(settingsStore.creationPreset);
+      // EXP-01：角色级绑定（boundPresetId）优先于全局；未绑定 / 非法值回落全局。
+      const presetId = resolveEffectivePreset(
+        character?.boundPresetId,
+        settingsStore.creationPreset
+      );
       activePresetInfo.value = { presetId, presetVersion: PRESET_SCHEMA_VERSION, at: Date.now() };
       const presetSampling = presetSamplingOverrides(presetId);
       if (presetSampling) {
@@ -1673,7 +1679,7 @@ export const useChatStore = defineStore('chat', () => {
       // E-01: 以角色 ID 作为会话键(情绪状态按角色隔离)
       chatManager.updateConfig({ sessionId: character.id });
       // P0-1/P0-3：同步思维链偏好与全局采样默认值
-      await applyRuntimeLlmControls();
+      await applyRuntimeLlmControls(character);
       // E-01: 种入角色 standing 事实(首次;字节稳定前缀数据源)
       await seedStandingFacts(card, character.id);
       const runtime = await ensureRuntimeIntegration(character, card);
@@ -2023,7 +2029,7 @@ export const useChatStore = defineStore('chat', () => {
       // E-01: 以角色 ID 作为会话键(情绪状态按角色隔离)
       chatManager.updateConfig({ sessionId: character.id });
       // P0-1/P0-3：同步思维链偏好与全局采样默认值
-      await applyRuntimeLlmControls();
+      await applyRuntimeLlmControls(character);
       // E-01: 种入角色 standing 事实(首次;字节稳定前缀数据源)
       await seedStandingFacts(card, character.id);
       const runtime = await ensureRuntimeIntegration(character, card);

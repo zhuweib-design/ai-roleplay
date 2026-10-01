@@ -40,6 +40,8 @@
     "release:pack:check": "node scripts/release-evidence-pack.mjs --check --allow-skipped",
     "perf:analyze": "node scripts/perf-analysis.mjs",
     "perf:baseline": "node scripts/perf-analysis.mjs --save-baseline",
+    "eval:run": "node scripts/eval-run.mjs",
+    "eval:manifest": "node scripts/eval-run.mjs --manifest --strict",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

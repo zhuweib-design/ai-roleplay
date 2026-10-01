@@ -108,6 +108,20 @@ export function normalizePresetId(value: unknown): PresetId {
     : 'balanced';
 }
 
+/**
+ * EXP-01：解析实际生效的 Preset —— 角色级绑定优先，未绑定 / 非法值回落全局。
+ *
+ * 与 `normalizePresetId(bound)` 的差别：角色绑定值**非法**时回落**全局**设置
+ * （fail-open 到全局），而不是静默落到 balanced —— 全局是用户显式选择的意图，
+ * 角色绑定只是覆盖层，覆盖层失效不应改变全局语义。
+ */
+export function resolveEffectivePreset(bound: unknown, global: unknown): PresetId {
+  if (typeof bound === 'string' && (PRESET_IDS as readonly string[]).includes(bound)) {
+    return bound as PresetId;
+  }
+  return normalizePresetId(global);
+}
+
 /** Preset 的展示名（i18n）。 */
 export function presetLabel(id: PresetId): string {
   return t(`preset.${id}.label`);

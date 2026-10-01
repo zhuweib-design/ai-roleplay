@@ -133,7 +133,27 @@ const GATES = [
   {
     id: 'postgres-transaction',
     planFile: 'postgres-transaction-result.json',
-    reason: '需要真实 PostgreSQL 实例与 RUNTIME_PG_TEST_URL；本机未配置，按诚实策略记为 skipped',
+    // 条件门禁（DB-01）：设置 RUNTIME_PG_TEST_URL 即真实执行被门控的集成测试，
+    // 未设置则诚实 skipped。本机可用嵌入式 PG（artifacts/pg-embedded/run-pg-tests.mjs）。
+    envKey: 'RUNTIME_PG_TEST_URL',
+    skipReason: '需要真实 PostgreSQL 实例：设置 RUNTIME_PG_TEST_URL 后本门禁自动真实执行（本机可用 artifacts/pg-embedded/run-pg-tests.mjs 拉起嵌入式 PG）',
+    run: () => {
+      const started = Date.now();
+      const result = spawnSync(
+        'npx',
+        [
+          'vitest', 'run',
+          'tests/runtime/postgres-runtime.integration.test.ts',
+          'tests/runtime/postgres-group.integration.test.ts',
+        ],
+        { cwd: ROOT, encoding: 'utf8', shell: true, maxBuffer: 64 * 1024 * 1024 }
+      );
+      return {
+        exitCode: result.status ?? 1,
+        durationMs: Date.now() - started,
+        output: `${result.stdout ?? ''}${result.stderr ?? ''}`,
+      };
+    },
   },
   {
     id: 'migration-restore',
@@ -143,7 +163,22 @@ const GATES = [
   {
     id: 'provider-regression',
     planFile: 'provider-regression-result.json',
-    reason: '需要真实 Provider API Key 才能执行回归；仓库不内置密钥',
+    // 条件门禁（API-01）：提供真实 Provider Key 后自动执行 opt-eval 的真实环境探针。
+    envKey: 'OPENAI_API_KEY',
+    skipReason: '需要真实 Provider API Key：设置 OPENAI_API_KEY（及可选 OPENAI_BASE_URL）后本门禁自动执行 opt-eval --with-api；仓库不内置密钥',
+    run: () => {
+      const started = Date.now();
+      const result = spawnSync(
+        'node',
+        ['scripts/opt-eval.mjs', '--with-api', '--json'],
+        { cwd: ROOT, encoding: 'utf8', shell: true, maxBuffer: 64 * 1024 * 1024 }
+      );
+      return {
+        exitCode: result.status ?? 1,
+        durationMs: Date.now() - started,
+        output: `${result.stdout ?? ''}${result.stderr ?? ''}`,
+      };
+    },
   },
 ];
 
@@ -152,6 +187,17 @@ function buildPack() {
   for (const gate of GATES) {
     if (gate.reason) {
       results.push(skippedResult({ id: gate.id, plan: gate.planFile, reason: gate.reason }));
+      continue;
+    }
+    // 条件门禁（envKey + run）：环境就绪即真实执行；未就绪则诚实 skipped。
+    if (gate.envKey && typeof gate.run === 'function') {
+      if (!process.env[gate.envKey]) {
+        results.push(skippedResult({ id: gate.id, plan: gate.planFile, reason: gate.skipReason }));
+        continue;
+      }
+      process.stdout.write(`[release-evidence-pack] 运行门禁 ${gate.id}（${gate.envKey} 已设置）…\n`);
+      const result = gate.run();
+      results.push(makeResult({ id: gate.id, plan: gate.planFile, kind: `env:${gate.envKey}`, result }));
       continue;
     }
     if (gate.requiresFull && !FULL) {
@@ -211,9 +257,12 @@ const KNOWN_ISSUES = `# 已知问题（1.0.0）
 
 以下门禁依赖外部环境，证据包中标记为 \`skipped\`（非伪造通过）：
 
-- **postgres-transaction**：需真实 PostgreSQL 实例（\`RUNTIME_PG_TEST_URL\`）。
+- **postgres-transaction**（条件门禁）：设置 \`RUNTIME_PG_TEST_URL\` 即自动真实执行
+  两个 Runtime PG 集成测试文件；本机可用 \`artifacts/pg-embedded/run-pg-tests.mjs\`
+  拉起嵌入式 PostgreSQL 后执行（2026-10-01 已用该方式取得真实通过证据）。
 - **migration-restore**：需真实实例执行 \`pg_dump\` / \`pg_restore\` 演练。
-- **provider-regression**：需真实 Provider API Key；仓库不内置密钥。
+- **provider-regression**（条件门禁）：设置 \`OPENAI_API_KEY\`（及可选 \`OPENAI_BASE_URL\`）
+  后自动执行 \`opt-eval --with-api\` 真实环境探针；仓库不内置密钥。
 
 执行方式见 \`docs/dev/runtime-database-migration-runbook.md\` §5 与
 \`docs/dev/data-backup-restore.md\` §4A.4。

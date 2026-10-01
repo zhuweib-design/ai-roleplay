@@ -938,3 +938,35 @@ describe('type-adapters — P1 消息 status 透传', () => {
     expect(back[1]?.status).toBeUndefined();
   });
 });
+
+describe('type-adapters — EXP-01 角色级创作模式绑定（boundPresetId）', () => {
+  it('round-trip 保留合法绑定值', () => {
+    const original = makeUIChar({ boundPresetId: 'strict' });
+    const card = uiCharToCard(original);
+    expect(card.ext?.boundPresetId).toBe('strict');
+    const roundTrip = cardToUiChar(card);
+    expect(roundTrip.boundPresetId).toBe('strict');
+  });
+
+  it('未绑定时 round-trip 保持"跟随全局"（null）语义，不落盘', () => {
+    const original = makeUIChar({ boundPresetId: null });
+    const card = uiCharToCard(original);
+    expect(card.ext?.boundPresetId).toBeUndefined();
+    const roundTrip = cardToUiChar(card);
+    expect(roundTrip.boundPresetId).toBeNull();
+  });
+
+  it('落盘数据被篡改为非法值时读取侧归一为 null（跟随全局），不静默改写', () => {
+    const card = makeCard();
+    card.ext = { ...(card.ext ?? {}), boundPresetId: 'aggressive' as never };
+    expect(cardToUiChar(card).boundPresetId).toBeNull();
+  });
+
+  it('旧数据顶层 legacy 字段仍可读回（ext 优先）', () => {
+    const card = makeCard();
+    (card as Record<string, unknown>).boundPresetId = 'free';
+    expect(cardToUiChar(card).boundPresetId).toBe('free');
+    card.ext = { ...(card.ext ?? {}), boundPresetId: 'balanced' };
+    expect(cardToUiChar(card).boundPresetId).toBe('balanced');
+  });
+});

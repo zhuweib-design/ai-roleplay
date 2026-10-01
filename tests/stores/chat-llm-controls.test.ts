@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import 'fake-indexeddb/auto';
 import { useChatStore } from '../../src/stores/chat';
+import { useSettingsStore } from '../../src/stores/settings';
 import { IndexedDBAdapter } from '@storage/indexeddb-adapter';
 import type { UICharacter, ApiProfile, UIMessage } from '@/types';
 
@@ -283,10 +284,29 @@ describe('chat store — P0-2 思考强度 / P0-3 采样参数下发', () => {
   });
 
   it('P0-3：三档都未设置时不传该参数（= 供应商默认）', async () => {
+    // MODEL-03 之后全局默认 preset=balanced 会以最低优先级兜底 topP，
+    // 本用例只验证「角色级 → Profile 级 → 供应商默认」三级回落，故切到 custom（不干预）隔离 Preset。
+    useSettingsStore().setCreationPreset('custom');
     const body = await captureBody({ model: 'gpt-4o' }, { sampling: { topP: null } });
     expect(body.top_p).toBeUndefined();
     expect(body.presence_penalty).toBeUndefined();
     expect(body.frequency_penalty).toBeUndefined();
+  });
+
+  it('MODEL-03/EXP-01：三级未设置时全局默认 balanced 兜底 topP 0.9', async () => {
+    const body = await captureBody({ model: 'gpt-4o' }, { sampling: { topP: null } });
+    expect(body.top_p).toBe(0.9);
+  });
+
+  it('EXP-01：角色级创作模式绑定优先于全局（strict 建议 topP 0.8 + 双 penalty 0.3）', async () => {
+    useSettingsStore().setCreationPreset('balanced'); // 全局 balanced，角色绑定 strict 应覆盖
+    const body = await captureBody(
+      { model: 'gpt-4o' },
+      { sampling: { topP: null }, boundPresetId: 'strict' }
+    );
+    expect(body.top_p).toBe(0.8);
+    expect(body.presence_penalty).toBe(0.3);
+    expect(body.frequency_penalty).toBe(0.3);
   });
 });
 

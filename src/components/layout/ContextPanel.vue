@@ -16,6 +16,7 @@ import {
 } from '@/api/reasoning-capability';
 import type { ReasoningEffort } from '@/api/types';
 import { REASONING_EFFORTS, type SamplingOverrides } from '@/types';
+import { PRESET_IDS, type PresetId, presetLabel } from '@core/creation-preset';
 import { t } from '@/i18n';
 import type { ApiProfile } from '@/types';
 import {
@@ -219,6 +220,19 @@ function onReasoningEffort(value: string | null): void {
   if (value !== 'low' && value !== 'medium' && value !== 'high') return;
   characterStore.updateCharacter(char.value.id, { reasoningEffort: value });
 }
+
+// ── EXP-01：角色级创作模式（Preset）绑定 ──
+// '' = 未绑定 = 跟随全局 settings.creationPreset；选择具体档位则该角色强制使用。
+const presetIds = PRESET_IDS;
+
+const presetBindingValue = computed<PresetId | ''>({
+  get: () => char.value.boundPresetId ?? '',
+  set: (raw) => {
+    characterStore.updateCharacter(char.value.id, {
+      boundPresetId: raw === '' ? null : (raw as PresetId),
+    });
+  },
+});
 
 /**
  * 角色级采样参数写入
@@ -641,6 +655,19 @@ class="token-bar" role="progressbar"
           <p v-if="reasoningHeuristicMiss" class="ctx-param-hint">
             {{ t('llm.reasoningMaybeUnsupported') }}
           </p>
+        </div>
+
+        <!-- EXP-01 创作模式：角色级绑定优先于全局；"跟随全局"= 不绑定 -->
+        <div class="ctx-param-row">
+          <span class="ctx-param-label">{{ t('preset.label') }}</span>
+          <select
+            v-model="presetBindingValue"
+            class="tk-input ctx-preset-select"
+            :aria-label="t('preset.title')"
+          >
+            <option value="">{{ t('preset.followGlobal') }}</option>
+            <option v-for="id in presetIds" :key="id" :value="id">{{ presetLabel(id) }}</option>
+          </select>
         </div>
       </section>
 
@@ -1128,6 +1155,12 @@ class="token-bar" role="progressbar"
   font-size: 11px;
   line-height: 1.5;
   color: var(--muted-foreground);
+}
+
+/* EXP-01：创作模式绑定选择器 */
+.ctx-preset-select {
+  width: 100%;
+  font-size: 12px;
 }
 
 .ctx-reset-btn {

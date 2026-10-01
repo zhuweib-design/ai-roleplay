@@ -129,6 +129,11 @@ export interface UICharacter {
   statusSchema?: StatusSchema | null;
   /** P1：'on'|'off'|null —— null = 继承全局 settings.statusHudConfig.enabled */
   statusInstruction?: 'on' | 'off' | null;
+  /**
+   * EXP-01：角色级创作模式（Preset）绑定（角色级 > 全局）。
+   * null / undefined = 未绑定 = 跟随全局 settings.creationPreset。
+   */
+  boundPresetId?: import('@core/creation-preset').PresetId | null;
   /** F01.6 角色属性（可选，v1.1 新增） */
   attributes?: CharacterAttributes;
   /** F16.4 关联的故事 ID（null 表示未关联故事，不启用时间/主角系统） */

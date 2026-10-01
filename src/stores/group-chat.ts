@@ -68,6 +68,43 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     () => currentGroup.value?.members ?? []
   );
 
+  // ── UX-03：群聊消息游标分页（尾部窗口） ──
+  // 长群聊一次性渲染全部消息会让 DOM 随消息数线性膨胀（PLAN_AUDIT UX-03：
+  // GroupChatView 全量 v-for、无 cursor/pageSize）。采用尾部窗口 + 上翻扩页：
+  // cursor = 当前可见条数，只渲染最近 N 条，向上翻阅按页扩窗，切换群组重置。
+  // （单聊为完整双向虚拟化 spacer 方案；群聊消息含成员徽章等复杂行内布局，
+  //  高度估算不可靠，故用无 spacer 的分页方案，DOM 上限 = 已翻阅页数 × 页大小。）
+  const TURN_PAGE_SIZE = 60;
+  const visibleTurnCursor = ref(TURN_PAGE_SIZE);
+
+  const visibleMessages = computed(() => {
+    const all = currentMessages.value;
+    return all.length <= visibleTurnCursor.value
+      ? all
+      : all.slice(all.length - visibleTurnCursor.value);
+  });
+
+  const hasOlderTurns = computed(
+    () => currentMessages.value.length > visibleTurnCursor.value
+  );
+
+  /** 窗口外更早的消息条数（UI 提示用） */
+  const hiddenOlderCount = computed(() =>
+    Math.max(0, currentMessages.value.length - visibleTurnCursor.value)
+  );
+
+  /** 向上扩一页（渲染更早的消息）；@returns 扩窗后是否还有更早的 */
+  function loadOlderTurns(): boolean {
+    const total = currentMessages.value.length;
+    visibleTurnCursor.value = Math.min(total, visibleTurnCursor.value + TURN_PAGE_SIZE);
+    return visibleTurnCursor.value < total;
+  }
+
+  /** 游标重置回默认页大小（切换 / 创建 / 删除群组时调用） */
+  function resetTurnCursor(): void {
+    visibleTurnCursor.value = TURN_PAGE_SIZE;
+  }
+
   // ── 依赖注入 ──
 
   function setStorageAdapter(adapter: StorageAdapter | null): void {
@@ -182,6 +219,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
 
   function selectGroup(id: string): void {
     currentGroupId.value = id;
+    resetTurnCursor();
   }
 
   /**
@@ -283,6 +321,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
 
     groups.value.unshift(group);
     currentGroupId.value = id;
+    resetTurnCursor();
     void persistGroup(id);
     lastInfo.value = t('group.created', { name: group.name });
     return id;
@@ -313,6 +352,7 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     lastInfo.value = t('group.deleted', { name: removed.name });
     if (currentGroupId.value === id) {
       currentGroupId.value = groups.value[0]?.id ?? null;
+      resetTurnCursor();
     }
   }
 
@@ -946,6 +986,10 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     currentGroup,
     currentMessages,
     currentMembers,
+    visibleMessages,
+    hasOlderTurns,
+    hiddenOlderCount,
+    loadOlderTurns,
     // 依赖注入
     setStorageAdapter,
     loadFromStorage,

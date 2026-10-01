@@ -6,6 +6,7 @@ import {
   normalizePresetId,
   presetContextBudget,
   presetSamplingOverrides,
+  resolveEffectivePreset,
   resolvePresetParams,
 } from '@core/creation-preset';
 
@@ -81,5 +82,28 @@ describe('上下文预算', () => {
 
   it('预算不低于下限，避免被压到不可用', () => {
     expect(presetContextBudget('strict', 100)).toBe(512);
+  });
+});
+
+describe('EXP-01 · resolveEffectivePreset 角色级优先', () => {
+  it('角色绑定合法值时优先生效', () => {
+    expect(resolveEffectivePreset('strict', 'balanced')).toBe('strict');
+    expect(resolveEffectivePreset('free', 'strict')).toBe('free');
+    expect(resolveEffectivePreset('custom', 'balanced')).toBe('custom');
+  });
+
+  it('未绑定（null/undefined）回落全局设置', () => {
+    expect(resolveEffectivePreset(null, 'strict')).toBe('strict');
+    expect(resolveEffectivePreset(undefined, 'free')).toBe('free');
+  });
+
+  it('角色绑定值非法时回落全局（而非静默改写为 balanced）', () => {
+    expect(resolveEffectivePreset('aggressive', 'strict')).toBe('strict');
+    expect(resolveEffectivePreset('', 'balanced')).toBe('balanced');
+    expect(resolveEffectivePreset(42, 'strict')).toBe('strict');
+  });
+
+  it('全局也非法时才回落 balanced（normalizePresetId 语义）', () => {
+    expect(resolveEffectivePreset(undefined, 'nope')).toBe('balanced');
   });
 });
