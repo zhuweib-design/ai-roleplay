@@ -16,6 +16,9 @@ export default [
       // 逐条列举的 dist-* 规则无法覆盖新命名的构建目录，会污染 lint 报数千条错误）
       'dist-*/**',
       'coverage/**',
+      // ORT_ISOLATION_DESIGN S2c：public/vendor/ 由 scripts/vendor-ort.mjs 生成的
+      // 第三方压缩产物（ort.bundle.min.mjs），非项目源码，lint 会报数千条表达式错误
+      'public/vendor/**',
       // 2026-09-18 目录整理：历史 dist-*/coverage-ci 等一次性快照已统一归入 artifacts/
       // （原 dist-i18n-check / dist-p13-check / dist-qa / dist-measure / dist-opt* /
       //  dist-lib-eval* / coverage-ci 等逐条规则一并收敛为本条，见 MIGRATION_LOG.md）

@@ -22,7 +22,24 @@ import {
 import { createModelFileAdapter } from './model-file-adapter';
 import { UserModelFileAdapter } from './user-model-bridge';
 import { isUserVectorModelId, findOnnxFile } from './vector-model-install';
+import type { OnnxEmbeddingConfig } from './onnx-embedding-provider';
 // i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
+
+/**
+ * ORT_ISOLATION_DESIGN S2b：onnx-embedding-provider 的**全仓唯一动态入口**。
+ *
+ * rolldown(vite 8) 会把被多处动态引用的模块提升为静态 import（vite.config.ts
+ * 注释、设计文档 §2）——首屏因此被拖入 ~104KB(gzip) 的 ort.bundle.min。
+ * 约束：全仓对 onnx-embedding-provider 的运行时引用只允许出现在本函数这一处
+ * （type-only 导入除外，编译期擦除）。
+ */
+export async function createOnnxEmbeddingProvider(
+  config: OnnxEmbeddingConfig
+): Promise<EmbeddingProvider> {
+  const { OnnxEmbeddingProvider } = await import('./onnx-embedding-provider');
+  return new OnnxEmbeddingProvider(config);
+}
+
 
 const ENABLE_KEY = 'aijiuguan.vectorRagEnabled';
 const DYN_MODEL_KEY = 'aijiuguan.ragDynamicModel';
@@ -231,8 +248,7 @@ export class VectorRagRuntime {
   private async getLocalProvider(modelId: string): Promise<EmbeddingProvider> {
     const cached = this.onnxProviders.get(modelId);
     if (cached) return cached;
-    const { OnnxEmbeddingProvider } = await import('./onnx-embedding-provider');
-    const provider = new OnnxEmbeddingProvider({
+    const provider = await createOnnxEmbeddingProvider({
       modelId: modelId as VectorModelId,
       // 用户自定义 → 桥接 IndexedDB;预置 → 项目目录适配器
       adapter: isUserVectorModelId(modelId) ? new UserModelFileAdapter() : this.adapter,

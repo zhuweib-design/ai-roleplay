@@ -15,6 +15,7 @@ import {
   setRagDynamicModel,
   getRagStaticModel,
   setRagStaticModel,
+  createOnnxEmbeddingProvider,
 } from '@/core/dual-channel-runtime';
 import {
   VECTOR_MODELS,
@@ -51,8 +52,8 @@ async function runSmoke(modelId: VectorModelId) {
   testingModel.value = modelId;
   smokeResult.value[modelId] = t('vector.smokeLoading');
   try {
-    const { OnnxEmbeddingProvider } = await import('@/core/onnx-embedding-provider');
-    const provider = new OnnxEmbeddingProvider({
+    // ORT_ISOLATION_DESIGN S2b：经全仓唯一动态入口构造 provider（设计文档 §4-B2）
+    const provider = await createOnnxEmbeddingProvider({
       modelId,
       adapter: createModelFileAdapter(),
     });

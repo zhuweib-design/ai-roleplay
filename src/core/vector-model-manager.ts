@@ -16,7 +16,9 @@ import {
   GatewayEmbeddingProvider,
   MockEmbeddingProvider,
 } from './embedding';
-import { getBestEmbeddingModel } from './rag-benchmark';
+// ORT_ISOLATION_DESIGN S3：目录函数从 rag-model-catalog 导入（原经 rag-benchmark
+// 的静态边会把 onnx-embedding-provider → ort 拖入首屏，见设计文档 §2/§4-B1）。
+import { getBestEmbeddingModel } from './rag-model-catalog';
 import { getRemoteApiKeyState } from './remote-api-key-state';
 import { isUserVectorModelId } from './vector-model-install';
 

@@ -16,11 +16,19 @@ import { VectorStore } from './embedding';
 import type { VectorModelId } from './vector-model-manager';
 import { createModelFileAdapter } from './model-file-adapter';
 import { UserModelFileAdapter } from './user-model-bridge';
-import { OnnxEmbeddingProvider } from './onnx-embedding-provider';
 import { isUserVectorModelId, findOnnxFile } from './vector-model-install';
 import { loadUserModelMeta } from './vector-model-storage';
+import { createOnnxEmbeddingProvider } from './dual-channel-runtime';
+// ORT_ISOLATION_DESIGN S2：目录函数下沉到 rag-model-catalog（零依赖），此处
+// 兼容 re-export 保持既有调用方（含 tests）符号不变；本模块对 provider 的唯一
+// 引用改为工厂内动态 import，切断首屏 entry → ort 的静态链。
+import { setBestEmbeddingModel } from './rag-model-catalog';
 
-const BEST_KEY = 'aijiuguan.bestEmbeddingModel';
+export {
+  getBestEmbeddingModel,
+  setBestEmbeddingModel,
+  clearBestEmbeddingModel,
+} from './rag-model-catalog';
 
 export interface EmbeddingBenchmarkCase {
   id: string;
@@ -98,36 +106,6 @@ export function buildRagBenchmarkSet(): RAGBenchmarkSet {
   return { dynamicKb, staticKb, cases };
 }
 
-/** 读取最佳模型 id(无则 null) */
-export function getBestEmbeddingModel(): string | null {
-  try {
-    const raw = localStorage.getItem(BEST_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as { id?: string };
-    return data.id ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/** 持久化最佳模型与跑分指标 */
-export function setBestEmbeddingModel(id: string, recall: number, latencyMs: number): void {
-  try {
-    localStorage.setItem(BEST_KEY, JSON.stringify({ id, recall, latencyMs, timestamp: Date.now() }));
-  } catch {
-    /* 环境无 localStorage:静默 */
-  }
-}
-
-/** 清除择优结果,恢复平台默认 */
-export function clearBestEmbeddingModel(): void {
-  try {
-    localStorage.removeItem(BEST_KEY);
-  } catch {
-    /* 静默 */
-  }
-}
-
 export interface BenchmarkRunnerOptions {
   /** 已装模型 id 列表(默认:预置 + 用户自定义) */
   listInstalled?: () => Promise<string[]>;
@@ -155,26 +133,28 @@ async function defaultListInstalled(): Promise<string[]> {
 
 /** 默认:本地 ONNX provider(与 dual-channel-runtime 相同的适配器/onnxFile 解析) */
 async function defaultProviderFactory(modelId: string): Promise<EmbeddingProvider> {
-  if (isUserVectorModelId(modelId)) {
-    // 自定义模型:桥接 IndexedDB + 按元数据推 onnx 文件名
-    let onnxFile: string | undefined;
-    try {
-      const meta = await loadUserModelMeta();
-      const m = meta.find((x) => x.id === modelId);
-      if (m?.files) onnxFile = findOnnxFile(m.files);
-    } catch {
-      /* 无元数据 */
-    }
-    return new OnnxEmbeddingProvider({
-      modelId: modelId as VectorModelId,
-      adapter: new UserModelFileAdapter(),
-      onnxFile,
-    });
-  }
-  return new OnnxEmbeddingProvider({
+  // ORT_ISOLATION_DESIGN S2b：经全仓唯一动态入口构造 provider（禁止本模块直接
+  // import onnx-embedding-provider——见 dual-channel-runtime.createOnnxEmbeddingProvider）。
+  return createOnnxEmbeddingProvider({
     modelId: modelId as VectorModelId,
-    adapter: createModelFileAdapter(),
+    adapter: isUserVectorModelId(modelId) ? await createUserAdapter() : createModelFileAdapter(),
+    ...(isUserVectorModelId(modelId) ? { onnxFile: await resolveUserOnnxFile(modelId) } : {}),
   });
+}
+
+/** 用户自定义模型的适配器与 onnx 文件解析（原 defaultProviderFactory 内联逻辑） */
+async function createUserAdapter(): Promise<UserModelFileAdapter> {
+  return new UserModelFileAdapter();
+}
+async function resolveUserOnnxFile(modelId: string): Promise<string | undefined> {
+  try {
+    const meta = await loadUserModelMeta();
+    const m = meta.find((x) => x.id === modelId);
+    return m?.files ? findOnnxFile(m.files) : undefined;
+  } catch {
+    /* 无元数据 */
+    return undefined;
+  }
 }
 
 /**

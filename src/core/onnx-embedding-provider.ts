@@ -16,6 +16,19 @@ import type { ModelFileAdapter } from './vector-model-source';
 import type { VectorModelId } from './vector-model-manager';
 import { filterStopwords } from './stopword-filter';
 
+/**
+ * ORT_ISOLATION_DESIGN S2c：解析 onnxruntime 模块地址。
+ * - 浏览器/Tauri：public/vendor/ort/ 同源文件（构建期由 scripts/vendor-ort.mjs
+ *   从 node_modules 复制，退出构建 chunk 图；wasm 与 mjs 同目录相对解析）
+ * - node/测试：npm 包（真实推理单测 onnx-real-model.test.ts 依赖 node 直跑）
+ */
+function resolveOrtModuleUrl(): string {
+  if (typeof process !== 'undefined' && process.versions?.node !== undefined) {
+    return 'onnxruntime-web';
+  }
+  return '/vendor/ort/ort.bundle.min.mjs';
+}
+
 /** 分词钩子:text → token ids(BERT 系词表尺寸由模型决定) */
 export interface Tokenizer {
   encode(text: string): number[];
@@ -222,23 +235,30 @@ export class OnnxEmbeddingProvider implements EmbeddingProvider {
     return this.resolvedDim ?? this.config.dim ?? 768;
   }
 
-  /** 动态加载 onnxruntime(避免静态 import 在非浏览器环境崩溃) */
+  /**
+   * 动态加载 onnxruntime(避免静态 import 在非浏览器环境崩溃)
+   *
+   * ORT_ISOLATION_DESIGN S2c：浏览器从 public/vendor/ort/ 同源加载（@vite-ignore
+   * 使 rolldown 不为其生成 chunk，ort 彻底退出首屏 chunk 图）；node/测试环境回退
+   * npm 包（真实推理单测依赖 node 直跑）。
+   */
   private async loadRuntime(): Promise<typeof import('onnxruntime-web')> {
-    const ort = await import('onnxruntime-web');
+    const ort = await import(/* @vite-ignore */ resolveOrtModuleUrl());
     if (this.session) return ort;
     // 探测权重文件名:model.onnx → model_int8.onnx(int8 导出命名)
     const fileName = await this.resolveOnnxFile();
     const buf = await this.config.adapter.readModelBuffer(this.config.modelId, fileName);
     // 跨 realm 拷贝(jsdom/node 差异:instanceof 检查失败时报 "must be 'path' or 'buffer'")
     const modelData = new Uint8Array(buf);
-    this.session = await ort.InferenceSession.create(modelData, {
+    const session = await ort.InferenceSession.create(modelData, {
       executionProviders: [this.config.executionProvider ?? 'wasm'],
     });
+    this.session = session;
     // 记录模型输入名(不同模型输入不同:gte 无 token_type_ids)
-    this.inputNames = (this.session.inputNames as string[]) ?? null;
+    this.inputNames = (session.inputNames as string[]) ?? null;
     // 探测输出维度并回填
     if (!this.resolvedDim) {
-      const meta = this.session.inputMetadata as unknown as Record<string, { shape?: number[] }>;
+      const meta = session.inputMetadata as unknown as Record<string, { shape?: number[] }>;
       const inputShape = meta?.input_ids?.shape;
       if (Array.isArray(inputShape)) {
         // [1, seq, hidden] 或 [seq, hidden]

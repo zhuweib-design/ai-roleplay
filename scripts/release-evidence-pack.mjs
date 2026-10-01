@@ -111,6 +111,7 @@ const GATES = [
   { id: 'unit-integration', planFile: 'unit-integration-result.json', npmScript: 'test' },
   { id: 'build', planFile: 'build-result.txt', npmScript: 'build' },
   { id: 'csp', planFile: 'csp-result.json', npmScript: 'check:csp' },
+  { id: 'ort-firstscreen', planFile: 'ort-firstscreen-result.json', npmScript: 'check:ort' },
   { id: 'i18n', planFile: 'i18n-result.json', npmScript: 'i18n:check:strict' },
   { id: 'css-contrast', planFile: 'css-contrast-result.json', npmScript: 'a11y:contrast' },
   { id: 'runtime-schema', planFile: 'runtime-schema-result.json', npmScript: 'runtime:db:schema:check' },
