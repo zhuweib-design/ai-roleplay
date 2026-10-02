@@ -2173,9 +2173,11 @@ type="button"
   cursor: pointer;
 }
 
-.load-earlier-btn:hover {
-  color: var(--foreground);
-  border-color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .load-earlier-btn:hover {
+    color: var(--foreground);
+    border-color: var(--secondary);
+  }
 }
 
 .load-earlier-btn:disabled {
