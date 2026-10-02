@@ -138,7 +138,3 @@ onnxruntime 移入专用 Worker：主线程 `EmbeddingWorkerClient`（postMessag
 **闸门判定（S6）**：G-1 / G-2 / G-3 / G-5 全部达成——**Phase 2（方案 A Worker）不启动**，其"嵌入计算不阻塞主线程"收益另立后续排期备忘。
 
 **最终门禁（真实 PG 下证据包全量复跑）**：**15 项中 11 passed / 0 failed / 4 skipped（均有理由）**——新增 `ort-firstscreen` 门禁 ✅；postgres-transaction（真实 PG 集成）✅；e2e 两项按 --full 约定 skipped（CI push 时执行）、migration-restore（无 pg_dump）、provider-regression（无 Key，已条件化）保持诚实 skipped。实施中的小回退与修复：vendor 压缩产物一度污染 lint（数千条表达式错误）→ `eslint.config.js` 增补 `public/vendor/**` 忽略后复跑通过。
-
-## 10. 实施记录
-
-（随步骤逐条填充）
