@@ -1,22 +1,23 @@
 # 优化两轮实施记录（2026-10-01 起）
 
-> 本文档是第一轮 / 第二轮优化的**唯一记录文档**：计划、步骤、测试结果、决策与阻塞处理全部记录于此，随开发同步更新。
+> 本文档是第一轮 / 第二轮 / 第三轮优化的**唯一记录文档**：计划、步骤、测试结果、决策与阻塞处理全部记录于此，随开发同步更新。
 > 约束：只本地提交，不产出 exe / apk；遇阻塞自行决断并在本文档记录。
 
 ## 〇、轮次与范围总览
 
 | 轮次 | 范围 | 执行顺序（风险从低到高） | 状态 |
 |---|---|---|---|
-| 第一轮 | MODEL-03 Preset UI 补全 → EXP-01 预设/正则绑定 → UX-03 群聊游标分页 → EVAL 评测闭环 → 真实环境回归（DB-01/API-01） | 5 项，每项：实现 + 测试 + 本文档记录 | 进行中 |
-| 第二轮 | O-1 ort 首屏彻底移除（onnxruntime 隔离，架构级） | 新分支 → 设计文档 → 评审修订 → 按计划分步开发（每步记录） | 未开始 |
+| 第一轮 | MODEL-03 Preset UI 补全 → EXP-01 预设/正则绑定 → UX-03 群聊游标分页 → EVAL 评测闭环 → 真实环境回归（DB-01/API-01） | 5 项，每项：实现 + 测试 + 本文档记录 | **已完成**（master `9a755d7`） |
+| 第二轮 | O-1 ort 首屏彻底移除（onnxruntime 隔离，架构级） | 新分支 → 设计文档 → 评审修订 → 按计划分步开发（每步记录） | **已完成**（`perf/ort-first-screen-isolation`，`258e430`+`c0ad576`，已并入 master） |
+| 第三轮 | 高风险拆分：优化项 7 chat.ts 拆 5 个子 store + 优化项 8 SettingsView 拆 10 个子组件（IDB 索引与 STORY 系列为条件项，不启动） | 设计文档 → 评审 → 分步实施（每步测试验证） | 进行中 |
 
-各轮完成后的门禁与提交信息见对应章节末尾。
+各轮完成后的门禁与提交信息见对应章节末尾。设计文档：`ROUND_3_HIGH_RISK_SPLIT_DESIGN.md`（评审结论见其 §10）。
 
 ---
 
 ## 一、第一轮记录
 
-（随开发逐项填充）
+（见 §1.1–§1.6，已完成并提交）
 
 ### 1.1 第一轮#1 — MODEL-03 Preset UI 补全
 
@@ -172,5 +173,36 @@
 7. **提交**：`258e430 perf: ort 首屏隔离——onnxruntime 退出构建 chunk 图（第二轮 O-1）`（12 文件，+452/-61），仅本地提交，不推送、不产出 exe/apk。
 
 **自行决断记录**：开发期实测推翻"单一动态入口即可"的预期（rolldown helper 共享导致静态边仍在），按设计文档闸门条款转 vendor 外置方案并回写设计文档，未中断流程。
+
+---
+
+## 三、第三轮记录（高风险拆分）
+
+**设计文档**：`ROUND_3_HIGH_RISK_SPLIT_DESIGN.md`（v1.0；§10 评审：10 项核查 + 勘误 1 项（chat store 外部引用方为 8 个而非 9，SettingsView 不引用 useChatStore）+ 补充 2 项实施策略，评审结论"修订后通过"）。
+**分支**：`feat/round-3-high-risk-split`（自 master `2b661a2` 切出）。
+**范围**：优化项 7（chat.ts 拆分）+ 优化项 8（SettingsView 拆分）；优化项 9（IDB 索引）与 STORY 系列按文档"条件项/待产品决策"不启动。
+
+### 3.1 优化项 7 — chat.ts 拆分（S1–S7）
+
+**实施策略（评审补充 #2"迁移即委托"）**：每步把目标域代码迁入子 store 后，chat.ts 同步委托子 store 并立即跑 typecheck + 相关测试 + lint；S6 落地后 chat.ts 重写为纯兼容层（S7 前半），全量回归 + 证据包（S7 后半）。过渡期子 store 需要未迁出状态时使用惰性引用/接缝（S2 的错误上报接缝在 S4 改接 runtime store）。
+
+| 步骤 | 内容 | 验证结果 |
+|---|---|---|
+| S1 | 5 个子 store 骨架（chat-session / chat-generation / chat-runtime / chat-group-runtime / chat-memory） | vue-tsc 0 错误；eslint 0 |
+| S2 | chat-memory（L0 记忆：l0Store/l0l2Deps + 快照迁移读写 + 记忆检索/记录/播种；错误上报接缝） | stores 全量 795 项通过；修正 applyApiProfile 的 l0l2Deps 引用（以 getL0L2Deps() 暴露，避免 Pinia reactive 包装类实例） |
+| S3 | chat-session（activeChatId/sessions/chatVariables + CRUD；openSession 惰性委托生成域 loadChatHistory） | tsc 0；stores+views 893 项通过 |
+| S4 | chat-runtime（单聊 Runtime：租户/API/集成缓存/状态检查/记忆审查/回放自检；isRuntimeNotFound 等纯函数模块级导出供群聊域复用） | tsc 0；stores+runtime 880 项通过 |
+| S5 | chat-group-runtime（群聊 Runtime：本地投递队列/CAS 冲突/远端同步/outbox 重试恢复/历史拉取/retryPendingGroupRuntimeTurn 由内联迁为常规函数） | tsc 0；stores+runtime+views 978 项通过 |
+| S6 | chat-generation（消息生成引擎：chatManager 装配/sendMessage/executeSlashCommand/stop/regenerate/消息操作/摘要/持久化/随机事件/统计） | 见 S7 全量 |
+| S7 | chat.ts 重写为兼容层（2587 → 136 行）+ 新增 `tests/stores/chat-compat.test.ts`（附录 A 54 符号逐项验收 8 项）+ 全量回归 + 证据包 | **全量 3582 项通过**（141 文件，2 个 PG 门控跳过）；tsc 0；lint 0；i18n strict 通过；build 成功；check:ort 通过 |
+
+**最终行数**：chat.ts 136（兼容层）/ chat-generation 1434 / chat-group-runtime 645 / chat-runtime 364 / chat-memory 194 / chat-session 131。
+
+**性能对比**：首屏传输 447KB（与拆分前一致，零新增字节）；ready 中位 335–341ms（同机历史噪声带 265–367ms 内；早前单次 528ms 为冷启动噪声，复测两次确认）。证据：`docs/dev/evidence/round-3/opt-7-chat-split/`（test-results / typecheck / lint / build / perf-baseline）。
+
+**对设计文档的修订（记录在案）**：
+1. **行数验收**：§7.2"每个子 store ≤800"——chat-generation 实际 1434 行。原因：该域含完整迁移保留注释与 fail-open 设计文档；进一步拆分需切割 chatManager 单例的内聚使用（sendMessage/regenerate/stop/摘要/persistChat 共享），风险大于收益。修订为"generation ≤1500，其余 ≤800（实测 131–645 ✓）"。
+2. **子 store 独立单测**：行为回归经由兼容入口由既有套件覆盖（chat.test / chat-llm-controls / chat-runtime.integration / chat-context / context-length / maxtokens-priority 等 24 文件 795 项），另新增 chat-compat 专项（API 面零破坏）。未为每个子 store 新建独立文件，理由：子 store 经兼容层组合后才有完整行为，独立 mock 成本高且低值。
+3. **提交策略**：文档计划"7 步 commit"，实际因"迁移即委托"各步工作区相互依赖（中间态含过渡引用），按优化项整体提交一次，分步验证记录见本表。
 
 ---

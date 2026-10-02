@@ -1,0 +1,15 @@
+{
+  "measuredAt": "2026-10-02T15:33:05.464Z",
+  "branch": "feat/round-3-high-risk-split",
+  "firstScreenTransferKB": 447,
+  "firstScreenTransferBaselineKB": 447,
+  "transferDeltaKB": 0,
+  "readyMedianMs": {
+    "round3PostSplit": 341,
+    "round3PostSplitRepeat": 335,
+    "round2Reference": 266,
+    "round0Reference": 336
+  },
+  "note": "ready 时间跨会话噪声带 265-453ms（见 PERF_OPTIMIZATION 与本轮多次测量）；同机历史区间 265-367ms，本轮 335-341ms 在带内。首屏传输与拆分前逐字节同量级（447KB），拆分不新增首屏字节。构建产物 ort 门禁通过。",
+  "methodology": "scripts/measure-startup.mjs，vite preview + Chromium 无头，多次取中位"
+}
