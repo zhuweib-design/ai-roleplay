@@ -458,7 +458,7 @@
 
 **通道适用范围说明**：B10–B15 新出的 D-5 / D-6 / D-7 / D-8 / D-9 / D-10 全是**状态、滚动与持久化逻辑**缺陷，与视口宽度、设备形态无关，故未在 Pixel 5 仿真通道重复跑（同一份代码同一条判定路径）；本轮唯一与宽度相关的是 D-2（1280 档抽屉遮挡），已在桌面档实测。移动仿真通道的功能与布局结论仍由 B0 / B9 的 33 项 Playwright 用例承担（31 通过 + 2 项判定为环境抖动，单 worker 复跑 3/3 绿）。
 
-**与既有门禁的关系**：本轮实机结论与 CI #84（Quality Gates 17 步全跑、E2E、Tauri Build 全绿）互相印证。本轮新发现的 D-1（市场远程清单 404）与 O-6（对比面板渲染）均不在现有自动化覆盖范围内 —— D-1 属外部依赖配置，O-6 属组件条件渲染；若要长期拦截需补对应 E2E 用例。B10 的 **D-5 / D-6 同样落在自动化盲区**：`chat-main-window.test.ts` 与 `group-chat-pagination.test.ts` 都在 jsdom 里断言"渲染条数"，既不校验占位高度，也不会因赋值 `scrollTop` 触发真实 `scroll` 事件（`@vue/test-utils` 与 jsdom 均不派发），因此"程序补偿滚动被 `handleScroll` 误判为用户滚动"这类缺陷**结构上不可能被现有单测拦住**。若要长期拦截，需：①在单测中显式 `vm.scrollTop = X` 后 `await nextTick()` 并手动 `trigger('scroll')` 来模拟补偿事件；②补一条 Playwright 用例，造 ≥2×页大小的历史后断言"打开会话 `atBottom === true`"与"`windowStart===0` 时顶部 spacer 高度为 0"。
+**与既有门禁的关系**：本轮实机结论与 CI #84（Quality Gates 17 步全跑、E2E、Tauri Build 全绿）互相印证；B10–B15 期间的三次提交（`4fd77d8` / `887b017` / `57dc451`）触发的流水线也**连续全绿**（run 37150321455 / 37151966197 / 37152359851），说明本轮只动文档与测试记录，未影响任何门禁。本轮新发现的 D-1（市场远程清单 404）与 O-6（对比面板渲染）均不在现有自动化覆盖范围内 —— D-1 属外部依赖配置，O-6 属组件条件渲染；若要长期拦截需补对应 E2E 用例。B10 的 **D-5 / D-6 同样落在自动化盲区**：`chat-main-window.test.ts` 与 `group-chat-pagination.test.ts` 都在 jsdom 里断言"渲染条数"，既不校验占位高度，也不会因赋值 `scrollTop` 触发真实 `scroll` 事件（`@vue/test-utils` 与 jsdom 均不派发），因此"程序补偿滚动被 `handleScroll` 误判为用户滚动"这类缺陷**结构上不可能被现有单测拦住**。若要长期拦截，需：①在单测中显式 `vm.scrollTop = X` 后 `await nextTick()` 并手动 `trigger('scroll')` 来模拟补偿事件；②补一条 Playwright 用例，造 ≥2×页大小的历史后断言"打开会话 `atBottom === true`"与"`windowStart===0` 时顶部 spacer 高度为 0"。
 
 ---
 
