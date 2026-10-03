@@ -13,7 +13,7 @@
 | 桌面浏览器通道 | 本机 Microsoft Edge（Playwright `msedge` project，Desktop Chrome 视口） | `playwright.config.ts:50-55` |
 | 移动通道 | **Edge/Chromium 的 Pixel 5 设备仿真**（视口 393×851、touch、UA、DPR 3） | `playwright.config.ts:80-99` |
 | WebKit 通道 | 本机未安装 webkit 内核，**本地不跑**，由 CI 覆盖 | `~/AppData/Local/ms-playwright` 仅有 `chromium_headless_shell` / `ffmpeg` / `winldd` |
-| 虚拟机 / 真机 | **不可达**：无 VirtualBox / VMware / qemu / Android emulator / 国产模拟器；`adb devices` 列表为空；Hyper-V 仅 `vmcompute` 在跑、无 `VMMS` | 探测输出见附录 A |
+| 虚拟机 / 真机 | **不可达**：无 VirtualBox / VMware / qemu / Android emulator / 国产模拟器；`adb devices` 列表为空；Hyper-V 仅 `vmcompute` 在跑、无 `VMMS` | 探测输出见附录 B |
 
 **替代决策（遇阻塞自行决断）**：目标要求"虚拟机的手机端"，但本机不存在任何虚拟机或 Android 运行时，也无 adb 设备可接管。故手机端测试改由**设备仿真 + 真实触摸事件 + PWA 视口**承担（即仓库自身 `mobile-*` project 的做法），本文所有移动端结论均带"仿真通道"限定。真实 Android WebView 行为（键盘避让、`dvh` 实现差异、原生分享）不在本轮可验证范围内，已列入遗留问题 L-7。
 
@@ -25,7 +25,7 @@
 
 按**路由 + 数据域 + 交互闭环**三条件交叉划分：同一批次内的用例共享一条可独立验收的业务闭环（有入口、有状态变更、有可观察结果），且尽量不跨存储域（IndexedDB store：`characters` / `chats` / `documents` / `groups` / `lorebooks` / `personas` / `settings` / `snapshots` / `stories`），使失败可归因到单一模块。
 
-15 个路由视图 + 设置 6 面板 + 横切能力，归并为 9 个批次：
+15 个路由视图 + 设置 6 面板 + 横切能力，归并为 9 个业务批次；执行中因"实例数据不足以触发分页"追加第 10 批（B10 长历史专项），故实跑 **10 批**：
 
 | 批次 | 覆盖模块（路由 / 组件 / 存储域） | 划分依据 |
 |---|---|---|
@@ -38,6 +38,7 @@
 | B7 | 模型与检索：设置内 API 配置 CRUD / 测试连接 / 获取模型列表 / 主模型切换、`LocalModelView`、RAG 双通道、ORT 首屏隔离 | 全部围绕"模型供给"，直接决定 B3/B4/B6 能否真跑 |
 | B8 | 设置其余：外观、扩展、数据（备份/恢复/导入导出）、安全（主密码与透明加密）、关于、`CommunityMarketView` | 同一 `settings` 域 + 文件系统边界，验收点是持久化与加密 |
 | B9 | 横切：i18n、响应式与移动端布局、无障碍（对比度 / ARIA / 键盘）、错误与重试、刷新持久化 | 不属任一业务域，但影响每个域 |
+| B10 | 长历史专项（追加批次）：`GroupChatView` 游标分页（UX-03）、`ChatMain` 双向窗口化与占位回收（P2-11）、窗口外全文搜索 | B3 / B5 的真实实例都只有个位数消息，这两条链路**结构性地没被触发过**；用造数把"数据规模"单独作为一个维度补测，才能判定"有单测 ≠ 实机可用" |
 
 ---
 
@@ -54,6 +55,7 @@
 | B7 | 模型供给与检索 | 配置 CRUD 持久化；测试连接对可用端点成功、对故障端点可归因；设主模型后对话页跟随；获取模型列表为实时数据；无向量模型时检索静默跳过；ORT 不进首屏 |
 | B8 | 设置持久化与数据安全 | 主题/字号跨刷新保持；备份导出与还原闭环；设主密码后 apiKey 落盘为密文；市场远程失败时降级可见 |
 | B9 | 横切质量 | 中英切换无残留硬编码；窄视口无横向滚动、控件字号 ≥16px、hover 不粘滞；对比度 0 违规；键盘可达（skip link 首位、焦点可达）；错误有重试与提示 |
+| B10 | 长历史下分页与窗口化在真实浏览器中可用 | 造数 ≥ 页大小后：窗口外条数与页大小算术一致；翻页后标记序列连续、不重复、不乱序；扩页后 `scrollTop` 补偿等于理论值（阅读位置不跳变）；DOM 行数受窗口上限约束（单聊恒 ≤ 2×`RENDER_WINDOW`）；**打开会话必须落在最新一条**；占位高度与实际未渲染区间一一对应（`windowStart=0` 时顶部占位须为 0）；窗口外消息仍可被搜索命中并定位 |
 
 ---
 
@@ -161,7 +163,7 @@
 
 ### B5 · 群聊（`/group`）
 
-**结果：通过（L-3 未覆盖）**
+**结果：通过（游标分页改由 B10 实测）**
 
 | 用例 | 结果 | 证据 |
 |---|---|---|
@@ -169,7 +171,7 @@
 | 创建群聊 | 通过 | 填名称 + 点选 Kael / Lyra（按钮态 `char-pick selected`）→ `groups` **0 → 1**，toast「已创建群聊：QA-B5-测试群」 |
 | 群聊工作台 | 通过 | 添加成员 / 生成随机 NPC / 归档 / 删除 / **导出 ST · 导入 ST** / 逐成员 Runtime 状态 / 发言模式（自然轮换 · 指定发言） |
 | 多角色轮次与中止 | 通过（E2E） | `group-chat-flow` 两条（真实模型双角色 + 独立 Runtime Context 与 Event；生成中可中止且不提交公共回合与旁听事件）双通道通过 |
-| 游标分页 | 未覆盖 | "加载更早消息"存在但实例历史不足，未触发真实分页（L-3；逻辑由 `group-chat-pagination.test.ts` 覆盖） |
+| 游标分页 | 已转 B10 实测 | 本批实例历史不足，未触发真实分页；改由 **B10** 造 150 条后实机覆盖（L-3 已闭环，并产出 D-5） |
 
 ### B6 · 创作扩展（`/story` · `/image-gen`）
 
@@ -228,6 +230,33 @@
 | 错误与重试 | 通过 | 503 期间对话给出可读错误且输入可用；LLM 重试由 `tests/api/llm-retry.test.ts` 覆盖 |
 | WebKit / 真机 | 未覆盖 | 本机无 webkit 内核、无虚拟机与 adb 设备（L-7） |
 
+### B10 · 长历史分页专项（补 L-3：单聊双向窗口化 + 群聊尾部游标）
+
+**为什么要单开一批**：B3 / B5 的实例历史都只有个位数消息，分页与窗口回收这两条链路**从未被真实触发**（L-3 的成因）。本轮用 IndexedDB 直接造数（**0 次模型调用**），造出 150 条群聊历史与 320 条单聊历史后在真实浏览器里翻阅。
+
+**造数与清理**：写入 `groups`（`group-pagination-l3` 150 条 / `group-short-l3` 12 条）与 `chats`（`chat-l4-long` 200 条 / `chat-l4-huge` 320 条）；取证完成后已删除，库回到 `chats=[chat-seraphina]`、`groups=[group-99cabc11…]`。复现脚本见附录 A。
+
+**验收标准**：①窗口外消息数与页大小一致；②翻页后消息不重复、不乱序、内容可逐条对齐；③阅读位置不跳变（scrollTop 补偿准确）；④DOM 有上限，不随历史线性膨胀；⑤打开会话落在最新一条；⑥全文搜索不漏窗口外消息。
+
+| 用例 | 结果 | 实机证据 |
+|---|---|---|
+| 群聊尾部窗口初始态 | 通过 | 150 条 → DOM 仅 **60** 行（`TURN_PAGE_SIZE=60`），标记连续 `091…150`，徽标"加载更早的消息（还有 **90** 条）" |
+| 群聊点按钮翻页 | 通过 | 60 → **120**，标记 `031…150` 连续无重复；徽标转"还有 **30** 条" |
+| 群聊 scrollTop 补偿 | 通过 | 补偿前 `scrollTop=5224.7 / scrollHeight=5620`，翻页后 `scrollHeight=11184`、`scrollTop=10788`，与理论值 `5224.7+(11184-5620)=10788.7` **逐位吻合**；视口顶部那条仍是 `#147`（阅读位置未跳变） |
+| 群聊翻至全量 | 通过 | 第三次翻页后 DOM=**150**、标记 `001…150` 连续、无重复、`.load-earlier-row` 正确卸载；`role="log"` + `aria-live="polite"` 齐备 |
+| 群聊触顶自动加载 | 通过 | 重进会话后把滚动区置 0，**无需点按钮**自动 60→120→150，到底后按钮消失 |
+| 群聊打开落在最新消息 | **失败（D-5）** | 选中 150 条群聊后 `scrollTop=0`（视口顶部仍是窗口内最早一条），且滚动事件立即触发扩页 60→120；补偿把 `scrollTop` 抬到 **5565/11184（52%）**，视口停在 `#090…#094` —— 既非最新也非最早 |
+| 短群聊打开落点（对照组） | 通过 | 12 条的群聊打开即 `atBottom=true`（`scrollTop=783`，`783+395=1178=scrollHeight`）⇒ D-5 只发生在**触发分页**的长历史，不是"自动滚底"本身坏了 |
+| 单聊双向窗口化 | 通过 | 320 条 → 初始 DOM **100**（`RENDER_WINDOW=100`），标记 `221…320`，徽标"加载更早消息（还有 220 条）"，打开即落底 |
+| 单聊上滚扩窗 + 底部回收 | 通过 | 依次上滚：窗口 `221…320` → `121…220` → `021…220` → `001…200`，DOM **恒为 200 = 2×RENDER_WINDOW**，底部 spacer 随之出现（`4800 → 5760px`），最早一条渲染后按钮消失 ⇒ "恒 ≤ 2×RENDER_WINDOW" 的不变量成立 |
+| 单聊顶部占位高度 | **失败（D-6）** | `windowStart=0`（最早消息已全部真实渲染）时顶部 `.msg-spacer` 仍高 **29740px**；反复点"加载更早消息"可观测到同一区间被**重复累加**：`4780 → 14360 → 23960`，而 DOM 恒 200、首条恒 `#121`、徽标恒"还有 120 条" ⇒ 越点越空白，翻不到更早内容 |
+| 单聊搜索命中窗口外消息 | 通过 | 窗口为 `221…320`、`#003` 不在 DOM 时搜"锦鲤关键词MMQ3" → `0/1 条命中`；按 Enter → `1/1 条命中`，窗口重定位到 `001…200`，命中气泡加 `.message-search-active` 且**在视口内** ⇒ "搜索独立于虚拟化窗口"的注释与实现一致 |
+| 既有单测覆盖度核对 | 缺口确认 | `tests/views/chat-main-window.test.ts` 覆盖渲染上限 / 触顶扩窗 / 防重入 / 搜索重定位，但**未断言 spacer 高度**，且 jsdom 中改 `scrollTop` 不产生真实 scroll 事件 ⇒ 无法暴露 D-5 / D-6 |
+
+**D-6 根因定位**（读码所得）：`ChatMain.vue:268-295 loadOlderMessages()` 用 `topSpacerHeight.value += msgHeightAt(i)` **增量累加**占位高度，同时 `el.scrollTop = prevScrollTop + (scrollHeight 差值)` 的补偿会排入一个 scroll 事件；该事件在 `suppressScroll=false`、`windowLoading=false` **之后**才到达，`handleScroll`（`ChatMain.vue:342-356`）此时看到"距底部 <300px 且有更晚消息"，于是回调 `loadNewerMessages()` 把窗口又滑回底部，并在"回收顶部"里**第二次**把同一批 `[newStart, windowStart)` 的高度 `+=` 进 `topSpacerHeight`。两条路径相互触发，形成"高度只加不减、内容原地不动"的 ping-pong。正确做法应是 `topSpacerHeight = Σ height[0, windowStart)`（按窗口边界重算而非累加），并用方向判定（`scrollTop` 相对上一次是增是减）或时间窗抑制来区分"用户滚动"与"程序补偿滚动"。
+
+**D-5 根因定位**：`GroupChatView.vue:202-208` 的自动滚底用 `scrollIntoView({behavior:'smooth'})`，而 `:229-232 onMessagesScroll()` 只按 `scrollTop <= 80` 判触顶、**不区分滚动来源**。平滑动画起步阶段的低 `scrollTop` 被当成"用户翻到顶部"⇒ 立即扩页，扩页后的 `scrollTop += 高度差` 又打断平滑动画，最终停在列表中部。
+
 ---
 
 ## 四、缺陷与观察清单
@@ -238,6 +267,9 @@
 | **D-2** | **P2（UI / 交互遮挡）** | 桌面 1280×720 下，助手消息的操作条（编辑 / 复制 / 朗读 / 翻译 / 重新生成 / 删除）被角色列表抽屉遮挡，真实鼠标点击被拦截 | Playwright 实测几何：`#character-drawer` 覆盖 `x=72..352`，而"编辑"按钮盒为 `x=321..345`（24×24），完全落在抽屉之内；Playwright 报 `char-time span ... intercepts pointer events` 并重试至超时。人工在较窄窗口点击成功，说明该遮挡随视口宽度出现。**这同时是 L-10 未能覆盖的根因**，不是测试脚本问题。修法：确认桌面端角色列与对话列的 flex/absolute 布局边界，或在选择角色后收起抽屉 |
 | **D-3** | **P1（数据完整性）** | 角色版本快照丢失 `personality` 与 `scenario` 字段，导致①"差异对比"对这两个字段永远报 0 差异；②**回滚会把角色的性格与场景清空** | 实机取证：同一角色同一时刻 `live.personality = "完全改写的性格：暴躁、只用单句回答（L-1 diff · L-1 二次修改"`、`live.scenario = "测试会议室"`，而最新提交 `snapshot.personality = ""`、`snapshot.scenario = ""`（`description` 正常）。构造点 `src/core/character-version-control.ts:354` 的 `snapshot: deepClone(card)` 收到的 `card` 是缺字段的投影，而非完整角色卡。复现：编辑角色 personality → 保存 → 版本页"提交新版本" → 查 IndexedDB `snapshots` 内该提交的 `snapshot.personality` 为空 |
 | **D-4** | **P2（功能不可用）** | 已落库的分支在 UI 中不出现，导致分支切换与**合并**无法进行 | 实机取证：`snapshots` 内该角色仓库 `branches: ["main","qa-branch"]`、`currentBranch: "main"`、`commits: 3`；但"分支"tab 徽标显示"分支 1"，面板只列 `main`，"合并"tab 的 `#merge-source`（过滤掉当前分支后应剩 `qa-branch`）也只有占位项。因此新建分支虽成功提示却不可用 |
+| **D-5** | **P2（交互：打开长群聊落在列表中部）** | 打开有 150 条历史的群聊后，视口停在中间（`#090…#094`，滚动位置 52%），既不是最新一条也不是最早一条；同时窗口在未交互的情况下自行扩页 60→120 | 实机取证见 B10；对照组（12 条短群聊）打开即落底 ⇒ 自动滚底本身没坏。根因：`GroupChatView.vue:202-208` 平滑滚底与 `:229-232` "只按 `scrollTop<=80` 判触顶、不区分滚动来源"的自动扩页相互抢占，扩页后的 `scrollTop +=` 补偿又打断平滑动画。修法：`onMessagesScroll` 需按**滚动方向 + 是否用户意图**过滤（记录上一次 `scrollTop`，只在上滚时扩页；程序滚动期间置标志位屏蔽），并在切换群组后先落底再启用分页 |
+| **D-6** | **P2（功能 + 性能：顶部占位高度重复累加）** | 单聊反复触发"加载更早消息"时，DOM 条数与首条标记不变、徽标恒为"还有 120 条"，但顶部空白占位持续增长（`4780 → 14360 → 23960px`）；即使窗口已覆盖最早一条（`windowStart=0`），顶部仍有 **29740px** 空白。用户表现为"越点上滚越空白、更早的消息点不出来"，长对话 `scrollHeight` 无界增长 | 实机取证见 B10。根因：`ChatMain.vue:268-295` 以 `topSpacerHeight += …` 增量累加，补偿赋值排入的 scroll 事件在抑制标志复位后才到达，`handleScroll:342-356` 把它判为"下滚近底"回调 `loadNewerMessages`，其"回收顶部"分支对同一批消息**第二次**累加 ⇒ 只加不减的 ping-pong。修法：占位高度按窗口边界**重算**（`Σ height[0, windowStart)`）而非累加，并区分用户滚动与程序补偿滚动。现有 `tests/views/chat-main-window.test.ts` 未断言 spacer 高度、jsdom 也不会因赋值 `scrollTop` 派发真实 scroll 事件，故未被拦截 |
+| O-12 | P3（观察：滚动条不反映历史全量） | 打开 320 条单聊时 `scrollHeight` 仅 5250px（只对应已渲染的 100 条），滚动条长度与实际历史规模不成比例，用户无法从滚动条判断还有 220 条未加载 | 属"初始窗口不预置占位"的既有设计（`.msg-spacer` 仅 `v-if="topSpacerHeight>0"`，见 `ChatMain.vue:851-856`），功能上由徽标"还有 220 条"补足；记录以免与 D-6 的**异常**空白混淆 —— D-6 是同一区间被重复计数 |
 | **O-6** | ~~P2 候选~~ **已撤回（测试误判）** | 曾报"版本对比面板不渲染" | 实为**选项卡页面**：diff 面板在"差异对比"tab 内，我此前在未激活该 tab 的情况下探测 DOM。切到"差异对比"tab 后，选两个版本点"对比"正常渲染"差异字段：N / 完全相同"。非缺陷 |
 | O-11 | P3（体验） | 删除消息无二次确认 | 点"删除"即从 2 条变 1 条，无确认弹窗、无 toast、无撤销入口；版本回滚有追加提交可撤销，但消息删除是**不可逆**的，建议补确认或撤销 |
 | O-7 | ~~P3 候选~~ **已升级为 D-4** | 分支已落库但"分支"面板与合并源均不显示 | 见 D-4；本行保留仅作追溯 |
@@ -255,7 +287,7 @@
 |---|---|---|
 | L-1 | ~~版本非零字段级 diff~~ | **已闭环并转为缺陷 D-3**：diff 面板本身工作正常（"差异对比"tab 内），但对 personality / scenario 永远报 0 差异，根因是快照丢字段（D-3），非 diff 引擎问题 |
 | L-2 | 版本合并（merge） | 锁生命周期已闭环（获取 → "已释放全部锁" → "已清理 0 个过期锁"）；**合并无法执行**，因已落库分支不显示（D-4） |
-| L-3 | 群聊"加载更早消息"真实分页 | 实例历史不足；逻辑由单测覆盖 |
+| L-3 | ~~群聊"加载更早消息"真实分页~~ | **已闭环（B10）**：IndexedDB 造 150 条历史后实机走完 60→120→150 三页，标记连续无重复、徽标计数 90→30→消失、scrollTop 补偿逐位吻合；顺带把单聊双向窗口化（320 条，DOM 恒 200）与"搜索命中窗口外消息"一并实测。**代价**：新发现 D-5（群聊打开落在列表中部并自行扩页）与 D-6（单聊顶部占位重复累加） |
 | L-4 | ~~故事引擎上传→结构化提取→生成~~ | **已闭环**：上传 → "已完成" → 提供"导入结果 / 设置主角"；仅"导入结果"落库一步未点（属 B2 已覆盖域） |
 | L-5 | ~~"获取模型列表"按钮~~ | **已闭环**（B7：实时获取到 19 个模型） |
 | L-6 | ~~键盘 Tab 序与焦点遍历~~ | **已闭环**（`/chat`：skip link 首位、39/40 可聚焦、landmark 齐备；发现 O-8） |
@@ -273,27 +305,56 @@
 | B2 角色域 | **通过**（L-1 未闭环；O-6/O-7 待复核） | 创建 4→5、编辑回显、提交 / 回滚 / parent 链 / 分支落库 / 全字段锁 |
 | B3 对话核心 | **通过**（含 O-9 / O-11） | 流式回复 + 思考块 + Token 统计；503 可读不卡死；消息级 编辑 / 重新生成 / 删除 / 翻译 全部实机通过；复制与朗读无反馈、删除无二次确认 |
 | B4 设定域 | **通过** | 世界书 0→1；数据银行 132 B → 2 分块；随机事件模板创建并回显参数 |
-| B5 群聊 | **通过**（L-3 未覆盖） | 成员数校验生效；建群 0→1；ST 导入导出入口；轮次与中止由 E2E 覆盖 |
+| B5 群聊 | **通过**（游标分页转 B10） | 成员数校验生效；建群 0→1；ST 导入导出入口；轮次与中止由 E2E 覆盖 |
 | B6 创作扩展 | **通过** | 图像生成未配模型时可读拦截；故事引擎上传→分析"已完成" |
 | B7 模型与检索 | **通过** | 配置 CRUD / 测试连接 / 获取模型列表（19 个）/ 主模型联动 / 端到端出字 / ORT 门禁 |
 | B8 设置与安全 | **通过，含 P2 缺陷 D-1** | 主题与字号跨刷新持久化；备份导出加密；主密码后 apiKey 转 `enc:v1:` 密文 |
 | B9 横切 | **通过**（L-7 环境不可达） | 中英即时切换；移动仿真布局与 6 条核心流程全绿；axe 对比度 3/3；键盘可达 |
+| B10 长历史专项 | **部分通过（含 2 项 P2 缺陷 D-5 / D-6）** | 群聊 150 条走完 60→120→150 三页、标记连续、scrollTop 补偿 10788 vs 理论 10788.7；单聊 320 条 DOM 恒 200、搜索命中窗口外 `#003` 并重定位；但群聊打开落在 52% 中部（D-5），单聊顶部占位重复累加至 29740px（D-6） |
 
-**总体判断**：Web 端主链路（导航 → 角色 → 对话 → 世界书 / 数据银行 → 群聊 → 设置 → 加密与备份 → i18n / 移动端 / 无障碍 / 键盘）在本机实机可用，未发现阻断级缺陷。功能级缺陷四项：**D-1 社区市场远程拉取恒 404**（硬编码分支 `main` 与实际 `master` 不一致，叠加仓库私有）、**D-2 桌面 1280px 档消息操作条被角色抽屉遮挡**（宽度相关，更宽视口不复现）、**D-3 版本快照丢失 personality / scenario（P1，回滚会清空这两个字段）**、**D-4 已落库分支不在 UI 出现（分支切换与合并不可用）**。我此前记的 O-6 / O-7 经复核为测试误判或已升级，已在表中标注撤回。桌面端与真实移动设备因环境缺失未做运行时验证（L-7、L-8）。
+**总体判断**：Web 端主链路（导航 → 角色 → 对话 → 世界书 / 数据银行 → 群聊 → 设置 → 加密与备份 → i18n / 移动端 / 无障碍 / 键盘）在本机实机可用，未发现阻断级缺陷。功能级缺陷六项：**D-1 社区市场远程拉取恒 404**（硬编码分支 `main` 与实际 `master` 不一致，叠加仓库私有）、**D-2 桌面 1280px 档消息操作条被角色抽屉遮挡**（宽度相关，更宽视口不复现）、**D-3 版本快照丢失 personality / scenario（P1，回滚会清空这两个字段）**、**D-4 已落库分支不在 UI 出现（分支切换与合并不可用）**、**D-5 打开长群聊落在列表中部并自行扩页**、**D-6 单聊顶部占位高度重复累加（越点上滚越空白、scrollHeight 无界增长）**。其中 D-5 / D-6 是"有单测但实机不成立"的典型：`chat-main-window.test.ts` 未断言占位高度，且 jsdom 不因 `scrollTop` 赋值派发真实 scroll 事件，故 ping-pong 与平滑滚动被劫持都只在真实浏览器里现形。我此前记的 O-6 / O-7 经复核为测试误判或已升级，已在表中标注撤回。桌面端与真实移动设备因环境缺失未做运行时验证（L-7、L-8）。
 
 ## 七、收尾说明
 
-**模型用量（按"节省着用"执行）**：对话页端到端真实调用 **2 次**（`hy4-preview-f`，约 112 + 约 90 tokens）；网关直连探测 3 次（各 ≤64 tokens）；故事引擎异步结构化提取 1 组（40 字 / 2 块，用量极小）；另有 1 次对话尝试失败于上游 503。首选模型全程可用，未触发切换。其余全部为静态断言、IndexedDB 读取或既有 E2E 复用。
+**模型用量（按"节省着用"执行）**：对话页端到端真实调用 **2 次**（`hy4-preview-f`，约 112 + 约 90 tokens）；网关直连探测 3 次（各 ≤64 tokens）；故事引擎异步结构化提取 1 组（40 字 / 2 块，用量极小）；另有 1 次对话尝试失败于上游 503。首选模型全程可用，未触发切换。**B10 全程 0 次模型调用**——分页与窗口化是纯前端渲染问题，用 IndexedDB 造数即可复现，无需真实回复。其余全部为静态断言、IndexedDB 读取或既有 E2E 复用。
 
-**测试数据残留**：本轮在 **Qoder 内置浏览器**的 IndexedDB（`ai-roleplay`）中留下：1 个角色（`QA-B2-测试角色`）、1 个世界书、1 个文档（`qa-doc.md`）、1 个群聊（`QA-B5-测试群`）、1 个故事（`qa-story.md`）、1 个事件模板、若干版本提交与 1 个分支，并在该会话内设置了主密码（不落盘）。该数据库与用户自己的浏览器相互隔离；如需清理，删除该浏览器站点数据即可。
+**测试数据残留**：本轮在 **Qoder 内置浏览器**的 IndexedDB（`ai-roleplay`）中留下：1 个角色（`QA-B2-测试角色`）、1 个世界书、1 个文档（`qa-doc.md`）、1 个群聊（`QA-B5-测试群`）、1 个故事（`qa-story.md`）、1 个事件模板、若干版本提交与 1 个分支，并在该会话内设置了主密码（不落盘）。B10 造出的 4 条长历史数据（2 个群聊 + 2 个单聊，共 782 条消息）**取证后已删除**，库已回到 `chats=[chat-seraphina]`、`groups=[group-99cabc11…]`；复现请直接用附录 A 的脚本重新写入。该数据库与用户自己的浏览器相互隔离；如需彻底清理，删除该浏览器站点数据即可。
 
 **环境替代声明**：目标中的"虚拟机手机端"在本机不可达（无虚拟机 / 无 Android 运行时 / 无 adb 设备），已统一以 Pixel 5 设备仿真替代，所有移动端结论均带此限定。桌面端（Tauri）因本机无 cargo 且按约束不产出安装包，仅达"CI 编译通过 + 静态审查"级别。
 
-**与既有门禁的关系**：本轮实机结论与 CI #84（Quality Gates 17 步全跑、E2E、Tauri Build 全绿）互相印证。本轮新发现的 D-1（市场远程清单 404）与 O-6（对比面板渲染）均不在现有自动化覆盖范围内 —— D-1 属外部依赖配置，O-6 属组件条件渲染；若要长期拦截需补对应 E2E 用例。
+**与既有门禁的关系**：本轮实机结论与 CI #84（Quality Gates 17 步全跑、E2E、Tauri Build 全绿）互相印证。本轮新发现的 D-1（市场远程清单 404）与 O-6（对比面板渲染）均不在现有自动化覆盖范围内 —— D-1 属外部依赖配置，O-6 属组件条件渲染；若要长期拦截需补对应 E2E 用例。B10 的 **D-5 / D-6 同样落在自动化盲区**：`chat-main-window.test.ts` 与 `group-chat-pagination.test.ts` 都在 jsdom 里断言"渲染条数"，既不校验占位高度，也不会因赋值 `scrollTop` 触发真实 `scroll` 事件（`@vue/test-utils` 与 jsdom 均不派发），因此"程序补偿滚动被 `handleScroll` 误判为用户滚动"这类缺陷**结构上不可能被现有单测拦住**。若要长期拦截，需：①在单测中显式 `vm.scrollTop = X` 后 `await nextTick()` 并手动 `trigger('scroll')` 来模拟补偿事件；②补一条 Playwright 用例，造 ≥2×页大小的历史后断言"打开会话 `atBottom === true`"与"`windowStart===0` 时顶部 spacer 高度为 0"。
 
 ---
 
-## 附录 A · 环境探测原始输出
+## 附录 A · B10 长历史造数脚本（在应用内控制台执行，0 模型消耗）
+
+```js
+// 群聊 150 条（验证 UX-03 游标分页 / D-5）
+const db = await new Promise((res, rej) => { const r = indexedDB.open('ai-roleplay', 6); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const t0 = Date.parse('2026-10-03T10:00:00.000Z');
+const members = [['kael','Kael'],['lyra','Lyra'],['mira','Mira']]
+  .map(([characterId, name]) => ({ characterId, name, joinedAt: new Date(t0).toISOString(), allowAutoSelect: true }));
+const msgs = Array.from({ length: 150 }, (_, k) => {
+  const i = k + 1, m = members[i % 3];
+  return { id: 'pg-' + String(i).padStart(3, '0'), role: i % 7 === 0 ? 'user' : 'assistant',
+    content: `分页标记#${String(i).padStart(3, '0')} ${m.name}：用于翻页断言。`,
+    timestamp: new Date(t0 + i * 1000).toISOString(), swipes: [], swipeIndex: 0,
+    characterId: m.characterId, characterName: m.name };
+});
+const group = { id: 'group-pagination-l3', name: 'L3-分页测试群', description: '', members,
+  firstMessage: msgs[0].content, messages: msgs, mode: 'natural', lastSpeakerId: 'mira',
+  createdAt: new Date(t0).toISOString(), updatedAt: new Date(t0 + 200000).toISOString(), lifecycleStatus: 'active' };
+await new Promise((res, rej) => { const t = db.transaction(['groups'], 'readwrite'); t.objectStore('groups').put(group); t.oncomplete = res; t.onerror = () => rej(t.error); });
+
+// 单聊 320 条（验证 P2-11 双向窗口化 / D-6）：把 messages 换成 320 条、
+// 记录写进 chats store（keyPath=id，字段同 Chat：{id, characterId, title, messages, createdAt, updatedAt, pinned}），
+// 并把第 3 条内容设为窗口外可搜索的关键词，即可复现 B10 全部断言。
+// 清理：db.transaction(['groups'],'readwrite').objectStore('groups').delete('group-pagination-l3')
+```
+
+---
+
+## 附录 B · 环境探测原始输出
 
 - `adb devices -l` → `List of devices attached`（空）
 - `command -v adb emulator virsh VBoxManage vmware qemu-system-x86_64 waydroid scrcpy` → 仅 `adb: /d/platform-tools/adb`
