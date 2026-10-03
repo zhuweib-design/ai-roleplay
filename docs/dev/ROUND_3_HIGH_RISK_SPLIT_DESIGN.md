@@ -1,6 +1,7 @@
 # 第三轮高风险拆分优化设计方案
 
-> **状态**：评审通过（2026-10-02，见 §10），开发中  
+> **状态**：已实施完成并合入 `master`（2026-10-03；优化项 7 = `5c191e6`，优化项 8 = `10f656e`，收尾 = `c8bf873`/`b0adc0f`）。评审通过 2026-10-02，见 §10。  
+> **实施偏差（2026-10-03 回写）**：本文按设计列出"10 个子组件"，实际落地为**新增 5 个分区面板**（`SettingsAboutPanel` / `SettingsAppearancePanel` / `SettingsDataPanel` / `SettingsExtensionPanel` / `SettingsSecurityPanel`）+ 复用既有的 `SettingsModelPanel` / `VectorModelPanel`，即 `src/components/settings/` 下 7 个面板文件；主文件 688 行（目标 ≤600，偏差理由见 `OPTIMIZATION_ROUNDS_2026-10-01.md` §3.3 修订注记）。文中"10 个子组件"的验收表述以此为准。  
 > **关联文档**：`OPTIMIZATION_ROUNDS_2026-10-01.md`、`ORT_ISOLATION_DESIGN.md`  
 > **执行原则**：继承第二轮成功经验——分阶段实施、每步可验证、设置闸门、完整回归测试
 

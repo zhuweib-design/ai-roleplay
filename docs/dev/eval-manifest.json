@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "aijiuguan-eval-manifest",
   "mode": "offline-fixture-selfcheck",
-  "commit": "5c3adba085137165439b099d7b52cd557f6542e3",
+  "commit": "b0adc0f5db63b12110a2ffa5f11d8e56e5242c50",
   "dataset": {
     "id": "aijiuguan-setting-facts",
     "version": "v1.0.0",
@@ -10,7 +10,7 @@
     "sha256": "e74553c0fa0a0d0438522ed87d4800c7faeabaadf56672bc9a0879db724ba917"
   },
   "owner": "【待确认】",
-  "ranAt": "2026-10-01T12:33:33.538Z",
+  "ranAt": "2026-10-03T12:30:29.105Z",
   "environment": {
     "node": "v24.19.0"
   },

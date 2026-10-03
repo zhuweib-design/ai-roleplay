@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-09-28 13:50（本地时区）
+- **生成时间**：2026-10-03 20:30（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v1.0.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：519 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：42 个
+- **收录文件**：832 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：345 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -19,7 +19,12 @@ ai-roleplay/
   - `memory/`  — 11 个文件
 - `.workbuddy-ai/`  — 6 个文件
   - `memory/`  — 6 个文件
-- `docs/`  — 189 个文件
+- `dist-preopt-20260928/`  — 236 个文件
+  - `assets/`  — 117 个文件
+    - `icons/`  — 12 个文件
+      - `dl_builtin_tik_tok/`  — 12 个文件
+  - `fonts/`  — 106 个文件
+- `docs/`  — 218 个文件
   - `assets/`  — 110 个文件
     - `screenshots/`  — 110 个文件
       - `themes/`  — 84 个文件
@@ -28,11 +33,17 @@ ai-roleplay/
         - `oled/`  — 21 个文件
         - `theatre/`  — 21 个文件
   - `design/`  — 14 个文件
-  - `dev/`  — 38 个文件
+  - `dev/`  — 67 个文件
+    - `evidence/`  — 17 个文件
+      - `round-3/`  — 17 个文件
+        - `opt-7-chat-split/`  — 5 个文件
+        - `opt-8-settings-split/`  — 12 个文件
+          - `before-after-screenshots/`  — 7 个文件
   - `fixes/`  — 17 个文件
   - `other/`  — 6 个文件
 - `e2e/`  — 14 个文件
   - `mobile/`  — 1 个文件
+- `eval/`  — 1 个文件
 - `market/`  — 8 个文件
   - `cards/`  — 1 个文件
   - `items/`  — 6 个文件
@@ -42,31 +53,31 @@ ai-roleplay/
     - `icons/`  — 12 个文件
       - `dl_builtin_tik_tok/`  — 12 个文件
   - `fonts/`  — 106 个文件
-- `scripts/`  — 21 个文件
-- `src/`  — 194 个文件
-  - `api/`  — 11 个文件
-  - `components/`  — 26 个文件
+- `scripts/`  — 36 个文件
+- `src/`  — 215 个文件
+  - `api/`  — 12 个文件
+  - `components/`  — 31 个文件
     - `chat/`  — 6 个文件
     - `common/`  — 10 个文件
     - `layout/`  — 3 个文件
     - `mobile/`  — 1 个文件
     - `random-events/`  — 2 个文件
-    - `settings/`  — 2 个文件
+    - `settings/`  — 7 个文件
     - `story/`  — 1 个文件
     - `worldbook/`  — 1 个文件
   - `composables/`  — 1 个文件
-  - `core/`  — 71 个文件
+  - `core/`  — 75 个文件
   - `data/`  — 1 个文件
   - `i18n/`  — 3 个文件
     - `locales/`  — 2 个文件
   - `router/`  — 1 个文件
-  - `runtime/`  — 21 个文件
+  - `runtime/`  — 22 个文件
   - `services/`  — 8 个文件
-  - `storage/`  — 7 个文件
-  - `stores/`  — 16 个文件
+  - `storage/`  — 9 个文件
+  - `stores/`  — 21 个文件
   - `styles/`  — 7 个文件
   - `types/`  — 1 个文件
-  - `utils/`  — 1 个文件
+  - `utils/`  — 4 个文件
   - `views/`  — 15 个文件
 - `src-tauri/`  — 65 个文件
   - `capabilities/`  — 1 个文件
@@ -81,20 +92,22 @@ ai-roleplay/
   - `src/`  — 11 个文件
     - `commands/`  — 5 个文件
     - `storage/`  — 1 个文件
-- `tests/`  — 136 个文件
+- `tests/`  — 146 个文件
   - `accessibility/`  — 3 个文件
-  - `api/`  — 8 个文件
-  - `core/`  — 70 个文件
-  - `runtime/`  — 8 个文件
+  - `api/`  — 9 个文件
+  - `components/`  — 1 个文件
+    - `settings/`  — 1 个文件
+  - `core/`  — 72 个文件
+  - `runtime/`  — 9 个文件
   - `services/`  — 10 个文件
-  - `storage/`  — 4 个文件
-  - `stores/`  — 23 个文件
-  - `views/`  — 8 个文件
+  - `storage/`  — 6 个文件
+  - `stores/`  — 25 个文件
+  - `views/`  — 9 个文件
 ```
 
 ## 二、文件索引
 
-### 2.1 程序（207）
+### 2.1 程序（228）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -117,6 +130,7 @@ ai-roleplay/
 | `src/api/api-client.ts` | ts | 程序 | 统一 API 客户端抽象 | 已跟踪 |  |
 | `src/api/diagnostics.ts` | ts | 程序 | API 连通性诊断与错误归类 | 已跟踪 |  |
 | `src/api/index.ts` | ts | 程序 | API 层出口，按运行环境选择客户端实现 | 已跟踪 |  |
+| `src/api/llm-retry.ts` | ts | 程序 | 模块：llm-retry（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/api/local-api-client.ts` | ts | 程序 | 本地模型 API 客户端（web-llm 引擎） | 已跟踪 |  |
 | `src/api/openai-client.ts` | ts | 程序 | OpenAI 协议客户端 | 已跟踪 |  |
 | `src/api/openai-protocol.ts` | ts | 程序 | OpenAI 协议报文构造与解析 | 已跟踪 |  |
@@ -145,7 +159,12 @@ ai-roleplay/
 | `src/components/mobile/BottomNav.vue` | vue | 程序 | 布局：移动端底部导航 | 已跟踪 |  |
 | `src/components/random-events/SceneConfigModal.vue` | vue | 程序 | 组件：随机事件场景配置 | 已跟踪 |  |
 | `src/components/random-events/TemplateEditorModal.vue` | vue | 程序 | 组件：随机事件模板编辑器 | 已跟踪 |  |
+| `src/components/settings/SettingsAboutPanel.vue` | vue | 程序 | 组件：SettingsAboutPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/settings/SettingsAppearancePanel.vue` | vue | 程序 | 组件：SettingsAppearancePanel（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/settings/SettingsDataPanel.vue` | vue | 程序 | 组件：SettingsDataPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/settings/SettingsExtensionPanel.vue` | vue | 程序 | 组件：SettingsExtensionPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsModelPanel.vue` | vue | 程序 | 组件：设置-模型面板 | 已跟踪 |  |
+| `src/components/settings/SettingsSecurityPanel.vue` | vue | 程序 | 组件：SettingsSecurityPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/VectorModelPanel.vue` | vue | 程序 | 组件：设置-向量模型面板 | 已跟踪 |  |
 | `src/components/story/StoryTimeConfigPanel.vue` | vue | 程序 | 组件：剧情时间轴配置面板 | 已跟踪 |  |
 | `src/components/worldbook/WorldBookEventsPanel.vue` | vue | 程序 | 组件：世界书事件面板 | 已跟踪 |  |
@@ -160,10 +179,12 @@ ai-roleplay/
 | `src/core/character-version-control.ts` | ts | 程序 | 角色卡版本控制 | 已跟踪 |  |
 | `src/core/community-market.ts` | ts | 程序 | 社区市场客户端 | 已跟踪 |  |
 | `src/core/compression.ts` | ts | 程序 | 内容压缩算法 | 已跟踪 |  |
+| `src/core/creation-preset.ts` | ts | 程序 | 模块：creation-preset（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/data-bank.ts` | ts | 程序 | 数据银行（素材库） | 已跟踪 |  |
 | `src/core/document-chunker.ts` | ts | 程序 | 文档分块器 | 已跟踪 |  |
 | `src/core/dual-channel-runtime.ts` | ts | 程序 | 双通道运行时 | 已跟踪 |  |
 | `src/core/embedding.ts` | ts | 程序 | 嵌入向量计算封装 | 已跟踪 |  |
+| `src/core/eval-judgment.ts` | ts | 程序 | 模块：eval-judgment（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/event-types.ts` | ts | 程序 | 事件类型定义 | 已跟踪 |  |
 | `src/core/extension-loader.ts` | ts | 程序 | 扩展加载器 | 已跟踪 |  |
 | `src/core/extension-types.ts` | ts | 程序 | 扩展类型定义 | 已跟踪 |  |
@@ -189,8 +210,10 @@ ai-roleplay/
 | `src/core/prompt-builder.ts` | ts | 程序 | 提示词组装（角色 / 世界书 / 记忆拼接） | 已跟踪 |  |
 | `src/core/protagonist.ts` | ts | 程序 | 主角设定管理 | 已跟踪 |  |
 | `src/core/rag-benchmark.ts` | ts | 程序 | RAG 检索质量基准测试 | 已跟踪 |  |
+| `src/core/rag-model-catalog.ts` | ts | 程序 | 模块：rag-model-catalog（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/rag-retriever.ts` | ts | 程序 | RAG 检索器：向量召回与上下文注入 | 已跟踪 |  |
 | `src/core/random-event-generator.ts` | ts | 程序 | 随机事件生成 | 已跟踪 |  |
+| `src/core/remote-api-key-state.ts` | ts | 程序 | 模块：remote-api-key-state（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/sanitize.ts` | ts | 程序 | HTML 净化（DOMPurify 封装，防 XSS） | 已跟踪 |  |
 | `src/core/schema-contract.ts` | ts | 程序 | 模块：schema-contract（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/slash-command.ts` | ts | 程序 | 斜杠命令解析与执行 | 已跟踪 |  |
@@ -245,6 +268,7 @@ ai-roleplay/
 | `src/runtime/runtime-group-http.ts` | ts | 程序 | Virtual Character OS 群聊 HTTP 客户端与 Fetch Handler | 已跟踪 |  |
 | `src/runtime/runtime-http.ts` | ts | 程序 | Virtual Character OS 单角色 HTTP 客户端与 Fetch Handler | 已跟踪 |  |
 | `src/runtime/runtime-id.ts` | ts | 程序 | Virtual Character OS 跨适配器稳定 UUID 与会话 Turn ID 规则 | 已跟踪 |  |
+| `src/runtime/runtime-trace.ts` | ts | 程序 | 模块：runtime-trace（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/runtime/server-runtime.ts` | ts | 程序 | Virtual Character OS 服务端 Runtime 与群聊事务组合入口 | 已跟踪 |  |
 | `src/runtime/store.ts` | ts | 程序 | Virtual Character OS Runtime Snapshot 存储接口与适配器 | 已跟踪 |  |
 | `src/runtime/types.ts` | ts | 程序 | Virtual Character OS Runtime 领域类型与 API 契约 | 已跟踪 |  |
@@ -260,6 +284,8 @@ ai-roleplay/
 | `src/storage/index.ts` | ts | 程序 | 存储层出口，按环境选择适配器 | 已跟踪 |  |
 | `src/storage/indexeddb-adapter.ts` | ts | 程序 | IndexedDB 存储适配器（Web 端） | 已跟踪 |  |
 | `src/storage/legacy-migration.ts` | ts | 程序 | 历史数据格式迁移 | 已跟踪 |  |
+| `src/storage/snapshot-migration.ts` | ts | 程序 | 模块：snapshot-migration（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/storage/snapshot-plans.ts` | ts | 程序 | 模块：snapshot-plans（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/storage/storage-adapter.ts` | ts | 程序 | 存储适配器接口定义 | 已跟踪 |  |
 | `src/storage/storage-factory.ts` | ts | 程序 | 存储适配器工厂（Web / Tauri 分流） | 已跟踪 |  |
 | `src/storage/tauri-fs-adapter.ts` | ts | 程序 | Tauri 文件系统存储适配器（桌面端） | 已跟踪 |  |
@@ -267,6 +293,11 @@ ai-roleplay/
 | `src/stores/character-version.ts` | ts | 程序 | 状态存储：角色卡版本历史 | 已跟踪 |  |
 | `src/stores/character.ts` | ts | 程序 | 状态存储：角色卡列表与当前角色 | 已跟踪 |  |
 | `src/stores/chat-context.ts` | ts | 程序 | 状态存储：对话上下文绑定（角色 / 世界书） | 已跟踪 |  |
+| `src/stores/chat-generation.ts` | ts | 程序 | 模块：chat-generation（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/chat-group-runtime.ts` | ts | 程序 | 模块：chat-group-runtime（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/chat-memory.ts` | ts | 程序 | 模块：chat-memory（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/chat-runtime.ts` | ts | 程序 | 模块：chat-runtime（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/chat-session.ts` | ts | 程序 | 模块：chat-session（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/stores/chat.ts` | ts | 程序 | 状态存储：会话与消息管理 | 已跟踪 |  |
 | `src/stores/community-market.ts` | ts | 程序 | 状态存储：社区市场 | 已跟踪 |  |
 | `src/stores/data-bank.ts` | ts | 程序 | 状态存储：数据银行素材 | 已跟踪 |  |
@@ -288,7 +319,10 @@ ai-roleplay/
 | `src/styles/tokens-responsive.css` | css | 程序 | 响应式设计令牌 | 已跟踪 |  |
 | `src/styles/tokens.css` | css | 程序 | 设计令牌（颜色/间距/字号） | 已跟踪 |  |
 | `src/types/index.ts` | ts | 程序 | 全局共享类型定义 | 已跟踪 |  |
+| `src/utils/logger.ts` | ts | 程序 | 模块：logger（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/utils/master-password-modal-state.ts` | ts | 程序 | 模块：master-password-modal-state（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/utils/onboarding.ts` | ts | 程序 | 新手引导状态读写（完成标志值为 "1"） | 已跟踪 |  |
+| `src/utils/toast-service.ts` | ts | 程序 | 模块：toast-service（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/views/ArchivesView.vue` | vue | 程序 | 页面：归档 | 已跟踪 |  |
 | `src/views/CharacterEditorView.vue` | vue | 程序 | 页面：角色编辑 | 已跟踪 |  |
 | `src/views/CharacterVersionView.vue` | vue | 程序 | 页面：角色版本管理 | 已跟踪 |  |
@@ -306,7 +340,7 @@ ai-roleplay/
 | `src/views/WorldBookView.vue` | vue | 程序 | 页面：世界书管理 | 已跟踪 |  |
 | `src/vite-env.d.ts` | ts | 程序 | Vite 环境变量与静态资源类型声明 | 已跟踪 |  |
 
-### 2.2 测试（150）
+### 2.2 测试（160）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -330,11 +364,13 @@ ai-roleplay/
 | `tests/api/anthropic-client.test.ts` | ts | 测试 | 单元测试：anthropic-client 模块 | 已跟踪 |  |
 | `tests/api/diagnostics.test.ts` | ts | 测试 | 单元测试：diagnostics 模块 | 已跟踪 |  |
 | `tests/api/llm-controls-p0.qa-independent.test.ts` | ts | 测试 | 单元测试：llm-controls-p0.qa-independent 模块 | 已跟踪 |  |
+| `tests/api/llm-retry.test.ts` | ts | 测试 | 单元测试：llm-retry 模块 | 已跟踪 |  |
 | `tests/api/local-api-client.test.ts` | ts | 测试 | 单元测试：local-api-client 模块 | 已跟踪 |  |
 | `tests/api/openai-client.test.ts` | ts | 测试 | 单元测试：openai-client 模块 | 已跟踪 |  |
 | `tests/api/reasoning-capability.test.ts` | ts | 测试 | 单元测试：reasoning-capability 模块 | 已跟踪 |  |
 | `tests/api/tauri-openai-client.test.ts` | ts | 测试 | 单元测试：tauri-openai-client 模块 | 已跟踪 |  |
 | `tests/api/usage-reasoning-tokens.qa-independent.test.ts` | ts | 测试 | 单元测试：usage-reasoning-tokens.qa-independent 模块 | 已跟踪 |  |
+| `tests/components/settings/settings-round3-gaps.test.ts` | ts | 测试 | 单元测试：settings-round3-gaps 模块 | 已跟踪 |  |
 | `tests/core/api-key-crypto.test.ts` | ts | 测试 | 单元测试：api-key-crypto 模块 | 已跟踪 |  |
 | `tests/core/audit-log.test.ts` | ts | 测试 | 单元测试：audit-log 模块 | 已跟踪 |  |
 | `tests/core/backup-crypto.test.ts` | ts | 测试 | 单元测试：backup-crypto 模块 | 已跟踪 |  |
@@ -345,9 +381,11 @@ ai-roleplay/
 | `tests/core/character-version-control.test.ts` | ts | 测试 | 单元测试：character-version-control 模块 | 已跟踪 |  |
 | `tests/core/community-market.test.ts` | ts | 测试 | 单元测试：community-market 模块 | 已跟踪 |  |
 | `tests/core/compression.test.ts` | ts | 测试 | 单元测试：compression 模块 | 已跟踪 |  |
+| `tests/core/creation-preset.test.ts` | ts | 测试 | 单元测试：creation-preset 模块 | 已跟踪 |  |
 | `tests/core/document-chunker.test.ts` | ts | 测试 | 单元测试：document-chunker 模块 | 已跟踪 |  |
 | `tests/core/dual-channel-runtime.test.ts` | ts | 测试 | 单元测试：dual-channel-runtime 模块 | 已跟踪 |  |
 | `tests/core/embedding.test.ts` | ts | 测试 | 单元测试：embedding 模块 | 已跟踪 |  |
+| `tests/core/eval-judgment.test.ts` | ts | 测试 | 单元测试：eval-judgment 模块 | 已跟踪 |  |
 | `tests/core/event-types.test.ts` | ts | 测试 | 单元测试：event-types 模块 | 已跟踪 |  |
 | `tests/core/extension-loader.test.ts` | ts | 测试 | 单元测试：extension-loader 模块 | 已跟踪 |  |
 | `tests/core/image-generation.test.ts` | ts | 测试 | 单元测试：image-generation 模块 | 已跟踪 |  |
@@ -413,6 +451,7 @@ ai-roleplay/
 | `tests/runtime/postgres-runtime.integration.test.ts` | ts | 测试 | 单元测试：postgres-runtime.integration 模块 | 已跟踪 |  |
 | `tests/runtime/runtime-core.test.ts` | ts | 测试 | 单元测试：runtime-core 模块 | 已跟踪 |  |
 | `tests/runtime/runtime-http.test.ts` | ts | 测试 | 单元测试：runtime-http 模块 | 已跟踪 |  |
+| `tests/runtime/runtime-trace.test.ts` | ts | 测试 | 单元测试：runtime-trace 模块 | 已跟踪 |  |
 | `tests/runtime/runtime-versioning.test.ts` | ts | 测试 | 单元测试：runtime-versioning 模块 | 已跟踪 |  |
 | `tests/services/backup-service.test.ts` | ts | 测试 | 单元测试：backup-service 模块 | 已跟踪 |  |
 | `tests/services/chat-error.test.ts` | ts | 测试 | 单元测试：chat-error 模块 | 已跟踪 |  |
@@ -426,12 +465,15 @@ ai-roleplay/
 | `tests/services/type-adapters.test.ts` | ts | 测试 | 单元测试：type-adapters 模块 | 已跟踪 |  |
 | `tests/setup.ts` | ts | 测试 | Vitest 全局测试环境初始化 | 已跟踪 |  |
 | `tests/storage/indexeddb-adapter.test.ts` | ts | 测试 | 单元测试：indexeddb-adapter 模块 | 已跟踪 |  |
+| `tests/storage/snapshot-migration.test.ts` | ts | 测试 | 单元测试：snapshot-migration 模块 | 已跟踪 |  |
+| `tests/storage/snapshot-restore.test.ts` | ts | 测试 | 单元测试：snapshot-restore 模块 | 已跟踪 |  |
 | `tests/storage/storage-contract.test.ts` | ts | 测试 | 单元测试：storage-contract 模块 | 已跟踪 |  |
 | `tests/storage/storage-factory.test.ts` | ts | 测试 | 单元测试：storage-factory 模块 | 已跟踪 |  |
 | `tests/storage/tauri-fs-adapter.test.ts` | ts | 测试 | 单元测试：tauri-fs-adapter 模块 | 已跟踪 |  |
 | `tests/stores/character-generate.test.ts` | ts | 测试 | 单元测试：character-generate 模块 | 已跟踪 |  |
 | `tests/stores/character-version.test.ts` | ts | 测试 | 单元测试：character-version 模块 | 已跟踪 |  |
 | `tests/stores/character.test.ts` | ts | 测试 | 单元测试：character 模块 | 已跟踪 |  |
+| `tests/stores/chat-compat.test.ts` | ts | 测试 | 单元测试：chat-compat 模块 | 已跟踪 |  |
 | `tests/stores/chat-context.test.ts` | ts | 测试 | 单元测试：chat-context 模块 | 已跟踪 |  |
 | `tests/stores/chat-llm-controls.test.ts` | ts | 测试 | 单元测试：chat-llm-controls 模块 | 已跟踪 |  |
 | `tests/stores/chat-p0-thinking.qa-independent.test.ts` | ts | 测试 | 单元测试：chat-p0-thinking.qa-independent 模块 | 已跟踪 |  |
@@ -441,6 +483,7 @@ ai-roleplay/
 | `tests/stores/context-length.test.ts` | ts | 测试 | 单元测试：context-length 模块 | 已跟踪 |  |
 | `tests/stores/data-bank.test.ts` | ts | 测试 | 单元测试：data-bank 模块 | 已跟踪 |  |
 | `tests/stores/events.test.ts` | ts | 测试 | 单元测试：events 模块 | 已跟踪 |  |
+| `tests/stores/group-chat-pagination.test.ts` | ts | 测试 | 单元测试：group-chat-pagination 模块 | 已跟踪 |  |
 | `tests/stores/group-chat.test.ts` | ts | 测试 | 单元测试：group-chat 模块 | 已跟踪 |  |
 | `tests/stores/local-model.test.ts` | ts | 测试 | 单元测试：local-model 模块 | 已跟踪 |  |
 | `tests/stores/lorebook-hierarchy.test.ts` | ts | 测试 | 单元测试：lorebook-hierarchy 模块 | 已跟踪 |  |
@@ -456,6 +499,7 @@ ai-roleplay/
 | `tests/views/chat-ime.test.ts` | ts | 测试 | 单元测试：chat-ime 模块 | 已跟踪 |  |
 | `tests/views/chat-main-window.test.ts` | ts | 测试 | 单元测试：chat-main-window 模块 | 已跟踪 |  |
 | `tests/views/llm-controls-ui.test.ts` | ts | 测试 | 单元测试：llm-controls-ui 模块 | 已跟踪 |  |
+| `tests/views/settings-creation-preset.test.ts` | ts | 测试 | 单元测试：settings-creation-preset 模块 | 已跟踪 |  |
 | `tests/views/settings-local-model.test.ts` | ts | 测试 | 单元测试：settings-local-model 模块 | 已跟踪 |  |
 | `tests/views/status-hud-ui.test.ts` | ts | 测试 | 单元测试：status-hud-ui 模块 | 已跟踪 |  |
 | `tests/views/story-engine-quicksetup.test.ts` | ts | 测试 | 单元测试：story-engine-quicksetup 模块 | 已跟踪 |  |
@@ -467,11 +511,11 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `public/sillytavern-vs-airoleplay.html` | html | 产品文档 | 静态页：SillyTavern vs ai-roleplay 系统化对比报告 | 已忽略 |  |
 
-### 2.4 开发文档（44）
+### 2.4 开发文档（73）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
+| `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已修改 |  |
 | `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
 | `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已跟踪 |  |
 | `README.md` | md | 开发文档 | 项目主说明（中文） | 已跟踪 |  |
@@ -481,9 +525,18 @@ ai-roleplay/
 | `docs/dev/0.3.1-c-runtime-auth.md` | md | 开发文档 | 开发文档：0.3.1 C 阶段 Runtime 认证与租户边界 | 已跟踪 |  |
 | `docs/dev/0.3.1-d-runtime-delivery.md` | md | 开发文档 | 开发文档：0.3.1 D 阶段 Runtime 可靠投递与群聊数据契约 | 已跟踪 |  |
 | `docs/dev/2026-09-20-LLM控制能力交付总览.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/CODE_REVIEW_2026-09-28.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/MIGRATION_LOG.md` | md | 开发文档 | 目录整理迁移日志 | 已跟踪 |  |
+| `docs/dev/OPTIMIZATION_DEMO.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/OPTIMIZATION_ROUNDS_2026-10-01.md` | md | 开发文档 | 待确认 | 已修改 | 用途待确认 |
+| `docs/dev/ORT_ISOLATION_DESIGN.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已跟踪 |  |
+| `docs/dev/PERF_OPTIMIZATION_2026-09-28.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/PLAN_AUDIT_2026-09-28.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/PROJECT_INDEX.md` | md | 开发文档 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已跟踪 | 索引文件（不递归展开） |
+| `docs/dev/QUICK_START.md` | md | 开发文档 | 待确认 | 已修改 | 用途待确认 |
+| `docs/dev/REVIEW_SUMMARY.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/ROUND_3_HIGH_RISK_SPLIT_DESIGN.md` | md | 开发文档 | 待确认 | 已修改 | 用途待确认 |
 | `docs/dev/b-type-findings.md` | md | 开发文档 | 开发文档：`!` 非空断言治理审计记录 | 已跟踪 |  |
 | `docs/dev/character-status-hud-落地记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/contrast-存量分类与收敛建议.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
@@ -491,9 +544,29 @@ ai-roleplay/
 | `docs/dev/data-backup-restore.md` | md | 开发文档 | 开发文档：备份恢复与灾备演练 Runbook（P2-#3 修复交付） | 已跟踪 |  |
 | `docs/dev/dialogue-pipeline-分析.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/embedding-optimization-实现对照.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/eval-manifest.json` | json | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-7-chat-split/build.txt` | txt | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-7-chat-split/lint.txt` | txt | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-7-chat-split/perf-baseline.json` | json | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-7-chat-split/test-results.txt` | txt | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-7-chat-split/typecheck.txt` | txt | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/accessibility-checklist.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/before-after-screenshots/after-about.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/before-after-screenshots/after-appearance.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/before-after-screenshots/after-data.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/before-after-screenshots/after-extension.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/before-after-screenshots/after-first-run-master-password-modal.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/before-after-screenshots/after-model.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/before-after-screenshots/after-security.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/build.txt` | txt | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/lint.txt` | txt | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/test-results.txt` | txt | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/evidence/round-3/opt-8-settings-split/typecheck.txt` | txt | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/llm-controls-p0-落地记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/llm-controls-收尾三项记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/mobile-pwa-plan.md` | md | 开发文档 | 开发文档：手机端 PWA 实现计划 | 已跟踪 |  |
+| `docs/dev/perf-baseline.json` | json | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/perf-report.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/rag-enhancement-plan.md` | md | 开发文档 | 开发文档：RAG 增强实现计划 | 已跟踪 |  |
 | `docs/dev/release-evidence-0.9.0.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/release-evidence-1.0.0.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
@@ -607,37 +680,289 @@ ai-roleplay/
 | `vite.config.ts` | ts | 配置 | Vite 构建配置：别名、代码分包、PWA 插件 | 已跟踪 |  |
 | `vitest.config.ts` | ts | 配置 | Vitest 单测配置：jsdom 环境、覆盖率阈值门禁 | 已跟踪 |  |
 
-### 2.10 脚本（21）
+### 2.10 脚本（36）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
+| `scripts/apply-s1-toast.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/breakpoint-guard.mjs` | mjs | 脚本 | 门禁：禁止野断点、断点数值 L1/L4 同步校验 | 已跟踪 |  |
 | `scripts/check-contrast.mjs` | mjs | 脚本 | 门禁：5 套主题关键色对对比度 ≥ AA | 已跟踪 |  |
+| `scripts/check-ort-firstscreen.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/clean.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/contrast-audit.mjs` | mjs | 脚本 | 审计：对比度全量扫描报告 | 已跟踪 |  |
 | `scripts/csp-audit.mjs` | mjs | 脚本 | 工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用） | 已跟踪 |  |
 | `scripts/csp-guard.mjs` | mjs | 脚本 | 门禁：Web 端 CSP 契约校验（构建产物含 CSP、关键指令齐备、script-src 未被削弱） | 已跟踪 |  |
 | `scripts/css-conventions-guard.mjs` | mjs | 脚本 | 门禁：CSS 约定守卫单一入口（编排断点 / 视口 / hover / !important / 控件字号五项子检查） | 已跟踪 |  |
 | `scripts/css-viewport-guard.mjs` | mjs | 脚本 | 门禁：CSS 视口单位使用校验 | 已跟踪 |  |
+| `scripts/debug-splitter.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/eval-run.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/gen-project-index.mjs` | mjs | 脚本 | 工具：生成本索引文件 | 已跟踪 |  |
 | `scripts/generate-pwa-icons.mjs` | mjs | 脚本 | 工具：由 icon-source.png 生成 PWA 图标到 public/ | 已跟踪 |  |
 | `scripts/hover-guard.mjs` | mjs | 脚本 | 门禁：禁止未按 (hover: hover) 分流的 :hover，防触屏 tap 后 hover 粘滞 | 已跟踪 |  |
 | `scripts/i18n-scan.mjs` | mjs | 脚本 | 门禁：硬编码中文 UI 文案扫描（strict 模式） | 已跟踪 |  |
 | `scripts/i7-control-font-size-guard.mjs` | mjs | 脚本 | 门禁：移动断点内可编辑控件字号 ≥16px 兜底（I-7，防 iOS 聚焦放大页面） | 已跟踪 |  |
 | `scripts/important-guard.mjs` | mjs | 脚本 | 门禁：!important 棘轮守卫（基线锁定，只许降不许升） | 已跟踪 |  |
+| `scripts/measure-startup.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/opt-eval.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/p11-baseline.mjs` | mjs | 脚本 | 测量：P11 性能基线采集 | 已跟踪 |  |
 | `scripts/p11-scroll-fps.mjs` | mjs | 脚本 | 测量：滚动帧率采集 | 已跟踪 |  |
+| `scripts/perf-analysis.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/post-split-fixups.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/prune-settings-styles.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/release-evidence-pack.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/release-evidence.mjs` | mjs | 脚本 | 门禁：生成绑定当前 commit 的 1.0.0 发布证据清单 | 已跟踪 |  |
+| `scripts/rewrite-settings-main.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/run-opt8-pipeline.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/settings-screenshots.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/snapshot-migration-report.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/split-settings-view.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/sync-runtime-schema.mjs` | mjs | 脚本 | 门禁：校验迁移文件与权威 Schema 文档无漂移（--check 只读比对） | 已跟踪 |  |
 | `scripts/ui-shot.mjs` | mjs | 脚本 | 工具：遍历路由批量截图到 docs/assets/screenshots/ | 已跟踪 |  |
 | `scripts/vendor-fonts.mjs` | mjs | 脚本 | 工具：把 Google Fonts 镜像到 public/fonts/，消除第三方字体请求（支持 --check 供校验） | 已跟踪 |  |
+| `scripts/vendor-ort.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 
-### 2.11 其他（30）
+### 2.11 其他（268）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
+| `.zcodeignore` | zcodeignore | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `LICENSE` | (无扩展名) | 其他 | Apache-2.0 许可证全文 | 已跟踪 |  |
+| `dist-preopt-20260928/ai-roleplay-dev-plan.html` | html | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/apple-touch-icon.png` | png | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ArchivesView-CuZ8mhCN.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ArchivesView-DUs4XRu8.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ArchivesView-DUs4XRu8.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/Avatar-Bi0BtMHH.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/Avatar-Bi0BtMHH.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CharacterEditorView-CViFfkv2.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CharacterEditorView-CViFfkv2.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CharacterEditorView-DdCpvPAi.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CharacterVersionView-B8cpUURI.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CharacterVersionView-DSg2agws.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CharacterVersionView-DSg2agws.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CharactersView-Bb3fY954.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CharactersView-D6KRFeCw.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CharactersView-D6KRFeCw.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ChatView-B0nbMKio.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ChatView-B0nbMKio.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ChatView-fEiDQafi.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CommunityMarketView-BSHwSE8G.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CommunityMarketView-aTpuSkPc.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/CommunityMarketView-aTpuSkPc.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/DataBankView-DNagjx76.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/DataBankView-DwT_QpS1.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/DataBankView-DwT_QpS1.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/FilterTabs-BgNTrcqP.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/FilterTabs-CReMCehu.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/FilterTabs-CReMCehu.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/GroupChatView-B9-CyMPQ.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/GroupChatView-B9-CyMPQ.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/GroupChatView-BzRbJNrB.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ImageGeneratorView-CTfJOiCS.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ImageGeneratorView-CbVjNfGo.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ImageGeneratorView-CbVjNfGo.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/LocalModelView-Cfxi8e3B.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/LocalModelView-Cfxi8e3B.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/LocalModelView-e3XSvjhS.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ProfileView-BPOqtt3t.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ProfileView-Vvm2z3jd.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ProfileView-Vvm2z3jd.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/RandomEventsView-Bo-fVP-C.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/RandomEventsView-DWV_iLQS.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/RandomEventsView-DWV_iLQS.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/RuntimeStatePanel-BIguWrXe.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/RuntimeStatePanel-CVE_hrhC.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/RuntimeStatePanel-CVE_hrhC.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/SettingsView-DldwoVgJ.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/SettingsView-rhtd-rYv.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/SettingsView-rhtd-rYv.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/StoryEngineView-BmdgMw4q.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/StoryEngineView-BmdgMw4q.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/StoryEngineView-CrydnQQ2.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/Toast-C17CZxia.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/Toast-C17CZxia.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/Toast-RUMfmkog.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/WorldBookView-DbxkcdMq.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/WorldBookView-xW_pLxae.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/WorldBookView-xW_pLxae.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/api-DR3AFQRs.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/api-DR3AFQRs.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/core-Cb7zNXui.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/core-Cb7zNXui.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/dist-js-DYF-JYs1.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/dist-js-DYF-JYs1.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/dist-js-Dc2oP_cP.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/dist-js-Dc2oP_cP.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/event-BUd3TQ2S.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/event-BUd3TQ2S.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/gpt-tokenizer-GqvvoJ0L.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/gpt-tokenizer-GqvvoJ0L.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/hero-cyber-nexus.jpg` | jpg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/hero-seraphina.jpg` | jpg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/i18n-BsOaAUmd.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/i18n-BsOaAUmd.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/arrow-left.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/bookmark-simple.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/chat-circle.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/compass.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/gear.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/heart.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/house.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/music-notes.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/play.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/plus.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/share-fat.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/icons/dl_builtin_tik_tok/user.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/index-BjHA0Tsh.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/index-BjHA0Tsh.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/index-DELrb_EB.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/local-model-GYpBD9Oy.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/local-model-GYpBD9Oy.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/onnx-embedding-provider-C53Ri-12.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/onnx-embedding-provider-C53Ri-12.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ort-wasm-simd-threaded.jsep-DC5y_g6C.wasm` | wasm | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ort.bundle.min-DDnQyjIl.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/ort.bundle.min-DDnQyjIl.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/pinia-BAc6U3uq.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/pinia-BAc6U3uq.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/preload-helper-Czpn1I53.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/rag-benchmark-C8cVO3AR.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/rag-benchmark-C8cVO3AR.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/runtime-core.esm-bundler-3gfI47wO.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/runtime-core.esm-bundler-3gfI47wO.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/settings-DJOGNX8i.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/settings-DJOGNX8i.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/status-schema-nHxki1-D.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/status-schema-nHxki1-D.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/token-counter-Cu7ifRfT.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/token-counter-Cu7ifRfT.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/type-adapters-0MIHoc9M.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/type-adapters-0MIHoc9M.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/vector-model-install-Dd0GShzT.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/vector-model-install-Dd0GShzT.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/vector-model-storage-DEje8Lvg.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/vector-model-storage-DEje8Lvg.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/vector-model-tauri-C8iObFeG.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/vector-model-tauri-C8iObFeG.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/web-llm-DDxLgXZa.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/assets/web-llm-DDxLgXZa.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7kq-Wbghq.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7kq6Wbghq.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7kqGWbg.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7kqWWbghq.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.100.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.101.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.102.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.103.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.104.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.105.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.106.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.107.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.108.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.109.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.110.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.111.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.112.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.113.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.114.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.115.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.116.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.117.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.118.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.119.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.21.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.22.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.23.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.24.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.25.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.26.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.27.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.28.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.29.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.30.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.31.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.32.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.33.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.34.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.35.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.36.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.37.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.38.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.39.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.4.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.40.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.41.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.42.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.43.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.44.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.45.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.46.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.47.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.48.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.49.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.5.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.50.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.51.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.52.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.53.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.54.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.55.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.56.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.57.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.58.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.59.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.6.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.60.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.61.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.62.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.63.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.64.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.65.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.66.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.67.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.68.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.69.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.70.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.71.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.72.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.73.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.74.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.75.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.76.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.77.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.78.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.79.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.80.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.81.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.82.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.83.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.84.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.85.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.86.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.87.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.88.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.89.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.90.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.91.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.97.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.98.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.99.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/fonts.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/nuFiD-vYSZviVYUb_rj3ij__anPXDTLYgFE_.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/nuFiD-vYSZviVYUb_rj3ij__anPXDTPYgFE_.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/nuFiD-vYSZviVYUb_rj3ij__anPXDTjYgFE_.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/fonts/nuFiD-vYSZviVYUb_rj3ij__anPXDTzYgA.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/index.html` | html | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/manifest.webmanifest` | webmanifest | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/pwa-192x192.png` | png | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/pwa-512x512.png` | png | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/pwa-icon.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/registerSW.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/sillytavern-vs-airoleplay.html` | html | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/sw.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/sw.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/workbox-9c191d2f.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `dist-preopt-20260928/workbox-9c191d2f.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `docs/Virtual-Character-OS-v1.0-database-schema.sql.md` | md | 其他 | 设计文档：Virtual Character OS 权威 Schema（迁移文件的事实源） | 已跟踪 |  |
 | `docs/Virtual-Character-OS-v1.0-技术规格.md` | md | 其他 | 设计文档：Virtual Character OS v1.0 技术规格 | 已跟踪 |  |
 | `docs/Virtual-Character-OS-v1.0-数据库-Schema-设计说明.md` | md | 其他 | 设计文档：Virtual Character OS 数据库 Schema 设计说明 | 已跟踪 |  |
@@ -648,6 +973,7 @@ ai-roleplay/
 | `docs/other/tifa-ollama-webui-架构评审.md` | md | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/other/项目文档结构.md` | md | 其他 | 其他：项目文档分类规范 | 已跟踪 |  |
 | `docs/对话记录.md` | md | 其他 | 其他：需求讨论与实施对话原始记录 | 已跟踪 |  |
+| `eval/setting-facts-dataset.v1.json` | json | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `icon-source.png` | png | 其他 | 应用图标设计源图（生成 PWA / Tauri 图标用） | 已跟踪 |  |
 | `market/cards/seraphina.json` | json | 其他 | 社区市场示例：角色卡数据 | 已跟踪 |  |
 | `market/index.json` | json | 其他 | 社区市场索引（角色卡 / 模板清单） | 已跟踪 |  |
@@ -672,18 +998,18 @@ ai-roleplay/
 
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
-| 程序 | 207 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
-| 测试 | 150 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
+| 程序 | 228 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
+| 测试 | 160 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
-| 开发文档 | 44 | docs/dev/ 实现计划、Runbook、审计记录 |
+| 开发文档 | 73 | docs/dev/ 实现计划、Runbook、审计记录 |
 | 修复文档 | 17 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
 | 设计文档 | 14 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
 | AI记忆 | 17 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
 | 截图 | 1 | docs/assets/screenshots/ 下 UI 冒烟截图 |
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
-| 脚本 | 21 | scripts/ 门禁、审计与工具脚本 |
-| 其他 | 30 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **519** | 与「收录文件」数一致 |
+| 脚本 | 36 | scripts/ 门禁、审计与工具脚本 |
+| 其他 | 268 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
+| **合计** | **832** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 
