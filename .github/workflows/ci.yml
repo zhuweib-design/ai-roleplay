@@ -3,11 +3,11 @@ name: CI
 on:
   push:
     branches: [master, main]
-    tags:
-      - 'v*'
   pull_request:
     branches: [master, main]
   # 手动触发只运行质量门禁；GitHub Release 保留自动生成的源码归档。
+  # 2026-10-03 移除 on.push.tags: ['v*']：回填 v0.4.0–v1.0.0 七个标签实测未触发
+  # 任何运行，该触发器既不生效又留着误触发白跑的风险。发布产物一律不上传。
   workflow_dispatch:
 
 # 同一分支的重复推送取消旧运行，节省算力
