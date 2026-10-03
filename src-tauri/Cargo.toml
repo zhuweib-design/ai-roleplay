@@ -31,9 +31,8 @@ tauri-build = { version = "2.0", features = [] }
 tauri = { version = "2.0", features = ["devtools", "tray-icon"] }
 tauri-plugin-fs = "2.0"
 tauri-plugin-dialog = "2.0"
-tauri-plugin-shell = "2.0"
-tauri-plugin-http = "2.0"
-tauri-plugin-os = "2.0"
+# shell / http / os 三个插件已于 2026-10-03 移除：Rust 侧与前端均无引用
+# （网络请求走 reqwest，见 commands/chat_stream.rs 与 commands/fetch_models.rs）
 tauri-plugin-global-shortcut = "2.0"
 
 # ── 序列化 ──

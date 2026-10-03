@@ -27,10 +27,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_http::init())
-        .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        // 全局快捷键插件只在 shortcut::init() 内注册（带 with_shortcuts + handler）；
+        // 此处不得再注册一次 —— 同名插件重复注册会让 setup 返回 Err。
         .setup(|app| {
             // 初始化系统托盘（桌面端强化）
             init_tray(app.handle())?;
