@@ -91,9 +91,11 @@ describe('SettingsModelPanel 创作模式（Preset）', () => {
       rows.some((s) => s.includes(t('preset.contextBudgetPercent', { percent: 85 })))
     ).toBe(true);
     expect(rows.some((s) => s.includes(t('preset.statusOn')))).toBe(true);
-    // 切换成功 Toast（Teleport 到 body，需查 document）
+    // 切换成功 Toast：S1 起 toast 走全局服务队列（容器在 App.vue 挂载），
+    // 组件测试直接断言服务队列首项
+    const { useActiveToast } = await import('@/utils/toast-service');
     await flushPromises();
-    expect(document.body.textContent).toContain(t('preset.applied', { name: t('preset.strict.label') }));
+    expect(useActiveToast()?.value?.message).toBe(t('preset.applied', { name: t('preset.strict.label') }));
   });
 
   it('切换 custom：参数表隐藏，展示自定义模式提示', async () => {

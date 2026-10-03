@@ -24,7 +24,7 @@ import type { ApiProfile } from '@/types';
 import type { ModelSize } from '@/core/local-model-engine';
 import Icon from '@/components/common/Icon.vue';
 import Modal from '@/components/common/Modal.vue';
-import Toast from '@/components/common/Toast.vue';
+import { showToast } from '@/utils/toast-service';
 import { t } from '@/i18n';
 
 const settings = useSettingsStore();
@@ -498,15 +498,6 @@ function handleSetPrimary(profile: ApiProfile, category: ModelCategory): void {
 
 const showApiKey = ref(false);
 // ── Toast（自包含，不依赖父组件） ──
-const toastOpen = ref(false);
-const toastType = ref<'info' | 'success' | 'error'>('info');
-const toastMessage = ref('');
-
-function showToast(type: 'info' | 'success' | 'error', message: string) {
-  toastType.value = type;
-  toastMessage.value = message;
-  toastOpen.value = true;
-}
 
 watch(
   () => settings.lastError,
@@ -1252,11 +1243,6 @@ watch(
     </Modal>
 
     <!-- 自包含 Toast -->
-    <Toast
-      v-model="toastOpen"
-      :message="toastMessage"
-      :type="toastType"
-    />
 
 
     <Modal

@@ -15,6 +15,8 @@ import { initStoragePersistence } from '@/core/storage-persistence';
 import { TauriFSAdapter } from '@storage/tauri-fs-adapter';
 import { importCharacterPng } from '@/services/backup-service';
 import { cardToUiChar } from '@/services/type-adapters';
+import Toast from '@/components/common/Toast.vue';
+import { useActiveToast, dismissToast } from '@/utils/toast-service';
 import NavRail from '@/components/layout/NavRail.vue';
 import BottomNav from '@/components/mobile/BottomNav.vue';
 import { isMainTab } from '@/core/mobile-nav';
@@ -39,6 +41,9 @@ const characterVersionStore = useCharacterVersionStore();
 // 移动端底部导航:仅主 Tab 页显示(二级详情页全屏)
 const route = useRoute();
 const showBottomNav = computed(() => isMainTab(route.name as string | undefined));
+
+// 全局 Toast 队列（S1）：所有面板经 toast-service 触发，容器只在 App.vue 挂载一次
+const activeToast = useActiveToast();
 
 // S-1（2026-09-16）：移动端(≤640)真卸载 NavRail，改由 BottomNav 承载；
 // 避免与 BottomNav 双高亮（I-4）。S-10：端判定统一由 useViewport() 提供（L4 唯一来源），
@@ -342,6 +347,14 @@ watch(activeProfile, (profile) => {
     </main>
     <!-- 移动端底部导航（≤640px 显示,主 Tab 页；断点口径以 src/core/viewport.ts 为唯一来源） -->
     <BottomNav v-if="showBottomNav" class="app-bottom-nav" />
+
+    <!-- 全局 Toast 显示容器（第三轮优化项 8 S1：队列逐条显示，见 src/utils/toast-service.ts） -->
+    <Toast
+      :model-value="activeToast !== null"
+      :type="activeToast?.type ?? 'info'"
+      :message="activeToast?.message ?? ''"
+      @update:model-value="dismissToast"
+    />
   </div>
 
   <!-- AC20 主密码弹窗（启动时若需解锁则显示） -->

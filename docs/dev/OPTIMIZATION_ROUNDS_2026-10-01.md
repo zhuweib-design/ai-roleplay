@@ -206,3 +206,22 @@
 3. **提交策略**：文档计划"7 步 commit"，实际因"迁移即委托"各步工作区相互依赖（中间态含过渡引用），按优化项整体提交一次，分步验证记录见本表。
 
 ---
+
+### 3.2 优化项 8 — SettingsView.vue 拆分（S1–S7）
+
+**对设计文档的勘误（记录在案）**：附录 B 的"10 个标签页"与实际结构不符——实际为 **6 个分区**（appearance/model/extension/data/security/about；主题+字号+语言在 appearance 区，API/向量模型在 model 区且已独立成组件）。按实际结构映射：appearance→SettingsAppearancePanel（含主题/自定义主题/字号/语言/背景/气泡）、extension→SettingsExtensionPanel（优化配置）、security→SettingsSecurityPanel（主密码）、data→SettingsDataPanel（备份导入/导出/审计/持久化/快捷回复/Profile 管理）、about→SettingsAboutPanel；model 区保留主文件（仅包装既有两面板 + 上下文长度设置）。
+
+**实施方式**：编写一次性拆分管线脚本（`scripts/split-settings-view.py` / `rewrite-settings-main.py` / `post-split-fixups.py` / `prune-settings-styles.py`，留档备查）——模板按 v-show div 深度配对提取、脚本符号按声明块括号平衡提取 + 传递闭包、样式按分区类名子串提取规则子集、主文件重写 + 按 tsc TS6133/TS6192 迭代清理未用导入。
+
+| 步骤 | 内容 | 验证结果 |
+|---|---|---|
+| S1 | `src/utils/toast-service.ts` 全局 Toast（单条队列 FIFO）+ App.vue 挂载唯一容器；SettingsModelPanel / VectorModelPanel / SettingsView 本地 toast 迁移 | 面板测试 9/9；顺带修复 VectorModelPanel `app-toast` 事件无监听方的死通道 bug |
+| S2-S6 | 5 个子组件拆分（模板逐字迁移，ARIA 保留） | 迭代修复拆分器缺陷（多行声明截断/import 多行消费/settings 头部条件），tsc 0 |
+| S6.5 | 跨组件状态修正：mpModal* 提升为 `src/utils/master-password-modal-state.ts` 共享模块（security 触发 / data 渲染，避免状态分叉）；AboutPanel 品牌名"AI 酒馆"改走 `app.name` i18n key（存量硬编码漏报修复） | tsc 0；i18n strict 通过（182 文件） |
+| S7 | 主文件重写为布局容器 + 父级样式按类名使用裁剪（243 块保留 45 块）+ 全量回归 + 截图证据 + 无障碍清单 | **全量 3582 项通过**；tsc/lint/build/CSP/ort 门禁全绿；Playwright 截图 7 张（6 分区 + 首启主密码弹窗）目检布局完好 |
+
+**最终行数**：SettingsView 4130 → **688**（-83%；≤600 目标差 88 行，差额为 model 区上下文设置脚本与父级保留样式，已在 §3.3 验收注记）；子组件 138–1788 行。
+
+**证据**：`docs/dev/evidence/round-3/opt-8-settings-split/`（test-results / typecheck / lint / build / 截图 7 张 / accessibility-checklist.md）。
+
+---

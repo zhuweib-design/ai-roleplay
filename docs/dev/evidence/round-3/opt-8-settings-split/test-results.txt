@@ -1,0 +1,2 @@
+[2m Test Files [22m [1m[32m141 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (143)[39m
+[2m      Tests [22m [1m[32m3582 passed[39m[22m[2m | [22m[33m3 skipped[39m[90m (3585)[39m

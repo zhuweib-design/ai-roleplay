@@ -7,6 +7,7 @@
  * - 线上服务器引用字段(预留)
  */
 import { ref, computed, watch, onMounted } from 'vue';
+import { showToast } from '@/utils/toast-service';
 import Icon from '@/components/common/Icon.vue';
 import {
   isVectorRagEnabled,
@@ -40,11 +41,7 @@ const installMsg = ref('');
 const remoteOpen = ref(false);
 const testingModel = ref<VectorModelId | null>(null);
 const smokeResult = ref<Record<string, string>>({});
-const showToast = (t: 'info' | 'success' | 'error', msg: string) => {
-  window.dispatchEvent(
-    new CustomEvent('app-toast', { detail: { type: t, message: msg } })
-  );
-};
+
 
 /** 冒烟验证:对已装模型执行一次真实嵌入 */
 async function runSmoke(modelId: VectorModelId) {
