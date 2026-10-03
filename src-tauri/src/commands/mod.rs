@@ -11,3 +11,4 @@ pub mod app_info;
 pub mod chat_stream;
 pub mod fetch_models;
 pub mod fs_commands;
+pub mod model_files;

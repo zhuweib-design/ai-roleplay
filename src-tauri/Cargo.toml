@@ -29,11 +29,14 @@ tauri-build = { version = "2.0", features = [] }
 [dependencies]
 # ── Tauri 核心 ──
 tauri = { version = "2.0", features = ["devtools", "tray-icon"] }
-tauri-plugin-fs = "2.0"
-tauri-plugin-dialog = "2.0"
-# shell / http / os 三个插件已于 2026-10-03 移除：Rust 侧与前端均无引用
-# （网络请求走 reqwest，见 commands/chat_stream.rs 与 commands/fetch_models.rs）
+# 插件仅剩 global-shortcut。fs / dialog 已于 2026-10-03 移除：capabilities 只授予
+# core:default，前端直连插件命令会被 ACL 拒绝，模型文件访问改走自定义命令
+# （commands/model_files.rs）；shell / http / os 同期移除（Rust 与前端均无引用，
+# 网络请求走 reqwest，见 commands/chat_stream.rs 与 commands/fetch_models.rs）。
 tauri-plugin-global-shortcut = "2.0"
+
+# ── 本地目录选择对话框（model_files::pick_model_dir 用；0.16 已在依赖树中） ──
+rfd = "0.16"
 
 # ── 序列化 ──
 serde = { version = "1.0", features = ["derive"] }

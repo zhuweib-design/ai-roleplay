@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "默认权限配置：应用仅通过 Tauri core 与自定义 Rust 命令访问能力；updater/shell/http/os 插件已移除，不授予对应权限。已知缺口：fs 与 dialog 插件在 lib.rs 注册且被桌面端向量模型导入流程调用（src/core/vector-model-tauri.ts、model-file-adapter.ts），但未授予权限，该路径在桌面端会被 ACL 拒绝 —— 待维护者在「补最小权限」与「改走自定义 Rust 命令」之间定夺。remote 只放行本地开发地址。",
+  "description": "默认权限配置：应用仅通过 Tauri core 与自定义 Rust 命令访问能力，不授予任何插件权限。fs / dialog / shell / http / os 插件已从依赖中移除：本地向量模型文件与目录对话框改由 commands/model_files.rs 的自定义命令提供（自定义命令经 invoke_handler 注册，不受插件 ACL 管束）。global-shortcut 仅在 Rust 侧注册（shortcut.rs），不经 webview IPC，故无需插件权限。remote 只放行本地开发地址。",
   "windows": ["main"],
   "permissions": ["core:default"],
   "remote": {

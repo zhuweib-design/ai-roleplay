@@ -3,7 +3,7 @@
 // 职责：
 // 1. 注册所有 invoke 命令（fs / chat_stream / app_info 等）
 // 2. 启动时初始化数据目录
-// 3. 配置 Tauri 插件（fs / dialog / shell / http / os）
+// 3. 配置 Tauri 插件（仅剩 global-shortcut，且由 shortcut::init 注册）
 // 4. 应用启动事件监听（窗口创建、关闭等）
 //
 // 命令命名约定：snake_case（前端通过 invoke('snake_case_name') 调用）
@@ -14,7 +14,7 @@ pub mod shortcut;
 pub mod storage;
 pub mod tray;
 
-use commands::{app_info, chat_stream, fetch_models, fs_commands};
+use commands::{app_info, chat_stream, fetch_models, fs_commands, model_files};
 use tauri::Manager;
 use tray::init_tray;
 
@@ -25,8 +25,9 @@ pub fn run() {
         .init();
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_dialog::init())
+        // fs / dialog 插件已移除：前端改走 model_files 自定义命令（见
+        // commands/model_files.rs 顶部说明 —— 插件命令受 ACL 管束，而
+        // capabilities 只授予 core:default）。
         // 全局快捷键插件只在 shortcut::init() 内注册（带 with_shortcuts + handler）；
         // 此处不得再注册一次 —— 同名插件重复注册会让 setup 返回 Err。
         .setup(|app| {
@@ -114,6 +115,14 @@ pub fn run() {
             app_info::get_app_version,
             app_info::get_data_dir_path,
             app_info::get_data_dir_size,
+            // ── 本地向量模型文件（桌面端导入；替代前端直连 plugin-fs / plugin-dialog） ──
+            model_files::pick_model_dir,
+            model_files::list_model_dir,
+            model_files::read_model_file,
+            model_files::read_model_by_id,
+            model_files::copy_model_files,
+            model_files::has_model_files,
+            model_files::list_installed_models,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri 应用启动失败");

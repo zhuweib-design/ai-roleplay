@@ -1,7 +1,7 @@
 /**
  * 模型文件适配器实现(双环境)
  *
- * - TauriFileAdapter:tauri-plugin-fs,模型目录在 appData/model/<id>/
+ * - TauriFileAdapter:自定义 Rust 命令(model-fs-ipc.ts),模型目录在 appData/model/<id>/
  * - WebFileAdapter:浏览器 <input webkitdirectory> 选目录 → File 列表复制进 IndexedDB
  *   (key: model/<id>/<文件名>;File 对象可持久化)
  *
@@ -10,6 +10,7 @@
  */
 import type { ModelFileAdapter } from './vector-model-source';
 import type { VectorModelId } from './vector-model-manager';
+import { modelFsIpc } from './model-fs-ipc';
 import { t } from '@/i18n';
 
 export function isTauriEnv(): boolean {
@@ -124,104 +125,34 @@ export class WebFileAdapter implements ModelFileAdapter {
 
 // ── Tauri ──
 
-/** Tauri fs 适配器(动态 import 插件,非 Tauri 环境不加载) */
+/**
+ * Tauri 模型文件适配器
+ *
+ * 磁盘访问经自定义 Rust 命令(model-fs-ipc.ts):插件命令受 capabilities ACL
+ * (仅 core:default)拒绝,自定义命令不占插件权限面。项目 model/ 优先、
+ * appData/model 兜底的解析顺序由 Rust 侧保证。
+ */
 export class TauriFileAdapter implements ModelFileAdapter {
-  private async fs() {
-    return import('@tauri-apps/plugin-fs');
-  }
-
-  private modelDir(modelId: VectorModelId): string {
-    return `model/${modelId}`;
-  }
-
-  /**
-   * 项目目录 model/ 路径(dev 直读;生产打包后不存在则走 appData)
-   * exe 工作目录 = src-tauri/target/debug/ → 项目根 = ../../../model
-   */
-  private projectModelDir(modelId: VectorModelId): string {
-    return `../../../model/${modelId}`;
-  }
-
-  /** 存在性:优先项目 model/(dev),其次 appData */
   async exists(modelId: VectorModelId): Promise<boolean> {
-    const fs = await this.fs();
-    // 1. 项目目录(dev 场景,用户已放模型)
-    try {
-      const entries = await fs.readDir(this.projectModelDir(modelId));
-      return entries.some((e) => e.name === 'model.onnx' || e.name === 'model_int8.onnx');
-    } catch {
-      /* 项目目录不存在 */
-    }
-    // 2. appData(生产,设置页复制)
-    try {
-      const entries = await fs.readDir(this.modelDir(modelId), { baseDir: fs.BaseDirectory.AppData });
-      return entries.some((e) => e.name === 'model.onnx' || e.name === 'model_int8.onnx');
-    } catch {
-      return false;
-    }
+    return modelFsIpc.hasModel(modelId);
   }
 
+  /** 桌面端:把选中目录里的模型文件复制进 appData/model/<id>/ */
   async importFromDir(modelId: VectorModelId, source: string | File[]): Promise<string[]> {
-    const fs = await this.fs();
-    const dest = this.modelDir(modelId);
-    await fs.mkdir(dest, { baseDir: fs.BaseDirectory.AppData, recursive: true });
     if (Array.isArray(source)) return [];
-    const sourceDir = source;
-    const entries = await fs.readDir(sourceDir);
-    const wanted = new Set(['model.onnx', 'config.json']);
-    const saved: string[] = [];
-    for (const e of entries) {
-      if (e.name && wanted.has(e.name)) {
-        await fs.copyFile(`${sourceDir}/${e.name}`, `${dest}/${e.name}`, {
-          fromPathBaseDir: fs.BaseDirectory.AppData,
-          toPathBaseDir: fs.BaseDirectory.AppData,
-        });
-        saved.push(e.name);
-      }
-    }
-    return saved;
+    return modelFsIpc.copyFiles(source, modelId);
   }
 
   async readModelBuffer(modelId: VectorModelId, fileName: string): Promise<ArrayBuffer> {
-    const fs = await this.fs();
-    const bytes = await this.tryRead(fs, modelId, fileName);
-    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    return modelFsIpc.readModel(modelId, fileName);
   }
 
   async readText(modelId: VectorModelId, fileName: string): Promise<string> {
-    const fs = await this.fs();
-    const bytes = await this.tryRead(fs, modelId, fileName);
-    return new TextDecoder('utf-8').decode(bytes);
-  }
-
-  /** 读取:项目 model/ 优先,appData 兜底 */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async tryRead(fs: any, modelId: VectorModelId, fileName: string): Promise<Uint8Array> {
-    try {
-      return await fs.readFile(`${this.projectModelDir(modelId)}/${fileName}`);
-    } catch {
-      return fs.readFile(`${this.modelDir(modelId)}/${fileName}`, { baseDir: fs.BaseDirectory.AppData });
-    }
+    return modelFsIpc.readModelText(modelId, fileName);
   }
 
   async listInstalled(): Promise<VectorModelId[]> {
-    const fs = await this.fs();
-    const ids = new Set<VectorModelId>();
-    // 项目目录
-    try {
-      const entries = await fs.readDir('../../../model');
-      for (const e of entries) if (e.isDirectory) ids.add(e.name as VectorModelId);
-    } catch {
-      /* 无项目目录 */
-    }
-    // appData
-    try {
-      const entries = await fs.readDir('model', { baseDir: fs.BaseDirectory.AppData });
-      for (const e of entries) if (e.isDirectory) ids.add(e.name as VectorModelId);
-    } catch {
-      /* 无 appData 目录 */
-    }
-    return [...ids];
+    return (await modelFsIpc.listInstalled()) as VectorModelId[];
   }
 }
 

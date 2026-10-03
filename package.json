@@ -75,8 +75,6 @@
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.84",
     "@tauri-apps/api": "^2.0.0",
-    "@tauri-apps/plugin-dialog": "^2.7.2",
-    "@tauri-apps/plugin-fs": "^2.5.1",
     "dompurify": "^3.1.0",
     "fflate": "^0.8.3",
     "gpt-tokenizer": "^2.5.0",

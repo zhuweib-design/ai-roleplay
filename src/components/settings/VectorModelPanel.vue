@@ -112,9 +112,9 @@ async function pickAndInstall() {
   try {
     const adapter = createModelFileAdapter();
     if (isTauriEnv()) {
-      const { open } = await import('@tauri-apps/plugin-dialog');
-      const dir = await open({ directory: true, title: t('vector.pickTitle') });
-      if (!dir || typeof dir !== 'string') return;
+      const { modelFsIpc } = await import('@/core/model-fs-ipc');
+      const dir = await modelFsIpc.pickDir(t('vector.pickTitle'));
+      if (!dir) return;
       // 由 model.onnx 所在文件夹名推断模型 id(或要求用户先选目标模型)
       const files = await adapter.importFromDir('bge-small-zh-v1.5', dir);
       installMsg.value = t('vector.copied', { files: files.join(', ') });
@@ -217,7 +217,7 @@ async function handleUserPickDir() {
   installingUser.value = true;
   try {
     const { pickModelDirectory } = await import('@/core/vector-model-tauri');
-    const cand = await pickModelDirectory();
+    const cand = await pickModelDirectory(t('vector.pickTitle'));
     if (!cand) return;
     await userStore.registerFromDir(cand, userModelName.value || undefined);
     userModelName.value = '';
