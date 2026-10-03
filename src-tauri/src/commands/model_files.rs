@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use serde::Serialize;
-use tauri::ipc::Response;
+use tauri::ipc::{CommandResult, Response};
 use tauri::{AppHandle, Manager};
 
 use crate::error::{AppError, AppResult};
@@ -130,18 +130,21 @@ fn model_dir_candidates(app: &AppHandle, model: &str) -> AppResult<Vec<PathBuf>>
 }
 
 /// 按模型 id + 文件名读取（解析顺序与改造前 TauriFileAdapter::tryRead 一致）
+///
+/// 二进制命令必须用 `CommandResult<Response>`（= `Result<Response, String>`）：
+/// `ipc::Response` 不实现 `Serialize`，包进 `Result<_, AppError>` 编译不过。
 #[tauri::command]
-pub fn read_model_by_id(app: AppHandle, model: String, file: String) -> AppResult<Response> {
-    let name = safe_file_name(&file)?;
-    for dir in model_dir_candidates(&app, &model)? {
+pub fn read_model_by_id(app: AppHandle, model: String, file: String) -> CommandResult<Response> {
+    let name = safe_file_name(&file).map_err(|e| e.to_string())?;
+    for dir in model_dir_candidates(&app, &model).map_err(|e| e.to_string())? {
         let candidate = dir.join(&name);
         if candidate.is_file() {
-            return Ok(Response::new(fs::read(&candidate)?));
+            return Ok(Response::new(
+                fs::read(&candidate).map_err(|e| e.to_string())?,
+            ));
         }
     }
-    Err(AppError::Config(format!(
-        "模型文件不存在: {model}/{name}"
-    )))
+    Err(format!("模型文件不存在: {model}/{name}"))
 }
 
 /// 系统目录对话框 → 选中的目录（取消返回 None）；选中后登记为本次会话可读根
@@ -193,15 +196,14 @@ pub fn list_model_dir(app: AppHandle, path: String) -> AppResult<Vec<ModelDirEnt
 /// 读取模型文件原始字节。走 Tauri 二进制 IPC —— ONNX 权重可达数十 MB，
 /// 返回 Vec<u8> 会被序列化成 JSON 数字数组，内存与耗时都不可接受。
 #[tauri::command]
-pub fn read_model_file(app: AppHandle, path: String) -> AppResult<Response> {
-    let file = resolve_allowed(&app, &path)?;
+pub fn read_model_file(app: AppHandle, path: String) -> CommandResult<Response> {
+    let file = resolve_allowed(&app, &path).map_err(|e| e.to_string())?;
     if !file.is_file() {
-        return Err(AppError::Config(format!(
-            "目标不是文件: {}",
-            file.display()
-        )));
+        return Err(format!("目标不是文件: {}", file.display()));
     }
-    Ok(Response::new(fs::read(&file)?))
+    Ok(Response::new(
+        fs::read(&file).map_err(|e| e.to_string())?,
+    ))
 }
 
 /// 把选中目录里的模型文件复制进 appData/model/<id>/，返回已复制文件名
