@@ -161,10 +161,10 @@ pub async fn pick_model_dir(title: String) -> AppResult<Option<String>> {
     })
     .await
     .map_err(|e| AppError::Internal(format!("目录对话框任务失败: {e}")))?;
-    let Some(handle) = picked else {
+    // rfd 0.16 的 pick_folder() 直接返回 PathBuf（0.14 的 FileHandle 包装已去掉）
+    let Some(dir) = picked else {
         return Ok(None);
     };
-    let dir = handle.path().to_path_buf();
     let canonical =
         fs::canonicalize(&dir).map_err(|_| AppError::Config("所选目录不可访问".into()))?;
     if let Ok(mut guard) = PICKED_DIRS.lock() {
