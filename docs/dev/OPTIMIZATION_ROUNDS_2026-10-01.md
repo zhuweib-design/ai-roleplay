@@ -212,7 +212,7 @@
 
 **对设计文档的勘误（记录在案）**：附录 B 的"10 个标签页"与实际结构不符——实际为 **6 个分区**（appearance/model/extension/data/security/about；主题+字号+语言在 appearance 区，API/向量模型在 model 区且已独立成组件）。按实际结构映射：appearance→SettingsAppearancePanel（含主题/自定义主题/字号/语言/背景/气泡）、extension→SettingsExtensionPanel（优化配置）、security→SettingsSecurityPanel（主密码）、data→SettingsDataPanel（备份导入/导出/审计/持久化/快捷回复/Profile 管理）、about→SettingsAboutPanel；model 区保留主文件（仅包装既有两面板 + 上下文长度设置）。
 
-**实施方式**：编写一次性拆分管线脚本（`scripts/split-settings-view.py` / `rewrite-settings-main.py` / `post-split-fixups.py` / `prune-settings-styles.py`，留档备查）——模板按 v-show div 深度配对提取、脚本符号按声明块括号平衡提取 + 传递闭包、样式按分区类名子串提取规则子集、主文件重写 + 按 tsc TS6133/TS6192 迭代清理未用导入。
+**实施方式**：编写一次性拆分管线脚本（现归档于 `scripts/archive/round3-settings-split/`：`split-settings-view.py` / `rewrite-settings-main.py` / `post-split-fixups.py` / `prune-settings-styles.py` 等 7 个，2026-10-03 归档并附 README 说明"不可对当前代码重跑"）——模板按 v-show div 深度配对提取、脚本符号按声明块括号平衡提取 + 传递闭包、样式按分区类名子串提取规则子集、主文件重写 + 按 tsc TS6133/TS6192 迭代清理未用导入。
 
 | 步骤 | 内容 | 验证结果 |
 |---|---|---|
