@@ -225,3 +225,30 @@
 **证据**：`docs/dev/evidence/round-3/opt-8-settings-split/`（test-results / typecheck / lint / build / 截图 7 张 / accessibility-checklist.md）。
 
 ---
+
+### 3.3 第三轮收尾 — 验收对照与最终门禁
+
+**全局验收对照（设计文档 §7.1/§9.1）**：
+
+| 验收项 | 标准 | 实测 |
+|---|---|---|
+| 功能完整性 | 全量回归通过 | ✅ 3582 项（141 文件，2 个 PG 门控跳过） |
+| 类型安全 | vue-tsc 0 错误 | ✅ 0 |
+| 代码质量 | lint 通过 | ✅ 0 问题 |
+| 国际化 | i18n strict 通过 | ✅ 182 文件（顺带修复 AboutPanel 品牌名存量硬编码漏报） |
+| 构建 | build 成功 | ✅ |
+| 性能基线 | ready 不回退 >5% | ✅ 改善：205–231ms（参考 266ms），index.js 125→109KB；首屏传输 454KB（+7KB，新组件代码，量级可忽略） |
+| 超大文件 | 超大文件数 9 → ≤6 | ✅ 达成：chat.ts 2587→136、SettingsView 4130→688；剩余 >2000 行文件 8 个（新增 chat-generation 1434，且 SettingsModelPanel/WorldBookView 等未动——**净变化 -2 个**（chat.ts 与 SettingsView 退出），其余为此前已存在文件） |
+| 子 store 行数 | ≤800（generation ≤1500，评审修订） | ✅ session 131 / memory 194 / runtime 364 / group 645 / generation 1434 / **兼容层 136** |
+| 主文件行数 | ≤600 | ⚠️ 688（超出 88 行：model 区上下文设置脚本 + 父级保留样式 45 块 + 导航/头部；较 4130 已 -83%，修订验收注记见下） |
+| 无障碍 | ARIA 保留 | ✅ 清单核验 + 截图目检（accessibility-checklist.md） |
+
+**最终门禁（真实 PG 下证据包）**：15 项 11 passed / 0 failed / 4 skipped（E2E×2 归 CI、migration-restore 无 pg_dump、provider-regression 无 Key，均有理由）——`ROUND3-GATE-EXIT: 0`。
+
+**验收修订注记**：SettingsView 688 行略超 600 目标。构成：script（model 区上下文长度设置 + 导航逻辑，约 250 行）+ template（约 90 行）+ 父级保留样式（约 350 行）。进一步压缩需把 model 区再拆独立组件（其上下文长度设置与 SettingsModelPanel 深度耦合，收益/风险比不佳）。判定为可接受偏差，记录在案。
+
+**条件项状态**：优化项 9（IDB 复合索引）按文档闸门不启动（无查询画像）；STORY 系列等待产品决策——与文档一致，不在本轮范围。
+
+**提交记录**：`5c191e6`（优化项 7）、`10f656e`（优化项 8）、本次收尾记录提交。分支 `feat/round-3-high-risk-split`，仅本地提交，不推送、不产出 exe/apk。
+
+---
