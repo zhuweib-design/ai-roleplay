@@ -66,9 +66,19 @@ jobs:
       - name: Runtime schema drift check
         run: npm run runtime:db:schema:check
 
+      # 快照迁移计划自洽门禁：各存储域的迁移步骤与版本契约必须自洽。
+      # 此前只在本地证据包（release:pack）里执行，CI 无护栏 —— 2026-10-03 补。
+      - name: Snapshot migration plan check
+        run: npm run snapshot:migration:check
+
       # i18n 扫描门禁：strict 模式, 全量无硬编码中文残留才通过
       - name: i18n check (strict)
         run: npm run i18n:check:strict
+
+      # 评测判定链离线自检（EVAL-01/02/03）：断言事实覆盖数与合规率阈值，
+      # 防判定链静默退化。不联网、不调用真实 Provider（真实一致率属 requires-real-env）。
+      - name: Eval manifest self-check (strict)
+        run: npm run eval:manifest
 
       # CSS 约定守卫（单一入口，编排 5 项子检查，任一项失败即整体失败）：
       #   1. 断点单一来源（S-10）—— 禁止野断点数字、禁止 matchMedia 出现在 viewport.ts 外、L1/L4 数值同步
@@ -113,6 +123,12 @@ jobs:
       # script-src 未被 unsafe-eval/unsafe-inline 削弱、无内联 script。必须在 Build 之后。
       - name: CSP guard (check:csp)
         run: npm run check:csp
+
+      # ORT 首屏隔离守卫（第二轮 O-1 的回归护栏）：断言构建产物、入口静态可达依赖图与
+      # index.html 均不含 onnxruntime，且 public/vendor/ort 与 node_modules 版本一致。
+      # 该门禁此前只在本地证据包执行，CI 无护栏 —— 2026-10-03 补。必须在 Build 之后。
+      - name: ORT first-screen guard (check:ort)
+        run: npm run check:ort
 
       # 持久化覆盖率报告供人工查看（不影响门禁结果）
       - name: Upload coverage report
