@@ -13,7 +13,7 @@
 | D-3 | P1 | 进行中 | 版本快照构造改用完整角色卡 |
 | D-9 | P2 | **已修复** | 随机事件模板/配置/结果持久化 + 备份纳入 |
 | D-10 | P2 | **已修复** | 锁定态三态区分 + 发送失败保草稿 |
-| D-7 | P2 | 待修 | 单聊归档可感知（按钮文案翻转 + 列表标记 + toast） |
+| D-7 | P2 | **已修复** | 单聊归档可感知（按钮文案翻转 + 列表标记 + toast） |
 | D-8 | P2 | **已修复** | 展开分块按钮 @click.stop |
 | D-5 | P2 | 待修 | 群聊打开先落底；扩页只认上滚方向 |
 | D-6 | P2 | 待修 | 单聊顶部占位按窗口边界重算，屏蔽程序补偿滚动 |
@@ -51,6 +51,19 @@
 3. 备份纳入（跟随 events 先例）：`BackupData.randomEvents`（可选字段 + 校验）、`exportAll` extra 透传、`ImportResult.randomEvents` 回传、`SettingsDataPanel` 导出携带 / 导入回写（`applyBackupData` 对不可信外部载荷逐字段运行时校验）。
 
 **验证**：新增 `tests/stores/random-events-persistence.test.ts`（3 项）——快照往返跨实例找回、生成器/场景配置落盘、备份载荷往返 + 不可信载荷防御；tsc 0。
+
+### D-7（P2）单聊"归档"写入无消费者（空操作感知）
+
+状态：**已修复**（选文档"补消费者"路线的最小可感知集）
+
+**改动**（`src/components/layout/CharacterList.vue` + i18n）：
+1. 归档按钮文案/aria 随状态翻转（归档 ↔ 取消归档，新 key `charList.unarchive`）；
+2. 会话行内"已归档"徽标（复用 `archives.archivedTag` 文案 + 弱化样式）；
+3. `onToggleArchive` 完成后 toast 反馈（`charList.archivedToast` / `unarchivedToast`）。
+
+记录页纳入单聊（O-17 关联）属信息架构调整，未在本轮范围内。
+
+**验证**：tsc 0；stores+components 全量 815 项通过（含 D-9 引入回归的修复）。
 
 ### D-10（P2）锁定态误报"未配置 API Profile" + 输入丢失（P2）锁定态误报"未配置 API Profile" + 输入丢失
 
