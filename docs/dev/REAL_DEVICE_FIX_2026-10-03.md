@@ -62,8 +62,8 @@
 | 缺陷 | 状态 | 回归保护 |
 |---|---|---|
 | D-3（P1） | ✅ 修复 | character-version.test D-3 回归用例（快照字段/diff 报差异/回滚保字段） |
-| D-5 | ✅ 修复 | chat-main-window 5 项（窗口语义）；"打开即落底"实机断言属 Playwright 范畴（原文档 §七建议），列入待补 |
-| D-6 | ✅ 修复 | 同上套件；spacer=0 实机断言同上 |
+| D-5 | ✅ 修复（含实机 E2E 断言） | chat-main-window 5 项 + **新增 `e2e/long-history-scroll.spec.ts`**："打开 150 条群聊视口落在最新一条（底部误差 ≤80px、尾窗口 60 行、徽标 90 条）"实测通过 |
+| D-6 | ✅ 修复（含实机 E2E 断言） | 同套件："点到窗口起点后顶部占位消失（无幽灵空白）、首条消息真实渲染、DOM ≤ 2×RENDER_WINDOW"实测通过 |
 | D-7 | ✅ 修复（最小可感知集） | stores+components 815 项；记录页纳入单聊属 O-17 信息架构调整 |
 | D-8 | ✅ 修复（@click.stop） | 一行模板改动；B16 建议"点按钮应展开"的正式 spec 待 D-8 验证后补 |
 | D-9 | ✅ 修复 | random-events-persistence 3 项（往返/配置/备份载荷防御） |
@@ -73,6 +73,11 @@
 | O-12 / O-13 及其余 P3 | 按原文档**不动代码**（L-11 待决策 / 收益微小） | — |
 
 **提交序列**：`5de4614`（D-3/D-8/D-10/D-9）→ `fc28dd7`（D-7）→ `6021e8e`（D-5/D-6）→ `2862e0b`（P3 批）→ 本记录。分支 `fix/real-device-2026-10-03`，仅本地提交，不推送、不产出 exe/apk。
+
+**原文档 §七 自动化盲区补漏状态**：
+- ②"打开会话 `atBottom===true`"与"`windowStart===0` 时顶部 spacer 为 0"——已补：`e2e/long-history-scroll.spec.ts`（D-5/D-6 两条，IndexedDB 造数 0 模型消耗，实测通过）；
+- D-8 对应"点按钮应展开"正式 spec——待补（现有 databank 相关 E2E 未覆盖该按钮，后续随 databank-flow 扩展）；
+- ③store 死状态扫描（grep 脚本进 CI）——未实施（工具类任务，另行排期）。
 
 ## 其余各项
 

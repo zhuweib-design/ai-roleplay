@@ -15,7 +15,7 @@
  * - aria-live 区域通知新消息
  * - 键盘可访问（Tab 导航、Enter 发送、Esc 关闭弹窗）
  */
-import { ref, computed, watch, nextTick, useTemplateRef } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useChatStore } from '@/stores/chat';
@@ -79,7 +79,7 @@ const addMemberModalOpen = ref(false);
 const toastOpen = ref(false);
 const toastType = ref<'info' | 'success' | 'error'>('info');
 const toastMessage = ref('');
-const messagesEndRef = useTemplateRef<HTMLElement>('messagesEnd');
+
 
 // ── 群聊生成中止 ──
 // 当前进行中的 ChatManager；同一时刻只允许一个群聊生成，避免并发中止串扰。
@@ -198,14 +198,43 @@ watch(
   { immediate: true }
 );
 
-// 监听消息列表变化，自动滚动到底部
-// D-5：滚底改即时（auto）。smooth 动画起步阶段 scrollTop 极低，会被 onMessagesScroll
-// 的"触顶扩页"误判为用户上滚；且扩页补偿会打断动画，最终停在列表中部。
+// ── D-5（REAL_DEVICE_TEST_2026-10-03）：显式落底 ──
+// 原实现 watch(messages.length) + messagesEndRef.scrollIntoView：
+// 应用启动自动选中群组时（length 无 0→X 变化或 ref 未绑定）根本不触发，且 smooth
+// 动画起步的低 scrollTop 会被触顶扩页误判（D-5 实测 scrollTop=0 停在列表顶部）。
+// 改为：监听 currentGroupId（手动选择/自动选中/首载统一入口），双 nextTick + rAF
+// 等布局与字体就绪后，直接把滚动容器置底；并用时间窗屏蔽随后的程序滚动事件。
+function scrollToBottom(): void {
+  const el = messagesAreaRef.value;
+  if (!el) return;
+  el.scrollTop = el.scrollHeight;
+  lastScrollTop = el.scrollTop;
+  suppressScrollUntil = Date.now() + 250;
+}
+
+async function scrollToBottomSoon(): Promise<void> {
+  await nextTick();
+  await nextTick();
+  await new Promise((r) => requestAnimationFrame(r));
+  scrollToBottom();
+}
+
+watch(
+  () => groupStore.currentGroupId,
+  () => {
+    void scrollToBottomSoon();
+  },
+  { immediate: true }
+);
+
+// 监听消息列表变化，新消息到达时若已近底部则跟随滚底（保持既有行为）
 watch(
   () => currentMessages.value.length,
-  async () => {
-    await nextTick();
-    messagesEndRef.value?.scrollIntoView({ behavior: 'auto' });
+  () => {
+    const el = messagesAreaRef.value;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottom) void scrollToBottomSoon();
   }
 );
 
@@ -1198,7 +1227,7 @@ type="button"
                 </div>
               </template>
             </div>
-            <div ref="messagesEnd" aria-hidden="true" />
+            <div aria-hidden="true" />
           </section>
 
           <!-- 输入区 -->
