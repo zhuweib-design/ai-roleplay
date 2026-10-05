@@ -44,98 +44,6 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
   /** 事件模板列表 */
   const templates = ref<RandomEventTemplate[]>([]);
 
-  // ── D-9（REAL_DEVICE_TEST_2026-10-03）：随机事件持久化 ──
-  // 原实现全部状态只在内存（刷新即丢且不进备份）。挂到存储适配器的快照通道，
-  // 与本地记忆 / 群聊待提交回合同一机制（MIG-01 版本信封）。
-  const RANDOM_EVENTS_SNAPSHOT_KEY = 'random-events:store:v1';
-  const RANDOM_EVENTS_SCHEMA_VERSION = 1;
-  let storageAdapter: Pick<StorageAdapter, 'loadSnapshot' | 'saveSnapshot'> | null = null;
-  let loaded = false;
-
-  function setStorageAdapter(adapter: Pick<StorageAdapter, 'loadSnapshot' | 'saveSnapshot'> | null): void {
-    storageAdapter = adapter;
-    loaded = false;
-  }
-
-  async function loadFromStorage(): Promise<void> {
-    if (!storageAdapter || loaded) return;
-    try {
-      const raw = await storageAdapter.loadSnapshot<unknown>(RANDOM_EVENTS_SNAPSHOT_KEY);
-      if (raw !== null) {
-        const { data } = unwrapSnapshot(raw);
-        const d = (data ?? {}) as {
-          templates?: RandomEventTemplate[];
-          sceneConfigs?: RandomEventSceneConfig[];
-          generatorConfig?: RandomEventGeneratorConfig;
-          results?: RandomEventResult[];
-        };
-        templates.value = Array.isArray(d.templates) ? d.templates : [];
-        sceneConfigs.value = new Map(
-          (Array.isArray(d.sceneConfigs) ? d.sceneConfigs : [])
-            .filter((sc) => sc && typeof sc.sceneName === 'string')
-            .map((sc) => [sc.sceneName, sc]),
-        );
-        if (d.generatorConfig && typeof d.generatorConfig === 'object') {
-          generatorConfig.value = { ...createDefaultGeneratorConfig(), ...d.generatorConfig };
-        }
-        results.value = Array.isArray(d.results) ? d.results : [];
-      }
-    } catch (error) {
-      lastError.value = error instanceof Error ? error.message : String(error);
-    } finally {
-      loaded = true;
-    }
-  }
-
-  async function persistNow(): Promise<void> {
-    if (!storageAdapter) return;
-    try {
-      await storageAdapter.saveSnapshot(
-        RANDOM_EVENTS_SNAPSHOT_KEY,
-        wrapSnapshot(
-          {
-            templates: templates.value,
-            sceneConfigs: Array.from(sceneConfigs.value.values()),
-            generatorConfig: generatorConfig.value,
-            results: results.value,
-          },
-          RANDOM_EVENTS_SCHEMA_VERSION,
-        ),
-      );
-    } catch (error) {
-      lastError.value = error instanceof Error ? error.message : String(error);
-    }
-  }
-
-  /** 备份导出载荷（备份通道此前完全不含随机事件，见 D-9） */
-  function exportBackupData() {
-    return {
-      templates: [...templates.value],
-      sceneConfigs: Array.from(sceneConfigs.value.values()),
-      generatorConfig: { ...generatorConfig.value },
-      results: [...results.value],
-    };
-  }
-
-  /** 备份导入回写（调用方从备份 JSON 读出后调用） */
-  function applyBackupData(payload: {
-    templates?: RandomEventTemplate[];
-    sceneConfigs?: RandomEventSceneConfig[];
-    generatorConfig?: RandomEventGeneratorConfig;
-    results?: RandomEventResult[];
-  }): void {
-    templates.value = Array.isArray(payload.templates) ? payload.templates : templates.value;
-    if (Array.isArray(payload.sceneConfigs)) {
-      sceneConfigs.value = new Map(
-        payload.sceneConfigs.filter((sc) => sc && typeof sc.sceneName === 'string').map((sc) => [sc.sceneName, sc]),
-      );
-    }
-    if (payload.generatorConfig && typeof payload.generatorConfig === 'object') {
-      generatorConfig.value = { ...createDefaultGeneratorConfig(), ...payload.generatorConfig };
-    }
-    results.value = Array.isArray(payload.results) ? payload.results : results.value;
-    void persistNow();
-  }
   /** 场景级配置（按 sceneName 索引） */
   const sceneConfigs = ref<Map<string, RandomEventSceneConfig>>(new Map());
   /** 生成器全局配置 */
@@ -371,6 +279,104 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
 
     // 更新生成器的 lastGeneratedAt
     generatorConfig.value.lastGeneratedAt = result.generatedAt;
+    void persistNow();
+  }
+
+  // ── D-9（REAL_DEVICE_TEST_2026-10-03）：随机事件持久化 ──
+  // 原实现全部状态只在内存（刷新即丢且不进备份）。挂到存储适配器的快照通道，
+  // 与本地记忆 / 群聊待提交回合同一机制（MIG-01 版本信封）。
+  const RANDOM_EVENTS_SNAPSHOT_KEY = 'random-events:store:v1';
+  const RANDOM_EVENTS_SCHEMA_VERSION = 1;
+  let storageAdapter: Pick<StorageAdapter, 'loadSnapshot' | 'saveSnapshot'> | null = null;
+  let loaded = false;
+
+  function setStorageAdapter(adapter: Pick<StorageAdapter, 'loadSnapshot' | 'saveSnapshot'> | null): void {
+    storageAdapter = adapter;
+    loaded = false;
+  }
+
+  async function loadFromStorage(): Promise<void> {
+    if (!storageAdapter || loaded) return;
+    try {
+      const raw = await storageAdapter.loadSnapshot<unknown>(RANDOM_EVENTS_SNAPSHOT_KEY);
+      if (raw !== null) {
+        const { data } = unwrapSnapshot(raw);
+        const d = (data ?? {}) as {
+          templates?: RandomEventTemplate[];
+          sceneConfigs?: RandomEventSceneConfig[];
+          generatorConfig?: RandomEventGeneratorConfig;
+          results?: RandomEventResult[];
+        };
+        templates.value = Array.isArray(d.templates) ? d.templates : [];
+        sceneConfigs.value = new Map(
+          (Array.isArray(d.sceneConfigs) ? d.sceneConfigs : [])
+            .filter((sc) => sc && typeof sc.sceneName === 'string')
+            .map((sc) => [sc.sceneName, sc]),
+        );
+        if (d.generatorConfig && typeof d.generatorConfig === 'object') {
+          generatorConfig.value = { ...createDefaultGeneratorConfig(), ...d.generatorConfig };
+        }
+        results.value = Array.isArray(d.results) ? d.results : [];
+      }
+    } catch (error) {
+      lastError.value = error instanceof Error ? error.message : String(error);
+    } finally {
+      loaded = true;
+    }
+  }
+
+  async function persistNow(): Promise<void> {
+    if (!storageAdapter) return;
+    try {
+      await storageAdapter.saveSnapshot(
+        RANDOM_EVENTS_SNAPSHOT_KEY,
+        wrapSnapshot(
+          {
+            templates: templates.value,
+            sceneConfigs: Array.from(sceneConfigs.value.values()),
+            generatorConfig: generatorConfig.value,
+            results: results.value,
+          },
+          RANDOM_EVENTS_SCHEMA_VERSION,
+        ),
+      );
+    } catch (error) {
+      lastError.value = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  /** 备份导出载荷（备份通道此前完全不含随机事件，见 D-9） */
+  function exportBackupData() {
+    return {
+      templates: [...templates.value],
+      sceneConfigs: Array.from(sceneConfigs.value.values()),
+      generatorConfig: { ...generatorConfig.value },
+      results: [...results.value],
+    };
+  }
+
+  /** 备份导入回写（调用方从备份 JSON 读出后调用） */
+  function applyBackupData(payload: {
+    templates?: unknown;
+    sceneConfigs?: unknown;
+    generatorConfig?: unknown;
+    results?: unknown;
+  }): void {
+    templates.value = Array.isArray(payload.templates)
+      ? (payload.templates as RandomEventTemplate[])
+      : templates.value;
+    if (Array.isArray(payload.sceneConfigs)) {
+      sceneConfigs.value = new Map(
+        (payload.sceneConfigs as RandomEventSceneConfig[])
+          .filter((sc) => sc && typeof sc.sceneName === 'string').map((sc) => [sc.sceneName, sc]),
+      );
+    }
+    if (payload.generatorConfig && typeof payload.generatorConfig === 'object') {
+      generatorConfig.value = { ...createDefaultGeneratorConfig(), ...(payload.generatorConfig as RandomEventGeneratorConfig) };
+    }
+    results.value = Array.isArray(payload.results)
+      ? (payload.results as RandomEventResult[])
+      : results.value;
     void persistNow();
   }
 

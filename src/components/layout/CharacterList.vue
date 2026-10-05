@@ -7,6 +7,7 @@ import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import NewConversationModal from '@/components/chat/NewConversationModal.vue';
 import { t } from '@/i18n';
+import { showToast } from '@/utils/toast-service';
 
 const characterStore = useCharacterStore();
 const chatStore = useChatStore();
@@ -65,8 +66,14 @@ function newChat() {
 function onTogglePin(chat: Chat) {
   void chatStore.togglePin(chat.id);
 }
+
+// D-7（REAL_DEVICE_TEST_2026-10-03）：归档原为空操作感知（写入无消费者、无反馈）。
+// 修复：按钮文案随状态翻转 + 行内"已归档"标记 + toast 反馈。
 function onToggleArchive(chat: Chat) {
-  void chatStore.toggleArchive(chat.id);
+  const willArchive = !chat.archived;
+  void chatStore.toggleArchive(chat.id).then(() => {
+    showToast('info', t(willArchive ? 'charList.archivedToast' : 'charList.unarchivedToast'));
+  });
 }
 
 // 删除二次确认（避免误删）
@@ -196,6 +203,11 @@ function onDrawerTouchEnd(e: TouchEvent) {
               @click="switchChat(conv)"
             >
               <Icon v-if="conv.pinned" name="pin" :size="12" class="conv-pin" aria-hidden="true" />
+              <span
+                v-if="conv.archived"
+                class="conv-archived-tag"
+                >{{ t('archives.archivedTag') }}</span
+              >
               <span class="conv-title">{{ conv.title }}</span>
               <span class="conv-time">{{ conv.updatedAt }}</span>
             </button>
@@ -231,8 +243,8 @@ function onDrawerTouchEnd(e: TouchEvent) {
                 <button
                   type="button"
                   class="conv-act-btn"
-                  :title="t('charList.archive')"
-                  :aria-label="t('charList.archive')"
+                  :title="conv.archived ? t('charList.unarchive') : t('charList.archive')"
+                  :aria-label="conv.archived ? t('charList.unarchive') : t('charList.archive')"
                   @click="onToggleArchive(conv)"
                 >
                   <Icon name="archive" :size="14" />
@@ -449,6 +461,15 @@ function onDrawerTouchEnd(e: TouchEvent) {
   cursor: pointer;
   text-align: left;
   color: inherit;
+}
+
+.conv-archived-tag {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 4px);
+  font-size: 10px;
+  color: var(--muted-foreground);
 }
 
 .conv-pin {

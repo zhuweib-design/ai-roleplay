@@ -15,7 +15,7 @@ import { useRandomEventsStore } from '../../src/stores/random-events';
 function makeAdapter() {
   const snapshots = new Map<string, unknown>();
   return {
-    loadSnapshot: vi.fn(async <T,>(key: string) => (snapshots.get(key) ?? null) as T | null),
+    loadSnapshot: vi.fn(async (key: string) => snapshots.get(key) ?? null),
     saveSnapshot: vi.fn(async (key: string, value: unknown) => {
       snapshots.set(key, value);
     }),
@@ -62,7 +62,7 @@ describe('random-events store — D-9 持久化', () => {
     const adapter = makeAdapter();
     const store = useRandomEventsStore();
     store.setStorageAdapter(adapter);
-    store.updateGeneratorConfig({ enabled: true, dailyCap: 5 });
+    store.updateGeneratorConfig({ enabled: true, maxPerTurn: 5 });
     store.updateSceneConfig('D9-场景', { enabled: true });
 
     setActivePinia(createPinia());
@@ -70,7 +70,7 @@ describe('random-events store — D-9 持久化', () => {
     store2.setStorageAdapter(adapter);
     await store2.loadFromStorage();
     expect(store2.generatorConfig.enabled).toBe(true);
-    expect(store2.generatorConfig.dailyCap).toBe(5);
+    expect(store2.generatorConfig.maxPerTurn).toBe(5);
     expect(store2.getSceneConfig('D9-场景')?.enabled).toBe(true);
   });
 
