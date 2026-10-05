@@ -340,6 +340,13 @@ const quickReplyFileInput = ref<HTMLInputElement | null>(null);
 
 const storageMultiProfile = getStorageCapability().multiProfile;
 
+// O-20：内部字段名 → 用户可读 label（原 toast 直接把 l0Enabled 等字段名抛给用户）
+const OPT_KEY_LABELS: Record<'l0Enabled' | 'l1Enabled' | 'l2Enabled', string> = {
+  l0Enabled: t('settingsView.optL0'),
+  l1Enabled: t('settingsView.optL1'),
+  l2Enabled: t('settingsView.optL2'),
+};
+
 function toggleOptimization(key: 'enabled' | 'l0Enabled' | 'l1Enabled' | 'l2Enabled', value: boolean) {
   optimizationConfig.value = { ...optimizationConfig.value, [key]: value };
   saveOptimizationConfig(optimizationConfig.value);
@@ -349,7 +356,7 @@ function toggleOptimization(key: 'enabled' | 'l0Enabled' | 'l1Enabled' | 'l2Enab
       ? value
         ? t('settingsView.optEnabled')
         : t('settingsView.optDisabled')
-      : t('settingsView.optToggled', { key, state: value ? t('settingsView.optOn') : t('settingsView.optOff') })
+      : t('settingsView.optToggled', { key: OPT_KEY_LABELS[key as keyof typeof OPT_KEY_LABELS], state: value ? t('settingsView.optOn') : t('settingsView.optOff') })
   );
 }
 

@@ -1485,6 +1485,11 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
         </div>
 
         <!-- 操作按钮 -->
+        <!-- O-19：目标未选时按钮为禁用态，补一行可见解释（原观察：点了没反应） -->
+        <p v-if="needsLorebook && !importLorebookId" class="form-hint">
+          {{ t('story.needLorebook') }}
+        </p>
+
         <div class="import-actions">
           <button type="button" class="btn btn-secondary" @click="closeImportModal">
             {{ t('story.close') }}

@@ -604,6 +604,14 @@ function speakMessage(text: string) {
     return;
   }
   const config = settings.ttsConfig;
+  // O-9（REAL_DEVICE_TEST_2026-10-03）：未启用时此前静默无效，而同面板翻译有明确提示——
+  // 补齐对称反馈，避免用户无从判断"没开还是坏了"
+  if (!config.enabled) {
+    toastMessage.value = t('chat.ttsDisabled');
+    toastType.value = 'info';
+    toastOpen.value = true;
+    return;
+  }
   ttsService.speak({
     text,
     voiceURI: config.voiceURI,

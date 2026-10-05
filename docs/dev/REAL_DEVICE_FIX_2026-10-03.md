@@ -17,13 +17,27 @@
 | D-8 | P2 | **已修复** | 展开分块按钮 @click.stop |
 | D-5 | P2 | **已修复** | 群聊打开先落底；扩页只认上滚方向 |
 | D-6 | P2 | **已修复** | 单聊顶部占位按窗口边界重算，屏蔽程序补偿滚动 |
-| O-9 | P3 | 待修 | TTS 未启用时给出与翻译一致的提示 |
-| O-19 | P3 | 待修 | 故事引擎未选目标时禁用"执行导入" |
-| O-20 | P3 | 待修 | 优化开关 toast 的 key→label 映射 |
-| O-22 | P3 | 待修 | 世界书删除确认插值名称与条目数 |
-| O-24 | P3 | 待修 | 数据银行搜索无结果空态 |
+| O-9 | P3 | **已修复**（①提示对称化；②停止态/③lang 留待 TTS 迭代） | TTS 未启用时给出与翻译一致的提示 |
+| O-19 | P3 | **已修复** | 目标未选时禁用 + 可见解释行 |
+| O-20 | P3 | **已修复** | 优化开关 toast 复用 optL0/L1/L2 label key |
+| O-22 | P3 | **已修复** | 删除确认插值名称与条目数（wb.deleteConfirmNamed） |
+| O-24 | P3 | **已修复** | 数据银行无结果空态 + 清除搜索按钮 |
 
 （每项完成后在下方小节填充改动与验证；不修改任何上述范围外的行为。）
+
+### P3 快赢批（O-9① / O-19 / O-20 / O-22 / O-24）
+
+状态：**已修复**
+
+| 项 | 改动 | 验证 |
+|---|---|---|
+| O-19 | `StoryEngineView` 导入弹窗：目标未选时按钮本已 disabled，补可见解释行（`story.needLorebook`）——原观察"点了没反应"实为禁用态无解释 | tsc 0 |
+| O-20 | `SettingsDataPanel` 优化开关 toast 的 key→label 映射（复用既有 `optL0/L1/L2` 文案 key），不再把 `l0Enabled` 等字段名抛给用户 | tsc 0 |
+| O-22 | `WorldBookView` 删除确认改 `wb.deleteConfirmNamed`（插值名称 + 条目数，派生自 deleteTargetId），同名副本可区分 | tsc 0 |
+| O-24 | `DataBankView` 筛选无结果时新增空态（`databank.noMatch` + 清除搜索按钮），对齐记录页既有做法 | tsc 0 |
+| O-9① | `ChatMain.speakMessage`：TTS 未启用时 toast「朗读功能未启用，请在设置页配置」（`chat.ttsDisabled`，与翻译同款）；停止态与 utterance.lang 属 TTS 迭代，不在本轮 | tsc 0 |
+
+**语义变更同步的既有测试**：`chat.test`"未配置 ChatManager"用例更新为 D-10 新语义（拒绝前置 / 不污染消息 / checkSendBlock==='no-profile'）；`chat-ime` spy 压平 checkSendBlock。
 
 ---
 

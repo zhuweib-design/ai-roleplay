@@ -387,6 +387,18 @@ function getCharacterName(id?: string): string {
           </article>
         </div>
       </section>
+
+      <!-- O-24（REAL_DEVICE_TEST_2026-10-03）：筛选无结果时的空态（对齐记录页做法） -->
+      <div v-if="documents.length === 0" class="search-empty" role="status">
+        <p class="search-empty-text">{{ t('databank.noMatch') }}</p>
+        <button
+          type="button"
+          class="search-empty-clear"
+          @click="store.searchQuery = ''"
+        >
+          {{ t('databank.clearSearch') }}
+        </button>
+      </div>
     </main>
 
     <!-- 上传 Modal -->
@@ -1024,5 +1036,33 @@ function getCharacterName(id?: string): string {
   .char-select-input {
     font-size: 16px;
   }
+}
+/* O-24：搜索无结果空态 */
+.search-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+  padding: var(--spacing-lg, 24px) 0;
+  color: var(--muted-foreground);
+}
+
+.search-empty-text {
+  margin: 0;
+  font-size: 13px;
+}
+
+.search-empty-clear {
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.search-empty-clear:hover {
+  border-color: var(--secondary);
 }
 </style>

@@ -135,19 +135,16 @@ describe('useChatStore — D4 集成', () => {
   });
 
   describe('sendMessage 流程', () => {
-    it('未配置 ChatManager 时应给出友好提示而非崩溃', async () => {
+    it('未配置 ChatManager 时应给出友好提示而非崩溃（D-10 新语义：拒绝前置、不污染消息、保住输入）', async () => {
       const chatStore = useChatStore();
       const char = makeCharacter();
 
       await chatStore.sendMessage(char, '你好');
 
-      expect(char.messages).toHaveLength(2);
-      expect(char.messages[0]!.role).toBe('user');
-      expect(char.messages[0]!.content).toBe('你好');
-      expect(char.messages[1]!.role).toBe('assistant');
-      expect(char.messages[1]!.generating).toBe(false);
-      expect(char.messages[1]!.content).toContain('未配置 API Profile');
+      // D-10：守卫前置——失败发生在任何消息入列之前，输入正文保留在输入框
+      expect(char.messages).toHaveLength(0);
       expect(chatStore.lastError).not.toBeNull();
+      expect(chatStore.checkSendBlock()).toBe('no-profile');
     });
 
     it('空文本不应触发任何消息', async () => {

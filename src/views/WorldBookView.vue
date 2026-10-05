@@ -94,6 +94,10 @@ function goBack() {
 
 // ── UI 状态 ──
 const deleteTargetId = ref<string | null>(null);
+// O-22：确认文案需要名称与条目数，派生自待删除 id
+const deleteTargetLorebook = computed(
+  () => store.lorebooks.find((lb) => lb.id === deleteTargetId.value) ?? null,
+);
 const deleteModalOpen = ref(false);
 const toastOpen = ref(false);
 const toastType = ref<'info' | 'success' | 'error'>('info');
@@ -1604,7 +1608,7 @@ function strategyLabel(s: LorebookStrategy): string {
       v-model="deleteModalOpen"
       :title="t('wb.deleteTitle')"
     >
-      <p>{{ t('wb.deleteConfirm') }}</p>
+      <p>{{ t('wb.deleteConfirmNamed', { name: deleteTargetLorebook?.name ?? t('story.unnamedLorebook'), count: deleteTargetLorebook?.entries.length ?? 0 }) }}</p>
       <template #footer>
         <button
           type="button"
