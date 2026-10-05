@@ -199,17 +199,24 @@ watch(
 );
 
 // 监听消息列表变化，自动滚动到底部
+// D-5：滚底改即时（auto）。smooth 动画起步阶段 scrollTop 极低，会被 onMessagesScroll
+// 的"触顶扩页"误判为用户上滚；且扩页补偿会打断动画，最终停在列表中部。
 watch(
   () => currentMessages.value.length,
   async () => {
     await nextTick();
-    messagesEndRef.value?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.value?.scrollIntoView({ behavior: 'auto' });
   }
 );
 
 // ── UX-03：游标分页 —— 顶部触顶 / 手动按钮加载更早消息，scrollTop 补偿保持阅读位置 ──
 const messagesAreaRef = ref<HTMLElement | null>(null);
 const loadingOlderTurns = ref(false);
+// D-5：程序补偿滚动会派发真实 scroll 事件（异步、晚于 loadingOlderTurns 复位），
+// 且平滑滚底起步阶段 scrollTop 极低——两类都不应被误判为"用户上滚到顶"。
+// 用"上一次 scrollTop 方向判定 + 补偿后时间窗"双重过滤。
+let lastScrollTop = 0;
+let suppressScrollUntil = 0;
 
 async function loadEarlier(): Promise<void> {
   if (loadingOlderTurns.value || !groupStore.hasOlderTurns) return;
@@ -220,7 +227,12 @@ async function loadEarlier(): Promise<void> {
     await nextTick();
     // 更早的消息在顶部展开，按新增高度补偿 scrollTop，避免阅读位置跳变
     const el = messagesAreaRef.value;
-    if (el) el.scrollTop += el.scrollHeight - beforeHeight;
+    if (el) {
+      el.scrollTop += el.scrollHeight - beforeHeight;
+      lastScrollTop = el.scrollTop;
+    }
+    // 补偿赋值派发的 scroll 事件异步到达——时间窗内一律视为程序滚动
+    suppressScrollUntil = Date.now() + 250;
   } finally {
     loadingOlderTurns.value = false;
   }
@@ -228,7 +240,19 @@ async function loadEarlier(): Promise<void> {
 
 function onMessagesScroll(): void {
   const el = messagesAreaRef.value;
-  if (el && el.scrollTop <= 80) void loadEarlier();
+  if (!el) return;
+  // D-5：程序滚动时间窗内的 scroll 事件直接忽略（只更新方向基准）
+  if (suppressScrollUntil > 0) {
+    if (Date.now() < suppressScrollUntil) {
+      lastScrollTop = el.scrollTop;
+      return;
+    }
+    suppressScrollUntil = 0;
+  }
+  const goingUp = el.scrollTop < lastScrollTop;
+  lastScrollTop = el.scrollTop;
+  // 只有"用户上滚"才扩页——打开会话时的程序落底/平滑动画不再被误判
+  if (goingUp && el.scrollTop <= 80) void loadEarlier();
 }
 
 // ── Toast ──

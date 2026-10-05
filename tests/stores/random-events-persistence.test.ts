@@ -15,7 +15,7 @@ import { useRandomEventsStore } from '../../src/stores/random-events';
 function makeAdapter() {
   const snapshots = new Map<string, unknown>();
   return {
-    loadSnapshot: vi.fn(async (key: string) => snapshots.get(key) ?? null),
+    loadSnapshot: vi.fn(async (key: string): Promise<unknown> => snapshots.get(key) ?? null),
     saveSnapshot: vi.fn(async (key: string, value: unknown) => {
       snapshots.set(key, value);
     }),
@@ -31,7 +31,9 @@ describe('random-events store — D-9 持久化', () => {
   it('创建模板后落盘；新实例 loadFromStorage 找回（跨刷新语义）', async () => {
     const adapter = makeAdapter();
     const store = useRandomEventsStore();
-    store.setStorageAdapter(adapter);
+    store.setStorageAdapter(
+      adapter as unknown as Parameters<typeof store.setStorageAdapter>[0],
+    );
     const id = store.createTemplate({
       name: 'D9-模板',
       description: '持久化验证',
@@ -52,7 +54,9 @@ describe('random-events store — D-9 持久化', () => {
     // 新 pinia 实例模拟"刷新后"
     setActivePinia(createPinia());
     const store2 = useRandomEventsStore();
-    store2.setStorageAdapter(adapter);
+    store2.setStorageAdapter(
+      adapter as unknown as Parameters<typeof store2.setStorageAdapter>[0],
+    );
     await store2.loadFromStorage();
     expect(store2.templates).toHaveLength(1);
     expect(store2.templates[0]!.name).toBe('D9-模板');
@@ -61,13 +65,15 @@ describe('random-events store — D-9 持久化', () => {
   it('生成器配置与场景配置同样落盘并找回', async () => {
     const adapter = makeAdapter();
     const store = useRandomEventsStore();
-    store.setStorageAdapter(adapter);
+    store.setStorageAdapter(
+      adapter as unknown as Parameters<typeof store.setStorageAdapter>[0],
+    );
     store.updateGeneratorConfig({ enabled: true, maxPerTurn: 5 });
     store.updateSceneConfig('D9-场景', { enabled: true });
 
     setActivePinia(createPinia());
     const store2 = useRandomEventsStore();
-    store2.setStorageAdapter(adapter);
+    store2.setStorageAdapter(adapter as Parameters<typeof store2.setStorageAdapter>[0]);
     await store2.loadFromStorage();
     expect(store2.generatorConfig.enabled).toBe(true);
     expect(store2.generatorConfig.maxPerTurn).toBe(5);

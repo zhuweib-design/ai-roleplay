@@ -149,7 +149,10 @@ const hasNewerMessages = computed(
   () => windowEnd.value < char.value.messages.length
 );
 // 加载/回收时抑制自动滚动(保持阅读位置)
-let suppressScroll = false;
+// D-6（REAL_DEVICE_TEST_2026-10-03）：程序补偿滚动会派发真实 scroll 事件（异步到达，
+// 晚于旧布尔旗标复位），被 handleScroll 误判为用户滚动 → 顶部占位重复累加的 ping-pong。
+// 改为时间窗屏蔽：补偿后 250ms 内的 scroll 事件一律视为程序滚动。
+let suppressScrollUntil = 0;
 // 双向防重入(滚动事件高频触发)
 const windowLoading = ref(false);
 
@@ -219,7 +222,6 @@ async function jumpToMessage(result: MessageSearchResult): Promise<void> {
   if (!el || result.index < 0 || result.index >= messages.length) return;
 
   const nextWindow = getMessageWindow(result.index, messages.length, RENDER_WINDOW * 2);
-  suppressScroll = true;
   windowStart.value = nextWindow.start;
   windowEnd.value = nextWindow.end;
   topSpacerHeight.value = sumMessageHeights(0, nextWindow.start);
@@ -240,7 +242,7 @@ async function jumpToMessage(result: MessageSearchResult): Promise<void> {
     }
     atBottom.value = result.index >= messages.length - 1;
   } finally {
-    suppressScroll = false;
+    suppressScrollUntil = Date.now() + 250;
   }
 }
 
@@ -272,27 +274,32 @@ async function loadOlderMessages(): Promise<void> {
   const el = msgArea.value;
   const prevScrollTop = el ? el.scrollTop : 0;
   const prevScrollHeight = el ? el.scrollHeight : 0;
-  suppressScroll = true;
   const newStart = Math.max(0, windowStart.value - RENDER_WINDOW);
-  for (let i = newStart; i < windowStart.value; i++) {
-    topSpacerHeight.value += msgHeightAt(i);
-  }
   windowStart.value = newStart;
   // 回收底部
   const maxEnd = windowStart.value + 2 * RENDER_WINDOW;
   if (windowEnd.value > maxEnd) {
-    for (let i = maxEnd; i < windowEnd.value; i++) {
-      bottomSpacerHeight.value += msgHeightAt(i);
-    }
     windowEnd.value = maxEnd;
   }
+  recalcSpacers();
   await nextTick();
   // 顶部 spacer 增加 → 补偿滚动位置, 保持视觉稳定
   if (el) {
     el.scrollTop = prevScrollTop + (el.scrollHeight - prevScrollHeight);
   }
-  suppressScroll = false;
+  // D-6：补偿赋值派发的 scroll 事件异步到达——用时间窗屏蔽，而非立即复位布尔旗标
+  suppressScrollUntil = Date.now() + 250;
   windowLoading.value = false;
+}
+
+/** D-6：占位高度按窗口边界重算（Σ 高度），替代旧实现的增量累加（只加不减 → ping-pong） */
+function recalcSpacers(): void {
+  let top = 0;
+  for (let i = 0; i < windowStart.value; i++) top += msgHeightAt(i);
+  topSpacerHeight.value = top;
+  let bottom = 0;
+  for (let i = windowEnd.value; i < char.value.messages.length; i++) bottom += msgHeightAt(i);
+  bottomSpacerHeight.value = bottom;
 }
 
 /** 下滚恢复更晚消息 + 同步回收顶部 */
@@ -302,27 +309,21 @@ async function loadNewerMessages(): Promise<void> {
   const el = msgArea.value;
   const prevScrollTop = el ? el.scrollTop : 0;
   const prevScrollHeight = el ? el.scrollHeight : 0;
-  suppressScroll = true;
   const newEnd = Math.min(char.value.messages.length, windowEnd.value + RENDER_WINDOW);
-  for (let i = windowEnd.value; i < newEnd; i++) {
-    bottomSpacerHeight.value = Math.max(0, bottomSpacerHeight.value - msgHeightAt(i));
-  }
   windowEnd.value = newEnd;
   // 回收顶部
   const minStart = windowEnd.value - 2 * RENDER_WINDOW;
   if (windowStart.value < minStart) {
-    for (let i = windowStart.value; i < minStart; i++) {
-      topSpacerHeight.value += msgHeightAt(i);
-    }
     windowStart.value = minStart;
   }
+  recalcSpacers();
   await nextTick();
   // 底部 spacer 减少/消息增加 → 内容向下延伸, 按差值补偿保持视口内容稳定
   if (el) {
     const delta = el.scrollHeight - prevScrollHeight;
     if (delta !== 0) el.scrollTop = prevScrollTop + delta;
   }
-  suppressScroll = false;
+  suppressScrollUntil = Date.now() + 250;
   windowLoading.value = false;
 }
 
@@ -342,7 +343,12 @@ function jumpToBottom(): void {
 // 滚动方向感知: 上滚近顶加载更早, 下滚近底恢复更晚
 function handleScroll() {
   const el = msgArea.value;
-  if (!el || windowLoading.value || suppressScroll) return;
+  if (!el || windowLoading.value) return;
+  // D-6：程序补偿滚动的时间窗屏蔽（补偿赋值派发的 scroll 事件在此被忽略）
+  if (suppressScrollUntil > 0) {
+    if (Date.now() < suppressScrollUntil) return;
+    suppressScrollUntil = 0;
+  }
   atBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
   if (el.scrollTop < 300 && hasOlderMessages.value) {
     void loadOlderMessages();
@@ -430,7 +436,7 @@ watch(
   () => char.value.messages.length,
   () => {
     ensureWindow(); // P2-11: 消息就绪后初始化窗口(首次)
-    if (suppressScroll) return;
+    if (suppressScrollUntil > Date.now()) return;
     const el = msgArea.value;
     // 视口在底部时, 窗口跟随新消息并滚底
     const atBottom = el && el.scrollHeight - el.scrollTop - el.clientHeight < 50;
@@ -449,7 +455,7 @@ watch(
 watch(
   () => visibleMessages.value.map((m) => m.content).join(''),
   () => {
-    if (suppressScroll) return;
+    if (suppressScrollUntil > Date.now()) return;
     void nextTick(() => {
       if (msgArea.value) {
         msgArea.value.scrollTop = msgArea.value.scrollHeight;

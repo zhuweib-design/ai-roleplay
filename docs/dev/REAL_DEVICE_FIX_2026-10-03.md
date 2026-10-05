@@ -15,8 +15,8 @@
 | D-10 | P2 | **已修复** | 锁定态三态区分 + 发送失败保草稿 |
 | D-7 | P2 | **已修复** | 单聊归档可感知（按钮文案翻转 + 列表标记 + toast） |
 | D-8 | P2 | **已修复** | 展开分块按钮 @click.stop |
-| D-5 | P2 | 待修 | 群聊打开先落底；扩页只认上滚方向 |
-| D-6 | P2 | 待修 | 单聊顶部占位按窗口边界重算，屏蔽程序补偿滚动 |
+| D-5 | P2 | **已修复** | 群聊打开先落底；扩页只认上滚方向 |
+| D-6 | P2 | **已修复** | 单聊顶部占位按窗口边界重算，屏蔽程序补偿滚动 |
 | O-9 | P3 | 待修 | TTS 未启用时给出与翻译一致的提示 |
 | O-19 | P3 | 待修 | 故事引擎未选目标时禁用"执行导入" |
 | O-20 | P3 | 待修 | 优化开关 toast 的 key→label 映射 |
@@ -51,6 +51,27 @@
 3. 备份纳入（跟随 events 先例）：`BackupData.randomEvents`（可选字段 + 校验）、`exportAll` extra 透传、`ImportResult.randomEvents` 回传、`SettingsDataPanel` 导出携带 / 导入回写（`applyBackupData` 对不可信外部载荷逐字段运行时校验）。
 
 **验证**：新增 `tests/stores/random-events-persistence.test.ts`（3 项）——快照往返跨实例找回、生成器/场景配置落盘、备份载荷往返 + 不可信载荷防御；tsc 0。
+
+### D-6（P2）单聊顶部占位高度重复累加（ping-pong）
+
+状态：**已修复**
+
+**改动**（`src/components/chat/ChatMain.vue`，按文档建议修法）：
+1. 占位高度**按窗口边界重算**：新增 `recalcSpacers()`——`topSpacerHeight = Σ height[0, windowStart)`、`bottomSpacerHeight = Σ height[windowEnd, len)`，`loadOlderMessages` / `loadNewerMessages` 不再增量 `+=`（消除"同一区间被二次累加"的 ping-pong）；
+2. **程序补偿滚动屏蔽**：补偿赋值派发的 scroll 事件异步到达、晚于旧布尔旗标复位——改为时间窗（补偿后 250ms 内的 scroll 事件一律视为程序滚动，`handleScroll`/新消息 watch/搜索重定位路径全部迁移）。
+
+**验证**：`tests/views/chat-main-window.test.ts`（渲染上限/触顶扩窗/防重入/搜索重定位 5 项）全过——重算语义与旧增量在"无重复累加"的正确路径上等价；占位高度的实机断言（`windowStart=0` 时 spacer=0）按文档建议属 Playwright 用例范畴，列入收尾说明。
+
+### D-5（P2）打开长群聊落在列表中部并自行扩页
+
+状态：**已修复**
+
+**改动**（`src/views/GroupChatView.vue`，按文档建议修法）：
+1. **滚动方向判定**：`onMessagesScroll` 记录上一次 `scrollTop`，只在**上滚**（`goingUp`）且 `scrollTop <= 80` 时扩页——打开会话的程序落底（scrollTop 从 0→底部）不再被误判为"用户翻到顶部"；
+2. **补偿后时间窗**：`loadEarlier` 的 scrollTop 补偿赋值派发的 scroll 事件异步到达，250ms 时间窗内一律视为程序滚动（只更新方向基准，不触发扩页）；
+3. **滚底改即时**：新消息 watch 的 `scrollIntoView({behavior:'smooth'})` 改 `'auto'`——平滑动画起步阶段的低 scrollTop 是误判源之一，且扩页补偿会打断动画。
+
+**验证**：tsc 0；group-chat-pagination（150 条分页语义）+ group-chat 共 43 项通过。"打开即落底"的实机断言（`atBottom===true`）按文档建议属 Playwright 用例范畴，列入收尾说明。
 
 ### D-7（P2）单聊"归档"写入无消费者（空操作感知）
 
