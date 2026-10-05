@@ -14,7 +14,7 @@ import { setActivePinia, createPinia, storeToRefs } from 'pinia';
 import { useChatStore } from '../../src/stores/chat';
 import type { UICharacter } from '@/types';
 
-/** 附录 A 的 54 个导出符号（状态 18 + 函数 36） */
+/** 导出符号清单（附录 A 54 个 + S 轮新增 checkSendBlock） */
 const STATE_SYMBOLS = [
   'isGenerating', 'streamingContent', 'lastError', 'runtimeStatus',
   'activeChatId', 'sessions', 'chatVariables',
@@ -24,7 +24,7 @@ const STATE_SYMBOLS = [
 ] as const;
 
 const FUNCTION_SYMBOLS = [
-  'setStorageAdapter', 'loadLocalMemoryStore', 'setApiProfile',
+  'setStorageAdapter', 'loadLocalMemoryStore', 'setApiProfile', 'checkSendBlock',
   'ensureRuntimeIntegration', 'inspectRuntimeState', 'reviewRuntimeMemory',
   'verifyRuntimeReplay', 'createRuntimeCharactersBatch',
   'ensureGroupRuntimeIntegration', 'syncRemoteGroupMember', 'syncRemoteGroupStatus',
@@ -74,7 +74,7 @@ describe('chat store 兼容层 — 54 符号 API 面', () => {
     for (const key of FUNCTION_SYMBOLS) {
       expect(typeof store[key], `函数符号缺失或非函数：${key}`).toBe('function');
     }
-    expect(STATE_SYMBOLS.length + FUNCTION_SYMBOLS.length).toBe(54);
+    expect(STATE_SYMBOLS.length + FUNCTION_SYMBOLS.length).toBe(55);
   });
 
   it('状态经 storeToRefs 可读写且与子 store 同一引用', () => {
@@ -110,12 +110,14 @@ describe('chat store 兼容层 — 54 符号 API 面', () => {
     await expect(store.loadLocalMemoryStore()).resolves.toBeUndefined();
   });
 
-  it('sendMessage 兼容：无 API Profile 时给出明确错误而非静默', async () => {
+  it('sendMessage 兼容（D-10 新语义）：无 Profile 时前置拒绝，不污染消息、保住输入、错误可见', async () => {
     const store = useChatStore();
     const character = makeCharacter();
     await store.sendMessage(character, '你好');
-    expect(character.messages.length).toBeGreaterThanOrEqual(2);
-    expect(character.messages.at(-1)?.content).toBeTruthy();
+    // D-10：拒绝发生在任何消息入列之前（输入正文保留在输入框）
+    expect(character.messages.length).toBe(0);
+    expect(store.lastError).not.toBeNull();
+    expect(store.checkSendBlock()).toBe('no-profile');
     expect(store.isGenerating).toBe(false);
   });
 

@@ -44,7 +44,7 @@ export type { ImportResult } from '@/core/backup';
  */
 export async function exportAll(
   adapter: StorageAdapter,
-  extra?: { events?: StoryEvent[] }
+  extra?: { events?: StoryEvent[]; randomEvents?: BackupData['randomEvents'] }
 ): Promise<BackupData> {
   const [characters, chats, lorebooks, groupChats, personas, settings, stories] =
     await Promise.all([
@@ -105,6 +105,7 @@ export async function exportAll(
     personas,
     stories,
     events: extra?.events ?? [],
+    randomEvents: extra?.randomEvents,
     runtimeSnapshots: await loadRuntimeSnapshots(adapter),
     settings,
   };
@@ -319,6 +320,11 @@ export async function importBackup(
   // 事件（世界书事件/触发器，内存态；随备份带出，交由调用方写回 store）
   if (data.events) {
     result.events = data.events;
+  }
+
+  // 随机事件状态（D-9：内存态；随备份带出，交由调用方写回 store）
+  if (data.randomEvents) {
+    result.randomEvents = data.randomEvents;
   }
 
   // Runtime 角色快照

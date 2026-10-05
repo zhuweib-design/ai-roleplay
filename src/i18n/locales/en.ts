@@ -2715,6 +2715,7 @@ const en: Record<MessageKey, string> = {
   'char.genFailed2': 'Generation failed: {error}',
   'char.noDesc2': '(no description)',
   'char.noApiProfile2': ' (no API profile configured; add one in Settings before chatting)',
+  'char.profileLocked': 'API profile exists but the master password is locked — unlock the app before sending.',
   'char.noChatManager': 'ChatManager not configured',
   'char.stoppedGen2': ' (generation stopped)',
   'char.genFailed3': ' (generation failed: {error})',

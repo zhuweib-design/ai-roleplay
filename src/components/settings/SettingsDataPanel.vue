@@ -30,9 +30,11 @@ import { showToast } from '@/utils/toast-service';
 import { t } from '@/i18n';;
 import { useCharacterStore } from '@/stores/character';
 import { useEventsStore } from '@/stores/events';
+import { useRandomEventsStore } from '@/stores/random-events';
 import { useStoryStore } from '@/stores/story';
 
 const settings = useSettingsStore();
+const randomEventsStore = useRandomEventsStore();
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
   backup_export: t('settingsView.auditBackupExport'),
@@ -112,6 +114,10 @@ async function handleBackupFileSelected(e: Event) {
     if (result.events) {
       useEventsStore().events = result.events;
     }
+    // D-9：随机事件为内存态：从备份恢复回随机事件 store
+    if (result.randomEvents) {
+      randomEventsStore.applyBackupData(result.randomEvents);
+    }
   } catch (err) {
     showToast('error', t('settingsView.importFailed', { error: err instanceof Error ? err.message : String(err) }));
   } finally {
@@ -162,7 +168,10 @@ async function handleExportBackup() {
   try {
     const adapter = getStorageAdapter();
     // F17 事件为内存态：显式带出到备份，随故事线一起导出
-    const data = await exportAll(adapter, { events: useEventsStore().events });
+    const data = await exportAll(adapter, {
+      events: useEventsStore().events,
+      randomEvents: randomEventsStore.exportBackupData(),
+    });
     // 已解锁主密码 → 加密备份文件；未设置 → 明文备份
     const password = settings.isUnlocked ? settings.getSessionMasterPassword() : undefined;
     await downloadBackupFile(data, password);

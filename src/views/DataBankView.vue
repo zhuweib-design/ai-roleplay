@@ -247,7 +247,7 @@ function getCharacterName(id?: string): string {
                 class="card-expand"
                 :aria-label="expandedDocId === doc.id ? t('databank.collapseChunks') : t('databank.expandChunks')"
                 :aria-expanded="expandedDocId === doc.id"
-                @click="toggleExpand(doc.id)"
+                @click.stop="toggleExpand(doc.id)"
               >
                 <Icon :name="expandedDocId === doc.id ? 'chevron-up' : 'chevron-down'" :size="16" />
               </button>

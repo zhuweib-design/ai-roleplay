@@ -22,6 +22,7 @@ import type { QuickReplyButton } from '@/types';
 import { ttsService, isTTSSupported } from '@services/tts-service';
 import { translateText, TranslationError } from '@services/translator';
 import { t } from '@/i18n';
+import { showToast } from '@/utils/toast-service';
 import { useViewport } from '@/core/viewport';
 import {
   getMessageWindow,
@@ -472,6 +473,12 @@ function handleSend() {
   if (!el) return;
   const text = el.value.trim();
   if (!text || chatStore.isGenerating) return;
+  // D-10：发送被拒（未配置 / 主密码锁定）时保留输入正文，不清空输入框
+  const blocked = chatStore.checkSendBlock();
+  if (blocked) {
+    showToast('info', t(blocked === 'locked' ? 'char.profileLocked' : 'store.noApiProfile'));
+    return;
+  }
   void chatStore.sendMessage(char.value, text);
   el.value = '';
   adjustHeight();

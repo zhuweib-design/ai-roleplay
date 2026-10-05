@@ -91,6 +91,7 @@ export const useChatStore = defineStore('chat', () => {
     setStorageAdapter,
     loadLocalMemoryStore: memoryStore.loadLocalMemoryStore,
     setApiProfile: generationStore.setApiProfile,
+    checkSendBlock: generationStore.checkSendBlock,
 
     // Runtime 集成（单聊）
     ensureRuntimeIntegration: runtimeStore.ensureRuntimeIntegration,

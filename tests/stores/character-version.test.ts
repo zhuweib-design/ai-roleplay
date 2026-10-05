@@ -168,6 +168,30 @@ describe('character-version store', () => {
       expect(ok).toBe(true);
       expect(store.headVersion!.snapshot.description).toBe('新描述');
     });
+
+    it('D-3 回归：快照保留 personality / scenario / firstMessage（原缺陷：投影丢字段致 diff 恒 0、回滚清空）', () => {
+      const char = charStore.characters.find((c) => c.id === 'seraphina')!;
+      char!.personality = 'D3-性格-稳重';
+      char!.scenario = 'D3-场景-翡翠森林';
+      const ok = store.commitCurrentCharacter('D3 首次提交');
+      expect(ok).toBe(true);
+      const v1 = store.headVersion!;
+      expect(v1.snapshot.personality).toBe('D3-性格-稳重');
+      expect(v1.snapshot.scenario).toBe('D3-场景-翡翠森林');
+
+      // 修改 personality 后再提交 → 与 v1 的字段级 diff 必须报出差异（原缺陷恒 0）
+      char!.personality = 'D3-性格-改写后';
+      expect(store.commitCurrentCharacter('D3 二次提交')).toBe(true);
+      const v2 = store.headVersion!;
+      const diff = store.diffWithHead(v1.id)!;
+      expect(diff).not.toBeNull();
+      expect(diff.fields.some((f) => f.path === 'personality')).toBe(true);
+      expect(v2.snapshot.personality).toBe('D3-性格-改写后');
+      // 回滚语义所依赖的父链快照同样保有原值
+      expect(store.rollbackTo(v1.id)).toBe(true);
+      expect(store.headVersion!.snapshot.personality).toBe('D3-性格-稳重');
+      expect(store.headVersion!.snapshot.scenario).toBe('D3-场景-翡翠森林');
+    });
   });
 
   // ── 分支 ──

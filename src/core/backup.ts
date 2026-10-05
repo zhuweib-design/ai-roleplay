@@ -53,6 +53,13 @@ export interface BackupData extends BackupMeta {
   stories?: StoryAnalysisResult[];
   /** 事件（世界书事件/触发器，F17；运行时内存，随备份带出便于跨端恢复） */
   events?: StoryEvent[];
+  /** 随机事件状态（D-9：模板/场景配置/生成器配置/结果历史；运行时内存，随备份带出） */
+  randomEvents?: {
+    templates: unknown[];
+    sceneConfigs: unknown[];
+    generatorConfig: unknown;
+    results: unknown[];
+  };
   /** Virtual Character Runtime 角色快照（可选，旧备份缺省为空） */
   runtimeSnapshots?: RuntimeSnapshot[];
   /** 全局设置（部分字段） */
@@ -98,6 +105,8 @@ export interface ImportResult {
   runtimeSnapshots: { added: number; skipped: number; overwritten: number };
   /** 备份内携带的事件（世界书事件，由调用方写回内存 store） */
   events?: StoryEvent[];
+  /** 备份内携带的随机事件状态（D-9：模板/场景配置/结果，由调用方写回内存 store） */
+  randomEvents?: BackupData['randomEvents'];
   settingsUpdated: boolean;
   errors: string[];
 }

@@ -68,6 +68,7 @@ import {
 } from '@/core/creation-preset';
 import type { MemoryFact } from '@/core/memory-store';
 import { useChatSessionStore } from './chat-session';
+import { useSettingsStore } from './settings';
 import { useChatMemoryStore } from './chat-memory';
 import { useChatRuntimeStore } from './chat-runtime';
 
@@ -583,14 +584,51 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
    * @param character 当前角色（包含 messages / authorNote / temperature 等）
    * @param text 用户输入文本
    */
-  async function sendMessage(character: UICharacter, text: string): Promise<void> {
-    if (isGenerating.value) return; // 单实例串行保护
-    if (!text.trim()) return;
+  /**
+   * D-10（REAL_DEVICE_TEST_2026-10-03）：发送前置三态检查（同步，供输入侧与守卫共用）。
+   * - 'no-profile'：未配置 API Profile
+   * - 'locked'：已配置但主密码未解锁（activeProfile 在锁定态返回 null，ChatManager 未建）
+   * - null：可发送
+   */
+  function checkSendBlock(): 'locked' | 'no-profile' | null {
+    if (chatManager) return null;
+    const st = useSettingsStore();
+    if (st.activeProfile) {
+      return st.hasMasterPassword && !st.isUnlocked ? 'locked' : null;
+    }
+    return 'no-profile';
+  }
 
-    // F11.1: 斜杠命令路由——以 / 开头时走命令引擎而非 AI API
+  async function sendMessage(character: UICharacter, text: string): Promise<boolean> {
+    if (isGenerating.value) return false; // 单实例串行保护
+    if (!text.trim()) return false;
+
+    // F11.1: 斜杠命令路由——以 / 开头时走命令引擎而非 AI API（无需 API Profile）
     if (isSlashCommand(text)) {
       await executeSlashCommand(character, text);
-      return;
+      return true;
+    }
+
+    // D-10：守卫前置——在任何消息入列之前失败，用户输入的正文保留在输入框不被清空。
+    // 三态区分：未配置 / 已配置但锁定（提示去解锁，而不是误导用户新建配置）。
+    if (!chatManager) {
+      const st = useSettingsStore();
+      if (st.activeProfile && st.hasMasterPassword && !st.isUnlocked) {
+        lastError.value = {
+          type: 'unknown',
+          message: t('char.profileLocked'),
+        };
+        return false;
+      }
+      if (!st.activeProfile) {
+        lastError.value = {
+          type: 'unknown',
+          message: t('char.noChatManager'),
+        };
+        return false;
+      }
+      // 配置存在且已解锁但 ChatManager 未建（如生成中切换 Profile 的时序缝隙）→ 现场重建
+      setApiProfile(st.activeProfile);
     }
 
     // 1. 保存 history 快照（在 push 用户消息之前）
@@ -621,17 +659,6 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
     // 4. 转换 UI → 核心类型
     const card = uiCharToCard(character);
     const history = uiMsgsToChatMsgs(historyBefore);
-
-    if (!chatManager) {
-      // 未配置 API Profile，给出明确提示而非静默失败
-      liveMsg.generating = false;
-      liveMsg.content = t('char.noApiProfile2');
-      lastError.value = {
-        type: 'unknown',
-        message: t('char.noChatManager'),
-      };
-      return;
-    }
 
     isGenerating.value = true;
     lastError.value = null;
@@ -673,16 +700,18 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
       ctx.ragContext = mergeRagContext(ctx.ragContext, vectorRag.text);
     }
 
+    if (!chatManager) return false; // setApiProfile 现场重建失败的兜底（正常不可达）
+    const mgr = chatManager;
     try {
       beginRequestTracking(card);
       // E-01: 以角色 ID 作为会话键(情绪状态按角色隔离)
-      chatManager.updateConfig({ sessionId: character.id });
+      mgr.updateConfig({ sessionId: character.id });
       // P0-1/P0-3：同步思维链偏好与全局采样默认值
       await applyRuntimeLlmControls(character);
       // E-01: 种入角色 standing 事实(首次;字节稳定前缀数据源)
       await memoryStore.seedStandingFacts(card, character.id);
       const runtime = await ensureRuntimeIntegration(character, card);
-      await chatManager.sendMessage(
+      await mgr.sendMessage(
         {
           card,
           history,
@@ -793,6 +822,7 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
       // 生成中切换的 API Profile 在此应用
       flushPendingProfile();
     }
+    return true;
   }
 
   /**
@@ -1410,6 +1440,7 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
     setApiProfile,
     applyRuntimeLlmControls,
     sendMessage,
+    checkSendBlock,
     stop,
     regenerateMessage,
     copyMessage,

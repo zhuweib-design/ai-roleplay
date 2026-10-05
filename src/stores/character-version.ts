@@ -38,6 +38,7 @@ import {
   type SerializedRepository,
 } from '@/core/character-version-control';
 import type { CharacterCard } from '@/core/character-card';
+import { uiCharToCard } from '@/services/type-adapters';
 import { useCharacterStore } from './character';
 import type { StorageAdapter } from '@storage/storage-adapter';
 import { migrateLegacyLocalStorage } from '@storage/legacy-migration';
@@ -309,24 +310,13 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
       lastError.value = t('cv.charDeleted');
       return false;
     }
+    // D-3（REAL_DEVICE_TEST_2026-10-03）：原手写投影丢 personality / scenario /
+    // firstMessage / ext 等字段，导致版本 diff 恒 0 差异、回滚清空性格与场景。
+    // 改经 uiCharToCard 完整映射；createdAt 保持角色时间锚点避免每次提交产生伪差异。
     const card: CharacterCard = {
-      id: character.id,
-      name: character.name,
-      avatar: character.avatar,
-      description: character.description,
-      personality: '',
-      scenario: '',
-      firstMessage: '',
-      alternateGreetings: [],
-      exampleMessages: '',
-      characterNote: null,
-      talkativeness: 50,
-      tags: character.tags,
-      favorite: character.favorite,
-      version: '1.0',
+      ...uiCharToCard(character),
       createdAt: character.lastActive,
       updatedAt: new Date().toISOString(),
-      attributes: character.attributes,
     };
     return commit(card, message);
   }

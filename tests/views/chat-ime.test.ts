@@ -99,7 +99,9 @@ async function pressEnter(
 
 /** 创建 sendMessage 间谍：类型由返回值推断，避免 `ReturnType<typeof vi.spyOn>` 泛型擦除导致的类型不兼容 */
 function spyOnSend() {
-  return vi.spyOn(useChatStore(), 'sendMessage').mockResolvedValue(undefined);
+  // D-10：handleSend 现在会先做三态前置检查；IME 用例只关注组词守卫，压平为可发送
+  vi.spyOn(useChatStore(), 'checkSendBlock').mockReturnValue(null);
+  return vi.spyOn(useChatStore(), 'sendMessage').mockResolvedValue(true);
 }
 
 describe('ChatMain IME 组词守卫（I-6）', () => {

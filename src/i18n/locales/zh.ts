@@ -2715,6 +2715,7 @@ export default {
   'char.genFailed2': '生成失败：{error}',
   'char.noDesc2': '（无描述）',
   'char.noApiProfile2': '（未配置 API Profile，请在设置页添加 API 配置后再开始对话）',
+  'char.profileLocked': 'API 配置已存在，但主密码未解锁——请先解锁应用后再发送。',
   'char.noChatManager': '未配置 ChatManager',
   'char.stoppedGen2': '（已停止生成）',
   'char.genFailed3': '（生成失败：{error}）',

@@ -10,6 +10,7 @@ import { useDataBankStore } from '@/stores/data-bank';
 import { useStoryStore } from '@/stores/story';
 import { useCommunityMarketStore } from '@/stores/community-market';
 import { useCharacterVersionStore } from '@/stores/character-version';
+import { useRandomEventsStore } from '@/stores/random-events';
 import { getStorageAdapter, getStorageEnv } from '@storage/storage-factory';
 import { initStoragePersistence } from '@/core/storage-persistence';
 import { TauriFSAdapter } from '@storage/tauri-fs-adapter';
@@ -37,6 +38,7 @@ const dataBankStore = useDataBankStore();
 const storyStore = useStoryStore();
 const communityMarketStore = useCommunityMarketStore();
 const characterVersionStore = useCharacterVersionStore();
+const randomEventsStore = useRandomEventsStore();
 
 // 移动端底部导航:仅主 Tab 页显示(二级详情页全屏)
 const route = useRoute();
@@ -211,6 +213,9 @@ onMounted(async () => {
     // 迭代33 新增：社区市场 / 角色版本 store 注入适配器（快照持久化）
     communityMarketStore.setStorageAdapter(adapter);
     characterVersionStore.setStorageAdapter(adapter);
+    // D-9：随机事件状态挂快照通道（模板/场景配置/结果此前仅内存）
+    randomEventsStore.setStorageAdapter(adapter);
+    void randomEventsStore.loadFromStorage();
 
     // 控制台输出当前环境（便于诊断）
      
