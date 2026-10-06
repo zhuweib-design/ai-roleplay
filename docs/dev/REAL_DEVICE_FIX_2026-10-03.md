@@ -72,11 +72,12 @@
 | O-9① / O-19 / O-20 / O-22 / O-24 | ✅ 修复 | tsc 0；i18n strict 183 文件 |
 | O-12 / O-13 及其余 P3 | 按原文档**不动代码**（L-11 待决策 / 收益微小） | — |
 
-**提交序列**：`5de4614`（D-3/D-8/D-10/D-9）→ `fc28dd7`（D-7）→ `6021e8e`（D-5/D-6）→ `2862e0b`（P3 批）→ 本记录。分支 `fix/real-device-2026-10-03`，仅本地提交，不推送、不产出 exe/apk。
+**提交序列**：`5de4614`（D-3/D-8/D-10/D-9）→ `fc28dd7`（D-7）→ `6021e8e`（D-5/D-6）→ `2862e0b`（P3 批）→ 本记录 → `e2e/databank-flow`（D-8/O-24 实机断言）→ 备份集成测试。分支 `fix/real-device-2026-10-03`，仅本地提交，不推送、不产出 exe/apk。
 
 **原文档 §七 自动化盲区补漏状态**：
 - ②"打开会话 `atBottom===true`"与"`windowStart===0` 时顶部 spacer 为 0"——已补：`e2e/long-history-scroll.spec.ts`（D-5/D-6 两条，IndexedDB 造数 0 模型消耗，实测通过）；
-- D-8 对应"点按钮应展开"正式 spec——待补（现有 databank 相关 E2E 未覆盖该按钮，后续随 databank-flow 扩展）；
+- D-8 对应"点按钮应展开"正式 spec——**已补**：`e2e/databank-flow.spec.ts`（上传 → 按钮展开/文案翻转/收起 → 头部展开不回归 → 搜索空态 O-24 → 删除确认，msedge 实测通过）；
+- D-9 备份通道——**已补服务层集成测试**：`tests/services/backup-random-events.test.ts`（exportAll 携带 → validateBackup 通过 → importBackup 透传 → applyBackupData 回写；旧备份无 randomEvents 字段向后兼容），3 项通过；
 - ③store 死状态扫描（grep 脚本进 CI）——未实施（工具类任务，另行排期）。
 
 ## 其余各项
