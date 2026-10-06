@@ -26,11 +26,22 @@ export interface StopwordFilterOptions {
   extraProperNouns?: string[];
 }
 
-const ENABLE_KEY = 'aijiuguan.stopwordFilterEnabled';
+// O-21（REAL_DEVICE_TEST_2026-10-03）：键名统一到 ai-roleplay: 命名空间
+// （老键 aijiuguan.stopwordFilterEnabled 兼容读取，写入仅用新键）
+const ENABLE_KEY = 'ai-roleplay:stopwordFilterEnabled';
+const ENABLE_KEY_LEGACY = 'aijiuguan.stopwordFilterEnabled';
 
 export function isStopwordFilterEnabled(): boolean {
   try {
-    return localStorage.getItem(ENABLE_KEY) !== '0';
+    const current = localStorage.getItem(ENABLE_KEY);
+    if (current !== null) return current !== '0';
+    // 旧键迁移：读到旧值后顺手写入新键（一次性收敛）
+    const legacy = localStorage.getItem(ENABLE_KEY_LEGACY);
+    if (legacy !== null) {
+      try { localStorage.setItem(ENABLE_KEY, legacy); } catch { /* 静默 */ }
+      return legacy !== '0';
+    }
+    return true;
   } catch {
     return true;
   }
@@ -38,8 +49,9 @@ export function isStopwordFilterEnabled(): boolean {
 
 export function setStopwordFilterEnabled(on: boolean): void {
   try {
-    if (on) localStorage.setItem(ENABLE_KEY, '1');
-    else localStorage.setItem(ENABLE_KEY, '0');
+    localStorage.setItem(ENABLE_KEY, on ? '1' : '0');
+    // 清理旧键，避免下次读取分叉
+    try { localStorage.removeItem(ENABLE_KEY_LEGACY); } catch { /* 静默 */ }
   } catch {
     /* 环境无 localStorage:静默 */
   }

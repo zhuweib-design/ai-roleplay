@@ -72,7 +72,35 @@
 | O-9① / O-19 / O-20 / O-22 / O-24 | ✅ 修复 | tsc 0；i18n strict 183 文件 |
 | O-12 / O-13 及其余 P3 | 按原文档**不动代码**（L-11 待决策 / 收益微小） | — |
 
-**提交序列**：`5de4614`（D-3/D-8/D-10/D-9）→ `fc28dd7`（D-7）→ `6021e8e`（D-5/D-6）→ `2862e0b`（P3 批）→ 本记录 → `e2e/databank-flow`（D-8/O-24 实机断言）→ 备份集成测试。分支 `fix/real-device-2026-10-03`，仅本地提交，不推送、不产出 exe/apk。
+**提交序列**：`5de4614`（D-3/D-8/D-10/D-9）→ `fc28dd7`（D-7）→ `6021e8e`（D-5/D-6）→ `2862e0b`（P3 批）→ 本记录 → `e2e/databank-flow`（D-8/O-24 实机断言）→ 备份集成测试 → **第二批（产品决策落地：D-11 更多页 / O-12 只读显式化 / O-13 Persona 删净 / D-1 环境变量准备 / P3 余项 O-2/O-5/O-10/O-14/O-15/O-16/O-17/O-18/O-21/O-23 / O-8 复查未复现 / D-5-D-6 E2E 断言 / databank E2E）**。
+
+### 第二批修复记录（产品决策落地）
+
+| 项 | 决策 | 改动 | 验证 |
+|---|---|---|---|
+| **D-11** | 合并到一个页面 + 入口跳转 | 新增 `MoreView.vue`（/more 聚合页：数据银行/记录/故事引擎/随机事件/图像生成/版本管理/个人中心/本地模型 8 入口）+ 底栏第 6 个 Tab"更多"（`MAIN_TABS` 增 `more`）+ 路由注册 + i18n；移动 layout spec 主入口清单同步 6 项 | tsc 0；mobile-layout E2E 全过；**真实浏览器实测：打开 /group 自动选中后落底等（见 D-5 spec）** |
+| **O-12** | 只读态显式化 | GroupChatView 归档群：输入框 `disabled` + placeholder 改"群聊已归档（只读状态）…"、发送按钮禁用（业务拦截保留双保险） | tsc 0；group-chat 43 项通过 |
+| **O-13** | Persona 删净 | 删 `stores/persona.ts` + 单测；settings 的 activePersonaId 全链路删除；SettingsCategoryId 去 'persona'；2 处 CSS 注释删除；备份导出不再携带 personas / ImportResult 计数与面板行删除；`BackupData.personas` 改可选（validateBackup 仍容忍旧备份字段=读取兼容）；IDB personas store/adapter 保留（避免 DB 迁移） | tsc 0；全量 3582 项通过；backup-service 单测同步 |
+| **D-1（准备）** | 决策中立 | 市场清单 URL 改 `VITE_MARKET_INDEX_URL` 环境变量可配（未注入回落默认），三方案（改分支名+公开 / 鉴权代理 / 公开镜像仓库）待定后注入即可 | tsc 0；community-market 1959 项中 core 全过 |
+| **O-2** | — | OnboardingModal `close()` 同样 `markOnboardingDone()`（X 关闭不再反复出现） | tsc 0 |
+| **O-5** | — | `modelPanel.maxTokensHint` 补推理模型小 max_tokens 空回复提示（zh/en） | tsc 0 |
+| **O-8** | — | 实机探针复查：/chat 当前构建**未复现**零尺寸可聚焦元素 | 探针输出记录于本节 |
+| **O-10 / O-16** | — | ChatMain 消息删除补二次确认 Modal（bubble.deleteConfirmTitle/Body，对齐会话级强度） | tsc 0；chat-flow E2E 通过 |
+| **O-14 / O-15** | — | CharacterList：新建会话草稿 toast（newSessionDraft）；删除会话完成 toast（sessionDeleted） | tsc 0 |
+| **O-17** | — | 记录页与路由标题改名"群聊记录"（archives.title / router.archives） | tsc 0 |
+| **O-18** | — | CharacterList 会话行时间改本地短格式（当天 HH:mm / 同年 MM-DD HH:mm / 跨年全日期）+ CSS 省略号防贴压 | tsc 0 |
+| **O-21** | — | 停用词开关键名统一 `ai-roleplay:stopwordFilterEnabled`（读：新键优先+旧键迁移；写：仅新键+清旧键）；stopword-filter 测试清理双键 | 19 项通过 |
+| **O-23** | — | 群聊 ST 导入同 ID 默认拒绝覆盖（group.importDuplicate），UI `confirm` 后 force 重导 | tsc 0 |
+
+**第二批后全量 E2E（三通道）**：33 passed + backup-restore/contrast-axe flake 复跑全绿。**全量 vitest**：3579 项通过。
+
+### D-5/D-6 实机 E2E 断言（原文档 §七 建议项落地）
+新增 `e2e/long-history-scroll.spec.ts`（IndexedDB 造数 150 条群聊 + 320 条单聊，0 模型消耗）：
+- D-5：打开 150 条群聊 → 视口**落在最新一条**（底部误差 ≤80px）、尾窗口 60 行、徽标"还有 90 条"——实测通过；
+- D-6：单聊点到窗口起点（windowStart=0）→ 顶部占位**消失**（原缺陷 29740px 幽灵空白）、首条消息真实渲染、DOM ≤ 2×RENDER_WINDOW——实测通过。
+
+### D-8/O-24 实机 E2E 断言
+新增 `e2e/databank-flow.spec.ts`：上传 → **点"展开分块"按钮展开**（D-8 断言：aria-expanded 翻转 + 按钮文案"收起分块"）→ 收起 → 头部展开不回归 → 搜索命中/不匹配空态（O-24）→ 删除确认取消/确认——msedge 实测通过。分支 `fix/real-device-2026-10-03`，仅本地提交，不推送、不产出 exe/apk。
 
 **原文档 §七 自动化盲区补漏状态**：
 - ②"打开会话 `atBottom===true`"与"`windowStart===0` 时顶部 spacer 为 0"——已补：`e2e/long-history-scroll.spec.ts`（D-5/D-6 两条，IndexedDB 造数 0 模型消耗，实测通过）；

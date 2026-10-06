@@ -21,6 +21,8 @@ import {
 describe('filterStopwords — 开关', () => {
   beforeEach(() => {
     try {
+      // O-21 键名迁移后新旧键都要清理，避免用例间状态泄漏
+      localStorage.removeItem('ai-roleplay:stopwordFilterEnabled');
       localStorage.removeItem('aijiuguan.stopwordFilterEnabled');
     } catch {
       /* 环境无 localStorage */

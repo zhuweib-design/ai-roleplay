@@ -400,6 +400,15 @@ async function handleStImport(e: Event) {
   const id = await groupStore.importGroupFromStFile(file, knownIds);
   if (id) {
     groupStore.selectGroup(id);
+    return;
+  }
+  // O-23：同名/同 id 冲突 → 弹确认（覆盖该群聊全部消息）→ 用户确认后 force 重导
+  if (groupStore.lastError && groupStore.lastError.includes(t('group.importDuplicate').split('「')[0]!)) {
+    const confirmed = window.confirm(t('group.importOverwriteConfirm'));
+    if (confirmed) {
+      const forceId = await groupStore.importGroupFromStFile(file, knownIds, { force: true });
+      if (forceId) groupStore.selectGroup(forceId);
+    }
   }
 }
 

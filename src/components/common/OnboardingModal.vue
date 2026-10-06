@@ -17,6 +17,9 @@ const features = [
 ] as const satisfies ReadonlyArray<{ titleKey: MessageKey; descKey: MessageKey; icon: IconName }>;
 
 function close(): void {
+  // O-2（REAL_DEVICE_TEST_2026-10-03）：X 关闭同样置完成标志——
+  // 原行为刷新后引导会反复出现，对已了解功能的用户构成打扰
+  markOnboardingDone();
   emit('update:modelValue', false);
 }
 

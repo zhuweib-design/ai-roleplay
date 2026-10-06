@@ -105,6 +105,13 @@ const router = createRouter({
       component: () => import('@/views/ProfileView.vue'),
       meta: { titleKey: 'router.profile' },
     },
+    {
+      // D-11：移动端"更多"聚合页（数据银行/记录/故事引擎等二级入口的统一跳转页）
+      path: '/more',
+      name: 'more',
+      component: () => import('@/views/MoreView.vue'),
+      meta: { titleKey: 'router.more' },
+    },
   ],
 });
 

@@ -536,7 +536,9 @@ function handleMessageAction(msgId: string, action: string) {
       break;
     }
     case 'delete':
-      chatStore.deleteMessage(char.value, msgId);
+      // O-10/O-16（REAL_DEVICE_TEST_2026-10-03）：消息删除不可逆——补二次确认，
+      // 与会话级删除的两步强度对齐
+      deleteConfirmMsgId.value = msgId;
       break;
     case 'regenerate':
       void chatStore.regenerateMessage(char.value, msgId);
@@ -572,6 +574,20 @@ function handleMessageAction(msgId: string, action: string) {
 
 // ── P1-3：消息编辑 Modal（替代原生 prompt） ──
 const editModalOpen = ref(false);
+// O-10/O-16：消息删除二次确认
+const deleteConfirmMsgId = ref<string | null>(null);
+const deleteConfirmModalOpen = computed({
+  get: () => deleteConfirmMsgId.value !== null,
+  set: (v: boolean) => {
+    if (!v) deleteConfirmMsgId.value = null;
+  },
+});
+function confirmDeleteMessage(): void {
+  if (deleteConfirmMsgId.value) {
+    chatStore.deleteMessage(char.value, deleteConfirmMsgId.value);
+  }
+  deleteConfirmMsgId.value = null;
+}
 const editTarget = ref<import('@/types').UIMessage | null>(null);
 const editDraft = ref('');
 
@@ -1019,6 +1035,17 @@ function startWithExample(text: string) {
     />
 
     <!-- P1-3：消息编辑 Modal（替代原生 prompt） -->
+    <Modal v-model="deleteConfirmModalOpen" :title="t('bubble.deleteConfirmTitle')">
+      <p class="delete-confirm-body">{{ t('bubble.deleteConfirmBody') }}</p>
+      <template #footer>
+        <button type="button" class="modal-btn modal-cancel" @click="deleteConfirmModalOpen = false">
+          {{ t('common.cancel') }}
+        </button>
+        <button type="button" class="modal-btn modal-confirm danger" @click="confirmDeleteMessage">
+          {{ t('common.delete') }}
+        </button>
+      </template>
+    </Modal>
     <Modal v-model="editModalOpen" :title="t('chat.editMessage')">
       <div class="edit-message-body">
         <textarea

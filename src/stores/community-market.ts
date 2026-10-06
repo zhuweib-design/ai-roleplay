@@ -36,7 +36,7 @@ import {
 } from '@/core/community-market';
 import type { CharacterCard } from '@/core/character-card';
 import {
-  DEFAULT_MARKET_INDEX_URL,
+  MARKET_INDEX_URL,
   fetchMarketIndex,
   downloadMarketItem,
   parseCharacterItem,
@@ -386,7 +386,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     remoteLoading.value = true;
     remoteError.value = null;
     try {
-      const manifest = await fetchMarketIndex(DEFAULT_MARKET_INDEX_URL);
+      const manifest = await fetchMarketIndex(MARKET_INDEX_URL);
       if (!manifest) {
         remoteError.value = t('market.remoteIndexBroken');
         return false;

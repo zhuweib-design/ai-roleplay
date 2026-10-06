@@ -182,7 +182,8 @@ export const useGroupChatStore = defineStore('groupChat', () => {
    */
   async function importGroupFromStFile(
     file: File,
-    knownCharacterIds: string[]
+    knownCharacterIds: string[],
+    options?: { force?: boolean }
   ): Promise<string | null> {
     lastError.value = null;
     try {
@@ -202,8 +203,15 @@ export const useGroupChatStore = defineStore('groupChat', () => {
         return null;
       }
       chat.members = validMembers;
+      // O-23：同 id 已存在时默认拒绝静默覆盖——调用方确认（force）后才覆盖
+      const existingIdx = groups.value.findIndex((g) => g.id === chat.id);
+      if (existingIdx >= 0 && !options?.force) {
+        lastError.value = t('group.importDuplicate', { name: chat.name });
+        return null;
+      }
       // 群聊消息中引用缺失角色的消息保留（仍可读）
-      groups.value.push(chat);
+      if (existingIdx >= 0) groups.value.splice(existingIdx, 1, chat);
+      else groups.value.push(chat);
       await persistGroup(chat.id);
       lastInfo.value =
         t('group.imported3', { name: chat.name, members: validMembers.length, msgs: chat.messages.length, skipped: '' }) +

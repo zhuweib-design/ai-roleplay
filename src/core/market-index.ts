@@ -68,9 +68,20 @@ export interface DownloadedMarketItem {
   content: unknown;
 }
 
-/** 默认清单地址（本仓库） */
+/**
+ * 市场清单地址（D-1）。
+ *
+ * 原缺陷：硬编码指向本仓库 `main` 分支，而实际默认分支是 `master` 且仓库私有，
+ * 匿名 raw 请求恒 404。改为**环境变量可配**（构建时注入）：
+ *   VITE_MARKET_INDEX_URL=https://raw.githubusercontent.com/<owner>/<repo>/<branch>/market/index.json
+ * 未注入时回落到默认值（保持既有行为）。最终口径（分支名/公开镜像/鉴权代理）
+ * 由产品决策后通过该变量注入，无需改代码。
+ */
 export const DEFAULT_MARKET_INDEX_URL =
   'https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/index.json';
+
+export const MARKET_INDEX_URL: string =
+  (import.meta.env.VITE_MARKET_INDEX_URL as string | undefined)?.trim() || DEFAULT_MARKET_INDEX_URL;
 
 /** 清单大小上限（512KB，防御异常清单） */
 export const MAX_MANIFEST_BYTES = 512 * 1024;
@@ -139,7 +150,7 @@ export function parseMarketIndex(rawText: string): MarketIndexManifest | null {
 
 /** 拉取清单（带大小上限） */
 export async function fetchMarketIndex(
-  url: string = DEFAULT_MARKET_INDEX_URL
+  url: string = MARKET_INDEX_URL
 ): Promise<MarketIndexManifest | null> {
   const text = await fetchText(url, MAX_MANIFEST_BYTES);
   return parseMarketIndex(text);

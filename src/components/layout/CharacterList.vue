@@ -50,6 +50,21 @@ onMounted(() => {
 });
 
 /** 切换会话 */
+// O-18（REAL_DEVICE_TEST_2026-10-03）：会话行时间原样输出 ISO 且贴压操作按钮——
+// 格式化为本地短格式，模板同步加省略号样式
+function formatConvTime(iso: string): string {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return iso;
+  const d = new Date(t);
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const sameDay = d.toDateString() === now.toDateString();
+  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  if (sameDay) return hm;
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return sameYear ? `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hm}` : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function switchChat(chat: Chat) {
   if (!current.value) return;
   void chatStore.openSession(current.value, chat.id);
@@ -61,6 +76,9 @@ function newChat() {
   if (!current.value) return;
   chatStore.newSession(current.value);
   characterStore.closeAllDrawers();
+  // O-14（REAL_DEVICE_TEST_2026-10-03）：懒创建草稿不进列表，原高亮消失——
+  // 补 toast 说明，避免看起来"什么都没发生"
+  showToast('info', t('charList.newSessionDraft'));
 }
 
 function onTogglePin(chat: Chat) {
@@ -86,7 +104,11 @@ function cancelDelete() {
 }
 function confirmDelete(chat: Chat) {
   confirmDeleteId.value = null;
-  void chatStore.deleteSession(current.value ?? null, chat.id);
+  const name = chat.title;
+  void chatStore.deleteSession(current.value ?? null, chat.id).then(() => {
+    // O-15（REAL_DEVICE_TEST_2026-10-03）：破坏性操作完成后给出反馈
+    showToast('success', t('charList.sessionDeleted', { name }));
+  });
 }
 
 /**
@@ -209,7 +231,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
                 >{{ t('archives.archivedTag') }}</span
               >
               <span class="conv-title">{{ conv.title }}</span>
-              <span class="conv-time">{{ conv.updatedAt }}</span>
+              <span class="conv-time">{{ formatConvTime(conv.updatedAt) }}</span>
             </button>
             <span class="conv-actions" :aria-hidden="undefined">
               <template v-if="confirmDeleteId === conv.id">
@@ -492,6 +514,12 @@ function onDrawerTouchEnd(e: TouchEvent) {
 }
 
 .conv-time {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--muted-foreground);
   font-size: 11px;
   font-family: var(--font-mono);
