@@ -6,12 +6,13 @@
  * - isMainTab:是否为主 Tab
  * - isDetailRoute:二级详细页,移动端应隐藏底部导航(全屏沉浸)
  */
-/** 底部导航 5 主入口 */
+/** 底部导航 6 主入口（D-11：more=聚合页） */
 export const MAIN_TABS = [
   'chat',
   'character-list',
   'community-market',
   'worldbook',
+  'more',
   'settings',
 ] as const;
 

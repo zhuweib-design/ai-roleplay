@@ -284,6 +284,10 @@ function onMessagesScroll(): void {
   if (goingUp && el.scrollTop <= 80) void loadEarlier();
 }
 
+// O-12（REAL_DEVICE_TEST_2026-10-03）：归档只读态显式化——输入框与发送按钮直接禁用，
+// 不再等用户提交后才收到失败 toast（业务拦截仍保留，双保险）
+const isArchivedReadonly = computed(() => currentGroup.value?.lifecycleStatus === 'archived');
+
 // ── Toast ──
 function showToast(type: 'info' | 'success' | 'error', message: string) {
   toastType.value = type;
@@ -1237,11 +1241,11 @@ type="button"
                 :value="groupStore.inputText"
                 @input="onInputChange"
                 @keydown="onInputKeydown"
-                :placeholder="t('group.inputPlaceholder')"
+                :placeholder="isArchivedReadonly ? t('group.archivedReadonlyPlaceholder') : t('group.inputPlaceholder')"
                 :aria-label="t('group.inputAria')"
                 rows="2"
                 class="msg-input"
-                :disabled="groupStore.isStreaming"
+                :disabled="groupStore.isStreaming || isArchivedReadonly"
               />
               <!-- @提及下拉 -->
               <div
@@ -1276,7 +1280,7 @@ type="button"
               v-if="!groupStore.isStreaming"
               type="button"
               class="send-btn"
-              :disabled="!groupStore.inputText.trim()"
+              :disabled="!groupStore.inputText.trim() || isArchivedReadonly"
               :aria-label="t('group.sendAria')"
               @click="sendMessage"
             >

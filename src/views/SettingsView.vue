@@ -19,7 +19,7 @@ interface SettingsCategory {
   icon: IconName;
 }
 
-type SettingsCategoryId = 'appearance' | 'model' | 'extension' | 'persona' | 'data' | 'security' | 'about';
+type SettingsCategoryId = 'appearance' | 'model' | 'extension' | 'data' | 'security' | 'about';
 
 const activeCategory = ref<SettingsCategoryId>('appearance');
 
@@ -469,7 +469,6 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
   font-weight: 600;
 }
 
-/* Persona 区段 (F07) */
 .badge-active {
   display: inline-block;
   padding: 1px 6px;

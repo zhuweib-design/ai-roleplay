@@ -9,11 +9,11 @@
 import { describe, it, expect } from 'vitest';
 import { MAIN_TABS, isMainTab, isDetailRoute } from '@core/mobile-nav';
 
-describe('MAIN_TABS 底部导航 5 个主入口', () => {
-  it('包含 5 个主 Tab', () => {
-    expect(MAIN_TABS).toHaveLength(5);
+describe('MAIN_TABS 底部导航 6 个主入口', () => {
+  it('包含 6 个主 Tab（D-11：新增"更多"聚合页）', () => {
+    expect(MAIN_TABS).toHaveLength(6);
     expect(MAIN_TABS).toEqual(
-      expect.arrayContaining(['chat', 'character-list', 'community-market', 'worldbook', 'settings'])
+      expect.arrayContaining(['chat', 'character-list', 'community-market', 'worldbook', 'more', 'settings'])
     );
   });
 });

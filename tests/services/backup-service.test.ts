@@ -311,7 +311,7 @@ describe('backup-service — F13 单元测试', () => {
       expect(data.chats).toHaveLength(1);
       expect(data.lorebooks).toHaveLength(1);
       expect(data.groupChats).toHaveLength(1);
-      expect(data.personas).toHaveLength(1);
+      expect(data.personas ?? []).toHaveLength(0); // O-13 下线后不再导出
       expect(data.runtimeSnapshots).toHaveLength(1);
       expect(data.runtimeSnapshots?.[0]?.character.id).toBe('runtime-1');
       expect(data.settings.theme).toBe('light');

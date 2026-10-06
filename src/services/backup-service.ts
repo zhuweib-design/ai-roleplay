@@ -46,13 +46,12 @@ export async function exportAll(
   adapter: StorageAdapter,
   extra?: { events?: StoryEvent[]; randomEvents?: BackupData['randomEvents'] }
 ): Promise<BackupData> {
-  const [characters, chats, lorebooks, groupChats, personas, settings, stories] =
+  const [characters, chats, lorebooks, groupChats, settings, stories] =
     await Promise.all([
       adapter.loadCharacters(),
       loadAllChats(adapter),
       adapter.loadLorebooks(),
       adapter.loadGroupChats(),
-      adapter.loadPersonas(),
       adapter.loadSettings(),
       adapter.loadStories(),
     ]);
@@ -102,7 +101,6 @@ export async function exportAll(
     chats,
     lorebooks,
     groupChats,
-    personas,
     stories,
     events: extra?.events ?? [],
     randomEvents: extra?.randomEvents,
@@ -158,8 +156,7 @@ export async function importBackup(
     chats: { added: 0, skipped: 0, overwritten: 0 },
     lorebooks: { added: 0, skipped: 0, overwritten: 0 },
     groupChats: { added: 0, skipped: 0, overwritten: 0 },
-    personas: { added: 0, skipped: 0, overwritten: 0 },
-    stories: { added: 0, skipped: 0, overwritten: 0 },
+      stories: { added: 0, skipped: 0, overwritten: 0 },
     runtimeSnapshots: { added: 0, skipped: 0, overwritten: 0 },
     settingsUpdated: false,
     errors,
@@ -269,30 +266,6 @@ export async function importBackup(
   }
 
   // Persona
-  if (options.importPersonas !== false && data.personas) {
-    const existing = await adapter.loadPersonas();
-    const existingIds = new Set(existing.map((p) => p.id));
-    for (const p of data.personas) {
-      try {
-        if (existingIds.has(p.id)) {
-          if (strategy === 'skip') {
-            result.personas.skipped++;
-          } else if (strategy === 'overwrite') {
-            await adapter.savePersona(p);
-            result.personas.overwritten++;
-          } else {
-            result.personas.skipped++;
-          }
-        } else {
-          await adapter.savePersona(p);
-          result.personas.added++;
-        }
-      } catch (err) {
-        errors.push(t('backup.personaImportFailed', { name: p.name, error: err instanceof Error ? err.message : String(err) }));
-      }
-    }
-  }
-
   // 故事线（F16 故事分析结果）
   if (options.importStories !== false && data.stories) {
     for (const story of data.stories) {
@@ -374,15 +347,15 @@ export async function importBackup(
   // T-06 审计:导入结果摘要
   const totalAdded =
     result.characters.added + result.chats.added + result.lorebooks.added +
-    result.groupChats.added + result.personas.added + result.stories.added +
+    result.groupChats.added + result.stories.added +
     result.runtimeSnapshots.added;
   const totalOverwritten =
     result.characters.overwritten + result.chats.overwritten + result.lorebooks.overwritten +
-    result.groupChats.overwritten + result.personas.overwritten + result.stories.overwritten +
+    result.groupChats.overwritten + result.stories.overwritten +
     result.runtimeSnapshots.overwritten;
   const totalSkipped =
     result.characters.skipped + result.chats.skipped + result.lorebooks.skipped +
-    result.groupChats.skipped + result.personas.skipped + result.stories.skipped +
+    result.groupChats.skipped + result.stories.skipped +
     result.runtimeSnapshots.skipped;
   auditLogger.record(
     'backup_import',

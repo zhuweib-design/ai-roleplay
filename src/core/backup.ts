@@ -47,8 +47,8 @@ export interface BackupData extends BackupMeta {
   lorebooks: Lorebook[];
   /** 全部群聊 */
   groupChats: GroupChat[];
-  /** 全部 Persona (F07) */
-  personas: Persona[];
+  /** 全部 Persona (F07，O-13 已下线：仅旧备份兼容保留该可选字段，导入时不再写回) */
+  personas?: Persona[];
   /** 全部故事分析结果（故事线，F16） */
   stories?: StoryAnalysisResult[];
   /** 事件（世界书事件/触发器，F17；运行时内存，随备份带出便于跨端恢复） */
@@ -100,7 +100,6 @@ export interface ImportResult {
   chats: { added: number; skipped: number; overwritten: number };
   lorebooks: { added: number; skipped: number; overwritten: number };
   groupChats: { added: number; skipped: number; overwritten: number };
-  personas: { added: number; skipped: number; overwritten: number };
   stories: { added: number; skipped: number; overwritten: number };
   runtimeSnapshots: { added: number; skipped: number; overwritten: number };
   /** 备份内携带的事件（世界书事件，由调用方写回内存 store） */

@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  * 由 `playwright.config.ts` 的 `testMatch: '**\/mobile/**\/*.spec.ts'` 限定到本目录。
  *
  * 覆盖此前零自动化的移动端专属行为，对应缺陷项验收标准：
- * - S-1 / I-4：≤640 下 NavRail 真卸载、BottomNav 唯一高亮
+ * - S-1 / I-4：≤640 下 NavRail 真卸载、BottomNav（6 主入口含"更多"）唯一高亮
  * - S-4：抽屉打开时遮罩层级 抽屉(70) > 遮罩(60) > 底部导航(40)，且底部导航区域点击被拦截
  * - S-6 / I-13：抽屉形态在 ≤1024 生效（Pixel 5 落在 ≤640 档）
  * - 640 边界：主流程无横向溢出
@@ -15,12 +15,13 @@ import { test, expect } from '@playwright/test';
  * 用例文案依赖 zh 语言（`storageState` 预置 onboarding 完成，首访默认中文）。
  */
 
-/** 底部导航 5 个主入口（路径取自 src/router/index.ts 的 name→path） */
+/** 底部导航 6 个主入口（D-11：新增"更多"聚合页；路径取自 src/router/index.ts） */
 const MAIN_TABS: Array<{ label: string; path: string }> = [
   { label: '会话', path: '/chat' },
   { label: '角色', path: '/character' },
   { label: '市场', path: '/community-market' },
   { label: '世界书', path: '/worldbook' },
+  { label: '更多', path: '/more' },
   { label: '设置', path: '/settings' },
 ];
 
@@ -45,7 +46,7 @@ test.describe('移动端（≤640px）', () => {
 
     // 5 个主 tab 全部可达
     const items = bottomNav.locator('.bottom-nav-item');
-    await expect(items).toHaveCount(5);
+    await expect(items).toHaveCount(6);
     for (const t of MAIN_TABS) {
       await expect(bottomNav.locator(`a[href="${t.path}"]`)).toBeVisible();
     }

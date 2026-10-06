@@ -127,6 +127,20 @@
 
 **验证**：tsc 0；stores+components 全量 815 项通过（含 D-9 引入回归的修复）。
 
+### O-13（P3）F07 用户 Persona 删净
+
+状态：**已修复**（产品决策：删净；文档建议的"旧备份保留读取兼容"已遵循）
+
+**改动**：
+- 删除 `src/stores/persona.ts`（317 行）与 `tests/stores/persona.test.ts`；
+- `settings.ts`：删 `activePersonaId` ref / `setActivePersona` / 加载分支 / 持久化字段 / 导出（旧存档中的残留键被加载端忽略，无害）；
+- `types/index.ts`：`AppSettings.activePersonaId` 删除；
+- `SettingsView`：`SettingsCategoryId` 去掉 `'persona'`；两处孤立 CSS 注释删除；
+- 备份通道：`exportAll` 不再导出 personas（写入路径移除）；`BackupData.personas` 改可选、`validateBackup` 仍容忍 personas 数组（**旧备份含 personas 字段仍可正常校验/导入，只是不再写回**——读取兼容符合文档建议）；`ImportResult.personas` 计数与面板 Persona 行删除；
+- IDB `personas` object store 与 adapter 三方法**保留**（删除需 DB 版本迁移，风险大于收益，已成无害死层）。
+
+**验证**：tsc 0；全量 3582 项通过（backup-service 单测同步更新为"O-13 下线后不再导出"断言）；mobile-nav / backup-restore 等关联测试同步修正。
+
 ### D-10（P2）锁定态误报"未配置 API Profile" + 输入丢失（P2）锁定态误报"未配置 API Profile" + 输入丢失
 
 状态：**已修复**

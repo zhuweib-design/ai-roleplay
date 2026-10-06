@@ -79,6 +79,10 @@ const en: Record<MessageKey, string> = {
   'mobile.tabMarket': 'Market',
   'mobile.tabWorldbook': 'Worldbook',
   'mobile.tabSettings': 'Settings',
+  'mobile.tabMore': 'More',
+  'more.title': 'More',
+  'more.desc': 'All feature entries',
+  'more.gridAria': 'Feature entries',
 
   // ── App shell (App.vue) ──
   'app.name': 'AI Tavern',
@@ -124,6 +128,7 @@ const en: Record<MessageKey, string> = {
   'router.characterVersion': 'Character Card Versions',
   'router.market': 'Community Market',
   'router.profile': 'Profile',
+  'router.more': 'More',
 
   // ── Toast ──
   'toast.close': 'Dismiss notification',
@@ -836,6 +841,7 @@ const en: Record<MessageKey, string> = {
   'group.searchPlaceholder': 'Search group chats…',
   'group.searchAria': 'Search group chat names',
   'group.archivedBadge': 'Archived',
+  'group.archivedReadonlyPlaceholder': 'Group archived (read-only) — restore to send messages',
   'group.meta': '{members} members · {messages} messages',
   'group.noGroups': 'No group chats yet',
   'group.noMatch': 'No matching group chats',

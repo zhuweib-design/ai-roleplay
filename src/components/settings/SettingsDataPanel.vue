@@ -762,14 +762,6 @@ function triggerBackupImport() {
             </span>
           </li>
           <li>
-            <span class="result-key">{{ t('settingsView.importKeyPersonas') }}</span>
-            <span class="result-value">
-              {{ t('settingsView.importAdded', { n: lastImportResult.personas.added }) }} ·
-              {{ t('settingsView.importOverwritten', { n: lastImportResult.personas.overwritten }) }} ·
-              {{ t('settingsView.importSkipped', { n: lastImportResult.personas.skipped }) }}
-            </span>
-          </li>
-          <li>
             <span class="result-key">{{ t('settingsView.importKeyStories') }}</span>
             <span class="result-value">
               {{ t('settingsView.importAdded', { n: lastImportResult.stories.added }) }} ·

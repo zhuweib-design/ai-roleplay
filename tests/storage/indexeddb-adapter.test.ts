@@ -64,7 +64,6 @@ function makeSettings(overrides: Partial<AppSettings> = {}): AppSettings {
     fontSize: 14,
     apiProfiles: [],
     activeApiProfileId: null,
-    activePersonaId: null,
     chatBackground: { type: 'none', value: '', opacity: 1, blur: 0 },
     bubbleStyle: { radius: 16, opacity: 1 },
     customCss: '',

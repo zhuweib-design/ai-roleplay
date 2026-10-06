@@ -79,6 +79,10 @@ export default {
   'mobile.tabMarket': '市场',
   'mobile.tabWorldbook': '世界书',
   'mobile.tabSettings': '设置',
+  'mobile.tabMore': '更多',
+  'more.title': '更多',
+  'more.desc': '全部功能入口',
+  'more.gridAria': '功能入口列表',
 
   // ── 应用外壳（App.vue） ──
   'app.name': 'AI 酒馆',
@@ -124,6 +128,7 @@ export default {
   'router.characterVersion': '角色卡版本管理',
   'router.market': '社区市场',
   'router.profile': '个人中心',
+  'router.more': '更多',
 
   // ── Toast ──
   'toast.close': '关闭通知',
@@ -836,6 +841,7 @@ export default {
   'group.searchPlaceholder': '搜索群聊名称…',
   'group.searchAria': '搜索群聊名称',
   'group.archivedBadge': '已归档',
+  'group.archivedReadonlyPlaceholder': '群聊已归档（只读状态），恢复后才能继续发言',
   'group.meta': '{members} 人 · {messages} 条消息',
   'group.noGroups': '暂无群聊',
   'group.noMatch': '没有匹配的群聊',

@@ -1286,7 +1286,6 @@ select.field-input {
   gap: 3px;
 }
 
-/* Persona 区段 (F07) */
 .badge-active {
   display: inline-block;
   padding: 1px 6px;

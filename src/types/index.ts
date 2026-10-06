@@ -288,7 +288,6 @@ export interface AppSettings {
   apiProfiles: ApiProfile[];
   activeApiProfileId: string | null;
   /** 旧版 Persona 激活 ID；0.9.0 不参与运行时身份，仅为设置快照兼容保留 */
-  activePersonaId: string | null;
   /** F08.2 新增：聊天背景配置（v1.1） */
   chatBackground: ChatBackground;
   /** F08.2 新增：消息气泡样式（v1.1） */

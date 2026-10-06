@@ -64,8 +64,6 @@ export const useSettingsStore = defineStore('settings', () => {
   const locale = ref<Locale>('zh');
   const apiProfiles = ref<ApiProfile[]>([]);
   const activeApiProfileId = ref<string | null>(null);
-  /** F07：当前激活的 Persona ID（由 personaStore 调用 setActivePersona 更新） */
-  const activePersonaId = ref<string | null>(null);
 
   // F08.2 聊天背景配置（默认无背景）
   const chatBackground = ref<ChatBackground>({
@@ -566,15 +564,6 @@ export const useSettingsStore = defineStore('settings', () => {
     void persistSettings();
   }
 
-  /**
-   * F07：设置当前激活的 Persona ID
-   * @param id Persona ID（null 表示使用默认 "User"）
-   */
-  function setActivePersona(id: string | null) {
-    activePersonaId.value = id;
-    void persistSettings();
-  }
-
   // ── F08.2 聊天背景 + 气泡样式 ──
 
   /** 设置聊天背景（F08.2） */
@@ -861,9 +850,6 @@ export const useSettingsStore = defineStore('settings', () => {
         if (typeof saved.activeApiProfileId !== 'undefined') {
           activeApiProfileId.value = saved.activeApiProfileId;
         }
-        if (typeof saved.activePersonaId !== 'undefined') {
-          activePersonaId.value = saved.activePersonaId;
-        }
         // F08.2 加载聊天背景（向后兼容：无字段时保留默认值）
         if (saved.chatBackground) {
           chatBackground.value = { ...chatBackground.value, ...saved.chatBackground };
@@ -1012,7 +998,6 @@ export const useSettingsStore = defineStore('settings', () => {
         locale: locale.value,
         apiProfiles: profilesToSave,
         activeApiProfileId: activeApiProfileId.value,
-        activePersonaId: activePersonaId.value,
         chatBackground: toRaw(chatBackground.value),
         bubbleStyle: toRaw(bubbleStyle.value),
         customCss: customCss.value,
@@ -1147,7 +1132,6 @@ export const useSettingsStore = defineStore('settings', () => {
     locale,
     apiProfiles,
     activeApiProfileId,
-    activePersonaId,
     chatBackground,
     bubbleStyle,
     customCss,
@@ -1190,7 +1174,6 @@ export const useSettingsStore = defineStore('settings', () => {
     getPrimaryModel,
     setPrimaryModel,
     // F07 Persona
-    setActivePersona,
     // F08.2 背景与气泡
     setChatBackground,
     setBubbleStyle,

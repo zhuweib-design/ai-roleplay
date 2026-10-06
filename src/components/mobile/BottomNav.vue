@@ -19,6 +19,8 @@ const tabs: Array<{ name: (typeof MAIN_TABS)[number]; icon: string; label: strin
   { name: 'character-list', icon: 'users', label: t('mobile.tabChar') },
   { name: 'community-market', icon: 'store', label: t('mobile.tabMarket') },
   { name: 'worldbook', icon: 'book-open', label: t('mobile.tabWorldbook') },
+  // D-11：移动端二级入口聚合页（数据银行/记录/故事引擎等）
+  { name: 'more', icon: 'menu', label: t('mobile.tabMore') },
   { name: 'settings', icon: 'gear', label: t('mobile.tabSettings') },
 ];
 </script>
