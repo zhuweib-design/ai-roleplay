@@ -806,3 +806,55 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 | E18 群聊能力集缺失 | E | **显式声明** | 同上 |
 | E02/E03/E22/E24 | C | **未变** | 留给 M2-b（trace、ContextPanel 全局书、图片来源说明、真实 token 用量） |
 | E12/E13/E16/E25 | D | **未变** | 撤 UI 属 M2-b，撤除即改变可见控件数，需与 §1.8 复评同批提交 |
+
+### M3-a 引导层第一批：任务中心 + 常驻入口 + 首启欢迎改造
+
+**落地范围**：§3.5 的第 1、2、3(部分)、4、7 条 + §3.2 遗漏的"零角色空态"。
+
+| 文件 | 实际改动 |
+|---|---|
+| `src/core/guided-tasks.ts`（新增） | 9 个任务（6 主 + 3 进阶）× 若干步骤，每步 `hintKey / actionKey / jump / done`；判据全部读真实数据：`settings.apiProfiles/activeProfile` + 就绪芯片、`characters.length`、`currentCharacter.messages` 是否出现 assistant、`lorebooks` 与条目数、`dataBank.documents` + 前提清单满足数、`ttsConfig`；持久化只有意图 `{skipped[], collapsed, updatedAt}`（键 `ai-roleplay:guided-tasks.v1`），完成态不落盘（D-I） |
+| `src/components/common/GuidedTasksCard.vue`（新增） | 任务列表 + `common.step`（"步骤 x/y"）+ 展开步骤 + 每步动作按钮走 `pushWithReturn`；跳过/取消跳过；进阶折叠；收起状态取自持久化意图 |
+| `src/views/GuideView.vue` + `router` `/guide`（新增） | 任务中心页（页头 + 卡 + 说明"进度读真实数据而非看过页面"） |
+| `src/core/nav-model.ts` | 第二个系统项 `guide`（rail 底部常驻入口），`NavEntryId` 增 `guide`；系统项由 1 → 2，rail 总数 14 → 15 |
+| `src/views/MoreView.vue` | 顶部新增引导入口卡，显示实时进度（不是"看过即完成"） |
+| `src/views/ChatView.vue` | 补零角色分支：`EmptyState`（新建角色 CTA）+ 任务卡，替换原先无条件的三栏（`ChatMain.vue:93` 的非空断言路径不再被走到） |
+| `src/components/common/EmptyState.vue`（新增） | 空态原语：图标 + 标题 + 解释 + 主行动 + 插槽（此前 ≥10 份手写 `.empty-state` 的第一处收敛） |
+| `src/components/common/OnboardingModal.vue` | 重写：4 条功能描述 → 3 步最短路径 + 两个真实动作（打开任务清单 / 现在配模型，均带 `from`）；关闭只表示"欢迎看过了"。顺带删除因此失效的 9 个 `onboarding.feature*` / `onboarding.start` 键（双语同删，不留死键） |
+| `i18n locales/{zh,en}.ts` | 各 +63 键、各 -9 死键（`guide.*`、`chat.empty*`、`nav.guide`、`navDesc.guide`、`router.guide`、`onboarding.step*`） |
+| 测试 | `tests/core/guided-tasks.test.ts`（9 例）、`tests/components/guided-tasks-card.test.ts`（5 例）、`e2e/ux-guided-tasks.spec.ts`（5 例，真实 Edge）；`tests/core/nav-model.test.ts` 与 `e2e/ux-nav-model.spec.ts` 的入口计数随系统项 +1 更新 |
+
+**判据不是"看过页面"的可证伪证明（三条单测）**
+
+- 删掉全部角色后，`t2-character` 从 complete 退回未完成；
+- 只新增 Profile 只点亮第一步，设为当前且未锁定才点亮第二步；
+- 跳过 `t6-voice` 后进度分母从 6 变 5，但任务仍在列表里、取消跳过即恢复。
+
+**真实浏览器抓到的两个自造缺陷（已修）**
+
+1. `useReadinessJump` 的站内白名单**漏了 `/guide`**：从任务页跳设置时 `from=/guide` 被判定为不合法，"返回来源页"按钮因此不渲染。e2e 在 30 秒超时后才暴露这点（等待的正是那个不存在的按钮）。
+2. `GuidedTasksCard` 的收起状态一开始只读 `props.compact`，没读持久化意图 —— 表现为"点了收起只写了存储、界面不动"。改为 `taskIntent().collapsed || compact`。
+
+**M3-a 后的度量变化**
+
+| 指标 | 前 | 现在 |
+|---|---|---|
+| 空态带 CTA | 5 / 12 | **6 / 12**（`/chat` 零角色分支） |
+| `.empty-state` 手写副本 | ≥10 | 10（新增 `EmptyState.vue` 供 1 处使用，其余替换在 M3-b/M4） |
+| 引导覆盖 | rail 12 目的地中 4 个有静态描述 | 6 个主任务 + 3 个进阶，覆盖 rail 全部目的地；关闭后可从 rail、`/more`、`/chat` 空态三处回来 |
+| 语义跳转点 `data-rel-jump` | 9（M2-a 后仍为 9） | 新增就绪条 5 + 前提 2 + 世界书反向 n/1 + 引导步骤 15 + 聚合页/rail 入口 → 实际计数以 `tests/ux/related-jumps.test.ts` 为准（该测试仍在 M2-b 计划内） |
+
+**验证证据（M3-a 合入前复跑，同一份工作树）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run typecheck` | 退出码 0 |
+| `npm run lint` | 0 problems（修掉本轮引入的 2 条 `attribute-hyphenation` warning） |
+| `npm run i18n:check:strict` | 退出码 0；双语 parity 由 `tests/i18n.test.ts` 保证（新增 63、删除 9 死键后仍对齐） |
+| `npm run check:css-conventions` | 5/5（断点 / viewport / hover / `!important`=26 基线 / 控件字号） |
+| `npm run a11y:contrast` | 退出码 0（含 axe 审计集；新页面 `/guide` 的文本均为 13–20px 前景/次要色） |
+| `npm run test:coverage` | 退出码 0，**All files 78.84 / 73.50 / 80.98 / 80.75**（阈值 78/73/78/78） |
+| 全量 E2E（msedge + mobile-msedge） | **42 passed**（2.6 分钟；含本批 5 条引导用例） |
+| WebKit E2E | 本机无浏览器未跑，由 CI 覆盖 —— 本批次同样**未在本机验证** webkit 通道 |
+
+**尚未做完的 G 层事项**：`StepFlow.vue` 原语（卡内步骤目前是内联渲染，两个"快速档"向导才真正需要它）；角色编辑器快速/完整两档与世界书"最小生效三步"；其余 11 个视图的 `EmptyState` 替换；`HelpTip` / `FormField` 原语。

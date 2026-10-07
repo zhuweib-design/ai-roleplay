@@ -1,0 +1,332 @@
+<script setup lang="ts">
+/**
+ * 任务中心卡（G 层，§3.5.2）
+ *
+ * 三个出现位置：/guide 任务页（主载体）、/more 顶部、/chat 零角色空态。
+ * 规则：收起 ≠ 永久消失；跳过某步不阻塞其它步；完成态实时算自真实数据。
+ */
+import { computed, ref } from 'vue';
+import { t } from '@/i18n';
+import Icon from '@/components/common/Icon.vue';
+import { useGuidedTasks, guideProgress, setCollapsed, toggleSkip, taskIntent } from '@/core/guided-tasks';
+import { useReadinessJump } from '@/composables/useReadinessJump';
+
+const props = defineProps<{ compact?: boolean }>();
+
+const tasks = useGuidedTasks();
+const { pushWithReturn } = useReadinessJump();
+const expanded = ref<string | null>(null);
+const showAdvanced = ref(false);
+
+const progress = computed(() => guideProgress(tasks.value));
+const mainTasks = computed(() => tasks.value.filter((task) => !task.advanced));
+const advancedTasks = computed(() => tasks.value.filter((task) => task.advanced));
+// 收起状态来自持久化意图（而不是仅本组件的 props），这样"收起"在三个出现位置一致
+const collapsed = computed(() => taskIntent().value.collapsed || props.compact === true);
+
+function toggleExpand(id: string): void {
+  expanded.value = expanded.value === id ? null : id;
+}
+
+function openSettingsGuide(): void {
+  pushWithReturn({ name: 'guide' });
+}
+</script>
+
+<template>
+  <section class="guided-card" :aria-label="t('guide.aria')">
+    <header class="guided-header">
+      <div class="guided-heading">
+        <Icon name="compass" :size="16" aria-hidden="true" />
+        <h2 class="guided-title">{{ t('guide.title') }}</h2>
+        <span class="guided-progress">{{ t('common.step', { current: progress.done, total: progress.total }) }}</span>
+      </div>
+      <button
+        type="button"
+        class="guided-toggle"
+        :aria-expanded="!collapsed"
+        @click="setCollapsed(!collapsed)"
+      >
+        {{ collapsed ? t('guide.expand') : t('guide.collapse') }}
+      </button>
+    </header>
+
+    <p v-if="collapsed" class="guided-collapsed-hint">{{ t('guide.collapsedHint') }}</p>
+
+    <ul v-else class="guided-list" role="list">
+      <li
+        v-for="task in mainTasks"
+        :key="task.id"
+        class="guided-task"
+        :class="{ complete: task.complete, skipped: task.skipped }"
+      >
+        <button
+          type="button"
+          class="guided-task-head"
+          :aria-expanded="expanded === task.id"
+          :data-rel-jump="`guide-${task.id}`"
+          @click="toggleExpand(task.id)"
+        >
+          <Icon :name="task.complete ? 'check' : 'info'" :size="15" aria-hidden="true" />
+          <span class="guided-task-title">{{ t(task.titleKey) }}</span>
+          <span class="guided-task-count">{{ t('common.step', { current: task.doneCount, total: task.totalCount }) }}</span>
+        </button>
+
+        <div v-if="expanded === task.id" class="guided-task-body">
+          <p class="guided-why">{{ t(task.whyKey) }}</p>
+          <ol class="guided-steps" role="list">
+            <li v-for="(step, idx) in task.steps" :key="step.id" class="guided-step" :class="{ done: step.done }">
+              <span class="guided-step-no">{{ idx + 1 }}</span>
+              <span class="guided-step-text">{{ t(step.hintKey) }}</span>
+              <button
+                v-if="step.jump"
+                type="button"
+                class="guided-step-action"
+                :data-rel-jump="`guide-${task.id}-${step.id}`"
+                @click="pushWithReturn(step.jump)"
+              >
+                {{ t(step.actionKey) }}
+              </button>
+              <span v-else-if="step.done" class="guided-step-done">{{ t('prereq.done') }}</span>
+            </li>
+          </ol>
+          <button type="button" class="guided-skip" @click="toggleSkip(task.id)">
+            {{ task.skipped ? t('guide.unskip') : t('guide.skip') }}
+          </button>
+        </div>
+      </li>
+    </ul>
+
+    <div v-if="!collapsed" class="guided-advanced">
+      <button type="button" class="guided-advanced-toggle" :aria-expanded="showAdvanced" @click="showAdvanced = !showAdvanced">
+        {{ showAdvanced ? t('guide.hideAdvanced') : t('guide.showAdvanced') }}
+      </button>
+      <ul v-if="showAdvanced" class="guided-list" role="list">
+        <li v-for="task in advancedTasks" :key="task.id" class="guided-task" :class="{ complete: task.complete }">
+          <button
+            type="button"
+            class="guided-task-head"
+            :aria-expanded="expanded === task.id"
+            @click="toggleExpand(task.id)"
+          >
+            <Icon :name="task.complete ? 'check' : 'info'" :size="15" aria-hidden="true" />
+            <span class="guided-task-title">{{ t(task.titleKey) }}</span>
+          </button>
+          <div v-if="expanded === task.id" class="guided-task-body">
+            <p class="guided-why">{{ t(task.whyKey) }}</p>
+            <ol class="guided-steps" role="list">
+              <li v-for="(step, idx) in task.steps" :key="step.id" class="guided-step" :class="{ done: step.done }">
+                <span class="guided-step-no">{{ idx + 1 }}</span>
+                <span class="guided-step-text">{{ t(step.hintKey) }}</span>
+                <button
+                  v-if="step.jump"
+                  type="button"
+                  class="guided-step-action"
+                  :data-rel-jump="`guide-${task.id}-${step.id}`"
+                  @click="pushWithReturn(step.jump)"
+                >
+                  {{ t(step.actionKey) }}
+                </button>
+              </li>
+            </ol>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <p v-if="!collapsed && progress.done === progress.total" class="guided-finished" role="status">
+      {{ t('guide.finished') }}
+      <button type="button" class="guided-step-action" @click="openSettingsGuide">{{ t('guide.openPage') }}</button>
+    </p>
+  </section>
+</template>
+
+<style scoped>
+.guided-card {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 12px);
+  background: var(--card);
+}
+
+.guided-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.guided-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.guided-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.guided-progress {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.guided-toggle,
+.guided-advanced-toggle,
+.guided-skip {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.guided-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guided-task-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+  color: var(--foreground);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .guided-task-head:hover,
+  .guided-toggle:hover,
+  .guided-advanced-toggle:hover,
+  .guided-skip:hover {
+    border-color: var(--secondary);
+  }
+}
+
+.guided-task.complete .guided-task-head {
+  color: var(--muted-foreground);
+}
+
+.guided-task.skipped .guided-task-title {
+  text-decoration: line-through;
+}
+
+.guided-task-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.guided-task-count {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.guided-task-body {
+  padding: 8px 8px 10px 30px;
+}
+
+.guided-why {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.guided-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guided-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--foreground);
+}
+
+.guided-step.done {
+  color: var(--muted-foreground);
+}
+
+.guided-step-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted, var(--card));
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.guided-step-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.guided-step-action {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border: 1px solid var(--secondary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.guided-step-done {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.guided-skip {
+  margin-top: 8px;
+}
+
+.guided-advanced {
+  margin-top: 10px;
+}
+
+.guided-collapsed-hint,
+.guided-finished {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.guided-finished {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--foreground);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
+}
+</style>

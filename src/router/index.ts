@@ -106,11 +106,18 @@ const router = createRouter({
       meta: { titleKey: 'router.profile' },
     },
     {
-      // D-11：移动端"更多"聚合页（数据银行/记录/故事引擎等二级入口的统一跳转页）
+      // G-11：移动端"更多"聚合页（数据银行/记录/故事引擎等二级入口的统一跳转页）
       path: '/more',
       name: 'more',
       component: () => import('@/views/MoreView.vue'),
       meta: { titleKey: 'router.more' },
+    },
+    {
+      // G 层：任务中心（关键任务的分步引导，完成态读真实数据）
+      path: '/guide',
+      name: 'guide',
+      component: () => import('@/views/GuideView.vue'),
+      meta: { titleKey: 'router.guide' },
     },
   ],
 });

@@ -26,6 +26,7 @@ const INTERNAL_PREFIXES = [
   '/archives',
   '/settings',
   '/more',
+  '/guide',
   '/profile',
 ];
 

@@ -26,7 +26,8 @@ export type NavEntryId =
   | 'archives'
   | 'version'
   | 'market'
-  | 'more';
+  | 'more'
+  | 'guide';
 
 export interface NavEntry {
   id: NavEntryId;
@@ -227,6 +228,18 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     mobileTab: true,
     mobileTabOrder: 5,
     mobileLabelKey: 'mobile.tabMore',
+    inMore: false,
+  },
+  // 系统项：任务中心（G 层引导，非内容资源，故不入任何内容组）
+  {
+    id: 'guide',
+    group: null,
+    routeName: 'guide',
+    activeWhen: ['guide'],
+    icon: 'info',
+    labelKey: 'nav.guide',
+    descKey: 'navDesc.guide',
+    mobileTab: false,
     inMore: false,
   },
 ];

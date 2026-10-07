@@ -41,6 +41,19 @@
 - 群聊页头显式声明能力差异（不加载世界书与文档检索、角色级模型参数不生效），把"静默不一致"改成"说清楚的缺失"。
 - `i18n` 双语各 +31 键（`readiness.*` / `prereq.*` / `wb.boundCharsGo*` / `group.capabilityNote` / `settings.backFrom`）。
 
+### 新增（UX/IA 实施 M3-a：关键任务的分步引导）
+- `src/core/guided-tasks.ts`：任务注册表 —— 6 个主任务（配模型 / 有角色 / 收到第一条回复 / 世界书生效 / 文档可检索 / 语音朗读）+ 3 个进阶任务（群聊 / 故事提取 / 本地模型）。每步的完成判据**读真实数据**（store、消息、开关、前提清单），不读"是否访问过页面"：删掉角色后任务会自动退回未完成。持久化只存用户意图 `{skipped, collapsed, updatedAt}`（键 `ai-roleplay:guided-tasks.v1`），完成态不落盘。
+- `src/components/common/GuidedTasksCard.vue` + `src/views/GuideView.vue` + 路由 `/guide`：任务中心卡与页面，步骤展开即给"一步跳转（带返回来源）"，可跳过、可收起、进阶默认折叠。
+- rail 底部新增第二个系统项「引导」（导航面 14 → 15 项），`/more` 顶部新增带实时进度的引导入口，三处出现且都可回到 `/guide`。
+- `src/views/ChatView.vue` 补零角色分支：`EmptyState`（新建角色 CTA）+ 任务卡，替代原先无条件的三栏渲染（`ChatMain.vue:93` 的非空断言路径不再被走到）。
+- `src/components/common/EmptyState.vue`：空态原语（图标 + 标题 + 解释 + 主行动 + 插槽），此前 ≥10 份手写 `.empty-state` 的第一处收敛。
+- 测试：`tests/core/guided-tasks.test.ts`（9 例）、`tests/components/guided-tasks-card.test.ts`（5 例）、`e2e/ux-guided-tasks.spec.ts`（5 例，真实 Edge 通过）。
+
+### 变更（UX/IA M3-a 续）
+- 首启欢迎窗重写：原来的"4 条功能描述 + 一个按钮，点 X 即永久结束"改为"三步最短路径 + 两个真实动作（打开任务清单 / 现在配模型）"，关闭仅表示欢迎看过，引导本身常驻可回；随之失效的 9 个 `onboarding.feature*` / `onboarding.start` 键在双语中一并清除，不留死键。
+- `i18n` 双语各 +63 键（`guide.*`、`chat.empty*`、`nav.guide`、`navDesc.guide`、`router.guide`、`onboarding.step*`）。
+- `useReadinessJump` 的站内白名单补 `/guide`（e2e 抓到：缺失时 `from=/guide` 被判非法，"返回来源页"按钮不渲染）。
+
 ### 修复（存量门禁红，非本批次引入）
 - `e2e/long-history-scroll.spec.ts` 删除声明后未使用的 `DB_NAME`/`DB_VERSION`（eslint 2 error）；`CharacterList.vue:231`、`SettingsView.vue:240` 的 2 条 vue 格式 warning 由 `eslint --fix` 消除。
 - `src/views/DataBankView.vue:1065` 的 `.search-empty-clear:hover` 包进 `@media (hover: hover) and (pointer: fine)`，恢复 `check:hover` / `check:css-conventions` 绿灯。

@@ -13,6 +13,7 @@ import { useRouter } from 'vue-router';
 import Icon from '@/components/common/Icon.vue';
 import { t } from '@/i18n';
 import { NAV_GROUPS, moreEntries, type NavEntry } from '@/core/nav-model';
+import { useGuidedTasks, guideProgress } from '@/core/guided-tasks';
 
 const router = useRouter();
 const groups = NAV_GROUPS.map((group) => ({
@@ -21,6 +22,9 @@ const groups = NAV_GROUPS.map((group) => ({
 })).filter((group) => group.entries.length > 0);
 
 const sections = computed(() => groups);
+
+const tasks = useGuidedTasks();
+const progress = computed(() => guideProgress(tasks.value));
 
 function goBack(): void {
   if (window.history.state?.back) void router.back();
@@ -42,6 +46,18 @@ function cardAria(entry: NavEntry): string {
       <h1>{{ t('more.title') }}</h1>
       <p class="more-desc">{{ t('more.desc') }}</p>
     </header>
+
+    <!-- 任务中心入口（G 层）：/more 顶部，带实时进度而不是"看过就算完成" -->
+    <router-link :to="{ name: 'guide' }" class="more-guide" data-rel-jump="more-guide">
+      <Icon name="info" :size="18" aria-hidden="true" />
+      <span class="more-guide-body">
+        <span class="more-guide-title">{{ t('guide.title') }}</span>
+        <span class="more-guide-desc">{{ t('guide.moreDesc') }}</span>
+      </span>
+      <span class="more-guide-progress">
+        {{ t('common.step', { current: progress.done, total: progress.total }) }}
+      </span>
+    </router-link>
 
     <section
       v-for="group in sections"
@@ -134,5 +150,41 @@ function cardAria(entry: NavEntry): string {
   font-size: 13px;
   line-height: 1.3;
   color: var(--muted-foreground);
+}
+.more-guide {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 var(--spacing-md, 16px);
+  padding: 12px;
+  border: 1px solid var(--secondary);
+  border-radius: var(--radius-md, 12px);
+  background: var(--card);
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.more-guide-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.more-guide-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.more-guide-desc,
+.more-guide-progress {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.more-guide:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 2px;
 }
 </style>

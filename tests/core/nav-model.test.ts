@@ -19,11 +19,11 @@ import {
 } from '@core/nav-model';
 
 describe('NAV_ENTRIES 结构', () => {
-  it('内容项 13 个 + 系统项 1 个，id 唯一', () => {
+  it('内容项 13 个 + 系统项 2 个，id 唯一', () => {
     expect(CONTENT_ENTRY_COUNT).toBe(13);
-    expect(NAV_ENTRIES).toHaveLength(14);
-    expect(new Set(NAV_ENTRIES.map((e) => e.id)).size).toBe(14);
-    expect(systemEntries().map((e) => e.id)).toEqual(['more']);
+    expect(NAV_ENTRIES).toHaveLength(15);
+    expect(new Set(NAV_ENTRIES.map((e) => e.id)).size).toBe(15);
+    expect(systemEntries().map((e) => e.id)).toEqual(['more', 'guide']);
   });
 
   it('四个分组各非空，且组内项之和等于内容项总数', () => {

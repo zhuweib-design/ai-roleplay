@@ -11,15 +11,15 @@ import { test, expect } from '@playwright/test';
 const GROUP_LABELS = ['对话', '创作', '能力', '档案'];
 
 test.describe('桌面端分层导航', () => {
-  test('rail 按 4 个内容组渲染，共 14 个入口（13 内容 + 1 系统）', async ({ page }) => {
+  test('rail 按 4 个内容组渲染，共 15 个入口（13 内容 + 2 系统）', async ({ page }) => {
     await page.goto('/chat');
 
     const rail = page.locator('.nav-rail');
     await expect(rail).toBeVisible();
     await expect(rail.locator('.nav-group-label')).toHaveText(GROUP_LABELS);
-    await expect(rail.locator('.nav-item')).toHaveCount(14);
+    await expect(rail.locator('.nav-item')).toHaveCount(15);
     // 每个入口都带一句话职责（hover 提示），不再只有图标和名字
-    await expect(rail.locator('.nav-item[title]')).toHaveCount(14);
+    await expect(rail.locator('.nav-item[title]')).toHaveCount(15);
   });
 
   test('高亮由路由派生：新建角色页仍点亮「角色」', async ({ page }) => {
