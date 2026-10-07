@@ -1256,7 +1256,14 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
 
     const now = new Date().toISOString();
     // 多会话：写入当前激活会话；无则回落默认会话 id（向后兼容，签名不改单会话）或创建新会话 id
-    const chatId = activeChatId.value ?? `chat-${character.id}`;
+    // D-R：`activeChatId` 是全局单值而 `selectCharacter()` 不重置它。若它指向的是**别的角色**的会话，
+    // 沿用它会把当前角色的整段缓冲覆盖到那个会话上（实测：甲的历史被乙的消息替换掉）。
+    // 已进索引的会话以其 `characterId` 归属为准；不在索引里的就是 `newSession()` 草稿，原样保留。
+    const bound = sessions.value.find((s) => s.id === activeChatId.value);
+    const chatId =
+      activeChatId.value && (!bound || bound.characterId === character.id)
+        ? activeChatId.value
+        : `chat-${character.id}`;
     activeChatId.value = chatId;
     const existing = sessions.value.find((s) => s.id === chatId);
     const chat: Chat = {

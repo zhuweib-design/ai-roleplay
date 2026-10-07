@@ -51,6 +51,9 @@
 
 **副产品修复**：`loadFromStorage` 原本经 `cardToUiChar` 丢弃 messages（`loadChatHistory` 是未接线死代码）→ 刷新后会话历史丢失；已最小修复（保留 messages），符合产品预期，也是压测前置。
 
+> **2026-10-07 校正（UX/IA 分支 M2-b4）**：上面这句"已最小修复"当时并不成立，因为被"保留"的 `messages` 字段**在角色卡记录里从来不存在**——落盘走的是 `stores/character.ts:185-186` 的 `uiCharToCard(char)`，而该函数（`services/type-adapters.ts:28-84`）不映射 `messages`。所以刷新后聊天区仍然是空的，且比"历史丢失"更糟：`stores/character.ts:157-162` 那句保留逻辑读到的永远是 `undefined`。
+> 真正的历史在 `chats` store 里，读取路径是 `chat-generation.loadChatHistory`，但它此前只有一个调用者（会话行点击 → `openSession`）。M2-b4 在 `App.vue` 的启动序列里显式接线（`loadAllSessions` 后 `restoreLatestSession`），并新增 `persistChat` 的会话归属纠偏（D-R）——详见 `docs/design/UX_IA_GUIDED_FLOW_DESIGN_2026-10-07.md` §3.7.2 与 §九 M2-b4。压测前置的结论不受影响（造数走 `long-history-scroll.spec.ts` 的 IndexedDB 直写）。
+
 ### Phase 2：方案选型与设计（✅ 已完成 2026-08-15）
 
 #### 2.1 候选方案对比（基于 ChatMain 现状 + MessageBubble 纯文本结构）

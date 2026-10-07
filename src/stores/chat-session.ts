@@ -3,8 +3,8 @@
  *
  * 职责（优化项 7 · S3）：
  * - activeChatId / sessions / chatVariables 状态（生成域经 storeToRefs 共享同一引用）
- * - loadAllSessions / openSession / newSession / togglePin / toggleArchive /
- *   deleteSession / renameSession
+ * - loadAllSessions / openSession / restoreLatestSession / newSession / togglePin /
+ *   toggleArchive / deleteSession / renameSession
  * - 自持 storageAdapter（由兼容层 setStorageAdapter 扇出注入）
  *
  * 依赖：openSession 需要生成域的 loadChatHistory（函数体内惰性解析，运行时才有
@@ -59,6 +59,26 @@ export const useChatSessionStore = defineStore('chat-session', () => {
   async function openSession(character: UICharacter, chatId: string): Promise<void> {
     const { useChatGenerationStore } = await import('./chat-generation');
     await useChatGenerationStore().loadChatHistory(character, chatId);
+  }
+
+  /**
+   * D-Q（UX_IA_GUIDED_FLOW_DESIGN_2026-10-07.md §3.7.2）：刷新后自动接回最近一段对话
+   *
+   * 会话历史只存在 chats store —— `uiCharToCard()` 从不写 `messages`，所以角色卡里
+   * 根本没有历史；而把历史装回界面的唯一入口是会话行点击 → `openSession`。
+   * 实测 F5 后聊天区没有任何气泡，用户必须再点一次会话才能接着聊。
+   *
+   * 触发条件收窄为"还没有选定会话（`activeChatId === null`）且缓冲为空"，
+   * 否则会覆盖 `newSession()` 的草稿语义或把用户正在写的消息换成历史。
+   */
+  async function restoreLatestSession(character: UICharacter | null): Promise<boolean> {
+    if (!character) return false;
+    if (activeChatId.value !== null || character.messages.length > 0) return false;
+    // sessions 已按 updatedAt 倒序（loadAllSessions 内排序），首个即该角色最近一条
+    const latest = sessions.value.find((s) => s.characterId === character.id && !s.archived);
+    if (!latest) return false;
+    await openSession(character, latest.id);
+    return true;
   }
 
   /**
@@ -122,6 +142,7 @@ export const useChatSessionStore = defineStore('chat-session', () => {
     chatVariables,
     loadAllSessions,
     openSession,
+    restoreLatestSession,
     newSession,
     togglePin,
     toggleArchive,

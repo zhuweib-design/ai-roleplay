@@ -288,6 +288,12 @@ onMounted(async () => {
         logger.error('Storage', '从存储加载故事失败', err);
       }),
     ]);
+
+    // D-Q（UX_IA_GUIDED_FLOW_DESIGN_2026-10-07.md §3.7.2）：启动时把最近一段会话接回聊天区。
+    // 会话索引原本只在 CharacterList 挂载时加载，而那次挂载早于这里注入适配器，
+    // 只有"角色数量恰好变化"才会被 watch 二次触发——不能把用户的历史建立在这个巧合上。
+    await chatStore.loadAllSessions(characterStore.characters.map((c) => c.id));
+    await chatStore.restoreLatestSession(characterStore.currentCharacter ?? null);
   } catch (err) {
     logger.error('Storage', '存储适配器初始化失败', err);
   }

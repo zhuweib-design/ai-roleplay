@@ -80,6 +80,12 @@
 - `e2e/ux-prompt-trace.spec.ts`：真实链路——配 mock API Profile → IndexedDB 造一本带"常驻"条目的全局世界书 → 发一条消息 → 断言就绪芯片转 ready、气泡下出现"本轮注入 1 条设定"、展开后条目为「永恒酒馆」、点书名落到 `/worldbook?from=/chat`、IndexedDB 的 `chats` 记录里确有 `promptTrace`、刷新后重开该会话痕迹仍在。
 - `tests/stores/chat-prompt-trace.test.ts`：store 级契约 4 例（常驻 + 关键词各 1 条共 2 条痕迹且**不含正文**、无世界书时不写字段的负向对照、`persistChat` 落盘可回读、重新生成清空）。把落点改回 `card` 后该文件 2 例即红，证明守卫有效。
 
+### 新增（UX/IA M2-b4：刷新后接回上一段对话 + 会话归属纠偏）
+- `stores/chat-session.ts` 新增 `restoreLatestSession(character)`：只在"未选定会话（`activeChatId === null`）且消息缓冲为空"时，把该角色**最近一条未归档**会话装回聊天区；兼容层 `stores/chat.ts` 同步导出。`App.vue` 启动序列在注入适配器并加载各 store 后显式接线（`loadAllSessions` → `restoreLatestSession`），`CharacterList.vue` 的会话加载与角色切换也走同一入口。修复 D-Q：此前 F5 之后聊天区一个气泡都没有，必须再点一次左侧会话行才能接着聊。
+- `stores/chat-generation.ts` 的 `persistChat` 增加会话归属校验（D-R）：`activeChatId` 指向的是**别的角色**的会话时不再沿用，回落 `chat-<角色 id>`；不在索引里的 `newSession()` 草稿仍原样保留。修复实测到的数据丢失——"打开甲的会话 → 切到乙 → 发一句"会把乙的整段缓冲覆盖进甲的会话记录。
+- 测试：`tests/stores/chat-session-restore.test.ts` 8 例（接回 `updatedAt` 最新一条并同步高亮 / 全部归档不接回 / 只接回本角色 / 已有激活会话（含草稿）不覆盖 / 缓冲非空不覆盖 / 无角色静默 / 跨角色落盘纠偏 / 草稿会话保留）。`e2e/ux-prompt-trace.spec.ts` 的刷新段改为**不点击任何会话行**直接断言正文与痕迹仍在；反证实验：临时摘掉 `CharacterList` 的加载调用后 e2e 仍绿，确认 `App.vue` 的接线才是确定路径。
+- 文档：回写 `docs/dev/P2-11-virtualization-plan.md` 的"已最小修复（保留 messages）"——被保留的字段在角色卡记录里从来不存在（`uiCharToCard()` 不映射 `messages`），该句当时不成立。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

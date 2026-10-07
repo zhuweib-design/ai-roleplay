@@ -141,18 +141,17 @@ test.describe('注入痕迹（E02）', () => {
       )
       .toBe(true);
 
-    // 回读：刷新后从会话列表重新打开该会话（真实读取路径 chatMsgsToUiMsgs），痕迹仍在
+    // 回读：刷新后不需要任何手动操作，最近一段会话自己接回（D-Q 的行为定义）
     await page.goBack();
     await expect(page).toHaveURL(/\/chat/);
     await page.reload();
-    const session = page.getByRole('button', { name: /^切换到会话 / }).first();
-    await expect(session).toBeVisible();
-    await session.click();
 
     const restored = page.locator('.msg-bubble.msg-assistant').last();
     await expect(restored).toContainText('你好，旅人！', { timeout: 15_000 });
     const persisted = restored.locator('.trace-toggle');
     await expect(persisted).toBeVisible();
     await expect(persisted).toContainText('1 条设定');
+    // 接回的是"当前会话"，会话行必须同步高亮（否则用户看到的是无源的历史）
+    await expect(page.locator('.conv-row.active')).toBeVisible();
   });
 });

@@ -128,6 +128,7 @@ export const useChatStore = defineStore('chat', () => {
     // 多会话（§14.2）
     loadAllSessions: sessionStore.loadAllSessions,
     openSession: sessionStore.openSession,
+    restoreLatestSession: sessionStore.restoreLatestSession,
     newSession: sessionStore.newSession,
     togglePin: sessionStore.togglePin,
     toggleArchive: sessionStore.toggleArchive,

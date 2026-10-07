@@ -13,7 +13,7 @@
 - **方案四层**：N 导航模型（单一事实源 `core/nav-model.ts`，12+2 平铺 → 4 组 13 内容项 + 2 系统项）、L 关联层（就绪状态条 + 关联面板 + 命中回显 + 前置条件横幅，全部读同一个 `core/readiness.ts`）、G 引导层（任务注册表 + 任务中心 + `StepFlow`/`EmptyState`/`HelpTip`/`FormField` 原语）、V 视觉与降噪（设置 6→7 类、渐进披露、术语表、巨型视图分区）。
 - **改造后可验证的目标**：25 条边 → **17 条转"可见且可一跳" + 4 条撤下无读者 UI + 4 条"显式声明不存在"**（E08 群聊参数与 E18/E21/E23 一并归入声明类，因它们没有可跳目标）；`data-rel-jump` 语义跳转点 9 → ≥26；空态带 CTA 5/12 → 12/12；「模型」类 ≈60 控件面 → 3 类各 ≤25（DOM 实测口径）；6 条关键任务全部具备"动作前给出原因 + 一步可达"的路径。
 - **改动分类与边界**：呈现层（P）/ 只读数据（R）/ 状态写入（W）/ 行为（B）四类分别给回滚路径（§5.5）。**不改路由 path、不改 IndexedDB store 结构**；仅在消息类型上增加一个**可选**字段（`promptTrace`，符合 `core/schema-contract.ts` 对可选新增的允许）。不新增功能、不产出 exe/apk。
-- **待裁决 11 项 + 已直接决定 6 项**：见 §3.7 与 §3.7.2，每项均已给选项与推荐；其中 D-G（移动端 tab 数）、D-J（trace 范围）为 v1 评审后新增，D-L…D-O 为 v3 为清除正文残留"或"字而定，**D-P 是 M4-a 实施中被证据否定的自我设计**（设置页智能默认落地已回退），**D-Q 是 M2-b3 的 e2e 实测出的新缺陷**（刷新后对话不自动接回，排期 M2-b4）。
+- **待裁决 11 项 + 已直接决定 7 项**：见 §3.7 与 §3.7.2，每项均已给选项与推荐；其中 D-G（移动端 tab 数）、D-J（trace 范围）为 v1 评审后新增，D-L…D-O 为 v3 为清除正文残留"或"字而定，**D-P 是 M4-a 实施中被证据否定的自我设计**（设置页智能默认落地已回退），**D-Q 是 M2-b3 的 e2e 实测出的新缺陷**（刷新后对话不自动接回，M2-b4 已修），**D-R 是 M2-b4 写接回测试时实测出的数据丢失**（会话归属不校验，已纠偏）。
 
 ---
 
@@ -357,7 +357,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | D-J | `promptTrace` 范围 | ① 单聊 + 仅世界书命中，持久化到消息可选字段 ② 内存态（刷新即失） ③ 含文档/事件全量（需改管线） | **①** |
 | D-K | 图片生成配置 | ① 补持久化 + 保留 `category='image-video'` 但说明优先级 ② 统一到 apiProfiles ③ 撤图片页配置 | **①**（② 是行为重构，收益不与本议题绑定） |
 
-### 3.7.2 本议题内直接决定、不再询问的 6 项（v3 补齐 4 项；M4-a 追加 D-P；M2-b3 追加 D-Q）
+### 3.7.2 本议题内直接决定、不再询问的 7 项（v3 补齐 4 项；M4-a 追加 D-P；M2-b3 追加 D-Q；M2-b4 追加 D-R）
 
 | ID | 议题 | 决定 | 理由 |
 |---|---|---|---|
@@ -367,6 +367,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | D-O | `tokenBudget` 字段处置 | **保留字段名，仅语义降级为"上限"** | 改名会触碰 `characters.ext.*` 持久化键与 `services/type-adapters.ts` 双映射，属迁移工程 |
 | D-P | 设置页默认落地是否随就绪状态变化 | **不变，保持「外观」**；改用 `?cat=` 显式深链 + 就绪条 + 欢迎窗动作按钮把人带到阻塞点 | 实现"智能默认"后全量 E2E 断掉 13 条既有用例（`theme-visual` / `contrast-axe` / `chat-flow` 等依赖默认分类为外观），且 strict-mode 冲突源于模型面板转为可见；收益可被显式深链完全替代 |
 | D-Q | 刷新（F5）后 `/chat` 是否自动接回上一段对话 | **自动接回该角色最近一条未归档会话**，且仅在 `activeChatId === null` 且消息缓冲为空时触发 | M2-b3 的 e2e 实测：回复已写入 `chats` store，但刷新后聊天区**没有任何气泡**，必须用户在左侧列表里再点一次会话才恢复。成因是两条断链——`uiCharToCard()` 从不带 `messages`（`stores/character.ts:186` 落盘的 CharacterCard 里就没有历史），而 `loadChatHistory` 只有 `openSession`（列表点击）一个调用者。`docs/dev/P2-11-virtualization-plan.md:52` 声称"已最小修复（保留 messages）"，实际保留的是恒不存在的字段 ⇒ 文档与代码不符，需一并回写。条件收窄是为了不覆盖 `newSession` 的草稿语义 |
+| D-R | `activeChatId` 与"当前角色"不匹配时 `persistChat` 写哪条会话 | **以会话的 `characterId` 归属为准纠偏**：已进索引且属于别的角色的会话 id 一律弃用，回落到 `chat-<角色 id>`；不在索引里的（`newSession` 草稿）原样保留 | M2-b4 给 D-Q 写测试时实测出来的**数据丢失**：`selectCharacter()` 不重置 `activeChatId`（`stores/character.ts:206-208`），而 `persistChat` 直接沿用 `activeChatId ?? chat-<id>` ⇒ "打开甲的会话 → 切到乙 → 发一句"会把乙的整段缓冲覆盖进甲的记录（断言 `expected ['来自 chat-A-1 的消息'] to deeply equal ['乙的新消息','乙的回复']` 即当时的实测证据）。彻底的做法是把"每个角色各自的激活会话"建模成映射，属会话模型重构，排 §七 #19 |
 
 ---
 
@@ -383,6 +384,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 依赖边处置覆盖 | A1/B6/C11/D4/E3 | **17 条转 A**（有可跳目标的边全部做到可见且可一跳）+ **4 条撤下**（E12/E13/E16/E25）+ **4 条显式声明不存在**（E08 群聊角色级参数、E18 群聊能力集、E21 市场 URL 运行期配置、E23 图片入对话；这四条没有可跳目标，只能"说清楚"） | §1.4 表增加"后测分类"列逐行复评（同一次提交内更新，避免结论与代码不同版本）；`tests/ux/related-jumps.test.ts` 断言每条 E-id 落在三类之一 |
 | 文档检索不再"上传即以为生效" | 两隐藏前提，零提示 | `/databank` 顶部 `PrereqNotice` 显示两前提与状态 + 两个"去完成" | e2e：无绑定时断言提示可见且含原因码；绑定并开开关后断言 chip 转 ready |
 | 世界书触发可感知（单聊） | 完全不可见 | 每条助手消息可展开"本轮注入 世界书 N 条"，条目名可跳来源书 | **已验证（M2-b3）**：`tests/stores/chat-prompt-trace.test.ts` 4 例（常驻 + 关键词各 1 条 ⇒ N=2、不含正文；无世界书的负向对照；落盘回读；重新生成清空）+ `e2e/ux-prompt-trace.spec.ts`（真发一条消息，断言 N、展开条目、点书名落 `/worldbook?from=/chat`、`chats` store 里确有该字段、重开会话后仍在），msedge 与 webkit 双内核均通过。**口径更正**：本行原写"刷新后仍在"隐含"刷新即自动接回对话"，实测并非如此（刷新后缓冲为空，需点左侧会话行）——该缺陷登记为 **D-Q**，修好前此行只能读作"重开会话后仍在" |
+| 刷新后接回上一段对话（D-Q） | F5 后聊天区**一个气泡都没有**，必须再点一次左侧会话行才能接着聊 | 启动即自动装回该角色最近一条未归档会话，会话行同步高亮；切换角色时同样接回 | `tests/stores/chat-session-restore.test.ts` 6 例（取 `updatedAt` 最新 / 归档不接回 / 只接回本角色 / 已有 `activeChatId`（含 `newSession` 草稿）不覆盖 / 缓冲非空不覆盖 / 无角色静默）+ `e2e/ux-prompt-trace.spec.ts` 的刷新段（**不再点击任何会话行**，直接断言正文与痕迹都在、`.conv-row.active` 可见）；反证：临时摘掉 `CharacterList` 的加载调用后 e2e 仍绿 ⇒ 证明 `App.vue` 的启动接线才是那条确定路径 |
 | 假进度 | `tokenBudget` 恒 0 | 显示真实 `tokenCount` | e2e：发送后断言用量 >0 且随消息增长；断言"剩余"字样不再出现 |
 | 首条消息路径 | 3 屏 / 12+ 控件 / 失败后才知道 | 任务中心 3 步、每步 `?cat=` 直达；缺配置在发送**前**给原因 | e2e：清空 Profile 后进 `/chat`，断言 `PrereqNotice` 与 `reasonCode=no-profile` 文案在发送前存在，点"去完成"落在模型接入类 |
 | 本地模型死端 | 按钮禁用无原因；加载后还要手动去设置 | 禁用显示原因 + `PrereqNotice`；成功后"去设置选中"一步跳 | e2e：`isAvailable=false` 断言原因文案；加载成功断言跳转链接存在且点击落到 `?cat=` |
@@ -577,6 +579,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 16 | 引导有效性度量（纯本地，不上传） | 需先定度量口径与隐私边界 | 需判断哪些任务卡真有用 |
 | 17 | 巨型 SFC 继续拆分（17 个 >1000 行，本次只按可见密度拆） | 纯工程收益，混做放大回归面 | 下次触碰同文件的任意需求 |
 | 18 | 设计文档收敛（`mobile-ui-design.md` §13 五/六 tab、`software-design-document.md:35,116,135`、`mobile-pwa-plan.md:48`、`PROJECT_INDEX.md:323-337` 缺 `MoreView`、`PLAN_AUDIT_2026-09-28.md:97` 对 EXP-02 的高估） | 本文档给出目标态，M1–M4 落地后统一回写 | M1 完成即先回写 tab 与 PROJECT_INDEX |
+| 19 | 会话模型改为**按角色记住各自激活会话**（`activeChatId` 由单值变映射），并让"切角色 → 该角色上次那段"直接接回 | D-R 已把"写错会话"这条数据丢失堵住（按 `characterId` 纠偏），但"切回甲时仍显示甲的默认会话而非甲上次打开的那条"这个体验缺口需要动会话模型，与"一次会话只属于一个角色"的索引结构一起改才干净 | 多会话使用率上来，或用户反馈"切回来不是刚才那段" |
 
 ---
 
@@ -699,7 +702,7 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 
 五轮累计：**第 1 轮** 249 条引用 → 33 处问题；**第 2 轮** 4 BLOCKER + 10 MAJOR + 5 MINOR + 1 条评审判定被驳回；**第 3 轮** 11 条可行性风险；**第 4 轮** 96 条引用 → 16 处引用问题 + 9 处内部矛盾；**第 5 轮** 复核第 4 轮修订 → 7 处残留 + 4 处行号漂移，全部改正，且未发现新的引用错配或算术冲突。
 
-全部结论已在正文处置或转为明确决策（§3.7 的 11 项待裁决 + §3.7.2 的 6 项自决，其中 D-P 是实施中否定本文初稿设计后补记的决定、D-Q 是 M2-b3 的 e2e 实测补入的新缺陷）。评审遗留的"待产品确认"仅 3 处，且都不阻断 M1：D-K 的图片配置归属偏好、E21 的市场 URL 口径（与提交信息"D-1 市场 URL 可配"的口径差异需产品确认是否升级为运行期设置）、§七 #6 的死 UI 是否接通。
+全部结论已在正文处置或转为明确决策（§3.7 的 11 项待裁决 + §3.7.2 的 7 项自决，其中 D-P 是实施中否定本文初稿设计后补记的决定、D-Q 是 M2-b3 的 e2e 实测补入的新缺陷、D-R 是 M2-b4 写 D-Q 测试时实测出的数据丢失）。评审遗留的"待产品确认"仅 3 处，且都不阻断 M1：D-K 的图片配置归属偏好、E21 的市场 URL 口径（与提交信息"D-1 市场 URL 可配"的口径差异需产品确认是否升级为运行期设置）、§七 #6 的死 UI 是否接通。
 
 **判定收敛**：每条"现状"有可核对的 `file:line`，每条"目标"有可执行断言与承载组件，每条"改动"有归属文件与回滚类别（P/R/W/B），每条"不做"有理由与排期去处，未决项全部编号；第 5 轮之后再无新增修订项。
 
@@ -859,7 +862,7 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 | `npm run a11y:contrast` | 退出码 0（含 axe 审计集；新页面 `/guide` 的文本均为 13–20px 前景/次要色） |
 | `npm run test:coverage` | 退出码 0，**All files 78.84 / 73.50 / 80.98 / 80.75**（阈值 78/73/78/78） |
 | 全量 E2E（msedge + mobile-msedge） | **42 passed**（2.6 分钟；含本批 5 条引导用例） |
-| WebKit E2E | 本机无浏览器未跑，由 CI 覆盖 —— 本批次同样**未在本机验证** webkit 通道 |
+| WebKit E2E | 本机无浏览器未跑，由 CI 覆盖 —— 本批次同样**未在本机验证** webkit 通道（**已于 M2-b3 本机补装 WebKit 26.5 关闭**，见 §九 M2-b3 / M2-b4 的最终 62 passed 全量） |
 
 **尚未做完的 G 层事项**：`StepFlow.vue` 原语（卡内步骤目前是内联渲染，两个"快速档"向导才真正需要它）；角色编辑器快速/完整两档与世界书"最小生效三步"；其余 11 个视图的 `EmptyState` 替换；`HelpTip` / `FormField` 原语。
 
@@ -973,4 +976,47 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 | `a11y:contrast` | 通过，实际扫描 **121** 处（基线 131，已收敛 10 处） |
 | `npm run test:coverage` | 退出码 **0**，**78.89 / 73.61 / 80.98 / 80.81**（阈值 78/73/78/78 未放松）；新增 4 例 store 契约 + 组件/纯函数 13 例全绿 |
 | E2E（msedge + mobile-msedge + mobile-functional） | **52 passed**（2.3 分钟），含新增的 `ux-prompt-trace.spec.ts` |
-| E2E（webkit · Safari 内核） | **本机已补验**：`npx playwright install webkit` 装上 WebKit 26.5（`ms-playwright\webkit-2336`）后，`--project=webkit` **9 passed**（1.0 分钟，`chat-flow` / `group-chat-flow` ×2 / `character-batch-import` ×3 / `character-crud` / `backup-restore` / `worldbook-flow`）。本分支此前各批次一律记"webkit 本机未验证、留给 CI"，此限制就此关闭。另把 `ux-prompt-trace.spec.ts` 加入 webkit 的 `testMatch`（该链路同时用 IndexedDB 造数与 SSE 流式，Safari 内核需要自己的那份证据），实测 **1 passed**（11.5s） |
+| E2E（webkit · Safari 内核） | **本机已补验**：`npx playwright install webkit` 装上 WebKit 26.5（`ms-playwright\webkit-2336`）后，`--project=webkit` **9 passed**（1.0 分钟，`chat-flow` / `group-chat-flow` ×2 / `character-batch-import` ×3 / `character-crud` / `backup-restore` / `worldbook-flow`）。本分支此前各批次一律记"webkit 本机未验证、留给 CI"，此限制就此关闭。另把 `ux-prompt-trace.spec.ts` 加入 webkit 的 `testMatch`（该链路同时用 IndexedDB 造数与 SSE 流式，Safari 内核需要自己的那份证据），实测 **1 passed**（11.5s）。**注**：本节这些数字是 M2-b3 时点的；M2-b4 的最终全量重跑见下节（四 project 合计 62 passed） |
+
+### M2-b4 刷新后接回上一段对话（D-Q）与会话归属纠偏（D-R）
+
+**起因**：M2-b3 的 e2e 在"刷新后仍在"这步实测出 D-Q。给 D-Q 写测试时，又用同一批夹具实测出 D-R —— 一个**数据丢失**级缺陷。
+
+| 文件 | 实际改动 |
+|---|---|
+| `src/stores/chat-session.ts` | 新增 `restoreLatestSession(character)`：仅当 `activeChatId === null` **且**该角色缓冲为空时，把 `sessions`（`loadAllSessions` 已按 `updatedAt` 倒序）里该角色**最近一条未归档**会话经 `openSession` → `loadChatHistory` 装回缓冲。归档会话不接回（归档的语义就是不在主列表里"复活"） |
+| `src/stores/chat.ts` | 兼容层导出 `restoreLatestSession`（55 符号 API 面测试只校验既有符号，新增不破坏） |
+| `src/App.vue` | 启动序列在五个 `loadFromStorage()` 之后 `await loadAllSessions(...)` + `await restoreLatestSession(currentCharacter)`。放在同一个 `try` 内：接回失败属启动期存储故障，应与其余存储加载共用那条 `logger.error` 而不是一道新的吞异常边界 |
+| `src/components/layout/CharacterList.vue` | 两处 `loadAllSessions` 收敛成 `loadSessions()`（加载 + 接回）；`onSelectCharacter()` 也接一次——覆盖"启动时当前角色无历史、切到有历史的角色"这一常见路径 |
+| `src/stores/chat-generation.ts` | `persistChat` 的会话选择加归属校验：`activeChatId` 若指向**已进索引且属于别的角色**的会话则弃用，回落 `chat-<角色 id>`；不在索引里的（`newSession()` 草稿）原样保留 |
+| `tests/stores/chat-session-restore.test.ts`（新增 8 例） | 接回段 6 例：取 `updatedAt` 最新并同步 `activeChatId` 与会话行高亮 / 全归档不接回 / 只接回本角色 / 已有激活会话（含 `newSession` 草稿）绝不覆盖 / 缓冲非空不覆盖 / 无角色静默。归属段 2 例走**真实 `sendMessage`**（mock SSE + 落盘），不用内部函数 |
+| `e2e/ux-prompt-trace.spec.ts` | "刷新后仍在"一段改为**不点击任何会话行**：`reload()` 后直接断言正文 `你好，旅人！`、`.trace-toggle` 与 `.conv-row.active` 都在 |
+| `docs/dev/P2-11-virtualization-plan.md` | 回写该文档的"已最小修复（保留 messages）"：被保留的字段在角色卡记录里从来不存在（`uiCharToCard()` 不映射 `messages`），该句当时不成立 |
+
+**D-R 是先红后绿测出来的**（不是读代码读出来的推测）。修复前 `tests/stores/chat-session-restore.test.ts` 第 7 例的实际失败输出：
+
+```
+AssertionError: expected [ '乙的新消息', '乙的回复' ] to deeply equal [ '来自 chat-A-1 的消息' ]
+  - Expected   "来自 chat-A-1 的消息"
+  + Received   "乙的新消息"
+  +            "乙的回复"
+```
+
+即：`chat-A-1`（甲的会话）里甲的唯一一条历史被乙的整段缓冲替换。修复后该文件 **8 passed**。
+
+**接回走的是哪条路径 —— 反证实验**：临时把 `CharacterList.loadSessions()` 改成第一行直接 `return`（组件侧不再加载），`e2e/ux-prompt-trace.spec.ts` **仍然通过** ⇒ 真正保证 F5 后接回的是 `App.vue` 的启动接线，组件侧那两处是补充而非依赖。实验后已还原该 `return`。
+
+**验证证据（M2-b4 最终状态，全量重跑，与代码同版本）**
+| 门禁 | 结果 |
+|---|---|
+| `npm run typecheck` | 退出码 **0** |
+| `npm run lint` | 退出码 **0** |
+| `i18n:check:strict` | 通过，`src` **193** 个文件无硬编码中文 |
+| `check:css-conventions` | **5/5** 通过 |
+| `snapshot:migration:check` / `runtime:db:schema:check` | 自洽 / 一致 |
+| `a11y:contrast` | 通过，扫描 **121** 处（基线 131） |
+| `npm run test:coverage` | 退出码 **0**，**3637 passed / 3 skipped**，覆盖率 **79.06 / 73.73 / 81.21 / 80.93**（阈值 78/73/78/78 未放松）。**注**：首轮曾以 `exit=1` 结束——`tests/views/app-tauri-ux.test.ts` 的 `useChatStore` mock 是空对象，`App.vue` 里新加的两行在 `try` 之外，抛出 3 条 `chatStore.loadAllSessions is not a function` 的 unhandled rejection；把接线移进既有 `try` 后同一 mock 缺失被启动错误处理吸收，重跑 `exit=0` |
+| 全量 E2E（msedge + webkit + mobile-functional + mobile，`--workers=2`） | **62 passed，0 failed**（4.6 分钟）——首次把 webkit project 计入本机全量 |
+
+**仍未做（不是遗漏，是排期）**：§七 #19 —— `activeChatId` 应从全局单值改为"每个角色记住自己上次打开的那条会话"的映射。D-R 的校验只保证"绝不写进别人的会话"，"切回甲时接回的可能是甲的默认会话而非甲上次打开的那条"这个体验缺口需要动会话模型才能消。
+

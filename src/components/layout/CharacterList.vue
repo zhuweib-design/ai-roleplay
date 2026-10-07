@@ -34,19 +34,30 @@ const chats = computed<Chat[]>(() => {
       || b.updatedAt.localeCompare(a.updatedAt));
 });
 
+/**
+ * 载入会话索引，并把最近一段对话接回聊天区（D-Q）。
+ *
+ * 此前刷新后缓冲为空：历史只存在 chats store，而装回历史的唯一入口是会话行点击，
+ * 用户 F5 之后要再点一次会话才能接着聊。
+ */
+async function loadSessions(): Promise<void> {
+  const ids = characterStore.characters.map((c) => c.id);
+  if (ids.length === 0) return;
+  await chatStore.loadAllSessions(ids);
+  await chatStore.restoreLatestSession(current.value ?? null);
+}
+
 /** 建档角色切换时加载其会话索引（session 列表数据源） */
 watch(
   () => characterStore.characters.length,
   () => {
-    const ids = characterStore.characters.map((c) => c.id);
-    if (ids.length > 0) void chatStore.loadAllSessions(ids);
+    void loadSessions();
   },
   { immediate: true }
 );
 
 onMounted(() => {
-  const ids = characterStore.characters.map((c) => c.id);
-  if (ids.length > 0) void chatStore.loadAllSessions(ids);
+  void loadSessions();
 });
 
 /** 切换会话 */
@@ -119,6 +130,8 @@ function confirmDelete(chat: Chat) {
 function onSelectCharacter(id: string) {
   characterStore.selectCharacter(id);
   characterStore.closeAllDrawers();
+  // D-Q：启动时若当前角色没有历史（因此没接回任何会话），切到有历史的角色时同样要接回
+  void chatStore.restoreLatestSession(characterStore.currentCharacter ?? null);
 }
 
 // I-8：触屏横向滑动关闭抽屉（左抽屉：向右滑 >60px 关闭）
