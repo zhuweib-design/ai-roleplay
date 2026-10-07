@@ -54,6 +54,13 @@
 - `i18n` 双语各 +63 键（`guide.*`、`chat.empty*`、`nav.guide`、`navDesc.guide`、`router.guide`、`onboarding.step*`）。
 - `useReadinessJump` 的站内白名单补 `/guide`（e2e 抓到：缺失时 `from=/guide` 被判非法，"返回来源页"按钮不渲染）。
 
+### 变更（UX/IA 实施 M4-a：设置拆类与默认落地）
+- 设置页分类 6 → **7**：新增「检索」类（图标 `search`），`VectorModelPanel`（向量模型与文档检索通道）从「模型」类末尾的隐藏段落升为独立、可深链（`?cat=retrieval`）的分类。「模型」类的控件面因此从 60（`v-for` 展开 66）降到 39（45）。
+- `VectorModelPanel` 补一条静态通道说明：文档所在的静态通道只在该对话角色绑定了世界书时才被查询（`chat-generation.ts:690-692` 的 `staticGate`），此前这句只存在于代码里。
+- 设置类「扩展」更名为「语音与辅助」（双语），与其实际内容（朗读 / 翻译 / 摘要）一致；就绪判定中向量开关的跳转同步指向新的「检索」类。
+- 曾实现"进入设置时若无可用 Profile 则自动落在「模型」"的智能默认，但全量 E2E 断掉 13 条既有用例（`theme-visual` / `contrast-axe` / `chat-flow` 等依赖默认分类为外观，且模型面板转为可见后触发 `getByRole('tab', {name:/模型/})` strict-mode 冲突）→ **已回退**，保持确定性默认「外观」，改由 `?cat=` 深链 + 就绪条 + 首启欢迎窗把人带到阻塞点。
+- 测试同步：`tests/views/settings-local-model.test.ts`（分类数 7、标签清单含「检索」「语音与辅助」，默认仍「外观」）、`tests/core/readiness.test.ts`、`tests/components/readiness-surfaces.test.ts`、`e2e/ux-readiness.spec.ts`（向量前提跳转改为 `cat=retrieval`）。
+
 ### 修复（存量门禁红，非本批次引入）
 - `e2e/long-history-scroll.spec.ts` 删除声明后未使用的 `DB_NAME`/`DB_VERSION`（eslint 2 error）；`CharacterList.vue:231`、`SettingsView.vue:240` 的 2 条 vue 格式 warning 由 `eslint --fix` 消除。
 - `src/views/DataBankView.vue:1065` 的 `.search-empty-clear:hover` 包进 `@media (hover: hover) and (pointer: fine)`，恢复 `check:hover` / `check:css-conventions` 绿灯。

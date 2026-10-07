@@ -83,17 +83,17 @@ describe('SettingsView 设置分类侧边栏 + 本地模型统一管理', () => 
     vi.clearAllMocks();
   });
 
-  it('侧边栏渲染全部分类，默认选中「外观」并展示主题内容', async () => {
+  it('侧边栏渲染 7 个分类，默认选中「外观」并展示主题内容', async () => {
     const { wrapper } = await mountSettings();
 
     const items = wrapper.findAll('.settings-nav-item');
-    expect(items.length).toBe(6);
+    expect(items.length).toBe(7);
     const labels = items.map((b) => b.text());
-    for (const label of ['外观', '模型', '扩展', '数据', '安全', '关于']) {
+    for (const label of ['外观', '模型', '检索', '语音与辅助', '数据', '安全', '关于']) {
       expect(labels.some((t) => t.includes(label))).toBe(true);
     }
 
-    // 默认外观分类：主题卡片可见
+    // 默认外观分类：主题卡片可见（落地分类由 ?cat= 显式决定，不做"猜用户缺什么"的智能默认）
     const active = wrapper.find('.settings-nav-item.active');
     expect(active.text()).toContain('外观');
     expect(wrapper.findAll('.theme-card').length).toBeGreaterThan(0);

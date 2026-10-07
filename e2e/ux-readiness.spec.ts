@@ -41,7 +41,7 @@ test.describe('就绪状态与关联跳转', () => {
     await expect(notice).toContainText('绑定世界书');
 
     await notice.locator('[data-rel-jump="prereq-vector-switch"]').click();
-    await expect(page).toHaveURL(/\/settings\?cat=model&from=/);
+    await expect(page).toHaveURL(/\/settings\?cat=retrieval&from=/);
   });
 
   test('群聊页头声明能力差异，并同样带就绪条', async ({ page }) => {

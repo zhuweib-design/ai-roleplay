@@ -142,7 +142,7 @@ describe('useDataBankPrereqs', () => {
     expect(rows).toHaveLength(3);
     expect(rows.every((r) => !r.done)).toBe(true);
     expect(rows[1]?.jump?.name).toBe('character-list');
-    expect(rows[2]?.jump?.query).toEqual({ cat: 'model' });
+    expect(rows[2]?.jump?.query).toEqual({ cat: 'retrieval' });
   });
 
   it('上传文档 + 全局世界书 + 开向量 → 三行全满足', () => {

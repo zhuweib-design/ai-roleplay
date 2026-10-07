@@ -99,7 +99,7 @@ describe('PrereqNotice', () => {
 
     await wrapper.find('[data-rel-jump="prereq-vector-switch"]').trigger('click');
     await flushPromises();
-    expect(router.currentRoute.value.query).toMatchObject({ cat: 'model', from: '/databank' });
+    expect(router.currentRoute.value.query).toMatchObject({ cat: 'retrieval', from: '/databank' });
 
     const allDone = useDataBankPrereqs();
     setVectorRagEnabled(true);

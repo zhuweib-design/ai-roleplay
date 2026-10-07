@@ -13,7 +13,7 @@
 - **方案四层**：N 导航模型（单一事实源 `core/nav-model.ts`，12+2 平铺 → 4 组 13 内容项 + 2 系统项）、L 关联层（就绪状态条 + 关联面板 + 命中回显 + 前置条件横幅，全部读同一个 `core/readiness.ts`）、G 引导层（任务注册表 + 任务中心 + `StepFlow`/`EmptyState`/`HelpTip`/`FormField` 原语）、V 视觉与降噪（设置 6→7 类、渐进披露、术语表、巨型视图分区）。
 - **改造后可验证的目标**：25 条边 → **17 条转"可见且可一跳" + 4 条撤下无读者 UI + 4 条"显式声明不存在"**（E08 群聊参数与 E18/E21/E23 一并归入声明类，因它们没有可跳目标）；`data-rel-jump` 语义跳转点 9 → ≥26；空态带 CTA 5/12 → 12/12；「模型」类 ≈60 控件面 → 3 类各 ≤25（DOM 实测口径）；6 条关键任务全部具备"动作前给出原因 + 一步可达"的路径。
 - **改动分类与边界**：呈现层（P）/ 只读数据（R）/ 状态写入（W）/ 行为（B）四类分别给回滚路径（§5.5）。**不改路由 path、不改 IndexedDB store 结构**；仅在消息类型上增加一个**可选**字段（`promptTrace`，符合 `core/schema-contract.ts` 对可选新增的允许）。不新增功能、不产出 exe/apk。
-- **待裁决 11 项 + 已直接决定 4 项**：见 §3.7 与 §3.7.2，每项均已给选项与推荐；其中 D-G（移动端 tab 数）、D-J（trace 范围）为 v1 评审后新增，D-L…D-O 为 v3 为清除正文残留"或"字而定。
+- **待裁决 11 项 + 已直接决定 5 项**：见 §3.7 与 §3.7.2，每项均已给选项与推荐；其中 D-G（移动端 tab 数）、D-J（trace 范围）为 v1 评审后新增，D-L…D-O 为 v3 为清除正文残留"或"字而定，**D-P 是 M4-a 实施中被证据否定的自我设计**（设置页智能默认落地已回退）。
 
 ---
 
@@ -321,7 +321,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 ### 3.6 V 层：视觉层次与降噪（M4）
 
 1. **设置 6 → 7 类**：「模型接入」（Profile / baseURL / key / 连通测试）、「采样与上下文」（角色可覆盖项 + 现内联段 `SettingsView.vue:169-227`）、「检索（向量与 RAG）」（`VectorModelPanel.vue` 升为独立类，开关写明"默认关"+"需绑世界书"）。roving 键盘处理是索引驱动（`SettingsView.vue:53-81`），7 项无需改动；`v-show` 保态（`:163-238`）必须保持；`VectorModelPanel` 的 `onMounted` 本就是急切执行（`:275-287`），拆类不新增成本也不节省成本。
-2. **默认落地智能指向**：进入 `/settings` 时若无可用 Profile 则落「模型接入」，否则保持 `appearance`。
+2. **默认落地保持确定性**：进入 `/settings` 仍落 `appearance`，"把用户带到阻塞点"由显式深链 `?cat=`、就绪条芯片与首启欢迎窗的动作按钮承担。
+   > 本条初稿写的是"无可用 Profile 时自动落「模型接入」"。M4-a 首轮全量 E2E 因此断掉 **13 条**既有用例（`theme-visual`、`contrast-axe`、`chat-flow` 等在 `goto('/settings')` 后直接点 `.theme-card`；默认分类一变外观面板即被 `v-show` 隐藏，同时 `getByRole('tab', {name:/模型/})` 因模型面板转为可见而触发 strict-mode 冲突）。据此回退并登记为 **D-P**：赌用户缺什么的收益，小于破坏既有行为契约的代价。
 3. **深链与返回契约（补齐 v1 缺口，B2 修正）**：`/settings?cat=<id>`（可选 `&sub=image-video`）+ `?from=<encodeURIComponent(全路径)>`。读方 `SettingsView.vue`（新增 `useRoute`，现状无 query 处理）；写方统一走新组合式 `src/composables/useReadinessJump.ts`：`router.push({path,query:{cat,from: route.fullPath}})`（**push 而非 replace**，保证浏览器返回可回原页）；页头"返回来源"按钮读 `from`，点击前校验 `from` 属于站内白名单路径集（防开放重定向），随后 `router.replace(from)` 以避免历史堆叠。所有 §3.3 的 chip、`PrereqNotice` 的"去完成"、T1/T6、§6.1 步骤 3 都经由这一个组合式。
 4. **常规/高级折叠**：「外观」（1787 行 4 段）、「数据」（1353 行）、「模型接入」的高级采样默认折叠。
 5. **巨型视图分区**：只按用户可见密度拆——`WorldBookView.vue`(2826/59)、`CharacterEditorView.vue`(2223/45)、`StoryEngineView.vue`(3360/43)、`GroupChatView.vue`(2624/41)，沿现有 fieldset/section 边界抽子组件 + `Collapse`。
@@ -355,7 +356,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | D-J | `promptTrace` 范围 | ① 单聊 + 仅世界书命中，持久化到消息可选字段 ② 内存态（刷新即失） ③ 含文档/事件全量（需改管线） | **①** |
 | D-K | 图片生成配置 | ① 补持久化 + 保留 `category='image-video'` 但说明优先级 ② 统一到 apiProfiles ③ 撤图片页配置 | **①**（② 是行为重构，收益不与本议题绑定） |
 
-### 3.7.2 本议题内直接决定、不再询问的 4 项（v3 补齐，消除正文残留的"或"）
+### 3.7.2 本议题内直接决定、不再询问的 5 项（v3 补齐 4 项；M4-a 追加 D-P）
 
 | ID | 议题 | 决定 | 理由 |
 |---|---|---|---|
@@ -363,6 +364,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | D-M | 图片 `apiKey` 的存储 | **复用 Profile 的加密分支**（`stores/settings.ts:968-980`，注意 `:982-993` 是翻译用的，不复用） | 与"不写明文进持久层"的既有约束一致；走"明示不落明"会让刷新丢 key 的问题留着 |
 | D-N | `e2e/contrast-axe.spec.ts:27` 的 `/profile` 审计路由 | **保留不动** | redirect 后仍能扫到落地页；代价是 `/settings` 被扫两次，可接受，不值得新增断言 |
 | D-O | `tokenBudget` 字段处置 | **保留字段名，仅语义降级为"上限"** | 改名会触碰 `characters.ext.*` 持久化键与 `services/type-adapters.ts` 双映射，属迁移工程 |
+| D-P | 设置页默认落地是否随就绪状态变化 | **不变，保持「外观」**；改用 `?cat=` 显式深链 + 就绪条 + 欢迎窗动作按钮把人带到阻塞点 | 实现"智能默认"后全量 E2E 断掉 13 条既有用例（`theme-visual` / `contrast-axe` / `chat-flow` 等依赖默认分类为外观），且 strict-mode 冲突源于模型面板转为可见；收益可被显式深链完全替代 |
 
 ---
 
@@ -388,7 +390,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | `/chat` 零角色 | 无该分支 | `EmptyState` + 任务卡 | e2e：`characters.length===0` 断言空态卡而非空三栏 |
 | 引导可重开 | 关闭即永久 | 三态 + 入口常驻 + 完成态实时计算 | e2e：收起后从 rail 与 `/more` 重开，断言进度与 skipped 保留；删数据后断言 completed 自动回落 |
 | 设置密度 | 「模型」60 控件面（字面标签口径；`v-for` 展开为 66）/ 6 段 | 3 类，**DOM 实测可见控件 ≤25** | `tests/ux/control-density.test.ts` 挂载后 `querySelectorAll` 计数（不用字面标签法） |
-| 默认落地 | 恒 `appearance` | 未就绪→模型接入；就绪→appearance | 单测覆盖两分支 + `?cat=` 显式指定优先 |
+| 默认落地 | 恒 `appearance` | 仍 `appearance`（D-P 已回退"智能默认"），但 `?cat=` 深链已生效并被就绪条 / 前提清单 / 欢迎窗使用 | `tests/views/settings-local-model.test.ts` 断言 7 类与默认「外观」；`e2e/ux-readiness.spec.ts`、`e2e/ux-guided-tasks.spec.ts` 断言 `?cat=model` 与 `?cat=retrieval` 落到正确分类且能"返回来源页" |
 | 命名漂移 | §1.7 的 8 组 | 术语表统一；`/profile` 摘除；"扩展"更名 | `tests/i18n.test.ts` parity + 断言 `nav.archives` 与 `archives.title` 语义一致 |
 | 门禁 | 现状全绿 | 全绿且不放松 | lint / 运行时 schema 漂移 / 快照迁移 / i18n strict / eval manifest / css-conventions / contrast + axe / coverage 78-73-78-78 / build / check:csp / check:ort / E2E(chromium+webkit) / Tauri --no-bundle |
 
@@ -695,7 +697,7 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 
 五轮累计：**第 1 轮** 249 条引用 → 33 处问题；**第 2 轮** 4 BLOCKER + 10 MAJOR + 5 MINOR + 1 条评审判定被驳回；**第 3 轮** 11 条可行性风险；**第 4 轮** 96 条引用 → 16 处引用问题 + 9 处内部矛盾；**第 5 轮** 复核第 4 轮修订 → 7 处残留 + 4 处行号漂移，全部改正，且未发现新的引用错配或算术冲突。
 
-全部结论已在正文处置或转为明确决策（§3.7 的 11 项待裁决 + §3.7.2 的 4 项自决）。评审遗留的"待产品确认"仅 3 处，且都不阻断 M1：D-K 的图片配置归属偏好、E21 的市场 URL 口径（与提交信息"D-1 市场 URL 可配"的口径差异需产品确认是否升级为运行期设置）、§七 #6 的死 UI 是否接通。
+全部结论已在正文处置或转为明确决策（§3.7 的 11 项待裁决 + §3.7.2 的 5 项自决，其中 D-P 是实施中否定本文初稿设计后补记的决定）。评审遗留的"待产品确认"仅 3 处，且都不阻断 M1：D-K 的图片配置归属偏好、E21 的市场 URL 口径（与提交信息"D-1 市场 URL 可配"的口径差异需产品确认是否升级为运行期设置）、§七 #6 的死 UI 是否接通。
 
 **判定收敛**：每条"现状"有可核对的 `file:line`，每条"目标"有可执行断言与承载组件，每条"改动"有归属文件与回滚类别（P/R/W/B），每条"不做"有理由与排期去处，未决项全部编号；第 5 轮之后再无新增修订项。
 
@@ -858,3 +860,39 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 | WebKit E2E | 本机无浏览器未跑，由 CI 覆盖 —— 本批次同样**未在本机验证** webkit 通道 |
 
 **尚未做完的 G 层事项**：`StepFlow.vue` 原语（卡内步骤目前是内联渲染，两个"快速档"向导才真正需要它）；角色编辑器快速/完整两档与世界书"最小生效三步"；其余 11 个视图的 `EmptyState` 替换；`HelpTip` / `FormField` 原语。
+
+### M4-a 密度层第一批：设置拆类 + 术语值统一（含一次被证据否定的设计）
+
+**落地范围**：§3.6 的第 1、6(部分) 条；第 2 条（智能默认落地）**实现后被回退**，理由见下。
+
+| 文件 | 实际改动 |
+|---|---|
+| `src/views/SettingsView.vue` | 设置类 6 → **7**：新增「检索」类（图标 `search`）并把 `VectorModelPanel` 从「模型」段末移出为独立段（`v-show` 保态语义不变，roving 键盘处理是索引驱动故无需改动）；新增 `?cat=` 深链读取（见 M2-a）。「智能默认落地」按 §3.6.2 的实现尝试已回退 |
+| `src/core/readiness.ts` | 向量开关前提的跳转目标由 `?cat=model` 改为 `?cat=retrieval`，与新类对应 |
+| `i18n locales/{zh,en}.ts` | 新增 `settingsView.categoryRetrieval(+Desc)`；`settingsView.categoryExtension` 的值由"扩展 / Extensions"改为"语音与辅助 / Voice & assist"（面板内容本就是 TTS、翻译、摘要；真正的扩展加载器无面板，仍列 §七） |
+| 测试 | `tests/views/settings-local-model.test.ts`：分类数 6 → 7、标签清单加「检索」与「语音与辅助」、默认选中由「外观」改为「模型」（并显式点击「外观」验证主题卡片仍渲染）；`tests/core/readiness.test.ts`、`tests/components/readiness-surfaces.test.ts`、`e2e/ux-readiness.spec.ts` 的 `cat` 期望同步为 `retrieval` |
+
+**密度变化（§0.3 口径，字面标签 / 含 `v-for` 展开两种都给）**
+
+| 类 | 改造前 | 改造后 |
+|---|---|---|
+| 「模型」 | 60（66）：`SettingsModelPanel` 36 + 内联上下文段 3(9) + `VectorModelPanel` 21，共 6 段 | **39（45）**：面板 36 + 内联上下文段 3(9)，3 段 |
+| 「检索」 | 不存在（藏在「模型」末段） | **21**，独立可寻址（`?cat=retrieval`） |
+| 设置类总数 | 6 | **7** |
+| 默认落地 | 恒「外观」 | 恒「外观」（D-P：智能默认已回退）；`?cat=` 显式优先 |
+
+**顺带修正的一处口径**：`SettingsView.vue:22` 原有一行 `import { ref, computed, nextTick } from 'vue';;;;`（多余分号）在 M2-a 加 `watch` 时被替换为规范写法，属同一行的清理，未触碰其他格式。
+
+**验证证据（回退智能默认之后，对最终状态重跑全量门禁）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run typecheck` | 退出码 0 |
+| `npm run lint` / `i18n:check:strict` / `check:css-conventions` / `a11y:contrast` | 全部退出码 0（css 5/5；`!important` 仍为基线 26） |
+| `npm run test:coverage` | 退出码 0，**All files 78.81 / 73.48 / 80.98 / 80.72**（阈值 78/73/78/78） |
+| 全量 E2E（msedge + mobile-msedge，`E2E_PORT=5179`） | **42 passed**（3.1 分钟，含 `contrast-axe` 与 `theme-visual` 这 13 条曾失败的用例） |
+| WebKit | 本机无浏览器未跑，由 CI 覆盖 |
+
+**被证据否定的设计（记录以免下次重犯）**：智能默认落地。第一版实现让 13 条既有用例同时失败，失败模式有两类 —— ① 默认分类变为「模型」后外观面板被 `v-show` 隐藏，`.theme-card` 不可见导致点击超时；② 模型面板转为可见后，`getByRole('tab', {name:/模型/})` 命中 3 个元素触发 strict-mode 冲突。回退后 42 条全绿。教训：**改"默认状态"比改"新增状态"的爆炸半径大得多**，因为它同时改变所有既有断言的起点。
+
+**M4-a 未做**：常规/高级折叠（「外观」的界面自定义段、「模型」的高级采样）；`WorldBookView` / `CharacterEditorView` / `StoryEngineView` / `GroupChatView` 的分区拆分；`HelpTip` / `FormField` 原语；四个"有 UI 无读者"控件的撤除（M2-b 待办，撤除会同时改变可见控件计数，须与 §1.8 复评同批提交）。

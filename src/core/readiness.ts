@@ -180,7 +180,7 @@ export function useDataBankPrereqs(): ComputedRef<PrereqRow[]> {
         id: 'vector-switch',
         textKey: 'prereq.databankVectorSwitch',
         done: vectorRagEnabled.value,
-        jump: { name: 'settings', query: { cat: 'model' } },
+        jump: { name: 'settings', query: { cat: 'retrieval' } },
         actionKey: 'prereq.actionOpenVector',
       },
     ];

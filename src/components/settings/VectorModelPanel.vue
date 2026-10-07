@@ -372,6 +372,14 @@ watch(stopwordFilter, (v) => setStopwordFilterEnabled(v));
       {{ t('vector.desc') }}
     </p>
 
+    <!--
+      静态通道的真实前提：chat-generation.ts 把"当前角色是否有生效世界书"当作 staticGate，
+      没有世界书时文档向量根本不参与检索。此前这句话只存在于代码里。
+    -->
+    <p class="section-desc" role="note">
+      {{ t('vector.staticNeedsBindingHint') }}
+    </p>
+
     <div class="field-row">
       <div class="field-group">
         <label class="field-label" for="vec-dyn">{{ t('vector.dynamicModel') }}</label>

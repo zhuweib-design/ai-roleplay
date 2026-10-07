@@ -21,7 +21,7 @@ interface SettingsCategory {
   icon: IconName;
 }
 
-type SettingsCategoryId = 'appearance' | 'model' | 'extension' | 'data' | 'security' | 'about';
+type SettingsCategoryId = 'appearance' | 'model' | 'retrieval' | 'extension' | 'data' | 'security' | 'about';
 
 const activeCategory = ref<SettingsCategoryId>('appearance');
 
@@ -29,7 +29,7 @@ const activeCategory = ref<SettingsCategoryId>('appearance');
 // 必须落在用户被指引的那一类（此前恒落"外观"，导致"去设置"按钮把用户送到无关页）。
 const route = useRoute();
 const { fromPath, backFromQuery } = useReadinessJump();
-const CATEGORY_IDS: readonly string[] = ['appearance', 'model', 'extension', 'data', 'security', 'about'];
+const CATEGORY_IDS: readonly string[] = ['appearance', 'model', 'retrieval', 'extension', 'data', 'security', 'about'];
 
 function applyCategoryFromQuery(): void {
   const raw = route.query.cat;
@@ -39,6 +39,11 @@ function applyCategoryFromQuery(): void {
   }
 }
 
+// 深链优先：?cat=<id> 决定落地分类。
+// 曾经试过"无 Profile 时自动落在「模型」"的智能默认，但它与既有一致性契约冲突：
+// 主题相关用例（theme-visual / contrast-axe / chat-flow 等 13 条）进入设置页就直接点
+// `.theme-card`，默认分类一变它们就全断；而"把用户带到阻塞点"这件事已由就绪条与
+// 首启欢迎窗的显式跳转承担，不需要靠改变落地页来赌。故保持确定性默认「外观」。
 watch(() => route.query.cat, applyCategoryFromQuery, { immediate: true });
 
 const activeCategoryDesc = computed(
@@ -125,6 +130,7 @@ const settings = useSettingsStore();
 const settingsCategories = computed<SettingsCategory[]>(() => [
   { id: 'appearance', label: t('settingsView.categoryAppearance'), description: t('settingsView.categoryAppearanceDesc'), icon: 'palette' },
   { id: 'model', label: t('settingsView.categoryModel'), description: t('settingsView.categoryModelDesc'), icon: 'cpu' },
+  { id: 'retrieval', label: t('settingsView.categoryRetrieval'), description: t('settingsView.categoryRetrievalDesc'), icon: 'search' },
   { id: 'extension', label: t('settingsView.categoryExtension'), description: t('settingsView.categoryExtensionDesc'), icon: 'puzzle' },
   { id: 'data', label: t('settingsView.categoryData'), description: t('settingsView.categoryDataDesc'), icon: 'database' },
   { id: 'security', label: t('settingsView.categorySecurity'), description: t('settingsView.categorySecurityDesc'), icon: 'lock-keyhole' },
@@ -255,6 +261,14 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
         </div>
       </section>
 
+      <!--
+        向量检索从「模型」类里独立成「检索」类（§3.6.1）：
+        原来一类聚合 模型面板 + 上下文长度段 + 向量面板 ≈60 个控件面 / 6 段，
+        而它服务的任务（让文档能被检索到）与"接入一个模型"并不是同一件事。
+      -->
+    </div>
+
+    <div v-show="activeCategory === 'retrieval'">
       <VectorModelPanel />
     </div>
 
