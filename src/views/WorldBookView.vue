@@ -782,24 +782,8 @@ function onGroupInput(e: Event) {
   onEntryField('group', (e.target as HTMLInputElement).value);
 }
 
-// ── F17.3 随机事件开关 ──
 
-function onRandomEventEnabledChange(e: Event) {
-  const enabled = (e.target as HTMLInputElement).checked;
-  onEntryField('randomEventEnabled', enabled);
-  // 首次开启时初始化默认概率
-  if (enabled) {
-    const d = draft();
-    if (d && (d.randomEventProbability === undefined || d.randomEventProbability === null)) {
-      onEntryField('randomEventProbability', 10);
-    }
-  }
-}
 
-function onRandomEventProbabilityInput(e: Event) {
-  const value = parseInt((e.target as HTMLInputElement).value, 10);
-  if (!isNaN(value)) onEntryField('randomEventProbability', value);
-}
 
 function keysPreview(keys: string[]): string {
   if (keys.length === 0) return t('wb.noKeywords');
@@ -1584,48 +1568,7 @@ function strategyLabel(s: LorebookStrategy): string {
                       />
                     </div>
                   </div>
-
-                  <!-- F17.3 随机事件开关（仅 hierarchyLevel >= 1 时显示） -->
-                  <div
-                    v-if="currentEntry && (currentEntry.hierarchyLevel ?? 0) >= 1"
-                    class="form-row random-event-row"
-                  >
-                    <div class="form-cell">
-                      <label class="form-label" :for="`entry-rand-${currentEntry.id}`">
-                        {{ t('wb.randomEvent') }}
-                      </label>
-                      <label class="checkbox-label">
-                        <input
-                          :id="`entry-rand-${currentEntry.id}`"
-                          type="checkbox"
-                          :checked="currentEntry.randomEventEnabled ?? false"
-                          @change="onRandomEventEnabledChange"
-                        />
-                        <span>{{ t('wb.randomEventEnable') }}</span>
-                      </label>
-                      <span class="form-hint">
-                        {{ t('wb.randomEventHint') }}
-                      </span>
-                    </div>
-                    <div
-                      v-if="currentEntry.randomEventEnabled"
-                      class="form-cell"
-                    >
-                      <label class="form-label" :for="`entry-rand-prob-${currentEntry.id}`">
-                        {{ t('wb.randomEventProb', { percent: currentEntry.randomEventProbability ?? 10 }) }}
-                      </label>
-                      <input
-                        :id="`entry-rand-prob-${currentEntry.id}`"
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="5"
-                        :value="currentEntry.randomEventProbability ?? 10"
-                        @input="onRandomEventProbabilityInput"
-                      />
-                    </div>
-                  </div>
-                </div>
+</div>
               </form>
             </section>
           </div>
@@ -2630,23 +2573,8 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 /* F17.3 随机事件行 */
-.random-event-row {
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 12px;
-  background: var(--surface-3, var(--card-elevated));
-  border-radius: 6px;
-  border: 1px solid var(--border);
-}
 
-.random-event-row .form-cell {
-  flex: 1;
-}
 
-.random-event-row input[type='range'] {
-  width: 100%;
-}
 
 .form-row-3col,
 .form-row-4col {

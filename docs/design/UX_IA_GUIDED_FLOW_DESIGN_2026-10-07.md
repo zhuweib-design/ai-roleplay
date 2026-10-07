@@ -137,6 +137,7 @@
 
 **分类合计（按表逐行）**：A **1** · B **6** · C **11** · D **4** · E **3** = 25。
 用户"不知道模块之间怎么关联"不是主观感受，而是可测量事实：**25 条边里只有 1 条做到可见且可一跳**。
+> **后测更新（M2-b1）**：D 类四条（E12 / E13 / E16 / E25）对应的控件已**从界面上撤除**，"配了没反应"这一类误导不再存在；数据层字段暂留（撤 UI 与改数据契约分两件事，见 §七 #6）。因此实际后测分布为 A 目标 17 条中已完成若干（逐行见 §九 M2-a 与 M2-b1 的复评表）。
 
 ### 1.5 引导现状：一个静态弹窗 + 一个向导 + 不一致的空态
 
@@ -191,7 +192,7 @@
 | 设置：类别与控件面 | 6 类；7 个面板文件字面标签合计 **67 button + 46 input + 1 textarea + 11 select** | 0.3 口径 |
 | 最重设置类 | 「模型」= `SettingsModelPanel.vue`(2509 行，36 控件面) + 父视图内联上下文段(`SettingsView.vue:169-227`，2 数字输入 + 1 个 `v-for` 按钮，展开为 7 个预设) + 嵌套 `VectorModelPanel.vue`(1000 行，21 控件面) = **60 控件面（字面标签）/ 66（按 v-for 展开）/ 6 段** | 同上（两种口径都给出，避免歧义） |
 | 默认进入的设置类 | `appearance`（`SettingsView.vue:24`）⇒ 最阻塞的「模型」不是默认落地 | — |
-| 控件最密的视图 | 世界书 59 / 角色编辑 45 / 故事 43 / 群聊 41 / **角色版本 38** / 市场 37 | 同上 |
+| 控件最密的视图 | 世界书 61（v2 记 59，见 §9-M2-b1 的口径校正）/ 角色编辑 45 / 故事 43 / 群聊 41 / 角色版本 38 / 市场 37 | 同上 |
 | SFC > 1000 行 | 17 个（最大 `StoryEngineView.vue` 3360；`VectorModelPanel.vue` 恰 1000） | `wc -l` |
 | i18n 键 | 每语言 3016 键（`zh.ts`/`en.ts` 各 3169 行）；未被引用 209（6.9%），聚簇 `settingsView` 41、`common` 40、`store` 24、`mktIndex` 15、`masterPwd` 12、`persona` 12、`preset` 9 | grep `src`/`tests`/`scripts` |
 | 空态带 CTA | **5 / 12**（固定集合见 §0.3） | §1.5 |
@@ -895,4 +896,33 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 
 **被证据否定的设计（记录以免下次重犯）**：智能默认落地。第一版实现让 13 条既有用例同时失败，失败模式有两类 —— ① 默认分类变为「模型」后外观面板被 `v-show` 隐藏，`.theme-card` 不可见导致点击超时；② 模型面板转为可见后，`getByRole('tab', {name:/模型/})` 命中 3 个元素触发 strict-mode 冲突。回退后 42 条全绿。教训：**改"默认状态"比改"新增状态"的爆炸半径大得多**，因为它同时改变所有既有断言的起点。
 
-**M4-a 未做**：常规/高级折叠（「外观」的界面自定义段、「模型」的高级采样）；`WorldBookView` / `CharacterEditorView` / `StoryEngineView` / `GroupChatView` 的分区拆分；`HelpTip` / `FormField` 原语；四个"有 UI 无读者"控件的撤除（M2-b 待办，撤除会同时改变可见控件计数，须与 §1.8 复评同批提交）。
+**M4-a 未做**：常规/高级折叠（「外观」的界面自定义段、「模型」的高级采样）；`WorldBookView` / `CharacterEditorView` / `StoryEngineView` / `GroupChatView` 的分区拆分；`HelpTip` / `FormField` 原语；四个"有 UI 无读者"控件的撤除（已由 M2-b1 完成）。
+
+### M2-b1 撤除四条"有 UI 无读者"控件（E12 / E13 / E16 / E25）
+
+| 撤除项 | 位置 | 撤除前的问题 | 后测量级 |
+|---|---|---|---|
+| E12 条目级"随机事件"开关 + 概率滑杆 | `WorldBookView.vue`（原 `:1565-1595`） | `core/lorebook.ts:87-92` 的两个字段在运行时**零读取**，用户勾了不会有任何效果 | 控件 61 → 59；文件 2901 → 2829 行；连带删除两个只写不读的处理函数与 `.random-event-row` 三条 CSS 规则 |
+| E13 生成器"绑定世界书"下拉 | `RandomEventsView.vue`（原 `:488-513`） | `generatorConfig.boundWorldBookId` 有写者无读者 | 控件 22 → 21；文件 1315 → 1278 行；`getBoundWorldBookName()` 与 `lorebookStore` 引用一并撤除 |
+| E16 故事"关联世界书"下拉 + 已绑显示 | `StoryEngineView.vue`（原 `:1129-1158` + `:774-796`） | `story.boundWorldBookId` 有写者（`setStoryWorldBookBinding`）但运行时零读取 | 控件 43 → 42；文件 3360 → 3307 行；`availableLorebooks` 随引用清零后一并撤除 |
+| E25 数据银行"聊天级文档"分区 | `DataBankView.vue`（原 `:342-396`）+ `stores/data-bank.ts` 的 `chatDocuments` | 该分区 `v-if="chatDocuments.length > 0"`，而上传对话框只有全局/角色两档、检索管线硬编码 `scope='character'` ⇒ 三重不可达的死面板 | 控件 19 → 17；文件 1076 → 1021 行；store 侧 getter 与其导出同步撤除 |
+
+**没有顺手加回"聊天级文档"单选**：那会立刻再造一条"有 UI 无读者"（`chat-context.ts:163-167` 仍硬编码 `scope='character'`）。要接通它必须先改检索管线，属功能开发（§七 #6）。
+
+**数据字段暂留**：`lorebook.entry.randomEventEnabled/Probability`、`generatorConfig.boundWorldBookId`、`story.boundWorldBookId` 三类字段保留在类型与持久化里，因为已有用户数据带值；撤除它们需要迁移脚本，与"界面上不再骗人"是两件事，排期在 §七 #10 / #12。
+
+**双语死键清理**：本次撤除后彻底无引用的 18 个键（`wb.randomEvent*` 4 个、`re.bind*`/`re.noBind`/`re.boundHint` 5 个、`story.bind*`/`boundWorldbookOk`/`unboundWorldbook` 7 个、`databank.chatSection` 1 个 + `re.bindEntryCount`）在 `zh.ts` / `en.ts` 中**同步删除**，两文件各 3289 → 3271 行，parity 测试保持绿。
+
+**测试适配**：`tests/stores/data-bank.test.ts` 的两处断言由 `store.chatDocuments` 改为等价的 `store.documents.filter(d => d.scope === 'chat')`，保留对"数据层仍支持 chat 域"的覆盖（**不是删测试**，而是把断言移到仍然真实的那一层）。
+
+**验证证据（M2-b1 最终状态，全量重跑）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run typecheck` | 退出码 0 |
+| `npm run lint` / `i18n:check:strict` / `check:css-conventions` / `a11y:contrast` | 全部 0（撤除后无未使用变量与死样式残留；css 5/5） |
+| `npm run test:coverage` | 退出码 0，**All files 78.80 / 73.47 / 80.96 / 80.71**（阈值 78/73/78/78 未放松） |
+| 全量 E2E（msedge + mobile-msedge） | **42 passed**（2.2 分钟），含 `worldbook-flow`、`databank-flow`、`story-flow`、`random-events` 四条会被撤除控件影响的行为链 |
+| WebKit project | 本机确实无浏览器（`Executable doesn't exist at …\webkit-2336\Playwright.exe`），仍由 CI 覆盖 —— 此项**未在本机验证** |
+
+**口径校正说明**：本文 §1.8 原记"世界书 59 控件"，实测 `d34df56` 基线为 **61**（差异来自并行提交在其间新增的"已绑定角色"等区块）。后续复评一律以同版本 `git show HEAD:<file>` 与当前文件对照计数，避免拿旧快照的数与新代码的数相减。

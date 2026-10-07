@@ -772,28 +772,6 @@ function getProtagonistRoleLabel(role: ProtagonistRole): string {
 
 // ── 需求8：故事与世界书关联 UI ──
 
-/** 获取故事关联的世界书名称（用于显示） */
-function getBoundWorldBookName(storyId: string): string {
-  const story = store.stories.find((s) => s.id === storyId);
-  if (!story?.boundWorldBookId) return '';
-  const lb = lorebookStore.lorebooks.find((l) => l.id === story.boundWorldBookId);
-  return lb?.name ?? '';
-}
-
-/** 切换故事关联的世界书 */
-function handleBindWorldBook(storyId: string, worldBookId: string): void {
-  const ok = store.setStoryWorldBookBinding(storyId, worldBookId || null);
-  if (ok) {
-    if (worldBookId) {
-      const lbName = lorebookStore.lorebooks.find((l) => l.id === worldBookId)?.name ?? worldBookId;
-      showToast('success', t('story.boundWorldbookOk', { name: lbName }));
-    } else {
-      showToast('info', t('story.unboundWorldbook'));
-    }
-  } else if (store.lastError) {
-    showToast('error', store.lastError);
-  }
-}
 
 /** 主角来源标签 */
 function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
@@ -1125,37 +1103,6 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
               </div>
             </section>
 
-            <!-- 需求8：关联世界书 -->
-            <section v-if="story.status === 'completed'" class="detail-section worldbook-bind-section">
-              <h4 class="detail-title">
-                <Icon name="book-open" :size="14" />
-                {{ t('story.bindWorldbook') }}
-              </h4>
-              <div class="form-row">
-                <label :for="`bindWorldBook-${story.id}`" class="form-label">{{ t('story.bindLabel') }}</label>
-                <select
-                  :id="`bindWorldBook-${story.id}`"
-                  class="form-select"
-                  :value="story.boundWorldBookId ?? ''"
-                  @change="handleBindWorldBook(story.id, ($event.target as HTMLSelectElement).value)"
-                >
-                  <option value="">{{ t('story.bindNone') }}</option>
-                  <option
-                    v-for="lb in availableLorebooks"
-                    :key="lb.id"
-                    :value="lb.id"
-                  >
-                    {{ t('story.bindEntryCount', { name: lb.name, count: lb.entries.length }) }}
-                  </option>
-                </select>
-                <p class="form-hint">
-                  {{ t('story.bindHint') }}
-                </p>
-                <p v-if="story.boundWorldBookId" class="form-hint success-hint">
-                  {{ t('story.bindCurrent', { name: getBoundWorldBookName(story.id) }) }}
-                </p>
-              </div>
-            </section>
 
             <StoryTimeConfigPanel :story="story" />
 

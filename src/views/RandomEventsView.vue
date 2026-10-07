@@ -20,7 +20,6 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRandomEventsStore } from '@/stores/random-events';
-import { useLorebookStore } from '@/stores/lorebook';
 import Icon from '@/components/common/Icon.vue';
 import Toast from '@/components/common/Toast.vue';
 import TemplateEditorModal from '@/components/random-events/TemplateEditorModal.vue';
@@ -35,7 +34,6 @@ import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useRandomEventsStore();
-const lorebookStore = useLorebookStore();
 
 // ── Tab ──
 type TabKey = 'templates' | 'scenes' | 'generator' | 'results';
@@ -164,7 +162,6 @@ const generatorForm = ref({
   maxPerTurn: store.generatorConfig.maxPerTurn,
   globalCooldownMs: store.generatorConfig.globalCooldownMs,
   feedbackAdjustStep: store.generatorConfig.feedbackAdjustStep,
-  boundWorldBookId: store.generatorConfig.boundWorldBookId ?? '',
 });
 
 function saveGeneratorConfig(): void {
@@ -174,18 +171,11 @@ function saveGeneratorConfig(): void {
     maxPerTurn: generatorForm.value.maxPerTurn,
     globalCooldownMs: generatorForm.value.globalCooldownMs,
     feedbackAdjustStep: generatorForm.value.feedbackAdjustStep,
-    boundWorldBookId: generatorForm.value.boundWorldBookId || null,
   });
   showToast('success', t('re.configSaved'));
   flushStoreMessages();
 }
 
-/** 需求8：获取关联世界书名称 */
-function getBoundWorldBookName(): string {
-  const id = generatorForm.value.boundWorldBookId;
-  if (!id) return '';
-  return lorebookStore.lorebooks.find((l) => l.id === id)?.name ?? '';
-}
 
 function toggleGenerator(): void {
   store.toggleGenerator();
@@ -485,34 +475,7 @@ function formatCooldown(ms: number): string {
               />
               <small class="form-hint">{{ t('re.feedbackStepHint') }}</small>
             </div>
-
-            <!-- 需求8：关联世界书 -->
-            <div class="form-row">
-              <label for="gen-worldbook">
-                <Icon name="book-open" :size="14" aria-hidden="true" />
-                {{ t('re.bindWorldBook') }}
-              </label>
-              <select
-                id="gen-worldbook"
-                v-model="generatorForm.boundWorldBookId"
-              >
-                <option value="">{{ t('re.noBind') }}</option>
-                <option
-                  v-for="lb in lorebookStore.lorebooks"
-                  :key="lb.id"
-                  :value="lb.id"
-                >
-                  {{ t('re.bindEntryCount', { name: lb.name, count: lb.entries.length }) }}
-                </option>
-              </select>
-              <small class="form-hint">
-                {{ t('re.bindHint') }}
-              </small>
-              <small v-if="generatorForm.boundWorldBookId" class="form-hint success-hint">
-                {{ t('re.boundHint', { name: getBoundWorldBookName() }) }}
-              </small>
-            </div>
-          </div>
+</div>
 
           <div class="form-actions">
             <button type="button" class="btn primary" @click="saveGeneratorConfig">

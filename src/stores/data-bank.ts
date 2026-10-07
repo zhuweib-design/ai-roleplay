@@ -62,10 +62,6 @@ export const useDataBankStore = defineStore('data-bank', () => {
     documents.value.filter((d) => d.scope === 'character')
   );
 
-  /** 聊天级文档 */
-  const chatDocuments = computed(() =>
-    documents.value.filter((d) => d.scope === 'chat')
-  );
 
   // ── 依赖注入 ──
 
@@ -280,7 +276,6 @@ export const useDataBankStore = defineStore('data-bank', () => {
     filteredDocuments,
     globalDocuments,
     characterDocuments,
-    chatDocuments,
     // 依赖注入
     setStorageAdapter,
     // 持久化

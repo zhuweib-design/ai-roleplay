@@ -65,6 +65,12 @@
 - `e2e/long-history-scroll.spec.ts` 删除声明后未使用的 `DB_NAME`/`DB_VERSION`（eslint 2 error）；`CharacterList.vue:231`、`SettingsView.vue:240` 的 2 条 vue 格式 warning 由 `eslint --fix` 消除。
 - `src/views/DataBankView.vue:1065` 的 `.search-empty-clear:hover` 包进 `@media (hover: hover) and (pointer: fine)`，恢复 `check:hover` / `check:css-conventions` 绿灯。
 
+### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
+- 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
+- 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。
+- 数据字段暂留（已有用户数据带值），撤除需迁移脚本，排期见设计文档 §七；未顺手加回"聊天级文档"单选，以免再造一条"有 UI 无读者"的控件。
+- 双语同步删除因此彻底无引用的 18 个 i18n 键（`wb.randomEvent*`、`re.bind*`、`story.bind*` 等），两文件各 3289 → 3271 行；`tests/stores/data-bank.test.ts` 的两处断言改为等价的 `documents.filter(scope==='chat')`，保留数据层覆盖。
+
 ### 新增
 - 全局 Toast 提示服务（`src/utils/toast-service.ts`），为拆分后的设置分区子组件提供跨组件提示能力。
 - 设置页 5 个分区子组件：`SettingsAboutPanel` / `SettingsAppearancePanel` / `SettingsDataPanel` / `SettingsExtensionPanel` / `SettingsSecurityPanel`。

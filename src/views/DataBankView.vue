@@ -48,7 +48,6 @@ const toastMessage = ref('');
 const documents = computed(() => store.filteredDocuments);
 const globalDocuments = computed(() => documents.value.filter((d) => d.scope === 'global'));
 const characterDocuments = computed(() => documents.value.filter((d) => d.scope === 'character'));
-const chatDocuments = computed(() => documents.value.filter((d) => d.scope === 'chat'));
 const totalChunks = computed(() =>
   store.documents.reduce((sum, d) => sum + d.chunks.length, 0)
 );
@@ -339,60 +338,6 @@ const prereqRows = useDataBankPrereqs();
         </div>
       </section>
 
-      <!-- 聊天级文档 -->
-      <section v-if="chatDocuments.length > 0" class="doc-section" :aria-label="t('databank.chatSection')">
-        <h2 class="section-title">
-          <Icon name="chat-circle" :size="18" />
-          {{ t('databank.chatSection') }}
-          <span class="section-count">{{ chatDocuments.length }}</span>
-        </h2>
-        <div class="doc-grid">
-          <article
-            v-for="doc in chatDocuments"
-            :key="doc.id"
-            class="doc-card"
-          >
-            <div class="card-header" @click="toggleExpand(doc.id)">
-              <Icon name="file" :size="20" class="doc-icon" />
-              <div class="card-info">
-                <h3 class="doc-name">{{ doc.name }}</h3>
-                <span class="doc-meta">{{ formatFileSize(doc.fileSize) }} · {{ t('databank.chunksCount', { count: doc.chunks.length }) }}</span>
-              </div>
-              <button
-                type="button"
-                class="card-expand"
-                :aria-label="expandedDocId === doc.id ? t('databank.collapseChunks') : t('databank.expandChunks')"
-                :aria-expanded="expandedDocId === doc.id"
-                @click="toggleExpand(doc.id)"
-              >
-                <Icon :name="expandedDocId === doc.id ? 'chevron-up' : 'chevron-down'" :size="16" />
-              </button>
-            </div>
-            <div v-if="expandedDocId === doc.id" class="card-chunks">
-              <div
-                v-for="chunk in doc.chunks"
-                :key="chunk.id"
-                class="chunk-item"
-              >
-                <span class="chunk-index">#{{ chunk.index + 1 }}</span>
-                <span class="chunk-content">{{ chunk.content }}</span>
-                <span class="chunk-tokens">{{ chunk.tokenCount }} tok</span>
-              </div>
-            </div>
-            <div class="card-actions">
-              <button
-                type="button"
-                class="card-btn delete-btn"
-                :aria-label="t('databank.deleteAria')"
-                @click="confirmDelete(doc.id)"
-              >
-                <Icon name="trash-2" :size="14" />
-                <span>{{ t('databank.delete') }}</span>
-              </button>
-            </div>
-          </article>
-        </div>
-      </section>
 
       <!-- O-24（REAL_DEVICE_TEST_2026-10-03）：筛选无结果时的空态（对齐记录页做法） -->
       <div v-if="documents.length === 0" class="search-empty" role="status">
