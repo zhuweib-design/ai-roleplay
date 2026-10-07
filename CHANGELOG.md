@@ -86,6 +86,13 @@
 - 测试：`tests/stores/chat-session-restore.test.ts` 8 例（接回 `updatedAt` 最新一条并同步高亮 / 全部归档不接回 / 只接回本角色 / 已有激活会话（含草稿）不覆盖 / 缓冲非空不覆盖 / 无角色静默 / 跨角色落盘纠偏 / 草稿会话保留）。`e2e/ux-prompt-trace.spec.ts` 的刷新段改为**不点击任何会话行**直接断言正文与痕迹仍在；反证实验：临时摘掉 `CharacterList` 的加载调用后 e2e 仍绿，确认 `App.vue` 的接线才是确定路径。
 - 文档：回写 `docs/dev/P2-11-virtualization-plan.md` 的"已最小修复（保留 messages）"——被保留的字段在角色卡记录里从来不存在（`uiCharToCard()` 不映射 `messages`），该句当时不成立。
 
+### 新增（UX/IA M2-b5：角色关联面板 + 深链回头路补齐）
+- `src/core/relations.ts` + `src/components/layout/ModuleRelationsPanel.vue`：角色编辑页新增「角色关联」六行清单——世界书（按**真实生效集合**计数，条目只数 `enabled`）、文档检索（全局 + 本角色）、创作模式（角色绑定 vs 跟随全局，显示翻译后的模式名）、模型（角色级 Profile vs 全局激活 vs 未配置）、版本跟踪（**只读** `repositories`，不为判断而建仓）、所在群聊（成员反查）。每行一个跳转，`linked=false` 的行弱化成次要文字而不是假装成错误。
+- `src/App.vue` + `src/styles/app-global.css`：`?from=` 深链契约的回程补齐。此前只有设置页真的给了"返回来源页"，世界书 / 数据银行 / 版本 / 群聊这些目标把用户带过去后没有回头路；现在带 `from` 落地就有右下角浮动返回（设置页仍用自己的面板头按钮，二者互斥不会重复渲染）。
+- 测试：`tests/core/relations.test.ts` 9 例（六行顺序与 `data-rel-jump` 命名 / 查不到角色返回空 / 裸角色各行老实说"没有" / 世界书只数启用条目 / 文档计数含全局与本角色而不含他人 / 创作模式两种说法 / 模型三种说法 / 版本行只读 / 群聊行带 `preSelectGroupId`）、`tests/components/module-relations-panel.test.ts` 4 例（渲染六行 + 未关联行样式 + 跳转带 `from` + 群聊先 `selectGroup` 再跳 + 查不到角色不渲染）、`e2e/ux-relations-panel.spec.ts`（IndexedDB 造一本含 1 启用 + 1 停用条目的全局世界书，断言"生效 1 本 · 启用条目 1 条"、面板不搬运条目正文、点"查看"落到 `/worldbook?from=/character/seraphina/edit` 且"返回来源页"能回来）。
+- 顺手修的存量提示（非本批次引入）：`ContextPanel.vue` 的 `.ctx-preset-select` 是 12px 的 `select`，移动断点内没有 ≥16px 覆盖（iOS 聚焦会放大整页），补 `@media (max-width: 640px)` 后 `check:i7-control-font-size` 的未覆盖项 1 → 0。
+- 无障碍返工记录：面板标题最初写成 `<h3>`，被 `tests/accessibility/components-axe.test.ts` 的 `heading-order` 判违规（编辑页已有自己的层级），改为 `<p class="relations-title">` + `<section :aria-label>`。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

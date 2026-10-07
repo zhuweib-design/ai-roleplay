@@ -381,6 +381,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 三处导航同源 | 三份硬编码 | 1 份 `nav-model` | 单测：`NavRail`/`BottomNav`/`MoreView` 输出同一集合；`/group`、`/more` 的"某端无入口"数 2 → 0 |
 | 激活高亮 | 3 处失准 | 0 处 | e2e 依次进 `/character/new`、`/character/:id/edit`、`/more`，按 `data-nav-entry="<id>"` 断言激活项（**项级断言，不断言组**） |
 | 语义跳转点 | 9 | ≥26 | 每个跳转带 `data-rel-jump="<edgeId>"`；`tests/ux/related-jumps.test.ts` 解析 nav-model + 组件，断言覆盖 E01–E25 的处置集合；e2e 抽样点 8 条真实链路 |
+| 角色 ⇄ 模块的关系面板（M2-b5） | 六条关系分散在四个页面，且"绑了没生效 / 跟随全局还是角色级"全靠猜 | 角色编辑页一屏六行（世界书 / 文档 / 创作模式 / 模型 / 版本 / 群聊），数字与状态一律读真实 store，每行可一跳 | `tests/core/relations.test.ts` 9 例 + `tests/components/module-relations-panel.test.ts` 4 例 + `e2e/ux-relations-panel.spec.ts`（造一本含 1 启用 + 1 停用条目的全局书，断言"生效 1 本 · 启用条目 1 条"、面板不含条目正文、跳转带 `from` 且能返回） |
+| 深链回程契约（M2-b5） | `?from=` 只有设置页兑现，其余目标页把用户带过去就没有回头路 | 任何带 `from` 落地的页面右下角都有"返回来源页"（设置页仍用自己的面板头按钮，二者互斥） | `e2e/ux-relations-panel.spec.ts` 按可及名点"返回来源页"（即 `.source-return`，`data-rel-jump="source-return"`）后断言 URL 回到 `/character/seraphina/edit` |
 | 依赖边处置覆盖 | A1/B6/C11/D4/E3 | **17 条转 A**（有可跳目标的边全部做到可见且可一跳）+ **4 条撤下**（E12/E13/E16/E25）+ **4 条显式声明不存在**（E08 群聊角色级参数、E18 群聊能力集、E21 市场 URL 运行期配置、E23 图片入对话；这四条没有可跳目标，只能"说清楚"） | §1.4 表增加"后测分类"列逐行复评（同一次提交内更新，避免结论与代码不同版本）；`tests/ux/related-jumps.test.ts` 断言每条 E-id 落在三类之一 |
 | 文档检索不再"上传即以为生效" | 两隐藏前提，零提示 | `/databank` 顶部 `PrereqNotice` 显示两前提与状态 + 两个"去完成" | e2e：无绑定时断言提示可见且含原因码；绑定并开开关后断言 chip 转 ready |
 | 世界书触发可感知（单聊） | 完全不可见 | 每条助手消息可展开"本轮注入 世界书 N 条"，条目名可跳来源书 | **已验证（M2-b3）**：`tests/stores/chat-prompt-trace.test.ts` 4 例（常驻 + 关键词各 1 条 ⇒ N=2、不含正文；无世界书的负向对照；落盘回读；重新生成清空）+ `e2e/ux-prompt-trace.spec.ts`（真发一条消息，断言 N、展开条目、点书名落 `/worldbook?from=/chat`、`chats` store 里确有该字段、重开会话后仍在），msedge 与 webkit 双内核均通过。**口径更正**：本行原写"刷新后仍在"隐含"刷新即自动接回对话"，实测并非如此（刷新后缓冲为空，需点左侧会话行）——该缺陷登记为 **D-Q**，修好前此行只能读作"重开会话后仍在" |
@@ -514,6 +516,13 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 ## 六、用户使用方式
 
+> **本节是"改造后的目标态"写法，不是当前界面清单**。截至 `feat/ux-ia-guided-flow` 最后一次提交（M2-b5），落地与未落地按下表核对；读到下面任何一条时，请先确认它在"已落地"列里。
+
+| 状态 | 条目 |
+|---|---|
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | 空态 `EmptyState` 铺开（`grep -rl "\.empty-state" src --include=*.vue` 实测 **13** 个文件仍各自定义该样式：11 个视图 + `ChatMain.vue` + `EmptyState.vue` 自己）；`StepFlow` / `HelpTip` / `FormField` 原语与角色·世界书"快速档"表单（M3-b）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；**E03** 上下文面板列出全局书；**E17** 群聊成员可点进编辑；**E19** 角色卡上的"已跟踪"入口；**E20** 市场安装后提示"已加入角色列表"并可跳；**E22** 图片模型两处配置互读 + `providerConfig` 持久化（刷新仍丢 key）；**E23** "图片不进对话"的显式声明；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
+
 ### 6.1 新用户第一次打开（改造后）
 
 1. 欢迎卡（原弹窗降级为任务第 0 步）：一句"三步就能聊起来" + 「现在配模型」「先看清单」两个按钮。收起它不影响任务中心存在。
@@ -524,7 +533,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 ### 6.2 日常创作者
 
-- **改一个角色的世界**：`/character` 卡片关联行"绑定世界书 · 2"→ 点条目直达该书；世界书页"已绑定角色"可点回编辑（含空态里的链接）。角色编辑新建态也能看到绑定段。
+- **改一个角色的世界**：角色编辑页底部有「角色关联」六行（M2-b5 已落地）——世界书写的是**真实生效数**（全局书无条件生效所以也计进去，停用条目不计数）、文档写"几篇可检索"、创作模式与模型分别标明"本角色指定"还是"跟随全局"、版本写"已跟踪 · N 次提交"或"尚未跟踪"、群聊写"在 N 个群里"。每行右侧一个按钮，点过去还带回得来路；世界书页"已绑定角色"可点回编辑（含空态里的链接）。角色卡列表上的关联行仍待铺（§九 M2-b5 "尚未铺开的面板宿主"）。
 - **写长文再抽设定**：`/story` 提取 → 结果行跳 `/worldbook`、`/character`（把现存的唯一好范式推广为通用关联面板）。
 - **喂文档**：`/databank` 顶部一眼看到"关键词通道：已生效 / 向量通道：未开启（原因 + 开启入口）/ 静态通道：需角色绑定世界书（+ 去绑定）"。
 - **单聊调教**：每条回复可展开"本轮注入 世界书 2 条"，条目名可跳来源；上下文面板显示真实 token 用量与"全局书也在生效"。
@@ -1019,4 +1028,37 @@ AssertionError: expected [ '乙的新消息', '乙的回复' ] to deeply equal [
 | 全量 E2E（msedge + webkit + mobile-functional + mobile，`--workers=2`） | **62 passed，0 failed**（4.6 分钟）——首次把 webkit project 计入本机全量 |
 
 **仍未做（不是遗漏，是排期）**：§七 #19 —— `activeChatId` 应从全局单值改为"每个角色记住自己上次打开的那条会话"的映射。D-R 的校验只保证"绝不写进别人的会话"，"切回甲时接回的可能是甲的默认会话而非甲上次打开的那条"这个体验缺口需要动会话模型才能消。
+
+### M2-b5 角色关联面板（ModuleRelationsPanel）与 `?from=` 回程补齐
+
+§3.3 计划的 `ModuleRelationsPanel.vue` 落地。选择"角色"作为承载对象，因为它是这条 IA 里唯一的枢纽：世界书、文档、创作模式、模型、版本、群聊六条关系都以它为主语。
+
+| 文件 | 实际改动 |
+|---|---|
+| `src/core/relations.ts`（新增） | `useCharacterRelations(characterId)` ⇒ 六行固定顺序的判定。**每行只读真实数据**：世界书用 `collectLorebooksForCharacter()`（与 prompt 构建同一个函数，因此"面板说的"与"注入用的"不可能分叉）且条目只数 `enabled`；文档用 `getDocumentsForScope('character', id)`（全局 + 本角色，不含他人角色）；创作模式区分"角色绑定"与"跟随全局 `settings.creationPreset`"；模型区分"角色级 Profile"与"全局激活"与"未配置"三种说法；群聊按 `members[].characterId` 反查 |
+| 同上 · 硬约束 | **判断"是否已跟踪"不得建仓**：只读 `version.repositories`，绝不调 `selectCharacter()`（它会 `ensureRepository` + `commitTick` + 落盘整块快照）。测试里用"读之前 `repositories` 长度为 0、之后为 1"把这个约束钉死 |
+| `src/components/layout/ModuleRelationsPanel.vue`（新增） | 挂在角色编辑页世界书绑定段之后（`CharacterEditorView.vue:1152` 后），`linked=false` 的行加 `.is-plain` 走次要文字色 —— "没有关联"是事实陈述，不是错误提示。每行一个跳转，带 `data-rel-id` / `data-rel-jump="rel-*"` |
+| `src/App.vue` + `src/styles/app-global.css` | **回程契约补全**：`?from=` 此前只有设置页兑现（它有自己的面板头按钮），世界书 / 数据银行 / 版本 / 群聊这些目标把用户带过去就没有回头路了。现在全局浮一枚"返回来源页"（`route.name === 'settings'` 时不渲染，避免同一屏两枚），M2-b2 的痕迹链接与 M2-b5 的六行同时受益 |
+| `src/i18n/locales/{zh,en}.ts` | 各 +23 键（`rel.*`），双语同序；`MessageKey` 由 zh 派生，en 缺键会直接编译失败 |
+| 测试 | `tests/core/relations.test.ts` 9 例（含裸角色的"老实说没有"、世界书 2 启用 + 1 停用只计 2、文档计数不含他人角色、三种模型说法、版本只读、群聊带 `preSelectGroupId`）；`tests/components/module-relations-panel.test.ts` 4 例（六行、`.is-plain`、跳转带 `from`、群聊先 `selectGroup` 再跳、查不到角色不渲染）；`e2e/ux-relations-panel.spec.ts` 浏览器级 |
+| 顺手修（非本批次引入） | `ContextPanel.vue` 的 `.ctx-preset-select` 是 12px 的 `select` 且移动断点内无 ≥16px 覆盖 ⇒ 补 `@media (max-width: 640px)` 覆盖，`check:i7-control-font-size` 未覆盖项 1 → 0（iOS 聚焦放大整页是真问题，不只是门禁数字） |
+
+**两处由门禁逼出来的返工（都是本文档 §四 预言过的成本）**
+| 返工 | 触发点 | 处置 |
+|---|---|---|
+| 面板标题 `<h3>` → `<p class="relations-title">` | `tests/accessibility/components-axe.test.ts` 的 `heading-order` 在"CharacterEditorView（编辑模式）"用例上报红（该用例在 HEAD 是绿的，本批次把它改红了） | 编辑页已有自己的标题层级，面板用 `<section :aria-label>` 提供无障碍名、`<p>` 提供视觉标题；改后 24 例全绿 |
+| 文本断言选择器 `[data-rel-jump]` → `[data-rel-id]` | 首版 e2e 失败：`Expected substring: "未配置任何 API 配置"  Received string: "去配置"` —— `data-rel-jump` 挂在**行内按钮**上，`.toContainText` 只拿到按钮文字 | 给 `<li>` 增加 `data-rel-id="row.id"`：行级断言用 `data-rel-id`，点击用 `data-rel-jump`，两个关注点分开 |
+
+**验证证据（M2-b5 最终状态，全量重跑，与代码同版本）**
+| 门禁 | 结果 |
+|---|---|
+| `npm run typecheck` / `npm run lint` | 退出码均 **0** |
+| `i18n:check:strict` | 通过，`src` **195** 个文件无硬编码中文（+2 为本批次新文件） |
+| `check:css-conventions` | **5/5** 通过，且 `i7-control-font-size` 未覆盖项由 1 → **0** |
+| `a11y:contrast` | 通过，扫描 **121** 处（基线 131）；axe 单测 24 例全绿 |
+| `npm run test:coverage` | 退出码 **0**，**3650 passed / 3 skipped**，覆盖率 **79.12 / 73.84 / 81.27 / 80.97**（阈值 78/73/78/78 未放松；较 M2-b4 的 79.06/73.73/81.21/80.93 略升） |
+| 全量 E2E（msedge + webkit + mobile-functional + mobile） | **63 passed，0 failed**（4.5 分钟），含新增 `ux-relations-panel.spec.ts` |
+
+**尚未铺开的面板宿主**：版本页、市场详情页、图片生成页与随机事件页仍复用同一 `core/relations.ts` 之前的状态（它们的主语不是"角色"，需要各自的判定行）。其中图片生成的两难（E22：两处配置互不读取 + 刷新丢 key）不是"看不见关系"而是"关系真的没接"，属功能开发，排 §七 #8 邻近项。
+
 

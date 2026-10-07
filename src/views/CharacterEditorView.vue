@@ -24,6 +24,7 @@ import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
+import ModuleRelationsPanel from '@/components/layout/ModuleRelationsPanel.vue';
 import type { UICharacter } from '@/types';
 import type { CharacterAttributes, CharacterAttribute } from '@/core/character-card';
 import { t } from '@/i18n';
@@ -1150,6 +1151,9 @@ function handleExport() {
             {{ t('charEdit.wbAllBound') }}
           </p>
         </fieldset>
+
+        <!-- L 层：角色关联（只读 core/relations.ts，编辑模式下才有确定的角色身份） -->
+        <ModuleRelationsPanel v-if="isEditMode && props.id" :character-id="props.id" />
 
         <!-- 表单底部按钮（移动端使用） -->
         <div class="form-footer">

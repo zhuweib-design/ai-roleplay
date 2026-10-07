@@ -157,3 +157,46 @@
     padding-bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* L 层深链的回头路：任何带 ?from= 落地的页面都给一枚（设置页用自己的那颗）。
+   浮在右下角，移动端抬高以避开底部导航。 */
+.source-return {
+  position: fixed;
+  right: 14px;
+  bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 14px);
+  z-index: var(--z-bottom-nav, 40);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--secondary);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@media (min-width: 641px) {
+  .source-return {
+    bottom: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .source-return {
+    font-size: 16px;
+  }
+}
+
+@media (hover: hover) {
+  .source-return:hover {
+    background: var(--secondary);
+    color: var(--primary-foreground, var(--background));
+  }
+}
+
+.source-return:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
+}

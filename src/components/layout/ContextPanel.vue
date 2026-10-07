@@ -1123,6 +1123,13 @@ function onCtxTouchEnd(e: TouchEvent) {
   font-size: 12px;
 }
 
+@media (max-width: 640px) {
+  /* 控件字号兜底：<16px 的 select 在 iOS 聚焦时会放大整页 */
+  .ctx-preset-select {
+    font-size: 16px;
+  }
+}
+
 .ctx-reset-btn {
   display: flex;
   align-items: center;

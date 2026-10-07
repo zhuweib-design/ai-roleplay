@@ -20,6 +20,8 @@ import Toast from '@/components/common/Toast.vue';
 import { useActiveToast, dismissToast } from '@/utils/toast-service';
 import NavRail from '@/components/layout/NavRail.vue';
 import BottomNav from '@/components/mobile/BottomNav.vue';
+import Icon from '@/components/common/Icon.vue';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import { isDetailRoute } from '@/core/mobile-nav';
 import MasterPasswordModal from '@/components/common/MasterPasswordModal.vue';
 import type { MasterPasswordMode } from '@/components/common/MasterPasswordModal.vue';
@@ -48,6 +50,11 @@ const route = useRoute();
 const showBottomNav = computed(
   () => isMobile.value && !isDetailRoute(route.name as string | undefined)
 );
+
+// L 层深链的回程。`?from=` 契约此前只有设置页兑现（它自己有一枚位置更贴合的面板头按钮），
+// 世界书 / 数据银行 / 版本 / 群聊这些目标把用户带过去后给不出回头路。
+const { fromPath, backFromQuery } = useReadinessJump();
+const showSourceReturn = computed(() => !!fromPath.value && route.name !== 'settings');
 
 // 全局 Toast 队列（S1）：所有面板经 toast-service 触发，容器只在 App.vue 挂载一次
 const activeToast = useActiveToast();
@@ -363,6 +370,19 @@ watch(activeProfile, (profile) => {
     </main>
     <!-- 移动端底部导航（≤640px 显示,主 Tab 页；断点口径以 src/core/viewport.ts 为唯一来源） -->
     <BottomNav v-if="showBottomNav" class="app-bottom-nav" />
+
+    <!-- L 层深链的统一回头路：带 ?from= 进来就能一键回去（设置页用自己的那枚） -->
+    <button
+      v-if="showSourceReturn"
+      type="button"
+      class="source-return"
+      data-rel-jump="source-return"
+      :aria-label="t('settings.backFrom')"
+      @click="backFromQuery"
+    >
+      <Icon name="arrow-left" :size="14" aria-hidden="true" />
+      <span>{{ t('settings.backFrom') }}</span>
+    </button>
 
     <!-- 全局 Toast 显示容器（第三轮优化项 8 S1：队列逐条显示，见 src/utils/toast-service.ts） -->
     <Toast
