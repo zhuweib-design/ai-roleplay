@@ -18,6 +18,10 @@
 
 ## 未发布
 
+### 文档
+- 新增 `docs/design/UX_IA_GUIDED_FLOW_DESIGN_2026-10-07.md`（交互流程与信息架构优化设计，分支 `feat/ux-ia-guided-flow`）：审查 17 条路由 / 16 视图 / 7 设置面板文件 / 4 导航面，把模块间关系登记为 **25 条依赖边（E01–E25）**并逐条分类——仅 1 条"可见且可一跳"、11 条不可见、6 条可见但不可跳、4 条有 UI 无读者、3 条功能不存在；给出 N 导航模型 / L 关联层 / G 引导层 / V 视觉降噪的四层方案、M1–M4 里程碑与 P/R/W/B 分类回滚，七节齐备（现状与问题 / 修改原因 / 方案 / 预期效果 / 具体修改内容 / 用户使用方式 / 后续持续优化方向）。
+- 该设计文档经 **五轮对抗自我评审** 收敛（引用核查 249 + 96 条，累计纠正 33 + 16 + 7 处，含 `dual-channel-runtime` 的 staticGate 隐藏耦合、`tokenBudget` 恒为 0 的假显示、`type-adapters` 与门禁脚本的路径行号错配）；§八 逐轮记录问题、判定与处置，并保留两条被驳回的评审意见。审查中纠正了 `REAL_DEVICE_TEST_2026-10-03.md` 的"随机事件无消费者"误判（实际由 `chat-generation.ts` 消费并下轮注入）。
+
 ### 新增
 - 全局 Toast 提示服务（`src/utils/toast-service.ts`），为拆分后的设置分区子组件提供跨组件提示能力。
 - 设置页 5 个分区子组件：`SettingsAboutPanel` / `SettingsAppearancePanel` / `SettingsDataPanel` / `SettingsExtensionPanel` / `SettingsSecurityPanel`。
