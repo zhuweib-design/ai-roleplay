@@ -24,6 +24,7 @@ import { translateText, TranslationError } from '@services/translator';
 import { t } from '@/i18n';
 import { showToast } from '@/utils/toast-service';
 import { useViewport } from '@/core/viewport';
+import ContextReadinessBar from '@/components/layout/ContextReadinessBar.vue';
 import {
   getMessageWindow,
   searchMessages,
@@ -807,6 +808,9 @@ function startWithExample(text: string) {
         </button>
       </div>
     </header>
+
+    <!-- L 层：依赖就绪状态一眼可见，未就绪时给出原因与一步跳转（取代失败后才提示） -->
+    <ContextReadinessBar />
 
     <!-- 0.5.0：全文搜索栏在顶栏下方展开，结果跨越完整历史消息。 -->
     <div v-if="searchOpen" class="chat-search-bar" role="search">

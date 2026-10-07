@@ -28,6 +28,19 @@
 - 群聊在移动端不再丢底栏：`App.vue` 的 `showBottomNav` 从 `isMainTab` 改为读取 `isDetailRoute`——后者此前**零消费者**，注释描述的"二级页隐藏底栏"并未生效；`/group` 也从 `DETAIL_ROUTES` 移出。聚合页在桌面端可达、按组分节、真正渲染卡片描述并补页头返回；聚合页新增群聊入口、移除个人中心入口（路由与页面暂留，内容并入设置→关于随 M2 的 `?cat=` 深链一起做）。
 - `src/i18n/locales/{zh,en}.ts` 各新增 19 键（`nav.group*` × 4、`nav.more`、`navDesc.*` × 14）；删除随之失效的 `.nav-item.settings` 底部对齐规则。
 
+### 新增（UX/IA 实施 M2-a：关联可见化与深链契约）
+- `src/core/readiness.ts`：就绪状态**唯一判定源**。模型 / 世界书 / 文档检索 / 语音 / 状态指令五个芯片，状态四值 `ready/attention/locked/n-a` + 原因键 + 跳转目标；锁定态读 `hasMasterPassword && !isUnlocked` 与 `!!activeProfile` 两个独立事实，因此不再把"锁住了"说成"没配过"（D-10 成因）。
+- `src/composables/useReadinessJump.ts`：`?cat=&from=` 深链契约，`from` 受站内前缀白名单约束（防开放重定向），返回走 `router.replace` 避免历史堆叠。
+- `src/components/layout/ContextReadinessBar.vue`（挂 `/chat`、`/group` 页头）与 `src/components/common/PrereqNotice.vue`（挂 `/databank`）：依赖状态与生效前提首次出现在界面上，入口带 `data-rel-jump` 标记。
+- `src/core/dual-channel-runtime.ts` 新增 `vectorRagEnabled` 响应式镜像（该开关此前只在面板挂载时读一次，界面会显示陈旧状态）。
+- 测试：`tests/core/readiness.test.ts`（12 例）、`tests/components/readiness-surfaces.test.ts`（5 例）、`e2e/ux-readiness.spec.ts`（4 例，真实 Edge 通过）。
+
+### 变更（UX/IA M2-a 续）
+- `src/views/SettingsView.vue` 开始读取 `?cat=`（此前恒落「外观」，所有"去设置"类按钮都会把用户送错地方），并在带 `from` 时提供"返回来源页"。
+- 世界书页"已绑定角色"从只读列表改为可点入口（跳角色编辑并带来源），空态补"去角色列表绑定"按钮，兑现原先那句没有链接的指引文案（`wb.boundCharsEmpty`）。
+- 群聊页头显式声明能力差异（不加载世界书与文档检索、角色级模型参数不生效），把"静默不一致"改成"说清楚的缺失"。
+- `i18n` 双语各 +31 键（`readiness.*` / `prereq.*` / `wb.boundCharsGo*` / `group.capabilityNote` / `settings.backFrom`）。
+
 ### 修复（存量门禁红，非本批次引入）
 - `e2e/long-history-scroll.spec.ts` 删除声明后未使用的 `DB_NAME`/`DB_VERSION`（eslint 2 error）；`CharacterList.vue:231`、`SettingsView.vue:240` 的 2 条 vue 格式 warning 由 `eslint --fix` 消除。
 - `src/views/DataBankView.vue:1065` 的 `.search-empty-clear:hover` 包进 `@media (hover: hover) and (pointer: fine)`，恢复 `check:hover` / `check:css-conventions` 绿灯。

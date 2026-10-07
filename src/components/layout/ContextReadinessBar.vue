@@ -1,0 +1,145 @@
+<script setup lang="ts">
+/**
+ * 就绪状态条（L 层，设计文档 §3.3）
+ *
+ * 页头一眼看清"这轮对话依赖的四件事各自到什么程度"，未就绪时给出原因 + 一步跳转，
+ * 取代此前"只有发失败才知道缺什么"（ChatMain.vue:746 的被动徽标）。
+ * 状态一律来自 core/readiness.ts，本组件不做任何判断。
+ */
+import { computed } from 'vue';
+import { t, type MessageKey } from '@/i18n';
+import Icon from '@/components/common/Icon.vue';
+import { useReadinessChips, type ReadinessChip, type ReadinessState } from '@/core/readiness';
+import { useReadinessJump } from '@/composables/useReadinessJump';
+
+defineProps<{ compact?: boolean }>();
+
+const chips = useReadinessChips();
+const { pushWithReturn } = useReadinessJump();
+
+const needsAttention = computed(() => chips.value.filter((c) => c.state !== 'ready' && c.state !== 'n-a').length);
+
+function stateKey(state: ReadinessState): MessageKey {
+  switch (state) {
+    case 'ready':
+      return 'readiness.stateReady';
+    case 'attention':
+      return 'readiness.stateAttention';
+    case 'locked':
+      return 'readiness.stateLocked';
+    default:
+      return 'readiness.stateUnused';
+  }
+}
+
+function onChip(chip: ReadinessChip): void {
+  if (chip.jump) pushWithReturn(chip.jump);
+}
+</script>
+
+<template>
+  <div
+    class="readiness-bar"
+    :class="{ compact }"
+    role="group"
+    :aria-label="t('readiness.aria')"
+  >
+    <span class="readiness-summary">
+      <Icon name="info" :size="14" aria-hidden="true" />
+      <span>{{ needsAttention === 0 ? t('readiness.allSet') : t('readiness.needsAttention', { count: needsAttention }) }}</span>
+    </span>
+
+    <button
+      v-for="chip in chips"
+      :key="chip.id"
+      type="button"
+      class="readiness-chip"
+      :class="`is-${chip.state}`"
+      :data-rel-jump="chip.dataRelJump"
+      :title="chip.reasonKey ? t(chip.reasonKey) : t('readiness.stateReadyHint')"
+      @click="onChip(chip)"
+    >
+      <span class="chip-dot" aria-hidden="true" />
+      <span class="chip-label">{{ t(chip.labelKey) }}</span>
+      <span class="chip-state">{{ t(stateKey(chip.state)) }}</span>
+    </button>
+  </div>
+</template>
+
+<style scoped>
+.readiness-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.readiness-bar.compact {
+  padding: 4px 8px;
+  gap: 4px;
+}
+
+.readiness-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 4px;
+}
+
+.readiness-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .readiness-chip:hover {
+    border-color: var(--secondary);
+    color: var(--foreground);
+  }
+}
+
+.readiness-chip:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
+}
+
+.chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+}
+
+.is-ready .chip-dot {
+  background: var(--success, var(--secondary));
+}
+
+.is-attention {
+  color: var(--foreground);
+}
+
+.is-attention .chip-dot {
+  background: var(--warning, var(--secondary));
+}
+
+.is-locked .chip-dot {
+  background: var(--secondary);
+}
+
+.chip-state {
+  font-size: 13px;
+}
+</style>

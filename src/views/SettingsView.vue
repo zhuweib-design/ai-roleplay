@@ -3,7 +3,9 @@ import Icon from '@/components/common/Icon.vue';
 import SettingsModelPanel from '@/components/settings/SettingsModelPanel.vue';
 import VectorModelPanel from '@/components/settings/VectorModelPanel.vue';
 import type { IconName } from '@/components/common/icons';
-import { ref, computed, nextTick } from 'vue';;;;
+import { ref, computed, nextTick, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import { showToast } from '@/utils/toast-service';
 import { t } from '@/i18n';;
 import { useSettingsStore } from '@/stores/settings';
@@ -22,6 +24,22 @@ interface SettingsCategory {
 type SettingsCategoryId = 'appearance' | 'model' | 'extension' | 'data' | 'security' | 'about';
 
 const activeCategory = ref<SettingsCategoryId>('appearance');
+
+// L 层深链：其他页面用 /settings?cat=<id>&from=<原页面> 跳进来时，
+// 必须落在用户被指引的那一类（此前恒落"外观"，导致"去设置"按钮把用户送到无关页）。
+const route = useRoute();
+const { fromPath, backFromQuery } = useReadinessJump();
+const CATEGORY_IDS: readonly string[] = ['appearance', 'model', 'extension', 'data', 'security', 'about'];
+
+function applyCategoryFromQuery(): void {
+  const raw = route.query.cat;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value === 'string' && CATEGORY_IDS.includes(value)) {
+    activeCategory.value = value as SettingsCategoryId;
+  }
+}
+
+watch(() => route.query.cat, applyCategoryFromQuery, { immediate: true });
 
 const activeCategoryDesc = computed(
   () => settingsCategories.value.find((c) => c.id === activeCategory.value)?.description ?? ''
@@ -155,6 +173,17 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
         <span>{{ t('settings.title') }}</span>
       </h1>
       <p class="settings-subtitle">{{ activeCategoryDesc }}</p>
+      <!-- 深链进来时给一条回头路（浏览器的返回键同样可用） -->
+      <button
+        v-if="fromPath"
+        type="button"
+        class="settings-back-from"
+        data-rel-jump="settings-return"
+        @click="backFromQuery"
+      >
+        <Icon name="arrow-left" :size="14" aria-hidden="true" />
+        <span>{{ t('settings.backFrom') }}</span>
+      </button>
     </header>
 
     <!-- 外观：语言 / 主题 / 字号 / 界面自定义 -->
@@ -682,5 +711,30 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
   .profile-input {
     font-size: 16px;
   }
+}
+.settings-back-from {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .settings-back-from:hover {
+    color: var(--foreground);
+    border-color: var(--secondary);
+  }
+}
+
+.settings-back-from:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
 }
 </style>

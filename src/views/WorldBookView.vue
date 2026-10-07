@@ -17,6 +17,7 @@
  */
 import { ref, computed, watch, useTemplateRef, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useLorebookStore } from '@/stores/lorebook';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
@@ -46,6 +47,16 @@ const store = useLorebookStore();
 const settingsStore = useSettingsStore();
 const characterStore = useCharacterStore();
 const router = useRouter();
+const { pushWithReturn } = useReadinessJump();
+
+/** 反向关系跳转：世界书 → 角色编辑（带来源，便于返回） */
+function openBoundCharacter(id: string): void {
+  pushWithReturn({ name: 'character-edit', params: { id } });
+}
+
+function openCharacterList(): void {
+  pushWithReturn({ name: 'character-list' });
+}
 
 // ── 需求7：世界书 → 角色 反向关系展示 ──
 
@@ -1002,17 +1013,36 @@ function strategyLabel(s: LorebookStrategy): string {
                 class="bound-char-item"
                 role="listitem"
               >
-                <Avatar :character="char" :size="28" />
-                <span class="bound-char-name">{{ char.name }}</span>
+                <!-- L 层：反向关系此前只是"看得见"，现在一次点击就到得了编辑页 -->
+                <button
+                  type="button"
+                  class="bound-char-link"
+                  :data-rel-jump="`wb-bound-${char.id}`"
+                  :aria-label="t('wb.boundCharsGo', { name: char.name })"
+                  @click="openBoundCharacter(char.id)"
+                >
+                  <Avatar :character="char" :size="28" />
+                  <span class="bound-char-name">{{ char.name }}</span>
+                </button>
                 <span
                   v-if="char.tags.length"
                   class="bound-char-tags"
                 >{{ char.tags.slice(0, 2).join(' · ') }}</span>
               </li>
             </ul>
-            <p v-else class="bound-chars-empty">
-              {{ t('wb.boundCharsEmpty') }}
-            </p>
+            <div v-else class="bound-chars-empty-row">
+              <p class="bound-chars-empty">
+                {{ t('wb.boundCharsEmpty') }}
+              </p>
+              <button
+                type="button"
+                class="bound-chars-go"
+                data-rel-jump="wb-bound-empty"
+                @click="openCharacterList"
+              >
+                {{ t('wb.boundCharsGoList') }}
+              </button>
+            </div>
           </section>
 
           <!-- F06.7 整体世界描述 -->
@@ -2822,5 +2852,50 @@ function strategyLabel(s: LorebookStrategy): string {
   .form-textarea {
     font-size: 16px;
   }
+}
+.bound-char-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .bound-char-link:hover {
+    border-color: var(--secondary);
+  }
+}
+
+.bound-char-link:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
+}
+
+.bound-chars-empty-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bound-chars-go {
+  padding: 3px 10px;
+  border: 1px solid var(--secondary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.bound-chars-go:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
 }
 </style>

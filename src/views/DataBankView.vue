@@ -21,6 +21,8 @@ import { useDataBankStore } from '@/stores/data-bank';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
 import Modal from '@/components/common/Modal.vue';
+import PrereqNotice from '@/components/common/PrereqNotice.vue';
+import { useDataBankPrereqs } from '@/core/readiness';
 import Toast from '@/components/common/Toast.vue';
 import type { DataBankScope } from '@/core/data-bank';
 import { MAX_FILE_SIZE } from '@/core/data-bank';
@@ -164,6 +166,7 @@ function getCharacterName(id?: string): string {
   const char = characterStore.characters.find((c) => c.id === id);
   return char?.name ?? id;
 }
+const prereqRows = useDataBankPrereqs();
 </script>
 
 <template>
@@ -196,6 +199,9 @@ function getCharacterName(id?: string): string {
         </button>
       </div>
     </header>
+
+    <!-- L 层：把"上传成功却没被检索"的两条隐藏前提显式化（E05/E06） -->
+    <PrereqNotice :rows="prereqRows" />
 
     <!-- 搜索框 -->
     <div class="search-bar">

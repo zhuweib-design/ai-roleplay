@@ -757,3 +757,52 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 | 跨模块语义跳转 | 9 | 9（**未变**，理由见偏差 3） | M2 → ≥26 |
 | 空态带 CTA / `.empty-state` 副本 | 5 / 12、≥10 | 未动 | M3 |
 | 设置类密度 | 「模型」60（v-for 展开 66） | 未动 | M4 |
+
+### M2-a 关联层第一批：就绪判定唯一源 + 深链契约 + 三处关联落地
+
+**落地范围**：§3.3 的 `core/readiness.ts`、`ContextReadinessBar`、`PrereqNotice`、世界书反向入口；§3.6.3 的深链与返回契约（提前于 M2 原计划，因为就绪条的"一步跳转"必须有承载物）。
+
+| 文件 | 实际改动 |
+|---|---|
+| `src/core/readiness.ts`（新增） | `useReadinessChips()` 输出模型/世界书/文档检索/语音/状态指令五个芯片，状态四值 `ready/attention/locked/n-a` + 原因键 + 跳转目标；`modelReadiness()` 抽成纯函数以便脱离 WebCrypto 单测锁定态；`useDataBankPrereqs()` 输出数据银行三行前提 |
+| `src/composables/useReadinessJump.ts`（新增） | `pushWithReturn()` 写 `?cat=&from=`，`from` 受**站内前缀白名单**约束（拒绝 `//` 与外部路径，防开放重定向）；`backFromQuery()` 用 `router.replace` 避免历史堆叠 |
+| `src/core/dual-channel-runtime.ts` | 新增 `vectorRagEnabled` ref 作为 localStorage 开关的响应式镜像，`setVectorRagEnabled()` 同步它（原实现只在挂载时读一次，界面会显示陈旧状态） |
+| `src/components/layout/ContextReadinessBar.vue`（新增） | 挂载于 `ChatMain.vue` 与 `GroupChatView.vue` 页头；每芯片带 `data-rel-jump`、`title` 原因、`:focus-visible` 焦点样式；hover 规则包在 `@media (hover: hover)` |
+| `src/components/common/PrereqNotice.vue`（新增） | 挂载于 `/databank` 页头下方，三行前提 + 未完成行的"去完成"跳转 |
+| `src/views/SettingsView.vue` | 开始读取 `?cat=`（此前无 `useRoute`，恒落"外观"）；`from` 存在时页头出现"返回来源页" |
+| `src/views/WorldBookView.vue` | "已绑定角色"从只读 `<li>` 改为按钮（跳角色编辑并带 `from`）；空态补"去角色列表绑定"按钮，兑现 `wb.boundCharsEmpty`（`zh.ts:1856`）那句"请在角色编辑页的世界书绑定区域添加" |
+| `src/views/GroupChatView.vue` | 页头加能力差异声明（`group.capabilityNote`）：群聊不加载世界书与文档检索、角色级模型参数不生效 —— E18/E08 走"显式声明不存在" |
+| `i18n locales/{zh,en}.ts` | 各 +31 键（`readiness.*` / `prereq.*` / `wb.boundCharsGo*` / `group.capabilityNote` / `settings.backFrom`） |
+| 测试 | 新增 `tests/core/readiness.test.ts`（12 例）、`tests/components/readiness-surfaces.test.ts`（5 例）、`e2e/ux-readiness.spec.ts`（4 例，真实 Edge 通过） |
+
+**过程中的两个真实发现（写进文档，避免下次再踩）**
+
+1. **`checkSendBlock()` 单独不足以判锁定态**。它第一步是 `if (chatManager) return null`，而锁定态下 `activeProfile` 同样返回 null（`App.vue:170-178`），于是"锁住了"与"从没配过"被折叠成同一个说法——这正是 D-10 误报的成因。`readiness` 因此读两个独立事实：`settings.hasMasterPassword && !settings.isUnlocked`（锁态）与 `!!settings.activeProfile`（存在性），再叠加 `checkSendBlock()` 兜住"已解锁但管理器未建"的残余情况。
+2. **给 setup store 上不存在的字段赋值不会报错，只会静默无效**。第一版测试写 `settings.masterPasswordVerifier = 'x'` 与 `settings.masterPassword = ''`（这两个 ref 不在 store 返回面上，暴露的是 `hasMasterPassword` / `isUnlocked` / `setMasterPassword` / `lock`），结果芯片被判 `ready`，测试以"假通过"的方式失败。改走公开 API（`await setMasterPassword()` + `lock()`）后锁定态才被真实验证。
+
+**验证证据（同版本代码，本机实跑）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run typecheck` | 退出码 0 |
+| `tests/core/readiness.test.ts` | 12 passed（含真实主密码锁定用例） |
+| `tests/components/readiness-surfaces.test.ts` | 5 passed（芯片数、跳转参数、ready 态不跳转、锁定文案不复用"未配置"、两表面判定源一致） |
+| `e2e/ux-readiness.spec.ts`（msedge 真实浏览器） | 4 passed：`/chat` 就绪条 5 芯片且模型为 `is-attention` → 点击落 `/settings?cat=model&from=/chat` 且侧栏 active 为「模型」→"返回来源页"回到 `/chat`；`/databank` 三行前提并可跳设置；`/group` 能力声明 + 就绪条；`/worldbook` 绑定角色入口可点并带 `from` |
+| 全量门禁（M2-a 合入前复跑，同一份工作树） | `npm run lint` 0；`npm run i18n:check:strict` 0；`npm run check:css-conventions` **5/5 通过**；`npm run a11y:contrast` 0（含 axe 审计集）；`npm run test:coverage` 0，**All files 78.78 / 73.49 / 80.86 / 80.7**（阈值 78/73/78/78 均达标且未放松）；`E2E_PORT=5178 npx playwright test --project=msedge --project=mobile-msedge` **37 passed**（含本批新增 4 条 + M1 的 6 条）；WebKit project 本机无浏览器未跑，由 CI 覆盖 |
+
+**M2-a 未做、留给 M2-b**：`promptTrace` 与真实 token 用量（涉及 `services/chat-manager.ts` 载荷裁剪 + `types/index.ts` 可选字段 + `services/type-adapters.ts` 两处字段映射）；撤除 E12/E13/E16/E25 四处"有 UI 无读者"；`ModuleRelationsPanel` 在角色卡/编辑/版本/图片/市场的铺开；图片生成配置持久化与 `sub=image-video` 来源说明。
+
+**M2-a 后的逐行复评（只列状态发生变化的边，其余保持 §1.4 原判）**
+
+| 边 | 前 | 现在 | 承载物 |
+|---|---|---|---|
+| E01 角色 → 世界书 | B（可见不可跳） | **A** | 就绪条世界书芯片 + 世界书"已绑定角色"可点回编辑（e2e 断言 URL 带 `from`） |
+| E04 文档 → 关键词检索 | B | **A** | `/databank` 前提行 + 文档芯片 |
+| E05 文档 → 向量开关 | C（不可见） | **A** | `PrereqNotice` 第三行"去开启"→ `/settings?cat=model` |
+| E06 文档 → 需绑世界书 | C（最隐蔽） | **A** | `PrereqNotice` 第二行 + 文档芯片原因键 `reasonStaticNeedsBinding` |
+| E07 模型配置优先级 | B | **A**（状态与跳转可见，优先级明细仍在 `ContextPanel`） | 模型芯片 → `/settings?cat=model`，带返回 |
+| E08 群聊忽略角色级参数 | C | **显式声明** | `group.capabilityNote`（无可跳目标，故不算 A） |
+| E09 语音 → 设置"扩展" | C | **A** | 语音芯片跳转（`?cat=extension`） |
+| E18 群聊能力集缺失 | E | **显式声明** | 同上 |
+| E02/E03/E22/E24 | C | **未变** | 留给 M2-b（trace、ContextPanel 全局书、图片来源说明、真实 token 用量） |
+| E12/E13/E16/E25 | D | **未变** | 撤 UI 属 M2-b，撤除即改变可见控件数，需与 §1.8 复评同批提交 |

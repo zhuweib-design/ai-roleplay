@@ -28,6 +28,7 @@ import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
+import ContextReadinessBar from '@/components/layout/ContextReadinessBar.vue';
 import Toast from '@/components/common/Toast.vue';
 import ThinkingBlock from '@/components/chat/ThinkingBlock.vue';
 import StatusHud from '@/components/chat/StatusHud.vue';
@@ -881,6 +882,13 @@ function isSystem(msg: { role: string }): boolean {
         </button>
       </div>
     </header>
+
+    <!--
+      群聊与单聊的能力集不同：不加载世界书、不做文档检索、角色级模型参数不生效。
+      与其让用户假设一致，不如在页头把差异说出来（E18/E08 的"显式声明不存在"）。
+    -->
+    <ContextReadinessBar />
+    <p class="group-capability-note" role="note">{{ t('group.capabilityNote') }}</p>
 
     <!-- 主体：左群聊列表 + 右群聊消息区 -->
     <div class="group-body">
@@ -2620,5 +2628,13 @@ type="button"
   .form-textarea {
     font-size: 16px;
   }
+}
+.group-capability-note {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
 }
 </style>
