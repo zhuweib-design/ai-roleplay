@@ -118,6 +118,16 @@
 - D-9 备份通道——**已补服务层集成测试**：`tests/services/backup-random-events.test.ts`（exportAll 携带 → validateBackup 通过 → importBackup 透传 → applyBackupData 回写；旧备份无 randomEvents 字段向后兼容），3 项通过；
 - ③store 死状态扫描（grep 脚本进 CI）——未实施（工具类任务，另行排期）。
 
+### 推送与合并状态（2026-10-03 收尾时点）
+
+- 本地 `master` 已快进合并 `fix/real-device-2026-10-03` 全部提交（= `373f719`，含第三轮 + 实机修复轮），领先 `origin/master`（`2b661a2`）**11 个提交**；
+- **推送被网络阻断**：本环境当前无法连接 github.com:443（3 次重试失败）。网络恢复后执行：
+  ```bash
+  git push origin master          # 推送主分支
+  git push origin master:main     # D-1 方案 A：创建 main 分支（含 market/index.json）
+  ```
+  然后在 GitHub：Settings → Branches 默认分支改 `main`；Settings → General → Visibility 改 Public。
+
 ## 其余各项
 
 ### D-9（P2）随机事件模板/场景/结果完全不持久化
