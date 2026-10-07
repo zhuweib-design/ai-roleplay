@@ -291,6 +291,8 @@ export function uiMsgToChatMsg(ui: UIMessage): ChatMessage {
       : {}),
     // P1：状态快照随消息持久化（与 thinking 同款；无状态时不写 → 旧数据零迁移）
     ...(ui.status ? { status: ui.status } : {}),
+    // L 层：世界书注入痕迹随消息持久化（同款可选字段；无条目时不写）
+    ...(ui.promptTrace && ui.promptTrace.length > 0 ? { promptTrace: ui.promptTrace } : {}),
   };
 }
 
@@ -321,6 +323,8 @@ export function chatMsgToUiMsg(msg: ChatMessage): UIMessage | null {
       : {}),
     // P1：状态快照回读（旧数据无此字段 → undefined → 不渲染状态栏）
     ...(msg.status ? { status: msg.status } : {}),
+    // L 层：世界书注入痕迹回读（旧数据无此字段 → undefined → 不渲染回显）
+    ...(msg.promptTrace && msg.promptTrace.length > 0 ? { promptTrace: msg.promptTrace } : {}),
   };
 }
 

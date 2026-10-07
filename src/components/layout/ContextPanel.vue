@@ -80,44 +80,16 @@ const TOTAL_BUDGET = computed(() => {
   return Number.isFinite(max) && max > 0 ? max : 1;
 });
 
-const usedTokens = computed(
-  () =>
-    char.value.tokenBudget.character +
-    char.value.tokenBudget.worldInfo +
-    char.value.tokenBudget.chatHistory
-);
+// E24：用量与上限改用真实数据。
+// 原实现读 char.tokenBudget 的三段拆分（character/worldInfo/chatHistory），但该字段只有初始化写点、
+// 从不重算 ⇒ 进度条恒为 0、"剩余"恒等于初始值，界面在说谎（决策 D-H）。
+const usedTokens = computed(() => chatStore.totalTokenUsage);
 
 const usedPercent = computed(() =>
   Math.min(100, Math.round((usedTokens.value / TOTAL_BUDGET.value) * 100))
 );
 
-// 各分项占比（用于堆叠条）
-const segments = computed(() => {
-  const total = Math.max(1, usedTokens.value);
-  return [
-    {
-      key: 'character',
-      label: t('ctx.character'),
-      value: char.value.tokenBudget.character,
-      percent: (char.value.tokenBudget.character / total) * 100,
-      color: 'var(--tk-cyan-500)',
-    },
-    {
-      key: 'world',
-      label: t('ctx.world'),
-      value: char.value.tokenBudget.worldInfo,
-      percent: (char.value.tokenBudget.worldInfo / total) * 100,
-      color: 'var(--tk-red-500)',
-    },
-    {
-      key: 'history',
-      label: t('ctx.history'),
-      value: char.value.tokenBudget.chatHistory,
-      percent: (char.value.tokenBudget.chatHistory / total) * 100,
-      color: 'var(--tk-yellow-500)',
-    },
-  ];
-});
+const remainingTokens = computed(() => Math.max(0, TOTAL_BUDGET.value - usedTokens.value));
 
 // 生成参数本地编辑 → 写回 store
 function onTemperature(e: Event) {
@@ -505,40 +477,28 @@ function onCtxTouchEnd(e: TouchEvent) {
           <span class="ctx-section-value">{{ usedTokens }} / {{ TOTAL_BUDGET }}</span>
         </header>
         <div
-class="token-bar" role="progressbar"
-          :aria-valuenow="usedTokens" :aria-valuemin="0" :aria-valuemax="TOTAL_BUDGET"
+          class="token-bar"
+          role="progressbar"
+          :aria-valuenow="usedTokens"
+          :aria-valuemin="0"
+          :aria-valuemax="TOTAL_BUDGET"
           :aria-label="t('ctx.tokenUsed', { percent: usedPercent })"
->
-          <div class="token-bar-fill" :style="{ width: `${usedPercent}%` }">
-            <div
-              v-for="seg in segments"
-              :key="seg.key"
-              class="token-segment"
-              :style="{
-                width: `${seg.percent}%`,
-                backgroundColor: seg.color,
-              }"
-              :title="`${seg.label}: ${seg.value}`"
-            />
-          </div>
+        >
+          <div class="token-bar-fill" :style="{ width: `${usedPercent}%` }" />
         </div>
         <ul class="token-legend" :aria-label="t('ctx.tokenLegend')">
-          <li v-for="seg in segments" :key="seg.key">
-            <span class="legend-dot" :style="{ backgroundColor: seg.color }" aria-hidden="true" />
-            <span class="legend-label">{{ seg.label }}</span>
-            <span class="legend-value">{{ seg.value }}</span>
-          </li>
-          <li>
-            <span class="legend-dot legend-remaining" aria-hidden="true" />
-            <span class="legend-label">{{ t('ctx.remaining') }}</span>
-            <span class="legend-value">{{ char.tokenBudget.remaining }}</span>
-          </li>
           <li class="legend-usage">
             <span class="legend-dot legend-usage-dot" aria-hidden="true" />
             <span class="legend-label">{{ t('ctx.totalUsage') }}</span>
             <span class="legend-value">{{ chatStore.totalTokenUsage }} Tokens</span>
           </li>
+          <li>
+            <span class="legend-dot legend-remaining" aria-hidden="true" />
+            <span class="legend-label">{{ t('ctx.remaining') }}</span>
+            <span class="legend-value">{{ remainingTokens }}</span>
+          </li>
         </ul>
+        <p class="ctx-char-desc">{{ t('ctx.tokenHint') }}</p>
       </section>
 
       <!-- 世界书 -->

@@ -65,6 +65,12 @@
 - `e2e/long-history-scroll.spec.ts` 删除声明后未使用的 `DB_NAME`/`DB_VERSION`（eslint 2 error）；`CharacterList.vue:231`、`SettingsView.vue:240` 的 2 条 vue 格式 warning 由 `eslint --fix` 消除。
 - `src/views/DataBankView.vue:1065` 的 `.search-empty-clear:hover` 包进 `@media (hover: hover) and (pointer: fine)`，恢复 `check:hover` / `check:css-conventions` 绿灯。
 
+### 新增（UX/IA 实施 M2-b2：注入痕迹与真实用量）
+- `PromptTraceSummary.vue`：助手气泡下可展开"本轮注入 N 条设定"，列出来源世界书、条目标题与命中关键词，书名可点回世界书页（带来源返回）。此前 `prompt-builder` 已返回 `activatedEntries`，只是从未下传（E02）。
+- 消息新增可选字段 `promptTrace`（`core/lorebook-scanner.ts` 的 `PromptTraceItem` 裁剪视图，**不含条目正文**），随消息持久化并在 `services/type-adapters.ts` 双向映射；与 `thinking` / `status` 同构：空值不写、旧数据读为 `undefined`，零迁移。
+- `services/chat-manager.ts` 的 `onPromptBuilt` 载荷增加 `activated` 字段；发送与重新生成两条链路都会把注入情况写到对应回复上。
+- 上下文面板的 Token 区块改用真实累计值（`onPromptBuilt.tokenCount` 之和）与上限、剩余，并删除原先恒为 0 的三段假预算堆叠条及其不可靠的分项拆分（决策 D-H）。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

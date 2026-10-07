@@ -125,6 +125,9 @@ export default {
   'wb.boundCharsGoList': '去角色列表绑定',
   'group.capabilityNote': '群聊不加载世界书与文档检索，角色级模型参数也不生效；这是当前设计，不是配置问题。',
   'settings.backFrom': '返回来源页',
+  'ctx.tokenHint': '数值来自各轮请求的真实 prompt token 累计；上限可在设置→模型调整。',
+  'trace.summary': '本轮注入 {count} 条设定',
+  'trace.openBook': '打开世界书「{name}」',
   // G 层：任务中心（判据唯一来源 src/core/guided-tasks.ts）
   'nav.guide': '引导',
   'navDesc.guide': '关键任务的分步清单',

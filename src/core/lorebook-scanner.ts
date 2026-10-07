@@ -38,6 +38,31 @@ export interface ActivatedEntry {
 }
 
 /**
+ * 界面可用的"本轮注入了哪几条设定"。
+ *
+ * 故意不带 content：ActivatedEntry 含整条正文（可达 2 万字），既撑大持久化体积，
+ * 也可能把未公开设定原文显示在会话里。只给标识与命中的关键词。
+ */
+export interface PromptTraceItem {
+  entryId: string;
+  bookId: string;
+  bookName: string;
+  title: string;
+  keys: string[];
+}
+
+/** ActivatedEntry[] → 可持久化、可渲染的裁剪视图（无条目时返回空数组） */
+export function toPromptTraceItems(entries: ActivatedEntry[] | undefined): PromptTraceItem[] {
+  return (entries ?? []).map((a) => ({
+    entryId: a.entry.id,
+    bookId: a.lorebookId,
+    bookName: a.lorebookName,
+    title: a.entry.title?.trim() ? a.entry.title : `#${a.entry.id.slice(0, 6)}`,
+    keys: (a.matchedKeys.length ? a.matchedKeys : a.entry.keys).slice(0, 4),
+  }));
+}
+
+/**
  * 将关键词字符串解析为 RegExp 或字符串
  * 支持 /pattern/flags 格式
  */

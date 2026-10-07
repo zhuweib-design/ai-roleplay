@@ -10,6 +10,7 @@ import type {
 import { ApiError } from '@api/types';
 import { withStreamRetry, DEFAULT_RETRY_POLICY, type RetryPolicy } from '@api/llm-retry';
 import { buildPrompt, type PromptContexts, type PromptSettings } from '@core/prompt-builder';
+import { toPromptTraceItems, type PromptTraceItem } from '@core/lorebook-scanner';
 import type { CharacterCard, ChatMessage } from '@core/character-card';
 import { ThinkingSplitter, parseThinkingComplete } from '@core/thinking-parser';
 import {
@@ -177,7 +178,13 @@ export interface ChatManagerCallbacks {
   /** 发生错误（含用户中止） */
   onError?: (error: Error) => void;
   /** prompt 构建完成后触发，可用于 UI 显示 Token 计数与裁剪状态 */
-  onPromptBuilt?: (info: { tokenCount: number; trimmed: boolean; messageCount: number }) => void;
+  onPromptBuilt?: (info: {
+    tokenCount: number;
+    trimmed: boolean;
+    messageCount: number;
+    /** 本轮真正注入的世界书条目（裁剪视图，不含正文） */
+    activated: PromptTraceItem[];
+  }) => void;
   /** E-01：本轮生成完成后情绪状态更新回调（成功时触发，供 UI 展示） */
   onEmotionUpdated?: (label: string, sessionId: string) => void;
   /**
@@ -280,6 +287,7 @@ export class ChatManager {
       tokenCount: built.tokenCount,
       trimmed: built.trimmed,
       messageCount: built.messages.length,
+      activated: toPromptTraceItems(built.activatedEntries),
     });
 
     // E-01/E-02 二期: L0 上下文结构 + L2 输出纪律挂载(默认关闭;fail-open 不影响主链路)

@@ -10,6 +10,7 @@
 import { t } from '@/i18n';
 import type { ReasoningEffort, SamplingParams } from '@api/types';
 import type { CharacterStatus, StatusSchema } from '@core/status-schema';
+import type { PromptTraceItem } from '@core/lorebook-scanner';
 import type { PresetId } from '@core/creation-preset';
 
 /** 单个属性项（键值对，支持数值或文本类型） */
@@ -65,6 +66,12 @@ export interface ChatMessage {
    * 旧数据无此字段 → undefined → 不渲染。仅 assistant 消息有值。
    */
   status?: CharacterStatus;
+  /**
+   * L 层：本轮注入的世界书条目（裁剪视图：标题 + 来源书 + 命中关键词，**不含正文**）。
+   * 与 thinking/status 同构 —— 不参与回传（prompt-builder 只读 content）；
+   * 旧数据无此字段 → undefined → 不渲染，零迁移。
+   */
+  promptTrace?: PromptTraceItem[];
 }
 
 /**

@@ -916,7 +916,6 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 **测试适配**：`tests/stores/data-bank.test.ts` 的两处断言由 `store.chatDocuments` 改为等价的 `store.documents.filter(d => d.scope === 'chat')`，保留对"数据层仍支持 chat 域"的覆盖（**不是删测试**，而是把断言移到仍然真实的那一层）。
 
 **验证证据（M2-b1 最终状态，全量重跑）**
-
 | 门禁 | 结果 |
 |---|---|
 | `npm run typecheck` | 退出码 0 |
@@ -926,3 +925,18 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 | WebKit project | 本机确实无浏览器（`Executable doesn't exist at …\webkit-2336\Playwright.exe`），仍由 CI 覆盖 —— 此项**未在本机验证** |
 
 **口径校正说明**：本文 §1.8 原记"世界书 59 控件"，实测 `d34df56` 基线为 **61**（差异来自并行提交在其间新增的"已绑定角色"等区块）。后续复评一律以同版本 `git show HEAD:<file>` 与当前文件对照计数，避免拿旧快照的数与新代码的数相减。
+
+### M2-b2 命中回显（E02）与真实用量（E24）
+
+| 文件 | 实际改动 |
+|---|---|
+| `src/core/lorebook-scanner.ts` | 新增 `PromptTraceItem` 与 `toPromptTraceItems()`：**裁剪掉 `entry.content`**（`ActivatedEntry` 含整条正文，最长 2 万字），只留 `entryId / bookId / bookName / title / keys(≤4)` |
+| `src/services/chat-manager.ts` | `onPromptBuilt` 载荷从 `{tokenCount, trimmed, messageCount}` 扩为再加 `activated: PromptTraceItem[]`（E02 的"早就算出来却不下传"就此接上） |
+| `src/stores/chat-generation.ts` | 两处 `onPromptBuilt`（发送 `:728`、重新生成 `:1070`）把 `info.activated` 写到本条回复消息上 |
+| `src/types/index.ts`、`src/core/character-card.ts`、`src/services/type-adapters.ts` | 消息新增**可选**字段 `promptTrace`，并在 `uiMsgToChatMsg` / `chatMsgToUiMsg` 双向映射；与 `thinking` / `status` 同构：空值不写盘、旧数据回读 `undefined` ⇒ **零迁移**（`core/schema-contract.ts` 允许可选新增） |
+| `src/components/chat/PromptTraceSummary.vue`（新增）+ `MessageBubble.vue` | 助手气泡下的"本轮注入 N 条设定"折叠条，展开后每条给出书名 + 条目标题 + 命中关键词，书名可点回 `/worldbook`（带 `from`） |
+| `src/components/layout/ContextPanel.vue` | 删除假的三段预算堆叠条（`char.tokenBudget.*` 只有初始化写点、从不重算 ⇒ 进度恒 0、"剩余"恒等初值），改为**真实 prompt token 累计 / 上限 / 剩余** + 一句说明；随之失效的 `segments` 计算与 `.token-segment` 用法一并撤除（D-H） |
+| `i18n locales/{zh,en}.ts` | 各 +3 键（`ctx.tokenHint`、`trace.summary`、`trace.openBook`） |
+| 测试 | 新增 `tests/core/prompt-trace.test.ts`：裁剪视图**不得含正文**（断言序列化结果不含 content 片段）、未命中关键词回退条目 keys 并截断到 4、空标题回退 `#id`、持久化往返与"空值不写字段/旧数据读为 undefined"、组件三态（无痕迹不渲染 / 折叠 / 展开并跳 `/worldbook?from=/chat`） |
+
+**尚未完成、不可当作已完成**：E02 的**浏览器级**证据还没有。上面的测试是服务层 + 组件层。真实链路（配置 mock API → 建世界书 → 绑角色 → 发消息 → 断言气泡出现痕迹且刷新后仍在）需要一个新 e2e，登记为 **M2-b3 第一项**，实现路径已明确：复用 `e2e/chat-flow.spec.ts` 的 mock SSE 拦截与 `e2e/long-history-scroll.spec.ts` 的 IndexedDB 造数范式。因此 §四 中"世界书触发可感知"一行在本批次只能标为**部分验证**。

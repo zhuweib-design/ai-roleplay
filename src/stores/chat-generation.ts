@@ -727,6 +727,8 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
         {
           onPromptBuilt: (info) => {
             tokenUsage.value.prompt += info.tokenCount;
+            // L 层：把"这一轮到底注入了哪几条设定"挂到本条回复上（E02 此前算出来却不下传）
+            card.promptTrace = info.activated.length ? info.activated : undefined;
           },
           onEmotionUpdated: () => {
             void memoryStore.persistLocalMemoryStore();
@@ -1069,6 +1071,8 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
         {
           onPromptBuilt: (info) => {
             tokenUsage.value.prompt += info.tokenCount;
+            // L 层：把"这一轮到底注入了哪几条设定"挂到本条回复上（E02 此前算出来却不下传）
+            card.promptTrace = info.activated.length ? info.activated : undefined;
           },
           onEmotionUpdated: () => {
             void memoryStore.persistLocalMemoryStore();

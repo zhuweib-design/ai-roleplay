@@ -8,6 +8,7 @@
 import type { CharacterAttributes } from '@core/character-card';
 import type { ReasoningEffort } from '@api/types';
 import type { CharacterStatus, StatusSchema, StatusHudConfig } from '@core/status-schema';
+import type { PromptTraceItem } from '@core/lorebook-scanner';
 import { t } from '@/i18n';
 
 /**
@@ -58,6 +59,11 @@ export interface UIMessage {
   narrationAfter?: string;
   /** 是否正在生成中 */
   generating?: boolean;
+  /**
+   * L 层：本轮注入的世界书条目（裁剪视图，不含正文）。
+   * 有值即可展开查看"这条回复用到了哪几条设定"，并可跳回来源世界书。
+   */
+  promptTrace?: PromptTraceItem[];
   timestamp: number;
 }
 

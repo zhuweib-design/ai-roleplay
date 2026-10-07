@@ -125,6 +125,9 @@ const en: Record<MessageKey, string> = {
   'wb.boundCharsGoList': 'Bind from the character list',
   'group.capabilityNote': 'Group chats do not load lorebooks or document retrieval, and character-level model parameters do not apply. This is the current design, not a misconfiguration.',
   'settings.backFrom': 'Back to where you came from',
+  'ctx.tokenHint': 'Values come from the real prompt tokens of each request; the limit is adjustable in Settings → Models.',
+  'trace.summary': '{count} lore entries used this turn',
+  'trace.openBook': 'Open lorebook “{name}”',
   // G 层：任务中心（判据唯一来源 src/core/guided-tasks.ts）
   'nav.guide': 'Guide',
   'navDesc.guide': 'Step-by-step list for the key tasks',

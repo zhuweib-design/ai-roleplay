@@ -4,6 +4,7 @@ import Icon from '@/components/common/Icon.vue';
 import type { IconName } from '@/components/common/icons';
 import ThinkingBlock from './ThinkingBlock.vue';
 import StatusHud from './StatusHud.vue';
+import PromptTraceSummary from './PromptTraceSummary.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { computed, getCurrentInstance } from 'vue';
 import { t } from '@/i18n';
@@ -128,6 +129,9 @@ const assistantActions: MsgAction[] = [
           <Icon :name="a.icon" :size="14" />
         </button>
       </div>
+
+      <!-- L 层：本轮注入了哪几条设定（可跳回来源世界书）；无注入痕迹时不渲染 -->
+      <PromptTraceSummary :items="msg.promptTrace" />
     </div>
   </div>
 </template>
