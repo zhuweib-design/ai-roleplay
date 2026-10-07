@@ -61,7 +61,7 @@
 | 激活态来自 `characterStore.currentNav`，**只在点击时写入**（写 `NavRail.vue:41`；读 `NavRail.vue:55`（全仓唯一读者）；定义 `stores/character.ts:56,246`，并出现在 store 返回值 `:629,655`；**从不持久化**），无路由 watcher | 经 `/character/new`、`/character/:id/edit`、深链 `/more` 进入时高亮停在上一入口，"我在哪"线索断裂 |
 | `nav.character` 与 `nav.profile` 同为图标 `user`（`NavRail.vue:24,38`） | 两个语义不同的入口共用同一符号，图标失去区分作用 |
 | `NavRail.vue:44-46` 的移动端分支是死代码（rail 仅 `!isMobile` 挂载，`App.vue:347`） | 说明"两端导航"长期靠各自硬编码演化，没有共同事实源 |
-| 移动端底栏 6 tab（`components/mobile/BottomNav.vue:17-25`；数据源 `core/mobile-nav.ts:10-17` = chat / character-list / **community-market** / worldbook / more / settings），`DETAIL_ROUTES`（`:24-36`，含 `group` `:27`）会隐藏底栏 | 与 `docs/design/mobile-ui-design.md` §13.1（`:284`）/§13.5（`:308-313`）的"5 tab"规定漂移；且 `/group` 一旦进入就无底栏，是**单向门** |
+| 移动端底栏 6 tab（`components/mobile/BottomNav.vue:17-25`；数据源 `core/mobile-nav.ts:10-17` = chat / character-list / **community-market** / worldbook / more / settings）。**底栏的真实门禁是 `App.vue:45` 的 `isMainTab(route.name)`**；同文件里的 `DETAIL_ROUTES` / `isDetailRoute`（`mobile-nav.ts:24-36,44`）**零消费者**（已 grep 证实），其"二级页隐藏底栏"的注释描述并未生效 | 结果仍是 `/group` 无底栏（它不是主 Tab），但机制与文档/注释不一致：**一个无人读取的集合被当成规则在描述**。另外实现与 `docs/design/mobile-ui-design.md` §13.1（`:284`）/§13.5（`:308-313`）的"5 tab"漂移 |
 
 ### 1.2 可达性：无 URL-only 孤儿，但 8/17 条路由没有任何页内跳入
 
@@ -698,3 +698,62 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 全部结论已在正文处置或转为明确决策（§3.7 的 11 项待裁决 + §3.7.2 的 4 项自决）。评审遗留的"待产品确认"仅 3 处，且都不阻断 M1：D-K 的图片配置归属偏好、E21 的市场 URL 口径（与提交信息"D-1 市场 URL 可配"的口径差异需产品确认是否升级为运行期设置）、§七 #6 的死 UI 是否接通。
 
 **判定收敛**：每条"现状"有可核对的 `file:line`，每条"目标"有可执行断言与承载组件，每条"改动"有归属文件与回滚类别（P/R/W/B），每条"不做"有理由与排期去处，未决项全部编号；第 5 轮之后再无新增修订项。
+
+---
+
+## 九、实施记录与验证证据（按批次追加，与代码同提交）
+
+### M1-a 导航单一事实源 + 分组 + 路由派生高亮（提交见本分支 `chore/feat(N):` 序列）
+
+**落地范围**：§3.2 的第 1、2、3、5、6 条 + §3.2.4 的群聊底栏修复。改动分类：P 呈现层 + B 行为（底栏门禁、`/profile` 移出导航）。
+
+| 文件 | 实际改动 |
+|---|---|
+| `src/core/nav-model.ts`（**新增**，约 250 行） | 14 个入口（13 内容 + 1 系统）× 4 组；每项带 `routeName` / `activeWhen` / `icon` / `labelKey` / `descKey` / `mobileTab(+Order,+LabelKey)` / `inMore`；导出 `activeEntryForRoute` `entriesOfGroup` `mobileTabEntries` `moreEntries` `systemEntries` `CONTENT_ENTRY_COUNT` |
+| `src/components/layout/NavRail.vue` | 删除本地 `navItems`/`settingsItem`/`profileItem` 三份清单；改为按组渲染（`role="group"` + `aria-labelledby` 组标题）；激活态由 `route.name` 派生；每项补 `title=descKey`；删除死掉的 `isMobile` 分支（rail 仅 `!isMobile` 挂载） |
+| `src/components/mobile/BottomNav.vue` | Tab 清单/顺序/图标/短称谓改自 `mobileTabEntries()`；删除硬编码 `tabs` 数组 |
+| `src/core/mobile-nav.ts` | `MAIN_TABS`/`isMainTab` 移除（其唯一消费者被替换，见下）；`DETAIL_ROUTES` 去掉 `group`；`isDetailRoute` 由**零消费者**变为底栏真实门禁 |
+| `src/App.vue:45` | `showBottomNav = isMobile && !isDetailRoute(route.name)`（原为 `isMainTab(...)`）。**发现**：`isDetailRoute` 此前无人读取，注释里"二级页隐藏底栏"是未被执行的规则；`/group` 无底栏的真因是它不是主 Tab |
+| `src/views/MoreView.vue` | 按组分节渲染 `moreEntries()`（8 卡，新增群聊入口、移除个人中心），真正渲染 `descKey`，删除恒假的 `.active`（`:40`），补页头与返回 |
+| `src/stores/character.ts` + `src/types/index.ts:31` | 删除 `currentNav` / `setNav` / `NavKey`（全仓零读者后不留死代码；该字段本就不落盘，无迁移） |
+| `src/i18n/locales/{zh,en}.ts` | 各新增 19 键：`nav.group*` × 4、`nav.more`、`navDesc.*` × 14（双语同步） |
+| `src/styles/layout.css` | 删除随之失效的 `.nav-item.settings { margin-top: auto }` |
+| 测试 | 新增 `tests/core/nav-model.test.ts`（11 例）、`e2e/ux-nav-model.spec.ts`（4 例）、`e2e/mobile/mobile-nav-groups.spec.ts`（2 例）；`tests/core/mobile-nav.test.ts` 重写为沉浸页判定（4 例）；`tests/stores/character.test.ts` 删除 `setNav` 用例 |
+
+**验证证据（本机实跑，全部同版本代码）**
+
+| 门禁 | 命令 | 结果 |
+|---|---|---|
+| 类型 | `npm run typecheck` | 退出码 0 |
+| 单元测试全量 | `npm test` | **145 文件通过 / 2 跳过**，含新增 nav-model 11 例与 i18n 双语 parity 12 例 |
+| E2E（真实浏览器） | `E2E_PORT=5178 npx playwright test --project=msedge --project=mobile-msedge` | **33 passed**（桌面 27 + 移动 6，1.5 分钟），含"新建角色页点亮「角色」""`/character-version` 不误点亮「角色」""桌面可达 `/more` 且 4 组分节、卡片有描述""群聊页保住底栏且 6 入口不变""沉浸页仍隐藏底栏" |
+| Lint | `npm run lint` | 退出码 0 |
+| CSS 约定 | `npm run check:css-conventions` | **5/5 通过**（断点 / viewport / hover / `!important`=26 基线 / 控件字号） |
+| i18n | `npm run i18n:check:strict` | 退出码 0 |
+| 对比度 | `npm run a11y:contrast` | 退出码 0（组标题用 13px `--muted-foreground`，未引入 11–12px 低对比文本） |
+| WebKit E2E | 未跑 | 本机无 webkit 浏览器（`npx playwright install` 未执行），由 CI 的 `webkit` project 覆盖；此项**未在本机验证** |
+
+**顺手修掉的存量红（非本批次引入，属并行会话提交遗留）**
+
+- `e2e/long-history-scroll.spec.ts:17-18`：`DB_NAME` / `DB_VERSION` 声明后未用 → eslint 2 error，已删除。
+- `src/views/DataBankView.vue:1065`：`.search-empty-clear:hover` 未包 `@media (hover: hover) and (pointer: fine)` → hover 守卫失败，已包。
+- `src/components/layout/CharacterList.vue:231`、`src/views/SettingsView.vue:240`：2 条 vue 格式 warning → `eslint --fix`。
+
+**与计划的偏差（4 项，逐条给理由）**
+
+1. **D-B 只做了一半**：`/profile` 已从 rail 与 `/more` 的导航面移除（`nav-model` 无该项），但**路由与 `ProfileView.vue` 保留、内容尚未并入设置→关于**——那需要 `SettingsView.vue` 的 `?cat=` 读取（M2 的 `useReadinessJump` 一起落地更省事），否则被摘掉入口的用户只剩一个空白页。当前 `/profile` 仍可靠 URL 直达，不构成不可达。
+2. **第 2 个系统项（引导）未落**：rail 底部只加了"更多"。任务中心卡属于 M3，先放一个空入口会指向不存在的东西。
+3. **`data-rel-jump` 标记不等于 §四 的"≥26 语义跳转点"**：本批次在 rail/聚合页入口上打了该属性，它们是**导航**而非**跨模块关联**。为避免自欺，M1-a **不计入**该指标；计数从 M2 的关联面板/就绪条真正落地后重新开始。
+4. **群聊 ⇄ 单聊分段控件未落**：本批次先解决"进群聊后底栏消失"的单向门（真实缺陷，改动最小）；分段控件与 `ChatView`/`GroupChatView` 的 `main-content` 冲突分析一并留到 M2，避免在没有互跳承载点时先动布局。
+
+**M1-a 后的度量现状（对照 §1.8 基线）**
+
+| 指标 | 基线 | M1-a 后 | 距 §四 目标 |
+|---|---|---|---|
+| rail 结构 | 12 + 2 平铺 | 4 组 / 13 内容 + 1 系统，每项带职责提示 | 达标 |
+| 高亮失准 | 3 处 | 0 处（e2e 断言） | 达标 |
+| 桌面 `/more` 无入口 / 移动 `/group` 无底栏 | 2 项 | 0 项（e2e 断言） | 达标 |
+| 无页内跳入的路由 | 8 / 17 | 7 / 17（`/group` 与 `/more` 已获聚合页入口；`/profile` 反向变差，见偏差 1） | M2 继续 |
+| 跨模块语义跳转 | 9 | 9（**未变**，理由见偏差 3） | M2 → ≥26 |
+| 空态带 CTA / `.empty-state` 副本 | 5 / 12、≥10 | 未动 | M3 |
+| 设置类密度 | 「模型」60（v-for 展开 66） | 未动 | M4 |

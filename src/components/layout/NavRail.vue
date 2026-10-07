@@ -1,103 +1,76 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
-import { useCharacterStore } from '@/stores/character';
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import Icon from '@/components/common/Icon.vue';
-import type { IconName } from '@/components/common/icons';
-import type { NavKey } from '@/types';
-import { t, type MessageKey } from '@/i18n';
-import { useViewport } from '@/core/viewport';
+import { t } from '@/i18n';
+import {
+  NAV_GROUPS,
+  activeEntryForRoute,
+  entriesOfGroup,
+  systemEntries,
+  type NavEntry,
+} from '@/core/nav-model';
 
 const router = useRouter();
-const characterStore = useCharacterStore();
-const { isMobile } = useViewport();
+const route = useRoute();
 
-interface NavItem {
-  key: NavKey;
-  /** i18n key（对应 nav.* 文案，类型安全） */
-  labelKey: MessageKey;
-  icon: IconName;
-  route?: string;
-}
+// N 层（设计文档 §3.2）：清单来自 nav-model 单一事实源，高亮由路由派生。
+// 原实现把激活态写进 characterStore.currentNav（只有点击才更新），
+// 经 /character/new、/character/:id/edit 等页进入时高亮会停在上一入口。
+// 原 handleNav 里的 isMobile 分支是死代码（rail 仅 !isMobile 挂载，App.vue:347），已删。
+const activeId = computed(() => activeEntryForRoute(route.name as string | undefined)?.id);
 
-const navItems: NavItem[] = [
-  { key: 'chat', labelKey: 'nav.chat', icon: 'house', route: '/chat' },
-  { key: 'character', labelKey: 'nav.character', icon: 'user', route: '/character' },
-  { key: 'worldbook', labelKey: 'nav.worldbook', icon: 'compass', route: '/worldbook' },
-  { key: 'group', labelKey: 'nav.group', icon: 'chat-circle', route: '/group' },
-  { key: 'databank', labelKey: 'nav.databank', icon: 'file', route: '/databank' },
-  { key: 'story', labelKey: 'nav.story', icon: 'book-open', route: '/story' },
-  { key: 'random-events', labelKey: 'nav.randomEvents', icon: 'star', route: '/random-events' },
-  { key: 'local-model', labelKey: 'nav.localModel', icon: 'cpu', route: '/local-model' },
-  { key: 'image-gen', labelKey: 'nav.imageGen', icon: 'image-stack', route: '/image-gen' },
-  { key: 'character-version', labelKey: 'nav.version', icon: 'git-commit', route: '/character-version' },
-  { key: 'community-market', labelKey: 'nav.market', icon: 'store', route: '/community-market' },
-  { key: 'archives', labelKey: 'nav.archives', icon: 'bookmark-simple', route: '/archives' },
-];
+const groups = NAV_GROUPS.map((group) => ({ ...group, entries: entriesOfGroup(group.id) }));
+const system = systemEntries();
 
-const settingsItem: NavItem = { key: 'settings', labelKey: 'nav.settings', icon: 'gear', route: '/settings' };
-const profileItem: NavItem = { key: 'profile', labelKey: 'nav.profile', icon: 'user', route: '/profile' };
-
-function handleNav(item: NavItem) {
-  characterStore.setNav(item.key);
-
-  // 移动端：点击对话按钮切换角色列表（端判定统一由 useViewport().isMobile 提供，S-10）
-  if (item.key === 'chat' && isMobile.value) {
-    characterStore.toggleCharacterList();
-  }
-
-  if (item.route) {
-    // I-9: 捕获重复导航（点击当前项）产生的 NavigationDuplicated rejection，避免未处理 Promise rejection
-    router.push(item.route).catch(() => {});
-  }
-}
-
-function isActive(key: NavKey): boolean {
-  return characterStore.currentNav === key;
+function handleNav(item: NavEntry) {
+  // I-9: 捕获重复导航（点击当前项）产生的 NavigationDuplicated rejection，避免未处理 Promise rejection
+  router.push({ name: item.routeName }).catch(() => {});
 }
 </script>
 
 <template>
   <nav class="nav-rail" :aria-label="t('nav.main')">
-    <ul class="nav-list" role="list">
-      <li v-for="item in navItems" :key="item.key" class="nav-list-item">
+    <div
+      v-for="group in groups"
+      :key="group.id"
+      class="nav-group"
+      role="group"
+      :aria-labelledby="`nav-group-${group.id}`"
+    >
+      <h2 :id="`nav-group-${group.id}`" class="nav-group-label">{{ t(group.labelKey) }}</h2>
+      <ul class="nav-list" role="list">
+        <li v-for="item in group.entries" :key="item.id" class="nav-list-item">
+          <button
+            type="button"
+            class="nav-item"
+            :class="{ active: activeId === item.id }"
+            :aria-current="activeId === item.id ? 'page' : undefined"
+            :aria-label="t(item.labelKey)"
+            :title="t(item.descKey)"
+            :data-rel-jump="`nav-${item.id}`"
+            @click="handleNav(item)"
+          >
+            <span class="nav-icon" aria-hidden="true"><Icon :name="item.icon" :size="24" /></span>
+            <span class="nav-label">{{ t(item.labelKey) }}</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <ul class="nav-list nav-system-list" role="list">
+      <li v-for="item in system" :key="item.id" class="nav-list-item">
         <button
           type="button"
           class="nav-item"
-          :class="{ active: isActive(item.key) }"
-          :aria-current="isActive(item.key) ? 'page' : undefined"
+          :class="{ active: activeId === item.id }"
+          :aria-current="activeId === item.id ? 'page' : undefined"
           :aria-label="t(item.labelKey)"
+          :title="t(item.descKey)"
           @click="handleNav(item)"
         >
           <span class="nav-icon" aria-hidden="true"><Icon :name="item.icon" :size="24" /></span>
           <span class="nav-label">{{ t(item.labelKey) }}</span>
-        </button>
-      </li>
-
-      <li class="nav-list-item nav-list-item-settings">
-        <button
-          type="button"
-          class="nav-item settings"
-          :class="{ active: isActive(settingsItem.key) }"
-          :aria-current="isActive(settingsItem.key) ? 'page' : undefined"
-          :aria-label="t(settingsItem.labelKey)"
-          @click="handleNav(settingsItem)"
-        >
-          <span class="nav-icon" aria-hidden="true"><Icon :name="settingsItem.icon" :size="24" /></span>
-          <span class="nav-label">{{ t(settingsItem.labelKey) }}</span>
-        </button>
-      </li>
-
-      <li class="nav-list-item nav-list-item-profile">
-        <button
-          type="button"
-          class="nav-item profile"
-          :class="{ active: isActive(profileItem.key) }"
-          :aria-current="isActive(profileItem.key) ? 'page' : undefined"
-          :aria-label="t(profileItem.labelKey)"
-          @click="handleNav(profileItem)"
-        >
-          <span class="nav-icon" aria-hidden="true"><Icon :name="profileItem.icon" :size="24" /></span>
-          <span class="nav-label">{{ t(profileItem.labelKey) }}</span>
         </button>
       </li>
     </ul>
@@ -114,14 +87,25 @@ function isActive(key: NavKey): boolean {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  height: 100%;
 }
 
 .nav-list-item {
   width: 100%;
 }
 
-.nav-list-item-settings {
+/* 系统项（更多）固定到 rail 底部 */
+.nav-system-list {
   margin-top: auto;
+  padding-top: var(--spacing-sm, 8px);
+}
+
+/* 组标题：13px + muted-foreground（不用 11px/12px 的 text-3，避免 contrast 门禁的 AA 风险） */
+.nav-group-label {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--muted-foreground);
 }
 </style>

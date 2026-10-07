@@ -1062,7 +1062,9 @@ function getCharacterName(id?: string): string {
   cursor: pointer;
 }
 
-.search-empty-clear:hover {
-  border-color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .search-empty-clear:hover {
+    border-color: var(--secondary);
+  }
 }
 </style>

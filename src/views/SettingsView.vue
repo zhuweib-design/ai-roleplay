@@ -238,7 +238,6 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
     <SettingsAboutPanel v-show="activeCategory === 'about'" />
     </div>
   </main>
-
 </template>
 
 <style scoped>

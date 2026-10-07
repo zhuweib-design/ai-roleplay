@@ -62,8 +62,6 @@
   border-left: 3px solid var(--secondary);
 }
 
-.nav-item.settings { margin-top: auto; }
-
 .nav-icon {
   width: 24px;
   height: 24px;

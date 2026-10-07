@@ -28,8 +28,6 @@ export interface SamplingOverrides {
 /** P0-2：思考强度三档的展示顺序（UI 共用，避免各面板重复定义） */
 export const REASONING_EFFORTS: readonly ReasoningEffort[] = ['low', 'medium', 'high'] as const;
 
-export type NavKey ='chat' | 'character' | 'worldbook' | 'group' | 'databank' | 'archives' | 'settings' | 'story' | 'random-events' | 'local-model' | 'image-gen' | 'character-version' | 'community-market' | 'profile';
-
 /** UI 层消息类型（扩展核心 ChatMessage，增加展示状态字段） */
 export interface UIMessage {
   id: string;

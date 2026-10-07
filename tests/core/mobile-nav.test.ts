@@ -1,53 +1,35 @@
 /**
  * mobile-nav 单元测试
  *
- * 覆盖:
- * - 底部导航 5 个主 Tab(chat/角色/市场/世界书/设置)
- * - isMainTab 判定
- * - 二级详细页应在移动端隐藏底部导航(isDetailRoute)
+ * 底部 Tab 的清单/顺序已移交 nav-model（tests/core/nav-model.test.ts 覆盖），
+ * 本文件只覆盖"二级沉浸页"判定——它是 App.vue 决定底栏显隐的真实门禁。
  */
 import { describe, it, expect } from 'vitest';
-import { MAIN_TABS, isMainTab, isDetailRoute } from '@core/mobile-nav';
+import { isDetailRoute } from '@core/mobile-nav';
 
-describe('MAIN_TABS 底部导航 6 个主入口', () => {
-  it('包含 6 个主 Tab（D-11：新增"更多"聚合页）', () => {
-    expect(MAIN_TABS).toHaveLength(6);
-    expect(MAIN_TABS).toEqual(
-      expect.arrayContaining(['chat', 'character-list', 'community-market', 'worldbook', 'more', 'settings'])
-    );
-  });
-});
-
-describe('isMainTab', () => {
-  it('5 个主 Tab 返回 true', () => {
-    expect(isMainTab('chat')).toBe(true);
-    expect(isMainTab('character-list')).toBe(true);
-    expect(isMainTab('community-market')).toBe(true);
-    expect(isMainTab('worldbook')).toBe(true);
-    expect(isMainTab('settings')).toBe(true);
+describe('isDetailRoute 二级页移动端隐藏底部导航', () => {
+  it('编辑器类返回 true(应隐藏)', () => {
+    expect(isDetailRoute('character-edit')).toBe(true);
+    expect(isDetailRoute('character-new')).toBe(true);
+    expect(isDetailRoute('local-model')).toBe(true);
+    expect(isDetailRoute('profile')).toBe(true);
   });
 
-  it('非主 Tab 返回 false', () => {
-    expect(isMainTab('character-edit')).toBe(false);
-    expect(isMainTab('group')).toBe(false);
-    expect(isMainTab('profile')).toBe(false);
+  it('group 不再是沉浸页：吞掉底栏会让 /group 成为单向门（N 层 §3.2.4）', () => {
+    expect(isDetailRoute('group')).toBe(false);
+  });
+
+  it('主入口与聚合页返回 false(不隐藏)', () => {
+    expect(isDetailRoute('chat')).toBe(false);
+    expect(isDetailRoute('settings')).toBe(false);
+    expect(isDetailRoute('more')).toBe(false);
+    expect(isDetailRoute('character-list')).toBe(false);
+    expect(isDetailRoute('community-market')).toBe(false);
+    expect(isDetailRoute('worldbook')).toBe(false);
   });
 
   it('空/未知名返回 false', () => {
-    expect(isMainTab(undefined)).toBe(false);
-    expect(isMainTab('nope')).toBe(false);
-  });
-});
-
-describe('isDetailRoute 二级页移动端隐藏底部导航', () => {
-  it('编辑器/详情类返回 true(应隐藏)', () => {
-    expect(isDetailRoute('character-edit')).toBe(true);
-    expect(isDetailRoute('character-new')).toBe(true);
-    expect(isDetailRoute('group')).toBe(true);
-  });
-
-  it('主 Tab 返回 false(不隐藏)', () => {
-    expect(isDetailRoute('chat')).toBe(false);
-    expect(isDetailRoute('settings')).toBe(false);
+    expect(isDetailRoute(undefined)).toBe(false);
+    expect(isDetailRoute('nope')).toBe(false);
   });
 });

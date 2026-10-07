@@ -20,7 +20,7 @@ import Toast from '@/components/common/Toast.vue';
 import { useActiveToast, dismissToast } from '@/utils/toast-service';
 import NavRail from '@/components/layout/NavRail.vue';
 import BottomNav from '@/components/mobile/BottomNav.vue';
-import { isMainTab } from '@/core/mobile-nav';
+import { isDetailRoute } from '@/core/mobile-nav';
 import MasterPasswordModal from '@/components/common/MasterPasswordModal.vue';
 import type { MasterPasswordMode } from '@/components/common/MasterPasswordModal.vue';
 import OnboardingModal from '@/components/common/OnboardingModal.vue';
@@ -42,7 +42,12 @@ const randomEventsStore = useRandomEventsStore();
 
 // 移动端底部导航:仅主 Tab 页显示(二级详情页全屏)
 const route = useRoute();
-const showBottomNav = computed(() => isMainTab(route.name as string | undefined));
+// 底栏显隐改由"是否二级沉浸页"决定（isDetailRoute 此前零消费者，实际门禁一直是 isMainTab，
+// 导致 /group 既不是主 Tab 又被当成沉浸页处理——进入后底部导航消失，成为单向门）。
+// 现在的口径：移动端 + 非沉浸页 => 显示底栏；沉浸页仍是角色编辑/新建两页。
+const showBottomNav = computed(
+  () => isMobile.value && !isDetailRoute(route.name as string | undefined)
+);
 
 // 全局 Toast 队列（S1）：所有面板经 toast-service 触发，容器只在 App.vue 挂载一次
 const activeToast = useActiveToast();

@@ -228,8 +228,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
               <span
                 v-if="conv.archived"
                 class="conv-archived-tag"
-                >{{ t('archives.archivedTag') }}</span
-              >
+                >{{ t('archives.archivedTag') }}</span>
               <span class="conv-title">{{ conv.title }}</span>
               <span class="conv-time">{{ formatConvTime(conv.updatedAt) }}</span>
             </button>

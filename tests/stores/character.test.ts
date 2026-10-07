@@ -167,12 +167,6 @@ describe('useCharacterStore — E5 单元测试', () => {
       expect(store.panelExpanded).toBe(true);
     });
 
-    it('setNav 应更新 currentNav', () => {
-      const store = useCharacterStore();
-      store.setNav('character');
-      expect(store.currentNav).toBe('character');
-    });
-
     it('selectCharacter 应更新 currentCharacterId', () => {
       const store = useCharacterStore();
       const target = store.characters[0]!;

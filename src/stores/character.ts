@@ -1,7 +1,7 @@
 import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { UICharacter, NavKey } from '@/types';
+import type { UICharacter } from '@/types';
 import { mockCharacters } from '../data/mock-data';
 import type { StorageAdapter } from '../storage/storage-adapter';
 import { getStorageAdapter } from '../storage/storage-factory';
@@ -53,7 +53,6 @@ export const useCharacterStore = defineStore('character', () => {
   const panelExpanded = ref(true);
   const contextDrawerOpen = ref(false);
   const characterDrawerOpen = ref(false);
-  const currentNav = ref<NavKey>('chat');
 
   // 注入的存储适配器（运行时由 App.vue 设置）
   let storageAdapter: StorageAdapter | null = null;
@@ -243,9 +242,6 @@ export const useCharacterStore = defineStore('character', () => {
     contextDrawerOpen.value = false;
   }
 
-  function setNav(key: NavKey) {
-    currentNav.value = key;
-  }
 
   /**
    * 新建角色（内存 + 持久化）
@@ -626,7 +622,6 @@ export const useCharacterStore = defineStore('character', () => {
     panelExpanded,
     contextDrawerOpen,
     characterDrawerOpen,
-    currentNav,
     lastError,
     lastInfo,
     isGeneratingCharacter,
@@ -652,7 +647,6 @@ export const useCharacterStore = defineStore('character', () => {
     togglePanel,
     toggleCharacterList,
     closeAllDrawers,
-    setNav,
     createCharacter,
     updateCharacter,
     deleteCharacter,

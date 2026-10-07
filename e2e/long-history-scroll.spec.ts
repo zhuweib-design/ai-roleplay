@@ -14,9 +14,6 @@ import { test, expect } from '@playwright/test';
  * 造数方式沿用 B10 附录 A（IndexedDB 直写，0 模型消耗）；用例自清理。
  */
 
-const DB_NAME = 'ai-roleplay';
-const DB_VERSION = 6;
-
 async function seed(page: import('@playwright/test').Page, fn: (db: IDBDatabase) => Promise<void>) {
   await page.evaluate(async (fnBody) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
