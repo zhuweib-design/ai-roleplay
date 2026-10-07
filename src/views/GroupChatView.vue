@@ -17,6 +17,7 @@
  */
 import { ref, computed, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useChatStore } from '@/stores/chat';
 import { createApiClient } from '@/api';
@@ -59,6 +60,13 @@ const chatStore = useChatStore();
 const characterStore = useCharacterStore();
 const settingsStore = useSettingsStore();
 const router = useRouter();
+
+// E17：成员此前在界面上只是一个名字（看得见进不去）。点成员名直接到该角色的编辑页，
+// 并带上来源，配合全局"返回来源页"让用户不会回不到群聊。
+const { pushWithReturn } = useReadinessJump();
+function editMember(characterId: string): void {
+  pushWithReturn({ name: 'character-edit', params: { id: characterId } });
+}
 
 /** 返回对话页 */
 function goBack() {
@@ -1120,7 +1128,15 @@ function isSystem(msg: { role: string }): boolean {
                   } as UICharacter"
                   :size="24"
                 />
-                <span class="member-name">{{ member.name }}</span>
+                <button
+                  type="button"
+                  class="member-name"
+                  data-rel-jump="rel-group-member"
+                  :aria-label="t('group.editMember', { name: member.name })"
+                  @click="editMember(member.characterId)"
+                >
+{{ member.name }}
+</button>
                 <button
 type="button"
                   v-if="currentMembers.length > 2"
@@ -2174,6 +2190,30 @@ type="button"
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* E17：名字现在是可点的跳转，去掉按钮默认外观，只保留可点语义 */
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .member-name {
+    font-size: 16px;
+  }
+}
+
+@media (hover: hover) {
+  .member-name:hover {
+    text-decoration: underline;
+  }
+}
+
+.member-name:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
 }
 
 .member-remove {

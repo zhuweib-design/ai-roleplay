@@ -520,8 +520,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | 空态 `EmptyState` 铺开（`grep -rl "\.empty-state" src --include=*.vue` 实测 **13** 个文件仍各自定义该样式：11 个视图 + `ChatMain.vue` + `EmptyState.vue` 自己）；`StepFlow` / `HelpTip` / `FormField` 原语与角色·世界书"快速档"表单（M3-b）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；**E03** 上下文面板列出全局书；**E17** 群聊成员可点进编辑；**E19** 角色卡上的"已跟踪"入口；**E20** 市场安装后提示"已加入角色列表"并可跳；**E22** 图片模型两处配置互读 + `providerConfig` 持久化（刷新仍丢 key）；**E23** "图片不进对话"的显式声明；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | 空态 `EmptyState` 铺开（`grep -rl "\.empty-state" src --include=*.vue` 实测 **13** 个文件仍各自定义该样式：11 个视图 + `ChatMain.vue` + `EmptyState.vue` 自己）；`StepFlow` / `HelpTip` / `FormField` 原语与角色·世界书"快速档"表单（M3-b）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；**E03** 上下文面板列出全局书；**E19** 角色卡上的"已跟踪"入口；**E22** 图片模型两处配置互读 + `providerConfig` 持久化（刷新仍丢 key）；**E23** "图片不进对话"的显式声明；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -589,6 +589,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 17 | 巨型 SFC 继续拆分（17 个 >1000 行，本次只按可见密度拆） | 纯工程收益，混做放大回归面 | 下次触碰同文件的任意需求 |
 | 18 | 设计文档收敛（`mobile-ui-design.md` §13 五/六 tab、`software-design-document.md:35,116,135`、`mobile-pwa-plan.md:48`、`PROJECT_INDEX.md:323-337` 缺 `MoreView`、`PLAN_AUDIT_2026-09-28.md:97` 对 EXP-02 的高估） | 本文档给出目标态，M1–M4 落地后统一回写 | M1 完成即先回写 tab 与 PROJECT_INDEX |
 | 19 | 会话模型改为**按角色记住各自激活会话**（`activeChatId` 由单值变映射），并让"切角色 → 该角色上次那段"直接接回 | D-R 已把"写错会话"这条数据丢失堵住（按 `characterId` 纠偏），但"切回甲时仍显示甲的默认会话而非甲上次打开的那条"这个体验缺口需要动会话模型，与"一次会话只属于一个角色"的索引结构一起改才干净 | 多会话使用率上来，或用户反馈"切回来不是刚才那段" |
+| 20 | 设置写入改为**可等待**（关键动作 `await` 落盘，或提供 `flushSettings()` 供导航/关闭前调用） | `stores/settings.ts:526-530` 的 `setActiveApiProfile()` 是 `void persistSettings()`，与创建 Profile 的写入是两次独立异步写；用户在"激活"后立刻刷新，激活态可能还没落盘就被丢掉。M2-b6 的 e2e 在 webkit + `--workers=2` 下**稳定复现**过（`readiness-model` 停在 `is-attention`，`title` 为"还没有可用的模型配置，发送后收不到回复"），只能在测试里轮询 IndexedDB 等两次写都到齐。改成 await 要顺带审一遍 `settings.ts` 里 20 余处 `void persistSettings()` 的调用点，属独立小批次 | 真人反馈"配好模型刷新又没了"，或要把 e2e 的轮询等待从测试侧移到产品侧 |
 
 ---
 
@@ -718,6 +719,8 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 ---
 
 ## 九、实施记录与验证证据（按批次追加，与代码同提交）
+
+> **行号口径**：§一 ~ §三 的所有 `file:line` 指证据基线 `d34df56`（见开头声明）；本节的行号指**该批次提交时**的工作树状态。两组行号不可互相换算——`i18n` 每加一批键就会让 `zh.ts` 之后的行号整体下移，这正是本文档坚持"证据与代码同版本"的原因。
 
 ### M1-a 导航单一事实源 + 分组 + 路由派生高亮（提交见本分支 `chore/feat(N):` 序列）
 
@@ -1060,5 +1063,38 @@ AssertionError: expected [ '乙的新消息', '乙的回复' ] to deeply equal [
 | 全量 E2E（msedge + webkit + mobile-functional + mobile） | **63 passed，0 failed**（4.5 分钟），含新增 `ux-relations-panel.spec.ts` |
 
 **尚未铺开的面板宿主**：版本页、市场详情页、图片生成页与随机事件页仍复用同一 `core/relations.ts` 之前的状态（它们的主语不是"角色"，需要各自的判定行）。其中图片生成的两难（E22：两处配置互不读取 + 刷新丢 key）不是"看不见关系"而是"关系真的没接"，属功能开发，排 §七 #8 邻近项。
+
+### M2-b6 两条"看得见但跳不过去"的边接上（E17 / E20）
+
+| 边 | 改动 | 证据 |
+|---|---|---|
+| **E17** 群聊 → 成员角色 | `GroupChatView.vue`：成员条里的名字由 `<span>` 改为按钮，`pushWithReturn({name:'character-edit',params:{id}})` 带 `?from=/group`；配套 `.member-name` 去掉按钮外观 + `@media (max-width:640px)` 把字号提到 16px（iOS 聚焦放大）；新键 `group.editMember` | `e2e/ux-relations-panel.spec.ts` 第二条：建角色 → 建两人群聊 → 点成员名 → 断言 URL 形如 `/character/<id>/edit?from=/group` 且 `#f-name` 的值就是该角色 → 点"返回来源页"回到 `/group` |
+| **E20** 市场 → 角色安装 | `stores/community-market.ts`：`installRemoteItem` 返回类型 `boolean → string \| null`（新角色 id），`importRemoteAsCharacter` 的既有返回值第一次被用上；`CommunityMarketView.vue`：安装成功后渲染 `role="status"` 结果条"已加入角色列表：「X」"+ 两个去路（去编辑这个角色 / 看角色列表），`handleUpdateInstall` 改走同一条路径，因此更新安装同样有结果条 | `tests/stores/community-market-install.test.ts` 3 例（成功给 id 且角色真在列表里、`installedOrigins` 来源记录未断；条目缺失与下载失败给 null；重名改名后 id 指向改名后的角色）；`tests/views/market-install-result-ui.test.ts` 2 例（结果条带名字、两按钮分别落 `character-edit?from=/community-market` 与 `character-list`、失败不渲染） |
+
+**这一批最重要的产出其实是一条缺陷登记（§七 #20）**：为把 E20 的链路走完，`ux-prompt-trace.spec.ts` 在 webkit + `--workers=2` 下**稳定**失败两次，且两次失败点不同——第一次是"发送后没有回复"，加了落盘等待后变成"刷新后模型芯片停在 `is-attention`"。顺着 `error-context.md` 的 DOM 快照看清了因果：
+
+```
+Locator: [data-rel-jump="readiness-model"]
+Received: "readiness-chip is-attention"  title="还没有可用的模型配置，发送后收不到回复"
+```
+
+即 Profile **存进去了**（按名字轮询 IndexedDB 已经通过），但**激活态没保住**。根因不在测试：`stores/settings.ts:526-530` 的 `setActiveApiProfile()` 是 `void persistSettings()`，创建与激活是两次独立异步写，只等"名字出现"会在第一次写落盘后就放行，紧随的 `reload()` 丢掉第二次写。修复方式是让测试等"两次写都到齐"：
+
+| 等待条件（改前） | 等待条件（改后） |
+|---|---|
+| `settings.app` 里出现名字 `E2E 痕迹模型` | `settings.app` 里出现该名字，**且** `activeApiProfileId === 该 Profile 的 id` |
+
+改后 `--workers=2` 的四 project 全量重跑 **64 passed / 0 failed**。产品侧的"可等待落盘"没有在本批动（要顺带审 `settings.ts` 里 20 余处 `void persistSettings()`），登记为 §七 #20；**这不是测试能掩盖过去的问题：真人若在激活后立刻刷新，会遇到同一件事**。
+
+**验证证据（M2-b6 最终状态，全量重跑，与代码同版本）**
+| 门禁 | 结果 |
+|---|---|
+| `npm run typecheck` / `npm run lint` | 0 / 0（含 `--fix` 清掉新按钮带来的 2 条 `vue/multiline-html-element-content-newline` warning） |
+| `i18n:check:strict` | 通过，`src` **195** 个文件 |
+| `check:css-conventions` | **5/5**（新增控件都带移动断点覆盖与 hover 守卫） |
+| `a11y:contrast` | 通过，扫描 **121** 处（基线 131） |
+| `npm run test:coverage` | 退出码 **0**，**3655 passed / 3 skipped**，覆盖率 **79.46 / 74.00 / 81.55 / 81.32**（阈值 78/73/78/78 未放松） |
+| 全量 E2E（四 project，`--workers=2`） | 修测试前 **1 failed**（webkit 的 `ux-prompt-trace`）→ 定位到 §七 #20 后 **64 passed / 0 failed**（3.0 分钟）。**注**：上面 `test:coverage` 那一行是在 e2e 修复之前跑的；此后只改动了 `e2e/ux-prompt-trace.spec.ts` 一个测试文件，未触碰 `src/`、单元与门禁判定，故单元侧数字与代码仍同版本 |
+
 
 

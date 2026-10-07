@@ -20,6 +20,7 @@
  */
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useCommunityMarketStore } from '@/stores/community-market';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
@@ -32,12 +33,13 @@ import { t } from '@/i18n';
 const router = useRouter();
 const store = useCommunityMarketStore();
 const characterStore = useCharacterStore();
+const { pushWithReturn } = useReadinessJump();
 
 // §14.4 更新检查：有可用更新的已装远程条目
 const updates = computed(() => store.getUpdatableInstalls());
 
 function handleUpdateInstall(itemId: string) {
-  void store.installRemoteItem(itemId);
+  void handleRemoteInstall(itemId);
 }
 
 // ── 启动 ──
@@ -165,8 +167,23 @@ function handleLoadRemote(): void {
   void store.loadRemoteIndex();
 }
 
+/**
+ * E20：安装完成后必须看得见落点。此前只有一句 toast（`lastInfo`），
+ * 用户不知道角色去了哪、也没有入口；现在把新角色 id 接住，就地给一条可点结果。
+ */
+const lastInstalled = ref<{ id: string; name: string } | null>(null);
+
 async function handleRemoteInstall(itemId: string): Promise<void> {
-  await store.installRemoteItem(itemId);
+  const installedId = await store.installRemoteItem(itemId);
+  if (!installedId) return;
+  const name = characterStore.characters.find((c) => c.id === installedId)?.name ?? installedId;
+  lastInstalled.value = { id: installedId, name };
+}
+
+function jumpInstalled(to: 'edit' | 'list'): void {
+  const id = lastInstalled.value?.id;
+  if (!id) return;
+  pushWithReturn(to === 'edit' ? { name: 'character-edit', params: { id } } : { name: 'character-list' });
 }
 
 function remotePercent(itemId: string): number {
@@ -484,6 +501,22 @@ type="button"
             </li>
           </ul>
           <p v-else-if="!store.remoteLoading" class="remote-hint">{{ t('market.remoteHint') }}</p>
+          <!-- E20：安装结果就地可见，且给两条去路（看这个角色 / 看整个角色列表） -->
+          <div v-if="lastInstalled" class="installed-result" role="status">
+            <Icon name="check" :size="14" aria-hidden="true" />
+            <span class="installed-result-text">{{ t('market.installedToLib', { name: lastInstalled.name }) }}</span>
+            <button type="button" class="installed-go" data-rel-jump="rel-market-edit" @click="jumpInstalled('edit')">
+              {{ t('market.installedGoEdit') }}
+            </button>
+            <button
+              type="button"
+              class="installed-go ghost"
+              data-rel-jump="rel-market-chars"
+              @click="jumpInstalled('list')"
+            >
+              {{ t('market.installedGoList') }}
+            </button>
+          </div>
         </div>
 
         <div class="toolbar">
@@ -1098,6 +1131,51 @@ type="button"
 .remote-title {
   font-weight: 600;
   color: var(--foreground);
+}
+/* E20：安装结果条 */
+.installed-result {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--card-elevated);
+  color: var(--foreground);
+  font-size: 0.8rem;
+}
+.installed-result-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.installed-go {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--secondary);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.installed-go.ghost {
+  border-color: var(--border);
+  color: var(--muted-foreground);
+}
+@media (hover: hover) {
+  .installed-go:hover {
+    background: var(--secondary);
+    color: var(--primary-foreground, var(--background));
+  }
+  .installed-go.ghost:hover {
+    background: var(--border);
+    color: var(--foreground);
+  }
+}
+.installed-go:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
 }
 .remote-refresh,
 .remote-install {

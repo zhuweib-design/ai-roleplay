@@ -93,6 +93,16 @@
 - 顺手修的存量提示（非本批次引入）：`ContextPanel.vue` 的 `.ctx-preset-select` 是 12px 的 `select`，移动断点内没有 ≥16px 覆盖（iOS 聚焦会放大整页），补 `@media (max-width: 640px)` 后 `check:i7-control-font-size` 的未覆盖项 1 → 0。
 - 无障碍返工记录：面板标题最初写成 `<h3>`，被 `tests/accessibility/components-axe.test.ts` 的 `heading-order` 判违规（编辑页已有自己的层级），改为 `<p class="relations-title">` + `<section :aria-label>`。
 
+### 修复（UX/IA M2-b6 顺带查明：激活态可能来不及落盘）
+- `e2e/ux-prompt-trace.spec.ts` 在 webkit + `--workers=2` 下稳定失败，定位为产品侧的落盘时序问题而非用例抖动：`stores/settings.ts:526-530` 的 `setActiveApiProfile()` 用 `void persistSettings()`，与"新建 Profile"是两次独立异步写，测试只等"名字出现"就 `reload()`，于是丢掉激活态（现象：刷新后模型芯片停在 `is-attention`，气泡一条都不出现）。测试侧改为轮询 IndexedDB 直到 `apiProfiles` 含该名字**且** `activeApiProfileId` 指向它；产品侧"可等待落盘"登记为设计文档 §七 #20（真人若在激活后立刻刷新会遇到同一件事）。修后四 project 全量 **64 passed / 0 failed**。
+
+### 新增（UX/IA M2-b6：群成员可点进编辑（E17）与市场安装结果可见可跳（E20））
+- `src/views/GroupChatView.vue`：成员条里的角色名由 `<span>` 改为按钮，点它直接进入该角色的编辑页并带 `?from=/group`（配 M2-b5 的全局"返回来源页"可原路回来）。此前成员"看得见但进不去"，是 §1.4 里 E17 那条 B 类边的唯一缺口。
+- `src/stores/community-market.ts`：`installRemoteItem` 的返回类型由 `Promise<boolean>` 改为 `Promise<string | null>`，成功时给出**新角色的 id**。界面据此显示结果条。
+- `src/views/CommunityMarketView.vue`：安装成功后在远程清单下方出现一条 `role="status"` 结果条，写明"已加入角色列表：「角色名」"，并给两个去路（去编辑这个角色 / 看角色列表）；更新安装（`handleUpdateInstall`）改走同一条路径，因此同样有结果条。安装失败不显示。
+- i18n：`group.editMember`、`market.installedToLib` / `installedGoEdit` / `installedGoList` 四键双语同步（两文件仍同序）。
+- 测试：`tests/stores/community-market-install.test.ts` 3 例（成功返回 id 且角色确在列表、来源记录未断；条目不存在与下载失败返回 null；重名改名后 id 指向改名后的角色）；`tests/views/market-install-result-ui.test.ts` 2 例（结果条带角色名、两个按钮分别落到 `character-edit?from=/community-market` 与 `character-list`、失败不显示）；`e2e/ux-relations-panel.spec.ts` 新增一条真实链路（建角色 → 建两人群聊 → 点成员名 → 断言 `/character/<id>/edit?from=/group` 且表单里就是该角色 → 点"返回来源页"回到 `/group`）。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

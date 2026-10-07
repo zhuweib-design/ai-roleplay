@@ -5,6 +5,8 @@
  * 这里验证的是**用户在真实浏览器里看到的那句话是不是真的**：
  * 裸角色的四行必须老实说"尚未 / 没有"，造一本全局世界书后那一行必须给出真实计数，
  * 而且点进去要带回得来路。
+ *
+ * 第二个用例是 E17（群成员可点进编辑）——同一批"看见但跳不过去"的边，宿主在群聊页。
  */
 import { test, expect, type Page } from '@playwright/test';
 
@@ -90,5 +92,31 @@ test.describe('角色关联面板（M2-b5）', () => {
     await expect(page).toHaveURL(/\/worldbook\?from=\/character\/seraphina\/edit$/);
     await page.getByRole('button', { name: '返回来源页' }).click();
     await expect(page).toHaveURL(/\/character\/seraphina\/edit/);
+  });
+
+  test('群成员名字可点进该角色的编辑页，并带回来路（E17）', async ({ page }) => {
+    const name = `关联E2E-${Date.now()}`;
+    await page.goto('/character');
+    await page.getByRole('button', { name: '新建角色' }).click();
+    await page.getByLabel('名称').fill(name);
+    await page.locator('#f-desc').fill('用于群成员跳转测试。');
+    await page.locator('.header-btn.save').click();
+    await expect(page.getByRole('article', { name: `角色：${name}` })).toBeVisible();
+
+    await page.goto('/group');
+    await page.getByRole('button', { name: '新建群聊' }).click();
+    const dialog = page.getByRole('dialog', { name: '创建群聊' });
+    await dialog.locator('#new-group-name').fill('关联测试群');
+    await dialog.locator('.char-pick').filter({ hasText: name }).click();
+    await dialog.locator('.char-pick').filter({ hasText: 'Seraphina' }).click();
+    await dialog.getByRole('button', { name: '创建', exact: true }).click();
+
+    // 成员此前只是一个名字（E17 的可看见不可跳）；现在点它就进该角色的编辑页
+    await page.locator('.member-chip').filter({ hasText: name }).locator('.member-name').click();
+    await expect(page).toHaveURL(/\/character\/[^/]+\/edit\?from=\/group$/);
+    await expect(page.locator('#f-name')).toHaveValue(name);
+
+    await page.getByRole('button', { name: '返回来源页' }).click();
+    await expect(page).toHaveURL(/\/group/);
   });
 });

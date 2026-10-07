@@ -57,6 +57,48 @@ async function seedGlobalLorebook(page: Page): Promise<void> {
   });
 }
 
+/**
+ * 等"配置存在 **且** 已被激活"这两件事都真正落盘再刷新。
+ *
+ * 为什么必须查 `activeApiProfileId` 而不是只查名字：`setActiveApiProfile()` 里是
+ * `void persistSettings()`（`stores/settings.ts:526-530`），激活与新建是两次独立写入，
+ * 只等"名字出现"会在第一次写入后就放行，紧随的 reload 于是丢掉激活态——
+ * webkit 在并发跑（--workers=2）下稳定复现过这一点，已登记为 §七 #20。
+ */
+async function waitProfileActivatedPersisted(page: Page, name: string): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          (want) =>
+            new Promise<string>((resolve, reject) => {
+              const open = indexedDB.open('ai-roleplay');
+              open.onerror = () => reject(open.error);
+              open.onsuccess = () => {
+                const db = open.result;
+                const req = db.transaction('settings', 'readonly').objectStore('settings').get('app');
+                req.onerror = () => {
+                  db.close();
+                  reject(req.error);
+                };
+                req.onsuccess = () => {
+                  const rec = req.result as
+                    | { apiProfiles?: Array<{ id: string; name: string }>; activeApiProfileId?: string | null }
+                    | undefined;
+                  const active = rec?.activeApiProfileId ?? null;
+                  const named = rec?.apiProfiles?.find((p) => p.name === want)?.id ?? null;
+                  db.close();
+                  resolve(active !== null && active === named ? 'activated' : 'pending');
+                };
+              };
+            }),
+          name
+        ),
+      { timeout: 15_000 }
+    )
+    .toBe('activated');
+}
+
 async function configureMockProfile(page: Page): Promise<void> {
   await page.goto('/settings?cat=model');
   await expect(page.locator('.settings-nav-item.active')).toContainText('模型');
@@ -69,6 +111,7 @@ async function configureMockProfile(page: Page): Promise<void> {
   await expect(page.getByText('E2E 痕迹模型').first()).toBeVisible();
   const activate = page.getByRole('button', { name: '激活此 API 配置' });
   if (await activate.count()) await activate.first().click();
+  await waitProfileActivatedPersisted(page, 'E2E 痕迹模型');
 }
 
 test.describe('注入痕迹（E02）', () => {
@@ -88,8 +131,9 @@ test.describe('注入痕迹（E02）', () => {
     await seedGlobalLorebook(page);
     await page.reload();
 
-    // 世界书芯片应转就绪（同一判定源，两条断言互相印证）
+    // 世界书芯片应转就绪（同一判定源，两条断言互相印证）；模型芯片则证明刷新后 Profile 仍然生效
     await expect(page.locator('[data-rel-jump="readiness-worldbook"]')).toHaveClass(/is-ready/);
+    await expect(page.locator('[data-rel-jump="readiness-model"]')).toHaveClass(/is-ready/);
 
     const input = page.getByLabel('输入消息');
     await expect(input).toBeEnabled();
