@@ -68,7 +68,9 @@
 | D-8 | ✅ 修复（@click.stop） | 一行模板改动；B16 建议"点按钮应展开"的正式 spec 待 D-8 验证后补 |
 | D-9 | ✅ 修复 | random-events-persistence 3 项（往返/配置/备份载荷防御） |
 | D-10 | ✅ 修复 | chat-compat + chat.test 更新为新语义（拒绝前置/不污染消息/三态判定） |
-| D-1 / D-2 / D-11 | 按原文档**不动代码**（产品决策） | — |
+| D-1 | ✅ 代码侧就绪（方案 A）+ GitHub 侧两步待用户操作 | 市场清单 URL 改 `VITE_MARKET_INDEX_URL` 可配；用户需：①默认分支改 `main` ②仓库转 public |
+| D-2 | ✅ 修复（含实机探针断言） | 助手气泡操作条改左锚定向右展开（`.msg-wrap-assistant .msg-toolbar { left:6px; right:auto }`）；1280×720 实测两条助手操作条 x=384 > 抽屉右缘 352，命中测试命中操作条本身 |
+| D-11 | ✅ 修复（合并页 + 入口跳转） | MoreView（/more）+ 底栏"更多"Tab；mobile-layout E2E 主入口清单同步 6 项 |
 | O-9① / O-19 / O-20 / O-22 / O-24 | ✅ 修复 | tsc 0；i18n strict 183 文件 |
 | O-12 / O-13 及其余 P3 | 按原文档**不动代码**（L-11 待决策 / 收益微小） | — |
 
@@ -93,6 +95,14 @@
 | **O-23** | — | 群聊 ST 导入同 ID 默认拒绝覆盖（group.importDuplicate），UI `confirm` 后 force 重导 | tsc 0 |
 
 **第二批后全量 E2E（三通道）**：33 passed + backup-restore/contrast-axe flake 复跑全绿。**全量 vitest**：3579 项通过。
+
+### D-2（P2）助手操作条被角色列表抽屉遮挡——修复实测
+
+**根因（实测定位）**：`.msg-toolbar` 锚定气泡**右上角**（`right:6px`），而助手气泡左对齐且窄气泡（短回复）的宽度小于操作条宽度（157px）——操作条**左溢出**气泡、越过对话列左边界（x=352）伸到角色列表列下方，被列表列内容（`char-group-header`）盖住，点击被拦截。与视口宽度的关系：对话列越窄气泡越窄，左溢越多。
+
+**改动**（`MessageBubble.vue` 一条 CSS 规则）：`.msg-wrap-assistant .msg-toolbar { left: 6px; right: auto; }`——助手消息的操作条锚气泡**左侧**、向右展开（右侧是对话列开阔区）。
+
+**验证**（1280×720 真实浏览器探针，全部助手操作条）：x=384 > 抽屉右缘 352（无重叠）、`elementFromPoint` 命中操作条本身（原为 `char-group-header` 拦截）——**可点击性恢复**。
 
 ### D-5/D-6 实机 E2E 断言（原文档 §七 建议项落地）
 新增 `e2e/long-history-scroll.spec.ts`（IndexedDB 造数 150 条群聊 + 320 条单聊，0 模型消耗）：

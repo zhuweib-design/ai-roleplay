@@ -238,6 +238,14 @@ const assistantActions: MsgAction[] = [
   }
 }
 
+/* D-2（REAL_DEVICE_TEST_2026-10-03）：助手气泡左对齐，操作条原右锚定会让
+   窄气泡的操作条左溢出对话列边界、被角色列表列盖住无法点击（1280×720 实测）。
+   助手消息的操作条锚左侧、向右展开——右侧是对话列开阔区，不会被遮挡。 */
+.msg-wrap-assistant .msg-toolbar {
+  left: 6px;
+  right: auto;
+}
+
 .msg-toolbar-btn {
   display: flex;
   align-items: center;
