@@ -13,7 +13,7 @@
 - **方案四层**：N 导航模型（单一事实源 `core/nav-model.ts`，12+2 平铺 → 4 组 13 内容项 + 2 系统项）、L 关联层（就绪状态条 + 关联面板 + 命中回显 + 前置条件横幅，全部读同一个 `core/readiness.ts`）、G 引导层（任务注册表 + 任务中心 + `StepFlow`/`EmptyState`/`HelpTip`/`FormField` 原语）、V 视觉与降噪（设置 6→7 类、渐进披露、术语表、巨型视图分区）。
 - **改造后可验证的目标**：25 条边 → **17 条转"可见且可一跳" + 4 条撤下无读者 UI + 4 条"显式声明不存在"**（E08 群聊参数与 E18/E21/E23 一并归入声明类，因它们没有可跳目标）；`data-rel-jump` 语义跳转点 9 → ≥26；空态带 CTA 5/12 → 12/12；「模型」类 ≈60 控件面 → 3 类各 ≤25（DOM 实测口径）；6 条关键任务全部具备"动作前给出原因 + 一步可达"的路径。
 - **改动分类与边界**：呈现层（P）/ 只读数据（R）/ 状态写入（W）/ 行为（B）四类分别给回滚路径（§5.5）。**不改路由 path、不改 IndexedDB store 结构**；仅在消息类型上增加一个**可选**字段（`promptTrace`，符合 `core/schema-contract.ts` 对可选新增的允许）。不新增功能、不产出 exe/apk。
-- **待裁决 11 项 + 已直接决定 5 项**：见 §3.7 与 §3.7.2，每项均已给选项与推荐；其中 D-G（移动端 tab 数）、D-J（trace 范围）为 v1 评审后新增，D-L…D-O 为 v3 为清除正文残留"或"字而定，**D-P 是 M4-a 实施中被证据否定的自我设计**（设置页智能默认落地已回退）。
+- **待裁决 11 项 + 已直接决定 6 项**：见 §3.7 与 §3.7.2，每项均已给选项与推荐；其中 D-G（移动端 tab 数）、D-J（trace 范围）为 v1 评审后新增，D-L…D-O 为 v3 为清除正文残留"或"字而定，**D-P 是 M4-a 实施中被证据否定的自我设计**（设置页智能默认落地已回退），**D-Q 是 M2-b3 的 e2e 实测出的新缺陷**（刷新后对话不自动接回，排期 M2-b4）。
 
 ---
 
@@ -357,7 +357,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | D-J | `promptTrace` 范围 | ① 单聊 + 仅世界书命中，持久化到消息可选字段 ② 内存态（刷新即失） ③ 含文档/事件全量（需改管线） | **①** |
 | D-K | 图片生成配置 | ① 补持久化 + 保留 `category='image-video'` 但说明优先级 ② 统一到 apiProfiles ③ 撤图片页配置 | **①**（② 是行为重构，收益不与本议题绑定） |
 
-### 3.7.2 本议题内直接决定、不再询问的 5 项（v3 补齐 4 项；M4-a 追加 D-P）
+### 3.7.2 本议题内直接决定、不再询问的 6 项（v3 补齐 4 项；M4-a 追加 D-P；M2-b3 追加 D-Q）
 
 | ID | 议题 | 决定 | 理由 |
 |---|---|---|---|
@@ -366,6 +366,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | D-N | `e2e/contrast-axe.spec.ts:27` 的 `/profile` 审计路由 | **保留不动** | redirect 后仍能扫到落地页；代价是 `/settings` 被扫两次，可接受，不值得新增断言 |
 | D-O | `tokenBudget` 字段处置 | **保留字段名，仅语义降级为"上限"** | 改名会触碰 `characters.ext.*` 持久化键与 `services/type-adapters.ts` 双映射，属迁移工程 |
 | D-P | 设置页默认落地是否随就绪状态变化 | **不变，保持「外观」**；改用 `?cat=` 显式深链 + 就绪条 + 欢迎窗动作按钮把人带到阻塞点 | 实现"智能默认"后全量 E2E 断掉 13 条既有用例（`theme-visual` / `contrast-axe` / `chat-flow` 等依赖默认分类为外观），且 strict-mode 冲突源于模型面板转为可见；收益可被显式深链完全替代 |
+| D-Q | 刷新（F5）后 `/chat` 是否自动接回上一段对话 | **自动接回该角色最近一条未归档会话**，且仅在 `activeChatId === null` 且消息缓冲为空时触发 | M2-b3 的 e2e 实测：回复已写入 `chats` store，但刷新后聊天区**没有任何气泡**，必须用户在左侧列表里再点一次会话才恢复。成因是两条断链——`uiCharToCard()` 从不带 `messages`（`stores/character.ts:186` 落盘的 CharacterCard 里就没有历史），而 `loadChatHistory` 只有 `openSession`（列表点击）一个调用者。`docs/dev/P2-11-virtualization-plan.md:52` 声称"已最小修复（保留 messages）"，实际保留的是恒不存在的字段 ⇒ 文档与代码不符，需一并回写。条件收窄是为了不覆盖 `newSession` 的草稿语义 |
 
 ---
 
@@ -381,7 +382,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 语义跳转点 | 9 | ≥26 | 每个跳转带 `data-rel-jump="<edgeId>"`；`tests/ux/related-jumps.test.ts` 解析 nav-model + 组件，断言覆盖 E01–E25 的处置集合；e2e 抽样点 8 条真实链路 |
 | 依赖边处置覆盖 | A1/B6/C11/D4/E3 | **17 条转 A**（有可跳目标的边全部做到可见且可一跳）+ **4 条撤下**（E12/E13/E16/E25）+ **4 条显式声明不存在**（E08 群聊角色级参数、E18 群聊能力集、E21 市场 URL 运行期配置、E23 图片入对话；这四条没有可跳目标，只能"说清楚"） | §1.4 表增加"后测分类"列逐行复评（同一次提交内更新，避免结论与代码不同版本）；`tests/ux/related-jumps.test.ts` 断言每条 E-id 落在三类之一 |
 | 文档检索不再"上传即以为生效" | 两隐藏前提，零提示 | `/databank` 顶部 `PrereqNotice` 显示两前提与状态 + 两个"去完成" | e2e：无绑定时断言提示可见且含原因码；绑定并开开关后断言 chip 转 ready |
-| 世界书触发可感知（单聊） | 完全不可见 | 每条助手消息可展开"本轮注入 世界书 N 条"，条目名可跳来源书 | 单测（`onPromptBuilt` 载荷）+ e2e（常驻 + 关键词各 1 条，断言 N 与刷新后仍在） |
+| 世界书触发可感知（单聊） | 完全不可见 | 每条助手消息可展开"本轮注入 世界书 N 条"，条目名可跳来源书 | **已验证（M2-b3）**：`tests/stores/chat-prompt-trace.test.ts` 4 例（常驻 + 关键词各 1 条 ⇒ N=2、不含正文；无世界书的负向对照；落盘回读；重新生成清空）+ `e2e/ux-prompt-trace.spec.ts`（真发一条消息，断言 N、展开条目、点书名落 `/worldbook?from=/chat`、`chats` store 里确有该字段、重开会话后仍在），msedge 与 webkit 双内核均通过。**口径更正**：本行原写"刷新后仍在"隐含"刷新即自动接回对话"，实测并非如此（刷新后缓冲为空，需点左侧会话行）——该缺陷登记为 **D-Q**，修好前此行只能读作"重开会话后仍在" |
 | 假进度 | `tokenBudget` 恒 0 | 显示真实 `tokenCount` | e2e：发送后断言用量 >0 且随消息增长；断言"剩余"字样不再出现 |
 | 首条消息路径 | 3 屏 / 12+ 控件 / 失败后才知道 | 任务中心 3 步、每步 `?cat=` 直达；缺配置在发送**前**给原因 | e2e：清空 Profile 后进 `/chat`，断言 `PrereqNotice` 与 `reasonCode=no-profile` 文案在发送前存在，点"去完成"落在模型接入类 |
 | 本地模型死端 | 按钮禁用无原因；加载后还要手动去设置 | 禁用显示原因 + `PrereqNotice`；成功后"去设置选中"一步跳 | e2e：`isAvailable=false` 断言原因文案；加载成功断言跳转链接存在且点击落到 `?cat=` |
@@ -698,7 +699,7 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 
 五轮累计：**第 1 轮** 249 条引用 → 33 处问题；**第 2 轮** 4 BLOCKER + 10 MAJOR + 5 MINOR + 1 条评审判定被驳回；**第 3 轮** 11 条可行性风险；**第 4 轮** 96 条引用 → 16 处引用问题 + 9 处内部矛盾；**第 5 轮** 复核第 4 轮修订 → 7 处残留 + 4 处行号漂移，全部改正，且未发现新的引用错配或算术冲突。
 
-全部结论已在正文处置或转为明确决策（§3.7 的 11 项待裁决 + §3.7.2 的 5 项自决，其中 D-P 是实施中否定本文初稿设计后补记的决定）。评审遗留的"待产品确认"仅 3 处，且都不阻断 M1：D-K 的图片配置归属偏好、E21 的市场 URL 口径（与提交信息"D-1 市场 URL 可配"的口径差异需产品确认是否升级为运行期设置）、§七 #6 的死 UI 是否接通。
+全部结论已在正文处置或转为明确决策（§3.7 的 11 项待裁决 + §3.7.2 的 6 项自决，其中 D-P 是实施中否定本文初稿设计后补记的决定、D-Q 是 M2-b3 的 e2e 实测补入的新缺陷）。评审遗留的"待产品确认"仅 3 处，且都不阻断 M1：D-K 的图片配置归属偏好、E21 的市场 URL 口径（与提交信息"D-1 市场 URL 可配"的口径差异需产品确认是否升级为运行期设置）、§七 #6 的死 UI 是否接通。
 
 **判定收敛**：每条"现状"有可核对的 `file:line`，每条"目标"有可执行断言与承载组件，每条"改动"有归属文件与回滚类别（P/R/W/B），每条"不做"有理由与排期去处，未决项全部编号；第 5 轮之后再无新增修订项。
 
@@ -922,7 +923,7 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 | `npm run lint` / `i18n:check:strict` / `check:css-conventions` / `a11y:contrast` | 全部 0（撤除后无未使用变量与死样式残留；css 5/5） |
 | `npm run test:coverage` | 退出码 0，**All files 78.80 / 73.47 / 80.96 / 80.71**（阈值 78/73/78/78 未放松） |
 | 全量 E2E（msedge + mobile-msedge） | **42 passed**（2.2 分钟），含 `worldbook-flow`、`databank-flow`、`story-flow`、`random-events` 四条会被撤除控件影响的行为链 |
-| WebKit project | 本机确实无浏览器（`Executable doesn't exist at …\webkit-2336\Playwright.exe`），仍由 CI 覆盖 —— 此项**未在本机验证** |
+| WebKit project | 本机确实无浏览器（`Executable doesn't exist at …\webkit-2336\Playwright.exe`），仍由 CI 覆盖 —— 此项**未在本机验证**（**该限制已于 M2-b3 关闭**：本机装上 WebKit 26.5 后 `--project=webkit` 9 例全绿） |
 
 **口径校正说明**：本文 §1.8 原记"世界书 59 控件"，实测 `d34df56` 基线为 **61**（差异来自并行提交在其间新增的"已绑定角色"等区块）。后续复评一律以同版本 `git show HEAD:<file>` 与当前文件对照计数，避免拿旧快照的数与新代码的数相减。
 
@@ -932,11 +933,44 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 |---|---|
 | `src/core/lorebook-scanner.ts` | 新增 `PromptTraceItem` 与 `toPromptTraceItems()`：**裁剪掉 `entry.content`**（`ActivatedEntry` 含整条正文，最长 2 万字），只留 `entryId / bookId / bookName / title / keys(≤4)` |
 | `src/services/chat-manager.ts` | `onPromptBuilt` 载荷从 `{tokenCount, trimmed, messageCount}` 扩为再加 `activated: PromptTraceItem[]`（E02 的"早就算出来却不下传"就此接上） |
-| `src/stores/chat-generation.ts` | 两处 `onPromptBuilt`（发送 `:728`、重新生成 `:1070`）把 `info.activated` 写到本条回复消息上 |
+| `src/stores/chat-generation.ts` | 两处 `onPromptBuilt`（发送 `:728`、重新生成 `:1072`）把 `info.activated` 挂到本条回复上。**本行原写"写到本条回复消息上"是错的**：落点写成了 `card`（`uiCharToCard()` 的 CharacterCard），因为 CharacterCard 带 `[key: string]: unknown`，typecheck 通过但界面与落盘都没有痕迹；M2-b3 的 e2e 抓到后已改为 `liveMsg` / `target` |
 | `src/types/index.ts`、`src/core/character-card.ts`、`src/services/type-adapters.ts` | 消息新增**可选**字段 `promptTrace`，并在 `uiMsgToChatMsg` / `chatMsgToUiMsg` 双向映射；与 `thinking` / `status` 同构：空值不写盘、旧数据回读 `undefined` ⇒ **零迁移**（`core/schema-contract.ts` 允许可选新增） |
 | `src/components/chat/PromptTraceSummary.vue`（新增）+ `MessageBubble.vue` | 助手气泡下的"本轮注入 N 条设定"折叠条，展开后每条给出书名 + 条目标题 + 命中关键词，书名可点回 `/worldbook`（带 `from`） |
 | `src/components/layout/ContextPanel.vue` | 删除假的三段预算堆叠条（`char.tokenBudget.*` 只有初始化写点、从不重算 ⇒ 进度恒 0、"剩余"恒等初值），改为**真实 prompt token 累计 / 上限 / 剩余** + 一句说明；随之失效的 `segments` 计算与 `.token-segment` 用法一并撤除（D-H） |
 | `i18n locales/{zh,en}.ts` | 各 +3 键（`ctx.tokenHint`、`trace.summary`、`trace.openBook`） |
 | 测试 | 新增 `tests/core/prompt-trace.test.ts`：裁剪视图**不得含正文**（断言序列化结果不含 content 片段）、未命中关键词回退条目 keys 并截断到 4、空标题回退 `#id`、持久化往返与"空值不写字段/旧数据读为 undefined"、组件三态（无痕迹不渲染 / 折叠 / 展开并跳 `/worldbook?from=/chat`） |
 
-**尚未完成、不可当作已完成**：E02 的**浏览器级**证据还没有。上面的测试是服务层 + 组件层。真实链路（配置 mock API → 建世界书 → 绑角色 → 发消息 → 断言气泡出现痕迹且刷新后仍在）需要一个新 e2e，登记为 **M2-b3 第一项**，实现路径已明确：复用 `e2e/chat-flow.spec.ts` 的 mock SSE 拦截与 `e2e/long-history-scroll.spec.ts` 的 IndexedDB 造数范式。因此 §四 中"世界书触发可感知"一行在本批次只能标为**部分验证**。
+**尚未完成、不可当作已完成（M2-b2 时的表述，已由 M2-b3 闭环，见下节）**：E02 的**浏览器级**证据当时还没有，只有服务层 + 组件层测试。
+
+**并且本节的"改了什么"有一句不实陈述**：`chat-generation.ts` 的两处 `onPromptBuilt` 写的是 `card.promptTrace`，`card` 是 `uiCharToCard()` 产出的 CharacterCard（**不是**消息），因此痕迹既没上屏也没落盘；`tests/core/prompt-trace.test.ts` 只测纯函数与组件 props，测不到这条断链。同一批次的 `tests/core/prompt-trace.test.ts:19` fixture 还漏了 `LorebookEntry` 必填的 `strategy` / `probability`，`vue-tsc` 实际会报错——M2-b2 报出的"typecheck 退出码 0"是错的，M2-b3 已修。
+
+### M2-b3 E02 的浏览器级证据（并抓出一次静默失效 + 一个新缺陷）
+
+| 文件 | 实际改动 |
+|---|---|
+| `e2e/ux-prompt-trace.spec.ts`（新增） | 真实链路一条：`page.route` 拦 mock SSE → `/settings?cat=model` 建并激活 Profile → `page.evaluate` 往 IndexedDB `lorebooks` store 写一本 `scope:'global'` + `strategy:'constant'` 的条目 → 发消息 → 依次断言 ①就绪芯片 `[data-rel-jump="readiness-worldbook"]` 含 `is-ready`（与痕迹同源，两条互相印证）②气泡下 `.trace-toggle` 文案 `1 条设定` ③展开后 `.trace-entry` = `永恒酒馆`、`.trace-link` = 书名 ④点书名落到 `/worldbook?from=/chat` ⑤`chats` store 里确有 `promptTrace`（存储层证据，不只是内存）⑥刷新后重开该会话，正文与痕迹都在 |
+| `tests/stores/chat-prompt-trace.test.ts`（新增） | store 级契约 4 例：常驻 + 关键词各 1 条 ⇒ 痕迹 2 条且**序列化结果不含正文**、命中条目带 `keys:['酒馆']`；**负向对照**无世界书时 `promptTrace` 为 `undefined`（且回复正文仍正常生成，避免空断言）；`persistChat` 后 `loadChat` 可回读；重新生成清空旧痕迹 |
+| `src/stores/chat-generation.ts` | 落点由 `card` 改为 `liveMsg`（发送 `:731`）与 `target`（重新生成 `:1078`）；重新生成的复位块补 `target.promptTrace = undefined`，与 `thinking` / `status` 同批处理；并就地留一行"为何不能写 card"的成因注释 |
+| `tests/core/prompt-trace.test.ts` | fixture 补齐 `LorebookEntry` 必填字段 `strategy` / `probability`，`npm run typecheck` 归零 |
+
+**静默失效是怎么被发现的（方法论）**：`CharacterCard` 有 `[key: string]: unknown`（`core/character-card.ts:153`），所以 `card.promptTrace = …` 是**类型合法的错写**——纯静态门禁永远不会红。只有把"用户能不能看见"作为断言目标（e2e 找 `.trace-toggle`）才会暴露。这是本分支第二次踩同一类坑（第一次是"给 store 里未导出的字段赋值"），因此守卫按可执行形式补齐：
+
+| 反证实验 | 结果 |
+|---|---|
+| 把落点改回 `card.promptTrace` 后跑 `tests/stores/chat-prompt-trace.test.ts` | **2 failed / 2 passed**（第 1、3 例红：痕迹不在消息上、落盘也就没有），证明新守卫确实咬得住；随后改回 `liveMsg` 并复跑 4 例全绿 |
+| M2-b3 e2e 首次运行（修复前） | `expect(locator).toBeVisible() failed … waiting for locator('.msg-bubble.msg-assistant').last().locator('.trace-toggle')` ⇒ 回复正文已渲染（`你好，旅人！` 断言先通过），唯独痕迹缺失 ⇒ 定位到"算出来了但挂错对象" |
+
+**顺带实测出的新缺陷（登记为 D-Q，排期 M2-b4）**：第二次失败发生在"刷新后仍在"这一步——`chats` store 里明明有这条会话与这个字段（第 ⑤ 步的 `expect.poll` 通过），刷新后界面却一个气泡都没有，直到测试显式点击左侧会话行才恢复。成因是 `loadChatHistory` 只在 `openSession`（列表点击）这一条路径上被调用，而 `uiCharToCard()` 根本不写 `messages`，所以启动时"保留角色卡 messages"的那段逻辑读到的是恒不存在的字段。`docs/dev/P2-11-virtualization-plan.md:52` 记的"已最小修复（保留 messages）⇒ 刷新后会话历史不再丢失"与代码现状不符，M2-b4 实施时一并回写该文档。
+
+**验证证据（M2-b3 最终状态，全量重跑）**
+| 门禁 | 结果 |
+|---|---|
+| `npm run typecheck` | 退出码 **0**（含 M2-b2 遗留 fixture 报错已修） |
+| `npm run lint` | 退出码 0，无 warning 残留 |
+| `i18n:check:strict` | 通过，`src` 全部 **193** 个文件无硬编码中文 |
+| `check:css-conventions` | **5/5** 通过（断点白名单 / hover 守卫 / `!important` 基线 / ≥16px 控件 / viewport） |
+| `snapshot:migration:check`、`runtime:db:schema:check` | 全部自洽（`promptTrace` 为可选新增字段，零迁移结论未变） |
+| `a11y:contrast` | 通过，实际扫描 **121** 处（基线 131，已收敛 10 处） |
+| `npm run test:coverage` | 退出码 **0**，**78.89 / 73.61 / 80.98 / 80.81**（阈值 78/73/78/78 未放松）；新增 4 例 store 契约 + 组件/纯函数 13 例全绿 |
+| E2E（msedge + mobile-msedge + mobile-functional） | **52 passed**（2.3 分钟），含新增的 `ux-prompt-trace.spec.ts` |
+| E2E（webkit · Safari 内核） | **本机已补验**：`npx playwright install webkit` 装上 WebKit 26.5（`ms-playwright\webkit-2336`）后，`--project=webkit` **9 passed**（1.0 分钟，`chat-flow` / `group-chat-flow` ×2 / `character-batch-import` ×3 / `character-crud` / `backup-restore` / `worldbook-flow`）。本分支此前各批次一律记"webkit 本机未验证、留给 CI"，此限制就此关闭。另把 `ux-prompt-trace.spec.ts` 加入 webkit 的 `testMatch`（该链路同时用 IndexedDB 造数与 SSE 流式，Safari 内核需要自己的那份证据），实测 **1 passed**（11.5s） |

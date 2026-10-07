@@ -22,6 +22,8 @@ function activated(over: Partial<ActivatedEntry> = {}): ActivatedEntry {
       keys: ['酒馆', ' inn'],
       content: '一段很长很长的设定正文，不应该出现在界面上。'.repeat(50),
       enabled: true,
+      strategy: 'keyword',
+      probability: 0,
       insertionOrder: 0,
       insertionPosition: 'beforeCharDefs',
       depth: 4,

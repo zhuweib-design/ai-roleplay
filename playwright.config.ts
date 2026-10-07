@@ -66,6 +66,8 @@ export default defineConfig({
         '**/character-crud.spec.ts',
         '**/backup-restore.spec.ts',
         '**/worldbook-flow.spec.ts',
+        // M2-b3：注入痕迹链路同时含 IndexedDB 造数与 SSE 流式，Safari 内核需另有一次实测
+        '**/ux-prompt-trace.spec.ts',
       ],
       testIgnore: '**/mobile/**',
       use: { ...devices['Desktop Safari'] },
