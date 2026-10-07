@@ -68,7 +68,7 @@
 | D-8 | ✅ 修复（@click.stop） | 一行模板改动；B16 建议"点按钮应展开"的正式 spec 待 D-8 验证后补 |
 | D-9 | ✅ 修复 | random-events-persistence 3 项（往返/配置/备份载荷防御） |
 | D-10 | ✅ 修复 | chat-compat + chat.test 更新为新语义（拒绝前置/不污染消息/三态判定） |
-| D-1 | ✅ 代码侧就绪（方案 A）+ GitHub 侧两步待用户操作 | 市场清单 URL 改 `VITE_MARKET_INDEX_URL` 可配；用户需：①默认分支改 `main` ②仓库转 public |
+| D-1 | ✅ **已修复（方案 A 执行完毕）** | 产品决策选 A：仓库转 public + main 分支推送（`790f54e`，含 market/index.json）；实测 raw URL 返回有效 JSON 且远端与本地清单一致（1 条示例卡）——「加载远程条目」功能恢复 |
 | D-2 | ✅ 修复（含实机探针断言） | 助手气泡操作条改左锚定向右展开（`.msg-wrap-assistant .msg-toolbar { left:6px; right:auto }`）；1280×720 实测两条助手操作条 x=384 > 抽屉右缘 352，命中测试命中操作条本身 |
 | D-11 | ✅ 修复（合并页 + 入口跳转） | MoreView（/more）+ 底栏"更多"Tab；mobile-layout E2E 主入口清单同步 6 项 |
 | O-9① / O-19 / O-20 / O-22 / O-24 | ✅ 修复 | tsc 0；i18n strict 183 文件 |
@@ -127,6 +127,8 @@
   git push origin master:main     # D-1 方案 A：创建 main 分支（含 market/index.json）
   ```
   然后在 GitHub：Settings → Branches 默认分支改 `main`；Settings → General → Visibility 改 Public。
+
+  **执行结果（2026-10-03）**：两步已完成（`790f54e` 推送为 `main` + 仓库转 public）；实测 raw URL 返回有效 JSON（1 条示例卡，与本地清单一致）——**D-1 正式闭环**。市场「下载」依赖的登录仍属 Web 形态降级（见 B13），与 D-1 的清单可达性相互独立。
 
 ## 其余各项
 
