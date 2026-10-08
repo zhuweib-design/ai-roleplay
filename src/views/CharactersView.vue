@@ -513,7 +513,7 @@ function tagsPreview(tags: string[]): string {
             class="meta-item meta-tracked"
             data-rel-jump="char-tracked"
             :aria-label="t('characters.trackedAria', { name: char.name })"
-            :title="t('characters.trackedHint')"
+            v-tip="t('characters.trackedHint')"
             @click.stop="openVersions(char.id)"
           >
             <Icon name="git-branch" :size="12" aria-hidden="true" />

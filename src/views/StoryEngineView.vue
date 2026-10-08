@@ -829,7 +829,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             :aria-checked="quickGenTemplate === tpl.id"
             class="template-pill"
             :class="{ active: quickGenTemplate === tpl.id }"
-            :title="tpl.description"
+            v-tip="tpl.description"
             @click="quickGenTemplate = tpl.id"
           >
             {{ tpl.label }}

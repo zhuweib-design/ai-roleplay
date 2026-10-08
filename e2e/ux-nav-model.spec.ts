@@ -18,8 +18,9 @@ test.describe('桌面端分层导航', () => {
     await expect(rail).toBeVisible();
     await expect(rail.locator('.nav-group-label')).toHaveText(GROUP_LABELS);
     await expect(rail.locator('.nav-item')).toHaveCount(15);
-    // 每个入口都带一句话职责（hover 提示），不再只有图标和名字
-    await expect(rail.locator('.nav-item[title]')).toHaveCount(15);
+    // 每个入口都带一句话职责，不再只有图标和名字。
+    // 原来断言的是 [title]；title 已迁到 v-tip（键盘聚焦也能拿到），改断 aria-describedby。
+    await expect(rail.locator('.nav-item[aria-describedby]')).toHaveCount(15);
   });
 
   test('侧栏二次排版：不需要滚动就够得着全部入口，设置钉在最底（M2-b7）', async ({ page }) => {

@@ -56,7 +56,7 @@ function onChip(chip: ReadinessChip): void {
       class="readiness-chip"
       :class="`is-${chip.state}`"
       :data-rel-jump="chip.dataRelJump"
-      :title="chip.reasonKey ? t(chip.reasonKey) : t('readiness.stateReadyHint')"
+      v-tip="chip.reasonKey ? t(chip.reasonKey) : t('readiness.stateReadyHint')"
       @click="onChip(chip)"
     >
       <span class="chip-dot" aria-hidden="true" />

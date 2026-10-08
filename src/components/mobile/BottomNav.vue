@@ -31,7 +31,7 @@ const tabs = mobileTabEntries().map((entry) => ({
       class="bottom-nav-item"
       :class="{ active: route.name === tab.name }"
       :aria-current="route.name === tab.name ? 'page' : undefined"
-      :title="tab.desc"
+      v-tip="tab.desc"
     >
       <Icon :name="tab.icon" :size="22" />
       <span class="bottom-nav-label">{{ tab.label }}</span>

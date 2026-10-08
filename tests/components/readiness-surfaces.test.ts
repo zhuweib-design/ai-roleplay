@@ -42,7 +42,11 @@ describe('ContextReadinessBar', () => {
     expect(chips).toHaveLength(5);
     const model = wrapper.find('[data-rel-jump="readiness-model"]');
     expect(model.classes()).toContain('is-attention');
-    expect(model.attributes('title')).toContain('模型配置');
+    // v-tip：说明文字挂在 body 上的 tooltip 节点，宿主只留 aria-describedby
+    const describedBy = model.attributes('aria-describedby');
+    expect(describedBy, '芯片应挂 aria-describedby').toBeTruthy();
+    const bubble = document.getElementById(describedBy as string);
+    expect(bubble?.textContent).toContain('模型配置');
 
     await model.trigger('click');
     await flushPromises();
@@ -78,7 +82,9 @@ describe('ContextReadinessBar', () => {
     const model = mount(ContextReadinessBar, { global: { plugins: [router] } }).find('[data-rel-jump="readiness-model"]');
     expect(model.classes()).toContain('is-locked');
     expect(model.text()).toContain('已锁定');
-    expect(model.attributes('title')).not.toContain('未配置');
+    const tipNode = document.getElementById(model.attributes('aria-describedby') as string);
+    expect(tipNode?.textContent ?? '').toContain('主密码');
+    expect(tipNode?.textContent).not.toContain('未配置');
   });
 });
 

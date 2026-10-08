@@ -19,7 +19,11 @@ test.describe('就绪状态与关联跳转', () => {
 
     const model = bar.locator('[data-rel-jump="readiness-model"]');
     await expect(model).toHaveClass(/is-attention/);
-    await expect(model).toHaveAttribute('title', /模型配置/);
+    // 说明从原生 title 迁到 v-tip：宿主挂 aria-describedby，文案在 body 的 tooltip 节点里
+    await expect(model).toHaveAttribute('aria-describedby', /tk-tip-\d+/);
+    await expect(
+      model.evaluate((el) => document.getElementById(el.getAttribute('aria-describedby') ?? '')?.textContent ?? '')
+    ).resolves.toMatch(/模型配置/);
 
     await model.click();
     await expect(page).toHaveURL(/\/settings\?cat=model&from=\/chat/);

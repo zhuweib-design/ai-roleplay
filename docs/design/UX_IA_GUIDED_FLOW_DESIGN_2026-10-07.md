@@ -554,7 +554,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
 | **未落地（下面小节仍按目标态描述，别当成现状）** | 常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
 
 ### 6.1 新用户第一次打开（改造后）
@@ -619,7 +619,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 11 | 持久化前缀统一（`aijiuguan.stopwordFilterEnabled` vs `ai-roleplay:*`） | 迁移需双路读写 | 需跨端迁移或备份格式变更 |
 | 12 | `personas` 死存储清理（`storage/indexeddb-adapter.ts:330-347`、`core/backup.ts:51`、`scope:'persona'` 过滤值 `core/lorebook.ts:118`） | O-13 已删功能，数据残留需迁移脚本 | 备份体积或 schema 演进需要 |
 | 13 | 检索参数 UI 化（`RAGConfig` 的 `maxChunks/depth/recentMessageCount/maxKeywords`，加 chunk size 与相似度阈值） | 属能力暴露，需先有「检索」类承载 | 召回质量可调需求 |
-| 14 | `title=` 71 处全量迁移 `HelpTip` + 键盘可达性审计 | M3 先建原语与关键项 | 无障碍专项 |
+| 14 | ~~`title=` 71 处全量迁移 `HelpTip`~~ **前半已在 M4-b1 结案**（口径纠正为 75 处 `:title=`，其中 42 处是 `<Modal>` 对话框标题、真正原生 tooltip 是 33 处；已按 v-tip / aria-label / 可见文字处置，仅剩 1 处白名单，并有 `tests/accessibility/no-native-title.test.ts` 守着）。**剩下的**：全站键盘焦点顺序与陷阱审计（本批只保证 tooltip 类信息不再依赖指针） | M3 先建原语与关键项 | 无障碍专项。**改道记录**：原方案的 HelpTip 组件在 33 处里只能服务 2 处（按钮不能套按钮、v-for 会重复 id、不支持插值），故改用 `v-tip` 指令 |
 | 15 | 消息 `outcome/error` 旗标（现错误写进 `content`） | 属数据契约扩展，本议题只做 trace 一个可选字段 | T3 需要"成功"而非"已回复" |
 | 16 | 引导有效性度量（纯本地，不上传） | 需先定度量口径与隐私边界 | 需判断哪些任务卡真有用 |
 | 17 | 巨型 SFC 继续拆分（17 个 >1000 行，本次只按可见密度拆） | 纯工程收益，混做放大回归面 | 下次触碰同文件的任意需求 |
@@ -1518,3 +1518,57 @@ axe 立刻报 `heading-order`（该页此前没有 h2，h1 直接跳 h3）。改
 | 新用例 | `e2e/ux-quick-forms.spec.ts` 5 例：默认落快速档且完整表单不在 DOM、头部保存按钮不并存、空名不建角色并给原因、切档双向、三步做完后**这本书出现在上下文面板**（把"生效"闭环到 E03 那一列上）、空名不建书 |
 | 浏览器实测 | 快速档填两项 → 建好 → URL 到 `/chat` → 角色列表出现该卡；三步做完后 `/chat` 上下文面板显示"世界书 1 本 / 港口设定 E2E / 1 条启用"；无 pageerror |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m3-b3-quick-forms/`：`char-quick-form.png` / `char-full-mode-switch.png` / `wb-empty-with-flow-entry.png` / `wb-three-steps-initial.png` / `wb-three-steps-done.png` |
+
+### M4-b1 原生 title 迁移与键盘可达性（§七 #14 结案）
+
+**先纠正口径**：§七 #14 写的是"71 处 `title=`"。实测 `src` 下 59 个 .vue 文件里 `:title=` 共 **75 处**，
+其中 **42 处是 `<Modal :title>` 的对话框标题**（不是 HTML tooltip，本来就该留），
+真正的原生 tooltip 是 **33 处**。静态 `title="..."` 一处也没有，全部是绑定形式。
+
+**为什么最终不是"迁到 HelpTip"**（这是本批最重要的一次改道，原因是先按原方案试过才发现走不通）：
+HelpTip 自己渲染一个 `<button>`，而 33 处里 **21 处的宿主本身就是按钮/链接/label** —— 按钮里再放按钮是非法 HTML；
+另有 **12 处在 `v-for` 里**（侧栏 15 个入口、世界书条目树可达数百行），HelpTip 的 id 由文案键派生，
+同文案在每行生成同一个 id，`aria-describedby` 会全部指到第一行；
+还有一半以上站点的文案是**插值结果或数据字段**（`{level} 层级`、`preset.description`），HelpTip 只接受 `MessageKey`。
+所以改成指令形态 `v-tip`（`src/core/tip.ts`，`main.ts` 注册）：宿主元素不变，气泡节点由指令挂到 body，
+id 用自增计数器保证唯一，值可以是任意字符串并随绑定更新。
+
+| 处置 | 处数 | 说明 |
+|---|---|---|
+| 改 `v-tip` | 29 | 侧栏 15、就绪芯片 5、会话列表 3、聊天页 10（含搜索/导出/快回脚本）、其余 6 |
+| 改 `:aria-label` | 1 | `WorldBookView` 树的层级徽标：行数不可控，每行挂一个气泡节点不划算 |
+| 保留原生 title | 1 | `LocalModelView` 基准历史芯片（嵌套 `v-for`，行数不可控，且耗时本身有可见文字） |
+| 改成**可见文字** | 1 | 市场页 Beta 免责：原来只在 title 里，触屏与键盘都拿不到，而它是本页最重要的一句免责 |
+| 直接删掉 | 1 | 数据面板"单档案模式"说明——该按钮此时是 `disabled`（禁用元素不进焦点顺序，挂 v-tip 也读不到），而**这句话在同一个块上方已有可见版本**（`role="note"`），title 只是重复 |
+
+**顺带修掉的两处真实无障碍缺口**（都是迁移过程中撞出来的）：
+1. `ChatMain.vue` 的 token 指标整块带 `aria-hidden="true"` ⇒ 读屏完全拿不到"已耗 token / 缓存命中率"。
+   去掉 aria-hidden，并给两个指标 span 补 `tabindex="0"`——**不可聚焦的元素挂 `aria-describedby` 等于没挂**。
+2. 组件测试拿不到 `main.ts` 注册的全局指令：Vue 只报一句 `Failed to resolve directive` 就静默跳过，
+   于是 `v-tip` 的 `aria-describedby`、`v-range` 的 `--range-pct` 在单测里全部消失。
+   已在 `tests/setup.ts` 统一 `config.global.directives` 注册，测试与运行时看的是同一套指令。
+
+**把待办变成会咬人的检查**：新增 `tests/accessibility/no-native-title.test.ts`，
+扫 `src` 全部 .vue，按宿主标签分类断言——交互元素上有 `title` 直接失败；
+非交互元素的 `title` 必须在白名单里且写明原因；剩余总数写死为 1（多一处少一处都会红）。
+该用例还钉了 `files.length > 50`，防止"路径解析坏掉 → 0 命中 → 当成 0 违规"的假绿
+（这个假绿真的出现过：最初的 `import.meta.url` 解析在 jsdom 下拿到 `/@fs/...`，扫描结果为 0，
+前两条断言就这么"通过"了）。
+
+**被改写的既有断言（4 处，语义不变）**：`tests/components/readiness-surfaces.test.ts:45,81`、
+`e2e/ux-readiness.spec.ts:22`、`e2e/ux-nav-model.spec.ts:22` 原来都断言 `title` 属性，
+现改为断言 `aria-describedby` + body 上 tooltip 节点的文案；侧栏那条仍是"15 个入口都带一句话职责"。
+
+**验证证据（M4-b1 最终状态，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run lint` / `npm run build` | 退出码均 **0**（build 曾抓到守卫用例的 `noUncheckedIndexedAccess` 类型错，改判空而不是加 `!`） |
+| `i18n:check:strict` / `check:css-conventions` / `a11y:contrast`(扫描 **121**，基线 131) + self-test / `runtime:db:schema:check` / `snapshot:migration:check` / `eval:manifest` / `check:csp` / `check:ort` | 全部退出码 **0** |
+| `npm run test:coverage` | **3770 passed / 3 skipped**，覆盖率 **79.74 / 74.13 / 81.82 / 81.64**；`tip.ts` 语句 **91.17%** |
+| 新增测试 | `tests/core/tip.test.ts` 8 例（含"多个宿主各自唯一 id"与"卸载后不泄漏 body 子节点"）、`tests/accessibility/no-native-title.test.ts` 3 例 |
+| E2E（msedge + mobile-functional + mobile） | **74 passed / 0 failed**（1.8 分钟） |
+| E2E（webkit，串行） | **16 passed / 0 failed** |
+| 浏览器实测（Edge 1440×900） | 侧栏 `.nav-item[aria-describedby]` **15**、`.nav-item[title]` **0**；就绪芯片 5 个全部挂上描述；**键盘 Tab 聚焦即出现气泡**（文案"与单个角色连续对话"，定位 top 67px / left 8px）；芯片聚焦读出"还没有可用的模型配置，发送后收不到回复"；Esc 立即收起（`is-visible` 归 0）；市场页 Beta 说明已是可见文字；无 pageerror |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m4-b1-tips/`：`tip-on-keyboard-focus.png`（键盘触发的气泡）/ `tip-readiness-chip.png`（芯片原因文案） |
+| 未做 | 33 处之外的"全站键盘可达性审计"（§七 #14 的后半句）仍留作专项——本批只保证 tooltip 类信息不再依赖指针，未系统检查焦点顺序与陷阱 |

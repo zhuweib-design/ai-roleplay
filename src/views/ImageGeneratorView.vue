@@ -310,7 +310,7 @@ onMounted(async () => {
                   :aria-checked="store.params.style === preset.id"
                   class="style-chip"
                   :class="{ active: store.params.style === preset.id }"
-                  :title="preset.description"
+                  v-tip="preset.description"
                   @click="store.setStyle(preset.id as StylePresetId)"
                 >
                   {{ preset.name }}

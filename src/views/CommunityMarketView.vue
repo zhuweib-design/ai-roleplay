@@ -395,11 +395,13 @@ function ratingStars(rating: number): string {
       </button>
       <h1 class="page-title">
         {{ t('market.title') }}
-        <span
-          class="beta-badge"
-          :title="t('market.betaTitle')"
-        >{{ t('market.beta') }}</span>
+        <!--
+          这条披露原来只在 title 里：触屏点不到、键盘聚焦也不显示，而它是本页最重要的免责。
+          改成页头下面一行可见文字，不再依赖悬停。
+        -->
+        <span class="beta-badge">{{ t('market.beta') }}</span>
       </h1>
+      <p class="beta-disclosure">{{ t('market.betaTitle') }}</p>
       <div class="header-right">
         <template v-if="store.isLoggedIn">
           <span class="user-info">
@@ -1001,6 +1003,14 @@ type="button"
 }
 
 /* T-14: 市场 Beta 徽标 */
+.beta-disclosure {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
 .beta-badge {
   display: inline-block;
   margin-left: 8px;

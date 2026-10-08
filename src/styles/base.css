@@ -156,6 +156,31 @@ textarea,
   }
 }
 
+/* v-tip 气泡（src/core/tip.ts）：常驻 DOM 但不可见，accname 仍会读它，
+   所以不能用 display:none / visibility:hidden，只能用 opacity */
+.tk-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: var(--z-toast, 40);
+  max-width: min(280px, 80vw);
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--card-elevated, var(--card));
+  color: var(--foreground);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.tk-tip.is-visible {
+  opacity: 1;
+}
+
 /* 开关 */
 .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
 .switch input { opacity: 0; width: 0; height: 0; position: absolute; }

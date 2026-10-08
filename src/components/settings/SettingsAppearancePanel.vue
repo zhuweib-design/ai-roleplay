@@ -474,7 +474,7 @@ const themeOptions = computed<ThemeOption[]>(() => [
               class="palette-swatch"
               role="listitem"
               :style="{ background: color }"
-              :title="`${color} · ${Math.round((settings.customTheme?.paletteRatios[idx] ?? 0) * 100)}%`"
+              v-tip="`${color} · ${Math.round((settings.customTheme?.paletteRatios[idx] ?? 0) * 100)}%`"
             >
               <span class="palette-hex">{{ color }}</span>
             </div>

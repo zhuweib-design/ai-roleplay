@@ -1045,13 +1045,13 @@ function isSystem(msg: { role: string }): boolean {
                   type="button"
                   class="action-btn"
                   :aria-label="t('group.exportStAria')"
-                  :title="t('group.exportStTitle')"
+                  v-tip="t('group.exportStTitle')"
                   @click="groupStore.downloadGroupSt(currentGroup.id)"
                 >
                   <Icon name="download" :size="14" />
                   <span>{{ t('group.exportSt') }}</span>
                 </button>
-                <label class="action-btn" :title="t('group.importStTitle')">
+                <label class="action-btn" v-tip="t('group.importStTitle')">
                   <Icon name="upload" :size="14" />
                   <span>{{ t('group.importSt') }}</span>
                   <input
@@ -1112,7 +1112,7 @@ function isSystem(msg: { role: string }): boolean {
                 :key="member.characterId"
                 class="member-chip"
                 role="listitem"
-                :title="t('group.memberTitle', { name: member.name, talk: member.talkativeness ?? 50 })"
+                v-tip="t('group.memberTitle', { name: member.name, talk: member.talkativeness ?? 50 })"
               >
                 <Avatar
                   :character="{

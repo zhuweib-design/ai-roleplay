@@ -747,19 +747,26 @@ function startWithExample(text: string) {
         <span class="model-badge" :class="{ 'not-configured': !settings.activeProfile }">{{ settings.activeProfile?.model ?? t('chat.modelNotConfigured') }}</span>
       </div>
 
-      <div class="chat-token" aria-hidden="true">
+      <!--
+        原来整块 aria-hidden="true"：读屏完全拿不到 token 用量与缓存命中率。
+        去掉后，两个指标 span 补 tabindex="0"，键盘 Tab 到就能听到 v-tip 的描述
+        （不可聚焦的元素挂 aria-describedby 等于没挂）。
+      -->
+      <div class="chat-token">
         {{ t('chat.tokenUsed', { count: (chatStore.totalTokenUsage / 1000).toFixed(1) }) }}
         <span
           v-if="chatStore.prefixCacheHitRate !== null"
           class="cache-rate"
-          :title="t('chat.cacheHitTitle', { hit: chatStore.cacheUsage.hitTokens, miss: chatStore.cacheUsage.missTokens, reported: chatStore.cacheUsage.reported })"
+          tabindex="0"
+          v-tip="t('chat.cacheHitTitle', { hit: chatStore.cacheUsage.hitTokens, miss: chatStore.cacheUsage.missTokens, reported: chatStore.cacheUsage.reported })"
         >
           · {{ t('chat.cacheHit', { percent: (chatStore.prefixCacheHitRate * 100).toFixed(0) }) }}
         </span>
         <span
           v-else-if="chatStore.prefixStableRate !== null"
           class="cache-rate local"
-          :title="t('chat.prefixStableTitle', { stable: chatStore.prefixStability.stable, total: chatStore.prefixStability.total, last: chatStore.ttftStats.lastMs, avg: chatStore.ttftStats.avgMs })"
+          tabindex="0"
+          v-tip="t('chat.prefixStableTitle', { stable: chatStore.prefixStability.stable, total: chatStore.prefixStability.total, last: chatStore.ttftStats.lastMs, avg: chatStore.ttftStats.avgMs })"
         >
           · {{ t('chat.prefixStable', { percent: (chatStore.prefixStableRate * 100).toFixed(0) }) }}
         </span>
@@ -769,7 +776,7 @@ function startWithExample(text: string) {
       <div
         v-if="storyTimeText"
         class="chat-story-time"
-        :title="t('chat.storyTimeTitle')"
+        v-tip="t('chat.storyTimeTitle')"
         role="status"
         aria-live="polite"
       >
@@ -782,7 +789,7 @@ function startWithExample(text: string) {
           type="button"
           class="hover-surface panel-toggle-btn"
           :aria-label="t('chat.searchMessages')"
-          :title="t('chat.searchMessagesTitle')"
+          v-tip="t('chat.searchMessagesTitle')"
           :aria-expanded="searchOpen"
           @click="toggleSearch"
         >
@@ -792,7 +799,7 @@ function startWithExample(text: string) {
           type="button"
           class="hover-surface panel-toggle-btn"
           :aria-label="t('chat.exportChat')"
-          :title="t('chat.exportChatTitle')"
+          v-tip="t('chat.exportChatTitle')"
           @click="handleExportChat"
         >
           <Icon name="download" :size="20" />
@@ -835,14 +842,14 @@ function startWithExample(text: string) {
           {{ t('chat.searchNoResults') }}
         </template>
       </span>
-      <span v-if="activeSearchResult" class="chat-search-snippet" :title="activeSearchResult.snippet">
+      <span v-if="activeSearchResult" class="chat-search-snippet" v-tip="activeSearchResult.snippet">
         {{ activeSearchResult.snippet }}
       </span>
       <button
         type="button"
         class="chat-search-btn"
         :aria-label="t('chat.searchPrevious')"
-        :title="t('chat.searchPrevious')"
+        v-tip="t('chat.searchPrevious')"
         :disabled="searchResults.length === 0"
         @click="navigateSearch(-1)"
       >
@@ -852,7 +859,7 @@ function startWithExample(text: string) {
         type="button"
         class="chat-search-btn"
         :aria-label="t('chat.searchNext')"
-        :title="t('chat.searchNext')"
+        v-tip="t('chat.searchNext')"
         :disabled="searchResults.length === 0"
         @click="navigateSearch(1)"
       >
@@ -862,7 +869,7 @@ function startWithExample(text: string) {
         type="button"
         class="chat-search-btn"
         :aria-label="t('chat.closeSearch')"
-        :title="t('chat.closeSearch')"
+        v-tip="t('chat.closeSearch')"
         @click="closeSearch"
       >
         <Icon name="close" :size="16" />
@@ -988,7 +995,7 @@ function startWithExample(text: string) {
               type="button"
               class="qr-btn"
               :disabled="chatStore.isGenerating"
-              :title="btn.script"
+              v-tip="btn.script"
               @click="handleQuickReply(btn)"
             >
               {{ btn.label }}

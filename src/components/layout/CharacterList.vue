@@ -268,7 +268,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
                 <button
                   type="button"
                   class="conv-act-btn"
-                  :title="conv.pinned ? t('charList.unpin') : t('charList.pin')"
+                  v-tip="conv.pinned ? t('charList.unpin') : t('charList.pin')"
                   :aria-label="conv.pinned ? t('charList.unpin') : t('charList.pin')"
                   @click="onTogglePin(conv)"
                 >
@@ -277,7 +277,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
                 <button
                   type="button"
                   class="conv-act-btn"
-                  :title="conv.archived ? t('charList.unarchive') : t('charList.archive')"
+                  v-tip="conv.archived ? t('charList.unarchive') : t('charList.archive')"
                   :aria-label="conv.archived ? t('charList.unarchive') : t('charList.archive')"
                   @click="onToggleArchive(conv)"
                 >
@@ -286,7 +286,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
                 <button
                   type="button"
                   class="conv-act-btn danger"
-                  :title="t('charList.delConv')"
+                  v-tip="t('charList.delConv')"
                   :aria-label="t('charList.delConv')"
                   @click="askDelete(conv)"
                 >

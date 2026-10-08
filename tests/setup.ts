@@ -84,6 +84,21 @@ if (typeof ResizeObserver === 'undefined') {
   });
 }
 
+// ── 全局指令注册 ──
+// 应用侧在 src/main.ts 里 app.directive(...) 注册的全局指令，组件测试用 mount() 时
+// 拿不到（Vue 只会报 "Failed to resolve directive" 然后静默跳过），
+// 于是 v-tip 挂的 aria-describedby、v-range 写的 --range-pct 在测试里全部消失。
+// 在这里统一注册，测试与运行时看到的是同一套指令。
+import { config } from '@vue/test-utils';
+import { vTip } from '../src/core/tip';
+import { vRange } from '../src/core/range-fill';
+
+config.global.directives = {
+  ...(config.global.directives ?? {}),
+  tip: vTip,
+  range: vRange,
+};
+
 // ── 加载全局样式（供 axe-core 颜色对比度等规则使用） ──
 import '../src/styles/tokens.css';
 import '../src/styles/themes.css';

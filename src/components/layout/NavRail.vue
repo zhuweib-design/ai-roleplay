@@ -53,7 +53,7 @@ function handleNav(item: NavEntry) {
             :class="{ active: activeId === item.id }"
             :aria-current="activeId === item.id ? 'page' : undefined"
             :aria-label="t(item.labelKey)"
-            :title="t(item.descKey)"
+            v-tip="t(item.descKey)"
             :data-rel-jump="`nav-${item.id}`"
             @click="handleNav(item)"
           >
@@ -73,7 +73,7 @@ function handleNav(item: NavEntry) {
           :class="{ active: activeId === item.id }"
           :aria-current="activeId === item.id ? 'page' : undefined"
           :aria-label="t(item.labelKey)"
-          :title="t(item.descKey)"
+          v-tip="t(item.descKey)"
           :data-rel-jump="`nav-${item.id}`"
           @click="handleNav(item)"
         >

@@ -175,6 +175,16 @@
 - 测试：`tests/components/quick-character-form.test.ts` 6 例、`tests/components/quick-lorebook-flow.test.ts` 6 例、`tests/accessibility/new-primitives-axe.test.ts` 扩到 6 例（两个新表单各 0 违规）、`e2e/ux-quick-forms.spec.ts` 5 例（含"三步做完后这本书出现在上下文面板"这条闭环断言）。6 条既有 e2e 在用例里显式切到完整表单（它们测的就是完整编辑器），断言内容未改。
 - 全量：单测 **3759 passed**，覆盖率 79.69 / 74.16 / 81.82 / 81.57；E2E Chromium 三 project **74 passed**、webkit **16 passed**；`build` 与 9 项静态门禁退出码均 0。
 
+### 变更（UX/IA M4-b1：原生 title 迁移与键盘可达性，§七 #14 前半结案）
+- **口径纠正**：§七 #14 原写"71 处 `title=`"。实测 `src` 下 59 个 .vue 里 `:title=` 共 **75 处**，其中 **42 处是 `<Modal :title>` 对话框标题**（不是 HTML tooltip，保留），真正的原生 tooltip 是 **33 处**；静态 `title="..."` 一处也没有。
+- **改道**：原方案是迁到 `HelpTip` 组件，实测只能服务 33 处中的 2 处——HelpTip 自己渲染 `<button>`，而 21 处宿主本身就是按钮/链接/label（按钮套按钮非法）；12 处在 `v-for` 里（侧栏 15 项、世界书树可达数百行），其 id 由文案键派生会让 `aria-describedby` 全部指到第一行；一半以上站点的文案是插值结果或数据字段，而它只接受 `MessageKey`。改为新增指令 **`src/core/tip.ts` 的 `v-tip`**（`main.ts` 注册）：宿主不变、气泡挂 body、id 自增唯一、值可为任意字符串并随绑定更新；`base.css` 加 `.tk-tip`（用 `opacity` 而不是 `display/visibility` 隐藏，否则 accname 读不到）。
+- 33 处处置：**29 处改 `v-tip`**（侧栏 15、就绪芯片 5、会话列表 3、聊天页 10、其余 6）；**1 处改 `:aria-label`**（世界书树层级徽标，行数不可控不划算挂气泡）；**1 处保留原生 title 并进白名单**（基准历史嵌套 `v-for`）；**1 处改成可见文字**（市场页 Beta 免责——触屏与键盘都拿不到，而它是本页最重要的免责）；**1 处直接删除**（数据面板"单档案模式"说明：按钮此时 `disabled` 不进焦点顺序，且同块上方已有 `role="note"` 可见版本，title 只是重复）。
+- 顺带修掉两处真实缺口：**①** `ChatMain.vue` 的 token 指标整块 `aria-hidden="true"` ⇒ 读屏完全拿不到已耗 token 与缓存命中率；去掉 aria-hidden 并给两个指标 span 补 `tabindex="0"`（不可聚焦元素挂 `aria-describedby` 等于没挂）。**②** 组件测试拿不到 `main.ts` 注册的全局指令（Vue 只报 `Failed to resolve directive` 后静默跳过），导致 `v-tip` 与 `v-range` 的效果在单测里全部消失——改在 `tests/setup.ts` 统一 `config.global.directives` 注册。
+- 新增守卫 `tests/accessibility/no-native-title.test.ts`：交互元素上有 `title` 直接失败、非交互元素的 `title` 必须在白名单内、剩余总数写死为 1，并钉 `files.length > 50` 防止"路径解析坏 → 0 命中被当成 0 违规"的假绿（该假绿真的出现过一次：jsdom 下 `import.meta.url` 解析成 `/@fs/...`）。
+- 4 处既有断言按新契约改写、语义不变：`tests/components/readiness-surfaces.test.ts:45,81`、`e2e/ux-readiness.spec.ts:22`、`e2e/ux-nav-model.spec.ts:22` 从断言 `title` 改为断言 `aria-describedby` + body 上 tooltip 的文案。
+- 新增测试：`tests/core/tip.test.ts` 8 例（含多宿主 id 唯一、卸载不泄漏 body 节点）。全量：单测 **3770 passed**、`tip.ts` 语句覆盖 91.17%，E2E Chromium **74 passed**、webkit **16 passed**，build 与 9 项静态门禁退出码均 0。浏览器实测：侧栏 `.nav-item[title]` 从 15 归 0、`[aria-describedby]` 15，**键盘 Tab 聚焦即出现气泡**，Esc 立即收起，无 pageerror。
+- 未做（仍留 §七 #14 后半）：全站键盘焦点顺序与陷阱审计。本批只保证 tooltip 类信息不再依赖指针。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

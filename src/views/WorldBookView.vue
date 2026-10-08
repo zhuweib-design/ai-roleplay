@@ -1243,7 +1243,7 @@ function strategyLabel(s: LorebookStrategy): string {
                     type="button"
                     class="tree-action-btn"
                     :aria-label="t('wb.expandAll')"
-                    :title="t('wb.expandAll')"
+                    v-tip="t('wb.expandAll')"
                     @click="expandAll"
                   >
                     <Icon name="chevron-down" :size="14" />
@@ -1252,7 +1252,7 @@ function strategyLabel(s: LorebookStrategy): string {
                     type="button"
                     class="tree-action-btn"
                     :aria-label="t('wb.collapseAll')"
-                    :title="t('wb.collapseAll')"
+                    v-tip="t('wb.collapseAll')"
                     @click="collapseAll"
                   >
                     <Icon name="chevron-up" :size="14" />
@@ -1327,7 +1327,7 @@ function strategyLabel(s: LorebookStrategy): string {
                     <span
                       class="level-badge"
                       :style="{ color: levelColor(getEntryLevel(entry.id)) }"
-                      :title="t('wb.levelTitle', { level: levelLabel(getEntryLevel(entry.id)) })"
+                      :aria-label="t('wb.levelTitle', { level: levelLabel(getEntryLevel(entry.id)) })"
                     >
                       {{ levelLabel(getEntryLevel(entry.id)).charAt(0) }}
                     </span>
@@ -1384,7 +1384,7 @@ function strategyLabel(s: LorebookStrategy): string {
                       type="button"
                       class="action-btn"
                       :aria-label="t('wb.moveToTop')"
-                      :title="t('wb.moveToTopTitle')"
+                      v-tip="t('wb.moveToTopTitle')"
                       :disabled="getEntryLevel(currentEntry.id) === 0"
                       @click="moveToTopLevel(currentEntry.id)"
                     >
@@ -1395,7 +1395,7 @@ function strategyLabel(s: LorebookStrategy): string {
                       type="button"
                       class="action-btn"
                       :aria-label="t('wb.moveUp')"
-                      :title="t('wb.moveUp')"
+                      v-tip="t('wb.moveUp')"
                       @click="moveUpInLevel(currentEntry.id)"
                     >
                       <Icon name="arrow-up" :size="14" />
@@ -1404,7 +1404,7 @@ function strategyLabel(s: LorebookStrategy): string {
                       type="button"
                       class="action-btn"
                       :aria-label="t('wb.moveDown')"
-                      :title="t('wb.moveDown')"
+                      v-tip="t('wb.moveDown')"
                       @click="moveDownInLevel(currentEntry.id)"
                     >
                       <Icon name="arrow-down" :size="14" />

@@ -445,7 +445,6 @@ function triggerBackupImport() {
                 type="button"
                 class="data-mgmt-btn"
                 :disabled="!storageMultiProfile"
-                :title="storageMultiProfile ? '' : t('settingsView.profileSingleNotice')"
                 @click="handleCreateProfile"
               >
                 <Icon name="plus" :size="14" />
