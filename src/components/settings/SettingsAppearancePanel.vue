@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
+import Collapse from '@/components/common/Collapse.vue';
 import type { ChatBackground, BubbleStyle } from '@/types';
 import type { CustomTheme } from '@/types';
 import type { ThemeName } from '@/types';
@@ -535,15 +536,14 @@ const themeOptions = computed<ThemeOption[]>(() => [
       </div>
     </section>
 
-    <!-- F08 UI 自定义（聊天背景 + 气泡样式 + 自定义 CSS） -->
-    <section class="settings-section" aria-labelledby="ui-custom-section-title">
-      <header class="section-header">
-        <h2 id="ui-custom-section-title" class="section-title">
-          <Icon name="image" :size="16" />
-          <span>{{ t('settingsView.uiCustomSection') }}</span>
-        </h2>
-      </header>
-
+    <!-- F08 UI 自定义（聊天背景 + 气泡样式 + 自定义 CSS）：M4-b2 归入高级段，默认收起 -->
+    <Collapse
+      title-key="settingsView.uiCustomSection"
+      hint-key="settingsView.uiCustomHint"
+      icon="image"
+      advanced
+      :default-open="false"
+    >
       <!-- F08.2 聊天背景 -->
       <div class="ui-custom-block">
         <h3 class="ui-custom-subtitle">{{ t('settingsView.bgSubtitle') }}</h3>
@@ -736,7 +736,7 @@ URL
           <button type="button" class="data-mgmt-btn" @click="resetCustomCss">{{ t('settingsView.resetCss') }}</button>
         </div>
       </div>
-    </section>
+    </Collapse>
 </div>
 </template>
 

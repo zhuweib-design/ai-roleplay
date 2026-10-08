@@ -554,8 +554,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | 常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；常规/高级折叠（**M4-b2：`Collapse` 原语接管设置页三处高级段——「外观」界面自定义、「数据」新分组「运维与兼容」四段（并把档案/备份/两项导出提到前面）、「模型」弹窗内默认采样参数，三处默认收起且用 `v-show` 保住草稿**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b3）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -949,6 +949,8 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 **被证据否定的设计（记录以免下次重犯）**：智能默认落地。第一版实现让 13 条既有用例同时失败，失败模式有两类 —— ① 默认分类变为「模型」后外观面板被 `v-show` 隐藏，`.theme-card` 不可见导致点击超时；② 模型面板转为可见后，`getByRole('tab', {name:/模型/})` 命中 3 个元素触发 strict-mode 冲突。回退后 42 条全绿。教训：**改"默认状态"比改"新增状态"的爆炸半径大得多**，因为它同时改变所有既有断言的起点。
 
 **M4-a 未做**：常规/高级折叠（「外观」的界面自定义段、「模型」的高级采样）；`WorldBookView` / `CharacterEditorView` / `StoryEngineView` / `GroupChatView` 的分区拆分；`HelpTip` / `FormField` 原语；四个"有 UI 无读者"控件的撤除（已由 M2-b1 完成）。
+
+> 后续核对：本条列的四项里，折叠已由 **M4-b2** 完成（并额外把「数据」的四段运维项并成一个高级段），`HelpTip` / `FormField` 已由 **M3-b1** 完成，四个视图的分区仍待 **M4-b3**。
 
 ### M2-b1 撤除四条"有 UI 无读者"控件（E12 / E13 / E16 / E25）
 
@@ -1572,3 +1574,37 @@ id 用自增计数器保证唯一，值可以是任意字符串并随绑定更�
 | 浏览器实测（Edge 1440×900） | 侧栏 `.nav-item[aria-describedby]` **15**、`.nav-item[title]` **0**；就绪芯片 5 个全部挂上描述；**键盘 Tab 聚焦即出现气泡**（文案"与单个角色连续对话"，定位 top 67px / left 8px）；芯片聚焦读出"还没有可用的模型配置，发送后收不到回复"；Esc 立即收起（`is-visible` 归 0）；市场页 Beta 说明已是可见文字；无 pageerror |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m4-b1-tips/`：`tip-on-keyboard-focus.png`（键盘触发的气泡）/ `tip-readiness-chip.png`（芯片原因文案） |
 | 未做 | 33 处之外的"全站键盘可达性审计"（§七 #14 的后半句）仍留作专项——本批只保证 tooltip 类信息不再依赖指针，未系统检查焦点顺序与陷阱 |
+
+### M4-b2 设置页常规/高级折叠（`Collapse` 原语，§3.6.4 与 M4-a 未做项的前半）
+
+**做了什么**：新增 `src/components/common/Collapse.vue`，把设置页里"每天要用的"和"一年调一次的"从平起平坐改成两段。
+
+| 位置 | 折叠的段 | 默认 | 一并调整 |
+|---|---|---|---|
+| 设置 → 外观 | 「界面自定义」（聊天背景 / 气泡样式 / 自定义 CSS） | 收起 | 段说明从没有人读的 `uiCustomHint`（原值"主题、字号、界面自定义"）改写为"这些是偶尔调一次的样式项，改完要点各块下方的应用才生效" |
+| 设置 → 数据 | 新分组「运维与兼容」= 快捷回复互导 + 数据持久性 + 嵌入优化 + 审计日志 | 收起 | 同一段内 8 个块重排为「档案 → 全量备份 → 导出 PNG → 导出 Markdown → 运维与兼容」，日常动作不再被四段运维项挡在下面 |
+| 设置 → 模型（新增/编辑 API 弹窗内） | 「默认采样参数」（top_p / presence / frequency） | 收起 | 原 `<fieldset>` 改为折叠段；弹窗内用 `plain` 变体，不再套第二层卡片。随之删除 `.sampling-fieldset` 两条死样式 |
+
+**一条必须钉住的契约：折叠只能是 `v-show`**。设置面板里全是"输入到一半"的草稿（自定义 CSS、选了一半的采样参数），用 `v-if` 收起等于把用户写的东西扔掉；`tests/setup.ts` 里那句"各分区 v-show 保留草稿状态"是设置页一直在守的既有契约。`tests/components/collapse.test.ts` 用三种方式守它：收起后节点仍在且 `value` 仍是草稿值、面板行内 `display` 的切换、以及**收起再展开后输入框是同一个 DOM 节点**（`v-if` 会换节点）。故障注入实测：把 `v-show` 改成 `v-if` → 该文件 **3 例转红**。
+
+**说明文字（`hintKey`）刻意放在面板外面**：收起时用户仍要知道这一段是什么、为什么默认收着，否则折叠就变成"藏东西"。这条也写成了断言（`panel.contains(hint) === false`）。
+
+**jsdom 的 `getComputedStyle` 会返回上一次的缓存值**（本批踩到，记下来免得再踩）：`@vue/test-utils` 的 `isVisible()` 走 `getComputedStyle`，实测在"收起→再展开"之后仍报 `display: none`，即第二次点击的断言红得毫无道理；同一份组件在真实浏览器里量到的是 `display: flex`。改为直接断言 `v-show` 写入的**行内** `style.display`——读的就是契约本身，且不受 jsdom 缓存影响。
+
+**被改写的既有断言（2 处，语义都变强了）**
+1. `e2e/ux-interaction-feedback.spec.ts:32`（滑块轨道着色）：目标控件搬进了默认收起的高级段，用例新增"收起时不可见 → 点开 → 可见"两步。定位器从 `input.form-range` 的 `first()` 改为 `#bubble-radius`：`#bg-opacity` 在背景类型为"无"时是 `v-if`，节点根本不存在，用它断"收起时不可见"会因为"元素不存在"而**假绿**。
+2. 同文件 `:137`（提示倒计时条）：原来在断言"条已可见"的同一帧读 `scaleX` 并要求 `< 1`。倒计时由 rAF 驱动、`begin()` 先写 `ratio = 1` 再等第一帧，机器忙时首帧可晚几百毫秒 ⇒ 本批实测连续复现读到 `scaleX(1)`。改为 `expect.poll(scale).toBeLessThan(1)` 先等它动起来，再比两次采样——"会缩短、会自己关"的契约一个字没放松。
+
+**验证证据（M4-b2 最终状态，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run lint`(0 error，6 warning 均来自 M3-b3/M4-b1 既有测试文件) / `i18n:check` + `:strict` / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**，基线 131) + self-test / `snapshot:migration:check` / `runtime:db:schema:check` / `check:csp` / `check:ort` / `eval:manifest` | 退出码均 **0**（`eval:manifest` 产物按既有约定回退，不入本批提交） |
+| `npm run test:coverage` | **175 files passed / 2 skipped**，**3780 passed / 3 skipped**（较 M4-b1 的 3770 增 10 = `collapse.test.ts` 新增例数），覆盖率阈值无告警 |
+| 新增测试 | `tests/components/collapse.test.ts` **10 例**：v-show 三条实质证据、`aria-expanded`/`aria-controls`/`aria-labelledby` 接线、`level` 不改标题层级、`advanced` 标、说明在面板外、`plain` 变体 |
+| E2E（msedge，默认并行） | 三轮分别 7 / 4 / 4 failed，**失败集合每轮都不同**（`contrast-axe` 三条、`worldbook-flow`、`ux-quick-forms`、`group-chat-flow:99`、`ux-gap-visibility` E19 轮流超时）⇒ 与 `REAL_DEVICE_TEST_2026-10-03.md:109` 登记的 **O-4** 同型（本机并行抢占 CPU，30s 默认超时偏紧）。按 O-4 的处置复跑：`--workers=2` **60 passed / 0 failed**，`--workers=1 --timeout=120000` 单跑 `contrast-axe` + `group-chat-flow` **5 passed** |
+| E2E（webkit，`--workers=1`） | **16 passed / 0 failed** |
+| E2E（mobile-functional-msedge + mobile-msedge，`--workers=2`） | **14 passed / 0 failed** |
+| 浏览器实测（Edge，dev :5179） | 外观段收起时 `aria-expanded=false`、面板 `display:none`；点开后 `aria-expanded=true`、面板 `display:flex`、内含 **12** 个控件；数据段收起时四个 `.data-mgmt-row` 全在 `display:none` 的面板里，可见块为档案/备份/PNG/Markdown 四项；模型弹窗内折叠段 class 为 `collapse-section is-collapsed is-plain`，展开后 `#p-top-p`/`#p-presence`/`#p-frequency` 齐备；**键盘 Space 在标题按钮上切换生效**（`aria-expanded` true→false、面板 `display:none`、焦点保持在按钮上） |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m4-b2-collapse/`：`appearance-collapsed` / `appearance-expanded` / `appearance-expanded-panel` / `data-advanced-collapsed` / `data-advanced-expanded` / `model-modal-sampling-collapsed` / `model-modal-sampling-expanded` |
+| 未做（诚实边界） | ① 该浏览器工具派发 **Enter** 时不激活任何原生按钮（在同一页面对设置分类标签按 Enter 同样无反应，而 Space 正常）⇒ 记为测试工具的按键派发问题，未据此给组件加 `@keydown` 兜底；② 折叠状态**不落盘**：设置各分类是 `v-show` 常驻，所以切分类、跳页面回来都保持，只有整页刷新会回到默认（高级段重新收起）——没有把它做成持久化偏好；③ 角色编辑器"属性"段那套自写折叠（`CharacterEditorView.vue:968-996`）尚未并入 `Collapse`，留作 M4-b3 拆该视图时一起做；④ §3.6.4 的"四个巨型视图分区"未动（M4-b3） |

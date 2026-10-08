@@ -32,8 +32,14 @@ test.describe('滑块进度着色', () => {
   test('轨道着色跟随值变化，可点区域够厚', async ({ page }) => {
     await page.goto('/settings');
     await dismissWelcomeModal(page);
-    // 外观页的 .form-range 只绑组件本地 ref，改值不落盘
-    const slider = page.locator('input.form-range').first();
+    // 外观页的 .form-range 只绑组件本地 ref，改值不落盘。
+    // M4-b2 起气泡圆角滑块住在默认收起的「界面自定义」高级段里：
+    // 先证明收起时它确实不占屏幕，再点开量着色——"展开"成了这条用例的新前置。
+    // 用 #bubble-radius 而不是 #bg-opacity：后者是 v-if（背景类型为"无"时根本不在 DOM），
+    // 拿它断"收起时不可见"会因为"元素不存在"而假绿。
+    const slider = page.locator('#bubble-radius');
+    await expect(slider).toBeHidden();
+    await page.getByRole('button', { name: /界面自定义/ }).click();
     await expect(slider).toBeVisible();
 
     const pct = await pctOf(slider);
@@ -137,8 +143,11 @@ test.describe('提示弹窗自动关闭', () => {
 
     const scale = async () =>
       Number(/scaleX\(([\d.]+)\)/.exec(await bar.evaluate((el: HTMLElement) => el.style.transform))?.[1] ?? '1');
+    // 倒计时条由 rAF 驱动，`begin()` 先写 ratio=1 再等第一帧：机器忙时首帧可以晚于
+    // "条已可见"这条断言几百毫秒（实测读到 scaleX(1) 而误判）。所以先等它动起来，
+    // 再比两次采样的进度——"会缩短"这个契约一个字没放松。
+    await expect.poll(scale, { timeout: 3000 }).toBeLessThan(1);
     const first = await scale();
-    expect(first).toBeLessThan(1);
     await page.waitForTimeout(1200);
     expect(await scale()).toBeLessThan(first);
 

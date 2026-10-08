@@ -20,6 +20,7 @@ import {
   type PresetId,
 } from '@core/creation-preset';
 import { createApiClient } from '@/api';
+import Collapse from '@/components/common/Collapse.vue';
 import type { ApiProfile } from '@/types';
 import type { ModelSize } from '@/core/local-model-engine';
 import Icon from '@/components/common/Icon.vue';
@@ -1134,11 +1135,15 @@ watch(
           <p class="field-hint">{{ t('modelPanel.reasoningEffortHint') }}</p>
         </div>
 
-        <!-- P0-3：Profile 级默认采样参数（留空 = 不传 = 供应商默认） -->
-        <fieldset class="sampling-fieldset">
-          <legend class="field-label">{{ t('modelPanel.samplingTitle') }}</legend>
-          <p class="field-hint">{{ t('modelPanel.samplingHint') }}</p>
-
+        <!-- P0-3：Profile 级默认采样参数（留空 = 不传 = 供应商默认）；M4-b2：三个参数一起归高级段，默认收起 -->
+        <Collapse
+          title-key="modelPanel.samplingTitle"
+          hint-key="modelPanel.samplingHint"
+          :level="3"
+          advanced
+          plain
+          :default-open="false"
+        >
           <div class="form-field">
             <label for="p-top-p" class="field-label">{{ t('modelPanel.topPLabel') }}</label>
             <input
@@ -1183,7 +1188,7 @@ watch(
             />
             <p class="field-hint">{{ t('modelPanel.frequencyPenaltyHint') }}</p>
           </div>
-        </fieldset>
+        </Collapse>
 
         <div class="form-field">
           <div class="test-row">
@@ -1345,18 +1350,6 @@ watch(
 .pref-checkbox:focus-visible {
   outline: 2px solid var(--secondary);
   outline-offset: 2px;
-}
-
-/* P0-3：采样参数分组 */
-.sampling-fieldset {
-  margin: 0;
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
-
-.sampling-fieldset .form-field:first-of-type {
-  margin-top: var(--spacing-sm);
 }
 
 /* MODEL-03：创作模式（Preset） */

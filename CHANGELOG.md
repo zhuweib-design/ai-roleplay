@@ -185,6 +185,16 @@
 - 新增测试：`tests/core/tip.test.ts` 8 例（含多宿主 id 唯一、卸载不泄漏 body 节点）。全量：单测 **3770 passed**、`tip.ts` 语句覆盖 91.17%，E2E Chromium **74 passed**、webkit **16 passed**，build 与 9 项静态门禁退出码均 0。浏览器实测：侧栏 `.nav-item[title]` 从 15 归 0、`[aria-describedby]` 15，**键盘 Tab 聚焦即出现气泡**，Esc 立即收起，无 pageerror。
 - 未做（仍留 §七 #14 后半）：全站键盘焦点顺序与陷阱审计。本批只保证 tooltip 类信息不再依赖指针。
 
+### 新增（UX/IA M4-b2：设置页常规/高级折叠）
+- 新增 `src/components/common/Collapse.vue`：可折叠段原语。触发器是 `<h2>/<h3>` 里的真按钮（`aria-expanded` + `aria-controls`，标题层级不因折叠而跳），面板用 **`v-show` 而非 `v-if`**——设置面板里全是"输入到一半"的草稿（自定义 CSS、选了一半的采样参数），用 `v-if` 收起等于把用户写的东西扔掉；说明文字刻意放在面板外面，收起时用户仍要知道这一段是什么、为什么默认收着。`plain` 变体供弹窗/表单内部使用，不再套第二层卡片。
+- 三处高级段改为默认收起：**「外观」界面自定义**（聊天背景 / 气泡样式 / 自定义 CSS）、**「数据」新分组「运维与兼容」**（快捷回复互导 + 数据持久性 + 嵌入优化 + 审计日志）、**「模型」新增/编辑 API 弹窗内的默认采样参数**（top_p / presence / frequency，原 `<fieldset>` 改写，`.sampling-fieldset` 两条死样式随之删除）。
+- 「数据」分类内 8 个块顺带重排为「档案 → 全量备份 → 导出 PNG → 导出 Markdown → 运维与兼容」：日常动作不再被四段运维项挡在下面；`e2e/backup-restore.spec.ts` 依赖的备份块保持常驻可见，未放宽任何断言。
+- 一条一直存在却没人读的段说明被改写：`settingsView.uiCustomHint` 原值"主题、字号、界面自定义"在界面上零读者，现作为折叠段的说明使用（"偶尔调一次的样式项，改完要点应用才生效"）。双语各 +2 键（`settingsView.advancedOpsSection` / `advancedOpsHint`）、复用 1 键。
+- 新增 `tests/components/collapse.test.ts` **10 例**（v-show 三条实质证据：收起后节点与草稿值仍在、行内 `display` 切换、收起再展开是同一个 DOM 节点；aria 接线；`level` 不改标题层级；说明在面板外；`plain` 变体）。故障注入实测：把 `v-show` 改成 `v-if` → 该文件 3 例转红。
+- 2 处既有 e2e 断言按新契约改写：`e2e/ux-interaction-feedback.spec.ts:32` 新增"收起时不可见 → 点开 → 可见"两步，定位器从 `input.form-range` 的 `first()` 改为 `#bubble-radius`（`#bg-opacity` 在背景为"无"时是 `v-if`，节点不存在，用它断不可见会假绿）；同文件 `:137` 的倒计时条改为先 `poll` 到 `scaleX < 1` 再比两次采样（倒计时由 rAF 驱动，机器忙时首帧可晚几百毫秒，本批实测连续复现读到 `scaleX(1)`）。
+- 全量：单测 **3780 passed / 3 skipped**（175 文件），E2E msedge **60 passed**、webkit **16 passed**、mobile 两 project **14 passed**；build 与 9 项静态门禁退出码均 0。默认并行度下 msedge 全量每轮失败集合都不同（`contrast-axe` / `worldbook-flow` / `group-chat-flow` 轮流 30s 超时），与 `REAL_DEVICE_TEST_2026-10-03.md` 登记的 **O-4** 同型，按该条处置以 `--workers=2` 复跑取全绿。
+- 未做（诚实边界）：折叠状态不落盘（整页刷新后高级段回到收起）；角色编辑器"属性"段那套自写折叠尚未并入 `Collapse`；§3.6.4 的四个巨型视图分区留给 M4-b3。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。
