@@ -52,6 +52,7 @@ test('配置 API → 新建角色 → 对话流式回复', async ({ page }) => {
   // 2. 新建角色
   await page.goto('/character');
   await page.getByRole('button', { name: '新建角色' }).click();
+  await page.getByRole('button', { name: '完整表单' }).click(); // 新建角色默认落在快速档；这些用例走完整表单，先切档再填字段
   await page.getByLabel('名称').fill(name);
   await page.locator('#f-desc').fill('E2E 对话测试角色。');
   await page.locator('.header-btn.save').click();

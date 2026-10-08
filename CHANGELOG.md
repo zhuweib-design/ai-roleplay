@@ -164,6 +164,17 @@
 - 测试适配（不是削弱）：`e2e/ux-readiness.spec.ts` 一处选择器 `.empty-state .link-btn` → `.empty-state .empty-action`（动作按钮类名随组件统一），断言的跳转行为不变。
 - 视觉取舍如实记下：`DataBankView` / `StoryEngineView` 的上传按钮原本是"图标 + 文字"的页头按钮，改为组件统一的主行动按钮后**按钮内的小图标没有了**，换来与其它空态同形。
 
+### 新增（UX/IA M3-b3：角色与世界书两个快速档）
+- `src/components/character/QuickCharacterForm.vue`：新建角色默认落在这一档——名字（必填）+ 设定 + 可选一本世界书 + "建好并开始对话"。**保存时才建角色**：不产生草稿、不给"跳去编辑"的链接（`/character/new` 没有 ID，跳过去是空跳）；绑定排在 `createCharacter()` 返回 ID 之后，否则 `bindWorldBook` 找不到角色只返回 false。字段用 `FormField` 做标签 / 说明 / 报错的 aria 关联。
+- `src/components/worldbook/QuickLorebookFlow.vue`：世界书"最小生效三步"——建书 → 加一条**启用且 `constant`** 的条目 → 绑到当前角色；步骤条复用 StepFlow 清单态，前一步没做完时后两步禁用。三步的实质是"无条件注入成立"的三个条件，不是三个按钮。
+- `CharacterEditorView` 新建态加"快速档 / 完整表单"两档开关（编辑已有角色时不出现，避免"藏字段=丢数据"）；快速档下头部那颗"保存"按钮不渲染，避免两条保存路径并存。
+- 两档切换用 `v-if` 而不是 `v-show`：`v-show` 时两档同时在 DOM 里，"名称"标签重复（`e2e/ux-relations-panel` 直接 `strict mode violation` 报出来），且隐藏表单的输入框仍可被 Tab 进入。改 `v-if` 后 6 条相关用例转绿；代价（新建态来回切档丢未保存填写）如实记下。
+- 世界书入口做过一次方向纠正：第一版"一本书都没有时自动展开三步"实测否掉——它把编辑器从用户手里抢走，`e2e/worldbook-flow.spec.ts` 整条被挡、移动视口下流程卡片还 `intercepts pointer events` 盖住"新增条目"按钮。现改为空态里一颗显式按钮"或按最小生效三步走"，流程打开期间编辑器不渲染，走完点"完成"收起。
+- 顺带修一处样式：`:disabled` 的 input/textarea 在深色主题下被浏览器刷成浅灰底（看着像坏了），补 `.quick-wb :disabled` 保持主题色。
+- i18n：新增 `quick.*` 共 32 键（双语同序，zh / en 各 3354 行）。
+- 测试：`tests/components/quick-character-form.test.ts` 6 例、`tests/components/quick-lorebook-flow.test.ts` 6 例、`tests/accessibility/new-primitives-axe.test.ts` 扩到 6 例（两个新表单各 0 违规）、`e2e/ux-quick-forms.spec.ts` 5 例（含"三步做完后这本书出现在上下文面板"这条闭环断言）。6 条既有 e2e 在用例里显式切到完整表单（它们测的就是完整编辑器），断言内容未改。
+- 全量：单测 **3759 passed**，覆盖率 79.69 / 74.16 / 81.82 / 81.57；E2E Chromium 三 project **74 passed**、webkit **16 passed**；`build` 与 9 项静态门禁退出码均 0。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

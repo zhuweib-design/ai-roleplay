@@ -21,6 +21,7 @@ import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useLorebookStore } from '@/stores/lorebook';
 import Icon from '@/components/common/Icon.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
+import QuickLorebookFlow from '@/components/worldbook/QuickLorebookFlow.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
@@ -45,6 +46,14 @@ import { useCharacterStore } from '@/stores/character';
 import { t } from '@/i18n';
 
 const store = useLorebookStore();
+
+/**
+ * "最小生效三步"的开合：由空态里那颗按钮展开，走完三步由用户点"完成"收起。
+ * 放在宿主而不是组件里，是因为收起之后这块区域就该让位给正常编辑器。
+ * 曾经做成"一本书都没有时自动展开"，实测否掉：那等于把编辑器从用户手里抢走，
+ * 已有的"新建世界书 → 重命名 → 加条目"路径整个被挡住（e2e/ 里就有一条这么红的）。
+ */
+const quickFlowOpen = ref(false);
 const settingsStore = useSettingsStore();
 const characterStore = useCharacterStore();
 const router = useRouter();
@@ -916,15 +925,32 @@ function strategyLabel(s: LorebookStrategy): string {
 
       <!-- 右侧 Lorebook 编辑器 -->
       <main class="lorebook-editor-panel" id="main-content" tabindex="-1">
-        <div v-if="!currentLorebook" class="empty-editor">
+        <!--
+          三步流程**不能**挂在 !currentLorebook 分支里：createLorebook 会把新书设成当前选中，
+          于是第一步一完成宿主就消失，用户做到一半被踢回编辑器（浏览器实测踩过这个）。
+          流程打开时编辑器整体不渲染：两者同时留在页面上会互相压住操作
+          （移动视口实测：流程卡片盖住编辑器的"新增条目"按钮，点不到）。
+          三步走完点"完成"收起，编辑器带着刚建好的书回来。
+        -->
+        <QuickLorebookFlow
+          v-if="quickFlowOpen"
+          class="wb-quick-flow"
+          @finished="quickFlowOpen = false"
+        />
+
+        <div v-if="!currentLorebook && !quickFlowOpen" class="empty-editor">
           <Icon name="compass" :size="48" />
           <p>{{ t('wb.emptyEditor') }}</p>
           <button type="button" class="primary-btn" @click="createLorebook">
             {{ t('wb.createNew') }}
           </button>
+          <!-- 最短生效路径要能被看见，但不替用户决定：默认仍进编辑器 -->
+          <button type="button" class="wb-open-flow" data-rel-jump="quick-wb-open" @click="quickFlowOpen = true">
+            {{ t('quick.wbOpenFlow') }}
+          </button>
         </div>
 
-        <div v-else class="editor-content">
+        <div v-else-if="currentLorebook && !quickFlowOpen" class="editor-content">
           <!-- Lorebook 元信息 -->
           <section class="lorebook-meta" :aria-label="t('wb.metaAria')">
             <div class="meta-row">
@@ -1909,6 +1935,23 @@ function strategyLabel(s: LorebookStrategy): string {
   min-height: 0;
   overflow: hidden;
   outline: none;
+}
+
+.wb-open-flow {
+  margin-top: 4px;
+  padding: 6px 12px;
+  border: 1px dashed var(--secondary);
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+  color: var(--secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.wb-quick-flow {
+  width: min(520px, 100%);
+  margin-top: 12px;
+  text-align: left;
 }
 
 .empty-editor {

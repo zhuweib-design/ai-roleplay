@@ -11,6 +11,10 @@ import HelpTip from '@/components/common/HelpTip.vue';
 import FormField from '@/components/common/FormField.vue';
 import { mountAndAudit, formatViolations } from './axe-helper';
 import type { StepFlowItem } from '@/components/common/StepFlow.vue';
+import QuickCharacterForm from '@/components/character/QuickCharacterForm.vue';
+import QuickLorebookFlow from '@/components/worldbook/QuickLorebookFlow.vue';
+import { createPinia, setActivePinia } from 'pinia';
+import { createRouter, createMemoryHistory } from 'vue-router';
 
 const WIZARD: StepFlowItem[] = [
   { id: 'a', labelKey: 'newConv.stepType' },
@@ -53,5 +57,30 @@ describe('StepFlow / HelpTip / FormField 无障碍', () => {
         default: '<input :id="id" :aria-describedby="describedBy" :aria-invalid="String(invalid)" value="" />',
       },
     });
+  });
+
+  it('角色快速档无违规', async () => {
+    setActivePinia(createPinia());
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'chat', component: { template: '<div />' } },
+        { path: '/character', name: 'character-list', component: { template: '<div />' } },
+      ],
+    });
+    await router.push('/');
+    await router.isReady();
+    const results = await mountAndAudit(QuickCharacterForm as never, {
+      global: { plugins: [router] },
+    } as never);
+    if (results.violations.length > 0) console.error(formatViolations(results));
+    expect(results.violations).toHaveLength(0);
+  });
+
+  it('世界书三步流程无违规', async () => {
+    setActivePinia(createPinia());
+    const results = await mountAndAudit(QuickLorebookFlow as never, {} as never);
+    if (results.violations.length > 0) console.error(formatViolations(results));
+    expect(results.violations).toHaveLength(0);
   });
 });

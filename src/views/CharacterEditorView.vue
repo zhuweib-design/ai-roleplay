@@ -24,6 +24,7 @@ import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
+import QuickCharacterForm from '@/components/character/QuickCharacterForm.vue';
 import ModuleRelationsPanel from '@/components/layout/ModuleRelationsPanel.vue';
 import type { UICharacter } from '@/types';
 import type { CharacterAttributes, CharacterAttribute } from '@/core/character-card';
@@ -138,6 +139,13 @@ const emptyForm = (): FormState => ({
 
 const form = ref<FormState>(emptyForm());
 const isEditMode = computed(() => !!props.id);
+
+/**
+ * 新建时的两档：快速档（名字 + 设定 + 选书）与完整表单。
+ * 默认快速档——新建角色最常卡住的不是字段不够，而是"这么多格子该填哪几个"。
+ * 编辑已有角色时不提供快速档：那时所有字段都可能有值，藏起来等于丢数据。
+ */
+const createMode = ref<'quick' | 'full'>('quick');
 const loadedCharacter = ref<UICharacter | null>(null);
 const isDirty = ref(false);
 
@@ -579,6 +587,7 @@ function handleExport() {
           {{ t('charEdit.cancel') }}
         </button>
         <button
+          v-if="isEditMode || createMode === 'full'"
           type="button"
           class="header-btn save"
           :disabled="!canSave"
@@ -592,8 +601,43 @@ function handleExport() {
       </div>
     </header>
 
-    <!-- 主体：表单 + 预览 -->
-    <div class="editor-body tk-scroll">
+    <!-- 新建先走快速档；完整表单随时可切，编辑已有角色时不出现这个开关 -->
+    <div
+      v-if="!isEditMode"
+      class="create-mode-switch"
+      role="group"
+      :aria-label="t('quick.charModeAria')"
+    >
+      <button
+        type="button"
+        class="create-mode-btn"
+        :class="{ active: createMode === 'quick' }"
+        :aria-pressed="createMode === 'quick'"
+        data-rel-jump="char-create-quick"
+        @click="createMode = 'quick'"
+      >
+        {{ t('quick.charModeQuick') }}
+      </button>
+      <button
+        type="button"
+        class="create-mode-btn"
+        :class="{ active: createMode === 'full' }"
+        :aria-pressed="createMode === 'full'"
+        data-rel-jump="char-create-full"
+        @click="createMode = 'full'"
+      >
+        {{ t('quick.charModeFull') }}
+      </button>
+    </div>
+
+    <QuickCharacterForm v-if="!isEditMode && createMode === 'quick'" class="create-quick" />
+
+    <!--
+      用 v-if 而不是 v-show：两档同时留在 DOM 里会让"名称"这类标签在一页上出现两次
+      （实测 getByLabel 直接 strict-mode 冲突），更糟的是隐藏表单里的输入框仍可被 Tab 进入。
+      代价是在新建态来回切档会丢掉未保存的填写——那时还没有任何持久化数据，可接受。
+    -->
+    <div v-if="isEditMode || createMode === 'full'" class="editor-body tk-scroll">
       <form
         class="editor-form"
         novalidate
@@ -1283,6 +1327,32 @@ function handleExport() {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.create-mode-switch {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px 0;
+}
+
+.create-mode-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.create-mode-btn.active {
+  border-color: var(--secondary);
+  color: var(--secondary);
+}
+
+.create-quick {
+  margin: 12px 20px;
+  max-width: 560px;
 }
 
 .editor-title {

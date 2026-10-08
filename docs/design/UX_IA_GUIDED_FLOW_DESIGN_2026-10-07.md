@@ -554,8 +554,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | 角色·世界书"快速档"表单（M3-b3；`StepFlow` / `HelpTip` / `FormField` 三个原语已在 M3-b1 建好并通过 axe，HelpTip / FormField 的采用点随快速档落地）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | 常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -1476,3 +1476,45 @@ axe 立刻报 `heading-order`（该页此前没有 h2，h1 直接跳 h3）。改
 | 界面实测（Edge 1280×860，全新 context） | 世界书侧栏空态 = 标题 + 主行动按钮；数据银行空态 = 标题 + 解释 + 上传按钮；记录页空态 = 单行标题。角色列表页**没有空态可拍**（应用自带内置角色，列表不空），这条如实记下而不是补造假截图 |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m3-b2-empty-state/`：`worldbook-list-empty.png` / `databank-empty.png` / `archives-empty.png` |
 | 测试适配（不是削弱） | `e2e/ux-readiness.spec.ts` 一处选择器从 `.empty-state .link-btn` 改为 `.empty-state .empty-action`（动作按钮类名随组件统一），断言的跳转行为不变 |
+
+### M3-b3 两个快速档（角色 4 件事 / 世界书最小生效三步）
+
+§2 里"建角色"那一行的前测事实是 **1 屏 6 段 23 个 label、1 个星号、看不到绑定**；
+世界书那条最短生效路径要跨 **3 屏 4 跳**。本批把这两条路各自压到一屏。
+
+| 快速档 | 内容 | 关键约束 |
+|---|---|---|
+| 角色 `QuickCharacterForm.vue` | 名字（必填）+ 设定 + 可选一本世界书 + 建好并开始 | **保存时才建角色**：不产生草稿、不给"跳去编辑"的链接（`/character/new` 没有 ID，跳过去是空跳，§3.5.6 明写过这个坑）；绑定动作排在 `createCharacter()` 返回 ID **之后**，否则 `bindWorldBook` 找不到角色只返回 false，用户看到"建好了但书没生效" |
+| 世界书 `QuickLorebookFlow.vue` | 建书 → 加一条**启用且 constant** 的条目 → 绑到当前角色 | 三步的实质是"无条件注入成立"的三个条件，不是三个按钮；步骤条用 StepFlow 清单态；后两步在前一步完成前禁用，避免做出无效操作 |
+
+**两档切换用 `v-if` 而不是 `v-show`（一个真实缺陷被 e2e 撞出来）**
+先用 `v-show` 隐藏完整表单，`e2e/ux-relations-panel` 立刻报
+`strict mode violation: getByLabel('名称') resolved to 2 elements`——两档同时在 DOM 里，
+"名称"标签重复，而且隐藏表单里的输入框**仍然能被 Tab 进入**。改成 `v-if` 后
+6 条相关用例全绿。代价如实记下：新建态来回切档会丢掉未保存的填写，
+那时还没有任何持久化数据，可接受；编辑已有角色时不提供快速档，避免"藏字段=丢数据"。
+
+**世界书入口做过一次方向纠正（自动展开 → 显式入口）**
+第一版是"一本书都没有时自动展开三步"。实测否掉：那等于把编辑器从用户手里抢走，
+`e2e/worldbook-flow.spec.ts`（新建 → 重命名 → 加条目 → 树显示）整条被挡住，
+移动视口下流程卡片还盖住了编辑器的"新增条目"按钮（`intercepts pointer events`，30s 超时）。
+现在改成空态里一颗显式按钮"或按最小生效三步走"，默认仍进编辑器；
+流程打开期间编辑器整体不渲染（两者共存就是上面那个遮挡问题），走完点"完成"收起。
+
+**顺带修的一处样式**：`:disabled` 的 input/textarea 在深色主题下被浏览器刷成浅灰底，
+看着像坏了；补一条 `.quick-wb :disabled` 让禁用态保持主题色。
+
+**验证证据（M3-b3 最终状态，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run lint` / `npm run build` | 退出码均 **0** |
+| `i18n:check:strict` / `check:css-conventions` / `a11y:contrast` + self-test / `runtime:db:schema:check` / `snapshot:migration:check` / `eval:manifest` / `check:csp` / `check:ort` | 全部退出码 **0**；对比度扫描 **121** 处存量（基线 131）未上涨 |
+| i18n 增量 | `quick.*` 共 **32** 键，zh / en 各 **3354** 行，同序 |
+| `npm run test:coverage` | **3759 passed / 3 skipped**，覆盖率 **79.69 / 74.16 / 81.82 / 81.57**；本批新增 2 个测试文件 **12** 例 + axe **2** 例 |
+| axe（两个新表单） | 快速档与三步流程各 **0 违规** |
+| E2E（msedge + mobile-functional + mobile） | **74 passed / 0 failed**（2.4 分钟；较上批 +5 条本批用例） |
+| E2E（webkit，串行） | **16 passed / 0 failed** |
+| 新用例 | `e2e/ux-quick-forms.spec.ts` 5 例：默认落快速档且完整表单不在 DOM、头部保存按钮不并存、空名不建角色并给原因、切档双向、三步做完后**这本书出现在上下文面板**（把"生效"闭环到 E03 那一列上）、空名不建书 |
+| 浏览器实测 | 快速档填两项 → 建好 → URL 到 `/chat` → 角色列表出现该卡；三步做完后 `/chat` 上下文面板显示"世界书 1 本 / 港口设定 E2E / 1 条启用"；无 pageerror |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m3-b3-quick-forms/`：`char-quick-form.png` / `char-full-mode-switch.png` / `wb-empty-with-flow-entry.png` / `wb-three-steps-initial.png` / `wb-three-steps-done.png` |

@@ -39,6 +39,7 @@ test('灾备闭环：导出备份 → 删除数据 → 导入还原', async ({ p
   // ── 1. 造一条可识别数据 ──
   await page.goto('/character');
   await page.getByRole('button', { name: '新建角色' }).click();
+  await page.getByRole('button', { name: '完整表单' }).click(); // 新建角色默认落在快速档；这些用例走完整表单，先切档再填字段
   await expect(page).toHaveURL(/\/character\/new/);
   await page.getByLabel('名称').fill(name);
   await page.locator('#f-desc').fill('E2E 灾备闭环用例角色。');
