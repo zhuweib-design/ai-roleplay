@@ -72,10 +72,10 @@ export default {
   'nav.settings': '设置',
   'nav.profile': '个人中心',
   // N 层导航分组与一句话职责（单一事实源 src/core/nav-model.ts）
-  'nav.groupConversation': '对话',
+  'nav.groupConversation': '会话',
   'nav.groupCreation': '创作',
   'nav.groupCapability': '能力',
-  'nav.groupArchive': '档案',
+  'nav.groupArchive': '历史',
   'nav.more': '更多',
   'navDesc.chat': '与单个角色连续对话',
   'navDesc.group': '多个角色同场对话',

@@ -23,15 +23,17 @@
   flex-direction: column;
 }
 
-/* 导航栏 */
+/* 导航栏：图标 + 文字横排一行（侧栏二次排版，见设计文档 §九 M2-b7）。
+   旧版是 72px 宽、图标在上文字在下的 56px 竖排卡片，15 个入口 + 4 个组标题
+   实测内容高 978px > 800px 视口 ⇒ 底部入口要靠滚动才够得着。 */
 .nav-rail {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   flex-shrink: 0;
-  width: 72px;
+  width: 112px;
   height: 100%;
-  padding: 14px 0;
+  padding: 10px 0 8px;
   background: var(--card);
   border-right: 1px solid var(--border);
   /* 矮视口/缩放下可滚动，保证所有导航项可达（WCAG 1.4.4） */
@@ -41,12 +43,12 @@
 
 .nav-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
   width: 100%;
-  height: 56px;
-  margin-top: 4px;
+  height: 32px;
+  margin-top: 1px;
+  padding: 0 10px 0 9px;
   color: var(--muted-foreground);
   background: none;
   border: none;
@@ -55,25 +57,58 @@
   transition: color .15s ease, background-color .15s ease;
 }
 
-.nav-item:first-of-type { margin-top: 0; }
+.nav-group .nav-list > .nav-list-item:first-child .nav-item,
+.nav-system-list > .nav-list-item:first-child .nav-item {
+  margin-top: 0;
+}
 
+/* 悬停有反馈（此前整条 rail 没有任何 hover 规则，鼠标划过看不出可点）；
+   键盘焦点由 base.css:134 的全局 :focus-visible outline 兜住，不在这里重复。 */
+@media (hover: hover) {
+  .nav-item:hover {
+    color: var(--foreground);
+  }
+}
+
+/* 激活态只留一个信号：左侧色条 + 同色文字。
+   曾加过 secondary 12% 的底色，但 axe 在浅色主题下实测 #0a7a77 on #e2efef = 4.38 < 4.5
+   （底色把 card 压暗，反而让文字不合格），故撤掉底色，保留色条与文字色。 */
 .nav-item.active {
   color: var(--secondary);
-  border-left: 3px solid var(--secondary);
+  border-left-color: var(--secondary);
 }
 
 .nav-icon {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .nav-label {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
-  margin-top: 5px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 平板宽度（641–900px）：主内容要给聊天区让位，rail 收成图标栏，
+   文字靠 title / aria-label 兜住（rail 仅在 >640px 渲染，移动端走 BottomNav） */
+@media (max-width: 900px) {
+  .nav-rail {
+    width: 64px;
+  }
+  .nav-label {
+    display: none;
+  }
+  .nav-item {
+    justify-content: center;
+    padding: 0 8px;
+  }
 }
 
 /* 角色列表 */

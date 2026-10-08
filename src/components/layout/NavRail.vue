@@ -51,13 +51,14 @@ function handleNav(item: NavEntry) {
             :data-rel-jump="`nav-${item.id}`"
             @click="handleNav(item)"
           >
-            <span class="nav-icon" aria-hidden="true"><Icon :name="item.icon" :size="24" /></span>
+            <span class="nav-icon" aria-hidden="true"><Icon :name="item.icon" :size="18" /></span>
             <span class="nav-label">{{ t(item.labelKey) }}</span>
           </button>
         </li>
       </ul>
     </div>
 
+    <!-- 系统项（引导 / 更多 / 设置）整体钉到底部：它们不是内容资源，与上方四组用分隔线断开 -->
     <ul class="nav-list nav-system-list" role="list">
       <li v-for="item in system" :key="item.id" class="nav-list-item">
         <button
@@ -67,9 +68,10 @@ function handleNav(item: NavEntry) {
           :aria-current="activeId === item.id ? 'page' : undefined"
           :aria-label="t(item.labelKey)"
           :title="t(item.descKey)"
+          :data-rel-jump="`nav-${item.id}`"
           @click="handleNav(item)"
         >
-          <span class="nav-icon" aria-hidden="true"><Icon :name="item.icon" :size="24" /></span>
+          <span class="nav-icon" aria-hidden="true"><Icon :name="item.icon" :size="18" /></span>
           <span class="nav-label">{{ t(item.labelKey) }}</span>
         </button>
       </li>
@@ -78,14 +80,13 @@ function handleNav(item: NavEntry) {
 </template>
 
 <style scoped>
-/* 使用 ul/li 语义化列表结构，但保留原视觉布局 */
+/* 布局几何在 src/styles/layout.css（与 app-shell 同源），这里只留结构无关的局部规则 */
 .nav-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
   width: 100%;
 }
 
@@ -93,19 +94,28 @@ function handleNav(item: NavEntry) {
   width: 100%;
 }
 
-/* 系统项（更多）固定到 rail 底部 */
+/* 系统项整体下沉：内容组再多也不会把它挤出可视区 */
 .nav-system-list {
   margin-top: auto;
-  padding-top: var(--spacing-sm, 8px);
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
 }
 
-/* 组标题：13px + muted-foreground（不用 11px/12px 的 text-3，避免 contrast 门禁的 AA 风险） */
+/* 组标题：左对齐 + 小字 + 上方分隔线，明确"这是分组，不是又一个入口" */
+.nav-group + .nav-group {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
 .nav-group-label {
-  margin: 10px 0 0;
-  font-size: 13px;
+  margin: 0 0 2px;
+  padding: 0 10px;
+  font-size: 11px;
   font-weight: 500;
-  line-height: 1.2;
-  text-align: center;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  text-align: left;
   color: var(--muted-foreground);
 }
 </style>

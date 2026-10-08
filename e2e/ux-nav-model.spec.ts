@@ -8,10 +8,10 @@
  */
 import { test, expect } from '@playwright/test';
 
-const GROUP_LABELS = ['对话', '创作', '能力', '档案'];
+const GROUP_LABELS = ['会话', '创作', '能力', '历史'];
 
 test.describe('桌面端分层导航', () => {
-  test('rail 按 4 个内容组渲染，共 15 个入口（13 内容 + 2 系统）', async ({ page }) => {
+  test('rail 按 4 个内容组渲染，共 15 个入口（12 内容 + 3 系统）', async ({ page }) => {
     await page.goto('/chat');
 
     const rail = page.locator('.nav-rail');
@@ -20,6 +20,31 @@ test.describe('桌面端分层导航', () => {
     await expect(rail.locator('.nav-item')).toHaveCount(15);
     // 每个入口都带一句话职责（hover 提示），不再只有图标和名字
     await expect(rail.locator('.nav-item[title]')).toHaveCount(15);
+  });
+
+  test('侧栏二次排版：不需要滚动就够得着全部入口，设置钉在最底（M2-b7）', async ({ page }) => {
+    await page.goto('/chat');
+
+    const rail = page.locator('.nav-rail');
+    const metrics = await rail.evaluate((el) => ({
+      client: el.clientHeight,
+      scroll: el.scrollHeight,
+      lastBottom: Math.round(el.getBoundingClientRect().bottom),
+      viewport: window.innerHeight,
+    }));
+    // 旧版实测 scrollHeight 978 > clientHeight 800（15 个竖排卡片 + 4 个组标题），
+    // 底部入口要靠滚动才够得着；横排后必须不溢出
+    expect(metrics.scroll).toBeLessThanOrEqual(metrics.client);
+    expect(metrics.lastBottom).toBeLessThanOrEqual(metrics.viewport);
+
+    // 顺序契约：设置是 rail 最后一个入口（此前它夹在「能力」组中间）
+    await expect(rail.locator('.nav-item').last()).toHaveAttribute('aria-label', '设置');
+    // 几何契约：入口是横排一行的小高度（旧版竖排卡片是 56px）
+    const itemHeight = await rail
+      .locator('.nav-item')
+      .first()
+      .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+    expect(itemHeight).toBeLessThanOrEqual(34);
   });
 
   test('高亮由路由派生：新建角色页仍点亮「角色」', async ({ page }) => {

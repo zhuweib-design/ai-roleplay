@@ -72,10 +72,10 @@ const en: Record<MessageKey, string> = {
   'nav.settings': 'Settings',
   'nav.profile': 'Profile',
   // N 层导航分组与一句话职责（单一事实源 src/core/nav-model.ts）
-  'nav.groupConversation': 'Chat',
+  'nav.groupConversation': 'Sessions',
   'nav.groupCreation': 'Create',
   'nav.groupCapability': 'Capabilities',
-  'nav.groupArchive': 'Library',
+  'nav.groupArchive': 'History',
   'nav.more': 'More',
   'navDesc.chat': 'Keep a running chat with one character',
   'navDesc.group': 'Run one scene with several characters',

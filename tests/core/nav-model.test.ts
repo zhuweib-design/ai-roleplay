@@ -2,9 +2,10 @@
  * nav-model 单元测试（N 层单一事实源）
  *
  * 覆盖设计文档 §4 的可执行断言：
- * - 13 个内容项 + 1 个系统项（"更多"），分 4 组
+ * - 12 个内容项 + 3 个系统项（引导 / 更多 / 设置），内容分 4 组
  * - 三个渲染面（rail / 底栏 / 聚合页）同源
  * - 高亮按路由 name 派生，且不吃 path 前缀（/character vs /character-version）
+ * - 侧栏二次排版（M2-b7）：设置属系统项且排在系统段最后（rail 钉底 = 最下方）
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -19,11 +20,26 @@ import {
 } from '@core/nav-model';
 
 describe('NAV_ENTRIES 结构', () => {
-  it('内容项 13 个 + 系统项 2 个，id 唯一', () => {
-    expect(CONTENT_ENTRY_COUNT).toBe(13);
+  it('内容项 12 个 + 系统项 3 个，id 唯一', () => {
+    expect(CONTENT_ENTRY_COUNT).toBe(12);
     expect(NAV_ENTRIES).toHaveLength(15);
     expect(new Set(NAV_ENTRIES.map((e) => e.id)).size).toBe(15);
-    expect(systemEntries().map((e) => e.id)).toEqual(['more', 'guide']);
+    expect(systemEntries().map((e) => e.id)).toEqual(['guide', 'more', 'settings']);
+  });
+
+  it('分组归属：设置移出「能力」，社区市场归入「创作」，「历史」只放记录与版本', () => {
+    expect(entriesOfGroup('conversation').map((e) => e.id)).toEqual(['chat', 'group']);
+    expect(entriesOfGroup('creation').map((e) => e.id)).toEqual([
+      'character',
+      'worldbook',
+      'databank',
+      'story',
+      'random-events',
+      'market',
+    ]);
+    expect(entriesOfGroup('capability').map((e) => e.id)).toEqual(['local-model', 'image-gen']);
+    expect(entriesOfGroup('archive').map((e) => e.id)).toEqual(['archives', 'version']);
+    expect(NAV_ENTRIES.find((e) => e.id === 'settings')?.group).toBeNull();
   });
 
   it('四个分组各非空，且组内项之和等于内容项总数', () => {

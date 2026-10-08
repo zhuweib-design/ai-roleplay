@@ -147,19 +147,6 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     inMore: true,
   },
   {
-    id: 'settings',
-    group: 'capability',
-    routeName: 'settings',
-    activeWhen: ['settings'],
-    icon: 'gear',
-    labelKey: 'nav.settings',
-    descKey: 'navDesc.settings',
-    mobileTab: true,
-    mobileTabOrder: 6,
-    mobileLabelKey: 'mobile.tabSettings',
-    inMore: false,
-  },
-  {
     id: 'local-model',
     group: 'capability',
     routeName: 'local-model',
@@ -205,7 +192,7 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
   },
   {
     id: 'market',
-    group: 'archive',
+    group: 'creation',
     routeName: 'community-market',
     activeWhen: ['community-market'],
     icon: 'store',
@@ -216,7 +203,22 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     mobileLabelKey: 'mobile.tabMarket',
     inMore: false,
   },
-  // 系统项：聚合页本身（group=null），移动端为底部 Tab，桌面端为 rail 底部入口
+  // ── 系统项（group=null）──
+  // `systemEntries()` 按声明顺序返回，桌面 rail 把这一段整体钉到底部，
+  // 因此这里的顺序就是自上而下：引导（任务中心）→ 更多（聚合页）→ 设置。
+  // 设置此前挂在"能力"组里、出现在 rail 中部，是"侧栏看起来很乱"的直接来源之一：
+  // 它不是内容资源，而是应用级系统入口。
+  {
+    id: 'guide',
+    group: null,
+    routeName: 'guide',
+    activeWhen: ['guide'],
+    icon: 'info',
+    labelKey: 'nav.guide',
+    descKey: 'navDesc.guide',
+    mobileTab: false,
+    inMore: false,
+  },
   {
     id: 'more',
     group: null,
@@ -230,16 +232,17 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     mobileLabelKey: 'mobile.tabMore',
     inMore: false,
   },
-  // 系统项：任务中心（G 层引导，非内容资源，故不入任何内容组）
   {
-    id: 'guide',
+    id: 'settings',
     group: null,
-    routeName: 'guide',
-    activeWhen: ['guide'],
-    icon: 'info',
-    labelKey: 'nav.guide',
-    descKey: 'navDesc.guide',
-    mobileTab: false,
+    routeName: 'settings',
+    activeWhen: ['settings'],
+    icon: 'gear',
+    labelKey: 'nav.settings',
+    descKey: 'navDesc.settings',
+    mobileTab: true,
+    mobileTabOrder: 6,
+    mobileLabelKey: 'mobile.tabSettings',
     inMore: false,
   },
 ];
@@ -256,6 +259,7 @@ export function entriesOfGroup(groupId: NavGroupId): NavEntry[] {
   return NAV_ENTRIES.filter((e) => e.group === groupId);
 }
 
+/** 系统项（引导 / 更多 / 设置）：按声明顺序返回，rail 底部与聚合页都以此序渲染 */
 export function systemEntries(): NavEntry[] {
   return NAV_ENTRIES.filter((e) => e.group === null);
 }

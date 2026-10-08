@@ -103,6 +103,14 @@
 - i18n：`group.editMember`、`market.installedToLib` / `installedGoEdit` / `installedGoList` 四键双语同步（两文件仍同序）。
 - 测试：`tests/stores/community-market-install.test.ts` 3 例（成功返回 id 且角色确在列表、来源记录未断；条目不存在与下载失败返回 null；重名改名后 id 指向改名后的角色）；`tests/views/market-install-result-ui.test.ts` 2 例（结果条带角色名、两个按钮分别落到 `character-edit?from=/community-market` 与 `character-list`、失败不显示）；`e2e/ux-relations-panel.spec.ts` 新增一条真实链路（建角色 → 建两人群聊 → 点成员名 → 断言 `/character/<id>/edit?from=/group` 且表单里就是该角色 → 点"返回来源页"回到 `/group`）。
 
+### 变更（UX/IA M2-b7：桌面侧栏二次排版）
+- 桌面 rail 的入口由"图标在上、文字在下"的 56px 竖排卡片改为**图标 + 文字横排 32px 行**，宽度 72px → 112px；641–900px 视口自动收成 64px 图标栏（`title`/`aria-label` 保留）。实测 `scrollHeight/clientHeight` 由 **978/800（溢出 178px，底部入口要滚动才够得着）** 变为 **800/800（不溢出）**，最后一个入口底边由 964px 回到 792px。
+- 组标题降级为左对齐 11px + 分隔线（此前与入口同色同形，读起来像更多条目）；`nav.groupConversation` 对话→**会话**、`nav.groupArchive` 档案→**历史**（第一组标题与组内条目同名是原来的观感来源之一）。
+- **设置从「能力」组移入系统项**，与 引导 / 更多 一起钉在 rail 底部（`systemEntries()` 的声明顺序即渲染顺序）；**社区市场从「档案」组移入「创作」组**。内容项由 13 变 12、系统项由 2 变 3。
+- 一次被门禁否定的设计：给激活项加 `secondary` 12% 底色后，axe 在浅色主题实测 `#0a7a77 on #e2efef = 4.38 < 4.5` 并连红三条用例；撤掉底色，只保留左侧色条 + 文字色。
+- 补上 rail 一直缺失的悬停反馈（此前整条侧栏没有任何 `:hover` 规则，鼠标划过看不出可点）：`.nav-item:hover` 改文字色，包在 `@media (hover: hover)` 内；键盘焦点仍走 `base.css` 的全局 `:focus-visible`。
+- 测试：`e2e/ux-nav-model.spec.ts` 新增几何断言（不溢出、最后入口在视口内、行高 ≤34px、设置是最后一个入口），`tests/core/nav-model.test.ts` 补齐四组归属快照与系统项顺序；前后截图存于 `docs/dev/evidence/ux-ia-guided-flow/m2-b7-nav-rail/`。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

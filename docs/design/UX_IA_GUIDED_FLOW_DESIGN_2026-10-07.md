@@ -10,7 +10,7 @@
 
 - **审查范围**：17 条路由 / 16 个视图 / 7 个设置面板文件（含嵌套 `VectorModelPanel.vue`）/ 4 个导航面（`NavRail` `BottomNav` `MoreView` `mobile-nav`）/ 5 个关键对话框入口（新建对话、主密码、API 错误、首启欢迎、向量模型安装）/ **25 条模块依赖边** / 6 条关键任务路径。全部结论以 `file:line` 可复核；引用核查进行了三轮（第 1 轮 249 条、第 4 轮 96 条、第 5 轮复核第 4 轮修订本身），累计纠正 33 + 16 + 7 处，评审记录见 §八。
 - **五条根因**：R1 导航是资源平铺而非任务分层（12 + 2 平铺项、无分组无描述、高亮由点击写入而非路由派生）；R2 模块依赖只存在于代码（25 条边中 **11 条不可见**、**6 条可见但不可一跳**、**4 条有 UI 无读者**、**3 条功能不存在**、只有 **1 条可见且可一跳**）；R3 引导仅 1 个静态 4 条描述的弹窗，关闭即永久消失；R4 单面板信息密度失控（设置「模型」一类聚合 ≈60 个控件面（字面标签口径；把 `v-for` 展开的 7 个预设按钮计入则为 66）、17 个 SFC > 1000 行、`.empty-state` 手写 ≥10 份）；R5 命名与状态语义漂移（`nav.archives`=记录 而页面标题=群聊记录；"扩展"面板装的是语音；图片页的"去设置"落在不含所需内容的类）。
-- **方案四层**：N 导航模型（单一事实源 `core/nav-model.ts`，12+2 平铺 → 4 组 13 内容项 + 2 系统项）、L 关联层（就绪状态条 + 关联面板 + 命中回显 + 前置条件横幅，全部读同一个 `core/readiness.ts`）、G 引导层（任务注册表 + 任务中心 + `StepFlow`/`EmptyState`/`HelpTip`/`FormField` 原语）、V 视觉与降噪（设置 6→7 类、渐进披露、术语表、巨型视图分区）。
+- **方案四层**：N 导航模型（单一事实源 `core/nav-model.ts`，12+2 平铺 → 4 组内容项 + 系统项；M2-b7 后为 **12 内容 + 3 系统**）、L 关联层（就绪状态条 + 关联面板 + 命中回显 + 前置条件横幅，全部读同一个 `core/readiness.ts`）、G 引导层（任务注册表 + 任务中心 + `StepFlow`/`EmptyState`/`HelpTip`/`FormField` 原语）、V 视觉与降噪（设置 6→7 类、渐进披露、术语表、巨型视图分区）。
 - **改造后可验证的目标**：25 条边 → **17 条转"可见且可一跳" + 4 条撤下无读者 UI + 4 条"显式声明不存在"**（E08 群聊参数与 E18/E21/E23 一并归入声明类，因它们没有可跳目标）；`data-rel-jump` 语义跳转点 9 → ≥26；空态带 CTA 5/12 → 12/12；「模型」类 ≈60 控件面 → 3 类各 ≤25（DOM 实测口径）；6 条关键任务全部具备"动作前给出原因 + 一步可达"的路径。
 - **改动分类与边界**：呈现层（P）/ 只读数据（R）/ 状态写入（W）/ 行为（B）四类分别给回滚路径（§5.5）。**不改路由 path、不改 IndexedDB store 结构**；仅在消息类型上增加一个**可选**字段（`promptTrace`，符合 `core/schema-contract.ts` 对可选新增的允许）。不新增功能、不产出 exe/apk。
 - **待裁决 11 项 + 已直接决定 7 项**：见 §3.7 与 §3.7.2，每项均已给选项与推荐；其中 D-G（移动端 tab 数）、D-J（trace 范围）为 v1 评审后新增，D-L…D-O 为 v3 为清除正文残留"或"字而定，**D-P 是 M4-a 实施中被证据否定的自我设计**（设置页智能默认落地已回退），**D-Q 是 M2-b3 的 e2e 实测出的新缺陷**（刷新后对话不自动接回，M2-b4 已修），**D-R 是 M2-b4 写接回测试时实测出的数据丢失**（会话归属不校验，已纠偏）。
@@ -262,6 +262,7 @@
    - 档案：`/archives`、`/character-version`、`/community-market`（3）
    - 系统项（不入组，固定底部）：引导（新）、`/more`（桌面补入口）。
    计数口径统一表述为"**13 内容项 + 2 系统项**"，不再说"12 + 2"。
+   > **M2-b7 修订**：设置从「能力」组移入系统项，社区市场从「档案」组移入「创作」组，现口径为 **12 内容项 + 3 系统项**（引导 / 更多 / 设置）。§八 与 §九 M1-a 里保留当时的数字，那是历史事实。
 3. **激活态改为路由派生**：`computed` 读 `route.name` ∈ `entry.activeWhen`；删除 `characterStore.currentNav`（写 `NavRail.vue:41`、读 `NavRail.vue:55`、定义 `stores/character.ts:56,246`、store 返回值 `:629,655`；该字段从不持久化，因此删除无数据迁移成本），并同步更新唯一测试读者 `tests/stores/character.test.ts:170-173`。`/more` 高亮"更多"系统项（它不属于任何组，无数据来源也不硬造来源）。
 4. **对话工作区**：`/chat` 与 `/group` **两端页头**加"单聊 / 群聊"分段控件（`SegmentedControl.vue`，`router-link` 方式），并把 `group` 从 `DETAIL_ROUTES`（`mobile-nav.ts:27`）移出，使群聊页也保留底栏 ⇒ 消除现状的"单向门"。**不做视图嵌套**：`GroupChatView.vue:958` 与 `ChatMain.vue:731` 都输出 `id="main-content"`，且 `ChatView.vue:19,26-36` 有滚动锁与 `inert`，嵌套会破坏 skip-link/焦点目标（`App.vue:326`），因此仅做路由间链接（D-A）。
 5. **移动端 tab 集合保持 6 不变**（对话/角色/市场/世界/更多/设置）：现状 `MAIN_TABS` 含 `community-market`，若为凑"5 tab"删掉它，将把"市场"变成移动端不可达——正是 §1.2 指责的缺陷。因此**反过来把设计文档 §13 回写为 6 tab**（D-G）。
@@ -377,7 +378,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 目标 | 前 | 后 | 验收方式（可执行） |
 |---|---|---|---|
-| 导航分层 | 12 内容 + 2 底部，平铺 | 4 组 / 13 内容项 + 2 系统项 | `tests/core/nav-model.test.ts` 断言分组结构与计数；三渲染器同源快照测试 |
+| 导航分层 | 12 内容 + 2 底部，平铺 | 4 组 / 12 内容项 + 3 系统项（M2-b7 口径），且**整栏不需要滚动就够得着全部入口** | `tests/core/nav-model.test.ts` 断言分组结构与计数；三渲染器同源快照测试 |
 | 三处导航同源 | 三份硬编码 | 1 份 `nav-model` | 单测：`NavRail`/`BottomNav`/`MoreView` 输出同一集合；`/group`、`/more` 的"某端无入口"数 2 → 0 |
 | 激活高亮 | 3 处失准 | 0 处 | e2e 依次进 `/character/new`、`/character/:id/edit`、`/more`，按 `data-nav-entry="<id>"` 断言激活项（**项级断言，不断言组**） |
 | 语义跳转点 | 9 | ≥26 | 每个跳转带 `data-rel-jump="<edgeId>"`；`tests/ux/related-jumps.test.ts` 解析 nav-model + 组件，断言覆盖 E01–E25 的处置集合；e2e 抽样点 8 条真实链路 |
@@ -769,7 +770,7 @@ v2 的改写引入了约百条**新**引用（门禁脚本、测试行号、持�
 
 | 指标 | 基线 | M1-a 后 | 距 §四 目标 |
 |---|---|---|---|
-| rail 结构 | 12 + 2 平铺 | 4 组 / 13 内容 + 1 系统，每项带职责提示 | 达标 |
+| rail 结构 | 12 + 2 平铺 | 4 组 / 13 内容 + 1 系统，每项带职责提示 | 达标（**M2-b7 改为 12 内容 + 3 系统，并把竖排卡片改横排，见本节末 M2-b7**） |
 | 高亮失准 | 3 处 | 0 处（e2e 断言） | 达标 |
 | 桌面 `/more` 无入口 / 移动 `/group` 无底栏 | 2 项 | 0 项（e2e 断言） | 达标 |
 | 无页内跳入的路由 | 8 / 17 | 7 / 17（`/group` 与 `/more` 已获聚合页入口；`/profile` 反向变差，见偏差 1） | M2 继续 |
@@ -1095,6 +1096,69 @@ Received: "readiness-chip is-attention"  title="还没有可用的模型配置�
 | `a11y:contrast` | 通过，扫描 **121** 处（基线 131） |
 | `npm run test:coverage` | 退出码 **0**，**3655 passed / 3 skipped**，覆盖率 **79.46 / 74.00 / 81.55 / 81.32**（阈值 78/73/78/78 未放松） |
 | 全量 E2E（四 project，`--workers=2`） | 修测试前 **1 failed**（webkit 的 `ux-prompt-trace`）→ 定位到 §七 #20 后 **64 passed / 0 failed**（3.0 分钟）。**注**：上面 `test:coverage` 那一行是在 e2e 修复之前跑的；此后只改动了 `e2e/ux-prompt-trace.spec.ts` 一个测试文件，未触碰 `src/`、单元与门禁判定，故单元侧数字与代码仍同版本 |
+
+### M2-b7 桌面侧栏二次排版（用户实机截图驱动的 V/N 修订）
+
+**触发**：M1-a 把 rail 从"12 项平铺"改成"4 组分层"后，用户实机截图反馈"现在的侧栏仍然很乱"。先量再改，量出来的不是审美问题而是**可达性问题**：
+
+| 指标（1280×800 · Edge · `/chat`） | M1-a 后的实测值 | 说明 |
+|---|---|---|
+| rail 宽度 | 72px | 竖排卡片（图标在上、11px 文字在下）|
+| 入口高度 | 56px × 15 | 15 个入口全部两行高 |
+| `rail.scrollHeight` / `clientHeight` | **978 / 800** | **溢出 178px**，底部入口要靠滚动才够得着 |
+| 最后一个入口的底边 | 964px | 已在视口（800px）之外 |
+| 组标题 | 4 个居中 13px 文本 | 与入口同样式、无分隔，读起来像"更多的条目" |
+
+三条根因：① 竖排卡片让 15 个入口吃掉 840px；② 组标题居中且与入口同色同形，不构成层级；③ **设置夹在「能力」组中间**——它是应用级系统入口，不是内容资源，位置随组内容漂移。
+
+| 改动 | 具体 | 为什么 |
+|---|---|---|
+| 入口改横排 | 图标 18px + 文字 12px 一行，行高 32px；rail 宽 72 → 112px | 同样 15 个入口从 840px 降到 480px；文字不再被 72px 挤成第二行 |
+| 组标题降级 | 左对齐 11px + `letter-spacing .06em` + 组间 1px 分隔线 | 明确"这是分组，不是又一个入口" |
+| 设置移入系统项 | `nav-model`：`settings.group: 'capability' → null`；`systemEntries()` 声明序即渲染序 = 引导 → 更多 → 设置，整段 `margin-top:auto` 钉底 | 系统入口不该随内容组漂移；也顺手把 `systemEntries()` 的顺序契约写进注释与单测 |
+| 社区市场归入「创作」 | `market.group: 'archive' → 'creation'`；「档案」→「历史」只留 记录 + 版本管理 | "从市场取别人做的角色卡"是创作的上游，与"归档记录/版本"无关；组名 对话→会话、档案→历史 也避免与组内条目同名（旧版第一组标题就叫"对话"，里面又是"对话"入口） |
+| 641–900px 收成图标栏 | `@media (max-width: 900px)`：rail 64px、隐藏 `.nav-label`（`title`/`aria-label` 仍在） | 平板宽度下 112px 会挤掉聊天区；断点取自门禁白名单里的 900 |
+| 激活态只留一个信号 | 左侧 3px 色条 + 同色文字 | 见下方"被证据否定的设计" |
+
+**被证据否定的设计（本批次自己的）**：横排后我给激活项加了 `color-mix(in srgb, var(--secondary) 12%, transparent)` 的底色，想让它更醒目。`e2e/contrast-axe.spec.ts` 立刻在**三个用例**上报红：
+
+```
+theme=light → color-contrast(1)
+Element has insufficient color contrast of 4.38
+  foreground #0a7a77, background #e2efef, font-size 12px, expected 4.5:1
+target: .nav-item.active > .nav-label（aria-label="设置"）
+```
+
+即底色把 `--card` 压暗，反而让同色文字跌破 AA。撤掉底色（保留色条 + 文字色）后 8 例复绿。**结论：这一栏的"醒目"不能靠给文字加背景**——要么改文字色，要么改底色但重算配对，二者只能选一个方向。
+
+**改动后的实测（同一台机器、同一视口、同一入口页）**
+| 指标 | M1-a | M2-b7 |
+|---|---|---|
+| `scrollHeight / clientHeight` | 978 / 800（溢出） | **800 / 800（不溢出）** |
+| 入口高度 | 56px | **32px** |
+| 最后入口底边 | 964px（视口外） | **792px（视口内）** |
+| rail 宽度 | 72px | 112px（≤900px 视口自动收 64px 并隐藏文字） |
+| 820×700 视口（平板档） | — | rail 实测 **64px 宽、15 项 32px、`scrollHeight=clientHeight=700` 不溢出**，截图 `after-64px-icon-rail-at-820w.png` |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m2-b7-nav-rail/before-72px-vertical.png` | 同目录 `after-112px-rows.png` |
+
+**回归防线**：`e2e/ux-nav-model.spec.ts` 新增一条几何断言（`scrollHeight ≤ clientHeight`、最后入口底边 ≤ 视口高、入口高度 ≤ 34px、设置是 rail 最后一个入口），把"不需要滚动"变成可失败的检查，而不是靠人眼；`tests/core/nav-model.test.ts` 补四组归属的完整快照断言（会话=对话+群聊；创作=角色/世界书/数据银行/故事引擎/随机事件/社区市场；能力=本地模型+图像生成；历史=记录+版本管理）。
+
+**顺带补的一处交互缺口**：整条 rail 此前**没有任何 hover 规则**（`grep -rn "nav-item:hover" src/` 为空），鼠标划过看不出可点。补 `.nav-item:hover { color: var(--foreground) }`（包在 `@media (hover: hover)` 里，符合 hover 门禁），键盘焦点仍由 `base.css:134` 的全局 `:focus-visible` outline 兜底，不重复定义。
+
+**验证证据（M2-b7 最终状态，与代码同版本）**
+| 门禁 | 结果 |
+|---|---|
+| `npm run typecheck` / `npm run lint` | 退出码均 **0** |
+| `i18n:check:strict` | 通过，`src` **195** 个文件 |
+| `check:css-conventions` | **5/5**，`i7-control-font-size` 未覆盖 **0** 条 |
+| `a11y:contrast`（静态） | 通过，扫描 **121** 处（基线 131） |
+| `a11y`（浏览器 axe，5 主题 × 设置页/对话页/7 条路由） | 加底色版 **3 例连红** → 撤底色后 **8 passed**（含 `ux-nav-model` 的几何新用例） |
+| `npm run test:coverage` | 退出码 **0**，**3656 passed / 3 skipped**，覆盖率 **79.46 / 74.00 / 81.55 / 81.32**（阈值未放松）。**注**：这次统计在"补 hover 规则"之前跑；该改动只新增一条 CSS 声明，而 coverage 的 `include` 是 `src/**/*.ts`（不含 `.vue`/`.css`），数字不受影响 |
+| 全量 E2E（四 project，`--workers=2`） | **65 passed / 0 failed**（5.0 分钟）。中途一次 `--workers=2` 运行里 `worldbook-flow`（mobile-functional project）失败过一次——"点新建世界书后名称框 5s 未出现"，单独 `--workers=1` 重跑通过，且并入下一次全量后 65 例全绿：判定为并发下的时序抖动，与本批改动无关（rail 在 ≤640px 不渲染），但与 §七 #20 记的"世界书即时保存是 fire-and-forget"同源，属同一类风险 |
+| 补 hover 规则之后 | `ux-nav-model` + `mobile-nav-groups` **7 passed**（27s）；静态五项全绿 |
+| 几何守卫是否真会咬人（反证） | 把 `.nav-item` 高度临时改回旧值 56px 后重跑：`Expected: <= 720 / Received: 1028` ⇒ **1 failed**；改回 32px 后 `ux-nav-model` **5 passed**。这条断言不是摆设 |
+
+
 
 
 
