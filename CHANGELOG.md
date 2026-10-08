@@ -111,6 +111,21 @@
 - 补上 rail 一直缺失的悬停反馈（此前整条侧栏没有任何 `:hover` 规则，鼠标划过看不出可点）：`.nav-item:hover` 改文字色，包在 `@media (hover: hover)` 内；键盘焦点仍走 `base.css` 的全局 `:focus-visible`。
 - 测试：`e2e/ux-nav-model.spec.ts` 新增几何断言（不溢出、最后入口在视口内、行高 ≤34px、设置是最后一个入口），`tests/core/nav-model.test.ts` 补齐四组归属快照与系统项顺序；前后截图存于 `docs/dev/evidence/ux-ia-guided-flow/m2-b7-nav-rail/`。
 
+### 新增（UX/IA M2-b8：侧栏入口可编辑 + 激活态改背景填充）
+- **侧栏入口显隐编辑**：新增 `src/core/rail-prefs.ts`（localStorage 键 `ai-roleplay:rail-visibility.v1`，只存"隐藏了哪些入口 id"的用户意图，带 Vue 响应式镜像）。`/more` 顶部新增「侧栏入口」区，点"编辑"展开勾选清单，取消勾选即从桌面左侧栏收起该入口；有隐藏项时出现"恢复显示全部入口"一键还原。`NavRail` 按偏好过滤，**整组被收起时组标题一起消失**。
+- **两条不可绕过的安全阀**：①「更多」与「设置」永远不可隐藏（编辑器就住在「更多」页里，能藏掉它就是把自己锁在门外），读写两侧都做剔除，脏数据里带它们也会被清洗；② 从侧栏收起、且聚合页原本不列出的入口（对话/角色/世界书/社区市场/引导）会出现在「更多」页底部的**「已从侧栏收起」**分区里——收起不等于找不回来。
+- 只影响桌面 rail：移动底部 Tab 保持"6 个入口不增不减"的既有契约（由 `e2e/mobile/mobile-nav-groups.spec.ts` 守着）。
+- **激活态样式**：去掉左侧 3px 竖线，改为整颗胶囊背景填充（rail 左右各留 6px 留白，圆角 `--radius-sm`），文字色走仓库既有约定 `var(--primary-foreground, var(--background))`。
+- **64px 图标档（641–900px 视口）不再显示组名**，只留分隔线表达分组；组名规则写在组件 scoped 样式里（全局规则会被 scoped 特异性压住，写在那里才真的生效）。
+- 一次被 axe 否定的写法：背景填充最初写 `color: var(--primary-foreground, #fff)`，而仓库**从未定义** `--primary-foreground`，于是永远回退成白字——青色主题下实测 `#fff on #7df9ff = 1.24`，`a11y:contrast` 静态扫描从 121 涨到 125、浏览器 axe 三条用例连红；改用 `var(--background)` 回退后静态回到 121、axe 4 例全绿。
+- 测试：`tests/core/rail-prefs.test.ts` 7 例（默认全显示 / 翻转与落盘 / 可编辑清单不含钉底项 / 钉底项藏不掉且脏数据被清洗 / 三种脏输入退回全显示 / 一键恢复 / 系统项顺序与引导可隐藏）、`tests/components/nav-rail-visibility.test.ts` 5 例（15 项与 4 个组名 / 隐藏后 DOM 里真的没有 / 整组收起时组名消失 / 设置与更多藏不掉 / 激活项状态类）、`e2e/ux-nav-model.spec.ts` 新增一条真实链路（编辑 → 收起 → rail 少一项 → 刷新仍在 → 「更多」页仍能进入 → 一键恢复）。
+
+### 修复（UX/IA M2-b8：设置并发写会倒置，旧快照盖掉新状态）
+- `src/stores/settings.ts`：`persistSettings()` 改为**空闲时同步发起、忙时排队**（原 `async` 实现拆为 `writeSettingsSnapshot()`，外层用 `persistInFlight` + `persistWaiters` 串起来）。此前连点"新建 API 配置"→"激活"会并发两次写，先发起的那次带的快照更旧却可能后完成，于是把新状态覆盖掉——刷新后就绪芯片说"还没有可用的模型配置"，而 IndexedDB 里配置明明在。20 余处 `void persistSettings()` 调用点一行未改，语义自然变正确。
+- **测试适配（不是削弱）**：`tests/stores/quick-reply.test.ts` 的 4 例"××后触发持久化"原先在调用栈内同步断言 `saveCallCount`，排队后第二次写会晚两个微任务，故加 `await flushPersist()` 后再断言；断言语义不变（仍是"该动作触发了持久化"），原因写在该文件顶部的 helper 注释里。
+- 这条同时**修正了 M2-b6 记下的原因**（当时写成"激活态可能还没落盘"，并因此在测试里轮询 IndexedDB——那个等待其实不够）；设计文档 §七 #20 已按新机制改写，`docs/design/...` 内相关表述同步更正。
+- 守卫：`tests/stores/settings-persist-order.test.ts`（假适配器"第一次写慢、后续写快"，断言最后一次落盘必须是最终状态）。反证：把排队摘掉后仅该用例即红 `expected {activeApiProfileId:'p1'} to equal {…'p2'}`（`quick-reply` 35 例仍全绿 ⇒ 只有顺序守卫抓得住），恢复后通过。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

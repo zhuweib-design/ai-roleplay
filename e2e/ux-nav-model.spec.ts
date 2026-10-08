@@ -47,6 +47,39 @@ test.describe('桌面端分层导航', () => {
     expect(itemHeight).toBeLessThanOrEqual(34);
   });
 
+  test('侧栏入口可编辑：在「更多」里收起一个入口，rail 少一项且刷新后仍是收起状态（M2-b8）', async ({ page }) => {
+    await page.goto('/chat');
+    const rail = page.locator('.nav-rail');
+    await expect(rail.locator('.nav-item')).toHaveCount(15);
+    await expect(rail.locator('[data-rel-jump="nav-story"]')).toHaveCount(1);
+
+    await page.goto('/more');
+    await page.locator('[data-rel-jump="more-rail-edit"]').click();
+    const storySwitch = page.locator('#rail-show-story');
+    await expect(storySwitch).toBeChecked();
+    await storySwitch.uncheck();
+    await expect(page.locator('[data-rel-jump="more-rail-edit"]')).toContainText('已隐藏 1 个入口');
+
+    await page.goto('/chat');
+    await expect(rail.locator('.nav-item')).toHaveCount(14);
+    await expect(rail.locator('[data-rel-jump="nav-story"]')).toHaveCount(0);
+    // 刷新后仍是收起状态（偏好持久化）
+    await page.reload();
+    await expect(rail.locator('[data-rel-jump="nav-story"]')).toHaveCount(0);
+
+    // 收起 ≠ 找不回来：聚合页仍然列着它
+    await page.goto('/more');
+    await expect(rail.locator('[data-rel-jump="nav-story"]')).toHaveCount(0);
+    await expect(page.locator('[data-rel-jump="more-story"]')).toHaveCount(1);
+
+    // 一键恢复
+    await page.locator('[data-rel-jump="more-rail-edit"]').click();
+    await page.locator('[data-rel-jump="more-rail-reset"]').click();
+    await page.goto('/chat');
+    await expect(rail.locator('.nav-item')).toHaveCount(15);
+    await expect(rail.locator('[data-rel-jump="nav-story"]')).toHaveCount(1);
+  });
+
   test('高亮由路由派生：新建角色页仍点亮「角色」', async ({ page }) => {
     await page.goto('/character/new');
 

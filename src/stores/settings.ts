@@ -960,7 +960,7 @@ export const useSettingsStore = defineStore('settings', () => {
    * 注意：Vue 的 reactive Proxy 无法被 IndexedDB 结构化克隆，
    * 需要通过 toRaw() 转换为普通对象再传递给存储适配器
    */
-  async function persistSettings(): Promise<void> {
+  async function writeSettingsSnapshot(): Promise<void> {
     if (!storageAdapter) return;
     try {
       // AC20 透明加密：若已设置主密码，加密 apiKey 字段后再保存
@@ -1036,6 +1036,38 @@ export const useSettingsStore = defineStore('settings', () => {
         error: err instanceof Error ? err.message : String(err),
       });
     }
+  }
+
+  /**
+   * 串行化设置写入（M2-b8 排查 §七 #20 时定位到的真因）
+   *
+   * 原来每次调用各自异步跑完：连着点"创建配置"再点"激活"会并发两次写，
+   * 先发起的那次带的快照更旧，却可能**后**完成，于是把新状态覆盖掉 ——
+   * 刷新后表现为"明明配过，芯片却说还没有可用的模型配置"。
+   *
+   * 排队规则：空闲时**同步发起**（保持既有"调用即写入"语义，含 `tests/stores/quick-reply.test.ts`
+   * 里的同步断言），有写在飞时排到它完成之后再发起 ⇒ 写入顺序 = 状态顺序，不可能倒置。
+   * 调用点的 `void persistSettings()` 一行都不用改。
+   */
+  let persistInFlight: Promise<void> | null = null;
+  const persistWaiters: Array<() => void> = [];
+
+  function persistSettings(): Promise<void> {
+    if (persistInFlight) {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      persistWaiters.push(release);
+      return gate.then(() => persistSettings());
+    }
+    const run = writeSettingsSnapshot().catch(() => undefined);
+    persistInFlight = run;
+    void run.then(() => {
+      persistInFlight = null;
+      persistWaiters.shift()?.();
+    });
+    return run;
   }
 
   /**

@@ -24,6 +24,16 @@ class MockStorageAdapter {
   }
 }
 
+/**
+ * 等设置写入队列排空。
+ * M2-b8 起 `persistSettings()` 会排队（前一次没写完时不并发发起下一次），
+ * 所以"第二次及以后的写"不再在调用栈内同步发生 —— 这几条用例断言的是
+ * "持久化被触发了"，不是"同步触发了"，故等队列清空后再断言。
+ */
+async function flushPersist(): Promise<void> {
+  for (let i = 0; i < 6; i++) await Promise.resolve();
+}
+
 /** 构造一个 Quick Reply 按钮 */
 function makeButton(overrides: Partial<QuickReplyButton> = {}): QuickReplyButton {
   return {
@@ -108,10 +118,12 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
       expect(store.quickReplies).toHaveLength(0);
     });
 
-    it('更新后触发持久化', () => {
+    it('更新后触发持久化', async () => {
       store.addQuickReply(makeButton({ id: 'qr-1' }));
+      await flushPersist();
       mockAdapter.saveCallCount = 0;
       store.updateQuickReply('qr-1', { label: 'updated' });
+      await flushPersist();
       expect(mockAdapter.saveCallCount).toBe(1);
     });
   });
@@ -131,10 +143,12 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
       expect(() => store.deleteQuickReply('nonexistent')).not.toThrow();
     });
 
-    it('删除后触发持久化', () => {
+    it('删除后触发持久化', async () => {
       store.addQuickReply(makeButton({ id: 'qr-1' }));
+      await flushPersist();
       mockAdapter.saveCallCount = 0;
       store.deleteQuickReply('qr-1');
+      await flushPersist();
       expect(mockAdapter.saveCallCount).toBe(1);
       expect(mockAdapter.saved?.quickReplies).toEqual([]);
     });
@@ -179,9 +193,11 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
       expect(() => store.moveQuickReply('nonexistent', 1)).not.toThrow();
     });
 
-    it('移动后触发持久化', () => {
+    it('移动后触发持久化', async () => {
+      await flushPersist();
       mockAdapter.saveCallCount = 0;
       store.moveQuickReply('qr-1', 1);
+      await flushPersist();
       expect(mockAdapter.saveCallCount).toBe(1);
     });
   });
@@ -196,10 +212,12 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
       expect(store.quickReplies).toEqual([]);
     });
 
-    it('清空后触发持久化', () => {
+    it('清空后触发持久化', async () => {
       store.addQuickReply(makeButton({ id: 'qr-1' }));
+      await flushPersist();
       mockAdapter.saveCallCount = 0;
       store.clearQuickReplies();
+      await flushPersist();
       expect(mockAdapter.saveCallCount).toBe(1);
       expect(mockAdapter.saved?.quickReplies).toEqual([]);
     });

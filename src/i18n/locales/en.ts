@@ -230,6 +230,14 @@ const en: Record<MessageKey, string> = {
   'more.title': 'More',
   'more.desc': 'All feature entries',
   'more.gridAria': 'Feature entries',
+  'more.railPrefs': 'Sidebar entries',
+  'more.railPrefsAria': 'Desktop sidebar entry visibility',
+  'more.railEdit': 'Edit',
+  'more.railAllShown': 'All shown in sidebar',
+  'more.railHiddenCount': '{count} entries hidden',
+  'more.railPrefsHint': 'Checked entries appear in the desktop sidebar. Unchecking only collapses them out of the sidebar — they stay listed under “Collapsed from sidebar” below.',
+  'more.railShowAll': 'Show all entries again',
+  'more.railHiddenSection': 'Collapsed from sidebar',
 
   // ── App shell (App.vue) ──
   'app.name': 'AI Tavern',

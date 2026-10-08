@@ -332,7 +332,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 现名 | 改为 | 附带 |
 |---|---|---|
-| 记录 / 群聊记录 | 「档案」，页内两 tab：群聊记录 / 已归档会话 | 让单聊 `archived`（E 见 §1.7）有归处 |
+| 记录 / 群聊记录 | rail 入口名「记录」，页面 `<h1>` 实测为「群聊记录」（`archives.title`），页内两 tab：群聊记录 / 已归档会话 | 让单聊 `archived`（E 见 §1.7）有归处 |
 | 设置→扩展 | 设置→语音与辅助 | 名称与内容一致；扩展加载器无面板列 §七 |
 | 数据银行 | 标题保留，页头副标题加「（对话检索用）」并在页头显示检索状态 chip | 呼应 T5 与 `PrereqNotice` |
 | 作者笔记 | 「补充设定」+ `HelpTip` 说明持久化名 `characterNote.text` | 不改字段名，只改称谓 |
@@ -465,7 +465,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | `views/CommunityMarketView.vue` | 安装成功提示 + 跳 `/character`（E20，写点 `stores/community-market.ts:454`）；**E21 的声明落点**：页头副标题写明"市场源地址由构建环境提供（`core/market-index.ts:80-84`），运行期不可配置"；`:572,638,735,768,813` 空态并入 `EmptyState`；`:375` 页头统一 |
 | `settings/SettingsAppearancePanel.vue` | 1787 行 4 段（`:367,394,495,539`）中的"UI 自定义"段默认折叠（`Collapse`）；语言/主题段补 `HelpTip`；其余不动 |
 | `settings/SettingsDataPanel.vue` | 1353 行：优化开关段（`:334-344,497-508`）的 toast 文案改为读 glossary 的人名而非裸键（承接 O-20，杜绝"「l0Enabled」已关闭"）；备份/恢复段补"包含哪些数据"的清单说明（`core/backup.ts:51`）；清空动作补与 `guided-tasks` 的关系说明（意图键保留、完成态实时回落） |
-| `views/ArchivesView.vue` | 页名「档案」+ 两 tab（群聊记录 / 已归档会话）；`:312-323` 并入 `EmptyState` |
+| `views/ArchivesView.vue` | 页名「群聊记录」+ 两 tab（群聊记录 / 已归档会话）；`:312-323` 并入 `EmptyState` |
 | `settings/SettingsAboutPanel.vue`（**已存在**，138 行 / 0 控件） | D-L：就地扩一个 section 承接 `/profile` 的"本地用户 + 扮演身份在世界书"说明（约 +80 行）；不新建视图文件 |
 | `views/ProfileView.vue` | D-B：摘入口、内容并入设置→关于、路由改 redirect（path 保留）；`nav.profile`(`zh.ts:73`)/`router.profile`(`:130`)/13 个 `profile.*` 键(`:454-466`) 的处置：**保留页面级键、删导航级键**（避免 §七 #10 之前继续累积死键） |
 | `components/common/OnboardingModal.vue` | 改为任务中心第 0 步（动作按钮 + 深链）；`close()`(`:19-24`) 不再等同引导结束 |
@@ -521,7 +521,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
 | **未落地（下面小节仍按目标态描述，别当成现状）** | 空态 `EmptyState` 铺开（`grep -rl "\.empty-state" src --include=*.vue` 实测 **13** 个文件仍各自定义该样式：11 个视图 + `ChatMain.vue` + `EmptyState.vue` 自己）；`StepFlow` / `HelpTip` / `FormField` 原语与角色·世界书"快速档"表单（M3-b）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；**E03** 上下文面板列出全局书；**E19** 角色卡上的"已跟踪"入口；**E22** 图片模型两处配置互读 + `providerConfig` 持久化（刷新仍丢 key）；**E23** "图片不进对话"的显式声明；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
 
 ### 6.1 新用户第一次打开（改造后）
@@ -539,7 +539,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 - **喂文档**：`/databank` 顶部一眼看到"关键词通道：已生效 / 向量通道：未开启（原因 + 开启入口）/ 静态通道：需角色绑定世界书（+ 去绑定）"。
 - **单聊调教**：每条回复可展开"本轮注入 世界书 2 条"，条目名可跳来源；上下文面板显示真实 token 用量与"全局书也在生效"。
 - **群聊**：页头明确"群聊不加载世界书与文档检索，角色级模型参数不生效"（把不存在说清楚），成员可点进编辑；`/chat` ⇄ `/group` 分段一键切换，切换后底栏仍在。
-- **回溯**：「档案」下群聊记录与已归档会话两个 tab；角色版本从角色卡也能进。
+- **回溯**：「记录」页（标题「群聊记录」）下两个 tab：群聊记录 / 已归档会话；角色版本从角色卡也能进。
+- **嫌侧栏太长**（M2-b8 已落地）：`/more` 顶部「侧栏入口 → 编辑」，勾掉的不进桌面左侧栏；「更多」与「设置」不可隐藏，被收起又想找回来时，它们列在「更多」页底部的「已从侧栏收起」里，一键"恢复显示全部入口"即可全回来。移动端底部 6 个 Tab 不受这个开关影响。
 
 ### 6.3 进阶配置
 
@@ -590,7 +591,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 17 | 巨型 SFC 继续拆分（17 个 >1000 行，本次只按可见密度拆） | 纯工程收益，混做放大回归面 | 下次触碰同文件的任意需求 |
 | 18 | 设计文档收敛（`mobile-ui-design.md` §13 五/六 tab、`software-design-document.md:35,116,135`、`mobile-pwa-plan.md:48`、`PROJECT_INDEX.md:323-337` 缺 `MoreView`、`PLAN_AUDIT_2026-09-28.md:97` 对 EXP-02 的高估） | 本文档给出目标态，M1–M4 落地后统一回写 | M1 完成即先回写 tab 与 PROJECT_INDEX |
 | 19 | 会话模型改为**按角色记住各自激活会话**（`activeChatId` 由单值变映射），并让"切角色 → 该角色上次那段"直接接回 | D-R 已把"写错会话"这条数据丢失堵住（按 `characterId` 纠偏），但"切回甲时仍显示甲的默认会话而非甲上次打开的那条"这个体验缺口需要动会话模型，与"一次会话只属于一个角色"的索引结构一起改才干净 | 多会话使用率上来，或用户反馈"切回来不是刚才那段" |
-| 20 | 设置写入改为**可等待**（关键动作 `await` 落盘，或提供 `flushSettings()` 供导航/关闭前调用） | `stores/settings.ts:526-530` 的 `setActiveApiProfile()` 是 `void persistSettings()`，与创建 Profile 的写入是两次独立异步写；用户在"激活"后立刻刷新，激活态可能还没落盘就被丢掉。M2-b6 的 e2e 在 webkit + `--workers=2` 下**稳定复现**过（`readiness-model` 停在 `is-attention`，`title` 为"还没有可用的模型配置，发送后收不到回复"），只能在测试里轮询 IndexedDB 等两次写都到齐。改成 await 要顺带审一遍 `settings.ts` 里 20 余处 `void persistSettings()` 的调用点，属独立小批次 | 真人反馈"配好模型刷新又没了"，或要把 e2e 的轮询等待从测试侧移到产品侧 |
+| 20 | ~~设置写入不可等待~~ **根因已在 M2-b8 修掉**（`persistSettings` 改为排队串行）；**剩下的范围**是给 20 余处 `void persistSettings()` 调用点做一遍审计：哪些应当 `await`（如关闭标签前、跳转前），要不要提供 `flushSettings()` | M2-b6 把它记成"激活态可能还没落盘"，M2-b8 查清了真正的机制：**并发写完成顺序会倒置**，先发起的旧快照后落盘把新状态盖掉。单测 `tests/stores/settings-persist-order.test.ts` 用"第一次写慢、后续写快"的假适配器钉死顺序，去掉串行立刻复现（`expected {p2,2} to equal {p1,1}`） | 真人反馈"配好模型刷新又没了"再次出现，或要做"关闭前确保保存"的语义 |
 
 ---
 
@@ -1157,6 +1158,52 @@ target: .nav-item.active > .nav-label（aria-label="设置"）
 | 全量 E2E（四 project，`--workers=2`） | **65 passed / 0 failed**（5.0 分钟）。中途一次 `--workers=2` 运行里 `worldbook-flow`（mobile-functional project）失败过一次——"点新建世界书后名称框 5s 未出现"，单独 `--workers=1` 重跑通过，且并入下一次全量后 65 例全绿：判定为并发下的时序抖动，与本批改动无关（rail 在 ≤640px 不渲染），但与 §七 #20 记的"世界书即时保存是 fire-and-forget"同源，属同一类风险 |
 | 补 hover 规则之后 | `ux-nav-model` + `mobile-nav-groups` **7 passed**（27s）；静态五项全绿 |
 | 几何守卫是否真会咬人（反证） | 把 `.nav-item` 高度临时改回旧值 56px 后重跑：`Expected: <= 720 / Received: 1028` ⇒ **1 failed**；改回 32px 后 `ux-nav-model` **5 passed**。这条断言不是摆设 |
+
+### M2-b8 侧栏入口可编辑 + 激活态改背景填充（用户三条反馈的直接落地）
+
+用户对 M2-b7 的结果提了三条：① 选中样式要背景填充，竖线不美观；② 64px 档不要组名；③ 在「更多」里加一个编辑，让用户控制侧栏显示什么、隐藏什么。
+
+| 项 | 实现 | 关键取舍 |
+|---|---|---|
+| 激活态 | 去掉 `border-left`，整颗胶囊 `background: var(--secondary)` + `color: var(--primary-foreground, var(--background))`；rail 左右各留 6px 让填充成为"胶囊"而不是"贴边色块" | 见下方"被 axe 否定的写法" |
+| 64px 档无组名 | `@media (max-width: 900px)` 里 `display: none` 组标题，只留分隔线 | 规则**必须写在组件 scoped 样式内**：写进 `layout.css` 会被 scoped 的特异性（`.nav-group-label[data-v-*]`）压住而不生效——这是一次实测出来的坑 |
+| 入口显隐编辑 | 新增 `core/rail-prefs.ts`（localStorage + 响应式镜像，只存意图不存结果，与 `guided-tasks.ts` 同口径）；`/more` 顶部「侧栏入口」区，"编辑"展开勾选清单；`NavRail` 过滤，整组空则组标题一起消失 | 只影响桌面 rail。移动底部 Tab 的"6 个入口不增不减"是既有契约（`e2e/mobile/mobile-nav-groups.spec.ts` 在守），不跟变 |
+| 不把自己锁死 | 两条安全阀：`PINNED_ENTRY_IDS = ['more','settings']` 在**读写两侧**都剔除（脏数据带它们也会被清洗）；从侧栏收起、且聚合页原本不列出的入口（对话 / 角色 / 世界书 / 社区市场 / 引导）落到「更多」页底部的**「已从侧栏收起」**分区 | 编辑器就住在「更多」页里——能藏掉「更多」或「设置」就没有回头路了。"收起 ≠ 找不回来"是这条设计的本意 |
+| 脏数据 | `loadRailVisibility()` 对非 JSON、非数组、未知 id 一律退回"全部显示"，存储不可用时偏好当场生效只是记不住 | 导航不能因为偏好坏了而坏 |
+
+**被 axe 否定的写法（本批次自己的返工）**：背景填充最初写 `color: var(--primary-foreground, #fff)`。查下来仓库**从未定义** `--primary-foreground`（`grep -rn "primary-foreground" src/styles/` 只有两处 `var(...)` 回退用法），所以它永远回退成白字——青色主题下 `#fff on #7df9ff = 1.24`：
+
+| 检查 | 写 `#fff` 时 | 改成 `var(--background)` 回退后 |
+|---|---|---|
+| `a11y:contrast` 静态扫描存量 | **125**（比基线 121 多 4 条，即 4 个主题的激活项不达标） | **121**（回到 M2-b7 水平） |
+| `e2e/contrast-axe.spec.ts`（5 主题 × 设置页 / 对话页 / 7 路由） | **3 failed**（`insufficient color contrast of 1.24 (foreground #ffffff, background #7df9ff, 12px)`） | **4 passed**（含 `custom-theme-contrast`） |
+
+**新增防线**：`tests/core/rail-prefs.test.ts` 7 例（含"钉底项藏不掉 + 脏数据里带它也被清洗"）、`tests/components/nav-rail-visibility.test.ts` 5 例（含"整组收起 ⇒ 组标题一起消失"）、`e2e/ux-nav-model.spec.ts` 一条端到端偏好链路（编辑 → 收起 → rail 少一项 → **刷新后仍是收起状态** → 聚合页仍能进 → 一键恢复）。
+
+**顺带把 §七 #20 从"待办"变成"已修"**：M2-b8 的验证跑里，`ux-prompt-trace` 在 webkit 又红了一次（刷新后 `readiness-model` 停在 `is-attention`），而 M2-b6 已经加过"轮询 IndexedDB 直到 `activeApiProfileId` 正确"的等待——**说明那个等待根本不够**，我记的原因（"还没落盘"）也不是真机制。单独跑不复现、并发跑必现，于是直接读 `persistSettings()`：它是 `async` 且**每次调用各自跑完**，连点"新建配置"再"激活"会并发两次写，先发起的那次带的快照更旧，却可能后完成 ⇒ **旧快照最后落盘，把新状态盖掉**。修法是排队：
+
+| | 修前 | 修后 |
+|---|---|---|
+| `persistSettings()` | 每次调用独立异步跑完，完成顺序不定 | **空闲时同步发起、忙时排队**（`persistInFlight` + `persistWaiters`）：写入顺序 = 状态顺序，旧快照不可能最后落盘 |
+| 调用点 | 20 余处 `void persistSettings()` | **一行不改**（排队后语义自然正确） |
+| 守卫 | 无 | `tests/stores/settings-persist-order.test.ts`：假适配器"第一次写慢、后续写快" ⇒ 断言最后一次落盘必须是最终状态 |
+| 反证（把排队摘掉） | `AssertionError: expected { activeApiProfileId: 'p1', … } to deeply equal { activeApiProfileId: 'p2', … }` ⇒ **1 failed**，而 `quick-reply` 的 35 例仍全绿 ⇒ 只有顺序守卫抓得住这个 bug | 恢复排队后 **1 passed** |
+
+**验证证据（M2-b8 最终状态，与代码同版本）**
+| 门禁 | 结果 |
+|---|---|
+| `npm run typecheck` / `npm run lint` | 退出码均 **0**（中途一次 `tsc=2` 是新单测里的 `writes[i-1]` 触发 `noUncheckedIndexedAccess`，已改写断言而非加 `!`） |
+| `i18n:check:strict` | 通过，`src` **196** 个文件（+1 = `core/rail-prefs.ts`） |
+| `check:css-conventions` | **5/5**，`i7` 未覆盖 **0** 条 |
+| `a11y:contrast`（静态） | 通过，扫描 **121** 处（基线 131）——中途曾因 `#fff` 回退涨到 125，改正后回到 121 |
+| `e2e/contrast-axe.spec.ts` + `custom-theme-contrast` | **4 passed**（5 主题 × 设置页 / 对话页 / 7 条路由 + 自定义背景图 22 对） |
+| `npm run test:coverage` | 退出码 **0**，**3669 passed / 3 skipped**，覆盖率 **79.51 / 74.04 / 81.58 / 81.38**（阈值未放松） |
+| 全量 E2E（四 project，`--workers=2`） | **66 passed / 0 failed**（4.6 分钟）。此前 M2-b8 中途那次全量是 **65 passed / 1 failed**（webkit 的 `ux-prompt-trace` 刷新后模型芯片不 ready）——正是那次失败把 §七 #20 从"待办"挖成"已修的并发写倒置"；修后同一用例连续两轮全绿 |
+| 界面实测（Edge 1280×900） | 编辑器 13 行可勾项、"已隐藏 2 个入口"计数、"恢复显示全部入口"出现；取消勾选「引导」后 rail 内 `[data-rel-jump="nav-guide"]` 计数 **0**，而「更多」页的 `collapsed-guide` 卡片计数 **1** ⇒ "收起 ≠ 找不回来"成立。截图见 `docs/dev/evidence/ux-ia-guided-flow/m2-b8-rail-prefs/`（`more-editor-all.png` / `more-editor-2-hidden.png` / `rail-all.png` / `rail-2-hidden.png`），激活态填充与 64px 无组名见 `../m2-b7-nav-rail/after-active-fill.png`、`after-64px-no-captions.png` |
+
+**必须记下的测试适配（不是削弱）**：`tests/stores/quick-reply.test.ts` 里 4 例"××后触发持久化"原先在调用栈内**同步**断言 `saveCallCount`。排队后第二次及以后的写会晚两个微任务，因此给它们加了 `await flushPersist()` 再断言。**断言语义没变**（仍是"这个动作触发了持久化"），变的是等待方式；这一点在测试文件顶部的 helper 注释里也写明了原因。
+
+
 
 
 

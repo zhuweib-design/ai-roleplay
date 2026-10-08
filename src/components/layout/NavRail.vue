@@ -7,9 +7,9 @@ import {
   NAV_GROUPS,
   activeEntryForRoute,
   entriesOfGroup,
-  systemEntries,
   type NavEntry,
 } from '@/core/nav-model';
+import { isEntryVisible, visibleSystemEntries } from '@/core/rail-prefs';
 
 const router = useRouter();
 const route = useRoute();
@@ -20,8 +20,14 @@ const route = useRoute();
 // 原 handleNav 里的 isMobile 分支是死代码（rail 仅 !isMobile 挂载，App.vue:347），已删。
 const activeId = computed(() => activeEntryForRoute(route.name as string | undefined)?.id);
 
-const groups = NAV_GROUPS.map((group) => ({ ...group, entries: entriesOfGroup(group.id) }));
-const system = systemEntries();
+// M2-b8：入口显隐是用户偏好（core/rail-prefs.ts），整组被隐藏时连组标题一起消失
+const groups = computed(() =>
+  NAV_GROUPS.map((group) => ({
+    ...group,
+    entries: entriesOfGroup(group.id).filter((e) => isEntryVisible(e.id)),
+  })).filter((group) => group.entries.length > 0)
+);
+const system = computed(() => visibleSystemEntries());
 
 function handleNav(item: NavEntry) {
   // I-9: 捕获重复导航（点击当前项）产生的 NavigationDuplicated rejection，避免未处理 Promise rejection
@@ -101,7 +107,7 @@ function handleNav(item: NavEntry) {
   border-top: 1px solid var(--border);
 }
 
-/* 组标题：左对齐 + 小字 + 上方分隔线，明确"这是分组，不是又一个入口" */
+/* 组标题：11px + muted-foreground + 上方分隔线，明确"这是分组，不是又一个入口" */
 .nav-group + .nav-group {
   margin-top: 8px;
   padding-top: 8px;
@@ -117,5 +123,16 @@ function handleNav(item: NavEntry) {
   letter-spacing: 0.06em;
   text-align: left;
   color: var(--muted-foreground);
+}
+
+/* 64px 图标档：组名放不下（且分隔线已经足够表达分组），整条隐藏 */
+@media (max-width: 900px) {
+  .nav-group-label {
+    display: none;
+  }
+  .nav-group + .nav-group {
+    margin-top: 6px;
+    padding-top: 6px;
+  }
 }
 </style>

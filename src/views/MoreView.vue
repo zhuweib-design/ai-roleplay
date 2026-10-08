@@ -8,12 +8,19 @@
  * - 按内容组分节，并真正渲染 descKey（原实现声明了 descKey 却没有渲染）
  * - 桌面端也可达（rail 底部系统项），因此补页头与返回
  */
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Icon from '@/components/common/Icon.vue';
 import { t } from '@/i18n';
-import { NAV_GROUPS, moreEntries, type NavEntry } from '@/core/nav-model';
+import { NAV_ENTRIES, NAV_GROUPS, moreEntries, type NavEntry } from '@/core/nav-model';
 import { useGuidedTasks, guideProgress } from '@/core/guided-tasks';
+import {
+  editableRailEntries,
+  hiddenRailCount,
+  isEntryVisible,
+  showAllRailEntries,
+  toggleRailEntry,
+} from '@/core/rail-prefs';
 
 const router = useRouter();
 const groups = NAV_GROUPS.map((group) => ({
@@ -25,6 +32,16 @@ const sections = computed(() => groups);
 
 const tasks = useGuidedTasks();
 const progress = computed(() => guideProgress(tasks.value));
+
+// M2-b8：侧栏入口显隐编辑器。本页始终列出全部入口（它是"找回被藏起来的入口"的地方），
+// 勾选只改变桌面 rail；「更多」与「设置」不在可编辑清单里，避免把自己锁在门外。
+const editingRail = ref(false);
+const railChoices = editableRailEntries();
+const hiddenCount = computed(() => hiddenRailCount());
+// 只列"既被收起、本页分组里又没有"的入口（inMore 的那 8 个本来就在下面出现，不重复列）
+const collapsedEntries = computed(() =>
+  NAV_ENTRIES.filter((e) => !isEntryVisible(e.id) && !e.inMore)
+);
 
 function goBack(): void {
   if (window.history.state?.back) void router.back();
@@ -59,6 +76,53 @@ function cardAria(entry: NavEntry): string {
       </span>
     </router-link>
 
+    <!-- M2-b8：侧栏入口显隐编辑（只影响桌面左侧栏；本页始终保留全部入口作为找回路径） -->
+    <section class="more-rail-prefs" :aria-label="t('more.railPrefsAria')">
+      <button
+        type="button"
+        class="more-prefs-toggle"
+        :aria-expanded="editingRail"
+        data-rel-jump="more-rail-edit"
+        @click="editingRail = !editingRail"
+      >
+        <Icon name="pencil" :size="14" aria-hidden="true" />
+        <span class="more-prefs-title">{{ t('more.railPrefs') }}</span>
+        <span class="more-prefs-state">
+          {{ hiddenCount > 0 ? t('more.railHiddenCount', { count: hiddenCount }) : t('more.railAllShown') }}
+        </span>
+        <span class="more-prefs-edit">{{ t('more.railEdit') }}</span>
+        <Icon :name="editingRail ? 'chevron-up' : 'chevron-down'" :size="14" aria-hidden="true" />
+      </button>
+
+      <template v-if="editingRail">
+        <p class="more-prefs-hint">{{ t('more.railPrefsHint') }}</p>
+        <ul class="more-prefs-list" role="list">
+          <li v-for="entry in railChoices" :key="entry.id" class="more-pref-row">
+            <label :for="`rail-show-${entry.id}`">
+              <input
+                :id="`rail-show-${entry.id}`"
+                type="checkbox"
+                :checked="isEntryVisible(entry.id)"
+                :data-rel-jump="`rail-show-${entry.id}`"
+                @change="toggleRailEntry(entry.id)"
+              />
+              <span class="more-pref-label">{{ t(entry.labelKey) }}</span>
+              <span class="more-pref-desc">{{ t(entry.descKey) }}</span>
+            </label>
+          </li>
+        </ul>
+        <button
+          v-if="hiddenCount > 0"
+          type="button"
+          class="more-prefs-reset"
+          data-rel-jump="more-rail-reset"
+          @click="showAllRailEntries"
+        >
+          {{ t('more.railShowAll') }}
+        </button>
+      </template>
+    </section>
+
     <section
       v-for="group in sections"
       :key="group.id"
@@ -75,6 +139,25 @@ function cardAria(entry: NavEntry): string {
           class="more-card"
           :aria-label="cardAria(entry)"
           :data-rel-jump="`more-${entry.id}`"
+        >
+          <Icon :name="entry.icon" :size="22" aria-hidden="true" />
+          <span class="more-card-label">{{ t(entry.labelKey) }}</span>
+          <span class="more-card-desc">{{ t(entry.descKey) }}</span>
+        </router-link>
+      </nav>
+    </section>
+
+    <!-- 从侧栏收起、且上面各组没列出的入口——保证"藏起来"不等于"找不回来" -->
+    <section v-if="collapsedEntries.length" class="more-section" :aria-label="t('more.railHiddenSection')">
+      <h2 class="more-section-title">{{ t('more.railHiddenSection') }}</h2>
+      <nav class="more-grid" :aria-label="t('more.gridAria')">
+        <router-link
+          v-for="entry in collapsedEntries"
+          :key="entry.id"
+          :to="{ name: entry.routeName }"
+          class="more-card"
+          :aria-label="cardAria(entry)"
+          :data-rel-jump="`collapsed-${entry.id}`"
         >
           <Icon :name="entry.icon" :size="22" aria-hidden="true" />
           <span class="more-card-label">{{ t(entry.labelKey) }}</span>
@@ -186,5 +269,121 @@ function cardAria(entry: NavEntry): string {
 .more-guide:focus-visible {
   outline: 2px solid var(--ring, var(--secondary));
   outline-offset: 2px;
+}
+
+/* M2-b8：侧栏入口显隐编辑器 */
+.more-rail-prefs {
+  margin: 0 0 var(--spacing-md, 16px);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 12px);
+  background: var(--card);
+}
+
+.more-prefs-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--foreground);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.more-prefs-title {
+  font-weight: 600;
+}
+
+.more-prefs-state {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.more-prefs-edit {
+  flex: 0 0 auto;
+  padding: 2px 10px;
+  border: 1px solid var(--secondary);
+  border-radius: 999px;
+  color: var(--secondary);
+  font-size: 13px;
+}
+
+.more-prefs-toggle:focus-visible,
+.more-prefs-reset:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 2px;
+}
+
+.more-prefs-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.more-prefs-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.more-pref-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.more-pref-label {
+  flex: 0 0 auto;
+  font-weight: 600;
+}
+
+.more-pref-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted-foreground);
+}
+
+.more-prefs-reset {
+  margin-top: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: none;
+  color: var(--secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .more-prefs-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (hover: hover) {
+  .more-prefs-edit:hover {
+    background: var(--secondary);
+    color: var(--primary-foreground, var(--background));
+  }
+
+  .more-prefs-reset:hover {
+    border-color: var(--secondary);
+  }
 }
 </style>

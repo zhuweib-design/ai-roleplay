@@ -230,6 +230,14 @@ export default {
   'more.title': '更多',
   'more.desc': '全部功能入口',
   'more.gridAria': '功能入口列表',
+  'more.railPrefs': '侧栏入口',
+  'more.railPrefsAria': '桌面侧栏入口显示设置',
+  'more.railEdit': '编辑',
+  'more.railAllShown': '全部显示在侧栏',
+  'more.railHiddenCount': '已隐藏 {count} 个入口',
+  'more.railPrefsHint': '勾选的入口出现在桌面左侧栏；取消只是从侧栏收起，它仍会出现在下方「已从侧栏收起」里，不会找不到。',
+  'more.railShowAll': '恢复显示全部入口',
+  'more.railHiddenSection': '已从侧栏收起',
 
   // ── 应用外壳（App.vue） ──
   'app.name': 'AI 酒馆',
