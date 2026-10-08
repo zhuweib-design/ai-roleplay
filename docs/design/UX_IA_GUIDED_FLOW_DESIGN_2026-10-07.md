@@ -554,8 +554,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | 空态 `EmptyState` 铺开（`grep -rl "\.empty-state" src --include=*.vue` 实测 **13** 个文件仍各自定义该样式：11 个视图 + `ChatMain.vue` + `EmptyState.vue` 自己）；角色·世界书"快速档"表单（M3-b3；`StepFlow` / `HelpTip` / `FormField` 三个原语已在 M3-b1 建好并通过 axe，HelpTip / FormField 的采用点随快速档落地）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | 角色·世界书"快速档"表单（M3-b3；`StepFlow` / `HelpTip` / `FormField` 三个原语已在 M3-b1 建好并通过 axe，HelpTip / FormField 的采用点随快速档落地）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -1426,3 +1426,53 @@ Up/Down/Home/End 一律放行。原因是设置页的分类 tablist（`SettingsV
 | axe（新原语专项） | 向导态 / 清单态 / HelpTip / FormField **4 例全过，0 违规** |
 | E2E（msedge 55 + mobile-functional 9 + mobile 5） | **69 passed / 0 failed**（1.7 分钟） |
 | E2E（webkit，串行） | **16 passed / 0 failed** |
+
+### M3-b2 空态收敛到 EmptyState（13 份手写副本 → 1 个组件）
+
+前测口径是"`grep -rl '\.empty-state' src --include=*.vue` 实测 13 个文件各自定义该样式"。
+本批把其中 11 个视图的 **22 处**空态改成共用 `EmptyState`，并删掉 **30 条**只有它们在用的
+`.empty-state*` / `.empty-hint` / `.empty-title` / `.empty-text` / `.empty-icon` 样式。
+
+| 文件 | 处数 | 改法 |
+|---|---|---|
+| `CommunityMarketView.vue` | 6 | 搜索无结果 / 推荐未登录（带动作）/ 推荐为空 / 收藏为空 / 发布未登录（带动作）/ 我的发布为空 |
+| `CharacterVersionView.vue` | 3 | 无历史 / 无分支 / 无差异，均为"标题 + 一句解释" |
+| `RandomEventsView.vue` | 3 | 无模板 / 无场景 / 无结果 |
+| `LocalModelView.vue` | 3 | 无模型（带图标）；无指标、未跑基准两处原是 `.empty-state.small` 只有一行字 ⇒ 新增 `compact` 变体承接 |
+| `ArchivesView.vue` | 1 | 两种空态（无数据 / 被筛空）合并成一个组件调用，"清除筛选"只在被筛空时出现 |
+| `CharactersView.vue` | 1 | 同上：搜索无结果与一个角色都没有，走不同文案键 |
+| `DataBankView.vue` / `StoryEngineView.vue` | 各 1 | 动作按钮从"图标 + 文字"的 `header-btn upload-btn` 改为组件统一的主行动按钮（**丢掉了按钮内的小图标**，换来两处与其它空态同形） |
+| `ImageGeneratorView.vue` | 1 | 画廊为空 |
+| `WorldBookView.vue` / `GroupChatView.vue` | 各 1 | 宿主是 `<ul>` 里的一项 ⇒ 给组件加 `as="li"`，否则生成 `ul > section` 的非法结构（axe 的 `list-item` 规则会红，实测过） |
+
+**组件本身为此扩了三个口子**（都是被真实需求逼出来的，不是预留）：
+`as: 'section' | 'li'`（列表宿主）、`compact`（面板内小空态不配 40px 圆底图标）、
+`headingLevel: 2 | 3`（嵌在别的标题之下时降级）；另外把写死的 `id="empty-title"`
+换成随机 uid —— 一页可能同时出现两个空态，重复 id 会让 `aria-labelledby` 指错。
+
+**被 axe 否掉的一次写法**：`WorldBookView` 的空态用了 `heading-level="3"`，
+axe 立刻报 `heading-order`（该页此前没有 h2，h1 直接跳 h3）。改回默认 h2 后
+`tests/accessibility/worldbook-group-axe.test.ts` 的两条"空状态应通过 axe 审计"全过。
+
+**没有改的一处，以及为什么**：`ChatMain.vue:930-956` 的空态带**动态示例提问芯片**
+（一组可点 chip），不是"图标 + 标题 + 说明 + 一个主行动"的形状；硬塞进 EmptyState
+要么给它开一个"任意内容"的口子（那就又回到各写各的），要么丢掉芯片。
+故保留其私有实现，本批只删掉它以外的那些副本。
+
+**后测口径**：`grep -rl '\.empty-state' src --include=*.vue` 现在只剩
+`ChatMain.vue` 与 `EmptyState.vue` 自身；使用组件的文件 **12 个**
+（11 个视图 + 原本就在用的 `ChatView.vue`）。
+
+**验证证据（M3-b2 最终状态，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run lint` / `npm run build` | 退出码均 **0** |
+| `i18n:check:strict` / `check:css-conventions` / `a11y:contrast` + self-test / `runtime:db:schema:check` / `snapshot:migration:check` / `eval:manifest` / `check:csp` / `check:ort` | 全部退出码 **0**；对比度扫描 **121** 处存量（基线 131）未上涨 |
+| `npm run test:coverage` | **3745 passed / 3 skipped**，覆盖率 **79.69 / 74.16 / 81.82 / 81.57** |
+| axe 空态专项（世界书页 / 群聊页） | **2 passed**（含 `heading-order` 反例修回后） |
+| E2E（msedge 55 + mobile-functional 9 + mobile 5） | **69 passed / 0 failed**（1.7 分钟） |
+| E2E（webkit，串行） | **16 passed / 0 failed** |
+| 界面实测（Edge 1280×860，全新 context） | 世界书侧栏空态 = 标题 + 主行动按钮；数据银行空态 = 标题 + 解释 + 上传按钮；记录页空态 = 单行标题。角色列表页**没有空态可拍**（应用自带内置角色，列表不空），这条如实记下而不是补造假截图 |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m3-b2-empty-state/`：`worldbook-list-empty.png` / `databank-empty.png` / `archives-empty.png` |
+| 测试适配（不是削弱） | `e2e/ux-readiness.spec.ts` 一处选择器从 `.empty-state .link-btn` 改为 `.empty-state .empty-action`（动作按钮类名随组件统一），断言的跳转行为不变 |

@@ -20,6 +20,7 @@ import { useRouter } from 'vue-router';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useLorebookStore } from '@/stores/lorebook';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
@@ -901,12 +902,15 @@ function strategyLabel(s: LorebookStrategy): string {
               <span class="item-meta">{{ t('wb.entryCount', { count: lb.entries.length }) }}</span>
             </button>
           </li>
-          <li v-if="store.filteredLorebooks.length === 0" class="empty-state">
-            <p>{{ t('wb.emptyList') }}</p>
-            <button type="button" class="link-btn" @click="createLorebook">
-              {{ t('wb.createFirst') }}
-            </button>
-          </li>
+          <!-- 列表内的一项，必须是 li（用默认 section 会生成 ul > section 的非法结构） -->
+          <EmptyState
+            v-if="store.filteredLorebooks.length === 0"
+            as="li"
+            compact
+            title-key="wb.emptyList"
+            action-key="wb.createFirst"
+            @action="createLorebook"
+          />
         </ul>
       </aside>
 
@@ -1819,16 +1823,7 @@ function strategyLabel(s: LorebookStrategy): string {
   flex: 1;
 }
 
-.empty-state {
-  padding: 24px 12px;
-  text-align: center;
-  color: var(--muted-foreground);
-  font-size: 13px;
-}
 
-.empty-state p {
-  margin: 0 0 8px 0;
-}
 
 .link-btn {
   background: none;

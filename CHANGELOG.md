@@ -155,6 +155,15 @@
 - 测试：`tests/components/step-flow.test.ts` 9 例、`tests/components/help-tip-form-field.test.ts` 9 例、`tests/accessibility/new-primitives-axe.test.ts` 4 例（向导态 / 清单态 / HelpTip / FormField 各过一遍 axe，全部 0 违规）。既有 `tests/components/guided-tasks-card.test.ts` 只把类名选择器换成 `.step-flow-row`，断言语义未变。
 - 两个实现期发现：**①** prop 不能叫 `ariaLabelKey` —— 模板里写 `aria-label-key` 会被 vue-tsc 当成 ARIA 属性而不是 prop，报"缺少 ariaLabelKey"，改名 `labelKey` 才通过；**②** HelpTip 这一批**没有可用采用点**——最需要的就绪状态芯片（原因只写在 `title=` 里、读屏拿不到）本身就是 `<button>`，再套一个按钮是非法 HTML，那处要的是给芯片自身加 `aria-describedby`，与 71 处 `title=` 的全量迁移一起留在设计文档 §七 #14；HelpTip / FormField 的采用随 M3-b3 的两个快速档表单落地。
 
+### 新增（UX/IA M3-b2：空态收敛到 EmptyState）
+- 11 个视图里的 **22 处**手写 `.empty-state` 改为共用 `src/components/common/EmptyState.vue`：`CommunityMarketView` 6 处、`CharacterVersionView` 3 处、`RandomEventsView` 3 处、`LocalModelView` 3 处，`ArchivesView` / `CharactersView` / `DataBankView` / `StoryEngineView` / `ImageGeneratorView` / `WorldBookView` / `GroupChatView` 各 1 处。随之删掉 **30 条**只有它们在用的 `.empty-state*` / `.empty-hint` / `.empty-title` / `.empty-text` / `.empty-icon` 样式。
+- 组件为此扩三个口子（都被真实需求逼出）：`as: 'section' | 'li'`（世界书侧栏与群聊列表的空态是 `<ul>` 里的一项，用默认 `section` 会生成 `ul > section` 的非法结构，axe 的 `list-item` 规则实测报红）、`compact`（面板内小空态不配 40px 圆底图标，承接原来的 `.empty-state.small`）、`headingLevel: 2 | 3`；并把写死的 `id="empty-title"` 换成随机 uid——一页可能同时出现两个空态，重复 id 会让 `aria-labelledby` 指错。
+- 两种"合并成一个组件调用"的写法：`ArchivesView` 与 `CharactersView` 原本是"无数据 / 被筛空"两套并排 DOM，现在按条件传不同文案键，"清除筛选"这类动作只在真有得清时出现。
+- 一次被 axe 否定的写法：`WorldBookView` 空态用 `heading-level="3"` 触发 `heading-order` 违规（该页在 h1 之后没有 h2），改回默认 h2 后两条"空状态应通过 axe 审计"全过。
+- **有意保留的一处**：`ChatMain.vue` 的空态带动态示例提问芯片，不是"图标 + 标题 + 说明 + 一个主行动"的形状，硬塞进组件要么给它开"任意内容"的口子（又回到各写各的）要么丢芯片，故不改。后测口径：`grep -rl '.empty-state' src --include=*.vue` 只剩 `ChatMain.vue` 与 `EmptyState.vue` 自身，使用组件的文件 12 个。
+- 测试适配（不是削弱）：`e2e/ux-readiness.spec.ts` 一处选择器 `.empty-state .link-btn` → `.empty-state .empty-action`（动作按钮类名随组件统一），断言的跳转行为不变。
+- 视觉取舍如实记下：`DataBankView` / `StoryEngineView` 的上传按钮原本是"图标 + 文字"的页头按钮，改为组件统一的主行动按钮后**按钮内的小图标没有了**，换来与其它空态同形。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

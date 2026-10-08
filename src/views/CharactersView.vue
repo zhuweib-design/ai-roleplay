@@ -19,6 +19,7 @@ import { useSettingsStore } from '@/stores/settings';
 import { useCharacterVersionStore } from '@/stores/character-version';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
@@ -562,13 +563,12 @@ function tagsPreview(tags: string[]): string {
       </article>
 
       <!-- 空状态 -->
-      <div v-if="characterList.length === 0" class="empty-state">
-        <Icon name="user" :size="48" />
-        <p class="empty-title">{{ characterStore.searchQuery ? t('characters.emptySearch') : t('characters.emptyNoChar') }}</p>
-        <p class="empty-hint">
-          {{ characterStore.searchQuery ? t('characters.emptySearchHint') : t('characters.emptyNoCharHint') }}
-        </p>
-      </div>
+      <EmptyState
+        v-if="characterList.length === 0"
+        :title-key="characterStore.searchQuery ? 'characters.emptySearch' : 'characters.emptyNoChar'"
+        :desc-key="characterStore.searchQuery ? 'characters.emptySearchHint' : 'characters.emptyNoCharHint'"
+        icon="user"
+      />
 
       <!-- 拖拽提示 -->
       <div v-if="isDragging" class="drag-overlay" aria-hidden="true">
@@ -1024,30 +1024,8 @@ function tagsPreview(tags: string[]): string {
   cursor: not-allowed;
 }
 
-.empty-state {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 16px;
-  gap: 12px;
-  color: var(--muted-foreground);
-}
 
-.empty-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--foreground);
-  margin: 0;
-}
 
-.empty-hint {
-  font-size: 13px;
-  margin: 0;
-  text-align: center;
-  max-width: 320px;
-}
 
 .drag-overlay {
   position: absolute;

@@ -21,6 +21,7 @@ import { useSettingsStore } from '@/stores/settings';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 import { isEncrypted } from '@core/api-key-crypto';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import { SIZE_DIMENSIONS } from '@/core/image-generation';
@@ -506,11 +507,12 @@ onMounted(async () => {
             </div>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="image" :size="48" aria-hidden="true" />
-          <p>{{ t('imgGen.emptyGallery') }}</p>
-          <p class="empty-hint">{{ t('imgGen.emptyGalleryHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="imgGen.emptyGallery"
+          desc-key="imgGen.emptyGalleryHint"
+          icon="image"
+        />
       </section>
 
       <!-- 设置 -->
@@ -1192,24 +1194,8 @@ onMounted(async () => {
 }
 
 /* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  color: var(--muted-foreground);
-  gap: 8px;
-}
 
-.empty-state p {
-  margin: 0;
-  font-size: 13px;
-}
 
-.empty-hint {
-  font-size: 12px !important;
-}
 
 /* 响应式 */
 @media (max-width: 640px) {

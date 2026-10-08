@@ -23,6 +23,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useCharacterVersionStore } from '@/stores/character-version';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Toast from '@/components/common/Toast.vue';
 import Modal from '@/components/common/Modal.vue';
 import {
@@ -537,11 +538,12 @@ type="button"
             </div>
           </li>
         </ol>
-        <div v-else class="empty-state">
-          <Icon name="file" :size="48" aria-hidden="true" />
-          <p>{{ t('cv.noHistory') }}</p>
-          <p class="empty-hint">{{ t('cv.noHistoryHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="cv.noHistory"
+          desc-key="cv.noHistoryHint"
+          icon="file"
+        />
       </section>
 
       <!-- ── 2. 分支 ── -->
@@ -615,11 +617,12 @@ type="button"
             </dl>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="git-branch" :size="48" aria-hidden="true" />
-          <p>{{ t('cv.noBranches') }}</p>
-          <p class="empty-hint">{{ t('cv.noBranchesHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="cv.noBranches"
+          desc-key="cv.noBranchesHint"
+          icon="git-branch"
+        />
       </section>
 
       <!-- ── 3. 差异对比 ── -->
@@ -687,11 +690,12 @@ type="button"
             </li>
           </ul>
         </div>
-        <div v-else class="empty-state">
-          <Icon name="git-branch" :size="48" aria-hidden="true" />
-          <p>{{ t('cv.diffEmpty') }}</p>
-          <p class="empty-hint">{{ t('cv.diffEmptyHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="cv.diffEmpty"
+          desc-key="cv.diffEmptyHint"
+          icon="git-branch"
+        />
       </section>
 
       <!-- ── 4. 合并 ── -->
@@ -1361,25 +1365,8 @@ type="button"
 }
 
 /* Empty state */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: var(--muted-foreground);
-  text-align: center;
-  gap: 8px;
-}
 
-.empty-state p {
-  margin: 0;
-}
 
-.empty-hint {
-  font-size: 12px;
-  opacity: 0.8;
-}
 
 /* Commit list */
 .commit-list {

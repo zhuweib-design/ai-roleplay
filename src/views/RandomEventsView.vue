@@ -21,6 +21,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRandomEventsStore } from '@/stores/random-events';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Toast from '@/components/common/Toast.vue';
 import TemplateEditorModal from '@/components/random-events/TemplateEditorModal.vue';
 import SceneConfigModal from '@/components/random-events/SceneConfigModal.vue';
@@ -343,11 +344,12 @@ function formatCooldown(ms: number): string {
             </dl>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="star" :size="48" aria-hidden="true" />
-          <p>{{ t('re.noTemplates') }}</p>
-          <p class="empty-hint">{{ t('re.noTemplatesHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="re.noTemplates"
+          desc-key="re.noTemplatesHint"
+          icon="star"
+        />
       </section>
 
       <!-- ── 场景配置 ── -->
@@ -394,11 +396,12 @@ function formatCooldown(ms: number): string {
             </dl>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="map-pin" :size="48" aria-hidden="true" />
-          <p>{{ t('re.noScenes') }}</p>
-          <p class="empty-hint">{{ t('re.noScenesHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="re.noScenes"
+          desc-key="re.noScenesHint"
+          icon="map-pin"
+        />
       </section>
 
       <!-- ── 生成器配置 ── -->
@@ -595,11 +598,12 @@ function formatCooldown(ms: number): string {
             </div>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="star" :size="48" aria-hidden="true" />
-          <p>{{ t('re.noResults') }}</p>
-          <p class="empty-hint">{{ t('re.noResultsHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="re.noResults"
+          desc-key="re.noResultsHint"
+          icon="star"
+        />
       </section>
     </main>
 
@@ -992,28 +996,8 @@ function formatCooldown(ms: number): string {
 }
 
 /* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: var(--muted-foreground);
-  text-align: center;
-}
 
-.empty-state p {
-  margin: 8px 0 0 0;
-  font-size: 14px;
-}
 
-.empty-hint {
-  font-size: 12px !important;
-  /* --muted-foreground 本身即 AA 达标的次要文本 token（门禁 muted/背景、muted/卡片 均覆盖）。
-     原叠加 opacity: 0.7 会在半透明混合后把对比度压到 3.11/4.30/4.05（light/oled/theatre），
-     故移除额外透明度 —— 提示文字是信息性文本，非装饰，必须 ≥4.5:1。 */
-  color: var(--muted-foreground);
-}
 
 /* 生成器配置表单 */
 .form-section {

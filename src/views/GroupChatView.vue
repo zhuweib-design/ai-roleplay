@@ -27,6 +27,7 @@ import { recordGroupObservation } from '@/services/group-chat-runtime';
 import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import ContextReadinessBar from '@/components/layout/ContextReadinessBar.vue';
@@ -954,19 +955,14 @@ function isSystem(msg: { role: string }): boolean {
               </div>
             </button>
           </li>
-          <li v-if="filteredGroups.length === 0" class="empty-state">
-            <Icon name="users" :size="32" />
-            <p v-if="groupStore.groups.length === 0">{{ t('group.noGroups') }}</p>
-            <p v-else>{{ t('group.noMatch') }}</p>
-            <button
-              v-if="groupStore.groups.length === 0"
-              type="button"
-              class="link-btn"
-              @click="openCreateModal"
-            >
-              {{ t('group.createFirst') }}
-            </button>
-          </li>
+          <EmptyState
+            v-if="filteredGroups.length === 0"
+            as="li"
+            :title-key="groupStore.groups.length === 0 ? 'group.noGroups' : 'group.noMatch'"
+            icon="users"
+            :action-key="groupStore.groups.length === 0 ? 'group.createFirst' : undefined"
+            @action="openCreateModal"
+          />
         </ul>
       </aside>
 
@@ -1723,19 +1719,7 @@ type="button"
   padding: 4px 0;
 }
 
-.empty-state {
-  padding: 32px 12px;
-  text-align: center;
-  color: var(--muted-foreground);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
 
-.empty-state p {
-  margin: 0;
-}
 
 .link-btn {
   background: none;

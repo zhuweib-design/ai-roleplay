@@ -21,6 +21,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGroupChatStore } from '@/stores/group-chat';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
@@ -309,19 +310,14 @@ function goToGroupChat() {
       </ul>
 
       <!-- 空状态 -->
-      <div v-else class="empty-state">
-        <Icon name="bookmark-simple" :size="48" />
-        <p v-if="groupStore.groups.length === 0">{{ t('archives.emptyNoData') }}</p>
-        <p v-else>{{ t('archives.emptyNoMatch') }}</p>
-        <button
-type="button"
-          v-if="groupStore.groups.length > 0"
-          class="link-btn"
-          @click="clearFilters"
-        >
-          {{ t('archives.clearLink') }}
-        </button>
-      </div>
+      <!-- 两种空态共用一个组件：有数据但被筛空时才给"清除筛选"这个去路 -->
+      <EmptyState
+        v-else
+        :title-key="groupStore.groups.length === 0 ? 'archives.emptyNoData' : 'archives.emptyNoMatch'"
+        icon="bookmark-simple"
+        :action-key="groupStore.groups.length > 0 ? 'archives.clearLink' : undefined"
+        @action="clearFilters"
+      />
     </main>
 
     <!-- 查看对话 Modal -->
@@ -671,20 +667,7 @@ type="button"
 }
 
 /* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 60px 20px;
-  color: var(--muted-foreground);
-  text-align: center;
-}
 
-.empty-state p {
-  margin: 0;
-  font-size: 14px;
-}
 
 .link-btn {
   background: none;

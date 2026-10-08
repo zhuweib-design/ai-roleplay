@@ -24,6 +24,7 @@ import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useCommunityMarketStore } from '@/stores/community-market';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Toast from '@/components/common/Toast.vue';
 import Modal from '@/components/common/Modal.vue';
 import FilterTabs, { type FilterTab } from '@/components/common/FilterTabs.vue';
@@ -569,10 +570,11 @@ type="button"
           </button>
         </div>
 
-        <div v-if="store.filteredCards.length === 0" class="empty-state">
-          <Icon name="search" :size="48" />
-          <p>{{ t('market.emptySearch') }}</p>
-        </div>
+        <EmptyState
+          v-if="store.filteredCards.length === 0"
+          title-key="market.emptySearch"
+          icon="search"
+        />
         <div v-else class="card-grid">
           <article
             v-for="card in store.filteredCards"
@@ -602,15 +604,17 @@ type="button"
 
       <!-- Tab 2: 推荐 -->
       <section v-if="activeTab === 'recommendations'" role="tabpanel" class="tab-panel">
-        <div v-if="!store.isLoggedIn" class="empty-state">
-          <Icon name="info" :size="48" />
-          <p>{{ t('market.recommendLogin') }}</p>
-          <button type="button" class="btn btn-primary" @click="openLoginModal">{{ t('market.login') }}</button>
-        </div>
-        <div v-else-if="recommendations.length === 0" class="empty-state">
-          <Icon name="star" :size="48" />
-          <p>{{ t('market.recommendEmpty') }}</p>
-        </div>
+        <EmptyState
+          v-if="!store.isLoggedIn"
+          title-key="market.recommendLogin"
+          action-key="market.login"
+          @action="openLoginModal"
+        />
+        <EmptyState
+          v-else-if="recommendations.length === 0"
+          title-key="market.recommendEmpty"
+          icon="star"
+        />
         <div v-else class="card-grid">
           <article
             v-for="item in recommendations"
@@ -638,10 +642,11 @@ type="button"
 
       <!-- Tab 3: 收藏 -->
       <section v-if="activeTab === 'favorites'" role="tabpanel" class="tab-panel">
-        <div v-if="favoriteCards.length === 0" class="empty-state">
-          <Icon name="heart" :size="48" />
-          <p>{{ t('market.favoriteEmpty') }}</p>
-        </div>
+        <EmptyState
+          v-if="favoriteCards.length === 0"
+          title-key="market.favoriteEmpty"
+          icon="heart"
+        />
         <div v-else class="card-grid">
           <article
             v-for="card in favoriteCards"
@@ -668,20 +673,22 @@ type="button"
 
       <!-- Tab 4: 我的发布 -->
       <section v-if="activeTab === 'published'" role="tabpanel" class="tab-panel">
-        <div v-if="!store.isLoggedIn" class="empty-state">
-          <Icon name="info" :size="48" />
-          <p>{{ t('market.publishLogin') }}</p>
-          <button type="button" class="btn btn-primary" @click="openLoginModal">{{ t('market.login') }}</button>
-        </div>
+        <EmptyState
+          v-if="!store.isLoggedIn"
+          title-key="market.publishLogin"
+          action-key="market.login"
+          @action="openLoginModal"
+        />
         <template v-else>
           <button type="button" class="btn btn-primary" @click="openPublishModal">
             <Icon name="plus" :size="16" />
             {{ t('market.publishBtn') }}
           </button>
-          <div v-if="myPublishedCards.length === 0" class="empty-state">
-            <Icon name="upload" :size="48" />
-            <p>{{ t('market.publishedEmpty') }}</p>
-          </div>
+          <EmptyState
+            v-if="myPublishedCards.length === 0"
+            title-key="market.publishedEmpty"
+            icon="upload"
+          />
           <div v-else class="card-grid">
             <article
               v-for="card in myPublishedCards"
@@ -1474,17 +1481,6 @@ type="button"
 .card-author {
   font-size: 0.75rem;
   color: var(--muted-foreground);
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 3rem 1rem;
-  color: var(--muted-foreground);
-  text-align: center;
 }
 
 .empty-mini {

@@ -20,6 +20,7 @@ import { useRouter } from 'vue-router';
 import { useDataBankStore } from '@/stores/data-bank';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Modal from '@/components/common/Modal.vue';
 import PrereqNotice from '@/components/common/PrereqNotice.vue';
 import { useDataBankPrereqs } from '@/core/readiness';
@@ -218,15 +219,14 @@ const prereqRows = useDataBankPrereqs();
     <!-- 文档列表 -->
     <main class="doc-main" :aria-label="t('databank.listAria')">
       <!-- 空状态 -->
-      <div v-if="store.documents.length === 0" class="empty-state">
-        <Icon name="file" :size="48" class="empty-icon" />
-        <p class="empty-text">{{ t('databank.emptyText') }}</p>
-        <p class="empty-hint">{{ t('databank.emptyHint') }}</p>
-        <button type="button" class="header-btn upload-btn" @click="openUploadModal">
-          <Icon name="upload" :size="16" />
-          <span class="btn-label">{{ t('databank.uploadFirst') }}</span>
-        </button>
-      </div>
+      <EmptyState
+        v-if="store.documents.length === 0"
+        title-key="databank.emptyText"
+        desc-key="databank.emptyHint"
+        action-key="databank.uploadFirst"
+        icon="file"
+        @action="openUploadModal"
+      />
 
       <!-- 全局文档 -->
       <section v-if="globalDocuments.length > 0" class="doc-section" :aria-label="t('databank.globalSection')">
@@ -580,36 +580,6 @@ const prereqRows = useDataBankPrereqs();
   flex: 1;
   overflow-y: auto;
   padding: 16px 20px;
-}
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 60px 20px;
-  text-align: center;
-}
-
-.empty-icon {
-  color: var(--muted-foreground);
-  opacity: 0.5;
-}
-
-.empty-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--foreground);
-  margin: 0;
-}
-
-.empty-hint {
-  font-size: 13px;
-  color: var(--muted-foreground);
-  margin: 0 0 8px 0;
-  max-width: 400px;
 }
 
 /* 文档分组 */

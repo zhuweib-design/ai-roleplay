@@ -29,6 +29,7 @@ import { CHARACTER_TEMPLATES, type CharacterTemplateId } from '@core/character-g
 import { buildSourceContext } from '@core/story-analyzer';
 import { STORY_TEMPLATES, type StoryTemplateId } from '@core/story-templates';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import FilterTabs, { type FilterTab } from '@/components/common/FilterTabs.vue';
@@ -926,19 +927,14 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
     <!-- 故事列表 -->
     <main class="story-main" :aria-label="t('story.listAria')">
       <!-- 空状态 -->
-      <div v-if="store.stories.length === 0" class="empty-state">
-        <Icon name="book-open" :size="48" class="empty-icon" />
-        <p class="empty-text">{{ t('story.emptyText') }}</p>
-        <p class="empty-hint">{{ t('story.emptyHint') }}</p>
-        <button
-          type="button"
-          class="header-btn upload-btn"
-          @click="openUploadModal"
-        >
-          <Icon name="upload" :size="16" />
-          <span class="btn-label">{{ t('story.uploadFirst') }}</span>
-        </button>
-      </div>
+      <EmptyState
+        v-if="store.stories.length === 0"
+        title-key="story.emptyText"
+        desc-key="story.emptyHint"
+        action-key="story.uploadFirst"
+        icon="book-open"
+        @action="openUploadModal"
+      />
 
       <!-- 故事卡片 -->
       <section v-else class="story-grid" :aria-label="t('story.cardsAria')">
@@ -1872,33 +1868,9 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 }
 
 /* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  text-align: center;
-  color: var(--on-surface-variant);
-}
 
-.empty-icon {
-  color: var(--on-surface-variant);
-  opacity: 0.4;
-  margin-bottom: 16px;
-}
 
-.empty-text {
-  font-size: 15px;
-  font-weight: 500;
-  margin: 0 0 4px;
-}
 
-.empty-hint {
-  font-size: 13px;
-  margin: 0 0 20px;
-  max-width: 480px;
-}
 
 /* 故事卡片 */
 .story-grid {

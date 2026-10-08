@@ -58,7 +58,7 @@ test.describe('就绪状态与关联跳转', () => {
     if (await firstBook.count()) {
       await firstBook.click();
     } else {
-      await page.locator('.empty-state .link-btn').click();
+      await page.locator('.empty-state .empty-action').click(); // 空态已统一走 EmptyState，动作按钮类名随之变
     }
     await expect(page.locator('.bound-chars-section')).toBeVisible();
 
