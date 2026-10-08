@@ -620,6 +620,7 @@ URL
           <input
             id="bg-opacity"
             v-model.number="bgOpacity"
+            v-range
             type="range"
             min="0"
             max="1"
@@ -634,6 +635,7 @@ URL
           <input
             id="bg-blur"
             v-model.number="bgBlur"
+            v-range
             type="range"
             min="0"
             max="20"
@@ -665,6 +667,7 @@ URL
           <input
             id="bubble-radius"
             v-model.number="bubbleRadius"
+            v-range
             type="range"
             min="0"
             max="24"
@@ -679,6 +682,7 @@ URL
           <input
             id="bubble-opacity"
             v-model.number="bubbleOpacity"
+            v-range
             type="range"
             min="0.3"
             max="1"
@@ -1427,12 +1431,12 @@ select.field-input {
 }
 
 .form-range {
+  --range-rail: var(--video-bg);
+  --range-h: 6px;
   width: 100%;
-  height: 6px;
+  height: 18px;
   -webkit-appearance: none;
   appearance: none;
-  background: var(--video-bg);
-  border-radius: 3px;
   outline: none;
   cursor: pointer;
 }
@@ -1442,7 +1446,7 @@ select.field-input {
   appearance: none;
   width: 18px;
   height: 18px;
-  background: var(--primary);
+  background: var(--range-fill, var(--secondary));
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--card);
@@ -1452,7 +1456,7 @@ select.field-input {
 .form-range::-moz-range-thumb {
   width: 18px;
   height: 18px;
-  background: var(--primary);
+  background: var(--range-fill, var(--secondary));
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--card);

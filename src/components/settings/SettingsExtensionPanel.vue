@@ -48,7 +48,9 @@ const settings = useSettingsStore();
         <label class="form-row">
           <span>{{ t('settingsView.ttsRate', { value: settings.ttsConfig.rate.toFixed(1) }) }}</span>
           <input
+            v-range
             type="range"
+            class="tk-range"
             min="0.5"
             max="2"
             step="0.1"
@@ -59,7 +61,9 @@ const settings = useSettingsStore();
         <label class="form-row">
           <span>{{ t('settingsView.ttsPitch', { value: settings.ttsConfig.pitch.toFixed(1) }) }}</span>
           <input
+            v-range
             type="range"
+            class="tk-range"
             min="0"
             max="2"
             step="0.1"

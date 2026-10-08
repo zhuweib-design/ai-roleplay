@@ -862,11 +862,12 @@ function handleExport() {
             <input
               id="f-temp"
               v-model.number="form.temperature"
+              v-range
               type="range"
               min="0"
               max="2"
               step="0.05"
-              class="field-range"
+              class="tk-range"
               :aria-invalid="!!errors.temperature"
               :aria-describedby="errors.temperature ? 'err-temp' : undefined"
             />
@@ -1070,11 +1071,12 @@ function handleExport() {
             <input
               id="f-depth"
               v-model.number="form.authorDepth"
+              v-range
               type="range"
               min="0"
               max="50"
               step="1"
-              class="field-range"
+              class="tk-range"
               :aria-invalid="!!errors.authorDepth"
               :aria-describedby="errors.authorDepth ? 'err-depth' : undefined"
             />
@@ -1454,11 +1456,6 @@ function handleExport() {
 
 .field-initial {
   max-width: 80px;
-}
-
-.field-range {
-  width: 100%;
-  accent-color: var(--secondary);
 }
 
 .field-error {

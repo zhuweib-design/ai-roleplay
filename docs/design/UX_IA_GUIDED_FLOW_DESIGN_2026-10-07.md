@@ -521,7 +521,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
 | **未落地（下面小节仍按目标态描述，别当成现状）** | 空态 `EmptyState` 铺开（`grep -rl "\.empty-state" src --include=*.vue` 实测 **13** 个文件仍各自定义该样式：11 个视图 + `ChatMain.vue` + `EmptyState.vue` 自己）；`StepFlow` / `HelpTip` / `FormField` 原语与角色·世界书"快速档"表单（M3-b）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；**E03** 上下文面板列出全局书；**E19** 角色卡上的"已跟踪"入口；**E22** 图片模型两处配置互读 + `providerConfig` 持久化（刷新仍丢 key）；**E23** "图片不进对话"的显式声明；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
 
 ### 6.1 新用户第一次打开（改造后）
@@ -541,6 +541,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 - **群聊**：页头明确"群聊不加载世界书与文档检索，角色级模型参数不生效"（把不存在说清楚），成员可点进编辑；`/chat` ⇄ `/group` 分段一键切换，切换后底栏仍在。
 - **回溯**：「记录」页（标题「群聊记录」）下两个 tab：群聊记录 / 已归档会话；角色版本从角色卡也能进。
 - **嫌侧栏太长**（M2-b8 已落地）：`/more` 顶部「侧栏入口 → 编辑」，勾掉的不进桌面左侧栏；「更多」与「设置」不可隐藏，被收起又想找回来时，它们列在「更多」页底部的「已从侧栏收起」里，一键"恢复显示全部入口"即可全回来。移动端底部 6 个 Tab 不受这个开关影响。
+- **拖动滑块 / 点按钮 / 等提示消失**（M2-b9 已落地）：滑块轨道左段随值着色（青=强调色，与拇指同色），拇指在悬停与按下时有光晕并放大；任何按钮/可点元素悬停都会叠一层同色底、按下时下沉 1px；提示弹窗按类型 3s（信息/成功）或 5s（错误）自己关，底部有一条随剩余时间收窄的倒计时条，**鼠标停在提示上或 Tab 到关闭按钮时计时暂停**，移开后继续；连点也只会在 5 条内排队，同一条文字重复触发不再重排。
 
 ### 6.3 进阶配置
 
@@ -1202,6 +1203,88 @@ target: .nav-item.active > .nav-label（aria-label="设置"）
 | 界面实测（Edge 1280×900） | 编辑器 13 行可勾项、"已隐藏 2 个入口"计数、"恢复显示全部入口"出现；取消勾选「引导」后 rail 内 `[data-rel-jump="nav-guide"]` 计数 **0**，而「更多」页的 `collapsed-guide` 卡片计数 **1** ⇒ "收起 ≠ 找不回来"成立。截图见 `docs/dev/evidence/ux-ia-guided-flow/m2-b8-rail-prefs/`（`more-editor-all.png` / `more-editor-2-hidden.png` / `rail-all.png` / `rail-2-hidden.png`），激活态填充与 64px 无组名见 `../m2-b7-nav-rail/after-active-fill.png`、`after-64px-no-captions.png` |
 
 **必须记下的测试适配（不是削弱）**：`tests/stores/quick-reply.test.ts` 里 4 例"××后触发持久化"原先在调用栈内**同步**断言 `saveCallCount`。排队后第二次及以后的写会晚两个微任务，因此给它们加了 `await flushPersist()` 再断言。**断言语义没变**（仍是"这个动作触发了持久化"），变的是等待方式；这一点在测试文件顶部的 helper 注释里也写明了原因。
+
+### M2-b9 交互反馈补强（用户第三条反馈：提示要自己关、按钮与滑块"颜色没变化"）
+
+用户原话："提示弹窗需要自动关闭，目前按钮样式交互、滑块样式交互中颜色没有明显的变化，不太明显"。三条都是观感判断，所以先量出事实再动手：
+
+| 用户说法 | 实测到的事实 | 因此改什么 |
+|---|---|---|
+| "提示弹窗需要自动关闭" | `Toast.vue` 一直是 5s 自动关（浏览器实测：出现后 `+4000ms` 仍在、`+6000ms` 已消失） | 缺的**不是计时器**。真正造成"粘着不放"观感的三件事：确认型提示也占屏 5 秒；界面上没有任何"我会自己关"的信号；连点会排成一串刷半分钟 |
+| "按钮样式交互颜色没有明显的变化" | `grep ":where(button\|button:hover\|button:active" src/styles/*.css` **零命中**——整站没有一条全局按钮交互规则，全靠组件自绘，没自绘的就完全没反馈；侧栏激活项在 M2-b7 加的文字色又被 M2-b8 的背景填充吃掉 | 补一条**兜底**规则，且不抢组件自己写好的样式 |
+| "滑块样式交互颜色没有明显的变化" | `.tk-range` / `.form-range` 都 `appearance: none` + 单一底色平铺 ⇒ 拖动时只有圆点在动，原生控件本有的"已填充一段"没了；另有 **3 个 `type="range"` 完全没有 class**（走原生外观）、2 个走 `.field-range`（只有 `width` + `accent-color`） | 轨道按当前值分段着色；把没样式的滑块并入同一套 |
+
+**三项实现**
+
+| 项 | 实现 | 关键取舍 |
+|---|---|---|
+| 滑块着色 | 新增 `core/range-fill.ts`：`v-range` 指令把 `rangePercent(value,min,max)` 写成元素自身的 `--range-pct`；`base.css` 给 `input[type="range"]` 铺**两层 `background-image`**（着色段 + 底色带）。14 个 range 输入全部挂指令，3 个无 class 的并入 `.tk-range`，`.field-range` 随之删除 | 三条更新路径都要有：`mounted`（首屏不空轨）、元素 `input` 监听（拖动即时跟色，**不依赖组件是否重渲染**）、`updated`（`v-model` / "重置"按钮以属性方式改值时不产生 input 事件） |
+| 可点区域 | 盒子 4px → 16px（`.form-range` 18px），可见轨道仍用 `background-size: 100% 4px` 居中画成细带 | 4px 高的盒子实际点不稳拇指；两层背景而不是 `background-color`，是因为加厚盒子后整块上色会变成"粗条" |
+| 拇指状态 | 悬停 / 按下 / 键盘聚焦给同色 `box-shadow` 光晕（32% / 45% `color-mix`），按下同时 `scale(1.18)`；`prefers-reduced-motion` 下撤掉过渡与缩放 | 光晕色取自 `--range-fill`，所以"红拇指 + 青轨道"不会同时出现 |
+| 按钮兜底 | `:where(button, [role='button']):not(:disabled)` 的 hover/active 规则：`inset box-shadow` 叠 `currentColor` 15% / 26%，按下 `translateY(1px)` | 见下方"两次被层叠打败的写法"。`:where()` 让特异度≈0，组件自绘的 hover/active 仍然说了算 |
+| 提示时长 | `TOAST_DURATIONS = { info:3000, success:3200, error:5000 }`，`Toast.vue` 的 `duration` 不传时按类型取，显式 `0` 仍是常驻 | 错误保留 5s（要读完并决定下一步），确认型缩到 3s 出头 |
+| 倒计时条 | 底部 3px `scaleX` 条，rAF 驱动（`transform` 而非 `width`，不逐帧触发布局），`aria-hidden` | 用 rAF 而不是 CSS `animation`：暂停/恢复必须和**真正的关闭计时**共用一个时钟，两套时钟一定会漂 |
+| 暂停计时 | 指针悬停、键盘聚焦、页面隐藏三个理由放进一个 `Set`，全部解除才继续 | WCAG 2.2.1；只判 `hover` 会让"Tab 到关闭按钮上"的键盘用户被抢走阅读时间 |
+| 队列 | `TOAST_QUEUE_LIMIT = 5`，超限淘汰最早**排在后面等**的非错误项；同类型同文案已在队列里就不再重复排队 | 正在显示的首条不参与淘汰（不能把用户正在读的那条挤掉）；待显示项全是错误时丢弃**新来的**那条，而不是静默丢掉已排队的错误 |
+
+**两次被层叠打败的写法（都实测过，不是推演）**
+
+| 想当然的写法 | 实测结果 | 改法 |
+|---|---|---|
+| 把整条渐变做成 `:root` 的复合 token `--range-track: linear-gradient(... var(--range-pct) ...)`，组件写 `background: var(--range-track)` | 浏览器里 `--range-pct: 37%` 明明在元素上，计算出来的渐变仍是 `rgb(cyan) 0px … 0%` —— **var() 在 `:root` 就求值完毕**，着色永远停在 0% | 渐变必须写在**能匹配到 `input` 的规则**里；`:root` 只放叶子色 token（`--range-fill` / `--range-rail`） |
+| 按钮兜底用 `background-image: linear-gradient(color-mix(currentColor…))` | 侧栏激活项 `transform` 生效了，但 `background-image` 计算值仍是 `none` —— `.nav-item.active { background: var(--secondary) }` 是**简体会把背景图整张清掉**，且与兜底规则同为 (0,2,0) 平手、按顺序它赢 | 兜底改用 `inset box-shadow`（叠在既有底色之上，不被简体清掉，也不替换设计好的底色） |
+
+**顺带修掉的真实缺陷**：`Toast.vue` 的 `modelValue` watch 没有 `immediate` ⇒ 只要组件是"挂载时就可见"地用，计时器**永远不启动**。新单测正是撞在这个上面才暴露的（改前 6 例红）。
+
+**反证（把守卫逐个摘掉，看测试是否真的咬人）**
+
+| 摘掉的东西 | 结果 |
+|---|---|
+| `v-range` 的 `input` 监听（只留 mounted/updated） | `用户拖动（input 事件）立即跟随` **1 failed** |
+| `showToast` 的重复消息合并 | `同类型同文案连续触发只排一条` **1 failed** |
+| `evictForCapacity()` 调用 | 队列上限 4 例全 **failed** |
+| `@mouseenter="hold('pointer')"` | 悬停暂停 2 例 **failed** |
+| `watch(…, { immediate: true })` | 自动关闭 6 例 **failed**（这是改代码前的一次性状态，非摘除实验） |
+| 全部恢复 | **27 passed** |
+
+**本批次自己引入的测试污染（查清后改掉，不记成"用例抖动"）**
+
+新 spec 最初用设置页"清除背景"触发提示。加上 webkit project 后，`ux-prompt-trace` 在 webkit 全量跑里**稳定变红**：刷新后模型芯片停在 `is-attention`（"还没有可用的模型配置"），而世界书芯片正常。
+
+| 排查步骤 | 观察 |
+|---|---|
+| 单跑 `ux-prompt-trace`（webkit） | **通过**，reload→芯片就绪仅 **234ms / 244ms** ⇒ 不是"5s 超时太短" |
+| 只放 1 个本文件用例在前 | 通过 |
+| 放全部 6 个在前 | **失败**，且把断言超时放宽到 30s 仍失败（53 次采样全是 `is-attention`）⇒ 不是时序，是数据 |
+| 失败现场 dump IndexedDB | `settings.app` = `{apiProfiles: [], activeApiProfileId: null, chatBackground:{type:'none'}}` ⇒ 落盘的是**别的 context 的快照** |
+| 结论 | 同一 webkit 进程内存储目录共享，本文件那次"清除背景"的 `persistSettings()` 落到了后面的用例上。单跑永远绿 ⇒ 只有在本文件加"写设置"这一步才触发 |
+
+处置：本文件的触发路径全部改成**零落盘**——提示走"发送被拦住"的守卫分支（`ChatMain.handleSend` 在 `checkSendBlock()` 为真时只出提示就 return），滑块改值落在 `.form-range` 的组件本地 ref 上，`/chat` 的 `.tk-range` 只做只读检查。改后 webkit 全量**连续两轮 16 passed / 0 failed**。教训写进了该 spec 顶部注释：证据用例不该顺带改用户数据。
+
+**倒计时条自身的可见度（新加的图形状态指示，按 WCAG 1.4.11 非文本 ≥3:1 量过）**
+
+| 主题 | default | light | midnight | oled | theatre |
+|---|---|---|---|---|---|
+| 条 vs 弹窗底 | 5.04 | 3.94 | 4.77 | 5.69 | 4.94 |
+| 正文 vs 弹窗底 | 13.04 | 17.66 | 12.12 | 15.52 | 12.75 |
+
+（`opacity: .55` 的 `currentColor` 与弹窗底色合成后再算，非估算。首轮量错了：脚本里写的 `dark/teal/purple/custom` 这四个主题名**在 `themes.css` 里不存在**，于是四次都退回默认主题——上表是改用 `[data-theme='light|midnight|oled|theatre']` 真实值后的重测。）
+
+**验证证据（M2-b9 最终状态，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run lint` | 退出码均 **0**（中途 `build` 抓到一次 `TS2339: Property 'mounted' does not exist on type 'Directive'` —— 联合类型上取钩子，改走 `{ mounted }` 结构解构而非加 `!`） |
+| `i18n:check:strict` | 通过，`src` **197** 个文件（+1 = `core/range-fill.ts`） |
+| `check:css-conventions` | **5/5** 通过，`!important` **26**（基线 26，未新增） |
+| `a11y:contrast`（静态） | 通过，实际扫描 **121** 处存量（基线 131）——与 M2-b8 持平，未因新着色上涨 |
+| `runtime:db:schema:check` / `snapshot:migration:check` / `eval:manifest` / `check:csp` / `check:ort` | 全部退出码 **0** |
+| `npm run test:coverage` | 退出码 **0**，**3696 passed / 3 skipped**，覆盖率 **79.5 / 74.07 / 81.64 / 81.36**（阈值未放松）；`range-fill.ts` 与 `toast-service.ts` 均 **100%** |
+| `npm run build` | 退出码 **0** |
+| E2E（msedge 48 + mobile-functional 9 + mobile 5） | **62 passed / 0 failed**（2.3 分钟） |
+| E2E（webkit，串行） | **16 passed / 0 failed，连续两轮**（本批次把 `ux-interaction-feedback` 6 例并入 webkit project，两个内核各跑一次） |
+| 界面实测（Edge 1440×900） | 56 个采样按钮（4 条路由 × 14）**全部**在悬停时计算样式发生变化；侧栏激活项 hover 前 `box-shadow: none` → hover 后出现 `inset` 着色；滑块 `--range-pct` 随 End/Home/拖动为 `100.00% / 0.00% / 90.00%`，轨道 `background-size: 100% 4px` 居中、盒子高 16px；提示 info 在 `+2.3s` 仍在、`+3.5s` 已消失，倒计时条 `0.998 → 0.598 → 0.248`，悬停 3s 内停在 `0.8686` 不动 |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m2-b9-interaction-feedback/`：`before-slider-flat.png`（整条轨道一个色，只有圆点在动）/ `after-slider-filled.png` / `after-slider-hover-halo.png`（拇指光晕）/ `before-rail-hover.png`（激活项 hover 无变化）/ `after-rail-hover-fill.png` / `before-toast-no-countdown.png` / `after-toast-countdown.png` / `after-toast-hover-frozen.png`。before 图是把 `base.css` / `Toast.vue` 临时换回 HEAD 版本后拍的，拍完立即还原 |
 
 
 

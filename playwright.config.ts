@@ -68,6 +68,8 @@ export default defineConfig({
         '**/worldbook-flow.spec.ts',
         // M2-b3：注入痕迹链路同时含 IndexedDB 造数与 SSE 流式，Safari 内核需另有一次实测
         '**/ux-prompt-trace.spec.ts',
+        // M2-b9：滑块渐变/按压着色都靠 color-mix 与新式渐变分段，Safari 内核必须实测一次
+        '**/ux-interaction-feedback.spec.ts',
       ],
       testIgnore: '**/mobile/**',
       use: { ...devices['Desktop Safari'] },

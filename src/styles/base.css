@@ -136,6 +136,26 @@ textarea,
   outline-offset: 2px;
 }
 
+/* 全局按压反馈兜底：大量按钮/可点元素只写了 focus 或什么都没写，
+   指针悬停和按下时看不出任何变化。
+   用 inset box-shadow 而不是 background-image：组件常写 `background: X` 简体会把
+   背景图整张清掉（实测就踩过这个：侧栏激活项 .nav-item.active 把 hover 着色抹平），
+   而 inset 阴影叠在自己的底色之上，既不被简体抹掉，也不会替换设计好的底色。
+   :where() 保证特异度接近 0，任何自绘 hover/active 的组件仍然说了算。 */
+:where(button, [role='button']):not(:disabled) {
+  transition: background-color .15s ease, color .15s ease, box-shadow .15s ease, transform .06s ease;
+}
+:where(button, [role='button']):not(:disabled):active {
+  box-shadow: inset 0 0 0 999px color-mix(in srgb, currentColor 26%, transparent);
+  transform: translateY(1px);
+}
+@media (hover: hover) and (pointer: fine) {
+  :where(button, [role='button']):not(:disabled):hover {
+    box-shadow: inset 0 0 0 999px color-mix(in srgb, currentColor 15%, transparent);
+    cursor: pointer;
+  }
+}
+
 /* 开关 */
 .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
 .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
@@ -145,11 +165,51 @@ textarea,
 .switch input:checked + .slider::before { transform: translateX(16px); background: var(--on-accent); }
 .switch input:focus-visible + .slider { outline: 2px solid var(--secondary); outline-offset: 2px; }
 
-/* 滑块 */
-.tk-range { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: var(--radius-pill); background: var(--border); outline: none; accent-color: var(--secondary); }
-.tk-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--secondary); cursor: pointer; border: 2px solid var(--card); }
-.tk-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--secondary); cursor: pointer; border: 2px solid var(--card); }
-.tk-range:focus-visible { outline: 2px solid var(--secondary); outline-offset: 4px; }
+/* 滑块：轨道左段按 --range-pct 着色（由 v-range 指令写到元素自身的内联变量上），
+   拖动时颜色边界跟着拇指走。
+   两层 background-image（着色段 + 底色带）而不是 background-color：
+   元素盒子有 --range-h(16px) 高可点，可见轨道只画 --range-h 那么粗并居中，
+   否则要么整块 16px 都是底色（变粗条），要么只能点到 4px 高的一条线。
+   渐变必须落在能匹配到 input 的规则里：实测把整条渐变放进 :root 的复合 token，
+   var(--range-pct) 会在 :root 提前求值，着色永远停在 0%。 */
+input[type="range"] {
+  cursor: pointer;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% var(--range-h, 4px);
+  background-image:
+    linear-gradient(to right,
+      var(--range-fill, var(--secondary)) 0 var(--range-pct, 0%),
+      transparent var(--range-pct, 0%) 100%),
+    linear-gradient(var(--range-rail, var(--border)), var(--range-rail, var(--border)));
+}
+.tk-range { -webkit-appearance: none; appearance: none; width: 100%; height: 16px; --range-h: 4px; outline: none; accent-color: var(--secondary); }
+.tk-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--range-fill, var(--secondary)); cursor: pointer; border: 2px solid var(--card); }
+.tk-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--range-fill, var(--secondary)); cursor: pointer; border: 2px solid var(--card); }
+.tk-range:focus-visible { outline: 2px solid var(--secondary); outline-offset: 2px; }
+
+/* 拇指状态：悬停/按下/键盘聚焦都给同色光晕，按下同时放大——
+   没有这些状态样式时，原生 range 拖动几乎看不出颜色变化 */
+input[type="range"]::-webkit-slider-thumb,
+input[type="range"]::-moz-range-thumb { transition: box-shadow .15s ease, transform .15s ease; }
+@media (hover: hover) and (pointer: fine) {
+  input[type="range"]:hover::-webkit-slider-thumb,
+  input[type="range"]:hover::-moz-range-thumb {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--range-fill, var(--secondary)) 32%, transparent);
+  }
+}
+input[type="range"]:active::-webkit-slider-thumb,
+input[type="range"]:active::-moz-range-thumb,
+input[type="range"]:focus-visible::-webkit-slider-thumb,
+input[type="range"]:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--range-fill, var(--secondary)) 45%, transparent);
+  transform: scale(1.18);
+}
+@media (prefers-reduced-motion: reduce) {
+  input[type="range"]::-webkit-slider-thumb,
+  input[type="range"]::-moz-range-thumb { transition: none; transform: none; }
+}
 
 /* 移动端遮罩 */
 .overlay-mask {

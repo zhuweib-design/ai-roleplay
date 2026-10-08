@@ -126,6 +126,16 @@
 - 这条同时**修正了 M2-b6 记下的原因**（当时写成"激活态可能还没落盘"，并因此在测试里轮询 IndexedDB——那个等待其实不够）；设计文档 §七 #20 已按新机制改写，`docs/design/...` 内相关表述同步更正。
 - 守卫：`tests/stores/settings-persist-order.test.ts`（假适配器"第一次写慢、后续写快"，断言最后一次落盘必须是最终状态）。反证：把排队摘掉后仅该用例即红 `expected {activeApiProfileId:'p1'} to equal {…'p2'}`（`quick-reply` 35 例仍全绿 ⇒ 只有顺序守卫抓得住），恢复后通过。
 
+### 变更（UX/IA M2-b9：交互反馈补强——滑块着色、按钮按压、提示自动关闭）
+- **滑块进度着色**：新增 `src/core/range-fill.ts`（`v-range` 全局指令，`main.ts` 注册），把当前值换算成 `--range-pct` 写到元素自身；`base.css` 给所有 `input[type="range"]` 铺两层 `background-image`（已填充段 + 底色带），拖动时颜色边界跟着拇指走。14 个 `type="range"` 输入全部挂上指令，其中 3 个此前**完全没有 class**（`WorldBookEventsPanel` 触发概率、`SettingsExtensionPanel` TTS 语速/音高）改走 `.tk-range`；`CharacterEditorView` 的 `.field-range`（只有 width + accent-color，等于原生控件）随之删除。
+- 轨道盒子由 4px 高加厚到 16px（`.form-range` 18px），可见轨道仍以 `background-size: 100% 4px` 居中画成细带——4px 高的可点区域实际很难抓稳拇指。拇指在悬停/按下/键盘聚焦时给同色光晕，按下同时放大 1.18 倍。
+- **按钮按压反馈兜底**：`base.css` 新增 `:where(button, [role='button']):not(:disabled)` 的 hover/active 规则（此前整站**没有任何**全局按钮 hover 规则，没自绘的按钮划过毫无反应）。着色用 `inset box-shadow` 而不是 `background-image`：组件普遍写 `background:` 简体，会把全局背景图整张清掉（侧栏激活项实测如此——`transform` 生效而 `background-image` 仍是 `none`），inset 阴影叠在既有底色上，既不被简体抹掉也不替换设计好的底色；按下另加 `translateY(1px)`。
+- **提示弹窗自动关闭可感知**：`toast-service.ts` 新增 `TOAST_DURATIONS`（info 3000 / success 3200 / error 5000，原来一律 5000）、`TOAST_QUEUE_LIMIT = 5`（超限优先淘汰最早"排在后面等"的非错误项，正在显示的首条与已排队的错误不被静默丢掉）、同类型同文案连续触发只排一条。`Toast.vue` 底部加倒计时条（rAF 驱动 `scaleX`），指针悬停 / 键盘聚焦 / 页面隐藏都会暂停计时，三个理由全部解除后按剩余时间继续（WCAG 2.2.1）。
+- 顺带修掉一个真实缺陷：`Toast.vue` 的 `modelValue` watch 缺 `immediate`，"挂载时就处于可见"的用法**永远不启动计时器**。
+- 三条实测踩坑（都写进代码注释）：① 复合 token 放 `:root` 会被提前求值，`var(--range-pct)` 永远算 0%，渐变必须写在匹配到 `input` 的规则里；② `background:` 简体会清掉 `background-image`；③ 4px 轨道点不到。
+- 测试：`tests/core/range-fill.test.ts` 8 例、`tests/utils/toast-service.test.ts` 9 例、`tests/components/toast-auto-close.test.ts` 10 例（假定时器把 rAF 与 `performance` 挂到同一时钟）；`e2e/ux-interaction-feedback.spec.ts` 6 例并入 **webkit** project（Chromium + WebKit 双内核各跑一次）。反证：分别摘掉 input 监听 / 重复合并 / 队列淘汰 / 悬停暂停 / `immediate`，对应单测红 1 / 1 / 4 / 2 / 6 例。
+- **本批次自己引入的测试污染已查清并改掉**：新 spec 最初用设置页"清除背景"触发提示，导致 `webkit` project 里紧随其后的 `ux-prompt-trace` 稳定变红（刷新后 IndexedDB `settings.app` 变成 `{apiProfiles: [], chatBackground:{type:'none'}}`，模型芯片停在 `is-attention`；单跑永远绿，全量必现，两次复现两次）。改为**零落盘**的触发路径（提示走"发送被拦住"的守卫分支，滑块改值落在组件本地 ref 上），同一 webkit 全量连续两轮 **16 passed / 0 failed**。教训写进该 spec 顶部注释：证据用例不该顺带改用户数据。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

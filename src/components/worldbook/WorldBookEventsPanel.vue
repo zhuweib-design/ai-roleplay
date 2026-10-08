@@ -530,7 +530,9 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                     </label>
                     <input
                       :id="`evt-prob-${selectedEvent.id}`"
+                      v-range
                       type="range"
+                      class="tk-range"
                       min="0"
                       max="100"
                       step="5"

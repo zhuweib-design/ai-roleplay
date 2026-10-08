@@ -535,6 +535,7 @@ function onCtxTouchEnd(e: TouchEvent) {
         <label class="ctx-range-label">
           <span>{{ t('ctx.insertDepth') }}</span>
           <input
+            v-range
             type="range"
             class="tk-range"
             min="0"
@@ -564,6 +565,7 @@ function onCtxTouchEnd(e: TouchEvent) {
         <label class="ctx-range-label">
           <span>{{ t('ctx.temperature') }}</span>
           <input
+            v-range
             type="range"
             class="tk-range"
             min="0"
@@ -578,6 +580,7 @@ function onCtxTouchEnd(e: TouchEvent) {
         <label class="ctx-range-label">
           <span>{{ t('ctx.maxTokens') }}</span>
           <input
+            v-range
             type="range"
             class="tk-range"
             min="256"
@@ -644,6 +647,7 @@ function onCtxTouchEnd(e: TouchEvent) {
         <label v-if="supportsTopP" class="ctx-range-label">
           <span>{{ t('ctx.topP') }}</span>
           <input
+            v-range
             type="range"
             class="tk-range"
             min="0"
@@ -670,6 +674,7 @@ function onCtxTouchEnd(e: TouchEvent) {
         <label v-if="supportsFrequencyPenalty" class="ctx-range-label">
           <span>{{ t('ctx.frequencyPenalty') }}</span>
           <input
+            v-range
             type="range"
             class="tk-range"
             min="-2"
