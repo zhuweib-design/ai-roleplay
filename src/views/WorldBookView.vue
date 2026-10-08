@@ -940,7 +940,11 @@ function strategyLabel(s: LorebookStrategy): string {
 
         <div v-if="!currentLorebook && !quickFlowOpen" class="empty-editor">
           <Icon name="compass" :size="48" />
-          <p>{{ t('wb.emptyEditor') }}</p>
+          <!--
+            一句话要对两种情况负责：左侧有书但没选中的，才谈得上"选择左侧的世界书"；
+            一本书都没有时那句是指令不了的指令，用户照着做只会对着空列表发呆。
+          -->
+          <p>{{ store.lorebooks.length === 0 ? t('wb.emptyNoBooks') : t('wb.emptyEditor') }}</p>
           <button type="button" class="primary-btn" @click="createLorebook">
             {{ t('wb.createNew') }}
           </button>
@@ -951,6 +955,14 @@ function strategyLabel(s: LorebookStrategy): string {
         </div>
 
         <div v-else-if="currentLorebook && !quickFlowOpen" class="editor-content">
+          <!--
+            三步走原先只挂在"一本书都没有"的空态里：选中一本书之后就再也打不开，
+            可"再按最短路径建一本能生效的"恰恰是在已有书的人身上最常发生的事。
+          -->
+          <button type="button" class="wb-open-flow wb-open-flow-inline" data-rel-jump="quick-wb-open" @click="quickFlowOpen = true">
+            {{ t('quick.wbOpenFlow') }}
+          </button>
+
           <!-- Lorebook 元信息 -->
           <section class="lorebook-meta" :aria-label="t('wb.metaAria')">
             <div class="meta-row">
@@ -1946,6 +1958,13 @@ function strategyLabel(s: LorebookStrategy): string {
   color: var(--secondary);
   font-size: 13px;
   cursor: pointer;
+}
+
+/* 编辑器内的那份：靠左、给够点击高度，不与空态里的居中排版混用 */
+.wb-open-flow-inline {
+  align-self: flex-start;
+  margin-top: 0;
+  min-height: 32px;
 }
 
 .wb-quick-flow {

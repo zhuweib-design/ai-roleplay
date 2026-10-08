@@ -16,7 +16,7 @@ import { useRouter } from 'vue-router';
 import { useCharacterStore } from '@/stores/character';
 import { useLorebookStore } from '@/stores/lorebook';
 import FormField from '@/components/common/FormField.vue';
-import { t } from '@/i18n';
+import { t, type MessageKey } from '@/i18n';
 
 const router = useRouter();
 const characterStore = useCharacterStore();
@@ -28,6 +28,13 @@ const bookId = ref('');
 const attempted = ref(false);
 
 const books = computed(() => lorebookStore.lorebooks);
+/**
+ * 一本书都没有时，下拉里只剩"暂不绑定"——那不是选择，是死路。
+ * 说明改成"为什么没有别的选择 + 之后能怎么办"，让用户知道这不是自己做错了什么。
+ */
+const bookHintKey = computed<MessageKey>(() =>
+  books.value.length > 0 ? 'quick.charBookHint' : 'quick.charBookEmpty'
+);
 const nameError = computed(() => {
   if (!attempted.value) return undefined;
   if (!name.value.trim()) return t('charEdit.nameRequired');
@@ -87,7 +94,7 @@ function submit(): void {
       </template>
     </FormField>
 
-    <FormField label-key="quick.charBookLabel" html-for="qc-book" hint-key="quick.charBookHint">
+    <FormField label-key="quick.charBookLabel" html-for="qc-book" :hint-key="bookHintKey">
       <template #default="{ describedBy }">
         <select id="qc-book" v-model="bookId" class="tk-input" :aria-describedby="describedBy">
           <option value="">{{ t('quick.charBookNone') }}</option>

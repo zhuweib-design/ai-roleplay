@@ -116,3 +116,35 @@ describe('保存', () => {
     expect(emitted?.[0]).toBe(characterStore.characters[0]!.id);
   });
 });
+
+/**
+ * 一本书都没有时，下拉里只剩"暂不绑定"——那不叫选择。
+ * 实测场景：沙箱里 0 本世界书，用户对着一个只有一项的下拉以为是自己哪里没做对。
+ */
+describe('世界书下拉的说明随真实数据变', () => {
+  it('没有可绑的书时，说明写清"为什么只有一项"和之后怎么办', async () => {
+    useLorebookStore().lorebooks.length = 0;
+    const { wrapper } = await mountForm();
+    const hint = wrapper.find('#qc-book').attributes('aria-describedby');
+    const described = hint ? wrapper.find(`#${hint.split(' ')[0]}`).text() : '';
+
+    expect(described).toBe(t('quick.charBookEmpty'));
+    // 不新增"跳去建书"的按钮：离开 /character/new 会丢掉已填的草稿，
+    // 而这本书建完后在编辑页照样能绑——留说明比留一个会毁草稿的按钮诚实。
+    expect(wrapper.text()).not.toContain(t('quick.charBookHint'));
+  });
+
+  it('有书时回到常规说明，并把书名列进选项', async () => {
+    const lorebook = useLorebookStore();
+    lorebook.lorebooks.push({ id: 'lb1', name: '酒馆设定', scope: 'global', entries: [] } as never);
+    const { wrapper } = await mountForm();
+    const hint = wrapper.find('#qc-book').attributes('aria-describedby');
+    const described = hint ? wrapper.find(`#${hint.split(' ')[0]}`).text() : '';
+
+    expect(described).toBe(t('quick.charBookHint'));
+    expect(wrapper.find('#qc-book').findAll('option').map((o) => o.text())).toEqual([
+      t('quick.charBookNone'),
+      '酒馆设定',
+    ]);
+  });
+});

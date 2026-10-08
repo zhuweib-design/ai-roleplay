@@ -124,3 +124,59 @@ describe('三步依次生效', () => {
     ]);
   });
 });
+
+/**
+ * 没有当前角色时，第三步原先是一颗**永久禁用**的按钮：
+ * `:disabled="!currentCharacter"` 让处理函数根本跑不到，于是为这种情况写好的
+ * `quick.wbBindFailed` 永远上不了屏幕，用户只能对着一层 0.55 透明度猜原因。
+ * 现在给的是"为什么 + 一条真出路"（全局书不需要绑定）。
+ */
+describe('没有当前角色时', () => {
+  beforeEach(() => {
+    characterStore.currentCharacterId = '';
+    characterStore.characters.length = 0;
+  });
+
+  it('不再渲染"绑定"按钮，而是说明缺什么、并给出改为全局书的出路', async () => {
+    const wrapper = mountFlow();
+    expect(wrapper.find('[data-rel-jump="quick-wb-bind"]').exists()).toBe(false);
+    expect(wrapper.find('.quick-wb-bind-line').text()).toBe(t('quick.wbNoCharacter'));
+
+    await wrapper.find('#qw-book-name').setValue('酒馆设定');
+    await wrapper.find('[data-rel-jump="quick-wb-create-book"]').trigger('click');
+    await wrapper.find('#qw-entry-title').setValue('吧台');
+    await wrapper.find('#qw-entry-content').setValue('酒馆永远亮着灯。');
+    await wrapper.find('[data-rel-jump="quick-wb-add-entry"]').trigger('click');
+    await flushPromises();
+
+    const globalBtn = wrapper.find('[data-rel-jump="quick-wb-make-global"]');
+    expect(globalBtn.exists()).toBe(true);
+    expect(globalBtn.attributes('disabled')).toBeUndefined();
+    // 第三步的标签也跟着实际出路走，不再写"绑定到当前角色"
+    expect(wrapper.findAll('.step-flow-row')[2]!.find('.step-flow-text').text()).toBe(t('quick.wbDoGlobal'));
+  });
+
+  it('改成全局书后：书的作用域真的变了，第三步真的打勾', async () => {
+    const wrapper = mountFlow();
+    await wrapper.find('#qw-book-name').setValue('酒馆设定');
+    await wrapper.find('[data-rel-jump="quick-wb-create-book"]').trigger('click');
+    await wrapper.find('#qw-entry-title').setValue('吧台');
+    await wrapper.find('#qw-entry-content').setValue('酒馆永远亮着灯。');
+    await wrapper.find('[data-rel-jump="quick-wb-add-entry"]').trigger('click');
+    await flushPromises();
+
+    await wrapper.find('[data-rel-jump="quick-wb-make-global"]').trigger('click');
+    await flushPromises();
+
+    expect(lorebookStore.lorebooks[0]?.scope).toBe('global');
+    expect(wrapper.findAll('.step-flow-row.done')).toHaveLength(3);
+    expect(wrapper.find('.quick-wb-done').text()).toBe(t('quick.wbGlobalDone'));
+    // 三步齐了才给"完成"，此时它收的是流程本身
+    expect(wrapper.find('[data-rel-jump="quick-wb-finish"]').exists()).toBe(true);
+  });
+
+  it('角色名不再借用"未配置"（那是讲模型配置的字符串）', () => {
+    const wrapper = mountFlow();
+    expect(wrapper.text()).not.toContain(t('chat.modelNotConfigured'));
+  });
+});
