@@ -16,6 +16,8 @@ import { useCharacterStore } from '@/stores/character';
 import { useChatStore } from '@/stores/chat';
 import { getActiveProfileId } from '@/storage/storage-factory';
 import { useSettingsStore } from '@/stores/settings';
+import { useCharacterVersionStore } from '@/stores/character-version';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
@@ -32,6 +34,8 @@ const router = useRouter();
 const characterStore = useCharacterStore();
 const chatStore = useChatStore();
 const settingsStore = useSettingsStore();
+const versionStore = useCharacterVersionStore();
+const { pushWithReturn } = useReadinessJump();
 
 // 删除确认对话框
 const deleteTarget = ref<UICharacter | null>(null);
@@ -122,6 +126,15 @@ function goToEditor(id?: string) {
   } else {
     void router.push({ name: 'character-new' });
   }
+}
+
+/**
+ * E19：角色卡上的"已跟踪"标记点进该角色的版本历史。
+ * 版本仓库是选中角色时懒创建的，所以"有没有标记"就是"是否已被跟踪"的唯一真相；
+ * 此前面界面上没有任何地方能看出这件事。
+ */
+function openVersions(id: string): void {
+  pushWithReturn({ name: 'character-version', query: { char: id } });
 }
 
 function startNewCharacter() {
@@ -493,6 +506,18 @@ function tagsPreview(tags: string[]): string {
             <Icon name="gear" :size="12" />
             <span>{{ settingsStore.activeProfile?.model ?? char.model }}</span>
           </span>
+          <button
+            v-if="versionStore.hasRepository(char.id)"
+            type="button"
+            class="meta-item meta-tracked"
+            data-rel-jump="char-tracked"
+            :aria-label="t('characters.trackedAria', { name: char.name })"
+            :title="t('characters.trackedHint')"
+            @click.stop="openVersions(char.id)"
+          >
+            <Icon name="git-branch" :size="12" aria-hidden="true" />
+            <span>{{ t('characters.trackedTag') }}</span>
+          </button>
         </div>
 
         <div class="card-actions">
@@ -931,6 +956,19 @@ function tagsPreview(tags: string[]): string {
   color: var(--muted-foreground);
   padding-top: 4px;
   border-top: 1px solid var(--border);
+}
+
+/* "已跟踪"是可点的（跳该角色版本历史），但视觉仍是元信息行的一员，不做成按钮块 */
+.meta-tracked {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .meta-item {

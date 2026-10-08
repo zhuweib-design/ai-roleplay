@@ -38,6 +38,7 @@ const lorebookStore = useLorebookStore();
 const groupChatStore = useGroupChatStore();
 const dataBankStore = useDataBankStore();
 const storyStore = useStoryStore();
+const versionStore = useCharacterVersionStore();
 const communityMarketStore = useCommunityMarketStore();
 const characterVersionStore = useCharacterVersionStore();
 const randomEventsStore = useRandomEventsStore();
@@ -293,6 +294,11 @@ onMounted(async () => {
       // 迭代31 新增：加载故事引擎数据 (F16)
       storyStore.loadFromStorage().catch((err) => {
         logger.error('Storage', '从存储加载故事失败', err);
+      }),
+      // E19：版本快照此前只在「版本管理」页挂载时加载 ⇒ 离开那一页就没有任何地方
+      // 知道"哪些角色已被跟踪"，角色卡上的标记也就无从判断。启动即加载一次。
+      versionStore.loadFromDisk().catch((err) => {
+        logger.error('Storage', '加载角色版本快照失败', err);
       }),
     ]);
 

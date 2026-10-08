@@ -97,6 +97,21 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     return engine.listRepositories();
   });
 
+  /**
+   * 已纳入版本跟踪的角色 id 集合（E19）。
+   * 仓库是"选中某角色时才懒创建"的，所以此前界面上没有任何地方能看出
+   * 哪些角色真的被跟踪着——入口只在侧栏，点进去才知道。
+   */
+  const trackedCharacterIds = computed<Set<string>>(() => {
+    void versionTick.value;
+    return new Set(engine.listRepositories().map((r) => r.characterId));
+  });
+
+  function hasRepository(characterId: string): boolean {
+    void versionTick.value;
+    return engine.getRepository(characterId) !== null;
+  }
+
   /** 当前选中的仓库 */
   const currentRepository = computed<CharacterRepository | null>(() => {
     void versionTick.value;
@@ -666,6 +681,8 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     pendingConflicts,
     // 计算属性
     repositories,
+    trackedCharacterIds,
+    hasRepository,
     currentRepository,
     currentRepoInfo,
     branches,

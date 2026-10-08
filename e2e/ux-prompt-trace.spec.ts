@@ -129,6 +129,12 @@ test.describe('注入痕迹（E02）', () => {
     await configureMockProfile(page);
     await page.goto('/chat');
     await seedGlobalLorebook(page);
+    // 刷新前再确认一次"我们的 Profile 就是当前落盘的那一份"。
+    // 必要性实测过：webkit project 的多个 context 共享同一存储目录，上一个用例
+    // （backup-restore 会清库并还原一份不含 Profile 的备份）的晚到写入可能落在这里，
+    // 于是 reload 读到的就是别人的快照 —— 芯片停在 is-attention，单跑永远绿、串跑偶发。
+    // 这里不放宽断言，只是把"读到的必须是自己的快照"变成用例的前置条件。
+    await waitProfileActivatedPersisted(page, 'E2E 痕迹模型');
     await page.reload();
 
     // 世界书芯片应转就绪（同一判定源，两条断言互相印证）；模型芯片则证明刷新后 Profile 仍然生效

@@ -306,6 +306,14 @@ export interface AppSettings {
   translationConfig: import('@services/translator').TranslationConfig;
   /** F12.4 新增：自动摘要配置（v1.1） */
   summarizationConfig: import('@core/summarizer').SummarizationConfig;
+  /**
+   * E22 新增：图像生成的 Provider 配置。
+   *
+   * 此前它只活在 `stores/image-generation.ts` 的内存 ref 里，不在持久化白名单内
+   * ⇒ 刷新即丢（连 apiKey 一起丢）。可选字段，兼容没有它的历史快照。
+   * apiKey 与 apiProfiles / translationConfig 同口径：设了主密码就密文落盘。
+   */
+  imageGenConfig?: import('@core/image-generation').ImageProviderConfig;
   /** F11.3 新增：Quick Reply 按钮列表（v1.1） */
   quickReplies: QuickReplyButton[];
   /**

@@ -33,6 +33,10 @@ import {
   type SummarizationConfig,
 } from '@core/summarizer';
 import {
+  createDefaultProviderConfig,
+  type ImageProviderConfig,
+} from '@core/image-generation';
+import {
   encryptApiKey,
   decryptApiKey,
   isEncrypted,
@@ -97,6 +101,14 @@ export const useSettingsStore = defineStore('settings', () => {
   const summarizationConfig = ref<SummarizationConfig>({
     ...DEFAULT_SUMMARIZATION_CONFIG,
   });
+
+  /**
+   * E22：图像生成的 Provider 配置。
+   *
+   * 唯一事实源放在这里（而不是图像页 store 的内存 ref），因为只有本 store 有
+   * 持久化白名单与主密码加密分支；图像 store 改为读写这一份。
+   */
+  const imageGenConfig = ref<ImageProviderConfig>({ ...createDefaultProviderConfig() });
 
   // F11.3 Quick Reply 按钮列表（默认空）
   const quickReplies = ref<QuickReplyButton[]>([]);
@@ -322,6 +334,20 @@ export const useSettingsStore = defineStore('settings', () => {
         );
       } catch {
         lastError.value = i18nT('masterPwd.translationKeyDecryptFailed');
+      }
+    }
+    // E22：图像 Provider 的密钥与上面两处同进同出（漏了它就会出现"能生成图但密钥是密文"）
+    if (
+      imageGenConfig.value.apiKey &&
+      isEncrypted(imageGenConfig.value.apiKey)
+    ) {
+      try {
+        imageGenConfig.value.apiKey = await decryptApiKey(
+          imageGenConfig.value.apiKey,
+          masterPassword.value
+        );
+      } catch {
+        lastError.value = i18nT('masterPwd.imageGenKeyDecryptFailed');
       }
     }
   }
@@ -651,6 +677,18 @@ export const useSettingsStore = defineStore('settings', () => {
     void persistSettings();
   }
 
+  /**
+   * E22：图像生成 Provider 的唯一写入口（图像页 store 走这里）。
+   * 与 setTranslationConfig 同口径：改内存 + 立即排队落盘。
+   */
+  function setImageGenConfig(config: Partial<ImageProviderConfig>): void {
+    imageGenConfig.value = {
+      ...imageGenConfig.value,
+      ...config,
+    };
+    void persistSettings();
+  }
+
   /** 设置自动摘要配置（F12.4） */
   function setSummarizationConfig(config: Partial<SummarizationConfig>): void {
     summarizationConfig.value = {
@@ -886,6 +924,10 @@ export const useSettingsStore = defineStore('settings', () => {
             ...saved.summarizationConfig,
           };
         }
+        // E22 加载图像生成 Provider（旧数据缺字段时保留默认；脏字段逐项回落默认）
+        if (saved.imageGenConfig && typeof saved.imageGenConfig === 'object') {
+          imageGenConfig.value = normalizeImageGenConfig(saved.imageGenConfig);
+        }
         // F11.3 加载 Quick Reply 按钮列表
         if (Array.isArray(saved.quickReplies)) {
           quickReplies.value = saved.quickReplies;
@@ -992,6 +1034,14 @@ export const useSettingsStore = defineStore('settings', () => {
             }
           : toRaw(translationConfig.value);
 
+      const imageGenToSave =
+        pw && imageGenConfig.value.apiKey && !isEncrypted(imageGenConfig.value.apiKey)
+          ? {
+              ...toRaw(imageGenConfig.value),
+              apiKey: await encryptApiKey(imageGenConfig.value.apiKey, pw),
+            }
+          : toRaw(imageGenConfig.value);
+
       await storageAdapter.saveSettings({
         theme: theme.value,
         fontSize: fontSize.value,
@@ -1015,6 +1065,8 @@ export const useSettingsStore = defineStore('settings', () => {
         ttsConfig: toRaw(ttsConfig.value),
         translationConfig: translationToSave,
         summarizationConfig: toRaw(summarizationConfig.value),
+        // E22 图像生成 Provider（apiKey 按主密码状态加密）
+        imageGenConfig: imageGenToSave,
         // F11.3 Quick Reply 按钮列表
         quickReplies: toRaw(quickReplies.value).map((b) => toRaw(b)),
         // AC20 主密码验证器
@@ -1171,6 +1223,7 @@ export const useSettingsStore = defineStore('settings', () => {
     // F12.2/F12.3/F12.4 配置
     ttsConfig,
     translationConfig,
+    imageGenConfig,
     summarizationConfig,
     // F11.3 Quick Reply
     quickReplies,
@@ -1220,6 +1273,7 @@ export const useSettingsStore = defineStore('settings', () => {
     // F12.2/F12.3/F12.4 配置
     setTtsConfig,
     setTranslationConfig,
+    setImageGenConfig,
     setSummarizationConfig,
     // F11.3 Quick Reply CRUD
     addQuickReply,
@@ -1329,6 +1383,24 @@ function normalizeSamplingDefaults(raw: unknown): SamplingOverrides | null {
     }
   }
   return Object.keys(out).length > 0 ? out : null;
+}
+
+/**
+ * E22：归一化图像生成 Provider 配置。
+ * 逐字段校验，脏值回落默认（不能让一个坏 endpoint 字段把整份设置读崩）；
+ * apiKey 原样保留——设了主密码时它是密文，解密在 unlock 的 decryptAllApiKeys 里做。
+ */
+function normalizeImageGenConfig(raw: unknown): ImageProviderConfig {
+  const base = createDefaultProviderConfig();
+  if (!raw || typeof raw !== 'object') return base;
+  const src = raw as Record<string, unknown>;
+  return {
+    type: src.type === 'custom' ? 'custom' : base.type,
+    endpoint: typeof src.endpoint === 'string' ? src.endpoint : base.endpoint,
+    apiKey: typeof src.apiKey === 'string' ? src.apiKey : base.apiKey,
+    model: typeof src.model === 'string' ? src.model : base.model,
+    enabled: typeof src.enabled === 'boolean' ? src.enabled : base.enabled,
+  };
 }
 
 /** 计算 hex 色的相对亮度（0-1），供旧数据缺 avgLuminance 时近似 */

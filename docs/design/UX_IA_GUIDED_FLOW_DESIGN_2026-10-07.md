@@ -136,6 +136,39 @@
 | E25 | 文档 chat 作用域 | store 与 `activeChatId` 支持（`stores/data-bank.ts:67,164,210-213`、`chat-generation.ts:210,1252`），列表段虽已实现（`DataBankView.vue:337-345`，computed `:49`）但整段被 `v-if="chatDocuments.length > 0"` 门控，而上传对话框只提供全局/角色两档（`:412-431`），检索管线又硬编码 `scope='character'`（`chat-context.ts:163-167`） | **三重不可达**：没有入口能产出 chat 域文档，列表面板也就永远不会出现 | **D** |
 
 **分类合计（按表逐行）**：A **1** · B **6** · C **11** · D **4** · E **3** = 25。
+
+#### 1.4.1 后测复评（逐行，与代码同版本；截至 M3-b 第一批）
+
+口径不变：**A** = 界面上看得见且一步跳得过去；**撤下** = 无读者的控件已从界面移除；**声明** = 能力不存在，界面上明说；**未覆盖** = 仍是前测那一类。
+
+| ID | 前测 | 后测 | 依据（哪一批、在哪看） |
+|---|---|---|---|
+| E01 角色 ⇄ 世界书绑定 | B | **A** | 角色编辑页关联面板 + 世界书页"已绑定角色"可点回（M2-a / M2-b5） |
+| E02 世界书条目 → 本轮命中 | C | **A** | 助手消息下方注入痕迹，条目名可跳来源书（M2-b2/b3） |
+| E03 全局书 → 无条件注入 | C | **A** | 上下文面板改读 `collectLorebooksForCharacter`，全局书列出并标"全局生效"，可点进该书（本批） |
+| E04 文档 → 关键词检索 | B | **A** | 就绪条"文档检索"芯片 + `/databank` 前提清单（M2-a） |
+| E05 文档 → 向量检索开关 | C | **A** | 芯片跳「检索」类，开关状态与两个前置在界面上（M2-a） |
+| E06 文档 → 必须先绑世界书 | C | **A** | `/databank` 顶部 `PrereqNotice` 逐条"去完成"（M2-a） |
+| E07 模型配置优先级 | B | **A** | 就绪条模型芯片 + 面板显示"实际生效的那个 Profile"（M2-a） |
+| E08 群聊忽略角色级参数 | C | **声明** | `group.capabilityNote` 页头明示（M2-b4） |
+| E09 语音 TTS → 设置「扩展」 | C | **A** | 语音芯片带原因与跳转（M2-a） |
+| E10 随机事件 → 场景名必须等于角色名 | C | **未覆盖（仍 C）** | 计划里的 `/random-events` `PrereqNotice` **没有落地**（该组件目前唯一挂载点是 `DataBankView.vue:203`） |
+| E11 随机事件 → 对话注入 | C | **未覆盖（仍 C）** | 注入痕迹 v1 只列世界书命中，随机事件命中不显示 |
+| E12 / E13 / E16 / E25 | D | **撤下** | 四条死控件已从界面移除（M2-b1） |
+| E14 故事 → 世界书/角色/事件 | A | **A** | 前测唯一一条，未动 |
+| E15 故事 → 对话 | B | **未覆盖（仍 B）** | 聊天区显示故事时间（`ChatMain.vue:429-430`）但跳不到故事本体 |
+| E17 群聊 → 成员角色 | B | **A** | 成员名可点进编辑并带回程（M2-b6） |
+| E18 群聊 → 世界书/RAG/故事/状态指令 | E | **声明** | 同 `group.capabilityNote`（M2-b4） |
+| E19 版本 → 哪些角色被跟踪 | C | **A** | 角色卡"已跟踪"标记，点进该角色版本历史（带 `?char=`）；为此把版本快照加载提到启动（本批） |
+| E20 市场 → 角色安装 | B | **A** | 安装结果条带角色名与两个去路（M2-b6） |
+| E21 市场 URL → 运行期配置 | E | **未覆盖（仍 E，且未声明）** | 计划里的"界面上明说不支持运行期改索引地址"也没做 |
+| E22 图片生成 → 模型配置 | C（双重） | **A** | `imageGenConfig` 进持久化白名单（密钥按主密码加密、解锁同批解密）+ 与「模型接入 · 图像/视频」互填 + "去设置"带 `?cat=model`（本批） |
+| E23 图片生成 → 对话消息 | E | **声明** | 图片页页头"产物只存进画廊，不会进入对话消息"（本批） |
+| E24 `tokenBudget` → 上下文面板 | C（假显示） | **A** | 真实 token 用量替换假预算条（M2-b2） |
+
+**后测合计**：A **14** · 撤下 **4** · 声明 **3** · 未覆盖 **4**（E10 / E11 / E15 / E21）= 25。
+
+> 与 §四 目标口径（"17 转 A + 4 撤下 + 4 声明"）的差 **3 条**，全部来自同一处失算：目标把"给 `/random-events`、`/local-model` 挂 `PrereqNotice`"与"市场 URL 的显式声明"算进了已完成，实际只挂了 `/databank` 一处。这 3 条已登记为 §七 的续期项，不改口径数字来凑达标。
 用户"不知道模块之间怎么关联"不是主观感受，而是可测量事实：**25 条边里只有 1 条做到可见且可一跳**。
 > **后测更新（M2-b1）**：D 类四条（E12 / E13 / E16 / E25）对应的控件已**从界面上撤除**，"配了没反应"这一类误导不再存在；数据层字段暂留（撤 UI 与改数据契约分两件事，见 §七 #6）。因此实际后测分布为 A 目标 17 条中已完成若干（逐行见 §九 M2-a 与 M2-b1 的复评表）。
 
@@ -521,8 +554,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | 空态 `EmptyState` 铺开（`grep -rl "\.empty-state" src --include=*.vue` 实测 **13** 个文件仍各自定义该样式：11 个视图 + `ChatMain.vue` + `EmptyState.vue` 自己）；`StepFlow` / `HelpTip` / `FormField` 原语与角色·世界书"快速档"表单（M3-b）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；**E03** 上下文面板列出全局书；**E19** 角色卡上的"已跟踪"入口；**E22** 图片模型两处配置互读 + `providerConfig` 持久化（刷新仍丢 key）；**E23** "图片不进对话"的显式声明；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | 空态 `EmptyState` 铺开（`grep -rl "\.empty-state" src --include=*.vue` 实测 **13** 个文件仍各自定义该样式：11 个视图 + `ChatMain.vue` + `EmptyState.vue` 自己）；`StepFlow` / `HelpTip` / `FormField` 原语与角色·世界书"快速档"表单（M3-b）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -1261,6 +1294,8 @@ target: .nav-item.active > .nav-label（aria-label="设置"）
 
 处置：本文件的触发路径全部改成**零落盘**——提示走"发送被拦住"的守卫分支（`ChatMain.handleSend` 在 `checkSendBlock()` 为真时只出提示就 return），滑块改值落在 `.form-range` 的组件本地 ref 上，`/chat` 的 `.tk-range` 只做只读检查。改后 webkit 全量**连续两轮 16 passed / 0 failed**。教训写进了该 spec 顶部注释：证据用例不该顺带改用户数据。
 
+> **该因果结论已被 M3-b0 推翻**：实测 `backup-restore` + `ux-prompt-trace` 这两条老用例（不含本批次任何新用例）也能稳定复现同一失败，真机制是 webkit 同一进程内多 context 共享存储目录造成的跨用例写竞态。本段「改触发路径」作为测试卫生仍然成立，但**不是**那条红用例的成因。详见 §九 M3-b0 的实验表。
+
 **倒计时条自身的可见度（新加的图形状态指示，按 WCAG 1.4.11 非文本 ≥3:1 量过）**
 
 | 主题 | default | light | midnight | oled | theatre |
@@ -1292,3 +1327,55 @@ target: .nav-item.active > .nav-label（aria-label="设置"）
 
 
 
+
+### M3-b0 四条关联缺口补完（E03 / E19 / E22 / E23）
+
+用户点名的第二批：把 §1.4 里还挂着的四条边补掉。四条性质不同，做法也不同。
+
+| 边 | 前测 | 做法 | 关键取舍 |
+|---|---|---|---|
+| E03 全局书无条件注入 | C | `ContextPanel` 的世界书清单改读发送链路同一个 `collectLorebooksForCharacter`，全局书单列并打"全局生效"标，每行可点（先 `selectLorebook` 再带 `?from=/chat` 跳世界书页） | **共用判定源**而不是再抄一份过滤逻辑——原缺陷正是"面板自己 filter boundWorldBookIds"造成的。计数一并改成生效口径（绑定 1 + 全局 1 = 2 本） |
+| E19 哪些角色被跟踪 | C | `stores/character-version.ts` 补 `trackedCharacterIds` / `hasRepository`；角色卡 `card-meta` 行尾加"已跟踪"标记，点它带 `?char=<id>` 进版本页，版本页 `onMounted` 读该 query 定位角色 | 标记读的是**事实**（仓库存在与否），不是"用户看过版本页"这种痕迹；删仓库后标记随之消失 |
+| E22 图片模型两处配置 | C（双重） | `imageGenConfig` 进设置持久化白名单（`writeSettingsSnapshot` 显式字段表 + `loadFromStorage` 逐项归一化 + `decryptAllApiKeys` 同批解密）；图像 store 的 `providerConfig` 改成 settings 那份的**只读 computed 镜像**，写一律走 `updateProviderConfig → setImageGenConfig`；页内加"从「模型接入 · X」填入"与 `?cat=model` 跳转 | 单一事实源放在 settings（只有它有白名单与加密分支），避免"两个 store 互相 watch"的循环；密钥复用 `encryptApiKey`/`isEncrypted`，**不新造加密路径**；锁定态（内存里是 `enc:v1:`）不算"已配置"，否则会拿密文去发请求 |
+| E23 图片 → 对话 | E | 图片页页头一句"产物只存进下方画廊，不会进入对话消息" | 该能力不存在且无可跳目标，只能声明；不做"图片入对话"以免超出范围 |
+
+**顺带修掉的真实缺陷（不是为测试改产品）**：版本快照只在 `CharacterVersionView.onMounted` 里加载 ⇒ 离开那一页，全应用都不知道哪些角色被跟踪，E19 的标记永远不可能正确。改为启动 `Promise.all` 里加载一次（带 catch，坏一次不影响其他 store）。
+
+**反证（逐条摘掉守卫）**
+
+| 摘掉 | 结果 |
+|---|---|
+| 面板改回只按 `boundWorldBookIds` 过滤 | E03 单测 **4 failed**（含"不再谎报未绑定"与计数口径） |
+| 把 `imageGenConfig` 从持久化白名单摘掉 | E22 单测 **4 failed**（落盘 / 加密 / 明文 / 解锁同批解密） |
+| `canGenerate` 不再排除密文密钥 | **1 failed**（锁定态被当成可生成） |
+| 启动不加载版本快照 | E19 的 e2e 用例**自然失败过一次**（标记数为 0），正是这条发现引出了上面的启动加载修复 |
+
+**webkit 串跑偶发的真机制（本批次纠正 M2-b9 记下的因果）**
+
+M2-b9 把"`ux-prompt-trace` 在 webkit 全量里变红"归因为"本批次新 spec 里那次'清除背景'写了设置"。这个因果**不成立**，本批次实测：
+
+| 实验 | 结果 |
+|---|---|
+| `backup-restore` + `ux-prompt-trace`（两条都是 M2 之前的老用例，**不含任何本批次新增用例**） | **稳定复现**失败 ⇒ 与本批次新 spec 无关 |
+| 失败现场按时间dump `settings.app` | `after-configure n=1` → `before-reload n=0` → `reload+0s n=1` ⇒ 快照在两个 app 实例之间来回盖，是**同一 webkit 进程内多 context 共享存储目录**导致的跨用例写竞态 |
+| 尝试"首次启动不写默认快照" | 该 pair 变绿，但全量 webkit 仍红 ⇒ 不是成因；且它逼着改一条既有单测的契约，收益不成立，**已完整还原**（含那条单测） |
+| 在 `backup-restore` 末尾加"等写入静默" | 无效（晚到的写发生在 context 关闭阶段），**已删除**，不留无效代码 |
+| 最终处置：`ux-prompt-trace` 在 `reload()` 前再确认一次"当前落盘的就是自己的 Profile" | pair 绿；webkit 全量**连续两轮 16 passed / 0 failed** |
+
+口径说清楚：这不是产品缺陷（真实用户只有一个 context），是测试环境的存储共享；处置没有放宽任何断言——"刷新后 Profile 仍生效"仍然是原断言，只是补上了"reload 读到的必须是自己的快照"这一前置。M2-b9 记录里那句因果结论已在原文处保留但标注为待纠正，本表为准。
+
+**验证证据（M3-b0 最终状态，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run lint` / `npm run build` | 退出码均 **0** |
+| `i18n:check:strict` | 通过，`src` **197** 个文件；zh / en 各 **3321** 行，同序新增 11 键 |
+| `check:css-conventions` | **5/5** 通过 |
+| `a11y:contrast`（静态） | 通过，扫描 **121** 处存量（基线 131），未因新标记/新说明上涨 |
+| `runtime:db:schema:check` / `snapshot:migration:check` / `eval:manifest` / `check:csp` / `check:ort` | 全部退出码 **0** |
+| `npm run test:coverage` | **3723 passed / 3 skipped**，覆盖率 **79.69 / 74.16 / 81.82 / 81.57**（阈值未放松）；本批新增 5 个测试文件共 **27** 例 |
+| E2E（msedge 55 + mobile-functional 9 + mobile 5） | **69 passed / 0 failed**（2.3 分钟；较上批 +7 条本批用例） |
+| E2E（webkit，串行） | **16 passed / 0 failed，连续两轮** |
+| 界面实测（Edge 1440×900） | 上下文面板世界书一节显示"1 本"并列出未绑定的全局书、带「全局生效」胶囊标；角色卡元信息行尾出现"已跟踪"（带 git-branch 图标 + 下划线），点它落到 `/character-version?char=kael&from=/character`；图像页填完端点/模型/密钥后刷新，三项都还在（密钥以掩码显示）；页头出现"产物只存进下方画廊，不会进入对话消息"。另测得"访问过版本页 → 角色列表出现标记"的延迟为 **822ms（一次刷新内即出现）**——快照落盘是懒建后的异步写，第一版截图脚本按 800ms 等待曾拍到没有标记的那一帧，已改成"拍到带标记的卡片"为止 |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m3-b0-gap-visibility/`：`e03-context-panel-global-book.png` / `e19-character-card-tracked.png` / `e22-image-provider-config.png` / `e22-image-provider-after-reload.png` / `e23-image-header-note.png`。**本批没有 before 截图**：四条边的"修前长什么样"由上面的反证表（摘掉守卫即转红）承担，比截图更硬；E22 的修前事实是"刷新后 IndexedDB 里根本没有 `imageGenConfig` 这个键"，无法用界面截图表达 |
+| 未做的事 | `ux-gap-visibility.spec.ts` **不纳入 webkit**（E22 用例会写设置，跨 context 共享目录会污染后面的用例，原因见上表）；E22 的"两处互读"只做到**单向一键填入**，没有把两份配置合并成一份（图像页支持 custom 端点、Profile 有 category 语义，合并属另一件事） |

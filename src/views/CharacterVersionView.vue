@@ -19,7 +19,7 @@
  * - Toast role=alert 反馈
  */
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useCharacterVersionStore } from '@/stores/character-version';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
@@ -34,13 +34,20 @@ import {
 import { t } from '@/i18n';
 
 const router = useRouter();
+const route = useRoute();
 const store = useCharacterVersionStore();
 const characterStore = useCharacterStore();
 
 // ── 启动加载持久化 ──
-onMounted(() => {
+onMounted(async () => {
   if (!store.loaded) {
-    void store.loadFromDisk();
+    await store.loadFromDisk();
+  }
+  // E19：角色卡的"已跟踪"标记带 ?char= 进来，直接定位到那个角色
+  const wanted = typeof route.query.char === 'string' ? route.query.char : '';
+  if (wanted && characterStore.characters.some((c) => c.id === wanted)) {
+    handleSelectCharacter(wanted);
+    return;
   }
   // 自动选中第一个角色
   if (!store.currentCharacterId && characterStore.characters.length > 0) {

@@ -17,6 +17,8 @@ import {
 import type { ReasoningEffort } from '@/api/types';
 import { REASONING_EFFORTS, type SamplingOverrides } from '@/types';
 import { PRESET_IDS, type PresetId, presetLabel } from '@core/creation-preset';
+import { collectLorebooksForCharacter } from '@/stores/chat-context';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import { t } from '@/i18n';
 import type { ApiProfile } from '@/types';
 import {
@@ -49,21 +51,32 @@ const modelLabel = computed(() =>
   effectiveProfile.value ? effectiveProfile.value.model : t('chat.modelNotConfigured')
 );
 
-// 角色页绑定的世界书（需求7：唯一数据源 boundWorldBookIds）
-const boundLorebooks = computed(() => {
-  const bound = char.value.boundWorldBookIds ?? [];
-  return lorebookStore.lorebooks.filter((lb) => bound.includes(lb.id));
-});
+/**
+ * 生效世界书：与发送链路**共用同一个判定源** `collectLorebooksForCharacter`。
+ * 此前面板自己按 `boundWorldBookIds` 过滤，而 `stores/chat-context.ts:63` 会把
+ * `scope === 'global'` 的书**无条件**纳入 ⇒ 面板少报了实际一直在注入的书，
+ * 用户看到"没有世界书"其实正文里全是（设计文档 §1.4 E03）。
+ */
+const effectiveLorebooks = computed(() =>
+  char.value ? collectLorebooksForCharacter(char.value.id) : []
+);
+const boundLorebooks = computed(() => effectiveLorebooks.value.filter((lb) => lb.scope !== 'global'));
+const globalLorebooks = computed(() => effectiveLorebooks.value.filter((lb) => lb.scope === 'global'));
 
-// 当前角色关联世界书中的用户资料，全球世界书作为兜底。
+// 当前角色关联世界书中的用户资料；全局书也在候选里（它就是会被注入的那批）
 const worldUserProfile = computed(() => {
-  const candidates = [
-    ...boundLorebooks.value,
-    ...lorebookStore.lorebooks.filter((lb) => lb.scope === 'global'),
-  ];
+  const candidates = [...boundLorebooks.value, ...globalLorebooks.value];
   return candidates.find((lb) => lb.userProfile)?.userProfile ?? null;
 });
 const worldUserProfileName = computed(() => worldUserProfile.value?.name?.trim() || t('ctx.worldUserProfileUnset'));
+
+const { pushWithReturn } = useReadinessJump();
+
+/** 面板里列出的每本书都可点进世界书页并选中它（E03：可见且可一跳） */
+function openLorebook(id: string): void {
+  lorebookStore.selectLorebook(id);
+  pushWithReturn({ name: 'worldbook' });
+}
 
 /**
  * Token 预算总量：取全局设置的上下文窗口上限（**响应式**，配置改动即时反映）。
@@ -501,15 +514,24 @@ function onCtxTouchEnd(e: TouchEvent) {
         <p class="ctx-char-desc">{{ t('ctx.tokenHint') }}</p>
       </section>
 
-      <!-- 世界书 -->
+      <!-- 世界书：列的是"真正会注入的那批"，全局书单独标注（E03） -->
       <section class="ctx-section" aria-labelledby="ctx-world-title">
         <header class="ctx-section-header">
           <span id="ctx-world-title" class="ctx-section-title">{{ t('ctx.worldTitle') }}</span>
-          <span class="ctx-section-value">{{ t('ctx.worldCount', { count: boundLorebooks.length }) }}</span>
+          <span class="ctx-section-value">{{ t('ctx.worldCount', { count: effectiveLorebooks.length }) }}</span>
         </header>
-        <ul v-if="boundLorebooks.length" class="world-list">
-          <li v-for="lb in boundLorebooks" :key="lb.id" class="world-lorebook">
-            <span class="world-entry-name">{{ lb.name }}</span>
+        <ul v-if="effectiveLorebooks.length" class="world-list">
+          <li v-for="lb in effectiveLorebooks" :key="lb.id" class="world-lorebook">
+            <button
+              type="button"
+              class="world-row-btn"
+              :data-rel-jump="lb.scope === 'global' ? 'ctx-world-global' : 'ctx-world-bound'"
+              :aria-label="t('ctx.worldRowAria', { name: lb.name })"
+              @click="openLorebook(lb.id)"
+            >
+              <span class="world-entry-name">{{ lb.name }}</span>
+              <span v-if="lb.scope === 'global'" class="world-global-tag">{{ t('ctx.worldGlobalTag') }}</span>
+            </button>
             <span class="world-entry-count">
               {{ t('ctx.worldEnabled', { count: lb.entries.filter((e) => e.enabled).length }) }}
             </span>
@@ -1026,6 +1048,31 @@ function onCtxTouchEnd(e: TouchEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 行本身可点（E03 的"可一跳"）：按钮铺满左侧弹性区，计数仍在行右端 */
+.world-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.world-global-tag {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  color: var(--muted-foreground);
 }
 
 .world-entry-count {
