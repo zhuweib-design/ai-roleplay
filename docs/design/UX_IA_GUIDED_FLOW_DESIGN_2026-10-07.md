@@ -1637,3 +1637,42 @@ id 用自增计数器保证唯一，值可以是任意字符串并随绑定更�
 | 浏览器实测（Edge，dev :5179） | `/profile` 落到 `/settings?cat=about`，侧栏「关于」为激活项，账户块渲染"账户 / 登录 / 本地用户 / 激活 / 两句说明"，点「登录」出现 `role=status` 的"远程登录服务尚未配置"与「关闭」；`/random-events` 三行前提齐全，中间一行带「去看角色」，点击后 URL 为 `/character/seraphina/edit?from=/random-events` 且页面出现"返回来源页"；`/community-market` 页头第二行显示 `https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/index.json` |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m4-b4-edges/`：`profile-merged-into-about.png` / `profile-login-note-open.png` / `random-events-prereqs.png` / `market-source-declaration.png`（本批改用 Playwright 无头截图：会话内浏览器在 M4-b2 之后失去了可见表面对象，`take_screenshot` 报 `NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`） |
 | 未做（诚实边界） | ① **E11 随机事件注入回显未做**：要在气泡下显示"本轮注入了哪条随机事件"，需要给消息新增一条持久化字段（`promptTrace` 现在只装世界书命中），牵动 `types` + `type-adapters` 两处映射 + 卡片导出契约，不在本批范围内；② E15 的浏览器实测只到"跳过去带 `?story=`"这一侧，聊天侧的故事时间芯片因沙箱内**没有任何故事数据**（`stories` 表 0 条、4 个角色均无 `storyId`）无法用真数据走通，改由 `tests/views/chat-story-jump.test.ts` 用注入的 `storyId` 覆盖；③ `/profile` 的重定向不留 `?from=` 透传，从旧链接进来时"返回来源页"不出现（没有来源可回） |
+
+### M5-b1 引导页优化（默认展开当前任务 + 完成态推进 + 口径分开）
+
+**触发**：用户提"引导页与功能内的引导优化一下"。先把现状量成数字（Edge 无头 + 沙箱真实数据），再动手：
+
+| 实测问题 | 改前 | 改后 |
+|---|---|---|
+| 进页面能看到几步 | 可见步骤行 **0**（6 条任务全折叠，卡片 325px） | 当前任务自动展开，可见步骤行 **2** |
+| 任务行点击目标 | 高 **31px** | 桌面 **40px**、移动 **44px** |
+| 步骤动作按钮 | **22×54px**（低于 WCAG 2.2 最小目标 24×24） | 桌面 **30px** 高、移动 **44px** 高 |
+| 标题与计数的层级 | 同为 **13px**（眼睛先看到数字） | 标题 14px/600，计数 12px/常规 |
+| 同一条任务里两个动作 | 都叫"去设置"、跳同一处 | "去新增配置" / "去设为当前"（各步不同，重复标签归 0） |
+| 顶部进度与每行计数 | 都写"步骤 x/y"，一个数任务一个数步 | 顶部改"已完成 x/6 个任务"，每行仍"步骤 x/y" |
+
+**三条语义修正**（不只是样式）：
+1. **做完的步骤不再留着动作按钮**：原来 `actionKey` 只看 `jump` 不看 `done`，所以一条已满足的步骤仍然挂着"去设置"，用户会怀疑自己没做对。现在三态各自有交代：未完成能跳 → 按钮；已完成 → "已满足"；未完成又不能跳（可选步）→ 一句"可稍后再做"。最后这句原先是**注册表里写了却永远渲染不出来的键**（`guide.actionOrSkip`），因为渲染层把无跳转的步的文案整个剥掉了。
+2. **做完一条任务，收尾给的是下一步**：`.guided-next`（"下一步：<任务名>"），点了直接展开那一条；同时**完成任务不再提供"跳过"**——跳过一件已完成的事没有意义。
+3. **"跳过这一步"其实跳的是整条任务**（并从进度分母里去掉），文案改为"跳过这个任务"。
+
+**顺带修掉的四处"界面说不清 / 判据说谎"**：
+- 进阶任务 a2「从文稿提取设定」与 a3「接入本地模型」的 `done` 原先**写死 false**——一条永远打不上勾的任务，违反本文件开头"完成与否读真实数据"的唯一规则。改为读 `story.stories.length > 0` 与 `localModel.loadedModelId !== null`。
+- a1「多角色群聊」的判据原先抄了 t2 的 `characters.length > 0`，用户从没打开过群聊页它就已经打勾。改为读 `groupChat.groups.length > 0`。
+- t6 语音的步骤写"启用**并选择声音**"，而设置界面里**根本没有声音选择器**（`ttsConfig.voiceURI` 全仓无写入点，只有 ChatMain 读一次）。文案改为只承诺存在的控件，并在 why 里明说"界面上没有单独的声音选择器，用的是系统当前语音"。
+- 全部完成时卡片会渲染一颗"打开任务清单"，而它就在任务清单页上——原地跳转被 router 的重复导航吞掉，是一颗死控件。改为只在非 `/guide` 的出现位置渲染。
+
+**被改写的既有断言（3 处，都是新契约的直接后果）**：`e2e/ux-guided-tasks.spec.ts` 的"点 t1 才看到步骤"改为断"进页面就展开 + 点一下能收起"（新增一条用例）；跳过用例不再需要先点开，并把 `.guided-skip` 收窄到具体任务（自动展开后页面上同时有两个跳过按钮，Playwright 严格模式会报多命中）；`/more` 的进度文案断言从"步骤"改为"个任务"。单测侧给 `guided-tasks-card.test.ts` 加了 `resetToEmptyData()` 夹具——mock 角色会让 t2/t3 天然完成，"下一条是谁"就随夹具漂移，测不出展开与推进的真实顺序。
+
+**过程中自己踩到并修掉的一个逻辑错**：`toggleExpand` 里先翻 `userPicked` 再比较 `openId`，而 `openId` 依赖 `userPicked`——翻完之后再比，比较基准已经变成空的 `expanded`，于是"点自动展开的那条收不起来"。由新增的收起断言抓到。
+
+**验证证据（M5-b1，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run build` / `lint`(0 error) / `i18n:check` + `:strict` / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**，基线 131) / `snapshot:migration:check` / `runtime:db:schema:check` / `check:csp` / `check:ort` | 退出码均 **0** |
+| `npx vitest run` | **176 files / 3795 passed / 3 skipped**（较 M4-b4 的 3792 增 3：自动展开、可选步说明、下一步推进三组新断言） |
+| E2E | msedge（`--workers=2`）**61 passed**（比上批多 1 条，即新增的自动展开用例）、webkit（`--workers=1`）**16**、mobile 两 project **14**，全部 0 failed |
+| 浏览器实测（Edge 无头，dev :5179） | 见上表"改后"列；另确认 `aria-expanded` 与面板同步、`/more` 进度为"已完成 1/6 个任务"、可选步 `.step-flow-note` 在无跳转时渲染 |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m5-b1-guide/`：`guide-auto-expanded.png` / `guide-next-task.png` / `more-progress-wording.png` / `guide-mobile-390.png` |
+| 未做（诚实边界） | ① 首启欢迎窗的 3 步仍是**写死的静态文案**，与任务卡前三条说的是同一件事却是两套数据（`OnboardingModal.vue:20-24`），本批未合并；② 自动展开在"用户手动开合过"之后就不再跟随（`userPicked` 一次即锁定），不做定时回归；③ 收起/展开的单条任务状态仍不落盘（只有整卡收起落盘）；④ `compact` prop 已删除，若将来要"侧栏小卡"形态需要重新设计而不是复原它——它原先与持久化收起状态互相矛盾。 |

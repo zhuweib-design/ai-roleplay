@@ -72,7 +72,7 @@ function cardAria(entry: NavEntry): string {
         <span class="more-guide-desc">{{ t('guide.moreDesc') }}</span>
       </span>
       <span class="more-guide-progress">
-        {{ t('common.step', { current: progress.done, total: progress.total }) }}
+        {{ t('guide.tasksProgress', { current: progress.done, total: progress.total }) }}
       </span>
     </router-link>
 

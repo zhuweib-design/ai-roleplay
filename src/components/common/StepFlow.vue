@@ -26,6 +26,12 @@ export interface StepFlowItem {
   actionKey?: MessageKey;
   /** 已完成时显示的标记（清单模式） */
   done?: boolean;
+  /**
+   * 没有动作可点、又还没完成时的静态说明键（清单模式）。
+   * 用在"可选步骤"上：不给这句话的话，界面上就只剩一行字，
+   * 用户分不清"这步没按钮是因为已经做完了"还是"这步本来就不用做"。
+   */
+  noteKey?: MessageKey;
   /** 语义跳转标记，供 e2e/单测定位（与 data-rel-jump 同一套约定） */
   dataRelJump?: string;
 }
@@ -102,6 +108,7 @@ function onKeydown(event: KeyboardEvent): void {
         {{ t(item.actionKey) }}
       </button>
       <span v-else-if="item.done" class="step-flow-done">{{ t('prereq.done') }}</span>
+      <span v-else-if="item.noteKey" class="step-flow-note">{{ t(item.noteKey) }}</span>
     </li>
   </ol>
 </template>
@@ -200,7 +207,9 @@ function onKeydown(event: KeyboardEvent): void {
 
 .step-flow-action {
   flex-shrink: 0;
-  padding: 2px 8px;
+  /* 实测 22px 高时移动端几乎点不中（WCAG 2.2 最小目标 24×24 CSS px 都不达标） */
+  min-height: 30px;
+  padding: 4px 10px;
   border: 1px solid var(--secondary);
   border-radius: var(--radius-sm, 8px);
   background: transparent;
@@ -215,10 +224,17 @@ function onKeydown(event: KeyboardEvent): void {
   color: var(--muted-foreground);
 }
 
+.step-flow-note {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
 @media (max-width: 640px) {
   /* 触控目标上的字号提到 16px，避免 iOS 聚焦放大（门禁 i7 同口径） */
   .step-flow-action {
     font-size: 16px;
+    min-height: 44px;
   }
 }
 

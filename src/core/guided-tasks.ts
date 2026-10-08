@@ -15,6 +15,9 @@ import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';
 import { useDataBankStore } from '@/stores/data-bank';
 import { useLorebookStore } from '@/stores/lorebook';
+import { useGroupChatStore } from '@/stores/group-chat';
+import { useStoryStore } from '@/stores/story';
+import { useLocalModelStore } from '@/stores/local-model';
 import { useReadinessChips, useDataBankPrereqs } from '@/core/readiness';
 
 const STATE_KEY = 'ai-roleplay:guided-tasks.v1';
@@ -99,6 +102,9 @@ export function useGuidedTasks(): ComputedRef<TaskView[]> {
   const settings = useSettingsStore();
   const dataBank = useDataBankStore();
   const lorebook = useLorebookStore();
+  const groupChat = useGroupChatStore();
+  const story = useStoryStore();
+  const localModel = useLocalModelStore();
   const chips = useReadinessChips();
   const dataBankPrereqs = useDataBankPrereqs();
 
@@ -124,14 +130,14 @@ export function useGuidedTasks(): ComputedRef<TaskView[]> {
           {
             id: 'profile',
             hintKey: 'guide.t1.stepProfile',
-            actionKey: 'guide.actionGoSettings',
+            actionKey: 'guide.actionAddProfile',
             jump: { name: 'settings', query: { cat: 'model' } },
             done: settings.apiProfiles.length > 0,
           },
           {
             id: 'active',
             hintKey: 'guide.t1.stepActive',
-            actionKey: 'guide.actionGoSettings',
+            actionKey: 'guide.actionSetCurrent',
             jump: { name: 'settings', query: { cat: 'model' } },
             done: !!settings.activeProfile && modelChip?.state === 'ready',
           },
@@ -260,7 +266,9 @@ export function useGuidedTasks(): ComputedRef<TaskView[]> {
             hintKey: 'guide.a1.stepCreate',
             actionKey: 'guide.actionGoGroup',
             jump: { name: 'group' },
-            done: characterStore.characters.length > 0,
+            // 判据不能是“有角色”——那是 t2 的判据，抄过来会让这条进阶任务
+            // 在用户从没打开过群聊页的情况下就已经打勾。读真实产物：建过群。
+            done: groupChat.groups.length > 0,
           },
         ],
       },
@@ -275,7 +283,9 @@ export function useGuidedTasks(): ComputedRef<TaskView[]> {
             hintKey: 'guide.a2.stepImport',
             actionKey: 'guide.actionGoStory',
             jump: { name: 'story' },
-            done: false,
+            // 原先写死 done: false —— 一条永远打不上勾的任务，
+            // 违反本文件开头“完成与否读真实数据”的唯一规则。
+            done: story.stories.length > 0,
           },
         ],
       },
@@ -290,7 +300,9 @@ export function useGuidedTasks(): ComputedRef<TaskView[]> {
             hintKey: 'guide.a3.stepLoad',
             actionKey: 'guide.actionGoLocalModel',
             jump: { name: 'local-model' },
-            done: false,
+            // 步骤写的是“加载一个模型”，判据就按加载态读；
+            // 卸载或重启后退回未完成，与 t2 删角色会退勾是同一套语义。
+            done: localModel.loadedModelId !== null,
           },
         ],
       },
@@ -312,6 +324,15 @@ export function useGuidedTasks(): ComputedRef<TaskView[]> {
       };
     });
   });
+}
+
+/**
+ * 当前该做的那一条任务：主清单里第一个"未完成且未跳过"的。
+ * 任务卡的默认展开、完成后的"下一步"都读它——两处必须指同一条，
+ * 否则会出现"展开的是 A、提示下一步去做 B"。
+ */
+export function nextIncompleteTask(tasks: TaskView[]): TaskView | null {
+  return tasks.find((t) => !t.advanced && !t.skipped && !t.complete) ?? null;
 }
 
 /** 供"返回后再看进度"使用的汇总（不做任何遥测，不上传） */

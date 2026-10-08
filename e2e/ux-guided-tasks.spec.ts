@@ -19,10 +19,23 @@ test.describe('任务中心', () => {
     await expect(page.locator('.guided-progress')).toContainText('/6');
   });
 
+  test('当前该做的那一条默认就是展开的，进页面不必先点一次', async ({ page }) => {
+    await page.goto('/guide');
+
+    const first = page.locator('.guided-task-head').first();
+    await expect(first).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('.step-flow-row').first()).toBeVisible();
+
+    // 点一下要能收起（自动展开的那条比较的是"当前实际展开项"，不是内部状态）
+    await first.click();
+    await expect(first).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('.step-flow-row')).toHaveCount(0);
+  });
+
   test('任务步骤可一步跳到设置对应分类，并带来源返回路径', async ({ page }) => {
     await page.goto('/guide');
 
-    await page.locator('[data-rel-jump="guide-t1-model"]').click();
+    // t1 是空数据下的当前任务，已自动展开，不必再点一次
     await expect(page.locator('[data-rel-jump="guide-t1-model-profile"]')).toBeVisible();
 
     await page.locator('[data-rel-jump="guide-t1-model-profile"]').click();
@@ -35,8 +48,9 @@ test.describe('任务中心', () => {
   test('跳过某任务后刷新仍然记住，其它任务不受影响', async ({ page }) => {
     await page.goto('/guide');
 
+    const t6 = page.locator('.guided-task').filter({ has: page.locator('[data-rel-jump="guide-t6-voice"]') });
     await page.locator('[data-rel-jump="guide-t6-voice"]').click();
-    await page.locator('.guided-task .guided-skip').last().click();
+    await t6.locator('.guided-skip').click();
     await expect(page.locator('.guided-task.skipped')).toHaveCount(1);
 
     await page.reload();
@@ -44,7 +58,7 @@ test.describe('任务中心', () => {
     await expect(page.locator('.guided-list').first().locator('.guided-task-head')).toHaveCount(6);
 
     await page.locator('[data-rel-jump="guide-t6-voice"]').click();
-    await page.locator('.guided-skip').click();
+    await t6.locator('.guided-skip').click();
     await expect(page.locator('.guided-task.skipped')).toHaveCount(0);
   });
 
@@ -69,7 +83,7 @@ test.describe('任务中心', () => {
 
     const entry = page.locator('[data-rel-jump="more-guide"]');
     await expect(entry).toBeVisible();
-    await expect(entry).toContainText('步骤');
+    await expect(entry).toContainText('个任务');
 
     await entry.click();
     await expect(page).toHaveURL(/\/guide$/);
