@@ -161,6 +161,7 @@ export default {
   'chat.emptyDesc': '先建一个角色，或从社区市场导入一张角色卡，就能开始对话。',
   'chat.emptyAction': '新建角色',
   'guide.aria': '任务清单',
+  'guide.stepsAria': '任务步骤',
   'guide.title': '任务清单',
   'guide.pageTitle': '引导',
   'guide.pageDesc': '按步骤做，做完的会自动打勾——进度读的是真实数据，不是"看过哪个页面"。',

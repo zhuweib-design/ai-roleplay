@@ -554,8 +554,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | 空态 `EmptyState` 铺开（`grep -rl "\.empty-state" src --include=*.vue` 实测 **13** 个文件仍各自定义该样式：11 个视图 + `ChatMain.vue` + `EmptyState.vue` 自己）；`StepFlow` / `HelpTip` / `FormField` 原语与角色·世界书"快速档"表单（M3-b）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | 空态 `EmptyState` 铺开（`grep -rl "\.empty-state" src --include=*.vue` 实测 **13** 个文件仍各自定义该样式：11 个视图 + `ChatMain.vue` + `EmptyState.vue` 自己）；角色·世界书"快速档"表单（M3-b3；`StepFlow` / `HelpTip` / `FormField` 三个原语已在 M3-b1 建好并通过 axe，HelpTip / FormField 的采用点随快速档落地）；常规/高级折叠与 `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -1379,3 +1379,50 @@ M2-b9 把"`ux-prompt-trace` 在 webkit 全量里变红"归因为"本批次新 sp
 | 界面实测（Edge 1440×900） | 上下文面板世界书一节显示"1 本"并列出未绑定的全局书、带「全局生效」胶囊标；角色卡元信息行尾出现"已跟踪"（带 git-branch 图标 + 下划线），点它落到 `/character-version?char=kael&from=/character`；图像页填完端点/模型/密钥后刷新，三项都还在（密钥以掩码显示）；页头出现"产物只存进下方画廊，不会进入对话消息"。另测得"访问过版本页 → 角色列表出现标记"的延迟为 **822ms（一次刷新内即出现）**——快照落盘是懒建后的异步写，第一版截图脚本按 800ms 等待曾拍到没有标记的那一帧，已改成"拍到带标记的卡片"为止 |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m3-b0-gap-visibility/`：`e03-context-panel-global-book.png` / `e19-character-card-tracked.png` / `e22-image-provider-config.png` / `e22-image-provider-after-reload.png` / `e23-image-header-note.png`。**本批没有 before 截图**：四条边的"修前长什么样"由上面的反证表（摘掉守卫即转红）承担，比截图更硬；E22 的修前事实是"刷新后 IndexedDB 里根本没有 `imageGenConfig` 这个键"，无法用界面截图表达 |
 | 未做的事 | `ux-gap-visibility.spec.ts` **不纳入 webkit**（E22 用例会写设置，跨 context 共享目录会污染后面的用例，原因见上表）；E22 的"两处互读"只做到**单向一键填入**，没有把两份配置合并成一份（图像页支持 custom 端点、Profile 有 category 语义，合并属另一件事） |
+
+### M3-b1 引导原语（StepFlow / HelpTip / FormField）
+
+G 层一直缺三块原语：任务卡里的"步骤"是内联渲染的（主清单与进阶清单**各写一遍**），
+新建会话弹窗的步骤指示器是另一套私有实现，说明与报错的 aria 关联靠各页面自觉。
+本批把这三块建起来并接上两处采用。
+
+| 原语 | 形态 | 采用情况 |
+|---|---|---|
+| `StepFlow.vue` | 传 `current` 即**向导**（圆点 + 连接线 + 当前步标签，`aria-current="step"`）；不传即**清单**（编号 + 说明 + 行尾动作或"已满足"） | 已接两处：`GuidedTasksCard` 两段重复步骤列表、`NewConversationModal` 的指示器。随之删掉 10 条只服务于这两处的样式 |
+| `HelpTip.vue` | 真按钮 + `aria-describedby` + `role="tooltip"`；悬停 / 聚焦 / 点击三条路都能开 | **本批无采用点**（原因见下），随 M3-b3 的两个快速档接入 |
+| `FormField.vue` | 标签 / 说明 / 报错外壳，用**插槽参数**下发 `id` / `aria-describedby` / `aria-invalid` | 同上，随 M3-b3 接入 |
+
+**为什么一个组件伺候两种形状**：两者共用"第几步"这个概念与 `common.step` / `prereq.done` 这些键，
+拆成两个组件只会让同一件事在界面上长得不一样；模式判定用"`current` 是否传"，
+不给调用方第二个开关去选错。
+
+**键盘边界**：向导模式只接管 ←/→（并 `preventDefault`，避免页面横向滚动），
+Up/Down/Home/End 一律放行。原因是设置页的分类 tablist（`SettingsView.handleCategoryKeydown`）
+把这四个键全占了，同屏时必抢；处理器挂在 StepFlow 自身根节点上，焦点不在组内根本不触发。
+另外**到边界不循环**——向导步骤有先后语义，循环会让人以为可以跳步。
+
+**`current` 是受控 prop**：组件不自己记步数，只 emit `change` 请求。
+好处是 `NewConversationModal` 的 `canNext` 闸门不需要复制一份进原语；
+代价是单测里"按 → 再按 ←"必须各自从固定起点挂载（一开始写成连续两次按键，
+第二条断言自然不成立——这是组件的正确行为，不是缺陷）。
+
+**两个实现期发现（都值得留在文档里，因为都会再踩）**
+
+| 发现 | 结论 |
+|---|---|
+| prop 取名 `ariaLabelKey`，模板写 `aria-label-key` | vue-tsc **把它当 ARIA 属性而不是 prop**，报 `Property 'ariaLabelKey' is missing`，且 kebab 值仍出现在报错里；改名 `labelKey` 即通过。组件对外暴露"可读名字"时不要以 `aria` 开头命名 prop |
+| HelpTip 想接管就绪状态芯片（原因只写在 `title=` 里，读屏拿不到） | **塞不进去**：芯片本身是 `<button>`，按钮里再放按钮是非法 HTML。那处正确的修法是给芯片自身加 `aria-describedby` 指向一段隐藏文本，与 71 处 `title=` 的全量迁移一起留在 §七 #14。故本批 HelpTip 只交付原语 + 测试，采用点随 M3-b3 |
+
+**验证证据（M3-b1 最终状态，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run lint` / `npm run build` | 退出码均 **0** |
+| `i18n:check:strict` | 通过，`src` **200** 个文件；zh / en 各 **3322** 行，仅新增 1 键 |
+| `check:css-conventions` | **5/5** 通过，`i7` 未覆盖 **0** 条 |
+| `a11y:contrast`（静态）+ `a11y:contrast:self-test` | 通过，扫描 **121** 处存量（基线 131） |
+| `runtime:db:schema:check` / `snapshot:migration:check` / `eval:manifest` / `check:csp` / `check:ort` | 全部退出码 **0** |
+| `npm run test:coverage` | **3745 passed / 3 skipped**，覆盖率 **79.69 / 74.16 / 81.82 / 81.57**（阈值未放松）；本批新增 3 个测试文件 **22** 例 |
+| axe（新原语专项） | 向导态 / 清单态 / HelpTip / FormField **4 例全过，0 违规** |
+| E2E（msedge 55 + mobile-functional 9 + mobile 5） | **69 passed / 0 failed**（1.7 分钟） |
+| E2E（webkit，串行） | **16 passed / 0 failed** |

@@ -161,6 +161,7 @@ const en: Record<MessageKey, string> = {
   'chat.emptyDesc': 'Create a character, or import a card from the community market, to start chatting.',
   'chat.emptyAction': 'New character',
   'guide.aria': 'Task list',
+  'guide.stepsAria': 'Task steps',
   'guide.title': 'Task list',
   'guide.pageTitle': 'Guide',
   'guide.pageDesc': 'Follow the steps; they tick themselves off — progress reads real data, not which page you visited.',

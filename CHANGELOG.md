@@ -146,6 +146,15 @@
 - 测试：`tests/components/context-panel-lorebooks.test.ts` 5 例、`tests/views/character-card-tracked.test.ts` 4 例、`tests/stores/character-version-tracked.test.ts` 5 例、`tests/stores/image-gen-settings.test.ts` 7 例、`tests/stores/image-generation-provider.test.ts` 6 例；`e2e/ux-gap-visibility.spec.ts` 7 例（真实浏览器里逐条验证面板计数、标记跳转、刷新后配置仍在、页头声明）。反证：面板改回只列绑定书 → 4 例红；把 `imageGenConfig` 摘出白名单 → 4 例红；`canGenerate` 去掉密文判断 → 1 例红；启动不加载版本快照 → E19 的 e2e 自然失败（正是这条发现引出修复）。
 - **webkit 串跑偶发的真机制查清（纠正 M2-b9 的因果）**：`backup-restore` + `ux-prompt-trace` 两条老用例即可稳定复现，与新增用例无关；现场按时间 dump `settings.app` 看到 `n=1 → n=0 → n=1`，即两个 app 实例在同一份共享存储上互相盖写。试过两种"看起来对"的修法并都**实测否掉后还原**：去掉"首次启动写默认快照"（pair 变绿但全量仍红，且逼着改一条既有单测契约）、在 `backup-restore` 末尾等写入静默（晚到的写发生在 context 关闭阶段，无效，代码已删）。最终处置是让 `ux-prompt-trace` 在 `reload()` 前再确认一次"当前落盘的就是自己的 Profile"——不放宽任何断言，只把"读到的必须是自己的快照"变成前置条件。修后 webkit 全量连续两轮 **16 passed**，Chromium 三 project **69 passed**。
 
+### 新增（UX/IA M3-b1：引导原语 StepFlow / HelpTip / FormField）
+- `src/components/common/StepFlow.vue`：一个组件伺候两种形状——传 `current` 即**向导**（圆点 + 连接线 + 当前步标签，`aria-current="step"`，←/→ 换步且到边界不循环），不传即**清单**（编号 + 说明 + 行尾动作或"已满足"）。向导模式**只接管 ←/→**，Up/Down/Home/End 一个都不吞（设置页 tablist 用这四个键切分类，同屏会抢）。
+- 两处采用：`GuidedTasksCard` 主清单与进阶清单里**各写一遍**的步骤列表（约 15 行 × 2）合并为一次调用，随之删掉只有它在用的 5 条样式（保留页头那颗"打开任务清单"仍在用的 `.guided-step-action`）；`NewConversationModal` 的步骤指示器（原 `role="navigation"` + 两个 span 圆点）改由 StepFlow 渲染，删掉 5 条样式。**行为不变**：前进仍受 `canNext` 约束（StepFlow 只发 `change` 请求，步数由调用方持有）。
+- `src/components/common/HelpTip.vue`：把"只有悬停看得到"的说明换成真按钮 + `aria-describedby` + `role="tooltip"`，悬停 / 聚焦 / 点击三条路都能开；气泡不用 `display:none` 藏（那样 `aria-describedby` 读不到内容），改用 `visibility`。
+- `src/components/common/FormField.vue`：标签 / 说明 / 报错三件套的外壳，通过**插槽参数**把 `id`、`aria-describedby`、`aria-invalid` 交给调用方绑到真正的控件上（不假设控件类型，也就不替调用方决定 v-model 怎么写）。
+- i18n：只新增 `guide.stepsAria` 一键（双语同序，zh / en 各 3322 行）；其余全部复用既有键（`common.step` / `common.optional` / `common.required` / `prereq.done`），不造重复文案。
+- 测试：`tests/components/step-flow.test.ts` 9 例、`tests/components/help-tip-form-field.test.ts` 9 例、`tests/accessibility/new-primitives-axe.test.ts` 4 例（向导态 / 清单态 / HelpTip / FormField 各过一遍 axe，全部 0 违规）。既有 `tests/components/guided-tasks-card.test.ts` 只把类名选择器换成 `.step-flow-row`，断言语义未变。
+- 两个实现期发现：**①** prop 不能叫 `ariaLabelKey` —— 模板里写 `aria-label-key` 会被 vue-tsc 当成 ARIA 属性而不是 prop，报"缺少 ariaLabelKey"，改名 `labelKey` 才通过；**②** HelpTip 这一批**没有可用采用点**——最需要的就绪状态芯片（原因只写在 `title=` 里、读屏拿不到）本身就是 `<button>`，再套一个按钮是非法 HTML，那处要的是给芯片自身加 `aria-describedby`，与 71 处 `title=` 的全量迁移一起留在设计文档 §七 #14；HelpTip / FormField 的采用随 M3-b3 的两个快速档表单落地。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

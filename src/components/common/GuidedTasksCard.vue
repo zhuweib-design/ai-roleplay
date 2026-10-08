@@ -6,9 +6,10 @@
  * 规则：收起 ≠ 永久消失；跳过某步不阻塞其它步；完成态实时算自真实数据。
  */
 import { computed, ref } from 'vue';
-import { t } from '@/i18n';
+import { t, type MessageKey } from '@/i18n';
 import Icon from '@/components/common/Icon.vue';
-import { useGuidedTasks, guideProgress, setCollapsed, toggleSkip, taskIntent } from '@/core/guided-tasks';
+import StepFlow, { type StepFlowItem } from '@/components/common/StepFlow.vue';
+import { useGuidedTasks, guideProgress, setCollapsed, toggleSkip, taskIntent, type TaskView } from '@/core/guided-tasks';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 
 const props = defineProps<{ compact?: boolean }>();
@@ -18,11 +19,42 @@ const { pushWithReturn } = useReadinessJump();
 const expanded = ref<string | null>(null);
 const showAdvanced = ref(false);
 
+/**
+ * 任务步骤 → StepFlow 条目。
+ * 只有真的能跳的步才带动作文案（与原实现一致：`jump` 为 null 的步不出现按钮），
+ * 否则会出现"点了没反应"的按钮——那正是本项目在别处撤掉过的那类死控件。
+ */
+function stepItems(task: TaskView): StepFlowItem[] {
+  return task.steps.map((step) => ({
+    id: step.id,
+    labelKey: step.hintKey,
+    actionKey: step.jump ? step.actionKey : undefined,
+    done: step.done,
+    dataRelJump: `guide-${task.id}-${step.id}`,
+  }));
+}
+
+/**
+ * 步骤动作：按 dataRelJump（`guide-<task>-<step>`，全局唯一）找回那一跳。
+ * 用直接函数引用而不是行内闭包，模板里每处都能省掉 task 参数。
+ */
+function onStepAction(item: StepFlowItem): void {
+  for (const task of tasks.value) {
+    const step = task.steps.find((s) => `guide-${task.id}-${s.id}` === item.dataRelJump);
+    if (step?.jump) {
+      pushWithReturn(step.jump);
+      return;
+    }
+  }
+}
+
 const progress = computed(() => guideProgress(tasks.value));
 const mainTasks = computed(() => tasks.value.filter((task) => !task.advanced));
 const advancedTasks = computed(() => tasks.value.filter((task) => task.advanced));
 // 收起状态来自持久化意图（而不是仅本组件的 props），这样"收起"在三个出现位置一致
 const collapsed = computed(() => taskIntent().value.collapsed || props.compact === true);
+
+const STEPS_ARIA: MessageKey = 'guide.stepsAria';
 
 function toggleExpand(id: string): void {
   expanded.value = expanded.value === id ? null : id;
@@ -74,22 +106,11 @@ function openSettingsGuide(): void {
 
         <div v-if="expanded === task.id" class="guided-task-body">
           <p class="guided-why">{{ t(task.whyKey) }}</p>
-          <ol class="guided-steps" role="list">
-            <li v-for="(step, idx) in task.steps" :key="step.id" class="guided-step" :class="{ done: step.done }">
-              <span class="guided-step-no">{{ idx + 1 }}</span>
-              <span class="guided-step-text">{{ t(step.hintKey) }}</span>
-              <button
-                v-if="step.jump"
-                type="button"
-                class="guided-step-action"
-                :data-rel-jump="`guide-${task.id}-${step.id}`"
-                @click="pushWithReturn(step.jump)"
-              >
-                {{ t(step.actionKey) }}
-              </button>
-              <span v-else-if="step.done" class="guided-step-done">{{ t('prereq.done') }}</span>
-            </li>
-          </ol>
+          <StepFlow
+            :items="stepItems(task)"
+            :label-key="STEPS_ARIA"
+            @action="onStepAction"
+          />
           <button type="button" class="guided-skip" @click="toggleSkip(task.id)">
             {{ task.skipped ? t('guide.unskip') : t('guide.skip') }}
           </button>
@@ -114,21 +135,11 @@ function openSettingsGuide(): void {
           </button>
           <div v-if="expanded === task.id" class="guided-task-body">
             <p class="guided-why">{{ t(task.whyKey) }}</p>
-            <ol class="guided-steps" role="list">
-              <li v-for="(step, idx) in task.steps" :key="step.id" class="guided-step" :class="{ done: step.done }">
-                <span class="guided-step-no">{{ idx + 1 }}</span>
-                <span class="guided-step-text">{{ t(step.hintKey) }}</span>
-                <button
-                  v-if="step.jump"
-                  type="button"
-                  class="guided-step-action"
-                  :data-rel-jump="`guide-${task.id}-${step.id}`"
-                  @click="pushWithReturn(step.jump)"
-                >
-                  {{ t(step.actionKey) }}
-                </button>
-              </li>
-            </ol>
+            <StepFlow
+              :items="stepItems(task)"
+              :label-key="STEPS_ARIA"
+              @action="onStepAction"
+            />
           </div>
         </li>
       </ul>
@@ -249,44 +260,7 @@ function openSettingsGuide(): void {
   color: var(--muted-foreground);
 }
 
-.guided-steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.guided-step {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--foreground);
-}
-
-.guided-step.done {
-  color: var(--muted-foreground);
-}
-
-.guided-step-no {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--muted, var(--card));
-  color: var(--muted-foreground);
-  font-size: 13px;
-}
-
-.guided-step-text {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
+/* 步骤清单本体已并入 StepFlow；这里只剩页头那颗"打开任务清单"按钮 */
 .guided-step-action {
   flex: 0 0 auto;
   padding: 3px 10px;
@@ -296,11 +270,6 @@ function openSettingsGuide(): void {
   color: var(--secondary);
   font-size: 13px;
   cursor: pointer;
-}
-
-.guided-step-done {
-  font-size: 13px;
-  color: var(--muted-foreground);
 }
 
 .guided-skip {

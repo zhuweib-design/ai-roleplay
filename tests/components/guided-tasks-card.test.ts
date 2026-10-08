@@ -56,7 +56,8 @@ describe('GuidedTasksCard', () => {
     const wrapper = mount(GuidedTasksCard, { global: { plugins: [router] } });
 
     await wrapper.find('[data-rel-jump="guide-t1-model"]').trigger('click');
-    const steps = wrapper.findAll('.guided-step');
+    // 步骤清单已并入 StepFlow 原语（类名随之变），断言本身不变
+    const steps = wrapper.findAll('.step-flow-row');
     expect(steps.length).toBeGreaterThanOrEqual(2);
 
     await wrapper.find('[data-rel-jump="guide-t1-model-profile"]').trigger('click');
