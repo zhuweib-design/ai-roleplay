@@ -22,6 +22,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useCommunityMarketStore } from '@/stores/community-market';
+import { MARKET_INDEX_URL } from '@/core/market-index';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
@@ -402,6 +403,13 @@ function ratingStars(rating: number): string {
         <span class="beta-badge">{{ t('market.beta') }}</span>
       </h1>
       <p class="beta-disclosure">{{ t('market.betaTitle') }}</p>
+      <!--
+        E21：索引地址只有构建期一个来源，界面上必须说清楚——否则提交信息里的
+        "市场 URL 可配"会被理解成"这里能改"。连同当前值一起显示，claim 可核对。
+      -->
+      <p class="beta-disclosure">
+        {{ t('market.sourceNote') }}<code class="market-source-url">{{ MARKET_INDEX_URL }}</code>
+      </p>
       <div class="header-right">
         <template v-if="store.isLoggedIn">
           <span class="user-info">
@@ -1009,6 +1017,14 @@ type="button"
   font-size: 12px;
   line-height: 1.4;
   color: var(--muted-foreground);
+}
+
+/* E21：地址本身是数据，用等宽并允许断行，避免撑破页头 */
+.market-source-url {
+  margin-inline-start: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  word-break: break-all;
 }
 
 .beta-badge {

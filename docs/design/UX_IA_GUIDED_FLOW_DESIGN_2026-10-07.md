@@ -152,21 +152,21 @@
 | E07 模型配置优先级 | B | **A** | 就绪条模型芯片 + 面板显示"实际生效的那个 Profile"（M2-a） |
 | E08 群聊忽略角色级参数 | C | **声明** | `group.capabilityNote` 页头明示（M2-b4） |
 | E09 语音 TTS → 设置「扩展」 | C | **A** | 语音芯片带原因与跳转（M2-a） |
-| E10 随机事件 → 场景名必须等于角色名 | C | **未覆盖（仍 C）** | 计划里的 `/random-events` `PrereqNotice` **没有落地**（该组件目前唯一挂载点是 `DataBankView.vue:203`） |
+| E10 随机事件 → 场景名必须等于角色名 | C | **A**（M4-b4） | `/random-events` 挂上 `PrereqNotice` 三行前提；场景名与当前角色名不一致时给一跳（进该角色的编辑页，带回程）。判定集中在 `readiness.ts` 的 `useRandomEventPrereqs`，界面不再自行推断 |
 | E11 随机事件 → 对话注入 | C | **未覆盖（仍 C）** | 注入痕迹 v1 只列世界书命中，随机事件命中不显示 |
 | E12 / E13 / E16 / E25 | D | **撤下** | 四条死控件已从界面移除（M2-b1） |
 | E14 故事 → 世界书/角色/事件 | A | **A** | 前测唯一一条，未动 |
-| E15 故事 → 对话 | B | **未覆盖（仍 B）** | 聊天区显示故事时间（`ChatMain.vue:429-430`）但跳不到故事本体 |
+| E15 故事 → 对话 | B | **A**（M4-b4） | 聊天顶栏的故事时间由只读文本改为按钮，一跳 `/story?story=<id>` 并带回程；故事引擎只认 `stories` 里真实存在的 id |
 | E17 群聊 → 成员角色 | B | **A** | 成员名可点进编辑并带回程（M2-b6） |
 | E18 群聊 → 世界书/RAG/故事/状态指令 | E | **声明** | 同 `group.capabilityNote`（M2-b4） |
 | E19 版本 → 哪些角色被跟踪 | C | **A** | 角色卡"已跟踪"标记，点进该角色版本历史（带 `?char=`）；为此把版本快照加载提到启动（本批） |
 | E20 市场 → 角色安装 | B | **A** | 安装结果条带角色名与两个去路（M2-b6） |
-| E21 市场 URL → 运行期配置 | E | **未覆盖（仍 E，且未声明）** | 计划里的"界面上明说不支持运行期改索引地址"也没做 |
+| E21 市场 URL → 运行期配置 | E | **声明**（M4-b4） | 市场页头一行可见文字：索引地址只在构建期由 `VITE_MARKET_INDEX_URL` 提供、运行期不可配置，并连同当前值一起显示，claim 可核对 |
 | E22 图片生成 → 模型配置 | C（双重） | **A** | `imageGenConfig` 进持久化白名单（密钥按主密码加密、解锁同批解密）+ 与「模型接入 · 图像/视频」互填 + "去设置"带 `?cat=model`（本批） |
 | E23 图片生成 → 对话消息 | E | **声明** | 图片页页头"产物只存进画廊，不会进入对话消息"（本批） |
 | E24 `tokenBudget` → 上下文面板 | C（假显示） | **A** | 真实 token 用量替换假预算条（M2-b2） |
 
-**后测合计**：A **14** · 撤下 **4** · 声明 **3** · 未覆盖 **4**（E10 / E11 / E15 / E21）= 25。
+**后测合计（M4-b4 后）**：A **16** · 撤下 **4** · 声明 **4** · 未覆盖 **1**（E11）= 25。
 
 > 与 §四 目标口径（"17 转 A + 4 撤下 + 4 声明"）的差 **3 条**，全部来自同一处失算：目标把"给 `/random-events`、`/local-model` 挂 `PrereqNotice`"与"市场 URL 的显式声明"算进了已完成，实际只挂了 `/databank` 一处。这 3 条已登记为 §七 的续期项，不改口径数字来凑达标。
 用户"不知道模块之间怎么关联"不是主观感受，而是可测量事实：**25 条边里只有 1 条做到可见且可一跳**。
@@ -554,8 +554,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；常规/高级折叠（**M4-b2：`Collapse` 原语接管设置页三处高级段——「外观」界面自定义、「数据」新分组「运维与兼容」四段（并把档案/备份/两项导出提到前面）、「模型」弹窗内默认采样参数，三处默认收起且用 `v-show` 保住草稿**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b3）；`/chat` ⇄ `/group` 分段控件；**D-B 后半** `/profile` 内容并入设置→关于 |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；常规/高级折叠（**M4-b2：`Collapse` 原语接管设置页三处高级段——「外观」界面自定义、「数据」新分组「运维与兼容」四段（并把档案/备份/两项导出提到前面）、「模型」弹窗内默认采样参数，三处默认收起且用 `v-show` 保住草稿**）；四条边的补完与一处页面合并（**M4-b4：E10 随机事件前提横幅（场景名=角色名的字符串耦合首次出现在界面上，不一致可一跳回该角色）、E15 聊天故事时间改为可点回故事本体（`/story?story=`）、E21 市场索引地址的构建期声明、D-B 后半 `/profile` 并入设置→关于（旧链接重定向，`ProfileView.vue` 删除，`nav.profile`/`router.profile`/5 个 `profile.*` 死键清除）**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b3）；`/chat` ⇄ `/group` 分段控件；**E11** 随机事件注入回显（需要给消息加一条持久化字段，见 §九 M4-b4 的诚实边界） |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -1608,3 +1608,32 @@ id 用自增计数器保证唯一，值可以是任意字符串并随绑定更�
 | 浏览器实测（Edge，dev :5179） | 外观段收起时 `aria-expanded=false`、面板 `display:none`；点开后 `aria-expanded=true`、面板 `display:flex`、内含 **12** 个控件；数据段收起时四个 `.data-mgmt-row` 全在 `display:none` 的面板里，可见块为档案/备份/PNG/Markdown 四项；模型弹窗内折叠段 class 为 `collapse-section is-collapsed is-plain`，展开后 `#p-top-p`/`#p-presence`/`#p-frequency` 齐备；**键盘 Space 在标题按钮上切换生效**（`aria-expanded` true→false、面板 `display:none`、焦点保持在按钮上） |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m4-b2-collapse/`：`appearance-collapsed` / `appearance-expanded` / `appearance-expanded-panel` / `data-advanced-collapsed` / `data-advanced-expanded` / `model-modal-sampling-collapsed` / `model-modal-sampling-expanded` |
 | 未做（诚实边界） | ① 该浏览器工具派发 **Enter** 时不激活任何原生按钮（在同一页面对设置分类标签按 Enter 同样无反应，而 Space 正常）⇒ 记为测试工具的按键派发问题，未据此给组件加 `@keydown` 兜底；② 折叠状态**不落盘**：设置各分类是 `v-show` 常驻，所以切分类、跳页面回来都保持，只有整页刷新会回到默认（高级段重新收起）——没有把它做成持久化偏好；③ 角色编辑器"属性"段那套自写折叠（`CharacterEditorView.vue:968-996`）尚未并入 `Collapse`，留作 M4-b3 拆该视图时一起做；④ §3.6.4 的"四个巨型视图分区"未动（M4-b3） |
+
+### M4-b4 四条未覆盖边里的三条 + `/profile` 并入设置→关于
+
+§1.4.1 后测复评留下的 4 条未覆盖边（E10 / E11 / E15 / E21），本批补掉三条，E11 因需要动消息数据契约而**明确不做**（见末尾）。
+
+| 边 | 落地 | 判定/契约所在 |
+|---|---|---|
+| E10 随机事件 → 场景名必须等于角色名 | `/random-events` 页头下挂 `PrereqNotice` 三行：总开关、场景名与当前角色名一致、至少一个已启用场景 | `readiness.ts` 新增 `useRandomEventPrereqs()`；不一致时一跳该角色的编辑页（无当前角色则跳角色列表），回程由 App 的全局"返回来源页"承接 |
+| E15 故事 → 对话 | 聊天顶栏的故事时间由 `<div role=status>` 改为 `<button>`，一跳 `/story?story=<id>`；故事引擎读到该 id 且它真实存在于 `stories` 时才 `selectStory` | `ChatMain.vue` 的 `goToStory()` 走 `pushWithReturn`；`StoryEngineView.vue` 的 `applyStoryQuery()`（setup 一次 + `watch` query） |
+| E21 市场 URL → 运行期配置 | 市场页头第二行可见文字：索引地址只在构建期由 `VITE_MARKET_INDEX_URL` 提供、运行期不可配置，**并连同当前值一起显示** | `CommunityMarketView.vue` 直接读 `core/market-index.ts` 的 `MARKET_INDEX_URL`（与 store 用的是同一个常量，不是另写一份文案） |
+
+**为什么 E21 要把 URL 本身显示出来**：只写"运行期不可配置"仍是一句无法核对的声明；把当前指向一起显示，用户能立刻看出"这确实是构建期注入的那个地址"，声明与证据在同一行里。
+
+**`/profile` 并入设置→关于（D-B 后半）**：`ProfileView.vue`（92 行）整页只有一块内容——一个本地用户 + 一句"扮演身份在世界书"，却占一条路由、一个页头、一个返回按钮。搬进「关于」后：
+- `/profile` 改为 `redirect: { path: '/settings', query: { cat: 'about' } }`，旧链接、`scripts/ui-shot.mjs`、`e2e/contrast-axe.spec.ts` 的审计路由全部继续可用（后者因此多扫一次 `/settings`，即 D-N 预先接受的代价）；
+- `mobile-nav.ts` 的 `DETAIL_ROUTES` 去掉 `profile`（它不再是有名字的沉浸页），`tests/core/mobile-nav.test.ts` 的断言随之翻转为 `false`；
+- 死键清理：`nav.profile`（M1-a 后已零读者）、`router.profile`（路由不再有名字）、以及只服务于原页头的 5 个 `profile.*`（`aria/title/subtitle/back/backAria`）；页面正文用到的 8 个 `profile.*` 键保留。
+
+**验证证据（M4-b4 最终状态，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run build` / `npm run lint`(0 error) / `i18n:check` + `:strict`(203 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**，基线 131) / `snapshot:migration:check` / `runtime:db:schema:check` / `check:csp` / `check:ort` | 退出码均 **0** |
+| `npx vitest run` | **176 files passed / 2 skipped**，**3792 passed / 3 skipped**（较 M4-b2 的 3781 增 11） |
+| 新增测试 | `tests/views/chat-story-jump.test.ts` 4 例（故事时间必须是 `BUTTON`、点击带 `?story=` 与来路、无故事不渲染、故事被删不渲染）；`tests/views/story-engine-quicksetup.test.ts` +3 例（`?story=` 只认存在的 id）；`tests/core/readiness.test.ts` +4 例（`useRandomEventPrereqs` 三行顺序、无角色跳列表、**改名即断链并跳回该角色**、开关与停用场景独立判定） |
+| E2E | msedge（`--workers=2`）**60 passed**、webkit（`--workers=1`）**16 passed**、mobile 两 project（`--workers=2`）**14 passed**，全部 0 failed |
+| 浏览器实测（Edge，dev :5179） | `/profile` 落到 `/settings?cat=about`，侧栏「关于」为激活项，账户块渲染"账户 / 登录 / 本地用户 / 激活 / 两句说明"，点「登录」出现 `role=status` 的"远程登录服务尚未配置"与「关闭」；`/random-events` 三行前提齐全，中间一行带「去看角色」，点击后 URL 为 `/character/seraphina/edit?from=/random-events` 且页面出现"返回来源页"；`/community-market` 页头第二行显示 `https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/index.json` |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m4-b4-edges/`：`profile-merged-into-about.png` / `profile-login-note-open.png` / `random-events-prereqs.png` / `market-source-declaration.png`（本批改用 Playwright 无头截图：会话内浏览器在 M4-b2 之后失去了可见表面对象，`take_screenshot` 报 `NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`） |
+| 未做（诚实边界） | ① **E11 随机事件注入回显未做**：要在气泡下显示"本轮注入了哪条随机事件"，需要给消息新增一条持久化字段（`promptTrace` 现在只装世界书命中），牵动 `types` + `type-adapters` 两处映射 + 卡片导出契约，不在本批范围内；② E15 的浏览器实测只到"跳过去带 `?story=`"这一侧，聊天侧的故事时间芯片因沙箱内**没有任何故事数据**（`stories` 表 0 条、4 个角色均无 `storyId`）无法用真数据走通，改由 `tests/views/chat-story-jump.test.ts` 用注入的 `storyId` 覆盖；③ `/profile` 的重定向不留 `?from=` 透传，从旧链接进来时"返回来源页"不出现（没有来源可回） |

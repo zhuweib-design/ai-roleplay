@@ -71,7 +71,6 @@ const en: Record<MessageKey, string> = {
   'nav.market': 'Market',
   'nav.archives': 'Records',
   'nav.settings': 'Settings',
-  'nav.profile': 'Profile',
   // N 层导航分组与一句话职责（单一事实源 src/core/nav-model.ts）
   'nav.groupConversation': 'Sessions',
   'nav.groupCreation': 'Create',
@@ -122,6 +121,11 @@ const en: Record<MessageKey, string> = {
   'prereq.actionUpload': 'Upload',
   'prereq.actionBindWorldbook': 'Bind lorebook',
   'prereq.actionOpenVector': 'Enable',
+  'prereq.randomEventsMaster': 'The random-events master switch is on (off by default)',
+  'prereq.randomEventsSceneName': 'A scene name matches the current character name exactly (rename the scene after renaming the character, or events stop firing)',
+  'prereq.randomEventsSceneEnabled': 'At least one scene is enabled',
+  'prereq.actionTurnOn': 'Turn it on',
+  'prereq.actionSeeCharacters': 'See characters',
   'wb.boundCharsGo': 'Open the editor for character “{name}”',
   'wb.boundCharsGoList': 'Bind from the character list',
   'group.capabilityNote': 'Group chats do not load lorebooks or document retrieval, and character-level model parameters do not apply. This is the current design, not a misconfiguration.',
@@ -313,7 +317,6 @@ const en: Record<MessageKey, string> = {
   'router.imageGen': 'Image Generation',
   'router.characterVersion': 'Character Card Versions',
   'router.market': 'Community Market',
-  'router.profile': 'Profile',
   'router.more': 'More',
 
   // ── Toast ──
@@ -411,7 +414,7 @@ const en: Record<MessageKey, string> = {
   'chat.cacheHitTitle': 'Prefix cache: {hit} tok hit / {miss} tok miss ({reported} reports)',
   'chat.prefixStable': 'prefix stable {percent}%',
   'chat.prefixStableTitle': 'Local check: character prefix stable {stable}/{total} turns (prerequisite for cache hits; provider did not return cache fields, stable rate is used as reference). TTFT: last {last}ms / avg {avg}ms',
-  'chat.storyTimeTitle': 'Current story time (/time advance to progress / /time set N to set)',
+  'chat.storyTimeTitle': 'Current story time (/time advance to progress / /time set N to set). Click to open this story.',
   'chat.inputLabel': 'Type a message',
   'chat.inputPlaceholder': 'Type a message… (Shift+Enter for newline)',
   'chat.inputHint': 'Press Enter to send, Shift+Enter for a new line',
@@ -641,9 +644,6 @@ const en: Record<MessageKey, string> = {
   'filterTabs.count': '{count} items',
 
   // ── Profile page (ProfileView) + Persona store ──
-  'profile.aria': 'Profile',
-  'profile.title': 'Profile',
-  'profile.subtitle': 'Manage your account and sign-in status',
   'profile.accountTitle': 'Account',
   'profile.worldProfileHint': 'Set your nickname, description, and role details in each world book.',
   'profile.localUser': 'Local user',
@@ -651,8 +651,6 @@ const en: Record<MessageKey, string> = {
   'profile.login': 'Sign in',
   'profile.loginUnavailable': 'Remote sign-in is not configured yet. You can continue using the local account.',
   'profile.closeLogin': 'Close',
-  'profile.back': 'Back',
-  'profile.backAria': 'Go back to previous page',
   'profile.active': 'Active',
   'persona.nameRequired': 'Persona name cannot be empty',
   'persona.nameTooLong': 'Persona name cannot exceed {max} characters',
@@ -1253,6 +1251,7 @@ const en: Record<MessageKey, string> = {
   'market.title': 'Community Market',
   'market.betaTitle': 'Local simulation: no real transactions, no backend, demo flow only',
   'market.beta': 'Beta',
+  'market.sourceNote': 'The index URL is injected at build time via VITE_MARKET_INDEX_URL and cannot be changed at runtime. Currently:',
   'market.logout': 'Log out',
   'market.login': 'Log in',
   'market.tabsAria': 'Community market navigation',

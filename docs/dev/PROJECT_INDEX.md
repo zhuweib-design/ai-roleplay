@@ -330,7 +330,6 @@ ai-roleplay/
 | `src/views/GroupChatView.vue` | vue | 程序 | 页面：群聊 | 已跟踪 |  |
 | `src/views/ImageGeneratorView.vue` | vue | 程序 | 页面：图像生成 | 已跟踪 |  |
 | `src/views/LocalModelView.vue` | vue | 程序 | 页面：本地模型管理 | 已跟踪 |  |
-| `src/views/ProfileView.vue` | vue | 程序 | 页面：用户档案 | 已跟踪 |  |
 | `src/views/RandomEventsView.vue` | vue | 程序 | 页面：随机事件 | 已跟踪 |  |
 | `src/views/SettingsView.vue` | vue | 程序 | 页面：设置中心（含数据管理与安全） | 已跟踪 |  |
 | `src/views/StoryEngineView.vue` | vue | 程序 | 页面：剧情引擎 | 已跟踪 |  |

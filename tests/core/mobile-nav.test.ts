@@ -12,7 +12,10 @@ describe('isDetailRoute 二级页移动端隐藏底部导航', () => {
     expect(isDetailRoute('character-edit')).toBe(true);
     expect(isDetailRoute('character-new')).toBe(true);
     expect(isDetailRoute('local-model')).toBe(true);
-    expect(isDetailRoute('profile')).toBe(true);
+  });
+
+  it('profile 已不是路由：/profile 重定向到「设置 → 关于」（D-B 后半）', () => {
+    expect(isDetailRoute('profile')).toBe(false);
   });
 
   it('group 不再是沉浸页：吞掉底栏会让 /group 成为单向门（N 层 §3.2.4）', () => {

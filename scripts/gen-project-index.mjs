@@ -267,7 +267,6 @@ const CURATED = {
   'src/views/ImageGeneratorView.vue': '页面：图像生成',
   'src/views/LocalModelView.vue': '页面：本地模型管理',
   'src/views/SettingsView.vue': '页面：设置中心（含数据管理与安全）',
-  'src/views/ProfileView.vue': '页面：用户档案',
 
   'src/components/chat/ChatMain.vue': '组件：对话主区域',
   'src/components/chat/RuntimeStatePanel.vue': '组件：Runtime 最小状态查看与回放自检（单聊与群聊共用）',

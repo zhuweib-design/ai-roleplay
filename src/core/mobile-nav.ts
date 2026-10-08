@@ -14,6 +14,9 @@
  *
  * `group` 不在其中：群聊与单聊是同一任务的两条通道，进 /group 就吞掉底栏会形成
  * 单向门（只能靠返回键离开）。见设计文档 §3.2.4。
+ *
+ * `profile` 也不在其中：/profile 已改为重定向到「设置 → 关于」（D-B 后半），
+ * 不再是一条有名字的沉浸页路由。
  */
 const DETAIL_ROUTES = new Set<string>([
   'character-edit',
@@ -25,7 +28,6 @@ const DETAIL_ROUTES = new Set<string>([
   'local-model',
   'image-gen',
   'character-version',
-  'profile',
 ]);
 
 /** 是否为二级详细页（移动端应隐藏底部导航） */

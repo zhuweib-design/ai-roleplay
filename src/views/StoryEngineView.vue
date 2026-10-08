@@ -19,8 +19,8 @@
  * - Toast role=alert 反馈
  * - 进度条 role="progressbar"
  */
-import { ref, computed, useTemplateRef } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, useTemplateRef, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useStoryStore } from '@/stores/story';
 import { useSettingsStore } from '@/stores/settings';
 import { useLorebookStore } from '@/stores/lorebook';
@@ -57,10 +57,26 @@ import {
 import { t } from '@/i18n';
 
 const router = useRouter();
+const route = useRoute();
 const store = useStoryStore();
 const settingsStore = useSettingsStore();
 const lorebookStore = useLorebookStore();
 const characterStore = useCharacterStore();
+
+/**
+ * E15：聊天页的故事时间现在可点进来，带 `?story=<id>` 时直接选中那一条。
+ * 只认 stories 里真实存在的 id——手打的、或故事已删除留下的过期链接，
+ * 都不该把界面停在一个空选中态上。
+ */
+function applyStoryQuery(): void {
+  const raw = route.query.story;
+  const id = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof id === 'string' && store.stories.some((s) => s.id === id)) {
+    store.selectStory(id);
+  }
+}
+applyStoryQuery();
+watch(() => route.query.story, applyStoryQuery);
 
 // ── T-08: 一键生成设定（世界书 + 主角角色卡）──
 const quickGenTemplate = ref<CharacterTemplateId>('fantasy');

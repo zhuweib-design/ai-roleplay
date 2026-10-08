@@ -8,9 +8,10 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useReadinessChips, useDataBankPrereqs, modelReadiness } from '@core/readiness';
+import { useReadinessChips, useDataBankPrereqs, useRandomEventPrereqs, modelReadiness } from '@core/readiness';
 import { setVectorRagEnabled } from '@core/dual-channel-runtime';
 import { useCharacterStore } from '@/stores/character';
+import { useRandomEventsStore } from '@/stores/random-events';
 import { useSettingsStore } from '@/stores/settings';
 import { useLorebookStore } from '@/stores/lorebook';
 import { useDataBankStore } from '@/stores/data-bank';
@@ -159,5 +160,69 @@ describe('useDataBankPrereqs', () => {
     characterStore.characters.splice(0, characterStore.characters.length);
     expect(() => useDataBankPrereqs().value).not.toThrow();
     expect(useReadinessChips().value).toHaveLength(5);
+  });
+});
+
+/**
+ * E10：随机事件与角色之间是**字符串耦合**——`chat-generation.ts:1306` 拿 `character.name`
+ * 当场景名去查配置。角色改名后事件静默停摆，而界面上没有任何一处说明这件事。
+ * 这里验的是判定本身：一致才算满足，不一致要能把人跳到那个角色身上。
+ */
+describe('useRandomEventPrereqs', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  function row(id: string) {
+    return useRandomEventPrereqs().value.find((r) => r.id === id);
+  }
+
+  it('三行前提，顺序为总开关 / 场景名一致 / 已启用场景', () => {
+    expect(useRandomEventPrereqs().value.map((r) => r.id)).toEqual([
+      'generator-enabled',
+      'scene-name-matches-character',
+      'scene-enabled',
+    ]);
+  });
+
+  it('没有当前角色时，场景名一行未满足且跳到角色列表', () => {
+    const characterStore = useCharacterStore();
+    characterStore.characters.splice(0, characterStore.characters.length);
+    const r = row('scene-name-matches-character');
+    expect(r?.done).toBe(false);
+    expect(r?.jump?.name).toBe('character-list');
+  });
+
+  it('场景名等于当前角色名 → 该行满足；角色改名后立刻不满足并跳回该角色', () => {
+    const characterStore = useCharacterStore();
+    characterStore.characters.push({ id: 'c1', name: '塞拉菲娜' } as never);
+    characterStore.currentCharacterId = 'c1';
+    const events = useRandomEventsStore();
+    events.getOrCreateSceneConfig('塞拉菲娜');
+
+    expect(row('scene-name-matches-character')?.done).toBe(true);
+
+    // 改名即断链——这正是这条边此前完全不可见的原因
+    // 走 store 的改名入口（characters 里还有 mock 数据，按下标改会改到别人身上）
+    characterStore.updateCharacter('c1', { name: '塞拉' });
+    const r = row('scene-name-matches-character');
+    expect(r?.done).toBe(false);
+    expect(r?.jump).toEqual({ name: 'character-edit', params: { id: 'c1' } });
+  });
+
+  it('总开关与已启用场景各自独立判定', () => {
+    const events = useRandomEventsStore();
+    expect(row('generator-enabled')?.done).toBe(false);
+    expect(row('scene-enabled')?.done).toBe(false);
+
+    events.toggleGenerator(true);
+    events.getOrCreateSceneConfig('广场');
+    events.toggleScene('广场', false);
+    expect(row('generator-enabled')?.done).toBe(true);
+    // 场景存在但被停用，仍算未满足
+    expect(row('scene-enabled')?.done).toBe(false);
+
+    events.toggleScene('广场', true);
+    expect(row('scene-enabled')?.done).toBe(true);
   });
 });

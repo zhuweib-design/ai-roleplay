@@ -195,6 +195,15 @@
 - 全量：单测 **3780 passed / 3 skipped**（175 文件），E2E msedge **60 passed**、webkit **16 passed**、mobile 两 project **14 passed**；build 与 9 项静态门禁退出码均 0。默认并行度下 msedge 全量每轮失败集合都不同（`contrast-axe` / `worldbook-flow` / `group-chat-flow` 轮流 30s 超时），与 `REAL_DEVICE_TEST_2026-10-03.md` 登记的 **O-4** 同型，按该条处置以 `--workers=2` 复跑取全绿。
 - 未做（诚实边界）：折叠状态不落盘（整页刷新后高级段回到收起）；角色编辑器"属性"段那套自写折叠尚未并入 `Collapse`；§3.6.4 的四个巨型视图分区留给 M4-b3。
 
+### 新增（UX/IA M4-b4：三条未覆盖边补完 + `/profile` 并入设置→关于）
+- **E10**：`/random-events` 页头下挂 `PrereqNotice` 三行前提（总开关 / 场景名与当前角色名一致 / 至少一个已启用场景）。这条边此前是纯字符串耦合——`chat-generation.ts:1306` 拿 `character.name` 当场景名去查配置，角色改名后事件静默停摆而界面无一处说明；判定集中在新函数 `useRandomEventPrereqs()`（`core/readiness.ts`），不一致时一跳该角色的编辑页并带回程。
+- **E15**：聊天顶栏的故事时间由只读文本改为按钮，一跳 `/story?story=<id>`；故事引擎只在 id 真实存在时才 `selectStory`，手打链接与已删除的故事都不会把界面停在空选中态。回程由 App 的全局"返回来源页"承接。
+- **E21**：市场页头新增一行可见文字，说明索引地址只在构建期由 `VITE_MARKET_INDEX_URL` 提供、运行期不可配置，**并连同当前指向一起显示**（读的是 store 用的同一个 `MARKET_INDEX_URL` 常量，声明与证据同行、可核对）。
+- **D-B 后半**：`ProfileView.vue`（92 行，整页只有一块"本地用户 + 扮演身份在世界书"）并入「设置 → 关于」，`/profile` 改为重定向到 `/settings?cat=about`；旧链接、`scripts/ui-shot.mjs` 与 `e2e/contrast-axe.spec.ts` 的审计路由继续可用（后者因此多扫一次 `/settings`，即 D-N 预先接受的代价）。`mobile-nav.ts` 的 `DETAIL_ROUTES` 去掉 `profile`，对应断言翻转；死键清理 `nav.profile`、`router.profile` 与 5 个只服务旧页头的 `profile.*`，页面正文用到的 8 个键保留。
+- 新增测试 11 例：`tests/views/chat-story-jump.test.ts`（4）、`tests/views/story-engine-quicksetup.test.ts` 的 `?story=` 深链组（3）、`tests/core/readiness.test.ts` 的 `useRandomEventPrereqs`（4，含"改名即断链并跳回该角色"）。双语各 +6 键（`market.sourceNote`、`prereq.randomEvents*` × 3、`prereq.actionTurnOn`、`prereq.actionSeeCharacters`）、−7 死键。
+- 全量：单测 **3792 passed / 3 skipped**（176 文件），E2E msedge **60**、webkit **16**、mobile **14** passed，build 与 9 项静态门禁退出码 0。浏览器实测三条边各自走通（含 `/profile` 重定向后「关于」为激活分类）。
+- 未做（诚实边界）：**E11 随机事件注入回显**仍开放——它需要给消息新增一条持久化字段（`promptTrace` 目前只装世界书命中），牵动 `types` 与 `type-adapters` 两处映射及角色卡导出契约；聊天侧的故事时间芯片因沙箱无任何故事数据（`stories` 0 条、4 个角色均无 `storyId`）无法用真数据走通，改由组件测试覆盖。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

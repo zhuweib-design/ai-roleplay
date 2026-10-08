@@ -15,6 +15,7 @@ import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';
 import { useDataBankStore } from '@/stores/data-bank';
 import { useChatStore } from '@/stores/chat';
+import { useRandomEventsStore } from '@/stores/random-events';
 import { collectLorebooksForCharacter } from '@/stores/chat-context';
 import { vectorRagEnabled } from '@/core/dual-channel-runtime';
 import type { MessageKey } from '@/i18n';
@@ -182,6 +183,46 @@ export function useDataBankPrereqs(): ComputedRef<PrereqRow[]> {
         done: vectorRagEnabled.value,
         jump: { name: 'settings', query: { cat: 'retrieval' } },
         actionKey: 'prereq.actionOpenVector',
+      },
+    ];
+  });
+}
+
+/**
+ * 随机事件的前置条件横幅（E10）。
+ *
+ * 这条边此前是纯字符串耦合：`chat-generation.ts:1306` 用 `character.name` 当场景名去
+ * `stores/random-events.ts` 里查配置，界面上没有任何一处说明"场景名必须等于角色名"，
+ * 于是角色改名 = 事件静默停摆。这里把耦合摊开成可核对的三条，并在角色对不上时给一跳。
+ */
+export function useRandomEventPrereqs(): ComputedRef<PrereqRow[]> {
+  const events = useRandomEventsStore();
+  const characterStore = useCharacterStore();
+
+  return computed(() => {
+    const char = characterStore.currentCharacter;
+    const scenes = events.sceneConfigList;
+    return [
+      {
+        id: 'generator-enabled',
+        textKey: 'prereq.randomEventsMaster',
+        done: events.generatorConfig.enabled,
+        jump: null,
+        actionKey: 'prereq.actionTurnOn',
+      },
+      {
+        id: 'scene-name-matches-character',
+        textKey: 'prereq.randomEventsSceneName',
+        done: !!char && scenes.some((s) => s.sceneName === char.name),
+        jump: char ? { name: 'character-edit', params: { id: char.id } } : { name: 'character-list' },
+        actionKey: 'prereq.actionSeeCharacters',
+      },
+      {
+        id: 'scene-enabled',
+        textKey: 'prereq.randomEventsSceneEnabled',
+        done: scenes.some((s) => s.enabled),
+        jump: null,
+        actionKey: 'prereq.actionTurnOn',
       },
     ];
   });

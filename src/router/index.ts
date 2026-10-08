@@ -100,10 +100,10 @@ const router = createRouter({
       meta: { titleKey: 'router.market' },
     },
     {
+      // D-B 后半：/profile 上唯一的内容（本地用户 + "扮演身份在世界书"）已并入设置→关于。
+      // 旧链接、脚本与收藏夹继续可用，只是落到那一类；页面级 profile.* 文案键保留。
       path: '/profile',
-      name: 'profile',
-      component: () => import('@/views/ProfileView.vue'),
-      meta: { titleKey: 'router.profile' },
+      redirect: { path: '/settings', query: { cat: 'about' } },
     },
     {
       // G-11：移动端"更多"聚合页（数据银行/记录/故事引擎等二级入口的统一跳转页）

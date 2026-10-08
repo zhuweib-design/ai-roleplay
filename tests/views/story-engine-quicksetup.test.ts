@@ -19,6 +19,7 @@ const mocks = {
   constructSourceContext: vi.fn(),
   generateRandomWorldbook: vi.fn(),
   generateRandomCharacter: vi.fn(),
+  selectStory: vi.fn(),
   activeApiProfileId: null as string | null,
   stories: [] as unknown[],
 };
@@ -35,6 +36,7 @@ vi.mock('@/stores/story', () => ({
     filterStatus: 'all',
     searchQuery: '',
     analyzeStoryWithText: vi.fn(),
+    selectStory: mocks.selectStory,
     cancelAnalysis: vi.fn(),
     clearProtagonist: vi.fn(),
     createStoryFromFile: vi.fn(),
@@ -90,15 +92,18 @@ function makeCompletedStory(id: string) {
   };
 }
 
-async function mountView(pinia: Pinia) {
+async function mountView(pinia: Pinia, query = '') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', component: { template: '<div />' } },
+      { path: '/story', name: 'story', component: { template: '<div />' } },
       { path: '/worldbook', name: 'worldbook', component: { template: '<div />' } },
       { path: '/character-list', name: 'character-list', component: { template: '<div />' } },
     ],
   });
+  // 组件在 setup 里读 route.query.story，所以要先落到带 query 的路由再挂载
+  await router.push(`/story${query}`);
   const wrapper = mount(StoryEngineView, {
     global: {
       plugins: [pinia, router],
@@ -170,5 +175,33 @@ describe('StoryEngineView 一键生成 (T-08)', () => {
     expect(result.text()).toContain('世界书生成失败');
     // 主角仍成功
     expect(result.text()).toContain('主角已生成');
+  });
+});
+
+/**
+ * E15：聊天页的故事时间可一跳回到故事本体，落地靠 `?story=<id>`。
+ * 这里守的是"只认存在的 id"——手打的或故事已删除留下的过期链接，
+ * 不能把界面停在一个空选中态上。
+ */
+describe('StoryEngineView 深链选中 (?story=)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.stories = [makeCompletedStory('s1')];
+    setActivePinia(createPinia());
+  });
+
+  it('带存在的 id 进来：选中那一条', async () => {
+    await mountView(createPinia(), '?story=s1');
+    expect(mocks.selectStory).toHaveBeenCalledWith('s1');
+  });
+
+  it('带不存在的 id 进来：不改选中态', async () => {
+    await mountView(createPinia(), '?story=nope');
+    expect(mocks.selectStory).not.toHaveBeenCalled();
+  });
+
+  it('不带 query 进来：什么都不做', async () => {
+    await mountView(createPinia());
+    expect(mocks.selectStory).not.toHaveBeenCalled();
   });
 });

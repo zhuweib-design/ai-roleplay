@@ -5,6 +5,7 @@ import { useCharacterStore } from '@/stores/character';
 import { useChatStore } from '@/stores/chat';
 import { useSettingsStore } from '@/stores/settings';
 import { useStoryStore } from '@/stores/story';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import { uiMsgsToChatMsgs } from '@/services/type-adapters';
 import { getWorldUserDisplayName } from '@/stores/chat-context';
 import { resolveLatestStatus } from '@core/status-parser';
@@ -432,6 +433,15 @@ const storyTimeText = computed(() => {
   return storyStore.getFormattedStoryTime(storyId);
 });
 
+// E15：故事时间原来只是"显示"，从这里跳不到故事本体。带 ?story= 过去，
+// 故事引擎会据此选中那一条；回程由 App 的全局"返回来源页"承接（from 自动写入）。
+const { pushWithReturn } = useReadinessJump();
+function goToStory(): void {
+  const storyId = char.value.storyId;
+  if (!storyId) return;
+  pushWithReturn({ name: 'story', query: { story: storyId } });
+}
+
 // ── 自动滚动到底部 ──
 watch(
   () => char.value.messages.length,
@@ -772,17 +782,17 @@ function startWithExample(text: string) {
         </span>
       </div>
 
-      <!-- F16.4 故事时间显示（仅当角色关联故事时显示） -->
-      <div
+      <!-- F16.4 故事时间显示（仅当角色关联故事时显示）；E15：整块可点，一跳回到故事本体 -->
+      <button
         v-if="storyTimeText"
+        type="button"
         class="chat-story-time"
         v-tip="t('chat.storyTimeTitle')"
-        role="status"
-        aria-live="polite"
+        @click="goToStory"
       >
-        <Icon name="calendar-check" :size="14" />
+        <Icon name="calendar-check" :size="14" aria-hidden="true" />
         <span>{{ storyTimeText }}</span>
-      </div>
+      </button>
 
       <div class="chat-actions">
         <button
@@ -1430,12 +1440,14 @@ function startWithExample(text: string) {
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
+  border: none;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
   color: var(--accent-blue);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 /* P1-9 窗口化：加载更早消息按钮 */

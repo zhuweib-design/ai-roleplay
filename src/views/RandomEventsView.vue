@@ -22,6 +22,8 @@ import { useRouter } from 'vue-router';
 import { useRandomEventsStore } from '@/stores/random-events';
 import Icon from '@/components/common/Icon.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
+import PrereqNotice from '@/components/common/PrereqNotice.vue';
+import { useRandomEventPrereqs } from '@/core/readiness';
 import Toast from '@/components/common/Toast.vue';
 import TemplateEditorModal from '@/components/random-events/TemplateEditorModal.vue';
 import SceneConfigModal from '@/components/random-events/SceneConfigModal.vue';
@@ -35,6 +37,7 @@ import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useRandomEventsStore();
+const prereqRows = useRandomEventPrereqs();
 
 // ── Tab ──
 type TabKey = 'templates' | 'scenes' | 'generator' | 'results';
@@ -274,6 +277,9 @@ function formatCooldown(ms: number): string {
         </button>
       </div>
     </header>
+
+    <!-- E10：场景名与角色名是字符串耦合，改名即断链——这条前提此前只写在代码注释里 -->
+    <PrereqNotice :rows="prereqRows" />
 
     <nav class="tabs" role="tablist" :aria-label="t('re.tabsAria')">
       <button

@@ -71,7 +71,6 @@ export default {
   'nav.market': '社区市场',
   'nav.archives': '记录',
   'nav.settings': '设置',
-  'nav.profile': '个人中心',
   // N 层导航分组与一句话职责（单一事实源 src/core/nav-model.ts）
   'nav.groupConversation': '会话',
   'nav.groupCreation': '创作',
@@ -122,6 +121,11 @@ export default {
   'prereq.actionUpload': '去上传',
   'prereq.actionBindWorldbook': '去绑定世界书',
   'prereq.actionOpenVector': '去开启',
+  'prereq.randomEventsMaster': '随机事件总开关处于开启状态（默认关闭）',
+  'prereq.randomEventsSceneName': '场景名与当前角色名完全一致（角色改名后要同步改场景名，否则事件不再触发）',
+  'prereq.randomEventsSceneEnabled': '至少有一个已启用的场景',
+  'prereq.actionTurnOn': '去开启',
+  'prereq.actionSeeCharacters': '去看角色',
   'wb.boundCharsGo': '打开角色「{name}」的编辑页',
   'wb.boundCharsGoList': '去角色列表绑定',
   'group.capabilityNote': '群聊不加载世界书与文档检索，角色级模型参数也不生效；这是当前设计，不是配置问题。',
@@ -313,7 +317,6 @@ export default {
   'router.imageGen': '图像生成',
   'router.characterVersion': '角色卡版本管理',
   'router.market': '社区市场',
-  'router.profile': '个人中心',
   'router.more': '更多',
 
   // ── Toast ──
@@ -411,7 +414,7 @@ export default {
   'chat.cacheHitTitle': '前缀缓存:命中 {hit} tok / 未命中 {miss} tok({reported} 次上报)',
   'chat.prefixStable': '前缀稳定 {percent}%',
   'chat.prefixStableTitle': '本地检测:角色前缀稳定 {stable}/{total} 轮(缓存命中的必要条件;供应商未返回缓存字段,以稳定率为参考)。TTFT:最近 {last}ms / 平均 {avg}ms',
-  'chat.storyTimeTitle': '当前故事时间（/time advance 推进 / /time set N 设置）',
+  'chat.storyTimeTitle': '当前故事时间（/time advance 推进 / /time set N 设置）；点此回到故事本体',
   'chat.inputLabel': '输入消息',
   'chat.inputPlaceholder': '输入消息… (Shift+Enter 换行)',
   'chat.inputHint': '按 Enter 发送消息，Shift+Enter 换行',
@@ -640,10 +643,7 @@ export default {
   'filterTabs.all': '全部',
   'filterTabs.count': '共 {count} 项',
 
-  // ── 个人中心（ProfileView） + Persona store ──
-  'profile.aria': '个人中心',
-  'profile.title': '个人中心',
-  'profile.subtitle': '管理真实账户与登录状态',
+  // ── 本地用户（设置在「关于」） + Persona store ──
   'profile.accountTitle': '账户',
   'profile.worldProfileHint': '世界内昵称、描述和角色资料请在对应世界书中设置。',
   'profile.localUser': '本地用户',
@@ -651,8 +651,6 @@ export default {
   'profile.login': '登录',
   'profile.loginUnavailable': '远程登录服务尚未配置，当前可以继续以本地用户使用。',
   'profile.closeLogin': '关闭',
-  'profile.back': '返回',
-  'profile.backAria': '返回上一页',
   'profile.active': '激活',
   'persona.nameRequired': 'Persona 名称不能为空',
   'persona.nameTooLong': 'Persona 名称不能超过 {max} 字符',
@@ -1253,6 +1251,7 @@ export default {
   'market.title': '社区市场',
   'market.betaTitle': '当前为本地模拟版本：无真实交易、无后端，仅演示流程',
   'market.beta': 'Beta',
+  'market.sourceNote': '索引地址只在构建期由环境变量 VITE_MARKET_INDEX_URL 提供，运行期不可配置；当前指向',
   'market.logout': '登出',
   'market.login': '登录',
   'market.tabsAria': '社区市场导航',
