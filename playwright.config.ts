@@ -68,6 +68,9 @@ export default defineConfig({
         '**/worldbook-flow.spec.ts',
         // M2-b3：注入痕迹链路同时含 IndexedDB 造数与 SSE 流式，Safari 内核需另有一次实测
         '**/ux-prompt-trace.spec.ts',
+        // M6-d：E11 与上面同一条链路形状（IndexedDB 造数 + 按请求分流的打桩 + 流式回复），
+        // 且多一处依赖 Safari 的写法：客户端跳转保内存态事件表 + IndexedDB 快照轮询
+        '**/ux-event-trace.spec.ts',
         // M2-b9：滑块渐变/按压着色都靠 color-mix 与新式渐变分段，Safari 内核必须实测一次
         '**/ux-interaction-feedback.spec.ts',
       ],

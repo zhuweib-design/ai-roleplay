@@ -272,6 +272,15 @@
 - 全量：`build`、`lint`(0 error)、`i18n:check:strict`(206 文件)、`check:css-conventions`(5/5)、`a11y:contrast`(121/131) + 自检、`snapshot:migration:check`、`runtime:db:schema:check`、`check:csp`、`check:ort`、`eval:manifest` 退出码均 **0**（manifest 只改 `commit`/`ranAt` 的重写已撤销，未混进提交）；单测 **3832 passed / 3 skipped**（182 文件，较 M6-c 增 1 文件 5 例），E2E msedge **61 passed** 且未改任何选择器。两条"建议下调基线"（`!important` 26 → 24、对比度 131 → 121）本批未动：已核对本批 diff 一行 `!important` 都没删，余量不属于本批就留给做出收敛的那一批下调。
 - 顺带量到一个**不属于本批的排版缺陷**并登记：视口 ≤1024px 时编辑器切单列，`实时预览` 侧栏 `order:-1` 排到表单上方，但其网格行轨只有 34px、盒子自身高 407px，表单压在预览卡上（1000px 实测 preview `[136,76,836,407]` vs fieldset `[136,134,836,725]`，390px 同型）。本批只在真实浏览器复现并记坐标，未修。
 
+### 新增（UX/IA M6-d：E11 的浏览器级 e2e，把"上一轮生成、下一轮注入"走通）
+- `e2e/ux-event-trace.spec.ts`：补上 M6-c 自己登记的那条未做。打桩端点**按请求分流**——请求体含 `buildRandomEventMessages` 的 system 文案"RPG 事件生成器"就回事件 JSON，否则回聊天的 SSE。全程走真实界面：设置页配 mock Profile → IndexedDB 造一本全局世界书 → 随机事件页开生成器并把 `defaultProbability` 拉到 100 → 第一轮生成事件 → 客户端跳到随机事件页看结果卡 → 跳回对话发第二轮 → 断言回显出现、展开列事件名、跳 `/random-events?from=/chat`、IndexedDB 里真的写进 `eventTrace`、刷新后回显仍在。
+- 用例形状由三个事实决定（都写进文件头注释）：事件表不落盘 ⇒ 第一轮之后一律客户端跳转，任何 `page.goto` 都会抹掉事件；生成的事件挂在 `lorebooks[0].id` 上 ⇒ 必须先造一本全局书，否则失败点离原因很远；`templates` 默认为空 ⇒ 决策走"无候选 ⇒ `defaultProbability`"分支，概率拉满才没有 `Math.random()` 的不确定性。
+- 新增 `waitGeneratorConfigPersisted`：`updateGeneratorConfig` 里是 `void persistNow()`，点完保存就整页跳转会读到默认配置，故轮询 IndexedDB 快照 `random-events:store:v1` 直到 `enabled===true && defaultProbability===100` 才放行（M2-b8 那个老坑换了个位置）。
+- 负向对照与断言分离：第一轮气泡 `toHaveCount(0)`（事件当轮提示词组装完才生成）、回显列表**不含事件正文**。故障注入三处、失败签名互不重叠：A 换掉分流标记 → 红在结果卡；B `liveMsg.eventTrace = undefined` → 红在回显可见性而结果卡仍绿；C `EventTraceSummary` 的 `v-if` 改恒真 → 红在第一轮的负向对照。三处撤销后复绿。
+- `playwright.config.ts` 把该 spec 加进 webkit 的 `testMatch`（与 `ux-prompt-trace` 同族链路，Safari 内核需实测一次）。
+- **撞上并登记一个真缺陷（设计文档 §七 #21）**：世界书"事件"面板是**死路**——新建事件后逐字段输入一个都存不进去。`stores/events.ts:updateEvent` 每次都拿合并后的整条事件跑 `validateEvent`，而新事件 `name`/`description`/`keywords` 三样全空，任何单字段更新都被另外两样的"不能为空"顶回（store 层实测：三次更新全 `false`，最终三字段仍为空）。界面上输入框是 `:value` 单向绑定，字看着还在、模型里是空的，同时每敲一个字弹一次红 toast。修法要把"完整性错误"与"取值错误"拆开，牵动 `core/event-types.ts` + `stores/events.ts` + 既有 12 例（其夹具正是"一次 patch 三个字段"才绕开了这个坑），故另起一批，未在本批顺手改。
+- 全量：E2E msedge **62 passed**、webkit **17 passed**、mobile 两 project **14 passed**；`npm run build`（vue-tsc 覆盖 e2e）与 `lint`（0 error）退出码 0。本批未动 `src/` 运行时，其余静态门禁随 M6-b2 同版本跑过。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

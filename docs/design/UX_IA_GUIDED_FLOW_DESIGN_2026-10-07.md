@@ -626,6 +626,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 18 | 设计文档收敛（`mobile-ui-design.md` §13 五/六 tab、`software-design-document.md:35,116,135`、`mobile-pwa-plan.md:48`、`PROJECT_INDEX.md:323-337` 缺 `MoreView`、`PLAN_AUDIT_2026-09-28.md:97` 对 EXP-02 的高估） | 本文档给出目标态，M1–M4 落地后统一回写 | M1 完成即先回写 tab 与 PROJECT_INDEX |
 | 19 | 会话模型改为**按角色记住各自激活会话**（`activeChatId` 由单值变映射），并让"切角色 → 该角色上次那段"直接接回 | D-R 已把"写错会话"这条数据丢失堵住（按 `characterId` 纠偏），但"切回甲时仍显示甲的默认会话而非甲上次打开的那条"这个体验缺口需要动会话模型，与"一次会话只属于一个角色"的索引结构一起改才干净 | 多会话使用率上来，或用户反馈"切回来不是刚才那段" |
 | 20 | ~~设置写入不可等待~~ **根因已在 M2-b8 修掉**（`persistSettings` 改为排队串行）；**剩下的范围**是给 20 余处 `void persistSettings()` 调用点做一遍审计：哪些应当 `await`（如关闭标签前、跳转前），要不要提供 `flushSettings()` | M2-b6 把它记成"激活态可能还没落盘"，M2-b8 查清了真正的机制：**并发写完成顺序会倒置**，先发起的旧快照后落盘把新状态盖掉。单测 `tests/stores/settings-persist-order.test.ts` 用"第一次写慢、后续写快"的假适配器钉死顺序，去掉串行立刻复现（`expected {p2,2} to equal {p1,1}`） | 真人反馈"配好模型刷新又没了"再次出现，或要做"关闭前确保保存"的语义 |
+| 21 | **世界书"事件"面板是一条死路**：新建事件后逐字段输入**一个都存不进去** | M6-d 写 e2e 时撞上的（原打算用这个面板造事件，改用随机事件生成器才走通）。机制：`stores/events.ts:updateEvent` 每次都拿**合并后的整条事件**跑 `validateEvent`，而新建的事件 `name`/`description`/`keywords` 三样全空，于是任何单字段更新都被另外两样的"不能为空"顶回。实测（store 层，逐条打印）：只写名称 → `false`，`lastError="事件描述不能为空；关键词触发条件必须至少包含一个关键词"`，`name` 仍是 `""`；再写描述 → `false`（"事件名称不能为空；关键词…"）；再写关键词 → `false`（"事件名称不能为空；事件描述不能为空"）；最终三个字段全空。界面上更糟：输入框是 `:value` 单向绑定，模型没变就不重渲染，**用户看到的字还在框里，实际一个字没存**；同时每敲一个字弹一次红 toast | 属校验语义设计问题，不是改两行能收口的：得把"完整性错误"（缺字段，应当拦住触发/保存动作）与"取值错误"（长度、概率范围、正则非法，应当拦住写入）拆开，`updateEvent` 只拒后者，`triggerEvent` 与导入路径查前者。牵动 `core/event-types.ts`、`stores/events.ts` 与既有 12 例（`tests/stores/events.test.ts` 的夹具正是"一次 patch 三个字段"才绕开了这个坑），故单列一批。启动信号：任何人再试图手工配一条事件，或要做"事件模板"引导 |
 
 ---
 
@@ -1839,3 +1840,37 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | 两条"建议下调基线"没动 | `check:css-conventions` 提示 `!important` 存量已比基线少 2（建议 26 → 24）、对比度提示扫描 121 < 基线 131。本批 diff 里一行 `!important` 都没删（已核对），这两处成果不属于本批，基线留给真正做出收敛的那一批下调，避免把别人的余量算成自己的 |
 
 **未做（诚实边界）**：① 8 个块仍是手写标签（图片 URL、首字母、温度、最大 Tokens、等级、经验值、属性组、作者深度），卡在 `FormField` 没有标签后缀插槽；② 本视图另有 5 条 `.field-hint`（旧类名，DOM 实测）没进 `aria-describedby` 体系——它们挂在未接原语的块上，接了才会自动带上；③ **顺带量到一个不属于本批的排版缺陷**：视口 ≤1024px 时编辑器切单列，`实时预览` 侧栏 `order:-1` 排到表单上方，但它的网格行轨只有 34px、自身盒子高 407px，于是表单压在预览卡上（1000px 实测 preview `[136,76,836,407]` vs fieldset `[136,134,836,725]`，390px 同型）。这是既有断点行为、与 M6-b2 无关，本批只在真实浏览器里复现并记下坐标，未修；④ 没有为本批加 e2e——这批改的是属性与排版，单测 + 浏览器实测已覆盖到断言层，e2e 只能重复同一件事。
+
+### M6-d E11 的浏览器级 e2e（把"上一轮生成、下一轮注入"这条链路走通）
+
+**补的是 M6-c 自己登记的那条未做**。新增 `e2e/ux-event-trace.spec.ts` 一条用例，打桩端点**按请求分流**：请求体里含 `buildRandomEventMessages` 的 system 文案"RPG 事件生成器"就回 `{choices:[{message:{content:"{name,description}"}}]}`（非流），否则回聊天的 SSE。链路全程走真实界面：设置页配 mock Profile → IndexedDB 造一本全局世界书 → 随机事件页用 `#gen-enabled` / `#gen-prob=100` 开生成器并保存 → 回 `/chat` 发第一轮 → 客户端跳到随机事件页看结果卡 → 跳回对话发第二轮 → 断言回显。
+
+**三个前置事实决定了用例的形状**（都写进了文件头注释，因为它们是"为什么长这样"的唯一答案）：
+1. **事件表不落盘**（`stores/events.ts` 注明仅内存），所以第一轮之后一律用 `.nav-rail` 按钮做客户端跳转，任何 `page.goto` 都会把刚生成的事件抹掉；也正因此，"刷新后回显仍在"只能来自消息自己带的 `eventTrace`——这条断言与"事件调用次数仍为 1"配对，证明回显不是现场重算出来的。
+2. 生成的事件挂在 `lorebooks[0].id` 上（`chat-generation.ts:1410`），角色收集不到世界书时它永远注入不了，所以**必须先造一本全局书**，否则测试会以"没生成"的形式失败在离原因很远的地方。
+3. `templates` 默认为空且全仓没有 e2e 会造模板，决策走"无候选 ⇒ `defaultProbability`"分支（`decideRandomEvent` 第 5 步），把概率拉到 100 才能免掉 `Math.random()` 的不确定性。
+
+**新增一处等待，是因为 M2-b8 的老坑换了个位置**：`updateGeneratorConfig` 里是 `void persistNow()`，点完保存就整页跳转会读到默认配置。用例改为轮询 IndexedDB 快照 `random-events:store:v1`，直到 `enabled===true && defaultProbability===100` 才放行（`waitGeneratorConfigPersisted`）。
+
+**负向对照放在同一轮里**：第一轮的气泡必须 `toHaveCount(0)`（事件当轮提示词组装完才生成，本轮不该有回显），第二轮才有；回显展开后断言列表里**不含事件正文**（`description` 只进提示词，不落回显），与 M6-c 的裁剪口径一致。
+
+**故障注入三处，失败签名互不重叠**：
+
+| 注入 | 期望 | 实测 |
+|---|---|---|
+| A 测试侧：把分流标记换成不存在的字符串（事件生成请求被回成 SSE） | 结果卡不出现 | 红在 `ux-event-trace.spec.ts:232`（`.result-card` 等不到） |
+| B 源码侧：`liveMsg.eventTrace = undefined`（不写回） | 第二轮无回显 | 红在 `:242`（`expect(toggle).toBeVisible()`），而 `:232` 仍绿——生成与回显两条断言可分别归因 |
+| C 源码侧：`EventTraceSummary` 的 `v-if="list.length"` 改成恒真 | 第一轮不该有的回显出现 | 红在 `:227`（`toHaveCount(0)`） |
+
+三处撤销后同一条用例复绿（6.2s）。
+
+**撞上一个真缺陷，登记为 §七 #21**：原打算用世界书"事件"面板手工造一条事件（比 mock 更接近用户路径），实测**一个字段都存不进去**——`updateEvent` 每次都拿合并后的整条事件跑 `validateEvent`，新建事件三个必填全空，任何单字段更新都被另外两个顶回；界面上输入框是 `:value` 单向绑定，字看着还在、模型里是空的，同时每敲一个字弹一次红 toast。改用随机事件生成器才把这条 e2e 走通。缺陷本身按"校验语义要拆完整性错误与取值错误"另起一批，未在本批顺手改（牵动 `core/event-types.ts` + `stores/events.ts` + 既有 12 例，且 `tests/stores/events.test.ts` 的夹具正是"一次 patch 三个字段"才绕开了这个坑）。
+
+**验证证据（M6-d，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run build`（vue-tsc 覆盖 e2e 目录） / `npm run lint` | 退出码 **0**（0 error，6 条既有 warning）；本批只新增 spec 与改 `playwright.config.ts` 的 `testMatch`，未动 `src/` 运行时，其余静态门禁随 M6-b2 同版本跑过 |
+| 新用例单跑 | msedge `--workers=1` **1 passed（6.2s）**、webkit `--workers=1` **1 passed（8.6s）**，注入前后各跑一次，签名可分别归因 |
+| E2E 全量 | msedge（`--workers=2`）**62 passed**（61 + 本条）；webkit **17 passed**（16 + 本条，已把该 spec 加进 webkit 的 `testMatch`，理由与 `ux-prompt-trace` 同族）；mobile 两 project **14 passed**（未纳入本条，桌面专属的 `.nav-rail` 在 393px 视口不存在） |
+| 未做（诚实边界） | ① 这条 e2e 覆盖的是"生成器 → 注入 → 回显 → 跳回 → 持久化"，**没有覆盖世界书事件面板的手工事件路径**（该路径本身是 §七 #21 的死路，修好之后再补一条才对得上）；② 概率判定仍走 `Math.random()`，用例靠把 `defaultProbability` 拉到 100 消除不确定性，若将来默认模板非空，"无候选"前提会失效（已在文件头注释里写明依赖）；③ 分流标记用的是 system 文案里的中文句子，`buildRandomEventMessages` 改词会让用例红在"没生成"上——红是有的，只是归因要多看一眼，故在注释里点明它是核心模块里唯一的一句。 |
