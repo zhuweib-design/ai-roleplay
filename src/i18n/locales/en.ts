@@ -1006,6 +1006,7 @@ const en: Record<MessageKey, string> = {
   'wbEvents.triggerManualDesc': 'Never auto-triggers; only via command',
   'wbEvents.keywordLabel': 'Keywords (comma-separated)',
   'wbEvents.keywordPlaceholder': 'e.g. traveler, visitor, knock',
+  'wbEvents.saveRejected': 'Not saved: {reason}',
   'wbEvents.useRegex': 'Use regex',
   'wbEvents.caseSensitive': 'Case sensitive',
   'wbEvents.dependencyLabel': 'Prerequisite event names (comma-separated)',

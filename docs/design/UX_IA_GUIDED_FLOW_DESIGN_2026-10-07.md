@@ -1942,7 +1942,7 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | `npx vitest run` | **185 files / 3856 passed / 3 skipped**（较 M6-e 的 183 / 3836 增 2 文件 20 例：`worldbook-events-panel-edit` 4、`modal-describes` 2、`event-types` 新增 12、编辑器接线 +1、store 改写 +1） |
 | E2E | msedge（`--workers=2`）**63 passed**（62 + 新那条）、webkit（`--workers=1`）**18 passed**、mobile 两 project **14 passed** |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m6-f-primitives/`：`editor-model-fields.png`（模型设置段，温度徽章在粗标签里、最大 Tokens 与等级/经验值同刻度）、`group-add-member-dialog.png`（添加成员弹窗，说明句已挂 `aria-describedby`；顺带拍到 M6-e 的"成员 Runtime 检视 [高级]"收起态） |
-| 未做（诚实边界） | ① **`:value` 单向绑定的老毛病仍在取值错误路径上**：粘贴一段超 2000 字的描述会被拒，但输入框里的字不会回退，用户看到的是"红 toast + 字还在"，store 里其实是旧值——彻底修要么改双向绑定 + 校验回滚，要么给这类字段加"当前值 vs 已存值"的可见差异，本批没做；② 世界书事件面板**没有**接 `FormField`（它的字段是 `form-label` + `:value` 手写体系，本批只修语义不动排版，避免一次改两件事）；③ 事件模板（`/random-events` 的 templates 页签）仍无浏览器级用例，本批的 e2e 走的是"无模板 ⇒ defaultProbability"分支。
+| 未做（诚实边界） | ① **`:value` 单向绑定在取值错误路径上的表现，本批写错了，M7-b 在真实浏览器里量过才纠正**：原记"粘贴超 2000 字的描述会被拒但输入框不回退（字还在）"。事实是名称与描述都有 `maxlength`、概率是带 `min/max` 的 `range`，那三条**根本走不到被拒**；唯一能拒的是"使用正则 + 非法表达式"，而那时的真实现象是**用户刚打的字符被直接吞掉**（打 `(` 之后输入框是空的），不是"字还在"。按纠正后的现象修，见 M7-b；② 世界书事件面板**没有**接 `FormField`（它的字段是 `form-label` + `:value` 手写体系，本批只修语义不动排版，避免一次改两件事）；③ 事件模板（`/random-events` 的 templates 页签）仍无浏览器级用例，本批的 e2e 走的是"无模板 ⇒ defaultProbability"分支。
 
 ### M7-a 最后两个巨型视图分区（世界书页的一次性配置段 + 故事卡展开态布局）
 
@@ -1973,4 +1973,29 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | 新增断言 | `tests/views/two-views-partition.test.ts` 4 例：已配 → 两段 `aria-expanded=false` 且范围标签在按钮里；未配 → 两段自动展开且"添加"入口直接可见；点段标题能收回；点卡头 → `.story-card` 带 `is-expanded`（两列 CSS 挂在这个类上）。`tests/components/collapse.test.ts` 加 title-extra 一例（钉"标签在 button 内、不在面板内"） |
 | 故障注入 | 两轮，签名不重叠：`:default-open` 恒 `true` → 只红"已配 → 收起"那条；恒 `false` → 红"未配 → 自动展开"与"点标题可收回"两条而"已配 → 收起"仍绿；删 `is-expanded` 绑定 → 只红故事卡那条。撤销后 4 例复绿 |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m7-a-two-views/`：`before-worldbook.png` / `worldbook-collapsed.png` / `worldbook-auto-open.png` / `before-story.png` / `story-two-column.png` |
-| 未做（诚实边界） | ① 故事卡的**状态色作用范围过宽**（`.story-card.status-completed` 把标题与人名一起染绿），要改得单独定配色口径，本批只在截图里留下证据；② 世界书页剩下的两块（`已绑定角色` 141px、`事件` 263px）**保持常驻**——前者是关联入口、后者是 M6-f 刚修好的功能，收起来等于把刚能用的东西藏了；③ 两列排布只在 ≥1025px 生效，平板档（641–1024）仍是单列长条，未做中间档。 | | | |
+| 未做（诚实边界） | ① 故事卡的**状态色作用范围过宽**（`.story-card.status-completed` 把标题与人名一起染绿），要改得单独定配色口径，本批只在截图里留下证据；② 世界书页剩下的两块（`已绑定角色` 141px、`事件` 263px）**保持常驻**——前者是关联入口、后者是 M6-f 刚修好的功能，收起来等于把刚能用的东西藏了；③ 两列排布只在 ≥1025px 生效，平板档（641–1024）仍是单列长条，未做中间档。
+
+### M7-b 事件面板"写入被拒"的可见反馈（顺带纠正 M6-f 自己写错的一句现象描述）
+
+**先纠错**：M6-f 的未做 ① 写的是"`:value` 单向绑定在取值错误路径上会'字看着还在、store 是旧值'"。这句是**读代码推出来的，没量**。M7-b 写用例时先在真实浏览器里跑了一遍，结果是相反的：打一个非法正则的 `(`，**输入框直接变空**——字符被吞了（Vue 的 `patchDOMProp` 对 `value` 会拿 DOM 现值比较并写回，所以一次因其他属性触发的重渲染就把用户输入抹掉）。两处记录（设计文档与 CHANGELOG）都已就地改正并注明是被谁、怎么量翻的。
+
+**再核对哪些字段真能走到"被拒"**：名称 `maxlength=50`、描述 `maxlength=2000`、概率是带 `min/max` 的 `range` —— 三条都到不了 `validateEventValues` 的拒绝分支。**唯一可达的是"使用正则 + 非法表达式"**。所以没有给所有字段铺草稿，只给关键词那一格做，其余继续直接绑 store。
+
+**改法（三层，缺一层就还是骗人）**：
+1. **草稿**：关键词输入框显示 `keywordText()`（草稿优先，否则回落到 store 已存值），写入成功才清草稿。用户打的字留在框里。
+2. **标注**：被拒的字段挂 `.reject-note`（`role="status"`，"这个值没有保存：无效的正则表达式：("）+ `aria-invalid` + `.is-rejected` 红框。toast 只闪一次，这条是一直挂着的；改对之后自己消失。
+3. **勾"使用正则/大小写敏感"时按框里现在那串写回**，而不是按 store 里的旧数组——否则一次勾选会把草稿抹掉，等于换个地方吞字。
+
+**一个特异性坑**：`.is-rejected { border-color: var(--destructive) }` 单写一条**看不见红**，因为 `src/styles/base.css:129` 的 `input[type="text"]:focus` 特异性更高，而用户正在输入时字段恰恰是聚焦的。实测：加 `:focus`/`:focus-visible` 两条之前，聚焦态 `borderTopColor = rgb(37,244,238)`（主色青），之后 = `rgb(234,79,83)`（destructive 红），失焦态两次都是红。规则旁注了原因。
+
+**验证证据（M7-b，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run build` / `lint`(0 error) / `i18n:check:strict`(206 文件，新增 1 键双语) / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**，未新增扫描对) | 退出码均 **0** |
+| `npx vitest run` | **186 files / 3864 passed / 3 skipped**（较 M7-a 的 3861 增 3 例） |
+| E2E | msedge **63 passed**、webkit **18 passed**、mobile 两 project **14 passed** |
+| 浏览器实测（Edge 无头，逐字段真键盘输入） | 打 `(` → `domValue="("`、`aria-invalid=true`、`is-rejected` 在、说明行文案与 i18n 键一致；`fill('桥\|河滩')` 改对 → 说明行消失、红类去掉；聚焦态与非聚焦态边框色都量过（见上） |
+| 故障注入 | 三处、签名不重叠：输入框改回直绑 store → 红"字留在框里"；写入成功不清标注 → 红"改对后消失"与"勾掉正则按草稿写回"；两处合跑 3 红 4 绿，撤销后 7 例复绿 |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m7-b-reject-feedback/rejected-keyword.png` |
+| 未做（诚实边界） | ① 草稿只做了关键词一格，是按"哪条真能走到被拒"选的，不是通用机制——若以后给描述去掉 `maxlength` 或加新的取值校验，得把同一套搬到那些字段上（`patchEvent` 已经支持传 `fieldKey`/`onCommitted`，成本是一个 ref 加一处 `:value`）；② 名称/描述/概率三格的 `:value` 直绑仍在，只是当前不可达被拒路径；③ 没做"存不进去时禁止离开该字段"这类强拦截——那会把一个可选的正则调试变成填表考试。 | | | | |

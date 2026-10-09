@@ -1006,6 +1006,7 @@ export default {
   'wbEvents.triggerManualDesc': '不自动触发，仅通过命令',
   'wbEvents.keywordLabel': '关键词（逗号分隔）',
   'wbEvents.keywordPlaceholder': '如：旅人, 访客, 叩门',
+  'wbEvents.saveRejected': '这个值没有保存：{reason}',
   'wbEvents.useRegex': '使用正则',
   'wbEvents.caseSensitive': '大小写敏感',
   'wbEvents.dependencyLabel': '前置事件名称（逗号分隔）',

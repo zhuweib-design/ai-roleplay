@@ -76,6 +76,24 @@ const eventStateOptions: { value: EventState; label: string; color: string }[] =
 
 const selectedEventId = ref<string | null>(null);
 
+/**
+ * 写入被拒的字段 → 原因。store 没收下这个值时，面板必须说出来：
+ * toast 只闪一次，这条标注是一直挂着的（配合红框与 aria-invalid）。
+ *
+ * 这两个 ref 必须声明在下面的 `watch(..., { immediate: true })` 之前——
+ * immediate 回调在 setup 阶段就会跑一次，碰到后面的 `const` 会直接踩空引用。
+ */
+const rejectedFields = ref<Record<string, string>>({});
+/**
+ * 关键词输入框的本地草稿。
+ *
+ * 名称与描述有 `maxlength` 兜着、概率是 range，三者都到不了"被 store 拒绝"；
+ * 唯一能拒的是"使用正则 + 非法表达式"。而 `:value` 单向绑定在写入被拒时会把用户
+ * 刚打的字**直接吞掉**（真实浏览器实测：打 `(` 之后框里是空的），所以这一格以草稿
+ * 为准显示，草稿只在写入成功时清掉。
+ */
+const keywordDraft = ref<string | null>(null);
+
 const selectedEvent = computed<StoryEvent | null>(() => {
   if (!selectedEventId.value) return null;
   return eventsStore.getEvent(selectedEventId.value) ?? null;
@@ -94,6 +112,7 @@ watch(
   (id) => {
     eventsStore.setCurrentLorebook(id ?? null);
     selectedEventId.value = null;
+    clearFieldState();
   },
   { immediate: true }
 );
@@ -138,6 +157,7 @@ function keywordsToString(keywords: string[] | undefined): string {
 
 function createNewGlobalEvent() {
   if (!currentLorebook.value) return;
+  clearFieldState();
   const id = eventsStore.createEvent(currentLorebook.value.id, null, null);
   if (id) {
     selectedEventId.value = id;
@@ -146,6 +166,7 @@ function createNewGlobalEvent() {
 
 function createNewEventForScene(sceneEntryId: string) {
   if (!currentLorebook.value) return;
+  clearFieldState();
   const sceneName = getSceneName(sceneEntryId);
   const id = eventsStore.createEvent(currentLorebook.value.id, sceneEntryId, sceneName);
   if (id) {
@@ -154,6 +175,7 @@ function createNewEventForScene(sceneEntryId: string) {
 }
 
 function selectEvent(id: string) {
+  clearFieldState();
   selectedEventId.value = id;
 }
 
@@ -161,6 +183,24 @@ function deleteSelectedEvent() {
   if (!selectedEventId.value) return;
   eventsStore.deleteEvent(selectedEventId.value);
   selectedEventId.value = null;
+  clearFieldState();
+}
+
+/** 输入框显示什么：草稿优先，否则回落到 store 里已存下的那份 */
+function splitKeywords(raw: string): string[] {
+  return raw.split(',').map((k) => k.trim()).filter((k) => k.length > 0);
+}
+
+function keywordText(): string {
+  if (keywordDraft.value !== null) return keywordDraft.value;
+  const trig = selectedEvent.value?.trigger;
+  return trig?.type === 'keyword' ? keywordsToString(trig.keywords) : '';
+}
+
+/** 换事件 / 换世界书 / 删事件：草稿与"未保存"标注都属于上一条，不能带过去 */
+function clearFieldState(): void {
+  keywordDraft.value = null;
+  rejectedFields.value = {};
 }
 
 /**
@@ -169,18 +209,32 @@ function deleteSelectedEvent() {
  * 面板监听 `lastInfo` 弹成功提示，逐字段输入若各写一次 `lastInfo`，
  * 敲四个字就弹四条"已更新"；而事件名还没填时那句提示会显示成"已更新 "。
  * 编辑本来就不该有反馈，要反馈的是"触发/完成/删除"这类离散动作。
+ *
+ * @param fieldKey 被拒时挂在哪个字段上做可见标注（默认取 patch 的第一个键）
+ * @param onCommitted 写入成功后的收尾（如清掉本地草稿）；被拒时不调用，草稿留着
  */
-function patchEvent(patch: StoryEventPatch): void {
+function patchEvent(
+  patch: StoryEventPatch,
+  fieldKey?: string,
+  onCommitted?: () => void
+): void {
   if (!selectedEvent.value) return;
-  eventsStore.updateEvent(selectedEvent.value.id, patch, { silent: true });
+  const ok = eventsStore.updateEvent(selectedEvent.value.id, patch, { silent: true });
+  const key = fieldKey ?? Object.keys(patch)[0] ?? '';
+  if (ok) {
+    delete rejectedFields.value[key];
+    onCommitted?.();
+  } else {
+    rejectedFields.value[key] = eventsStore.lastError ?? '';
+  }
 }
 
 function onEventNameInput(e: Event) {
-  patchEvent({ name: (e.target as HTMLInputElement).value });
+  patchEvent({ name: (e.target as HTMLInputElement).value }, 'name');
 }
 
 function onEventDescriptionInput(e: Event) {
-  patchEvent({ description: (e.target as HTMLTextAreaElement).value });
+  patchEvent({ description: (e.target as HTMLTextAreaElement).value }, 'description');
 }
 
 function onEventSceneChange(e: Event) {
@@ -188,11 +242,12 @@ function onEventSceneChange(e: Event) {
   const raw = (e.target as HTMLSelectElement).value;
   const sceneEntryId = raw === '' ? null : raw;
   const sceneName = sceneEntryId === null ? null : getSceneName(sceneEntryId);
-  patchEvent({ sceneEntryId, sceneName });
+  patchEvent({ sceneEntryId, sceneName }, 'scene');
 }
 
 function onTriggerTypeChange(e: Event) {
   if (!selectedEvent.value) return;
+  keywordDraft.value = null;
   const type = (e.target as HTMLSelectElement).value as TriggerConditionType;
   let trigger: TriggerCondition;
   if (type === 'keyword') {
@@ -204,27 +259,37 @@ function onTriggerTypeChange(e: Event) {
   } else {
     trigger = { type: 'time', storyTime: '' };
   }
-  patchEvent({ trigger });
+  patchEvent({ trigger }, 'trigger');
 }
 
 function onEventKeywordsInput(e: Event) {
   if (!selectedEvent.value || selectedEvent.value.trigger.type !== 'keyword') return;
   const raw = (e.target as HTMLInputElement).value;
-  const keywords = raw.split(',').map((k) => k.trim()).filter((k) => k.length > 0);
-  patchEvent({ trigger: { ...selectedEvent.value.trigger, keywords } });
+  keywordDraft.value = raw;
+  patchEvent(
+    { trigger: { ...selectedEvent.value.trigger, keywords: splitKeywords(raw) } },
+    'trigger',
+    () => {
+      keywordDraft.value = null;
+    }
+  );
 }
 
 function onEventUseRegexChange(e: Event) {
   if (!selectedEvent.value || selectedEvent.value.trigger.type !== 'keyword') return;
-  patchEvent({
-    trigger: { ...selectedEvent.value.trigger, useRegex: (e.target as HTMLInputElement).checked },
-  });
+  // 勾选作用在"框里现在显示的那串"上，而不是 store 里那份——否则草稿会被这次写回抹掉
+  const keywords = splitKeywords(keywordText());
+  patchEvent(
+    { trigger: { ...selectedEvent.value.trigger, keywords, useRegex: (e.target as HTMLInputElement).checked } },
+    'trigger'
+  );
 }
 
 function onEventCaseSensitiveChange(e: Event) {
   if (!selectedEvent.value || selectedEvent.value.trigger.type !== 'keyword') return;
+  const keywords = splitKeywords(keywordText());
   patchEvent({
-    trigger: { ...selectedEvent.value.trigger, caseSensitive: (e.target as HTMLInputElement).checked },
+    trigger: { ...selectedEvent.value.trigger, keywords, caseSensitive: (e.target as HTMLInputElement).checked },
   });
 }
 
@@ -238,11 +303,11 @@ function onEventRequiredEventsInput(e: Event) {
 function onEventProbabilityInput(e: Event) {
   if (!selectedEvent.value) return;
   const value = parseInt((e.target as HTMLInputElement).value, 10);
-  if (!isNaN(value)) patchEvent({ probability: value });
+  if (!isNaN(value)) patchEvent({ probability: value }, 'probability');
 }
 
 function onEventRepeatableChange(e: Event) {
-  patchEvent({ repeatable: (e.target as HTMLInputElement).checked });
+  patchEvent({ repeatable: (e.target as HTMLInputElement).checked }, 'repeatable');
 }
 
 function onEventManualOnlyChange(e: Event) {
@@ -251,7 +316,7 @@ function onEventManualOnlyChange(e: Event) {
   const completion: CompletionCondition = manualOnly
     ? { manualOnly: true }
     : { manualOnly: false, keywords: [], useRegex: false };
-  patchEvent({ completion });
+  patchEvent({ completion }, 'completion');
 }
 
 function onEventCompletionKeywordsInput(e: Event) {
@@ -263,7 +328,7 @@ function onEventCompletionKeywordsInput(e: Event) {
     keywords,
     useRegex: selectedEvent.value.completion.useRegex ?? false,
   };
-  patchEvent({ completion });
+  patchEvent({ completion }, 'completion');
 }
 
 function triggerSelectedEvent() {
@@ -428,11 +493,16 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                       :id="`evt-name-${selectedEvent.id}`"
                       type="text"
                       class="form-input"
+                      :class="{ 'is-rejected': rejectedFields.name }"
+                      :aria-invalid="Boolean(rejectedFields.name)"
                       :value="selectedEvent.name"
                       @input="onEventNameInput"
                       :placeholder="t('wbEvents.namePlaceholder')"
                       maxlength="50"
                     />
+                    <p v-if="rejectedFields.name" class="reject-note" role="status">
+                      {{ t('wbEvents.saveRejected', { reason: rejectedFields.name }) }}
+                    </p>
                   </div>
 
                   <div class="form-row">
@@ -486,10 +556,16 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                       :id="`evt-kw-${selectedEvent.id}`"
                       type="text"
                       class="form-input"
-                      :value="keywordsToString(selectedEvent.trigger.keywords)"
+                      :class="{ 'is-rejected': rejectedFields.trigger }"
+                      :aria-invalid="Boolean(rejectedFields.trigger)"
+                      :value="keywordText()"
                       @input="onEventKeywordsInput"
                       :placeholder="t('wbEvents.keywordPlaceholder')"
                     />
+                    <!-- 单向绑定下 store 没收下这个值，框里却还写着：必须标出来 -->
+                    <p v-if="rejectedFields.trigger" class="reject-note" role="status">
+                      {{ t('wbEvents.saveRejected', { reason: rejectedFields.trigger }) }}
+                    </p>
                     <div class="checkbox-row">
                       <label>
                         <input
@@ -565,12 +641,17 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                     <textarea
                       :id="`evt-desc-${selectedEvent.id}`"
                       class="form-textarea"
+                      :class="{ 'is-rejected': rejectedFields.description }"
+                      :aria-invalid="Boolean(rejectedFields.description)"
                       :value="selectedEvent.description"
                       @input="onEventDescriptionInput"
                       :placeholder="t('wbEvents.descPlaceholder')"
                       rows="5"
                       maxlength="2000"
                     ></textarea>
+                    <p v-if="rejectedFields.description" class="reject-note" role="status">
+                      {{ t('wbEvents.saveRejected', { reason: rejectedFields.description }) }}
+                    </p>
                   </div>
 
                   <div class="form-row">
@@ -914,6 +995,22 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   align-items: center;
   gap: 6px;
   cursor: pointer;
+}
+
+/* 写入被拒的字段：留在原地、标红、说清原因（不回退用户输入）。
+   带 :focus 是因为 base.css 的 `input[type="text"]:focus` 会把边框染成主色，
+   特异性比单一条 .is-rejected 高——不加这两条，"正在输入时"恰好看不到红色。 */
+.is-rejected,
+.is-rejected:focus,
+.is-rejected:focus-visible {
+  border-color: var(--destructive);
+}
+
+.reject-note {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--destructive);
 }
 
 .state-row {

@@ -120,4 +120,73 @@ describe('世界书事件面板逐字段编辑', () => {
     expect(eventsStore.getEvent(id)!.triggerCount).toBe(1);
     expect(wrapper.find('.event-state-badge').text()).toBe(t('wbEvents.stateActive'));
   });
+
+  it('写入被拒时：值不存、字留在框里、并明确说"这个值没有保存"', async () => {
+    const wrapper = await mountPanelWithLorebook();
+    const eventsStore = useEventsStore();
+    const id = await createEventViaPanel(wrapper);
+    await typeInto(wrapper, `#evt-name-${id}`, '断桥拦路');
+    await typeInto(wrapper, `#evt-desc-${id}`, '商队必经的木桥昨夜断了。');
+
+    // 勾上"使用正则"后，一个非法表达式就会被 store 拒掉
+    const regexBox = wrapper.findAll('.checkbox-row input[type="checkbox"]')[0]!;
+    await regexBox.setValue(true);
+    await typeInto(wrapper, `#evt-kw-${id}`, '(');
+    await wrapper.vm.$nextTick();
+
+    const evt = eventsStore.getEvent(id)!;
+    // ① store 里没收下这个值（仍是空关键词）
+    expect(evt.trigger.type === 'keyword' && evt.trigger.keywords).toEqual([]);
+    // ② 用户打的字留在框里（改前 `:value` 单向绑定会把它直接吞掉——真实浏览器实测
+    //    打 `(` 之后输入框是空的，用户只会以为"我按了键盘没反应"）
+    expect((wrapper.find(`#evt-kw-${id}`).element as HTMLInputElement).value).toBe('(');
+    // ③ 这个差被明确说出来，而不是只靠闪一次的 toast
+    const note = wrapper.find('.reject-note');
+    expect(note.exists()).toBe(true);
+    expect(note.text()).toBe(
+      t('wbEvents.saveRejected', { reason: '无效的正则表达式：(' })
+    );
+    expect(note.attributes('role')).toBe('status');
+    expect(wrapper.find(`#evt-kw-${id}`).attributes('aria-invalid')).toBe('true');
+    expect(wrapper.find(`#evt-kw-${id}`).classes()).toContain('is-rejected');
+  });
+
+  it('勾掉"使用正则"时按框里现在那串写回，草稿不被 store 里的旧值顶掉', async () => {
+    const wrapper = await mountPanelWithLorebook();
+    const eventsStore = useEventsStore();
+    const id = await createEventViaPanel(wrapper);
+    await typeInto(wrapper, `#evt-name-${id}`, '断桥拦路');
+    await typeInto(wrapper, `#evt-desc-${id}`, '商队必经的木桥昨夜断了。');
+
+    // 先进入"被拒"态：勾上正则 + 打一个非法表达式
+    const regexBox = wrapper.findAll('.checkbox-row input[type="checkbox"]')[0]!;
+    await regexBox.setValue(true);
+    await typeInto(wrapper, `#evt-kw-${id}`, '(');
+    expect(wrapper.find('.reject-note').exists()).toBe(true);
+
+    // 再取消勾选：这一下应当按"框里现在显示的 '(' "写回，而不是按 store 里的空数组
+    await regexBox.setValue(false);
+    const trig = eventsStore.getEvent(id)!.trigger;
+    expect(trig.type === 'keyword' && trig.keywords).toEqual(['(']);
+    expect(trig.type === 'keyword' && trig.useRegex).toBe(false);
+    expect(wrapper.find('.reject-note').exists()).toBe(false);
+  });
+
+  it('把值改对之后，"未保存"标注自己消失', async () => {
+    const wrapper = await mountPanelWithLorebook();
+    const eventsStore = useEventsStore();
+    const id = await createEventViaPanel(wrapper);
+    await typeInto(wrapper, `#evt-name-${id}`, '断桥拦路');
+    await typeInto(wrapper, `#evt-desc-${id}`, '商队必经的木桥昨夜断了。');
+    const regexBox = wrapper.findAll('.checkbox-row input[type="checkbox"]')[0]!;
+    await regexBox.setValue(true);
+    await typeInto(wrapper, `#evt-kw-${id}`, '(');
+    expect(wrapper.find('.reject-note').exists()).toBe(true);
+
+    await typeInto(wrapper, `#evt-kw-${id}`, '桥|河滩');
+    const evt = eventsStore.getEvent(id)!;
+    expect(evt.trigger.type === 'keyword' && evt.trigger.keywords).toEqual(['桥|河滩']);
+    expect(wrapper.find('.reject-note').exists()).toBe(false);
+    expect(wrapper.find(`#evt-kw-${id}`).classes()).not.toContain('is-rejected');
+  });
 });

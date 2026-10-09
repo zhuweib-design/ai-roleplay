@@ -295,7 +295,7 @@
 - `updateEvent` 加第三个参数 `{ silent }`，面板 12 处字段写入统一静默：死路修好后若不管，逐字段输入会**每敲一个字弹一条"已更新"**（事件名还空着时显示成"已更新 "）。离散动作（新建/触发/完成/删除）照旧有反馈。
 - 改写 4 条既有用例（钉的正是这个坑，不是放宽）：`updateEvent(name → '')` 从"返回 false"改为"能存进去、但这条事件随即不能激活"；三条 `triggerEvent`/`completeEvent` 原本用裸 `createEvent` 当夹具，改用 `createValidEvent`，让被测的状态前提不被完整性串扰。新增 `tests/core/event-types.test.ts` 12 例（含 50/2000 字与概率 0/100 边界"拆分没挪位"、`validateEvent` 仍是并集）、`tests/components/worldbook-events-panel-edit.test.ts` 4 例（逐字段输入真存得进去、编辑不弹提示、没填全点触发被拒且逐条说缺什么、填全后同一按钮能激活）。
 - 新增 `e2e/ux-event-manual-trace.spec.ts`：在世界书面板逐字段配一条全局关键词事件 → 先发不含关键词的消息（负向对照，本轮无回显）→ 再发含关键词的，**同一轮触发并同一轮注入** → 断言回显、事件名、跳 `/random-events?from=/chat`。与 M6-d 的"生成器 → 下一轮注入"是两条不同路径；已加入 webkit `testMatch`。
-- 未做：`:value` 单向绑定在**取值错误**路径上仍会"字看着还在、store 是旧值"（粘贴超长描述会被拒但输入框不回退），彻底修需要改双向绑定或给出"当前值 vs 已存值"的可见差异；世界书事件面板本批只修语义不动排版，没接 `FormField`。
+- 未做（**其中一句已被 M7-b 在真实浏览器里量证为错**）：原写"`:value` 单向绑定在取值错误路径上仍会字看着还在、store 是旧值（粘贴超长描述会被拒但输入框不回退）"——名称与描述都有 `maxlength`、概率是带 `min/max` 的 range，三条都到不了被拒；唯一能拒的是"使用正则 + 非法表达式"，而真实现象是**刚打的字符被直接吞掉**。按纠正后的现象修，见 M7-b。世界书事件面板本批只修语义不动排版，没接 `FormField`。
 
 ### 新增（UX/IA M6-f：两个原语缺口补完，角色编辑器再转 7 块）
 - `FormField` 加 `label-extra` 插槽（渲染在 `<label>` 内、必填星号之前）。这是"温度 [1.00]"、"作者深度 [4]"这类**标签里嵌实时数值**的字段此前接不进原语的唯一原因。角色编辑器因此再转 7 块：温度、最大 Tokens、作者深度、图片 URL、首字母、等级、经验值。实测：字段说明被 `aria-describedby` 指到 **5/5 → 8/8**、未接原语的 `.field .field-label` **8 → 0**、旧 `.field-hint` 残留 **5 → 2**（那两条是"属性组为空""属性未启用"的块级说明，不属于任何控件）、悬空 label 仍 0。渐变那对"起始色/结束色"没接：两个控件共用一条报错，接成两份会把同一句话重复两遍。
@@ -313,6 +313,15 @@
 - 新增 `tests/views/two-views-partition.test.ts`（4 例）与 `tests/components/collapse.test.ts` 的 title-extra 一例。故障注入三轮、签名不重叠：`:default-open` 恒 true → 只红"已配 → 收起"；恒 false → 红"未配 → 自动展开"与"点标题可收回"而"已配 → 收起"仍绿；删 `is-expanded` 绑定 → 只红故事卡那条。
 - 全量：单测 **186 files / 3861 passed / 3 skipped**，E2E msedge **63**、webkit **18**、mobile **14** passed；`build` / `lint`(0 error) / `check:css-conventions`(5/5，断点守卫确认 1025 在规范集内) / `a11y:contrast`(121) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m7-a-two-views/`（五张：两页改前 + 世界书收起/自动展开 + 故事卡两列）。
 - 顺带记录一个未修的既有问题：`.story-card.status-completed` 把标题与人名一起染成状态绿，作用范围过宽；要改需另定配色口径，本批只在截图里留下证据。
+
+### 修复（UX/IA M7-b：事件面板"写入被拒"终于看得见，并纠正 M6-f 写错的一句现象）
+- **先纠错**：M6-f 记的"`:value` 单向绑定在取值错误路径上会'字看着还在、store 是旧值'"是读代码推的、没量。真实浏览器里跑一遍结论相反：打一个非法正则的 `(`，**输入框直接变空**——字符被吞了（Vue 对 `value` 这个 prop 会拿 DOM 现值比较并写回，一次因其他属性触发的重渲染就抹掉用户输入）。设计文档与 CHANGELOG 两处都已就地改正并注明是谁量翻的。
+- 核对了哪些字段真能走到"被拒"：名称 `maxlength=50`、描述 `maxlength=2000`、概率是带 `min/max` 的 `range`，三条都到不了拒绝分支；**唯一可达的是"使用正则 + 非法表达式"**。所以草稿只给关键词那一格做，其余继续直绑 store，不做用不上的通用机制。
+- 三层改法：① 关键词输入框显示 `keywordText()`（草稿优先、否则回落 store 值），写入成功才清草稿，用户打的字留在框里；② 被拒字段挂 `role="status"` 的"这个值没有保存：{原因}"说明行 + `aria-invalid` + 红框，改对后自己消失（toast 只闪一次，标注是一直挂的）；③ 勾"使用正则/大小写敏感"时按**框里现在那串**写回，不按 store 里的旧数组，否则一次勾选就换个地方吞字。
+- 一个特异性坑：`.is-rejected { border-color: var(--destructive) }` 单写一条看不见红——`src/styles/base.css` 的 `input[type="text"]:focus` 更高，而用户正在输入时字段恰好聚焦。实测聚焦态边框从 `rgb(37,244,238)`（主色青）变成 `rgb(234,79,83)`（红），失焦态两次都是红；补 `:focus` / `:focus-visible` 两条并在规则旁注明原因。
+- 新增 3 例（值不存但字留下并说明原因 / 改对后标注消失 / 勾掉正则按草稿写回）。故障注入三处、签名不重叠：改回直绑 store → 红第一条；写入成功不清标注 → 红第二三条；撤销后 7 例复绿。双语新增 1 键 `wbEvents.saveRejected`。
+- 全量：单测 **186 files / 3864 passed / 3 skipped**，E2E msedge **63**、webkit **18**、mobile **14** passed；`build` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions`(5/5) / `a11y:contrast`(121，未新增扫描对) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m7-b-reject-feedback/rejected-keyword.png`。
+- 未做：名称/描述/概率三格的 `:value` 直绑仍在（当前不可达被拒路径）；没做"存不进去就不许离开该字段"的强拦截——那会把一次正则调试变成填表考试。
 
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
