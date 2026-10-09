@@ -236,6 +236,16 @@
 - 双语各 +2 键（`onboarding.descDone`、`onboarding.startChat`）。全量：单测 **3804 passed / 3 skipped**（177 文件），E2E msedge **61**、webkit **16**、mobile **14** passed，build 与 9 项静态门禁退出码 0。
 - 浏览器实测（沙箱真实数据：4 个角色、有回复、无模型 Profile）：欢迎窗第 2、3 步渲染为"已满足"、第 1 步未勾、页脚仍是「现在配模型」——静态版表达不了这种状态。"三步全完成"那一支只有单测覆盖：为它截图需要往沙箱写一把假密钥再删，脏数据比那张图值钱。
 
+### 新增（UX/IA M6-a：单聊 ⇄ 群聊 分段控件）
+- 新增 `src/components/chat/ChatModeSwitch.vue`，挂在两处页头（`ChatMain` 的 `.chat-header`、`GroupChatView` 的 `.page-header`）：单聊与群聊之间从此可以一步互切。§六 未落地清单里的最后一项导航到此完成。
+- 不是"再加一个入口"：rail 的 15 项与"不滚动就够得着"、底栏的 6 个 tab 都被既有契约钉住，而群聊刻意不占底栏 tab（它和单聊是同一任务的两条通道，做成 tab 会形成单向门）。缺的是"我能在这两条通道之间换过去"这件事本身。
+- 两侧选中态天然保留：单聊读 `character.currentCharacterId`、群聊读 `group-chat.currentGroupId`，都在 Pinia 里跨路由不丢，本次没有新增任何状态管道。
+- 用 `role="tablist"` + 手动激活，而不是现成的 `SegmentedControl`（radiogroup）：radiogroup 的"焦点即选中"在这里等于按一次方向键就把人送进另一个页面，且焦点会随旧组件卸载丢失。标签与图标取自 `nav-model`，不抄第二份清单。不写 `aria-controls`（`/chat` 有角色时主内容区没有稳定 id，指向不存在的 id 是 axe 违规）。
+- 移动端页头让位顺序：隐藏计数与返回按钮的文字（`aria-label` 保留），**保留"新建群聊"的文字**——它是这页唯一入口，不能只剩一个加号。实测 390px 下标签不再竖排、tab 高 36px、横向溢出 0。
+- 新增 `tests/components/chat-mode-switch.test.ts` 6 例（当前项由路由派生、点当前项不重复导航、方向键只移焦点、Home/End、blur 后 tabindex 归位、其它按键放行）。故障注入两次：第二次暴露出**测试自己的假绿**——断言在 `router.push` 完成前就读路由，"没跳"与"还没跳完"分不清，补 `flushPromises()` 后才真正转红。
+- 记录一个既有缺口（本批未改）：移动端在 `/group` 时底栏没有任何高亮项（tab 清单里没有 group），页头这一段现在承担"你在哪"的指示；底栏要不要给非跳转态的标记属于 N 层下一个决定，会撞 `mobile-layout.spec.ts:63` 的"高亮唯一"契约。
+- 全量：单测 **3810 passed / 3 skipped**（178 文件），E2E msedge **61**、webkit **16**、mobile **14** passed，build 与 9 项静态门禁退出码 0；两个宿主视图的 axe 挂载用例 0 违规。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

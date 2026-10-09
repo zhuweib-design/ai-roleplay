@@ -554,8 +554,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 
 | 状态 | 条目 |
 |---|---|
-| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；常规/高级折叠（**M4-b2：`Collapse` 原语接管设置页三处高级段——「外观」界面自定义、「数据」新分组「运维与兼容」四段（并把档案/备份/两项导出提到前面）、「模型」弹窗内默认采样参数，三处默认收起且用 `v-show` 保住草稿**）；四条边的补完与一处页面合并（**M4-b4：E10 随机事件前提横幅（场景名=角色名的字符串耦合首次出现在界面上，不一致可一跳回该角色）、E15 聊天故事时间改为可点回故事本体（`/story?story=`）、E21 市场索引地址的构建期声明、D-B 后半 `/profile` 并入设置→关于（旧链接重定向，`ProfileView.vue` 删除，`nav.profile`/`router.profile`/5 个 `profile.*` 死键清除）**）；E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M4-b3）；`/chat` ⇄ `/group` 分段控件；**E11** 随机事件注入回显（需要给消息加一条持久化字段，见 §九 M4-b4 的诚实边界） |
+| **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；常规/高级折叠（**M4-b2：`Collapse` 原语接管设置页三处高级段——「外观」界面自定义、「数据」新分组「运维与兼容」四段（并把档案/备份/两项导出提到前面）、「模型」弹窗内默认采样参数，三处默认收起且用 `v-show` 保住草稿**）；四条边的补完与一处页面合并（**M4-b4：E10 随机事件前提横幅（场景名=角色名的字符串耦合首次出现在界面上，不一致可一跳回该角色）、E15 聊天故事时间改为可点回故事本体（`/story?story=`）、E21 市场索引地址的构建期声明、D-B 后半 `/profile` 并入设置→关于（旧链接重定向，`ProfileView.vue` 删除，`nav.profile`/`router.profile`/5 个 `profile.*` 死键清除）**）；`/chat` ⇄ `/group` 分段控件（**M6-a：两处页头共用 `ChatModeSwitch`，标签取自 nav-model，方向键只移焦点不跳转**）E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M6-b 起）；**E11** 随机事件注入回显（M6-c） |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -1730,3 +1730,29 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | 浏览器实测（Edge 无头，dev :5179，沙箱真实数据） | 沙箱有 4 个角色与既有回复但没有模型 Profile → 欢迎窗第 2、3 步渲染为 `done` + "已满足"，第 1 步未勾，页脚仍是「现在配模型」。**这正是静态版表达不了的状态**（改前无论数据如何，三步都是三行一模一样的编号文字） |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m5-b3-onboarding/welcome-live-steps.png` |
 | 未做（诚实边界） | ① "三步全完成"那一支只有单测覆盖，浏览器实测没走到——沙箱缺一个可用的模型 Profile，而为一个截图往沙箱写入假密钥再删掉，留下的脏数据比这张图值钱；② 欢迎窗仍只在 `onboarding-done` 缺失时出现，且**没有重开入口**（`markOnboardingDone` 无对应 reset），这是既有行为，本批未改；③ 三步的完成度是"任务级 complete"，不是"步骤级 x/y"——窗内不显示"步骤 1/2"这类进度，避免与任务卡抢口径。 |
+
+### M6-a 单聊 ⇄ 群聊 分段控件（§六 未落地清单里的最后一项导航）
+
+**为什么不是"再加一个入口"**：rail 的 15 项与"不滚动就够得着"、底栏的 6 个 tab 都被既有契约钉住（`e2e/ux-nav-model.spec.ts:20,23,30-38`、`e2e/mobile/mobile-nav-groups.spec.ts:14`），而群聊**刻意**不占底栏 tab——它和单聊是同一任务的两条通道，做成 tab 会形成单向门（`core/mobile-nav.ts` 对 group 的注释）。真正缺的是"我能在这两条通道之间一步换过去"这件事本身。
+
+**落点**：两处页头各挂同一个组件 `src/components/chat/ChatModeSwitch.vue`（`ChatMain.vue` 的 `.chat-header`、`GroupChatView.vue` 的 `.page-header .header-title`）。切换后两侧各自的选中态**天然保留**——单聊读 `character.ts:43 currentCharacterId`、群聊读 `group-chat.ts:45 currentGroupId`，都在 Pinia 里，跨路由不丢，所以这次没有新增任何状态管道。
+
+| 决定 | 理由 |
+|---|---|
+| 用 `role="tablist"` + **手动激活**，不用现成的 `SegmentedControl`（radiogroup） | radiogroup 的惯例是"焦点走到哪就选到哪"，而这里的"选"是一次跨路由跳转——按一次方向键就把人送进另一个页面，焦点还会随旧组件卸载一起丢掉。`tests/components/chat-mode-switch.test.ts` 里"方向键只移焦点"那条断言就是为这个决定的 |
+| 标签与图标取自 `nav-model`（`nav.chat` / `nav.group` + 各自 icon） | 不在组件里抄第二份入口清单，`tests/core/nav-model.test.ts` 的单一事实源约束不被绕过 |
+| 不写 `aria-controls` | `/chat` 有角色时主内容区没有稳定 id（只有冷启动分支有 `#main-content`），指向不存在的 id 反而是 axe 违规（`aria-valid-attr-value`） |
+| 移动端页头让位顺序：先隐藏计数与返回按钮的文字，**保留"新建群聊"的文字** | 390px 下加上这一段后原排版会把"对话"竖排成两行。返回按钮 `aria-label` 仍在（`e2e/group-chat-flow.spec.ts:38` 靠名字点它），而"新建群聊"是这页唯一入口，不能只剩一个加号 |
+
+**顺带记录一个既有缺口（本批未改）**：移动端在 `/group` 时底栏**没有任何一项高亮**（`BottomNav.vue:32-33` 拿 `route.name === tab.name` 比对，而 tab 清单里没有 group），实测 `bottom-nav-item[aria-current="page"]` 为 0 项。页头这一段现在承担了"你在哪"的指示，但底栏本身要不要为群聊给一个非跳转态的标记，属于 N 层的下一个决定，没有顺手改（会撞 `mobile-layout.spec.ts:63` 的"高亮唯一"契约）。
+
+**验证证据（M6-a，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run build` / `lint`(0 error) / `i18n:check:strict`(204 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**) / `snapshot:migration:check` / `runtime:db:schema:check` / `check:csp` / `check:ort` | 退出码均 **0** |
+| `npx vitest run` | **178 files / 3810 passed / 3 skipped**（较 M5-b3 的 3804 增 6：新文件 `tests/components/chat-mode-switch.test.ts`）；`components-axe` 与 `worldbook-group-axe` 挂载两个宿主视图 0 违规 |
+| E2E | msedge（`--workers=2`）**61 passed**、webkit（`--workers=1`）**16**、mobile 两 project **14**，0 failed（含 `mobile-layout.spec.ts` 的"5 个 tab 页无横向溢出"与"高亮唯一"） |
+| 故障注入 | ① 去掉"点当前项不导航"的守卫 → "不重复导航"那条转红；② 让方向键也跳转 → 第一次注入**没有**转红，因为断言在 `router.push` 完成前就读了路由（"没跳"与"还没跳完"分不清）；补上 `flushPromises()` 后重跑才转红。这条记下来是因为它是一次**假绿**，不是组件问题 |
+| 浏览器实测（Edge 无头） | `/chat` 页头亮"对话"→ 点"群聊"落到 `/group` 且改亮"群聊"；桌面 tab 28px 高、移动 36px 高（改前移动端页头会把标签竖排，实测截图为证）；390px 下 `scrollWidth - clientWidth = 0` |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m6-a-mode-switch/`：`chat-header-switch.png` / `group-header-switch.png` / `group-header-switch-mobile.png` |

@@ -424,6 +424,7 @@ export default {
   'chat.cacheHitTitle': '前缀缓存:命中 {hit} tok / 未命中 {miss} tok({reported} 次上报)',
   'chat.prefixStable': '前缀稳定 {percent}%',
   'chat.prefixStableTitle': '本地检测:角色前缀稳定 {stable}/{total} 轮(缓存命中的必要条件;供应商未返回缓存字段,以稳定率为参考)。TTFT:最近 {last}ms / 平均 {avg}ms',
+  'chat.modeSwitchAria': '会话类型',
   'chat.storyTimeTitle': '当前故事时间（/time advance 推进 / /time set N 设置）；点此回到故事本体',
   'chat.inputLabel': '输入消息',
   'chat.inputPlaceholder': '输入消息… (Shift+Enter 换行)',

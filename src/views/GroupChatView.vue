@@ -27,6 +27,7 @@ import { recordGroupObservation } from '@/services/group-chat-runtime';
 import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
+import ChatModeSwitch from '@/components/chat/ChatModeSwitch.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
@@ -877,6 +878,8 @@ function isSystem(msg: { role: string }): boolean {
         </button>
         <h1>{{ t('group.title') }}</h1>
         <span class="header-count">{{ t('group.count', { count: groupStore.groups.length }) }}</span>
+        <!-- 群聊不占移动端底栏 tab（见 core/mobile-nav.ts），这一行就是它在页内的位置指示 -->
+        <ChatModeSwitch class="group-mode-switch-slot" />
       </div>
 
       <div class="header-actions">
@@ -1617,6 +1620,26 @@ type="button"
 .header-count {
   font-size: 12px;
   color: var(--muted-foreground);
+}
+
+@media (max-width: 640px) {
+  /*
+    页头多了"单聊 ⇄ 群聊"这一段之后，390px 宽度放不下原来那一排：
+    计数与返回按钮的文字先让位（返回按钮的 aria-label 仍在，读屏与截图都拿得到名字），
+    主操作"新建群聊"的文字保留——它是这页唯一的入口，不能只剩一个加号。
+  */
+  .header-title {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .header-count {
+    display: none;
+  }
+
+  .header-btn.back .btn-label {
+    display: none;
+  }
 }
 
 .header-actions {

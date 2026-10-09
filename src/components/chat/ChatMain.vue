@@ -6,6 +6,7 @@ import { useChatStore } from '@/stores/chat';
 import { useSettingsStore } from '@/stores/settings';
 import { useStoryStore } from '@/stores/story';
 import { useReadinessJump } from '@/composables/useReadinessJump';
+import ChatModeSwitch from '@/components/chat/ChatModeSwitch.vue';
 import { uiMsgsToChatMsgs } from '@/services/type-adapters';
 import { getWorldUserDisplayName } from '@/stores/chat-context';
 import { resolveLatestStatus } from '@core/status-parser';
@@ -756,6 +757,9 @@ function startWithExample(text: string) {
         <span class="chat-name truncate">{{ char.name }}</span>
         <span class="model-badge" :class="{ 'not-configured': !settings.activeProfile }">{{ settings.activeProfile?.model ?? t('chat.modelNotConfigured') }}</span>
       </div>
+
+      <!-- 单聊 ⇄ 群聊：两条通道是同一次对话的两种形态，切换要在这里看得见 -->
+      <ChatModeSwitch class="chat-mode-switch-slot" />
 
       <!--
         原来整块 aria-hidden="true"：读屏完全拿不到 token 用量与缓存命中率。

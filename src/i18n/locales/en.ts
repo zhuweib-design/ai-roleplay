@@ -424,6 +424,7 @@ const en: Record<MessageKey, string> = {
   'chat.cacheHitTitle': 'Prefix cache: {hit} tok hit / {miss} tok miss ({reported} reports)',
   'chat.prefixStable': 'prefix stable {percent}%',
   'chat.prefixStableTitle': 'Local check: character prefix stable {stable}/{total} turns (prerequisite for cache hits; provider did not return cache fields, stable rate is used as reference). TTFT: last {last}ms / avg {avg}ms',
+  'chat.modeSwitchAria': 'Conversation mode',
   'chat.storyTimeTitle': 'Current story time (/time advance to progress / /time set N to set). Click to open this story.',
   'chat.inputLabel': 'Type a message',
   'chat.inputPlaceholder': 'Type a message… (Shift+Enter for newline)',
