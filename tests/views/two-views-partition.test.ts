@@ -31,9 +31,14 @@ function makeRouter() {
   });
 }
 
-async function mountWorldbook(withSetup: boolean) {
+/**
+ * 挂载世界书页并选中一本测试书。
+ * @param existingId 传了就复用那本书（跨重挂载测同一条记忆要用）
+ */
+async function mountWorldbook(withSetup: boolean, existingId?: string) {
   const store = useLorebookStore();
-  const id = store.createLorebook({ name: '分区测试世界', description: '' });
+  const id =
+    existingId ?? store.createLorebook({ name: '分区测试世界', description: '' })!;
   if (withSetup) {
     const lb = store.lorebooks.find((l) => l.id === id) as Lorebook;
     lb.worldDescription = { name: '分区测试世界', type: 'fantasy', keys: ['运河'], content: '运河与石墙。' };
@@ -95,11 +100,30 @@ describe('世界书页的一次性配置段', () => {
     // 用户特意收起
     await toggleFor(first, '整体世界描述')!.trigger('click');
     expect(toggleFor(first, '整体世界描述')!.attributes('aria-expanded')).toBe('false');
+    const bookId = useLorebookStore().currentLorebook!.id;
     first.unmount();
 
-    // 同一份设置（同一个 pinia）里重挂载：该听用户的，而不是又自动展开
-    const again = await mountWorldbook(false);
+    // 同一本书、同一份设置里重挂载：该听用户的，而不是又自动展开
+    const again = await mountWorldbook(false, bookId);
     expect(toggleFor(again, '整体世界描述')!.attributes('aria-expanded')).toBe('false');
+  });
+
+  it('开合记忆按书分开：在 A 书点开的状态不会跟到 B 书', async () => {
+    const a = await mountWorldbook(false);
+    const aId = useLorebookStore().currentLorebook!.id;
+    await toggleFor(a, '整体世界描述')!.trigger('click');
+    expect(toggleFor(a, '整体世界描述')!.attributes('aria-expanded')).toBe('false');
+    a.unmount();
+
+    // 另一本同样没填的书：按自己的规则自动展开
+    const b = await mountWorldbook(false);
+    expect(useLorebookStore().currentLorebook!.id).not.toBe(aId);
+    expect(toggleFor(b, '整体世界描述')!.attributes('aria-expanded')).toBe('true');
+
+    // 切回 A 书：A 的那一条仍然生效
+    b.unmount();
+    const back = await mountWorldbook(false, aId);
+    expect(toggleFor(back, '整体世界描述')!.attributes('aria-expanded')).toBe('false');
   });
 });
 

@@ -76,6 +76,9 @@ export default defineConfig({
         // M7-c：断言的是"计算后的颜色归属"，而 scoped CSS 的选择器特异性正是
         // 各内核差异最容易显形的地方，Safari 必须实测一次
         '**/ux-status-color.spec.ts',
+        // M8-a：量的是"滚动容器在网格块方向塌成 34px 行轨"造成的重叠，
+        // 块方向 intrinsic sizing 各内核差异最大，Safari 必须实测一次
+        '**/ux-narrow-editor-preview.spec.ts',
         // M2-b9：滑块渐变/按压着色都靠 color-mix 与新式渐变分段，Safari 内核必须实测一次
         '**/ux-interaction-feedback.spec.ts',
       ],

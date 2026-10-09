@@ -2096,6 +2096,12 @@ function handleExport() {
     position: static;
     order: -1;
     max-height: none;
+    /* 必须同时取消滚动容器：`.editor-preview` 带着 overflow-y:auto 时，
+       它在网格里的**块方向贡献会塌成标题那一行（实测 34px）**——滚动容器没有
+       块方向的 max-content 高度。行轨 34px、盒子却照旧画 407px，于是下面的表单
+       压在预览卡上（1000px 实测 fieldset.y=134 而 preview 占到 483）。
+       改成 visible 后行轨 = 407.219px，重叠消失；只写 height:auto 无效。 */
+    overflow: visible;
   }
 }
 

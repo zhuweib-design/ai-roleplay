@@ -443,9 +443,16 @@ function onNameInput(e: Event) {
 const worldDescDraft = ref<WorldDescription | null>(null);
 const worldUserProfileDraft = ref<WorldUserProfile | null>(null);
 
-// M7-d：这两段的开合走"点过就记住，没点过按'还没填就展开'推导"
-const worldDescOpen = useSectionMemory('wb.worldDesc', () => !worldDescDraft.value);
-const userProfileOpen = useSectionMemory('wb.userProfile', () => !worldUserProfileDraft.value);
+// M8-b：这两段描述的是"这一本书"，key 必须带上书 id——否则在 A 书点开的状态会
+// 跟着到 B 书，而"还没填就自动展开"这条规则也会被上一本书的随手一点顶掉。
+const worldDescOpen = useSectionMemory(
+  () => `wb.worldDesc:${currentLorebook.value?.id ?? ''}`,
+  () => !worldDescDraft.value
+);
+const userProfileOpen = useSectionMemory(
+  () => `wb.userProfile:${currentLorebook.value?.id ?? ''}`,
+  () => !worldUserProfileDraft.value
+);
 
 const worldTypeOptions: { value: WorldType; label: string }[] = [
   { value: 'fantasy', label: t('wb.worldTypeFantasy') },

@@ -83,8 +83,13 @@ function goBack() {
 
 // 群聊 Runtime 状态查看：当前选中的成员
 const runtimeInspectMemberId = ref<string | null>(null);
-/** M7-d：排障段的开合跨会话记住（默认仍收起） */
-const runtimeInspectOpen = useSectionMemory('group.runtimeInspect');
+/**
+ * M7-d/M8-b：排障段的开合跨会话记住（默认收起）。
+ * key 带群 id——"这个群我要盯着 Runtime、那个群不用看"是两回事。
+ */
+const runtimeInspectOpen = useSectionMemory(
+  () => `group.runtimeInspect:${currentGroup.value?.id ?? ''}`
+);
 
 // ── UI 状态 ──
 const createModalOpen = ref(false);

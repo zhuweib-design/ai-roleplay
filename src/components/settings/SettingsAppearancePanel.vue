@@ -2,7 +2,7 @@
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import Collapse from '@/components/common/Collapse.vue';
-import { useSectionMemory } from '@/composables/useSectionMemory';
+import { useSectionMemory, useSectionMemoryCount } from '@/composables/useSectionMemory';
 import type { ChatBackground, BubbleStyle } from '@/types';
 import type { CustomTheme } from '@/types';
 import type { ThemeName } from '@/types';
@@ -16,6 +16,14 @@ const settings = useSettingsStore();
 
 /** M7-d：界面自定义是高级段，默认收起；用户点过的开合跨会话记住 */
 const uiCustomOpen = useSectionMemory('settings.uiCustom');
+
+const sectionMemoryCount = useSectionMemoryCount();
+
+/** 清掉开合记忆。这条操作本身不该再被记忆管住，所以直接给结果提示。 */
+function resetSectionMemory(): void {
+  const cleared = settings.resetUiSectionOpen();
+  if (cleared > 0) showToast('success', t('settingsView.sectionMemoryResetDone', { count: cleared }));
+}
 
 interface FontSizeOption {
   value: number;
@@ -738,6 +746,26 @@ URL
         <div class="ui-custom-actions">
           <button type="button" class="data-mgmt-btn primary" @click="saveCustomCss">{{ t('settingsView.saveApply') }}</button>
           <button type="button" class="data-mgmt-btn" @click="resetCustomCss">{{ t('settingsView.resetCss') }}</button>
+        </div>
+      </div>
+      <!-- M8-b：开合记忆的出口。没有它，一次误点会让某段永远停在随手留下的状态，
+           连"还没填就自动展开"这类规则都被顶掉，用户无从退回。 -->
+      <div class="ui-custom-block">
+        <h3 class="ui-custom-subtitle">{{ t('settingsView.sectionMemoryTitle') }}</h3>
+        <p class="ui-custom-hint">
+          {{ sectionMemoryCount === 0
+            ? t('settingsView.sectionMemoryEmpty')
+            : t('settingsView.sectionMemoryHint', { count: sectionMemoryCount }) }}
+        </p>
+        <div class="ui-custom-actions">
+          <button
+            type="button"
+            class="data-mgmt-btn"
+            :disabled="sectionMemoryCount === 0"
+            @click="resetSectionMemory"
+          >
+            {{ t('settingsView.sectionMemoryReset') }}
+          </button>
         </div>
       </div>
     </Collapse>

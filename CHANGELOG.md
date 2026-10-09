@@ -339,7 +339,24 @@
 - 新增 6 例（推导默认随数据重算 / 记忆优先于相反默认 / 写一次落盘一次且同值不重复 / 加载丢非 boolean 脏值 / 两段互不覆盖 / 视图侧跨重挂载保持）。故障注入把 getter 改成只回落到默认 → 4 例转红，其中"点段标题可收起"也红，说明**没有记忆就没有手动控制权**。
 - 两处坑记下来免得重踩：① `loadFromStorage` 把"完全没有已知字段"的快照当首次启动整段跳过，夹具必须带一个它认得的字段（真机快照永远带 `theme`）；② `computed({get,set})` 的返回类型要标 `WritableComputedRef`，标 `ComputedRef` 会让调用方赋值报 TS2540。
 - 全量：单测 **187 files / 3870 passed / 3 skipped**，E2E msedge **64**、webkit **19**、mobile **14** passed；`build` / `lint` / `i18n:check:strict`(207 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(121) / `snapshot:migration:check` / `runtime:db:schema:check` 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m7-d-section-memory/`。
-- 未做：记忆是全局一份、不分世界书（开合是用户偏好不是书的内容属性；要按书分开只需把 key 拼上 `lorebookId`）；没有"恢复默认"入口。
+- 未做：记忆是全局一份、不分世界书（开合是用户偏好不是书的内容属性；要按书分开只需把 key 拼上 `lorebookId`）；没有"恢复默认"入口。**（这两条已在 M8-b 补完）**
+
+### 修复（UX/IA M8-a：窄屏角色编辑器的"实时预览"被表单压住）
+- M6-b2 量到并登记、当时没动的那条缺陷，这次根因是**量出来的**：用"同一页只改一条 CSS"的隔离实验（每个候选开一个新 context，避免样式叠加）在 1000px / 390px 各测一遍——原样行轨 `34px`、预览盒 407px、表单顶 y=134（重叠）；只加 `height: auto` 完全无效（行轨仍 34px）；只加 `overflow: visible` 行轨变 `407.219px`、表单顶 y=507（重叠消失）。
+- 机制：`.editor-preview` 带 `overflow-y: auto`，而**滚动容器没有块方向的 max-content 高度**，它在单列网格里对行轨的贡献塌成标题那一行，盒子却照旧按内容画满，于是第二行的表单叠在上面。桌面两列靠侧栏自滚看不出问题，只有 ≤1024px 切单列才暴露。
+- 改法一行：断点内补 `overflow: visible`，并把机制与实测数字写进规则注释，免得下一个人又去试 `height: auto`。
+- 新增 `e2e/ux-narrow-editor-preview.spec.ts` 5 例（jsdom 不做布局，只能浏览器级）：390 / 640 / 1000 / 1024 四档断言"预览高度 > 300 且表单顶 ≥ 预览底"，另加 1280px"仍是两列侧栏、`overflow-y` 仍为 `auto`"防止把桌面端一起改掉。已加入 webkit `testMatch`。
+- 故障注入：删掉那一行 → 四个窄档全红（红在重叠断言）、1280px 那条仍绿；补回后 5 例复绿。多宽度实测 390/640/800/1000/1024 全部无重叠，1100/1440 保持两列。
+- 全量：E2E msedge **69**、webkit **24**、mobile **14** passed（Safari 对块方向 intrinsic sizing 的结论与 Chromium 一致）；`build` / `lint`(0 error) / `check:css-conventions`(5/5) / `a11y:contrast`(121) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m8-a-preview-overlap/`。
+- 未做：没顺手给预览卡在窄屏做折叠（它 407px 摆在表单上方会占掉窄屏首屏，收不收起是信息架构决定，本批只修"重叠"这个明确缺陷）。
+
+### 新增（UX/IA M8-b：开合记忆按实体分开 + "恢复默认"出口）
+- M7-d 的键是固定的 `wb.worldDesc`，于是"在 A 书特意收起"会跟着到 B 书——而 B 书可能还没填、本该自动展开：规则被另一本书的随手一点顶掉。现在**描述实体的段**（世界书两段、群聊 Runtime 检视）把实体 id 拼进 key，**与实体无关的段**（设置页三处）保持全局。`useSectionMemory` 的 key 放宽成 `MaybeRefOrGetter<string>`，视图侧传 `() => \`wb.worldDesc:${currentLorebook.value?.id ?? ''}\``。
+- 记忆优先之后，一次误点会让某段永远停在随手留下的状态且无处退回。设置 → 外观 → 界面自定义 末尾加"界面开合状态"一行：说清当前记了几条（不是"若干条"这种含糊话）、一条都没记时按钮不可点、点一下清空并回报清了几条。`settings.resetUiSectionOpen()` 返回条数，本来为空则返回 0 且不写盘。双语新增 5 键。
+- 新增 5 例（`tests/components/appearance-section-memory.test.ts` 2、composable 侧 2、视图侧按书分开 1），并把 M7-d 那条"跨重挂载保持"改成按同一本书测。浏览器实测：书甲收起 → 切到书乙两段仍自动展开 → 切回书甲保持收起；设置页恢复前"当前共 1 条"可点，恢复后变空态文案且按钮 disabled。
+- 故障注入三处、签名不重叠：`:disabled` 恒 false → 只红"空态不可点"；`resetUiSectionOpen` 不清空 → 红"点一下清空"；世界书 key 退回固定串 → 只红"按书分开"。
+- 全量：单测 **188 files / 3875 passed / 3 skipped**，E2E msedge **69**、webkit **24**、mobile **14** passed；`build` / `lint`(0 error) / `i18n:check:strict`(207 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(121) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m8-b-section-memory-per-entity/`。
+- 未做：删书/删群不清理其记忆键（留的是几条 boolean，代价可忽略）；出口只有整体清空，没有"单独恢复某一段"；角色编辑器"属性详情"段仍未接记忆（语义不同）。
 
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。

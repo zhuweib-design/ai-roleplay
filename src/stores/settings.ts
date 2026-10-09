@@ -1198,6 +1198,21 @@ export const useSettingsStore = defineStore('settings', () => {
     void persistSettings();
   }
 
+  /**
+   * M8-b：清掉所有开合记忆，让各段回到自己的推导默认。
+   *
+   * 为什么需要：一次误点会让某段永远停在用户随手留下的状态，尤其是
+   * "还没填就自动展开"这条规则——记忆优先之后它就不再生效了。
+   * @returns 清掉的条数（调用方用它决定要不要提示）
+   */
+  function resetUiSectionOpen(): number {
+    const count = Object.keys(uiSectionOpen.value).length;
+    if (count === 0) return 0;
+    uiSectionOpen.value = {};
+    void persistSettings();
+    return count;
+  }
+
   // ── 上下文长度配置 ──
 
   /**
@@ -1318,6 +1333,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setCreationPreset,
     setStatusHudConfig,
     setUiSectionOpen,
+    resetUiSectionOpen,
     // 上下文长度配置
     setMaxContextTokens,
     setReservedTokens,

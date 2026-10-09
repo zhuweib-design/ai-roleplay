@@ -84,4 +84,49 @@ describe('useSectionMemory', () => {
     expect(a.value).toBe(true);
     expect(b.value).toBe(false);
   });
+
+  it('key 是会变的值时，换一个实体就读另一条记忆', () => {
+    const bookId = ref('lb-1');
+    const open = useSectionMemory(() => `probe.book:${bookId.value}`, () => true);
+
+    open.value = false;
+    expect(open.value).toBe(false);
+    // 换到另一本书：那条书没有记录，回到推导默认
+    bookId.value = 'lb-2';
+    expect(open.value).toBe(true);
+    // 换回来，A 书的选择还在
+    bookId.value = 'lb-1';
+    expect(open.value).toBe(false);
+  });
+
+  it('resetUiSectionOpen 清空全部、返回条数并落盘；本来就空时返回 0 且不写', async () => {
+    const writes: number[] = [];
+    const settings = useSettingsStore();
+    settings.setStorageAdapter({
+      async loadSettings() {
+        return null;
+      },
+      async saveSettings(payload: Record<string, unknown>) {
+        writes.push(Object.keys((payload.uiSectionOpen as Record<string, boolean>) ?? {}).length);
+      },
+    } as never);
+
+    useSectionMemory('probe.r1', () => false).value = true;
+    useSectionMemory('probe.r2', () => false).value = false;
+    await new Promise((r) => setTimeout(r, 60));
+    const writesBefore = writes.length;
+
+    expect(settings.resetUiSectionOpen()).toBe(2);
+    expect(settings.uiSectionOpen).toEqual({});
+    await new Promise((r) => setTimeout(r, 60));
+    // 清空本身要落盘，且落的是空表
+    expect(writes.length).toBeGreaterThan(writesBefore);
+    expect(writes[writes.length - 1]).toBe(0);
+
+    // 已经空了：不再写第二次
+    const afterReset = writes.length;
+    expect(settings.resetUiSectionOpen()).toBe(0);
+    await new Promise((r) => setTimeout(r, 60));
+    expect(writes.length).toBe(afterReset);
+  });
 });
