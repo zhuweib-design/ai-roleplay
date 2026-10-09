@@ -1702,3 +1702,31 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | 浏览器实测（Edge 无头，dev :5179） | 快速档说明实际渲染为"还没有可绑的世界书，所以下面只有「暂不绑定」…"；世界书页空态实际渲染"还没有世界书。建一本，或按最小生效三步走。"；**选中一本书后三步走入口 `isVisible() === true`**（改前该分支不存在此入口）；点开流程正常渲染；截图用的临时书已通过真实 UI 删除，收尾时列表回到 **0 本**（沙箱数据未留痕） |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m5-b2-in-feature/`：`char-quick-no-books-hint.png` / `worldbook-empty-no-books.png` / `worldbook-flow-entry-inline.png` / `worldbook-flow-open.png` |
 | 未做（诚实边界） | ① 首启欢迎窗的 3 步仍是静态文案，与任务卡前三条两套数据（M5-b1 同条）；② 三步走的完成态仍只活在组件里（`createdBookId` 等是本会话 ref），刷新后从头开始——它没有接进 `guided-tasks` 的真实判据（那条判据现在读 `lorebooks`，是对的）；③ 角色编辑器的 23 个 label、设置模型面板的 15 个 label 等 **77 处**手写 label 仍未并入 `FormField`，属于 M4-b3 的分区工作范围。 |
+
+### M5-b3 首启欢迎窗接进任务判据（三步不再是一套静态文字）
+
+**问题**：欢迎窗的三步（`OnboardingModal.vue:20-24`）是写死的数组，与任务卡的 t1/t2/t3 说的是同一件事，却是**两套数据**——一套永远不动，一套读真实 store。后果不是"不好看"：恢复过备份、或只清掉 `localStorage` 的人会被这扇窗要求"现在配模型"，而那三步其实都做完了。
+
+**改法（刻意保守）**：完成态**只认注册表一处**（`useGuidedTasks()` 的 `t1-model` / `t2-character` / `t3-first-reply` 的 `complete`），文案仍留在欢迎窗里——第一句要顺带说"密钥只留在本机"，那是首启特有的安抚，任务卡没有义务讲。判据同源，措辞各留一句。
+
+| 状态 | 欢迎窗表现 |
+|---|---|
+| 有步骤未完成 | 三步按真实完成度标"已满足"（灰字 + 删除线，与任务卡的 StepFlow 清单同一套排版）；页脚仍是「打开任务清单」（主）+「现在配模型」+「关闭」 |
+| 三步都完成 | 说明改为"这三步都已经做好了，直接开始就行："；页脚改为「去对话」（主）+「打开任务清单」+「关闭」——**不再递"现在配模型"**，那等于当着做完的人说他没做完 |
+
+**顺带钉住的一条老契约**：关闭只写 `ai-roleplay:onboarding-done`，不写任何引导意图（`ai-roleplay:guided-tasks.v1` 保持不存在）——这是"关掉这个窗口不会结束引导"那句话第一次有断言兜着。
+
+**被牵动的既有测试（1 个文件，非语义反转）**：`tests/views/app-tauri-ux.test.ts` 的 store 桩原先是空对象。欢迎窗挂在 App 上，现在它要读注册表 → `readiness` 的模型判据 → `chat.checkSendBlock()`，空桩直接抛 `TypeError`。补齐了这些桩真正被读到的字段（settings 的 Profile/锁态、chat 的 `checkSendBlock`、lorebook/data-bank/story/group-chat 的列表、character 的当前角色）。**没有放宽任何断言**，三条用例覆盖的仍是断网提示与拖拽导入。
+
+**验证证据（M5-b3，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run build` / `lint`(0 error，6 warning 均为既有) / `i18n:check` + `:strict` / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**，基线 131) / `snapshot:migration:check` / `runtime:db:schema:check` / `check:csp` / `check:ort` | 退出码均 **0** |
+| `npx vitest run` | **177 files / 3804 passed / 3 skipped**（较 M5-b2 的 3800 增 4：新文件 `tests/components/onboarding-modal.test.ts`） |
+| 新增测试 | 4 例：全新用户三步都不带"已满足"且页脚是原样；三步齐 → 每步标记 + 不给"现在配模型" + 给"去对话" + 说明换文案；**只做完成两步时仍按未完成处理**（负向对照，防"全部完成"判据空转）；关闭只记欢迎看过 |
+| 故障注入 | 把 `doneOf()` 改成恒 `false` → 该文件**恰好 2 例转红**（依赖完成态的两条），另 2 例仍绿——证明断言咬的是这条接线本身，不是顺带变红 |
+| E2E | msedge（`--workers=2`）**61 passed**、webkit（`--workers=1`）**16**、mobile 两 project **14**，0 failed |
+| 浏览器实测（Edge 无头，dev :5179，沙箱真实数据） | 沙箱有 4 个角色与既有回复但没有模型 Profile → 欢迎窗第 2、3 步渲染为 `done` + "已满足"，第 1 步未勾，页脚仍是「现在配模型」。**这正是静态版表达不了的状态**（改前无论数据如何，三步都是三行一模一样的编号文字） |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m5-b3-onboarding/welcome-live-steps.png` |
+| 未做（诚实边界） | ① "三步全完成"那一支只有单测覆盖，浏览器实测没走到——沙箱缺一个可用的模型 Profile，而为一个截图往沙箱写入假密钥再删掉，留下的脏数据比这张图值钱；② 欢迎窗仍只在 `onboarding-done` 缺失时出现，且**没有重开入口**（`markOnboardingDone` 无对应 reset），这是既有行为，本批未改；③ 三步的完成度是"任务级 complete"，不是"步骤级 x/y"——窗内不显示"步骤 1/2"这类进度，避免与任务卡抢口径。 |

@@ -302,12 +302,14 @@ const en: Record<MessageKey, string> = {
   // ── Onboarding (OnboardingModal.vue, P2-7) ──
   'onboarding.title': 'Welcome to AI Tavern',
   'onboarding.desc': 'Three steps to your first reply:',
+  'onboarding.descDone': 'All three are already done - just start here:',
   'onboarding.stepModel': 'Configure a working model (keys stay on this device)',
   'onboarding.stepCharacter': 'Pick an existing character or create one',
   'onboarding.stepReply': 'Send the first message and get a reply',
   'onboarding.note': 'Lorebooks, document retrieval and voice follow the steps in Guide; closing this window does not end it.',
   'onboarding.openGuide': 'Open the task list',
   'onboarding.configureModel': 'Configure a model now',
+  'onboarding.startChat': 'Go to chat',
 
   // ── Router / page titles ──
   'router.chat': 'Chat',

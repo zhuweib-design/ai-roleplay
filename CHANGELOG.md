@@ -227,6 +227,15 @@
 - 测试：新增 5 例（无角色时不渲染绑定按钮而渲染原因与出路、改全局书后 `scope` 真的变且第三步打勾、不再借用"未配置"字样、快速档下拉说明的两种取值与选项列表）。
 - 全量：单测 **3800 passed / 3 skipped**，E2E msedge **61**、webkit **16**、mobile **14** passed，build 与静态门禁退出码 0。浏览器实测三处文案/入口逐条确认，截图用的临时世界书已走真实 UI 删除、收尾列表回到 0 本。
 
+### 变更（UX/IA M5-b3：首启欢迎窗接进任务判据）
+- 欢迎窗的三步原先是写死的数组，与任务卡前三条同一件事却两套数据（一套永不动、一套读真实 store）：恢复过备份或只清掉 `localStorage` 的人会被它要求"现在配模型"，而那三步其实都做完了。现在**完成态只认注册表一处**（`useGuidedTasks` 的 t1/t2/t3 `complete`），文案仍留在窗内（首启要顺带安抚"密钥只留在本机"，任务卡没义务讲）；完成步骤的排版与任务卡的 StepFlow 清单一致（灰字 + 删除线 + 右侧"已满足"）。
+- 三步全完成时页脚不再递「现在配模型」，改为「去对话」为主按钮，说明文案换成"这三步都已经做好了，直接开始就行："——当着做完的人说他没做完，是说谎。
+- 第一次给"关掉这个窗口不会结束引导"这句话加上断言：关闭只写 `ai-roleplay:onboarding-done`，`ai-roleplay:guided-tasks.v1` 必须仍不存在。
+- 新增 `tests/components/onboarding-modal.test.ts` 4 例（全新用户 / 三步齐 / **只做完成两步的负向对照** / 关闭不写引导意图）。故障注入实测：把完成态查询改成恒 `false` → 恰好 2 例转红、另 2 例仍绿。
+- 连带补齐 `tests/views/app-tauri-ux.test.ts` 的 store 桩：欢迎窗挂在 App 上，读注册表会经 `readiness` 调到 `chat.checkSendBlock()`，原先的空对象桩直接抛 `TypeError`。补的是真正被读到的那几个字段，未放宽任何断言。
+- 双语各 +2 键（`onboarding.descDone`、`onboarding.startChat`）。全量：单测 **3804 passed / 3 skipped**（177 文件），E2E msedge **61**、webkit **16**、mobile **14** passed，build 与 9 项静态门禁退出码 0。
+- 浏览器实测（沙箱真实数据：4 个角色、有回复、无模型 Profile）：欢迎窗第 2、3 步渲染为"已满足"、第 1 步未勾、页脚仍是「现在配模型」——静态版表达不了这种状态。"三步全完成"那一支只有单测覆盖：为它截图需要往沙箱写一把假密钥再删，脏数据比那张图值钱。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

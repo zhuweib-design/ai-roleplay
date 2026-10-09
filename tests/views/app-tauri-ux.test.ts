@@ -18,22 +18,35 @@ const mocks = vi.hoisted(() => ({
   importCharacterPng: vi.fn(),
 }));
 
-vi.mock('@/stores/settings', () => ({ useSettingsStore: () => ({}) }));
-vi.mock('@/stores/chat', () => ({ useChatStore: () => ({}) }));
+// 首启欢迎窗现在读任务注册表（App 树里），注册表又经 readiness 判模型就绪，
+// 所以这些 store 桩不能是空对象——缺哪个字段，挂载期就会撞上哪个 undefined。
+vi.mock('@/stores/settings', () => ({
+  useSettingsStore: () => ({
+    apiProfiles: [],
+    activeProfile: null,
+    hasMasterPassword: false,
+    isUnlocked: true,
+    ttsConfig: { enabled: false },
+  }),
+}));
+vi.mock('@/stores/chat', () => ({ useChatStore: () => ({ checkSendBlock: () => null }) }));
 vi.mock('@/stores/character', () => ({
   useCharacterStore: () => ({
     characters: [],
+    currentCharacter: null,
+    currentCharacterId: null,
+    getBoundWorldBookIds: () => [],
     importV2File: mocks.importV2File,
     persistCharacter: mocks.persistCharacter,
   }),
 }));
 vi.mock('@/stores/lorebook', () => ({
-  useLorebookStore: () => ({ importLorebookFile: mocks.importLorebookFile }),
+  useLorebookStore: () => ({ lorebooks: [], importLorebookFile: mocks.importLorebookFile }),
 }));
-vi.mock('@/stores/group-chat', () => ({ useGroupChatStore: () => ({}) }));
+vi.mock('@/stores/group-chat', () => ({ useGroupChatStore: () => ({ groups: [] }) }));
 vi.mock('@/stores/persona', () => ({ usePersonaStore: () => ({}) }));
-vi.mock('@/stores/data-bank', () => ({ useDataBankStore: () => ({}) }));
-vi.mock('@/stores/story', () => ({ useStoryStore: () => ({}) }));
+vi.mock('@/stores/data-bank', () => ({ useDataBankStore: () => ({ documents: [] }) }));
+vi.mock('@/stores/story', () => ({ useStoryStore: () => ({ stories: [] }) }));
 vi.mock('@/stores/community-market', () => ({ useCommunityMarketStore: () => ({}) }));
 vi.mock('@/stores/character-version', () => ({ useCharacterVersionStore: () => ({}) }));
 vi.mock('@/services/backup-service', () => ({
