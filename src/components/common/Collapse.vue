@@ -34,14 +34,34 @@ const props = withDefaults(
     advanced?: boolean;
     /** 去掉卡片外观：用在表单/弹窗内部，作为一段分组标题而不是又一张卡 */
     plain?: boolean;
+    /**
+     * 受控用法（`v-model:open`）。不传就是非受控，内部自己管展开态。
+     * 为什么要能受控：角色编辑器的"属性"段有三处**从外部改展开态**——
+     * 打开属性开关时强制展开、"加一条属性"时强制展开、切换角色时强制收起
+     * （`CharacterEditorView.vue:446,251,958`）。只给 `defaultOpen` 的话，
+     * 这三处没有地方写，那段自写折叠就只能留在原地。
+     */
+    open?: boolean;
   }>(),
-  { hintKey: undefined, icon: undefined, defaultOpen: true, level: 2, advanced: false, plain: false }
+  { hintKey: undefined, icon: undefined, defaultOpen: true, level: 2, advanced: false, plain: false, open: undefined }
 );
 
-const open = ref(props.defaultOpen);
+const emit = defineEmits<{ 'update:open': [value: boolean] }>();
+
 const uid = `collapse-${Math.random().toString(36).slice(2, 8)}`;
 const titleId = computed(() => `${uid}-title`);
 const panelId = computed(() => `${uid}-panel`);
+
+const internalOpen = ref(props.defaultOpen);
+const controlled = computed(() => typeof props.open === 'boolean');
+const open = computed({
+  get: () => (controlled.value ? Boolean(props.open) : internalOpen.value),
+  set: (value: boolean) => {
+    // 受控时不写内部状态，只把意图抛给父级；非受控时自己记住
+    if (!controlled.value) internalOpen.value = value;
+    emit('update:open', value);
+  },
+});
 </script>
 
 <template>

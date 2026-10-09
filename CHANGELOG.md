@@ -246,6 +246,13 @@
 - 记录一个既有缺口（本批未改）：移动端在 `/group` 时底栏没有任何高亮项（tab 清单里没有 group），页头这一段现在承担"你在哪"的指示；底栏要不要给非跳转态的标记属于 N 层下一个决定，会撞 `mobile-layout.spec.ts:63` 的"高亮唯一"契约。
 - 全量：单测 **3810 passed / 3 skipped**（178 文件），E2E msedge **61**、webkit **16**、mobile **14** passed，build 与 9 项静态门禁退出码 0；两个宿主视图的 axe 挂载用例 0 违规。
 
+### 变更（UX/IA M6-b1：角色编辑器"属性"段并入 Collapse）
+- `Collapse` 补上受控用法 `v-model:open`：传 `open` 即受控（点击只发 `update:open`，组件不自己翻面），不传维持原非受控行为——三处设置页既有用法一行没改。动机是角色编辑器有三处**从外部改展开态**，只有 `defaultOpen` 写不进去。
+- 删掉 `CharacterEditorView` 自写的那套折叠（`aria-expanded` 按钮 + `v-show` 面板，缺 `aria-controls`、标题不是 `<hN>`），换成 `<Collapse :level="3" plain v-model:open>`；段标题从动词式两键"收起属性详情/展开属性详情"改成一键名词 `charEdit.attrDetails`（展开态由 `aria-expanded` 与箭头表达，不该占两个文案键）；随之删除 4 条只服务旧写法的私有样式。
+- 实测发现并登记为缺口：三处外部写点里"加一条属性时强制展开"**在真实交互里到不了**——那颗按钮就在面板内，收起时不可见点不到（`addStatVisible: false`）。这行赋值是死代码，本批保留但没算作受控用法的动机；真正的动机是开关联动展开与"切换角色时归零展开态"（路由参数变化不重挂载视图，非受控就归不了零）。
+- 测试：`tests/components/collapse.test.ts` 10 → 13 例（受控时"外部说收起就是收起，点一下只发事件不偷改"、"外部改展开界面跟着变"、"不传 open 仍走非受控"）。
+- 全量：单测 **3813 passed**（178 文件），E2E msedge **61**、mobile **14** passed；六条走"新建角色 → 完整表单 → 名称/设定/保存"的用例未改即通过（`#f-name`/`#f-desc`/`.header-btn.save`/`.editor-body` 四个硬选择器全部保住）。浏览器实测：开关打开→面板自动展开、点段标题→收起、`aria-controls` 指向的 id 真实存在、标题为 `H3`、收起后控件仍在 DOM 且 `display:none`。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

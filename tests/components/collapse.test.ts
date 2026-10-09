@@ -117,3 +117,41 @@ describe('aria 接线', () => {
     expect(mountCollapse({ plain: true }).find('.collapse-section').classes()).toContain('is-plain');
   });
 });
+
+/**
+ * 受控用法（v-model:open）。角色编辑器那三处"从外面改展开态"
+ * （开属性开关时展开、加一条属性时展开、切换角色时收起）只有走这条路才做得到；
+ * 非受控的 defaultOpen 只在挂载时读一次，写不进去。
+ */
+describe('受控展开（v-model:open）', () => {
+  it('外部说收起就是收起，点一下只发事件、自己不偷改状态', async () => {
+    const wrapper = mountCollapse({ open: false });
+    const toggle = wrapper.find('button.collapse-toggle');
+
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+    await toggle.trigger('click');
+
+    expect(wrapper.emitted('update:open')).toEqual([[true]]);
+    // 父级没回应，界面就还是收起：受控组件不能自己变
+    expect(wrapper.find('button.collapse-toggle').attributes('aria-expanded')).toBe('false');
+  });
+
+  it('外部从收起改成展开时，界面跟着变（不是只有初次挂载生效）', async () => {
+    const wrapper = mountCollapse({ open: false });
+    expect(wrapper.find('button.collapse-toggle').attributes('aria-expanded')).toBe('false');
+
+    await wrapper.setProps({ open: true });
+    expect(wrapper.find('button.collapse-toggle').attributes('aria-expanded')).toBe('true');
+    const panel = wrapper.find('.collapse-panel').element as HTMLElement;
+    expect(panel.style.display).not.toBe('none');
+  });
+
+  it('不传 open 时仍是非受控：点一下就自己翻面，且不发 update:open 以外的副作用', async () => {
+    const wrapper = mountCollapse();
+    const toggle = wrapper.find('button.collapse-toggle');
+    await toggle.trigger('click');
+
+    expect(wrapper.find('button.collapse-toggle').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.emitted('update:open')).toEqual([[false]]);
+  });
+});

@@ -1756,3 +1756,21 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | 故障注入 | ① 去掉"点当前项不导航"的守卫 → "不重复导航"那条转红；② 让方向键也跳转 → 第一次注入**没有**转红，因为断言在 `router.push` 完成前就读了路由（"没跳"与"还没跳完"分不清）；补上 `flushPromises()` 后重跑才转红。这条记下来是因为它是一次**假绿**，不是组件问题 |
 | 浏览器实测（Edge 无头） | `/chat` 页头亮"对话"→ 点"群聊"落到 `/group` 且改亮"群聊"；桌面 tab 28px 高、移动 36px 高（改前移动端页头会把标签竖排，实测截图为证）；390px 下 `scrollWidth - clientWidth = 0` |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m6-a-mode-switch/`：`chat-header-switch.png` / `group-header-switch.png` / `group-header-switch-mobile.png` |
+
+### M6-b1 角色编辑器的"属性"段并入 `Collapse`（原语补上受控用法）
+
+**先补原语的缺口**：`Collapse` 原先只有 `defaultOpen`（挂载时读一次），没有对外写展开态的入口。角色编辑器恰好有三处**从外部改展开态**：打开属性开关时强制展开（`:958`）、切换角色时强制收起（`:251`）、"加一条属性"时强制展开（`:446`）。所以先给 `Collapse` 加 `v-model:open`：传了 `open` 就是受控（点击只发 `update:open`，组件自己不翻面），不传就维持非受控的原行为——**既有三处设置页用法一行没改**。
+
+**再并入**：删掉编辑器自写的那套（`aria-expanded` 按钮 + `v-show` 面板，缺 `aria-controls`、标题也不是 `<hN>`），换成 `<Collapse :level="3" plain v-model:open>`。段标题从动词式"收起属性详情/展开属性详情"两个键改成一个名词键 `charEdit.attrDetails`——展开态由 `aria-expanded` 与箭头方向表达，不该占用两个文案键。随之删掉 4 条只服务旧写法的私有样式（`.collapse-toggle` 三条 + `.attr-content`），面板间距由原语的 `.collapse-panel` 承担。
+
+**一处实测发现，登记为缺口而不是假装修好**：三处外部写点里，"加一条属性时强制展开"**在真实交互里到不了**——那颗按钮本身就在面板内，收起时它不可见、点不到（实测 `addStatVisible: false`）。也就是说这行赋值是死代码，本批保留它（无害）但没把它算作"受控用法"的动机；真正的动机是另外两处：开关联动展开、以及切换角色时把上一段编辑的展开态归零（路由参数变化不会重挂载本视图，非受控就归不了零）。
+
+**验证证据（M6-b1，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run lint`(0 error) / `i18n:check:strict` / `check:css-conventions`(5/5) | 退出码均 **0**（本批不动构建产物，`build` 随 M6-b 收尾再跑） |
+| `npx vitest run` | **178 files / 3813 passed**（`collapse.test.ts` 10 → 13 例：受控时"外部说收起就是收起，点一下只发事件不偷改"、"外部从收起改展开界面跟着变"、"不传 open 仍走非受控"）；`components-axe`（挂载编辑器新建态与编辑态）与 `tests/views` 全绿 |
+| E2E | msedge（`--workers=2`）**61 passed**、mobile 两 project **14 passed**——`character-crud` / `ux-quick-forms` / `backup-restore` / `ux-relations-panel` / `chat-flow` / `group-chat-flow` 六条走"新建角色 → 完整表单 → 名称/设定/保存"的用例全部未改即通过（`#f-name`、`#f-desc`、`.header-btn.save`、`.editor-body` 四个硬选择器都保住了） |
+| 浏览器实测（Edge 无头，`/character/seraphina/edit`） | 打开属性开关 → 面板自动展开（`aria-expanded=true`、`panelVisible=true`、3 个控件）；点段标题 → 收起（`aria-expanded=false`）；`aria-controls` 指向的 id 在文档里**真实存在**；标题渲染为 `H3`；收起后面板内控件仍在 DOM 且 `display: none`（v-show 保草稿）。截图 `docs/dev/evidence/ux-ia-guided-flow/m6-b-editor-collapse/attr-open.png` / `attr-collapsed.png` |
+| 截图踩到的一个坑 | 首版截图里段标题是红的：那是全局"悬停把标题染成主色"的常态，指针停在刚点过的行上被一起拍了进来。截图前把指针移开才对——记录是因为它一度被误读成错误态 |

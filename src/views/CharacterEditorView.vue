@@ -25,6 +25,7 @@ import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import QuickCharacterForm from '@/components/character/QuickCharacterForm.vue';
+import Collapse from '@/components/common/Collapse.vue';
 import ModuleRelationsPanel from '@/components/layout/ModuleRelationsPanel.vue';
 import type { UICharacter } from '@/types';
 import type { CharacterAttributes, CharacterAttribute } from '@/core/character-card';
@@ -964,21 +965,19 @@ function handleExport() {
             <span v-if="form.attrEnabled" class="attr-badge">{{ t('charEdit.attrEnabled') }}</span>
           </legend>
 
-          <div v-if="form.attrEnabled">
-            <button
-              type="button"
-              class="collapse-toggle"
-              :aria-expanded="form.attributesOpen"
-              @click="form.attributesOpen = !form.attributesOpen"
-            >
-              <Icon
-                :name="form.attributesOpen ? 'chevron-down' : 'chevron-right'"
-                :size="14"
-              />
-              <span>{{ form.attributesOpen ? t('charEdit.collapseAttrs') : t('charEdit.expandAttrs') }}</span>
-            </button>
-
-            <div v-show="form.attributesOpen" class="attr-content">
+          <!--
+            这段折叠原来是本文件自己写的一套（aria-expanded 按钮 + v-show 面板），
+            与设置页的 Collapse 长得不一样、也没有 aria-controls。并入统一原语后，
+            "打开属性开关 / 加一条属性 / 切换角色"这三处从外部改展开态的地方
+            才真的有地方可写（v-model:open）。
+          -->
+          <Collapse
+            v-if="form.attrEnabled"
+            v-model:open="form.attributesOpen"
+            title-key="charEdit.attrDetails"
+            :level="3"
+            plain
+          >
               <div class="field">
                 <label for="f-profession" class="field-label">{{ t('charEdit.professionLabel') }}</label>
                 <input
@@ -1087,8 +1086,7 @@ function handleExport() {
                 </div>
                 <p v-else class="field-hint">{{ t('charEdit.statEmptyHint') }}</p>
               </div>
-            </div>
-          </div>
+          </Collapse>
           <p v-else class="field-hint">{{ t('charEdit.attrOffHint') }}</p>
         </fieldset>
 
@@ -1935,38 +1933,6 @@ function handleExport() {
 .attr-switch input:focus-visible + .switch-track {
   outline: 2px solid var(--secondary);
   outline-offset: 2px;
-}
-
-.collapse-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: var(--muted-foreground);
-  font-size: 12px;
-  cursor: pointer;
-  padding: 4px 0;
-  transition: color .15s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .collapse-toggle:hover {
-    color: var(--secondary);
-  }
-}
-
-.collapse-toggle:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.attr-content {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-top: 4px;
 }
 
 .attr-row {
