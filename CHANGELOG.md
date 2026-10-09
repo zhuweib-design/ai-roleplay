@@ -304,6 +304,16 @@
 - 一处工具性踩坑记在这里避免重犯：第一次注入把 `// 注释` 写进 Vue 模板的**属性列表**里，编译器报 `Illegal '/' in tags.`，但上一次运行的转换缓存让 vitest 仍报"通过"——一次假绿。模板文件里的注入必须写成合法语法，且"刚改完就绿"要先 `grep` 实际文件再下结论。
 - 全量：单测 **185 files / 3856 passed / 3 skipped**，E2E msedge **63**、webkit **18**、mobile **14** passed；`build` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions`(5/5) / `a11y:contrast`(121) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m6-f-primitives/`。
 
+### 变更（UX/IA M7-a：最后两个巨型视图分区，§六 的分区这条到此收口）
+- 世界书页把两段"配一次就长期不动"的一次性配置收进 `Collapse`：`整体世界描述`（实测 422px）与`世界内用户资料`（921px）。同一份数据同视口对比：两段合计 **1343px → 148px**、`.editor-content` 滚动高 **2635 → 1440px**、每天要用的条目区从 **y≈1998（三屏之下）回到 y=803（首屏可见）**。
+- 规则是**没填的那一段自动展开**（`:default-open="!worldDescDraft"` / `!worldUserProfileDraft"`）——把待办藏起来是反向优化；用户仍可点段标题收回。`:key` 绑世界书 id 让切书时重挂载，否则 `defaultOpen` 只在挂载时读一次、第二本书会沿用第一本的展开态。
+- 为此给 `Collapse` 补 `title-extra` 插槽：这两段各带一个范围标签（"常量注入" / "仅当前世界"），它们决定用户要不要点开，必须留在触发按钮里而不是被面板一起藏掉——与 M6-f 给 `FormField` 补 `label-extra` 是同一个缺口的两半。随之删掉两处失效的 `.world-desc-header` 规则与两个只服务旧 `aria-label` 的死键（`wb.worldDescAria` / `wb.worldUserProfileAria`）。
+- 故事引擎：真正的问题不是"段太多"而是**展开的卡只有 400px 宽**——`.story-grid` 是 `auto-fill minmax(360px,1fr)`，一份故事时右边一千像素全空、七段竖堆 1276px。改法两行 CSS：展开卡 `grid-column: 1 / -1` 占满整行，`@media (min-width: 1025px)`（规范断点集内的值）下 `.card-detail` 两列排布。实测 `.story-grid` **1276 → 794px（-38%）**；移动端不受影响。
+- 明确不做的判断：故事卡内部七段**没有再折叠**（用户点开卡就是为了读这些提取结果，卡片本身已是折叠单元）；世界书页的`已绑定角色`（141px）与`事件`（263px）保持常驻（前者是关联入口、后者是 M6-f 刚修好的功能）。
+- 新增 `tests/views/two-views-partition.test.ts`（4 例）与 `tests/components/collapse.test.ts` 的 title-extra 一例。故障注入三轮、签名不重叠：`:default-open` 恒 true → 只红"已配 → 收起"；恒 false → 红"未配 → 自动展开"与"点标题可收回"而"已配 → 收起"仍绿；删 `is-expanded` 绑定 → 只红故事卡那条。
+- 全量：单测 **186 files / 3861 passed / 3 skipped**，E2E msedge **63**、webkit **18**、mobile **14** passed；`build` / `lint`(0 error) / `check:css-conventions`(5/5，断点守卫确认 1025 在规范集内) / `a11y:contrast`(121) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m7-a-two-views/`（五张：两页改前 + 世界书收起/自动展开 + 故事卡两列）。
+- 顺带记录一个未修的既有问题：`.story-card.status-completed` 把标题与人名一起染成状态绿，作用范围过宽；要改需另定配色口径，本批只在截图里留下证据。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

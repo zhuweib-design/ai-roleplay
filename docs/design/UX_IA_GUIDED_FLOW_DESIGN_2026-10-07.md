@@ -555,7 +555,8 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 状态 | 条目 |
 |---|---|
 | **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E11 随机事件注入回显（M6-c）**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；常规/高级折叠（**M4-b2：`Collapse` 原语接管设置页三处高级段——「外观」界面自定义、「数据」新分组「运维与兼容」四段（并把档案/备份/两项导出提到前面）、「模型」弹窗内默认采样参数，三处默认收起且用 `v-show` 保住草稿**）；四条边的补完与一处页面合并（**M4-b4：E10 随机事件前提横幅（场景名=角色名的字符串耦合首次出现在界面上，不一致可一跳回该角色）、E15 聊天故事时间改为可点回故事本体（`/story?story=`）、E21 市场索引地址的构建期声明、D-B 后半 `/profile` 并入设置→关于（旧链接重定向，`ProfileView.vue` 删除，`nav.profile`/`router.profile`/5 个 `profile.*` 死键清除）**）；`/chat` ⇄ `/group` 分段控件（**M6-a：两处页头共用 `ChatModeSwitch`，标签取自 nav-model，方向键只移焦点不跳转**）E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索"；角色编辑器分区与原语铺开（**M6-b1：属性段并入 `Collapse`，原语补上 `v-model:open` 受控用法**、**M6-b2：8 个字段块接进 `FormField`，5 条说明拿到 `aria-describedby`、2 处悬空 label 改成分组标签、必填改成"星号对读屏隐藏 + 一句必填文本"，并把本视图标签排版对齐到原语刻度**） |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | 四个巨型视图的分区：`CharacterEditorView` 已并入 `Collapse`（M6-b1）且 15 块接进 `FormField`（M6-b2 八块 + M6-f 七块，含"标签里嵌实时值"那两处；只剩渐变一对色——两控件共用一条报错，接成两份会重复同一句话）、`GroupChatView` 页头的成员 Runtime 检视段已折叠（M6-e）；**其余**：`WorldBookView` / `StoryEngineView` 的分区仍未做 |
+| **已落地（分区这条到此收口）** | 四个巨型视图：`CharacterEditorView` 并入 `Collapse`（M6-b1）且 15 块接进 `FormField`（M6-b2 八块 + M6-f 七块，只剩渐变一对色共用一条报错的两控件块）、`GroupChatView` 页头的成员 Runtime 检视段折叠（M6-e）、`WorldBookView` 两段一次性配置折叠（M7-a，条目区 y≈1998 → 803）、`StoryEngineView` 展开卡占满整行 + 详情两列（M7-a，1276px → 794px） |
+| **仍未落地（下面小节仍按目标态描述，别当成现状）** | 折叠态跨会话记忆（`Collapse` 目前不持久化开合状态）；故事卡的状态色作用范围过宽（把标题与人名一起染成状态色）；`Modal` 的对话框级说明只接了群聊两个弹窗，其余弹窗的开头说明尚未逐一归类 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -1941,4 +1942,35 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | `npx vitest run` | **185 files / 3856 passed / 3 skipped**（较 M6-e 的 183 / 3836 增 2 文件 20 例：`worldbook-events-panel-edit` 4、`modal-describes` 2、`event-types` 新增 12、编辑器接线 +1、store 改写 +1） |
 | E2E | msedge（`--workers=2`）**63 passed**（62 + 新那条）、webkit（`--workers=1`）**18 passed**、mobile 两 project **14 passed** |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m6-f-primitives/`：`editor-model-fields.png`（模型设置段，温度徽章在粗标签里、最大 Tokens 与等级/经验值同刻度）、`group-add-member-dialog.png`（添加成员弹窗，说明句已挂 `aria-describedby`；顺带拍到 M6-e 的"成员 Runtime 检视 [高级]"收起态） |
-| 未做（诚实边界） | ① **`:value` 单向绑定的老毛病仍在取值错误路径上**：粘贴一段超 2000 字的描述会被拒，但输入框里的字不会回退，用户看到的是"红 toast + 字还在"，store 里其实是旧值——彻底修要么改双向绑定 + 校验回滚，要么给这类字段加"当前值 vs 已存值"的可见差异，本批没做；② 世界书事件面板**没有**接 `FormField`（它的字段是 `form-label` + `:value` 手写体系，本批只修语义不动排版，避免一次改两件事）；③ 事件模板（`/random-events` 的 templates 页签）仍无浏览器级用例，本批的 e2e 走的是"无模板 ⇒ defaultProbability"分支。 | | |
+| 未做（诚实边界） | ① **`:value` 单向绑定的老毛病仍在取值错误路径上**：粘贴一段超 2000 字的描述会被拒，但输入框里的字不会回退，用户看到的是"红 toast + 字还在"，store 里其实是旧值——彻底修要么改双向绑定 + 校验回滚，要么给这类字段加"当前值 vs 已存值"的可见差异，本批没做；② 世界书事件面板**没有**接 `FormField`（它的字段是 `form-label` + `:value` 手写体系，本批只修语义不动排版，避免一次改两件事）；③ 事件模板（`/random-events` 的 templates 页签）仍无浏览器级用例，本批的 e2e 走的是"无模板 ⇒ defaultProbability"分支。
+
+### M7-a 最后两个巨型视图分区（世界书页的一次性配置段 + 故事卡展开态布局）
+
+**世界书页：把"配一次就长期不动"的两段收起来，但没填的那段必须自动展开。** 1440×900 实测（同一份数据、同视口，IndexedDB 造两本书：一本配齐、一本全空）：
+
+| 段 | 改前常驻展开 | 改后（已配） | 改后（未配） |
+|---|---|---|---|
+| 整体世界描述 | 422px | **74px**（收起） | 149px（自动展开） |
+| 世界内用户资料 | 921px | **74px**（收起） | 149px（自动展开） |
+| `.editor-content` 滚动高 | 2635px | **1440px** | — |
+| 条目区顶部 `entries-layout` | y≈1998（三屏之下） | **y=803**（首屏可见） | y=953 |
+
+两段合计 **1343px → 148px**，每天要用的条目区从三屏之下回到首屏。规则是 `:default-open="!worldDescDraft"` / `!worldUserProfileDraft"`——**没填的那一段自动展开**，因为把待办藏起来是反向优化；用户仍可点段标题收回去（有用例钉住这条"不是只读的一次性决定"）。`:key="`wd-${currentLorebook.id}`"` 让切书时重挂载，否则 `defaultOpen` 只在挂载时读一次、第二本书会沿用第一本的展开态。
+
+**为此给 `Collapse` 补了 `title-extra` 插槽**：这两段各带一个范围标签（"常量注入" / "仅当前世界"），它们决定用户要不要点开，必须留在**触发按钮里**而不是被面板一起藏掉。原语只有 `advanced` 一个内置标签位，没有可扩展位置——与 M6-f 给 `FormField` 补 `label-extra` 是同一个缺口的两半。随之删掉两处失效的 `.world-desc-header` 规则与两个只服务旧 `aria-label` 的死键（`wb.worldDescAria` / `wb.worldUserProfileAria`；折叠段的 `aria-labelledby` 由原语自己给）。
+
+**故事引擎：真正的问题不是"段太多"，是展开的卡只有 400px 宽。** `.story-grid` 是 `repeat(auto-fill, minmax(360px, 1fr))`，只有一份故事时它就是一条 400px 的窄列，七段详情竖着堆到 **1276px** 高、右边一千像素全空——页面看起来是坏的，读一条故事要滚三屏。改法两行 CSS：展开的那张卡 `grid-column: 1 / -1` 占满整行；`@media (min-width: 1025px)`（规范断点集内的"桌面"值）下 `.card-detail` 两列排布，段与段是并列关系不是先后关系。实测 `.story-grid` **1276px → 794px（-38%）**。移动端不受影响（两列规则在 1025 以上）。
+
+**没做的判断也写清楚**：故事卡内部的七段**没有再折叠**——用户点开卡就是为了读这些提取结果，折叠结果等于把内容藏起来；卡片本身已经是折叠单元。另外观察到"已完成"状态色把整张卡的文字也染成绿色（标题、人名、场景名全绿），属既有状态类作用范围过宽，本批未动，登记在下面。
+
+**验证证据（M7-a，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run build` / `lint`(0 error) / `check:css-conventions`(**5/5**，含断点守卫：新用的 `1025` 在规范集 `{380,480,640,641,900,1024,1025}` 内) / `a11y:contrast`(扫描 **121**) | 退出码均 **0** |
+| `npx vitest run` | **186 files / 3861 passed / 3 skipped**（较 M6-f 增 1 文件 5 例：`two-views-partition` 4 + `collapse` 的 title-extra 1） |
+| E2E | msedge **63 passed**、webkit **18 passed**、mobile 两 project **14 passed**——`worldbook-flow`（三 project 都跑，走"新建→重命名→加条目→树显示"）未改选择器即通过 |
+| 新增断言 | `tests/views/two-views-partition.test.ts` 4 例：已配 → 两段 `aria-expanded=false` 且范围标签在按钮里；未配 → 两段自动展开且"添加"入口直接可见；点段标题能收回；点卡头 → `.story-card` 带 `is-expanded`（两列 CSS 挂在这个类上）。`tests/components/collapse.test.ts` 加 title-extra 一例（钉"标签在 button 内、不在面板内"） |
+| 故障注入 | 两轮，签名不重叠：`:default-open` 恒 `true` → 只红"已配 → 收起"那条；恒 `false` → 红"未配 → 自动展开"与"点标题可收回"两条而"已配 → 收起"仍绿；删 `is-expanded` 绑定 → 只红故事卡那条。撤销后 4 例复绿 |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m7-a-two-views/`：`before-worldbook.png` / `worldbook-collapsed.png` / `worldbook-auto-open.png` / `before-story.png` / `story-two-column.png` |
+| 未做（诚实边界） | ① 故事卡的**状态色作用范围过宽**（`.story-card.status-completed` 把标题与人名一起染绿），要改得单独定配色口径，本批只在截图里留下证据；② 世界书页剩下的两块（`已绑定角色` 141px、`事件` 263px）**保持常驻**——前者是关联入口、后者是 M6-f 刚修好的功能，收起来等于把刚能用的东西藏了；③ 两列排布只在 ≥1025px 生效，平板档（641–1024）仍是单列长条，未做中间档。 | | | |

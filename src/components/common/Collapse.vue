@@ -80,6 +80,9 @@ const open = computed({
       >
         <Icon v-if="icon" :name="icon" :size="16" aria-hidden="true" />
         <span class="collapse-title">{{ t(titleKey) }}</span>
+        <!-- 标题后缀：给"常量注入""仅当前世界"这类**范围标签**用。
+             它们决定用户要不要点开，收起时也必须看得见——放面板里就等于藏了。 -->
+        <slot name="title-extra" />
         <span v-if="advanced" class="collapse-advanced-tag">{{ t('common.advanced') }}</span>
         <Icon class="collapse-chevron" name="chevron-down" :size="16" aria-hidden="true" />
       </button>

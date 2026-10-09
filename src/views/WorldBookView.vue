@@ -21,6 +21,7 @@ import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useLorebookStore } from '@/stores/lorebook';
 import Icon from '@/components/common/Icon.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
+import Collapse from '@/components/common/Collapse.vue';
 import QuickLorebookFlow from '@/components/worldbook/QuickLorebookFlow.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
@@ -1072,14 +1073,19 @@ function strategyLabel(s: LorebookStrategy): string {
           </section>
 
           <!-- F06.7 整体世界描述 -->
-          <section class="world-desc-section" :aria-label="t('wb.worldDescAria')">
-            <header class="world-desc-header">
-              <h2>
-                <Icon name="globe" :size="14" />
-                <span>{{ t('wb.worldDescTitle') }}</span>
-              </h2>
+          <!-- 一次性配置：填好了就默认收起，没填时自动展开（别把还没做的事藏起来） -->
+          <Collapse
+            :key="`wd-${currentLorebook.id}`"
+            class="world-desc-section"
+            title-key="wb.worldDescTitle"
+            hint-key="wb.worldDescCollapseHint"
+            icon="globe"
+            :level="2"
+            :default-open="!worldDescDraft"
+          >
+            <template #title-extra>
               <span class="world-desc-tag">{{ t('wb.worldDescTag') }}</span>
-            </header>
+            </template>
 
             <div v-if="!worldDescDraft" class="world-desc-empty">
               <p>{{ t('wb.worldDescEmpty') }}</p>
@@ -1172,17 +1178,21 @@ function strategyLabel(s: LorebookStrategy): string {
                 </button>
               </div>
             </div>
-          </section>
+          </Collapse>
 
           <!-- 世界内用户资料：与真实账户分离，每本世界书独立保存 -->
-          <section class="world-user-profile-section" :aria-label="t('wb.worldUserProfileAria')">
-            <header class="world-desc-header">
-              <h2>
-                <Icon name="user" :size="14" />
-                <span>{{ t('wb.worldUserProfileTitle') }}</span>
-              </h2>
+          <Collapse
+            :key="`wup-${currentLorebook.id}`"
+            class="world-user-profile-section"
+            title-key="wb.worldUserProfileTitle"
+            hint-key="wb.worldUserProfileCollapseHint"
+            icon="user"
+            :level="2"
+            :default-open="!worldUserProfileDraft"
+          >
+            <template #title-extra>
               <span class="world-desc-tag">{{ t('wb.worldUserProfileTag') }}</span>
-            </header>
+            </template>
 
             <div v-if="!worldUserProfileDraft" class="world-desc-empty">
               <p>{{ t('wb.worldUserProfileEmpty') }}</p>
@@ -1240,7 +1250,7 @@ function strategyLabel(s: LorebookStrategy): string {
                 </button>
               </div>
             </div>
-          </section>
+          </Collapse>
 
       <WorldBookEventsPanel />
 
@@ -2169,23 +2179,6 @@ function strategyLabel(s: LorebookStrategy): string {
   border-bottom: 1px solid var(--border);
   background: var(--card);
   flex-shrink: 0;
-}
-
-.world-desc-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.world-desc-header h2 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--foreground);
 }
 
 .world-desc-tag {

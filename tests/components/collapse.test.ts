@@ -154,4 +154,21 @@ describe('受控展开（v-model:open）', () => {
     expect(wrapper.find('button.collapse-toggle').attributes('aria-expanded')).toBe('false');
     expect(wrapper.emitted('update:open')).toEqual([[false]]);
   });
+
+  it('title-extra 渲染在触发按钮里，收起时范围标签照样看得见', () => {
+    const wrapper = mount(Collapse, {
+      props: { titleKey: 'settingsView.uiCustomSection', defaultOpen: false },
+      slots: {
+        default: '<input id="probe-input" />',
+        'title-extra': '<span class="scope-tag">常量注入</span>',
+      },
+    });
+    const tag = wrapper.find('.scope-tag');
+
+    expect(tag.exists()).toBe(true);
+    // 关键：标签在 button 内而不是面板内——放面板里就等于把"要不要点开"的依据藏了
+    expect(wrapper.find('button.collapse-toggle').element.contains(tag.element)).toBe(true);
+    const panel = wrapper.find('.collapse-panel').element as HTMLElement;
+    expect(panel.style.display).toBe('none');
+  });
 });

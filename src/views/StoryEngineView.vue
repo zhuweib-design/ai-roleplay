@@ -958,7 +958,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
           v-for="story in stories"
           :key="story.id"
           class="story-card"
-          :class="getStatusClass(story.status)"
+          :class="[getStatusClass(story.status), { 'is-expanded': expandedStoryId === story.id }]"
         >
           <div class="card-header" @click="toggleExpand(story.id)">
             <Icon name="book-open" :size="20" class="card-icon" />
@@ -1911,6 +1911,24 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 
 .story-card.status-failed {
   border-color: var(--error);
+}
+
+/* 展开的那张卡占满整行。
+ * 1440 视口实测：`.story-grid` 是 `auto-fill minmax(360px,1fr)`，只有一份故事时
+ * 它就是一条 400px 宽的窄列，七段详情竖着堆到 1276px 高，右边一千像素全空——
+ * 读一条故事要滚三屏，而页面看起来是坏的。 */
+.story-card.is-expanded {
+  grid-column: 1 / -1;
+}
+
+/* 展开后详情段两列排布（同一批段落是并列关系，不是先后关系），高度约减半 */
+@media (min-width: 1025px) {
+  .story-card.is-expanded .card-detail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 28px;
+    align-items: start;
+  }
 }
 
 .card-header {
