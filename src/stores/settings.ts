@@ -143,6 +143,12 @@ export const useSettingsStore = defineStore('settings', () => {
   const statusHudConfig = ref<StatusHudConfig>({ ...DEFAULT_STATUS_HUD_CONFIG });
 
   /**
+   * 可折叠段的开合记忆（M7-d）：段标识 → 是否展开。
+   * 只存"用户明确点过"的段；没点过的段由调用方给推导默认（如"没填的自动展开"）。
+   */
+  const uiSectionOpen = ref<Record<string, boolean>>({});
+
+  /**
    * 上下文窗口 Token 上限（全局）
    *
    * 决定 prompt-builder 的历史裁剪预算：`预算 = maxContextTokens - reservedTokens`。
@@ -958,6 +964,14 @@ export const useSettingsStore = defineStore('settings', () => {
         if (saved.statusHudConfig && typeof saved.statusHudConfig === 'object') {
           statusHudConfig.value = normalizeStatusHudConfig(saved.statusHudConfig);
         }
+        // M7-d 加载折叠段开合记忆（只收 boolean，脏键值直接丢）
+        if (saved.uiSectionOpen && typeof saved.uiSectionOpen === 'object') {
+          const clean: Record<string, boolean> = {};
+          for (const [k, v] of Object.entries(saved.uiSectionOpen as Record<string, unknown>)) {
+            if (typeof v === 'boolean') clean[k] = v;
+          }
+          uiSectionOpen.value = clean;
+        }
         // 加载上下文长度配置（向后兼容：旧数据缺字段时保留默认 8192 / 1024）
         if (typeof saved.maxContextTokens === 'number' && Number.isFinite(saved.maxContextTokens)) {
           maxContextTokens.value = Math.floor(saved.maxContextTokens);
@@ -1079,6 +1093,8 @@ export const useSettingsStore = defineStore('settings', () => {
         creationPreset: creationPreset.value,
         // P1 状态栏偏好
         statusHudConfig: { ...toRaw(statusHudConfig.value) },
+        // M7-d 折叠段开合记忆
+        uiSectionOpen: { ...toRaw(uiSectionOpen.value) },
         // 上下文长度配置
         maxContextTokens: maxContextTokens.value,
         reservedTokens: reservedTokens.value,
@@ -1170,6 +1186,18 @@ export const useSettingsStore = defineStore('settings', () => {
     statusHudConfig.value = normalizeStatusHudConfig({ ...statusHudConfig.value, ...patch });
   }
 
+  /**
+   * M7-d：记住某个可折叠段的开合。
+   *
+   * 自己排队落盘（与其余 `void persistSettings()` 同一条串行队列，M2-b8 之后
+   * 并发写不会倒置）。点一次折叠/展开就是一次写，不排队会丢最后一下。
+   */
+  function setUiSectionOpen(key: string, open: boolean): void {
+    if (uiSectionOpen.value[key] === open) return;
+    uiSectionOpen.value = { ...uiSectionOpen.value, [key]: open };
+    void persistSettings();
+  }
+
   // ── 上下文长度配置 ──
 
   /**
@@ -1233,6 +1261,8 @@ export const useSettingsStore = defineStore('settings', () => {
     // MODEL-03 创作模式
     creationPreset,
     statusHudConfig,
+    // M7-d 折叠段开合记忆
+    uiSectionOpen,
     // 上下文长度配置
     maxContextTokens,
     reservedTokens,
@@ -1287,6 +1317,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setSamplingDefaults,
     setCreationPreset,
     setStatusHudConfig,
+    setUiSectionOpen,
     // 上下文长度配置
     setMaxContextTokens,
     setReservedTokens,

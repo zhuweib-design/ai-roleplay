@@ -340,6 +340,17 @@ export interface AppSettings {
   /** P1：状态栏全局偏好（缺省 → DEFAULT_STATUS_HUD_CONFIG） */
   statusHudConfig?: StatusHudConfig;
   /**
+   * 可折叠段的开合记忆（M7-d）：段标识 → 是否展开。
+   *
+   * 为什么值得占一个持久化位：排障段（成员 Runtime 检视、世界描述、用户资料、
+   * 设置页高级段）默认收起，但"我这次是特意展开的"这件事跨刷新会丢，
+   * 于是每次都要重新点一遍。记的是**用户明确点过的**开合，没点过的段
+   * 仍按各自的推导默认值（例如"还没填的段自动展开"）走。
+   *
+   * 可选字段，兼容没有它的历史快照（按 schema-contract 不需要升版本）。
+   */
+  uiSectionOpen?: Record<string, boolean>;
+  /**
    * 上下文窗口 Token 上限（全局设置）。
    *
    * 决定 prompt-builder 的历史裁剪预算：`预算 = maxContextTokens - reservedTokens`。

@@ -556,7 +556,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 |---|---|
 | **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E11 随机事件注入回显（M6-c）**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；常规/高级折叠（**M4-b2：`Collapse` 原语接管设置页三处高级段——「外观」界面自定义、「数据」新分组「运维与兼容」四段（并把档案/备份/两项导出提到前面）、「模型」弹窗内默认采样参数，三处默认收起且用 `v-show` 保住草稿**）；四条边的补完与一处页面合并（**M4-b4：E10 随机事件前提横幅（场景名=角色名的字符串耦合首次出现在界面上，不一致可一跳回该角色）、E15 聊天故事时间改为可点回故事本体（`/story?story=`）、E21 市场索引地址的构建期声明、D-B 后半 `/profile` 并入设置→关于（旧链接重定向，`ProfileView.vue` 删除，`nav.profile`/`router.profile`/5 个 `profile.*` 死键清除）**）；`/chat` ⇄ `/group` 分段控件（**M6-a：两处页头共用 `ChatModeSwitch`，标签取自 nav-model，方向键只移焦点不跳转**）E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索"；角色编辑器分区与原语铺开（**M6-b1：属性段并入 `Collapse`，原语补上 `v-model:open` 受控用法**、**M6-b2：8 个字段块接进 `FormField`，5 条说明拿到 `aria-describedby`、2 处悬空 label 改成分组标签、必填改成"星号对读屏隐藏 + 一句必填文本"，并把本视图标签排版对齐到原语刻度**） |
 | **已落地（分区这条到此收口）** | 四个巨型视图：`CharacterEditorView` 并入 `Collapse`（M6-b1）且 15 块接进 `FormField`（M6-b2 八块 + M6-f 七块，只剩渐变一对色共用一条报错的两控件块）、`GroupChatView` 页头的成员 Runtime 检视段折叠（M6-e）、`WorldBookView` 两段一次性配置折叠（M7-a，条目区 y≈1998 → 803）、`StoryEngineView` 展开卡占满整行 + 详情两列（M7-a，1276px → 794px） |
-| **仍未落地（下面小节仍按目标态描述，别当成现状）** | 折叠态跨会话记忆（`Collapse` 目前不持久化开合状态）；故事卡的状态色作用范围过宽（把标题与人名一起染成状态色）；`Modal` 的对话框级说明只接了群聊两个弹窗，其余弹窗的开头说明尚未逐一归类 |
+| **仍未落地（下面小节仍按目标态描述，别当成现状）** | 折叠记忆的"恢复默认"入口（当前只能靠删键，没有界面）；记忆按世界书分开（现在是全局一份）；`Modal` 的对话框级说明只接了群聊两个弹窗，其余弹窗的开头说明尚未逐一归类 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -2031,4 +2031,34 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | `npx vitest run` | **186 files / 3864 passed / 3 skipped**（与 M7-b 同数——本批的回归网是 e2e，不加单测） |
 | E2E | msedge（`--workers=2`）**64 passed**（63 + 本条）、webkit **19 passed**（18 + 本条）、mobile 两 project **14 passed** |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m7-c-status-color/`：`before-story-colors.png`（整卡染状态色）、`after-story-colors.png`（标题与正文回到中性，徽标保留状态色，失败卡红边框） |
-| 未做（诚实边界） | ① 卡片左上那个书本图标仍是主色，不随状态变——要不要让它也参与状态表达是配色设计决定，本批只处理"文字被染色"这一条；② `.detail-section` / `.protagonist-section` / `.time-section` 的边框用了 `color-mix` 的分段识别色，属"分区身份"不是"状态"，未动；③ 没给 `pending` 状态加边框语义（只有 failed 有），因为四色边框会让"失败"不再突出。 | | | | | |
+| 未做（诚实边界） | ① 卡片左上那个书本图标仍是主色，不随状态变——要不要让它也参与状态表达是配色设计决定，本批只处理"文字被染色"这一条；② `.detail-section` / `.protagonist-section` / `.time-section` 的边框用了 `color-mix` 的分段识别色，属"分区身份"不是"状态"，未动；③ 没给 `pending` 状态加边框语义（只有 failed 有），因为四色边框会让"失败"不再突出。
+
+### M7-d 折叠态跨会话记忆（把"我特意展开的"和"程序推导的默认"分清楚）
+
+**要补的是 M7-a 留下的那条尾巴**：排障段默认收起是对的，但"我这次是特意点开的"跨刷新就丢，于是每次都要重新点。本批给开合一个持久化位，并把两种意图分开：
+
+| 情形 | 谁说了算 |
+|---|---|
+| 用户点过这一段 | 他的选择，跨刷新、跨页面都跟着 |
+| 从没点过 | 调用方给的推导默认（M7-a 的"还没填就自动展开"、高级段的"默认收起"） |
+
+**落点**：`AppSettings.uiSectionOpen?: Record<string, boolean>`（可选字段，按 `schema-contract` 零迁移，两个 schema 门禁都不用动）+ `settings.setUiSectionOpen(key, open)`（同值早退不重复写、写走 M2-b8 那条串行队列）+ `composables/useSectionMemory.ts` 一个读时合并的 `WritableComputed`。
+**刻意不在挂载时把默认值写进存储**——一写进去，"没填自动展开"就退化成"只在新装时生效一次"。
+
+**原语一行没改**：`Collapse` 在 M6-b1 就有 `v-model:open` 受控用法，本批只是把 7 个点接上去（世界书 2、群聊页头 1、设置页高级段 3、外加 M7-a 那两段的 `:key` 因此可以撤掉——开合不再依赖重挂载）。
+
+**浏览器实测（Edge 无头，真刷新）**：都配过的书两段初始 `false` → 点开"整体世界描述"变 `true` → **整页刷新后仍是 `true`** → 再收起并刷新仍是 `false`；设置页「外观」的"界面自定义"展开后刷新 `aria-expanded` 仍为 `true`。
+
+**踩到两处，都记下来**：① `loadFromStorage` 把"完全没有已知字段"的快照当首次启动整段跳过（判据是 `theme/fontSize/apiProfiles/activeApiProfileId/creationPreset` 至少有一个），所以只带 `uiSectionOpen` 的夹具读不回来——真机快照永远带 `theme`，不影响线上，但夹具必须照实写；② 类型：`computed({get,set})` 的返回要标 `WritableComputedRef`，标成 `ComputedRef` 会让调用方 `open.value = x` 报 TS2540。
+
+**验证证据（M7-d，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run build` / `lint`(0 error) / `i18n:check:strict`(207 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**) / `snapshot:migration:check` / `runtime:db:schema:check` | 退出码均 **0**（两个 schema 门禁确认零迁移） |
+| `npx vitest run` | **187 files / 3870 passed / 3 skipped**（新增 `tests/composables/use-section-memory.test.ts` 5 例 + 视图侧 1 例） |
+| E2E | msedge **64 passed**、webkit **19 passed**、mobile 两 project **14 passed** |
+| 新增断言 | 推导默认随数据重算（不是挂载快照）、记忆优先于相反方向的默认、写一次落盘一次且同值不重复写、加载丢非 boolean 脏值、两段互不覆盖、视图侧"点过之后跨重挂载仍保持" |
+| 故障注入 | 把 getter 改成只回落到推导默认 → 4 例转红（含视图侧两条：其中"点段标题可收起"也红，说明**没有记忆就没有手动控制权**，这条比预想更值）；撤销后全绿 |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m7-d-section-memory/worldbook-remembered-open.png`（刷新后仍保持展开） |
+| 未做（诚实边界） | ① 记忆是**全局一份**，不分世界书——切到另一本书也会带着上一次的开合。选它是因为开合是"我要不要看这块"的用户偏好，不是书的内容属性；若以后有人反馈"这本书想开着、那本想关着"，把 key 拼上 `lorebookId` 即可（存储结构不用改）；② 没有"恢复默认"入口——清掉记忆等于删键，当前没有任何界面做这件事；③ 角色编辑器的"属性详情"段**没接**记忆：它的开合绑的是 `form.attributesOpen`，随表单一起存、且切换角色时要归零，属另一条语义。 | | | | | | |

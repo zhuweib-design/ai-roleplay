@@ -2,6 +2,7 @@
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import Collapse from '@/components/common/Collapse.vue';
+import { useSectionMemory } from '@/composables/useSectionMemory';
 import MasterPasswordModal from '@/components/common/MasterPasswordModal.vue';
 import Modal from '@/components/common/Modal.vue';
 import type { ConflictStrategy } from '@/core/backup';
@@ -35,6 +36,8 @@ import { useRandomEventsStore } from '@/stores/random-events';
 import { useStoryStore } from '@/stores/story';
 
 const settings = useSettingsStore();
+/** M7-d：运维与兼容四段属高级段，默认收起；点过的开合跨会话记住 */
+const advancedOpsOpen = useSectionMemory('settings.advancedOps');
 const randomEventsStore = useRandomEventsStore();
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -580,11 +583,11 @@ function triggerBackupImport() {
 
       <!-- M4-b2：四段运维项归入高级段，默认收起；备份/导出这些日常动作不再被挡在下面 -->
       <Collapse
+        v-model:open="advancedOpsOpen"
         title-key="settingsView.advancedOpsSection"
         hint-key="settingsView.advancedOpsHint"
         icon="database"
         advanced
-        :default-open="false"
       >
       <!-- T-07: SillyTavern Quick Reply 互导 -->
       <div class="data-mgmt-row">

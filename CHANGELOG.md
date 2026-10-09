@@ -331,6 +331,16 @@
 - 踩到一处时序：应用是异步开库的，紧跟首次 `goto` 之后查 `indexedDB.databases()` 可能为空，造数会取到 `undefined`；改成先 `expect.poll` 等到库出现，连跑三次稳定。故障注入：选择器改回不限定 → 红在"标题色不该随状态变"；另一次 `sed` 把 `.status-badge.status-x` 写成 `status-x`（丢点号）导致"徽标没色"，不是被验的那件事，已剔除不算数。
 - 全量：单测 **186 files / 3864 passed / 3 skipped**（与 M7-b 同数，本批回归网在 e2e）；E2E msedge **64**、webkit **19**、mobile **14** passed；`build` / `lint`(0 error) / `check:css-conventions`(5/5) / `a11y:contrast`(121，未变) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m7-c-status-color/`（改前整卡染色 / 改后回到中性）。
 
+### 新增（UX/IA M7-d：折叠态跨会话记忆）
+- 补上 M7-a 留下的尾巴：排障段默认收起是对的，但"我这次特意点开"跨刷新就丢。新增 `AppSettings.uiSectionOpen?: Record<string, boolean>`（可选字段，按 `schema-contract` **零迁移**，两个 schema 门禁都不动）+ `settings.setUiSectionOpen()`（同值早退不重复写，写走 M2-b8 那条串行队列）+ `composables/useSectionMemory.ts`。
+- 两种意图分清：用户点过 → 他的选择优先；从没点过 → 用调用方给的推导默认（"还没填就自动展开"、高级段"默认收起"）。**刻意不在挂载时把默认值写进存储**——一写进去，"没填自动展开"就退化成"只在新装时生效一次"。
+- `Collapse` 原语一行没改：M6-b1 就有 `v-model:open` 受控用法。接上 7 个点（世界书 2、群聊页头 1、设置页高级段 3，另含 M7-a 那两段可以撤掉 `:key` 重挂载）。角色编辑器的"属性详情"段没接——它绑 `form.attributesOpen`，随表单存且切角色要归零，另一条语义。
+- 浏览器实测（真刷新）：初始两段 `false` → 点开 `true` → 整页刷新仍 `true` → 再收起刷新仍 `false`；设置页「外观」的"界面自定义"展开后刷新仍 `true`。
+- 新增 6 例（推导默认随数据重算 / 记忆优先于相反默认 / 写一次落盘一次且同值不重复 / 加载丢非 boolean 脏值 / 两段互不覆盖 / 视图侧跨重挂载保持）。故障注入把 getter 改成只回落到默认 → 4 例转红，其中"点段标题可收起"也红，说明**没有记忆就没有手动控制权**。
+- 两处坑记下来免得重踩：① `loadFromStorage` 把"完全没有已知字段"的快照当首次启动整段跳过，夹具必须带一个它认得的字段（真机快照永远带 `theme`）；② `computed({get,set})` 的返回类型要标 `WritableComputedRef`，标 `ComputedRef` 会让调用方赋值报 TS2540。
+- 全量：单测 **187 files / 3870 passed / 3 skipped**，E2E msedge **64**、webkit **19**、mobile **14** passed；`build` / `lint` / `i18n:check:strict`(207 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(121) / `snapshot:migration:check` / `runtime:db:schema:check` 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m7-d-section-memory/`。
+- 未做：记忆是全局一份、不分世界书（开合是用户偏好不是书的内容属性；要按书分开只需把 key 拼上 `lorebookId`）；没有"恢复默认"入口。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

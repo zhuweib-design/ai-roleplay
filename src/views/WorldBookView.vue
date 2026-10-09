@@ -18,6 +18,7 @@
 import { ref, computed, watch, useTemplateRef, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useReadinessJump } from '@/composables/useReadinessJump';
+import { useSectionMemory } from '@/composables/useSectionMemory';
 import { useLorebookStore } from '@/stores/lorebook';
 import Icon from '@/components/common/Icon.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
@@ -441,6 +442,10 @@ function onNameInput(e: Event) {
 // ── F06.7 整体世界描述 ──
 const worldDescDraft = ref<WorldDescription | null>(null);
 const worldUserProfileDraft = ref<WorldUserProfile | null>(null);
+
+// M7-d：这两段的开合走"点过就记住，没点过按'还没填就展开'推导"
+const worldDescOpen = useSectionMemory('wb.worldDesc', () => !worldDescDraft.value);
+const userProfileOpen = useSectionMemory('wb.userProfile', () => !worldUserProfileDraft.value);
 
 const worldTypeOptions: { value: WorldType; label: string }[] = [
   { value: 'fantasy', label: t('wb.worldTypeFantasy') },
@@ -1073,15 +1078,14 @@ function strategyLabel(s: LorebookStrategy): string {
           </section>
 
           <!-- F06.7 整体世界描述 -->
-          <!-- 一次性配置：填好了就默认收起，没填时自动展开（别把还没做的事藏起来） -->
+          <!-- 一次性配置：用户点过就听他的；没点过时"没填的那段自动展开"（M7-d 接上记忆） -->
           <Collapse
-            :key="`wd-${currentLorebook.id}`"
+            v-model:open="worldDescOpen"
             class="world-desc-section"
             title-key="wb.worldDescTitle"
             hint-key="wb.worldDescCollapseHint"
             icon="globe"
             :level="2"
-            :default-open="!worldDescDraft"
           >
             <template #title-extra>
               <span class="world-desc-tag">{{ t('wb.worldDescTag') }}</span>
@@ -1182,13 +1186,12 @@ function strategyLabel(s: LorebookStrategy): string {
 
           <!-- 世界内用户资料：与真实账户分离，每本世界书独立保存 -->
           <Collapse
-            :key="`wup-${currentLorebook.id}`"
+            v-model:open="userProfileOpen"
             class="world-user-profile-section"
             title-key="wb.worldUserProfileTitle"
             hint-key="wb.worldUserProfileCollapseHint"
             icon="user"
             :level="2"
-            :default-open="!worldUserProfileDraft"
           >
             <template #title-extra>
               <span class="world-desc-tag">{{ t('wb.worldUserProfileTag') }}</span>

@@ -87,6 +87,20 @@ describe('世界书页的一次性配置段', () => {
     await desc.trigger('click');
     expect(toggleFor(wrapper, '整体世界描述')!.attributes('aria-expanded')).toBe('false');
   });
+
+  it('用户明确点过之后，记忆优先于"没填自动展开"（跨重挂载仍保持）', async () => {
+    const first = await mountWorldbook(false);
+    // 没填 → 自动展开
+    expect(toggleFor(first, '整体世界描述')!.attributes('aria-expanded')).toBe('true');
+    // 用户特意收起
+    await toggleFor(first, '整体世界描述')!.trigger('click');
+    expect(toggleFor(first, '整体世界描述')!.attributes('aria-expanded')).toBe('false');
+    first.unmount();
+
+    // 同一份设置（同一个 pinia）里重挂载：该听用户的，而不是又自动展开
+    const again = await mountWorldbook(false);
+    expect(toggleFor(again, '整体世界描述')!.attributes('aria-expanded')).toBe('false');
+  });
 });
 
 describe('故事引擎展开卡片的布局钩子', () => {

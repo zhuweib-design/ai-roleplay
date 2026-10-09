@@ -18,6 +18,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useReadinessJump } from '@/composables/useReadinessJump';
+import { useSectionMemory } from '@/composables/useSectionMemory';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useChatStore } from '@/stores/chat';
 import { createApiClient } from '@/api';
@@ -82,6 +83,8 @@ function goBack() {
 
 // 群聊 Runtime 状态查看：当前选中的成员
 const runtimeInspectMemberId = ref<string | null>(null);
+/** M7-d：排障段的开合跨会话记住（默认仍收起） */
+const runtimeInspectOpen = useSectionMemory('group.runtimeInspect');
 
 // ── UI 状态 ──
 const createModalOpen = ref(false);
@@ -1072,12 +1075,12 @@ function isSystem(msg: { role: string }): boolean {
                  整段是排障面（实测 94px，占页头 234px 的四成），默认收进高级段 -->
             <Collapse
               v-if="currentMembers.length > 0"
+              v-model:open="runtimeInspectOpen"
               title-key="group.runtimeInspectTitle"
               hint-key="group.runtimeInspectHint"
               icon="cpu"
               :level="3"
               :advanced="true"
-              :default-open="false"
               plain
             >
               <div class="group-runtime-inspect">

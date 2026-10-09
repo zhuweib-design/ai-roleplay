@@ -2,6 +2,7 @@
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import Collapse from '@/components/common/Collapse.vue';
+import { useSectionMemory } from '@/composables/useSectionMemory';
 import type { ChatBackground, BubbleStyle } from '@/types';
 import type { CustomTheme } from '@/types';
 import type { ThemeName } from '@/types';
@@ -12,6 +13,9 @@ import { showToast } from '@/utils/toast-service';
 import { t, type Locale } from '@/i18n';
 
 const settings = useSettingsStore();
+
+/** M7-d：界面自定义是高级段，默认收起；用户点过的开合跨会话记住 */
+const uiCustomOpen = useSectionMemory('settings.uiCustom');
 
 interface FontSizeOption {
   value: number;
@@ -538,11 +542,11 @@ const themeOptions = computed<ThemeOption[]>(() => [
 
     <!-- F08 UI 自定义（聊天背景 + 气泡样式 + 自定义 CSS）：M4-b2 归入高级段，默认收起 -->
     <Collapse
+      v-model:open="uiCustomOpen"
       title-key="settingsView.uiCustomSection"
       hint-key="settingsView.uiCustomHint"
       icon="image"
       advanced
-      :default-open="false"
     >
       <!-- F08.2 聊天背景 -->
       <div class="ui-custom-block">

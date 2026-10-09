@@ -21,6 +21,7 @@ import {
 } from '@core/creation-preset';
 import { createApiClient } from '@/api';
 import Collapse from '@/components/common/Collapse.vue';
+import { useSectionMemory } from '@/composables/useSectionMemory';
 import type { ApiProfile } from '@/types';
 import type { ModelSize } from '@/core/local-model-engine';
 import Icon from '@/components/common/Icon.vue';
@@ -29,6 +30,8 @@ import { showToast } from '@/utils/toast-service';
 import { t } from '@/i18n';
 
 const settings = useSettingsStore();
+/** M7-d：默认采样参数属高级段，默认收起；点过的开合跨会话记住 */
+const samplingOpen = useSectionMemory('model.sampling');
 const chatStore = useChatStore();
 const localModelStore = useLocalModelStore();
 const router = useRouter();
@@ -1137,12 +1140,12 @@ watch(
 
         <!-- P0-3：Profile 级默认采样参数（留空 = 不传 = 供应商默认）；M4-b2：三个参数一起归高级段，默认收起 -->
         <Collapse
+          v-model:open="samplingOpen"
           title-key="modelPanel.samplingTitle"
           hint-key="modelPanel.samplingHint"
           :level="3"
           advanced
           plain
-          :default-open="false"
         >
           <div class="form-field">
             <label for="p-top-p" class="field-label">{{ t('modelPanel.topPLabel') }}</label>
