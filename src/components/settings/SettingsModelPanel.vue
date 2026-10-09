@@ -1257,11 +1257,12 @@ watch(
       v-model="deleteModalOpen"
       :title="t('modelPanel.deleteTitle')"
       :aria-label="t('modelPanel.deleteAria2')"
+      described-by="profile-delete-desc profile-delete-warning"
     >
-      <p v-if="deleteTarget">
+      <p id="profile-delete-desc" v-if="deleteTarget">
         {{ t('modelPanel.deleteConfirm', { name: deleteTarget.name }) }}
       </p>
-      <p class="delete-warning">{{ t('modelPanel.deleteWarning') }}</p>
+      <p id="profile-delete-warning" class="delete-warning">{{ t('modelPanel.deleteWarning') }}</p>
       <template #footer>
         <button
           type="button"

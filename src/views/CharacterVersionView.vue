@@ -860,9 +860,10 @@ type="button"
     <Modal
       :model-value="commitModalOpen"
       :title="t('cv.commitTitle')"
+      described-by="cv-commit-desc"
       @update:model-value="commitModalOpen = $event"
     >
-      <p class="modal-hint">
+      <p id="cv-commit-desc" class="modal-hint">
         {{ t('cv.commitHint', { name: currentCharacter?.name ?? '' }) }}
       </p>
       <div class="form-group">
@@ -973,9 +974,10 @@ type="button"
       :model-value="conflictModalOpen"
       :title="t('cv.conflictTitle')"
       :dismissible="false"
+      described-by="cv-conflict-desc"
       @update:model-value="conflictModalOpen = $event"
     >
-      <p class="modal-hint">
+      <p id="cv-conflict-desc" class="modal-hint">
         {{ t('cv.conflictHint') }}
       </p>
       <ul v-if="store.pendingConflicts" class="conflict-list" role="list">

@@ -1060,8 +1060,12 @@ function startWithExample(text: string) {
     />
 
     <!-- P1-3：消息编辑 Modal（替代原生 prompt） -->
-    <Modal v-model="deleteConfirmModalOpen" :title="t('bubble.deleteConfirmTitle')">
-      <p class="delete-confirm-body">{{ t('bubble.deleteConfirmBody') }}</p>
+    <Modal
+      v-model="deleteConfirmModalOpen"
+      :title="t('bubble.deleteConfirmTitle')"
+      described-by="msg-delete-desc"
+    >
+      <p id="msg-delete-desc" class="delete-confirm-body">{{ t('bubble.deleteConfirmBody') }}</p>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="deleteConfirmModalOpen = false">
           {{ t('common.cancel') }}

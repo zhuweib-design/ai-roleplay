@@ -230,11 +230,12 @@ function handleKeydown(e: KeyboardEvent) {
     :title="title"
     :dismissible="dismissible"
     :aria-label="title"
+    described-by="mpm-desc"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div class="mpm-content" @keydown="handleKeydown">
       <!-- 描述说明 -->
-      <p class="mpm-desc">{{ descText }}</p>
+      <p id="mpm-desc" class="mpm-desc">{{ descText }}</p>
 
       <!-- 表单 -->
       <form class="mpm-form" @submit.prevent="handleSubmit">

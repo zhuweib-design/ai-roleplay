@@ -81,6 +81,10 @@ export default defineConfig({
         '**/ux-narrow-editor-preview.spec.ts',
         // M2-b9：滑块渐变/按压着色都靠 color-mix 与新式渐变分段，Safari 内核必须实测一次
         '**/ux-interaction-feedback.spec.ts',
+        // M8-c：用例按可访问名定位对话框（getByRole('dialog', { name })），而对话框的
+        // 可访问名由各内核自己算；同一个按钮在页面上还有另外两处同名「取消」，
+        // 名字算错就会点偏。Safari 必须实测一次
+        '**/ux-modal-describedby.spec.ts',
       ],
       testIgnore: '**/mobile/**',
       use: { ...devices['Desktop Safari'] },

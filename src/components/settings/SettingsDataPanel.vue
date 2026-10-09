@@ -844,8 +844,12 @@ function triggerBackupImport() {
     </Modal>
 
     <!-- P1-3：清空审计日志确认（替代原生 confirm） -->
-    <Modal v-model="auditClearConfirmOpen" :title="t('settingsView.auditClearConfirmTitle')">
-      <p>{{ t('settingsView.auditClearConfirm') }}</p>
+    <Modal
+      v-model="auditClearConfirmOpen"
+      :title="t('settingsView.auditClearConfirmTitle')"
+      described-by="audit-clear-desc"
+    >
+      <p id="audit-clear-desc">{{ t('settingsView.auditClearConfirm') }}</p>
       <template #footer>
         <button
           type="button"

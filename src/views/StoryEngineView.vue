@@ -1342,8 +1342,9 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
       v-model="deleteModalOpen"
       :title="t('story.deleteTitle')"
       :aria-label="t('story.deleteAria2')"
+      described-by="story-delete-desc"
     >
-      <p class="confirm-text">
+      <p id="story-delete-desc" class="confirm-text">
         {{ t('story.deleteConfirm') }}
       </p>
       <div class="confirm-actions">

@@ -1521,8 +1521,9 @@ type="button"
     <Modal
       v-model="deleteModalOpen"
       :title="t('group.deleteTitle')"
+      described-by="group-delete-desc"
     >
-      <p>{{ t('group.deleteConfirm') }}</p>
+      <p id="group-delete-desc">{{ t('group.deleteConfirm') }}</p>
       <template #footer>
         <button
           type="button"

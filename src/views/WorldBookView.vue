@@ -1642,8 +1642,9 @@ function strategyLabel(s: LorebookStrategy): string {
     <Modal
       v-model="deleteModalOpen"
       :title="t('wb.deleteTitle')"
+      described-by="wb-delete-desc"
     >
-      <p>{{ t('wb.deleteConfirmNamed', { name: deleteTargetLorebook?.name ?? t('story.unnamedLorebook'), count: deleteTargetLorebook?.entries.length ?? 0 }) }}</p>
+      <p id="wb-delete-desc">{{ t('wb.deleteConfirmNamed', { name: deleteTargetLorebook?.name ?? t('story.unnamedLorebook'), count: deleteTargetLorebook?.entries.length ?? 0 }) }}</p>
       <template #footer>
         <button
           type="button"
@@ -1666,9 +1667,10 @@ function strategyLabel(s: LorebookStrategy): string {
     <Modal
       v-model="generateModalOpen"
       :title="t('wb.generateTitle')"
+      described-by="wb-generate-desc"
     >
       <div class="generate-modal-body">
-        <p class="generate-hint">
+        <p id="wb-generate-desc" class="generate-hint">
           {{ t('wb.generateHint') }}
         </p>
 

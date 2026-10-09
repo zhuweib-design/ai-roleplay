@@ -358,6 +358,15 @@
 - 全量：单测 **188 files / 3875 passed / 3 skipped**，E2E msedge **69**、webkit **24**、mobile **14** passed；`build` / `lint`(0 error) / `i18n:check:strict`(207 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(121) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m8-b-section-memory-per-entity/`。
 - 未做：删书/删群不清理其记忆键（留的是几条 boolean，代价可忽略）；出口只有整体清空，没有"单独恢复某一段"；角色编辑器"属性详情"段仍未接记忆（语义不同）。
 
+### 新增（UX/IA M8-c：对话框"这是在干什么"接进无障碍树）
+- M6-f 加的 `Modal.describedBy` 只接了群聊两处，其余弹窗开头那句解释整个对话框的话（"确定要删除角色「X」吗"、"会一并删掉全部对话历史"、"三步就能聊起来"）读屏念不到——进窗只报标题，而标题是动作名、不带后果，用户只能靠猜。本批铺到 **20 处静态引用 / 23 条 id / 13 个文件**：角色列表与编辑器的删除+未保存、世界书删除与 AI 生成、故事删除、数据银行删除、图片删除与清空、版本提交与冲突、群聊删除、消息删除、审计清空、模型档位删除、主密码、首启欢迎窗。
+- 口径：只接"这个对话框在干什么 / 按下会发生什么"那一句；字段级提示仍走 `FormField` 自己的 `describedBy`，两者混用会让读屏把某个框的填法当成整窗说明。
+- 两层守卫：`tests/accessibility/modal-describedby-wired.test.ts`（静态 5 条：引用数与接入文件数不倒退、id 有定义、定义唯一、定义落在同一个 `<Modal>` 块内、引用只挂在 `<Modal>` 上；扫描跳过 `:described-by`，否则 `FormField` 的插槽绑定会凭空造出悬空引用）+ `e2e/ux-modal-describedby.spec.ts`（运行时 4 例，静态守卫看不见的 `v-if` 说明段落只能在浏览器里验）。
+- 故障注入六处、签名不重叠：改 id → 红"悬空"；挂到 `<p>` → 红"只应挂在 Modal"；删掉群聊 3 处 → 红"数量下限"；引用挪到同文件另一个 Modal → 红"说明不在本 Modal 内"；Modal 外再造同名 id → 红"全应用唯一"；运行时把引用改成不存在的 id → e2e 报错（证明它不是空转）。
+- 浏览器实测：欢迎窗 / 未保存确认 / 列表删除确认（含 `v-if` 那句）/ 世界书删除确认四个弹窗逐个点开，`aria-describedby` 全部解析到框内真实文字。全量：单测 **189 files / 3880 passed / 3 skipped**，E2E msedge **73**、webkit **28**（本批 4 例已进 Safari 内核清单）、mobile **14** passed；`build` / `lint`(0 error) / `i18n:check:strict`(207 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(121) / 两个 schema 门禁 / `eval:manifest` / `check:csp` / `check:ort` 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m8-c-describedby/`。
+- 顺带量到一条与 M8-c 无关的门禁问题：e2e 全量跑在默认并发下不稳定（msedge 72/73、webkit 25–26/28，失败点每次不同，单跑全绿；压到 `--workers=2` / `--workers=1` 后分别 73/73、28/28 全绿）。属既有用例对负载敏感，不是本批回归，修法（把并发上限写进 `playwright.config.ts`）登记待办。
+- 未做：20 处引用只有 4 处在真浏览器里点开验过，其余靠静态守卫（风险点收窄到"带 `v-if` 的说明"，全量扫下来仅 3 处，其中 1 处已浏览器验）；世界书两个弹窗未进 e2e（三步流程的"完成"要先有角色，空 profile 走不到，改用"创建新世界书"按钮已在证据脚本跑通）；未清理既有的重复可访问名（同页三处「取消」、9 处 `id="main-content"`、3 处 `panel-settings`）。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

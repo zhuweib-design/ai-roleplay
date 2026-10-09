@@ -582,11 +582,12 @@ function tagsPreview(tags: string[]): string {
       v-model="deleteModalOpen"
       :title="t('characters.deleteTitle')"
       :aria-label="t('characters.deleteModalAria')"
+      described-by="char-list-delete-desc char-list-delete-warning"
     >
-      <p v-if="deleteTarget">
+      <p id="char-list-delete-desc" v-if="deleteTarget">
         {{ t('characters.deleteConfirm', { name: deleteTarget.name }) }}
       </p>
-      <p class="delete-warning">
+      <p id="char-list-delete-warning" class="delete-warning">
         {{ t('characters.deleteWarning') }}
       </p>
       <template #footer>
@@ -619,9 +620,10 @@ function tagsPreview(tags: string[]): string {
       v-model="generateModalOpen"
       :title="t('characters.generateModalTitle')"
       :aria-label="t('characters.generateModalAria')"
+      described-by="char-generate-desc"
     >
       <div class="generate-content">
-        <p class="generate-hint">
+        <p id="char-generate-desc" class="generate-hint">
           {{ t('characters.generateHint') }}
           <span class="generate-cost">{{ t('characters.generateCost') }}</span>
         </p>

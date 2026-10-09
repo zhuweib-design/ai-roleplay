@@ -448,8 +448,9 @@ const prereqRows = useDataBankPrereqs();
       v-model="deleteModalOpen"
       :title="t('databank.deleteTitle')"
       :aria-label="t('databank.deleteAria2')"
+      described-by="db-delete-desc"
     >
-      <p class="delete-hint">{{ t('databank.deleteHint') }}</p>
+      <p id="db-delete-desc" class="delete-hint">{{ t('databank.deleteHint') }}</p>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="deleteModalOpen = false">
           {{ t('databank.cancel') }}

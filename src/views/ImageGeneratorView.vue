@@ -645,8 +645,13 @@ onMounted(async () => {
     </Modal>
 
     <!-- P2-8 删除单图确认 -->
-    <Modal v-model="deleteModalOpen" :title="t('imgGen.deleteConfirmTitle')" :aria-label="t('imgGen.deleteConfirmTitle')">
-      <p>{{ t('imgGen.deleteConfirm') }}</p>
+    <Modal
+      v-model="deleteModalOpen"
+      :title="t('imgGen.deleteConfirmTitle')"
+      :aria-label="t('imgGen.deleteConfirmTitle')"
+      described-by="img-delete-desc"
+    >
+      <p id="img-delete-desc">{{ t('imgGen.deleteConfirm') }}</p>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="deleteTargetId = null">
           {{ t('common.cancel') }}
@@ -658,8 +663,13 @@ onMounted(async () => {
     </Modal>
 
     <!-- P2-8 清空画廊确认 -->
-    <Modal v-model="clearAllOpen" :title="t('imgGen.clearConfirmTitle')" :aria-label="t('imgGen.clearConfirmTitle')">
-      <p>{{ t('imgGen.clearConfirm') }}</p>
+    <Modal
+      v-model="clearAllOpen"
+      :title="t('imgGen.clearConfirmTitle')"
+      :aria-label="t('imgGen.clearConfirmTitle')"
+      described-by="img-clear-desc"
+    >
+      <p id="img-clear-desc">{{ t('imgGen.clearConfirm') }}</p>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="clearAllOpen = false">
           {{ t('common.cancel') }}

@@ -2104,4 +2104,42 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | 浏览器实测（Edge 无头，两本都没填的书） | 书甲初始两段 `true` → 手动收起"整体世界描述"变 `false` → **切到书乙两段仍是 `true`**（不被书甲带走）→ 切回书甲仍是 `false`（自己的记忆还在）；设置页恢复前提示"当前共 1 条"、按钮可点，点完变"目前没有记住任何开合状态"、按钮 disabled |
 | 故障注入 | 三处、签名不重叠：`:disabled` 恒 false → 只红"一条都没记时按钮不可点"；`resetUiSectionOpen` 不清空 → 红"点一下清空"；世界书 key 退回固定串 → 只红"按书分开"那条。撤销后全绿 |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m8-b-section-memory-per-entity/`：`book-b-unaffected.png`、`settings-reset-entry.png`、`settings-after-reset.png` |
-| 未做（诚实边界） | ① 删书/删群**不清理**其记忆键（留的是几条 boolean，代价可忽略，但"恢复默认"是目前唯一的出口）；② 出口只有一处全局清空，没有"单独恢复某一段"；③ 角色编辑器的"属性详情"段仍未接（语义不同，见 M7-d）。 | | | | | | | |
+| 未做（诚实边界） | ① 删书/删群**不清理**其记忆键（留的是几条 boolean，代价可忽略，但"恢复默认"是目前唯一的出口）；② 出口只有一处全局清空，没有"单独恢复某一段"；③ 角色编辑器的"属性详情"段仍未接（语义不同，见 M7-d）。 |
+
+### M8-c 对话框"这是在干什么"接进无障碍树（`Modal.describedBy` 从 2 处铺到 20 处）
+
+**为什么要铺**：M6-f 加这个属性时只接了群聊那两处（挑成员、加临时 NPC）。其余弹窗开头都躺着一句解释整个对话框的话——"确定要删除角色「X」吗"、"会一并删掉他的全部对话历史"、"三步就能聊起来"——可读屏进对话框时只会念标题。标题是动作名（"确认删除"），不带后果；**用户必须靠猜才知道按下"删除"会连带删掉什么**。这正是本任务里"操作过程没有反馈"的一种：不是没写字，是写了但那条通道没接。
+
+**口径（哪些接、哪些不接）**：接的是"这个对话框在干什么 / 按下会发生什么"那一句；字段级提示继续走 `FormField` 自己的 `describedBy`。两者不能混——把"最多 16 个标签"挂到对话框上，读屏就会把某个框的填法当成整个窗的说明。本批共 **20 处静态引用 / 23 条 id / 13 个文件**：角色列表与编辑器的删除+未保存、世界书删除与 AI 生成、故事删除、数据银行删除、图片删除与清空、版本提交与冲突、群聊删除、消息删除、审计清空、模型档位删除、主密码、首启欢迎窗。
+
+**两层守卫，各挡一半失效面**：
+
+1. `tests/accessibility/modal-describedby-wired.test.ts`（静态，5 条）：引用数与接入文件数不许倒退、每条 id 全应用有定义、定义唯一、定义落在**同一个 `<Modal>` 块内**、引用确实挂在 `<Modal>` 上。裸字符串引用写错一个字母，界面、构建、类型全都无感，所以只能靠这一层。扫描时**跳过 `:described-by`**——`FormField` 默认插槽往上抛的就是动态绑定，把它当对话框引文校验会凭空造出一条悬空引用（第一版就红在这）。
+2. `e2e/ux-modal-describedby.spec.ts`（运行时，4 例）：静态守卫看不见 `v-if`。删除确认里那句"确定要删除角色「X」吗"带 `v-if="deleteTarget"`，弹窗打开时它若没渲染出来，`aria-describedby` 就指着空气泡。用例把弹窗真点开，读 `[role=dialog]` 的 `aria-describedby`，再 `getElementById` 反查：查得到、就在本对话框内、有实际文字。
+
+**故障注入（每条都单独红过，签名不重叠）**
+
+| 注入 | 红在哪条 |
+|---|---|
+| 把 `id="wb-delete-desc"` 改成别的名字 | 悬空引用 |
+| 给 `MasterPasswordModal` 里一个 `<p>` 加 `described-by="mpm-desc"` | 引用只应挂在 `<Modal>` 上 |
+| 删掉群聊那 3 处引用 | 引用数下限（回到 M8-c 之前的状态必然红） |
+| 把 `db-delete-desc` 的引用挂到同文件另一个 `<Modal>` 上 | 说明文字不在本 Modal 内 |
+| 在 Modal 之外再造一个同名 `id` | 被引用的 id 全应用唯一 |
+| 运行时把 `aria-describedby` 改成 `probe-missing-id` | e2e 的解析检查报错（证明它不是空转） |
+
+**浏览器实测（Edge 无头，4 个弹窗逐个点开）**：欢迎窗 `onboarding-desc` → "三步就能聊起来："；未保存确认 → "有未保存的修改，确定离开吗？"；列表删除确认两条 → "确定要删除角色「证据角色-…」吗？" + "…操作不可撤销。"；世界书删除 → "确定要删除世界书「新世界书」（0 条目）吗？…"。四条全部 `exists:true / inside:true`。
+
+**踩到两处，都记下来**：① 弹窗有淡入过渡，DOM 到位时遮罩 `opacity` 仍是 0，直接截图会拍到"没有弹窗"的假现场——证据脚本必须先等 `opacity > 0.99`；② 角色编辑器一个页面上有**三处同名「取消」**（页头、表单底部、弹窗），`getByRole('button', { name: '取消' })` 直接 strict violation，必须先用 `getByRole('dialog', { name })` 限定。这是既有的可访问名重复，本批只登记。
+
+**顺带量到一条与 M8-c 无关的门禁问题**：e2e 全量跑在默认并发下不稳定——msedge 73 例时 72 绿 1 红（红在 `ux-event-trace`），把本批新增的 4 例排除后仍红、只是换到 `contrast-axe`；webkit 28 例三次全量分别 26/25/26 绿，失败点每次不同；**这些用例单跑全绿**。把并发压到 `--workers=2`（msedge）与 `--workers=1`（webkit）后分别 **73/73、28/28 全绿**。结论：不是本批引入的回归，是既有用例对机器负载敏感（Safari + 打桩 SSE + IndexedDB 造数），修法是把并发上限写进 `playwright.config.ts`。
+
+**验证证据（M8-c，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run build` / `lint`(0 error，6 条既有 warning) / `i18n:check[:strict]`(207 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**，基线 131) + 自检 / `snapshot:migration:check` / `runtime:db:schema:check` / `eval:manifest` / `check:csp` / `check:ort` | 退出码均 **0**（`eval-manifest.json` 被门禁改写的 commit/ranAt 已还原，不入库） |
+| `npx vitest run` | **189 files / 3880 passed / 3 skipped**（新增静态守卫 5 例） |
+| E2E（限并发后） | msedge **73 passed**（72 例既有 + 本批 1 条 spec 4 例）、webkit **28 passed**（本批 4 例已进 Safari 内核清单）、mobile 两 project **14 passed** |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m8-c-describedby/`：`01-欢迎窗`、`02-未保存确认`、`03-列表删除确认`（两句说明都在框内）、`04-世界书删除确认`（带书名与条目数） |
+| 未做（诚实边界） | ① 20 处引用里 **4 处**在真浏览器里点开验过，其余 16 处只有静态守卫。风险点收窄到"带 `v-if` 的说明"：全量扫下来只有 3 处（`char-list-delete-desc` 已浏览器验，`char-delete-desc`、`profile-delete-desc` 形状相同但未验）；② 世界书那两个弹窗没进 e2e——三步流程的"完成"要先有角色，空 profile 走不到，编辑器整块不渲染就拿不到删除按钮（证据脚本改用"创建新世界书"按钮，已跑通并截图）；③ 没给 `Modal` 加运行时自检（axe 不查 `aria-describedby` 的解析，静态守卫 + 抽样 e2e 已覆盖主要失效面）；④ 三处同名「取消」、9 处重复 `id="main-content"`、3 处 `panel-settings` 未清理，本批只登记。 |

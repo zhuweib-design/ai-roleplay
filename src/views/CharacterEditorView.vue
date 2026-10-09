@@ -1289,11 +1289,12 @@ function handleExport() {
       v-model="deleteModalOpen"
       :title="t('charEdit.deleteTitle')"
       :aria-label="t('charEdit.deleteAria2')"
+      described-by="char-delete-desc char-delete-warning"
     >
-      <p v-if="loadedCharacter">
+      <p id="char-delete-desc" v-if="loadedCharacter">
         {{ t('charEdit.deleteConfirm', { name: loadedCharacter.name }) }}
       </p>
-      <p class="delete-warning">
+      <p id="char-delete-warning" class="delete-warning">
         {{ t('charEdit.deleteWarning') }}
       </p>
       <template #footer>
@@ -1315,8 +1316,12 @@ function handleExport() {
     </Modal>
 
     <!-- P1-3：取消编辑时未保存确认（替代原生 confirm） -->
-    <Modal v-model="unsavedConfirmOpen" :title="t('charEdit.unsavedTitle')">
-      <p>{{ t('charEdit.unsaved') }}</p>
+    <Modal
+      v-model="unsavedConfirmOpen"
+      :title="t('charEdit.unsavedTitle')"
+      described-by="char-unsaved-desc"
+    >
+      <p id="char-unsaved-desc">{{ t('charEdit.unsaved') }}</p>
       <template #footer>
         <button
           type="button"

@@ -69,9 +69,10 @@ function goChat(): void {
     :model-value="modelValue"
     :title="t('onboarding.title')"
     :aria-label="t('onboarding.title')"
+    described-by="onboarding-desc"
     @update:model-value="close"
   >
-    <p class="onboarding-desc">{{ allDone ? t('onboarding.descDone') : t('onboarding.desc') }}</p>
+    <p id="onboarding-desc" class="onboarding-desc">{{ allDone ? t('onboarding.descDone') : t('onboarding.desc') }}</p>
 
     <ol class="onboarding-steps" role="list">
       <li
