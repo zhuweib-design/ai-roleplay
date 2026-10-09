@@ -281,6 +281,14 @@
 - **撞上并登记一个真缺陷（设计文档 §七 #21）**：世界书"事件"面板是**死路**——新建事件后逐字段输入一个都存不进去。`stores/events.ts:updateEvent` 每次都拿合并后的整条事件跑 `validateEvent`，而新事件 `name`/`description`/`keywords` 三样全空，任何单字段更新都被另外两样的"不能为空"顶回（store 层实测：三次更新全 `false`，最终三字段仍为空）。界面上输入框是 `:value` 单向绑定，字看着还在、模型里是空的，同时每敲一个字弹一次红 toast。修法要把"完整性错误"与"取值错误"拆开，牵动 `core/event-types.ts` + `stores/events.ts` + 既有 12 例（其夹具正是"一次 patch 三个字段"才绕开了这个坑），故另起一批，未在本批顺手改。
 - 全量：E2E msedge **62 passed**、webkit **17 passed**、mobile 两 project **14 passed**；`npm run build`（vue-tsc 覆盖 e2e）与 `lint`（0 error）退出码 0。本批未动 `src/` 运行时，其余静态门禁随 M6-b2 同版本跑过。
 
+### 变更（UX/IA M6-e：群聊页头的"成员 Runtime 检视"段折叠）
+- `GroupChatView` 页头原本七件事平铺，其中成员级 Runtime 检视（下拉 + `RuntimeStatePanel`）实测占 **94px / 页头 234px**，却既不参与任何一轮生成、也不改变群聊怎么说话。整段包进 `<Collapse :level="3" :advanced="true" :default-open="false" plain>`，沿用 M4-b2 给设置页定的两条规矩：`v-show` 收起（选了一半的检视成员不丢）、说明文字放在面板外。
+- 同一夹具同一视口实测：页头 **234 → 172px**、消息可视区 **452 → 513px（+13.5%）**；收起时下拉仍在 DOM、`aria-expanded=false`，展开后 `#group-runtime-member` 高 32px。展开态 301px 比改前高，是折叠段自身标题与说明行的代价，只在主动排障时出现。
+- 两条硬约束显式守住：`tests/services/status-hud-p1.qa-independent.test.ts` 读的是 `GroupChatView.vue` **源文本**（恰好一个 `<StatusHud`、含 `ms.status`、要有 `v-for="ms in memberStatuses"` / `resolveLatestStatus` / `onStatus` 写回），故成员状态条与生成回路一行都没往外提；`messages-area` 不提取（`long-history-scroll` 与群聊 e2e 依赖该选择器）。
+- 群聊弹窗**没有**铺 `FormField`，原因写清楚而不是漏掉：两个弹窗的字段本就用的配对 `<label for>`，剩下的两条 `.form-hint` 是**弹窗级**说明（描述整个成员选择器 / 整个模板网格），挂到某个控件上是撒谎；正确做法是给 `Modal` 加 `describedBy`，属原语扩展，登记未做。
+- 新增 `tests/views/group-runtime-inspect-collapse.test.ts`（4 例：默认收起且下拉在 DOM、点标题展开、说明与"高级"标记在面板外、段标题是 `h3`）。故障注入 `:default-open=true` → 前三例分别转红且签名不同，`h3` 那例仍绿（正交）；撤销后复绿。
+- 双语各新增 2 键（`group.runtimeInspectTitle` / `Hint`）。全量：单测 **183 files / 3836 passed / 3 skipped**，E2E msedge **62**、webkit **17**、mobile **14** passed，`build` / `lint`(0 error) / `i18n:check[:strict]` / `check:css-conventions`(5/5) / `a11y:contrast`(121) 退出码 0；群聊 axe 与读源文本那条 QA 用例未改即通过。截图 `docs/dev/evidence/ux-ia-guided-flow/m6-e-group-header/`（改前 / 收起 / 展开三张）。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

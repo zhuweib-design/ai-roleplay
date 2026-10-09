@@ -29,6 +29,7 @@ import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import ChatModeSwitch from '@/components/chat/ChatModeSwitch.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
+import Collapse from '@/components/common/Collapse.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import ContextReadinessBar from '@/components/layout/ContextReadinessBar.vue';
@@ -1067,26 +1068,38 @@ function isSystem(msg: { role: string }): boolean {
               </div>
             </div>
 
-            <!-- Virtual Character OS：成员级 Runtime 最小状态查看与回放自检 -->
-            <div v-if="currentMembers.length > 0" class="group-runtime-inspect">
-              <label class="group-runtime-label" for="group-runtime-member">{{ t('runtime.title') }}</label>
-              <select
-                id="group-runtime-member"
-                class="group-runtime-select"
-                :value="runtimeInspectMember?.characterId ?? ''"
-                @change="runtimeInspectMemberId = ($event.target as HTMLSelectElement).value"
-              >
-                <option v-for="member in currentMembers" :key="member.characterId" :value="member.characterId">
-                  {{ member.name }}
-                </option>
-              </select>
-              <RuntimeStatePanel
-                v-if="runtimeInspectCharacter"
-                :key="runtimeInspectCharacter.id"
-                :character="runtimeInspectCharacter"
-                :label="runtimeInspectMember?.name"
-              />
-            </div>
+            <!-- Virtual Character OS：成员级 Runtime 最小状态查看与回放自检。
+                 整段是排障面（实测 94px，占页头 234px 的四成），默认收进高级段 -->
+            <Collapse
+              v-if="currentMembers.length > 0"
+              title-key="group.runtimeInspectTitle"
+              hint-key="group.runtimeInspectHint"
+              icon="cpu"
+              :level="3"
+              :advanced="true"
+              :default-open="false"
+              plain
+            >
+              <div class="group-runtime-inspect">
+                <label class="group-runtime-label" for="group-runtime-member">{{ t('runtime.title') }}</label>
+                <select
+                  id="group-runtime-member"
+                  class="group-runtime-select"
+                  :value="runtimeInspectMember?.characterId ?? ''"
+                  @change="runtimeInspectMemberId = ($event.target as HTMLSelectElement).value"
+                >
+                  <option v-for="member in currentMembers" :key="member.characterId" :value="member.characterId">
+                    {{ member.name }}
+                  </option>
+                </select>
+                <RuntimeStatePanel
+                  v-if="runtimeInspectCharacter"
+                  :key="runtimeInspectCharacter.id"
+                  :character="runtimeInspectCharacter"
+                  :label="runtimeInspectMember?.name"
+                />
+              </div>
+            </Collapse>
 
             <!-- 群组定义 CAS 冲突：显式提示，不静默覆盖远端 -->
             <div v-if="currentGroupConflict" class="conflict-banner" role="alert">

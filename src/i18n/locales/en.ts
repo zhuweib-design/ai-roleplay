@@ -1071,6 +1071,8 @@ const en: Record<MessageKey, string> = {
   'group.exportSt': 'Export ST',
   'group.importStTitle': 'Import from SillyTavern group chat JSON',
   'group.importSt': 'Import ST',
+  'group.runtimeInspectTitle': 'Member Runtime inspector',
+  'group.runtimeInspectHint': 'Inspect each Runtime state and replay self-check per member. Collapsed by default — it does not change how the group speaks.',
   'group.membersAria': 'Group members',
   'group.memberTitle': '{name} (talkativeness: {talk})',
   'group.editMember': 'Edit character {name}',

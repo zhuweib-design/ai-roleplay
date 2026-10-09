@@ -555,7 +555,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 状态 | 条目 |
 |---|---|
 | **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E11 随机事件注入回显（M6-c）**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；常规/高级折叠（**M4-b2：`Collapse` 原语接管设置页三处高级段——「外观」界面自定义、「数据」新分组「运维与兼容」四段（并把档案/备份/两项导出提到前面）、「模型」弹窗内默认采样参数，三处默认收起且用 `v-show` 保住草稿**）；四条边的补完与一处页面合并（**M4-b4：E10 随机事件前提横幅（场景名=角色名的字符串耦合首次出现在界面上，不一致可一跳回该角色）、E15 聊天故事时间改为可点回故事本体（`/story?story=`）、E21 市场索引地址的构建期声明、D-B 后半 `/profile` 并入设置→关于（旧链接重定向，`ProfileView.vue` 删除，`nav.profile`/`router.profile`/5 个 `profile.*` 死键清除）**）；`/chat` ⇄ `/group` 分段控件（**M6-a：两处页头共用 `ChatModeSwitch`，标签取自 nav-model，方向键只移焦点不跳转**）E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索"；角色编辑器分区与原语铺开（**M6-b1：属性段并入 `Collapse`，原语补上 `v-model:open` 受控用法**、**M6-b2：8 个字段块接进 `FormField`，5 条说明拿到 `aria-describedby`、2 处悬空 label 改成分组标签、必填改成"星号对读屏隐藏 + 一句必填文本"，并把本视图标签排版对齐到原语刻度**） |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | 四个巨型视图的分区：`CharacterEditorView` 已并入 `Collapse`（M6-b1）且 8 块接进 `FormField`（M6-b2，剩 8 块卡在原语没有"标签后缀插槽"），其余（`WorldBookView` / `StoryEngineView` / `GroupChatView` 的分区与 `FormField` 铺开）仍未做 |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | 四个巨型视图的分区：`CharacterEditorView` 已并入 `Collapse`（M6-b1）且 8 块接进 `FormField`（M6-b2，剩 8 块卡在原语没有"标签后缀插槽"）、`GroupChatView` 页头的成员 Runtime 检视段已折叠（M6-e，页头 234 → 172px；弹窗级说明要接进无障碍树需 `Modal` 支持 `describedBy`，未做）；**其余**：`WorldBookView` / `StoryEngineView` 的分区仍未做 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -1873,4 +1873,37 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | `npm run build`（vue-tsc 覆盖 e2e 目录） / `npm run lint` | 退出码 **0**（0 error，6 条既有 warning）；本批只新增 spec 与改 `playwright.config.ts` 的 `testMatch`，未动 `src/` 运行时，其余静态门禁随 M6-b2 同版本跑过 |
 | 新用例单跑 | msedge `--workers=1` **1 passed（6.2s）**、webkit `--workers=1` **1 passed（8.6s）**，注入前后各跑一次，签名可分别归因 |
 | E2E 全量 | msedge（`--workers=2`）**62 passed**（61 + 本条）；webkit **17 passed**（16 + 本条，已把该 spec 加进 webkit 的 `testMatch`，理由与 `ux-prompt-trace` 同族）；mobile 两 project **14 passed**（未纳入本条，桌面专属的 `.nav-rail` 在 393px 视口不存在） |
-| 未做（诚实边界） | ① 这条 e2e 覆盖的是"生成器 → 注入 → 回显 → 跳回 → 持久化"，**没有覆盖世界书事件面板的手工事件路径**（该路径本身是 §七 #21 的死路，修好之后再补一条才对得上）；② 概率判定仍走 `Math.random()`，用例靠把 `defaultProbability` 拉到 100 消除不确定性，若将来默认模板非空，"无候选"前提会失效（已在文件头注释里写明依赖）；③ 分流标记用的是 system 文案里的中文句子，`buildRandomEventMessages` 改词会让用例红在"没生成"上——红是有的，只是归因要多看一眼，故在注释里点明它是核心模块里唯一的一句。 |
+| 未做（诚实边界） | ① 这条 e2e 覆盖的是"生成器 → 注入 → 回显 → 跳回 → 持久化"，**没有覆盖世界书事件面板的手工事件路径**（该路径本身是 §七 #21 的死路，修好之后再补一条才对得上）；② 概率判定仍走 `Math.random()`，用例靠把 `defaultProbability` 拉到 100 消除不确定性，若将来默认模板非空，"无候选"前提会失效（已在文件头注释里写明依赖）；③ 分流标记用的是 system 文案里的中文句子，`buildRandomEventMessages` 改词会让用例红在"没生成"上——红是有的，只是归因要多看一眼，故在注释里点明它是核心模块里唯一的一句。
+
+### M6-e 群聊页头分区（成员 Runtime 检视段并入 `Collapse`）
+
+**收的是页头里唯一一块排障面**。`GroupChatView` 的 `<header>` 原本从上到下堆了七件事：群名与操作按钮、成员级 Runtime 检视（下拉 + `RuntimeStatePanel`）、CAS 冲突横幅、成员芯片、待提交回合重试、发言模式切换、成员状态条。实测（1440×900，两个成员的群，`page.screenshot` 同一夹具量得）：**页头共 234px，其中 Runtime 检视占 94px（四成）**，而它既不改变群聊怎么说话、也不参与任何一轮生成——纯粹是"我怀疑 Runtime 出问题了才去看一眼"的面板，却和每天要用的成员条、发言模式平起平坐，还把消息可视区压到 452px。
+
+**做法**：整段包进 `<Collapse :level="3" :advanced="true" :default-open="false" plain>`，沿用 M4-b2 给设置页定的两条规矩——收起用 `v-show`（用户选了一半的检视成员不能因为收起就丢），说明文字放在面板**外面**（`group.runtimeInspectHint`："逐个成员查看 Runtime 状态与回放自检。默认收起——它不改变群聊怎么说话。"），段上带"高级"标记。`icon="cpu"`。
+
+**前后对比（同一夹具、同一视口，实测值）**：
+
+| 量 | 收起态（改后） | 改前（常驻展开） | 展开态（改后） |
+|---|---|---|---|
+| `.group-header` 高 | **172px** | 234px | 301px |
+| `.messages-area` 高 | **513px** | 452px | — |
+| Runtime 检视块 | 盒子 0（`display:none`），**下拉仍在 DOM** | 94px | 可见，`#group-runtime-member` 高 32px |
+| 段标题 `aria-expanded` | `false` | 无折叠 | `true` |
+
+消息可视区 **+61px（+13.5%）**，页头 **-62px**。展开态比改前更高（301 vs 234）是折叠段自身标题 + 说明行的代价——它只在主动排障时出现，符合"低频换常驻整洁"的取向。
+
+**两条硬约束是显式守住的**：① `tests/services/status-hud-p1.qa-independent.test.ts` 读的是 `GroupChatView.vue` 的**源文本**（要求恰好一个 `<StatusHud`、含 `ms.status`、文件里要有 `v-for="ms in memberStatuses"` 与 `resolveLatestStatus`、且 5-5 那条要求 `onStatus: (status) =>` 与 `groupStore.updateAssistantMessage(...)` 同在本文件），所以成员状态条与生成回路的 plumbing **一行都没往外提**；② `messages-area` 不提取（`long-history-scroll` 与群聊 e2e 依赖该选择器）。本批只动 Runtime 检视一块，正是绕开这两条的最小切法。
+
+**为什么这里没铺 `FormField`（不是漏了，是不该铺）**：群聊的两个弹窗（创建群聊、添加成员）字段本来就用的是配对好的 `<label for>`；文件里剩下的两条 `.form-hint`（`group.addMemberHint`、`group.npcHint`）都是**弹窗级**说明——一个描述整个成员选择器、一个描述整个模板网格，把它们 `aria-describedby` 到某个控件上是撒谎。真正对的做法是给 `Modal` 加 `describedBy` 让对话框自己带上这句说明，那是原语扩展、牵动所有对话框，登记为后续项。
+
+**新增断言（`tests/views/group-runtime-inspect-collapse.test.ts`，4 例）**：默认 `aria-expanded=false` 且下拉仍在 DOM、点标题展开后 `display` 不再为 `none`、说明文字与"高级"标记在面板外（`panel.element.contains(hint.element) === false`）、段标题是 `h3`。故障注入：把 `:default-open` 改成 `true` → 前三例分别转红（`expected 'true' to be 'false'` / `expected 'false' to be 'true'` / `expected '' to be 'none'`），`h3` 那例仍绿——正交，符合预期。撤销后 4 例复绿。
+
+**验证证据（M6-e，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run build` / `lint`(0 error) / `i18n:check` + `i18n:check:strict`(206 文件) / `tests/i18n.test.ts`(12 例，新增 2 键双语齐) / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**，基线 131) | 退出码均 **0** |
+| `npx vitest run` | **183 files / 3836 passed / 3 skipped**（较 M6-d 的 182 / 3832 增 1 文件 4 例）；`tests/accessibility/worldbook-group-axe.test.ts`（群聊空态与有数据态）与 `status-hud-p1.qa-independent`（读源文本那条）**未改即通过** |
+| E2E | msedge（`--workers=2`）**62 passed**、webkit（`--workers=1`）**17 passed**、mobile 两 project **14 passed**——`group-chat-flow`（三 project 都跑，含"两个角色群聊 + 独立 Runtime Context"）未改任何选择器即通过 |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m6-e-group-header/`：`before-group-header.png`（改前页头）、`after-group-header.png`（收起态）、`after-group-header-open.png`（展开态）。M6-b1 那个坑又踩到一次：首版展开态截图里段标题是红的，仍是全局悬停染色，截图前把指针移到 `(700,620)` 才拍干净 |
+| 未做（诚实边界） | ① 页头其余六块（成员芯片、发言模式、两条条件横幅、成员状态条）**保持常驻**——它们要么每轮都用、要么是 `role=alert/status` 的异常提示，折叠任何一条都会把"该被看见的东西"藏起来；② 弹窗级说明接不进无障碍树需要 `Modal` 支持 `describedBy`，属原语扩展，本批未做；③ 折叠态**不记忆**：切群或刷新后回到默认收起（`Collapse` 非受控 + `defaultOpen=false`）。没上记忆是因为它需要一个新的持久化位点，而"排障面板每次都要重新点开"目前不构成投诉；若有人反馈"每次都要展开很烦"，改成受控 + 落 `settings` 即可。 | |

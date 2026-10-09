@@ -1071,6 +1071,8 @@ export default {
   'group.exportSt': '导出 ST',
   'group.importStTitle': '从 SillyTavern 群聊 JSON 导入',
   'group.importSt': '导入 ST',
+  'group.runtimeInspectTitle': '成员 Runtime 检视',
+  'group.runtimeInspectHint': '逐个成员查看 Runtime 状态与回放自检。默认收起——它不改变群聊怎么说话。',
   'group.membersAria': '群聊成员',
   'group.memberTitle': '{name}（健谈度：{talk}）',
   'group.editMember': '编辑角色 {name}',
