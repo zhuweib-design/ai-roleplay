@@ -262,6 +262,16 @@
 - 全量：单测 **3827 passed / 3 skipped**（181 文件），E2E msedge **61**、webkit **16**、mobile **14** passed，build 与 9 项静态门禁退出码 0。msedge 第一轮有 1 条 `ux-gap-visibility` E19 失败（`char-tracked` 计数 0），单跑两次均通过、且在 M4-b2 全量跑里以同种方式红过一次，属 O-4 同族干扰，未据此放宽任何断言。
 - 未做（诚实边界）：没有浏览器级 e2e 走通真实生成链路（事件是"上一轮生成、下一轮注入"，打桩端点需按请求分流，还要把场景名配成与角色名完全一致并拉满概率），本批覆盖停在 store + 组件两层；回显只报"注入了"不报"模型采纳了"；`severity`/`category` 不在 `StoryEvent` 上，故回显条不显示严重度。
 
+### 变更（UX/IA M6-b2：角色编辑器 8 个字段块接进 `FormField`）
+- 名称、标签、描述、性格设定、初始场景、绑定 API Profile、职业、作者笔记八块改由 `FormField` 生成标签/说明/报错并回填 `aria-describedby`。改造前这八块只靠视觉相邻表达归属：**说明一条都没和控件建立关系**（旧 `.field-hint` 源码 12 处，零 `aria-describedby`），报错只有 6 处手写 `err-*` 指向且不能与说明同时挂上。实测（Edge 无头，与代码同版本）：默认态 5 条说明 **5/5 被指到**、悬空 `<label>` 2 → **0**（打开属性段后 17 个 label 全部有效）、`#f-name` 的 `aria-describedby` 指向那条 `role="alert"` 的报错段。
+- 必填改成双表达：星号 `aria-hidden="true"` + 一句 `sr-only` 的"必填"，DOM 原生 `required` 保留（保存判据与浏览器自带提示都依赖它）。
+- 两处悬空 label（`渐变预设`、`属性组`）下面各是一排按钮而非单个控件，配 `for` 是撒谎，改成 `<p id="f-*-label" class="field-label">` + 消费端 `role="group" aria-labelledby`（实测该组合 5 处）。
+- 一处刻意的视觉改动：`FormField` 标签是 13px/600/`--foreground`，本视图手写 `.field-label` 是 12px/500/`--muted-foreground`，只接八块会让同页出现两套粗细并排。故把本视图 scoped 的 `.field-label` 与 `.field-hint` 对齐到原语刻度（11px → 12px），改后实测 8 个未接原语的标签计算值全部为 `13px|600|rgb(245,245,247)`，与 `.form-field-label` 一致；对比度门禁扫描数不变（121）。
+- 剩 8 块没接的原因写清楚：温度与作者深度的标签里嵌着实时数值徽章，`FormField` 只有 `labelKey`、没有标签后缀插槽——登记为原语缺口，本批不动原语。
+- 测试：新增 `tests/views/character-editor-field-wiring.test.ts`（5 例）。这批收益 axe 查不到（它不验"说明有没有被指到"），所以直接钉结构。故障注入一次跑两处（删一条 `:aria-describedby` / 把 `aria-labelledby` 指向不存在的 id）→ 第 1、第 4 例分别转红，撤销后复绿。踩到一次**假红**：分组标签最初一条用例同时断言两处，而夹具里 seraphina 的 `avatarType` 是 `image`、渐变那块 `v-if` 根本不渲染——按"对照必须在夹具里可达"拆成两条，各用真实交互驱动（开属性开关 / 点"渐变色"按钮），并顺手把"切之前不存在"也断下来。
+- 全量：`build`、`lint`(0 error)、`i18n:check:strict`(206 文件)、`check:css-conventions`(5/5)、`a11y:contrast`(121/131) + 自检、`snapshot:migration:check`、`runtime:db:schema:check`、`check:csp`、`check:ort`、`eval:manifest` 退出码均 **0**（manifest 只改 `commit`/`ranAt` 的重写已撤销，未混进提交）；单测 **3832 passed / 3 skipped**（182 文件，较 M6-c 增 1 文件 5 例），E2E msedge **61 passed** 且未改任何选择器。两条"建议下调基线"（`!important` 26 → 24、对比度 131 → 121）本批未动：已核对本批 diff 一行 `!important` 都没删，余量不属于本批就留给做出收敛的那一批下调。
+- 顺带量到一个**不属于本批的排版缺陷**并登记：视口 ≤1024px 时编辑器切单列，`实时预览` 侧栏 `order:-1` 排到表单上方，但其网格行轨只有 34px、盒子自身高 407px，表单压在预览卡上（1000px 实测 preview `[136,76,836,407]` vs fieldset `[136,134,836,725]`，390px 同型）。本批只在真实浏览器复现并记坐标，未修。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

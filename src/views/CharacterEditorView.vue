@@ -26,6 +26,7 @@ import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import QuickCharacterForm from '@/components/character/QuickCharacterForm.vue';
 import Collapse from '@/components/common/Collapse.vue';
+import FormField from '@/components/common/FormField.vue';
 import ModuleRelationsPanel from '@/components/layout/ModuleRelationsPanel.vue';
 import type { UICharacter } from '@/types';
 import type { CharacterAttributes, CharacterAttribute } from '@/core/character-card';
@@ -648,75 +649,82 @@ function handleExport() {
         <fieldset class="form-section">
           <legend class="section-title">{{ t('charEdit.basicTitle') }}</legend>
 
-          <div class="field">
-            <label for="f-name" class="field-label">
-              {{ t('charEdit.nameLabel') }} <span class="required" aria-hidden="true">*</span>
-            </label>
-            <input
-              id="f-name"
-              v-model="form.name"
-              type="text"
-              class="field-input"
-              :class="{ 'has-error': errors.name }"
-              :aria-invalid="!!errors.name"
-              :aria-describedby="errors.name ? 'err-name' : undefined"
-              maxlength="64"
-              required
-              autocomplete="off"
-            />
-            <p v-if="errors.name" id="err-name" class="field-error" role="alert">
-              <Icon name="alert-triangle" :size="12" />
-              <span>{{ errors.name }}</span>
-            </p>
-          </div>
+          <FormField label-key="charEdit.nameLabel" html-for="f-name" :error-text="errors.name" required>
+            <template #default="{ describedBy, invalid }">
+              <input
+                id="f-name"
+                v-model="form.name"
+                type="text"
+                class="field-input"
+                :class="{ 'has-error': invalid }"
+                :aria-invalid="invalid"
+                :aria-describedby="describedBy"
+                maxlength="64"
+                required
+                autocomplete="off"
+              />
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-tags" class="field-label">{{ t('charEdit.tagsLabel') }}</label>
-            <input
-              id="f-tags"
-              v-model="form.tagsText"
-              type="text"
-              class="field-input"
-              :placeholder="t('charEdit.tagsPlaceholder')"
-              autocomplete="off"
-            />
-            <p class="field-hint">{{ t('charEdit.tagsHint') }}</p>
-          </div>
+          <FormField label-key="charEdit.tagsLabel" html-for="f-tags" hint-key="charEdit.tagsHint">
+            <template #default="{ describedBy }">
+              <input
+                id="f-tags"
+                v-model="form.tagsText"
+                type="text"
+                class="field-input"
+                :placeholder="t('charEdit.tagsPlaceholder')"
+                :aria-describedby="describedBy"
+                autocomplete="off"
+              />
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-desc" class="field-label">{{ t('charEdit.descLabel') }}</label>
-            <textarea
-              id="f-desc"
-              v-model="form.description"
-              class="field-input field-textarea"
-              rows="5"
-              :placeholder="t('charEdit.descPlaceholder')"
-            ></textarea>
-          </div>
+          <FormField label-key="charEdit.descLabel" html-for="f-desc">
+            <template #default>
+              <textarea
+                id="f-desc"
+                v-model="form.description"
+                class="field-input field-textarea"
+                rows="5"
+                :placeholder="t('charEdit.descPlaceholder')"
+              ></textarea>
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-personality" class="field-label">{{ t('charEdit.personalityLabel') }}</label>
-            <textarea
-              id="f-personality"
-              v-model="form.personality"
-              class="field-input field-textarea"
-              rows="4"
-              :placeholder="t('charEdit.personalityPlaceholder')"
-            ></textarea>
-            <p class="field-hint">{{ t('charEdit.personalityHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.personalityLabel"
+            html-for="f-personality"
+            hint-key="charEdit.personalityHint"
+          >
+            <template #default="{ describedBy }">
+              <textarea
+                id="f-personality"
+                v-model="form.personality"
+                class="field-input field-textarea"
+                rows="4"
+                :placeholder="t('charEdit.personalityPlaceholder')"
+                :aria-describedby="describedBy"
+              ></textarea>
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-scenario" class="field-label">{{ t('charEdit.scenarioLabel') }}</label>
-            <textarea
-              id="f-scenario"
-              v-model="form.scenario"
-              class="field-input field-textarea"
-              rows="4"
-              :placeholder="t('charEdit.scenarioPlaceholder')"
-            ></textarea>
-            <p class="field-hint">{{ t('charEdit.scenarioHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.scenarioLabel"
+            html-for="f-scenario"
+            hint-key="charEdit.scenarioHint"
+          >
+            <template #default="{ describedBy }">
+              <textarea
+                id="f-scenario"
+                v-model="form.scenario"
+                class="field-input field-textarea"
+                rows="4"
+                :placeholder="t('charEdit.scenarioPlaceholder')"
+                :aria-describedby="describedBy"
+              ></textarea>
+            </template>
+          </FormField>
 
           <div class="field field-inline">
             <label class="field-checkbox">
@@ -758,8 +766,8 @@ function handleExport() {
 
           <!-- 渐变色配置 -->
           <div v-if="form.avatarType === 'gradient'" class="field">
-            <label class="field-label">{{ t('charEdit.gradientPresets') }}</label>
-            <div class="preset-row">
+            <p id="f-gradient-presets-label" class="field-label">{{ t('charEdit.gradientPresets') }}</p>
+            <div class="preset-row" role="group" aria-labelledby="f-gradient-presets-label">
               <button
                 v-for="p in colorPresets"
                 :key="p.label"
@@ -878,12 +886,17 @@ function handleExport() {
         <fieldset class="form-section">
           <legend class="section-title">{{ t('charEdit.modelTitle') }}</legend>
 
-          <div class="field">
-            <label for="f-profile" class="field-label">{{ t('charEdit.profileBindLabel') }}</label>
+          <FormField
+            label-key="charEdit.profileBindLabel"
+            html-for="f-profile"
+            hint-key="charEdit.profileBindHint"
+          >
+            <template #default="{ describedBy }">
             <select
               id="f-profile"
               class="field-input"
               :value="form.profileId ?? ''"
+              :aria-describedby="describedBy"
               @change="form.profileId = ($event.target as HTMLSelectElement).value || null"
             >
               <option value="">
@@ -897,8 +910,8 @@ function handleExport() {
                 {{ p.name }} · {{ p.model }}
               </option>
             </select>
-            <p class="field-hint">{{ t('charEdit.profileBindHint') }}</p>
-          </div>
+            </template>
+          </FormField>
 
           <div class="field">
             <label for="f-temp" class="field-label">
@@ -978,18 +991,19 @@ function handleExport() {
             :level="3"
             plain
           >
-              <div class="field">
-                <label for="f-profession" class="field-label">{{ t('charEdit.professionLabel') }}</label>
-                <input
-                  id="f-profession"
-                  v-model="form.profession"
-                  type="text"
-                  class="field-input"
-                  :placeholder="t('charEdit.professionPlaceholder')"
-                  maxlength="30"
-                  autocomplete="off"
-                />
-              </div>
+              <FormField label-key="charEdit.professionLabel" html-for="f-profession">
+                <template #default>
+                  <input
+                    id="f-profession"
+                    v-model="form.profession"
+                    type="text"
+                    class="field-input"
+                    :placeholder="t('charEdit.professionPlaceholder')"
+                    maxlength="30"
+                    autocomplete="off"
+                  />
+                </template>
+              </FormField>
 
               <div class="attr-row">
                 <div class="field">
@@ -1027,9 +1041,9 @@ function handleExport() {
                 </div>
               </div>
 
-              <div class="field">
+              <div class="field" role="group" aria-labelledby="f-stats-label">
                 <div class="stats-header">
-                  <label class="field-label">{{ t('charEdit.statsLabel') }}</label>
+                  <p id="f-stats-label" class="field-label">{{ t('charEdit.statsLabel') }}</p>
                   <button
                     type="button"
                     class="add-stat-btn"
@@ -1094,17 +1108,22 @@ function handleExport() {
         <fieldset class="form-section">
           <legend class="section-title">{{ t('charEdit.advancedTitle') }}</legend>
 
-          <div class="field">
-            <label for="f-author-note" class="field-label">{{ t('charEdit.authorNoteLabel') }}</label>
-            <textarea
-              id="f-author-note"
-              v-model="form.authorNote"
-              class="field-input field-textarea"
-              rows="4"
-              :placeholder="t('charEdit.authorNotePlaceholder')"
-            ></textarea>
-            <p class="field-hint">{{ t('charEdit.authorNoteHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.authorNoteLabel"
+            html-for="f-author-note"
+            hint-key="charEdit.authorNoteHint"
+          >
+            <template #default="{ describedBy }">
+              <textarea
+                id="f-author-note"
+                v-model="form.authorNote"
+                class="field-input field-textarea"
+                rows="4"
+                :placeholder="t('charEdit.authorNotePlaceholder')"
+                :aria-describedby="describedBy"
+              ></textarea>
+            </template>
+          </FormField>
 
           <div class="field">
             <label for="f-depth" class="field-label">
@@ -1467,10 +1486,12 @@ function handleExport() {
   gap: 6px;
 }
 
+/* 与 FormField 的标签/说明同刻度：本页仍有 8 个字段块没接原语（温度、作者深度
+   这类标签里带实时数值，原语还没有标签后缀插槽），先让两套排版看不出层级差 */
 .field-label {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  font-weight: 500;
+  font-size: 13px;
+  color: var(--foreground);
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1536,7 +1557,7 @@ function handleExport() {
 }
 
 .field-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted-foreground);
   margin: 0;
 }
