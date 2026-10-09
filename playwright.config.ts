@@ -73,6 +73,9 @@ export default defineConfig({
         '**/ux-event-trace.spec.ts',
         // M6-f：世界书事件面板逐字段编辑 + 同轮关键词触发注入，Safari 内核同样要实测一次
         '**/ux-event-manual-trace.spec.ts',
+        // M7-c：断言的是"计算后的颜色归属"，而 scoped CSS 的选择器特异性正是
+        // 各内核差异最容易显形的地方，Safari 必须实测一次
+        '**/ux-status-color.spec.ts',
         // M2-b9：滑块渐变/按压着色都靠 color-mix 与新式渐变分段，Safari 内核必须实测一次
         '**/ux-interaction-feedback.spec.ts',
       ],

@@ -1998,4 +1998,37 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | 浏览器实测（Edge 无头，逐字段真键盘输入） | 打 `(` → `domValue="("`、`aria-invalid=true`、`is-rejected` 在、说明行文案与 i18n 键一致；`fill('桥\|河滩')` 改对 → 说明行消失、红类去掉；聚焦态与非聚焦态边框色都量过（见上） |
 | 故障注入 | 三处、签名不重叠：输入框改回直绑 store → 红"字留在框里"；写入成功不清标注 → 红"改对后消失"与"勾掉正则按草稿写回"；两处合跑 3 红 4 绿，撤销后 7 例复绿 |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m7-b-reject-feedback/rejected-keyword.png` |
-| 未做（诚实边界） | ① 草稿只做了关键词一格，是按"哪条真能走到被拒"选的，不是通用机制——若以后给描述去掉 `maxlength` 或加新的取值校验，得把同一套搬到那些字段上（`patchEvent` 已经支持传 `fieldKey`/`onCommitted`，成本是一个 ref 加一处 `:value`）；② 名称/描述/概率三格的 `:value` 直绑仍在，只是当前不可达被拒路径；③ 没做"存不进去时禁止离开该字段"这类强拦截——那会把一个可选的正则调试变成填表考试。 | | | | |
+| 未做（诚实边界） | ① 草稿只做了关键词一格，是按"哪条真能走到被拒"选的，不是通用机制——若以后给描述去掉 `maxlength` 或加新的取值校验，得把同一套搬到那些字段上（`patchEvent` 已经支持传 `fieldKey`/`onCommitted`，成本是一个 ref 加一处 `:value`）；② 名称/描述/概率三格的 `:value` 直绑仍在，只是当前不可达被拒路径；③ 没做"存不进去时禁止离开该字段"这类强拦截——那会把一个可选的正则调试变成填表考试。
+
+### M7-c 状态色口径：状态只染徽标与边框
+
+**病灶**：`StoryEngineView` 里 `.status-completed { background; color }` 这四条**不带元素限定**，而 `getStatusClass()` 同时挂在**卡片根元素**和徽标上（`:961` 与 `:968`）。于是 `color` 从卡片一路继承下去——一份"已完成"的故事整张卡变绿：标题、人名、场景名全染上状态色。M7-a 的截图里能看到，本批把它当一条独立问题处理。
+
+**修法**：四条规则限定到 `.status-badge.status-*`；卡片本体只保留 `.story-card.status-failed { border-color }` 这一条边框语义。口径写在规则上方的注释里：**状态是这张卡的元信息，不是它的主题色**。
+
+**同病扫描结果**（全仓 grep 这四个类名）：只有 `StoryEngineView` 用它们，且只有它把同一个类同时挂在容器与徽标上。`CharactersView` 的 `.char-card.is-busy` 用的是 `opacity` 降透明、不是染色，不同机制，不算同病。所以这一条口径目前只有一处需要落，落完即无同类。
+
+**实测（Edge 无头，四张卡分别 completed / analyzing / failed / pending，同页互比）**：
+
+| 量 | 改前 | 改后 |
+|---|---|---|
+| 卡片 `color` | 各等于自己的状态色（`rgb(52,211,153)` / `rgb(96,165,250)` / `rgb(229,72,77)` / 橙） | 四张一致 `rgb(245,245,247)` |
+| 标题 `color` | 同上（跟着染） | 四张一致 |
+| 徽标 `color` / 底色 | 状态色 + 淡底 | 不变（仍状态色 + 淡底） |
+| 卡片边框 | 只有 failed 是红 | 不变 |
+
+**回归网选的是浏览器级而不是读源文本**：新增 `e2e/ux-status-color.spec.ts`，断言全部用"四张卡互相比"——四张的标题色必须一致、徽标色必须四样、失败态边框独异——**不写死任何色号也不读 CSS 变量**，换主题、换调色板、把 hex 改成 oklch 都不会让它假失败。已加入 webkit 的 `testMatch`（scoped CSS 的特异性差异最容易在第二个内核显形，webkit 单跑 1 passed）。
+
+**踩到的一处时序**：这条用例第一次跑就红在 `dbs.sort(...)[0].name` 取空——应用是**异步开库**的，紧跟首次 `goto` 之后查 `indexedDB.databases()` 可能还是空。改成先 `expect.poll` 等到库出现再写数据，连跑三次稳定绿。此前几条造数用例没撞上，是因为它们都在若干次 UI 交互之后才写库。
+
+**故障注入**：把四条选择器改回不带 `.status-badge` 前缀 → 用例红在 `expect(titles.size, '标题色不该随状态变').toBe(1)`（正是病灶本身）；撤销后复绿。中途还有一次"注入注错"的假信号：`sed` 的替换把 `.status-badge.status-x` 写成了 `status-x`（丢了点号，规则匹配不到任何元素），红的是"徽标没色"那条——不是被验的那件事，已剔除不算数。
+
+**验证证据（M7-c，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run build` / `lint`(0 error) / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**，未变) | 退出码均 **0** |
+| `npx vitest run` | **186 files / 3864 passed / 3 skipped**（与 M7-b 同数——本批的回归网是 e2e，不加单测） |
+| E2E | msedge（`--workers=2`）**64 passed**（63 + 本条）、webkit **19 passed**（18 + 本条）、mobile 两 project **14 passed** |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m7-c-status-color/`：`before-story-colors.png`（整卡染状态色）、`after-story-colors.png`（标题与正文回到中性，徽标保留状态色，失败卡红边框） |
+| 未做（诚实边界） | ① 卡片左上那个书本图标仍是主色，不随状态变——要不要让它也参与状态表达是配色设计决定，本批只处理"文字被染色"这一条；② `.detail-section` / `.protagonist-section` / `.time-section` 的边框用了 `color-mix` 的分段识别色，属"分区身份"不是"状态"，未动；③ 没给 `pending` 状态加边框语义（只有 failed 有），因为四色边框会让"失败"不再突出。 | | | | | |

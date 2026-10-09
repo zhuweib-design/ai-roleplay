@@ -1975,22 +1975,27 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   font-weight: 500;
 }
 
-.status-pending {
+/* 状态色口径：只作用于徽标与边框。
+ * 这四条原本是不带元素限定的 `.status-xxx`，而卡片根元素也吃同一个类
+ * （`:class="getStatusClass(...)"`），于是 `color` 一路继承下去——
+ * 一份"已完成"的故事整张卡变成绿色，标题、人名、场景名全染上状态色。
+ * 状态是这张卡的**元信息**，不是它的主题色，所以限定到徽标上。 */
+.status-badge.status-pending {
   background: rgba(245, 158, 11, 0.15);
   color: var(--accent-orange);
 }
 
-.status-analyzing {
+.status-badge.status-analyzing {
   background: rgba(59, 130, 246, 0.15);
   color: var(--tag-blue);
 }
 
-.status-completed {
+.status-badge.status-completed {
   background: rgba(34, 197, 94, 0.15);
   color: var(--tag-green);
 }
 
-.status-failed {
+.status-badge.status-failed {
   background: rgba(220, 38, 38, 0.15);
   color: var(--error);
 }

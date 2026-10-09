@@ -323,6 +323,14 @@
 - 全量：单测 **186 files / 3864 passed / 3 skipped**，E2E msedge **63**、webkit **18**、mobile **14** passed；`build` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions`(5/5) / `a11y:contrast`(121，未新增扫描对) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m7-b-reject-feedback/rejected-keyword.png`。
 - 未做：名称/描述/概率三格的 `:value` 直绑仍在（当前不可达被拒路径）；没做"存不进去就不许离开该字段"的强拦截——那会把一次正则调试变成填表考试。
 
+### 修复（UX/IA M7-c：状态色只作用于徽标与边框）
+- `StoryEngineView` 的 `.status-completed` 等四条规则**不带元素限定**，而 `getStatusClass()` 同时挂在卡片根元素与徽标上，于是 `color` 从卡片一路继承——一份"已完成"的故事整张卡变绿（标题、人名、场景名全染状态色）。四条限定到 `.status-badge.status-*`，卡片本体只保留失败态那条红边框；口径写进规则注释：状态是这张卡的元信息，不是它的主题色。
+- 同病扫描（全仓 grep 四个类名）：只有本视图把同一个类同时挂容器与徽标；`CharactersView` 的 `.char-card.is-busy` 走 `opacity` 不是染色，不同机制。故这条口径落完即无同类。
+- 实测（Edge 无头，四张卡同页互比）：卡片与标题的 `color` 由"各等于自己的状态色"变为四张一致 `rgb(245,245,247)`；徽标色与淡底、失败态红边框不变。
+- 新增 `e2e/ux-status-color.spec.ts` 作回归网，断言全部"四张卡互相比"（标题色一致、徽标色四样、失败边框独异），**不写死色号也不读 CSS 变量**，换主题或改 oklch 都不会假失败。已加入 webkit `testMatch`（scoped CSS 特异性差异最容易在第二内核显形）。
+- 踩到一处时序：应用是异步开库的，紧跟首次 `goto` 之后查 `indexedDB.databases()` 可能为空，造数会取到 `undefined`；改成先 `expect.poll` 等到库出现，连跑三次稳定。故障注入：选择器改回不限定 → 红在"标题色不该随状态变"；另一次 `sed` 把 `.status-badge.status-x` 写成 `status-x`（丢点号）导致"徽标没色"，不是被验的那件事，已剔除不算数。
+- 全量：单测 **186 files / 3864 passed / 3 skipped**（与 M7-b 同数，本批回归网在 e2e）；E2E msedge **64**、webkit **19**、mobile **14** passed；`build` / `lint`(0 error) / `check:css-conventions`(5/5) / `a11y:contrast`(121，未变) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m7-c-status-color/`（改前整卡染色 / 改后回到中性）。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。
