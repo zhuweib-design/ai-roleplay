@@ -862,6 +862,18 @@ export const useSettingsStore = defineStore('settings', () => {
    * 解密需在 unlock() 成功后通过 decryptAllApiKeys() 触发。
    */
   async function loadFromStorage(): Promise<void> {
+    // 登记"存档正在读"。App.vue 是在 onMounted 里才 await 这里的，也就是说界面已经挂好、
+    // 按钮已经能点而数据还没回来——这期间发起的写入必须排队到加载落地之后，
+    // 否则写下去的是内存里的默认值（apiProfiles 空），会把用户已有的配置抹掉。
+    if (!loadInFlight) {
+      loadInFlight = applyStoredSettings().finally(() => {
+        loadInFlight = null;
+      });
+    }
+    return loadInFlight;
+  }
+
+  async function applyStoredSettings(): Promise<void> {
     if (!storageAdapter) return;
     try {
       const saved = await storageAdapter.loadSettings();
@@ -995,8 +1007,14 @@ export const useSettingsStore = defineStore('settings', () => {
         // 避免异步启动时序导致 data-theme 回退为默认（刷新后自定义主题失效）
         setTheme(theme.value);
       } else {
-        // 首次启动：写入默认设置
-        await persistSettings();
+        // 首次启动：写入默认设置。这条写来自加载自己，若也去排"等加载落地"的队，
+        // 就变成等它自己完成 ⇒ 启动即卡死（全量 e2e 表现为大面积超时）。
+        applyingStoredSettings = true;
+        try {
+          await persistSettings();
+        } finally {
+          applyingStoredSettings = false;
+        }
       }
     } catch (err) {
       lastError.value = i18nT('settings.loadFailed', {
@@ -1119,8 +1137,16 @@ export const useSettingsStore = defineStore('settings', () => {
    */
   let persistInFlight: Promise<void> | null = null;
   const persistWaiters: Array<() => void> = [];
+  /** 首帧存档加载的在飞 promise（见 `loadFromStorage`） */
+  let loadInFlight: Promise<void> | null = null;
+  /** 加载流程自己发起、且被它 await 的那次写入（首启默认快照）不能再等加载，否则自己等自己 */
+  let applyingStoredSettings = false;
 
   function persistSettings(): Promise<void> {
+    // 加载在飞时先等它落地再走正常写入：挡住"用默认值盖掉存档"这一类丢数据
+    if (loadInFlight && !applyingStoredSettings) {
+      return loadInFlight.then(() => persistSettings());
+    }
     if (persistInFlight) {
       let release!: () => void;
       const gate = new Promise<void>((resolve) => {

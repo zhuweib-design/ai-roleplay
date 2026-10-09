@@ -367,6 +367,14 @@
 - 顺带量到一条与 M8-c 无关的门禁问题：e2e 全量跑在默认并发下不稳定（msedge 72/73、webkit 25–26/28，失败点每次不同，单跑全绿；压到 `--workers=2` / `--workers=1` 后分别 73/73、28/28 全绿）。属既有用例对负载敏感，不是本批回归，修法（把并发上限写进 `playwright.config.ts`）登记待办。
 - 未做：20 处引用只有 4 处在真浏览器里点开验过，其余靠静态守卫（风险点收窄到"带 `v-if` 的说明"，全量扫下来仅 3 处，其中 1 处已浏览器验）；世界书两个弹窗未进 e2e（三步流程的"完成"要先有角色，空 profile 走不到，改用"创建新世界书"按钮已在证据脚本跑通）；未清理既有的重复可访问名（同页三处「取消」、9 处 `id="main-content"`、3 处 `panel-settings`）。
 
+### 修复（UX/IA M9-a：首帧加载窗口里的设置写入会写出"没有模型配置"的存档）
+- M8-c 收尾登记的"e2e 全量跑在默认并发下不稳"挖到底：一半是并发预算，一半是能丢用户数据的真缺陷。`App.vue` 在 `onMounted` 里才 `await settings.loadFromStorage()`，即界面已挂好、按钮已能点而存档还在读；这个窗口里任何一次 `void persistSettings()` 落盘的都是内存默认值（`apiProfiles: []`），紧随其后的刷新/导出备份读到的就是空配置（e2e 里表现为刷新后芯片提示"还没有可用的模型配置，发送后收不到回复"），这期间关掉应用即真丢。
+- 与 M2-b8 是同一片故障域、两种机制：那条管**两次写之间**的顺序（排队），这一条管**写与首帧加载之间**的顺序。`loadFromStorage()` 现在登记"在飞"状态，`persistSettings()` 见它就排到加载落地之后再写；空闲路径一行未动（"第一次写同步发起"是 M2-b8 留给 `quick-reply` 的语义，有用例专门守着）。
+- 自己踩到的坑也钉成断言：闸门第一版让所有写入都等加载，于是首启分支里 `await persistSettings()` 等的是它自己 ⇒ 应用启动即卡死、全量 e2e 当场 45/70 超时。豁免只给加载自己发起且被它 await 的那一次写，并新增"首启那次写必须 1s 内结束"的用例。
+- 并发与预算：本地 `workers` 从"核数 / 2"（这台 16 核 = 8）改为 **4**，单条预算 30s → **45s**。实测 8 workers 下全量红 1–4 条且红点轮换、`contrast-axe` 连自己 90s 预算都撞穿；4 workers 下 **115 / 115 连续三轮全绿**（2.3–2.6 分钟/轮），非对比度用例最慢 18.1s。CI 仍是 `workers: 1`，未改。
+- 新增 `tests/stores/settings-load-write-gate.test.ts` 4 例（写要等加载、空闲仍同步发起、首启不自锁、已知边界以 `it.fails` 钉住）；全量单测 **190 files / 3883 passed / 1 expected fail / 3 skipped**，`build` / `lint`(0 error) 退出码 0。
+- 未做：同一个窗口里用户刚改的那一项，加载完成后仍会被存档盖回（芯片不再报"没配置"，但主题会跳回深色）——逐字段脏标记要改 `applyStoredSettings` 里 25 处赋值，或把挂载推迟到存档读完（首帧变白，属启动观感决定），故以 `it.fails` 留证；只审了 `settings` 一个 store，`randomEvents` / `lorebooks` 等同款"onMounted 异步加载 + 组件即时写"形状未逐一审计。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

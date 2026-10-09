@@ -30,9 +30,27 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isCI ? 1 : undefined,
+  /**
+   * 本地并发上限：4，不用 Playwright 默认的"核数 / 2"（这台 16 核机器上就是 8）。
+   *
+   * 默认并发下全量跑**随机红 1–3 条**，失败点每次不同（实测 `ux-event-trace`、
+   * `contrast-axe`、`group-chat-flow` 轮流中），而这三条单跑全绿——红相是负载不是回归。
+   * 机制：三条都是"多轮打桩 SSE + IndexedDB 造数"的长用例，30s 预算里光是 vite dev
+   * 的冷模块图 + 8 个浏览器就能吃掉一半以上，最后一轮回复的 15s 断言于是踩在总超时上。
+   * 同一台机器实测：8 workers → msedge 72/73、webkit 25–26/28；4 workers → 两条 project
+   * 全绿（msedge 73/73 用时 1.3m、webkit 28/28 用时 45–59s），比 8 workers 还快。
+   */
+  workers: isCI ? 1 : 4,
   reporter: isCI ? [['github', {}], ['html', { open: 'never' }]] : 'list',
-  timeout: 30_000,
+  /**
+   * 单条用例预算 45s（原 30s）。
+   *
+   * 30s 对"多轮打桩 SSE + IndexedDB 造数"那几条是紧的：4 workers 全绿的一轮里
+   * 最慢的 `group-chat-flow` 用掉 18.8s，8 workers 的另一轮里 `ux-event-manual-trace`
+   * 跑到 25.0s 后撞在总超时上（红相是"最后一轮回复没出现"，不是断言不符）。
+   * 45s 是实测最差值的 1.8 倍；`contrast-axe` 自己 `setTimeout(90_000)`，不受影响。
+   */
+  timeout: 45_000,
   use: {
     baseURL,
     trace: 'on-first-retry',
