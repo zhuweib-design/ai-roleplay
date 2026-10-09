@@ -555,7 +555,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 状态 | 条目 |
 |---|---|
 | **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E11 随机事件注入回显（M6-c）**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；常规/高级折叠（**M4-b2：`Collapse` 原语接管设置页三处高级段——「外观」界面自定义、「数据」新分组「运维与兼容」四段（并把档案/备份/两项导出提到前面）、「模型」弹窗内默认采样参数，三处默认收起且用 `v-show` 保住草稿**）；四条边的补完与一处页面合并（**M4-b4：E10 随机事件前提横幅（场景名=角色名的字符串耦合首次出现在界面上，不一致可一跳回该角色）、E15 聊天故事时间改为可点回故事本体（`/story?story=`）、E21 市场索引地址的构建期声明、D-B 后半 `/profile` 并入设置→关于（旧链接重定向，`ProfileView.vue` 删除，`nav.profile`/`router.profile`/5 个 `profile.*` 死键清除）**）；`/chat` ⇄ `/group` 分段控件（**M6-a：两处页头共用 `ChatModeSwitch`，标签取自 nav-model，方向键只移焦点不跳转**）E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索"；角色编辑器分区与原语铺开（**M6-b1：属性段并入 `Collapse`，原语补上 `v-model:open` 受控用法**、**M6-b2：8 个字段块接进 `FormField`，5 条说明拿到 `aria-describedby`、2 处悬空 label 改成分组标签、必填改成"星号对读屏隐藏 + 一句必填文本"，并把本视图标签排版对齐到原语刻度**） |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | 四个巨型视图的分区：`CharacterEditorView` 已并入 `Collapse`（M6-b1）且 8 块接进 `FormField`（M6-b2，剩 8 块卡在原语没有"标签后缀插槽"）、`GroupChatView` 页头的成员 Runtime 检视段已折叠（M6-e，页头 234 → 172px；弹窗级说明要接进无障碍树需 `Modal` 支持 `describedBy`，未做）；**其余**：`WorldBookView` / `StoryEngineView` 的分区仍未做 |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | 四个巨型视图的分区：`CharacterEditorView` 已并入 `Collapse`（M6-b1）且 15 块接进 `FormField`（M6-b2 八块 + M6-f 七块，含"标签里嵌实时值"那两处；只剩渐变一对色——两控件共用一条报错，接成两份会重复同一句话）、`GroupChatView` 页头的成员 Runtime 检视段已折叠（M6-e）；**其余**：`WorldBookView` / `StoryEngineView` 的分区仍未做 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -626,7 +626,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 18 | 设计文档收敛（`mobile-ui-design.md` §13 五/六 tab、`software-design-document.md:35,116,135`、`mobile-pwa-plan.md:48`、`PROJECT_INDEX.md:323-337` 缺 `MoreView`、`PLAN_AUDIT_2026-09-28.md:97` 对 EXP-02 的高估） | 本文档给出目标态，M1–M4 落地后统一回写 | M1 完成即先回写 tab 与 PROJECT_INDEX |
 | 19 | 会话模型改为**按角色记住各自激活会话**（`activeChatId` 由单值变映射），并让"切角色 → 该角色上次那段"直接接回 | D-R 已把"写错会话"这条数据丢失堵住（按 `characterId` 纠偏），但"切回甲时仍显示甲的默认会话而非甲上次打开的那条"这个体验缺口需要动会话模型，与"一次会话只属于一个角色"的索引结构一起改才干净 | 多会话使用率上来，或用户反馈"切回来不是刚才那段" |
 | 20 | ~~设置写入不可等待~~ **根因已在 M2-b8 修掉**（`persistSettings` 改为排队串行）；**剩下的范围**是给 20 余处 `void persistSettings()` 调用点做一遍审计：哪些应当 `await`（如关闭标签前、跳转前），要不要提供 `flushSettings()` | M2-b6 把它记成"激活态可能还没落盘"，M2-b8 查清了真正的机制：**并发写完成顺序会倒置**，先发起的旧快照后落盘把新状态盖掉。单测 `tests/stores/settings-persist-order.test.ts` 用"第一次写慢、后续写快"的假适配器钉死顺序，去掉串行立刻复现（`expected {p2,2} to equal {p1,1}`） | 真人反馈"配好模型刷新又没了"再次出现，或要做"关闭前确保保存"的语义 |
-| 21 | **世界书"事件"面板是一条死路**：新建事件后逐字段输入**一个都存不进去** | M6-d 写 e2e 时撞上的（原打算用这个面板造事件，改用随机事件生成器才走通）。机制：`stores/events.ts:updateEvent` 每次都拿**合并后的整条事件**跑 `validateEvent`，而新建的事件 `name`/`description`/`keywords` 三样全空，于是任何单字段更新都被另外两样的"不能为空"顶回。实测（store 层，逐条打印）：只写名称 → `false`，`lastError="事件描述不能为空；关键词触发条件必须至少包含一个关键词"`，`name` 仍是 `""`；再写描述 → `false`（"事件名称不能为空；关键词…"）；再写关键词 → `false`（"事件名称不能为空；事件描述不能为空"）；最终三个字段全空。界面上更糟：输入框是 `:value` 单向绑定，模型没变就不重渲染，**用户看到的字还在框里，实际一个字没存**；同时每敲一个字弹一次红 toast | 属校验语义设计问题，不是改两行能收口的：得把"完整性错误"（缺字段，应当拦住触发/保存动作）与"取值错误"（长度、概率范围、正则非法，应当拦住写入）拆开，`updateEvent` 只拒后者，`triggerEvent` 与导入路径查前者。牵动 `core/event-types.ts`、`stores/events.ts` 与既有 12 例（`tests/stores/events.test.ts` 的夹具正是"一次 patch 三个字段"才绕开了这个坑），故单列一批。启动信号：任何人再试图手工配一条事件，或要做"事件模板"引导 |
+| 21 | ~~世界书"事件"面板是一条死路~~ **已在 M6-f 结案**：`validateEvent` 拆成 `validateEventValues`（取值错误，拦写入）与 `validateEventCompleteness`（完整性错误，拦激活），`updateEvent` 只跑前者、`triggerEvent` 补查后者 | 登记时的判断"属校验语义设计问题，不是改两行能收口的"成立，但改动量比预想小：核心是拆函数 + 挪拦的位置，共动 3 个源文件。附带发现并修掉一处同源噪声：面板监听 `lastInfo` 弹提示，逐字段输入若能存进去就会**每敲一个字弹一条**，故 `updateEvent` 加 `{ silent }`，面板的 12 处字段写入统一走静默。反证用例：`tests/components/worldbook-events-panel-edit.test.ts`（4 例，含"没填全点触发被拒且逐条说缺什么"）与 `e2e/ux-event-manual-trace.spec.ts`（浏览器级：逐字段配一条全局关键词事件 → 命中它的那一轮出现回显） | 已闭。剩余同类问题（`:value` 单向绑定在写入被拒时"字看着还在"）在取值错误路径上仍存在，见 §九 M6-f 未做 ① |
 
 ---
 
@@ -1906,4 +1906,39 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | `npx vitest run` | **183 files / 3836 passed / 3 skipped**（较 M6-d 的 182 / 3832 增 1 文件 4 例）；`tests/accessibility/worldbook-group-axe.test.ts`（群聊空态与有数据态）与 `status-hud-p1.qa-independent`（读源文本那条）**未改即通过** |
 | E2E | msedge（`--workers=2`）**62 passed**、webkit（`--workers=1`）**17 passed**、mobile 两 project **14 passed**——`group-chat-flow`（三 project 都跑，含"两个角色群聊 + 独立 Runtime Context"）未改任何选择器即通过 |
 | 截图 | `docs/dev/evidence/ux-ia-guided-flow/m6-e-group-header/`：`before-group-header.png`（改前页头）、`after-group-header.png`（收起态）、`after-group-header-open.png`（展开态）。M6-b1 那个坑又踩到一次：首版展开态截图里段标题是红的，仍是全局悬停染色，截图前把指针移到 `(700,620)` 才拍干净 |
-| 未做（诚实边界） | ① 页头其余六块（成员芯片、发言模式、两条条件横幅、成员状态条）**保持常驻**——它们要么每轮都用、要么是 `role=alert/status` 的异常提示，折叠任何一条都会把"该被看见的东西"藏起来；② 弹窗级说明接不进无障碍树需要 `Modal` 支持 `describedBy`，属原语扩展，本批未做；③ 折叠态**不记忆**：切群或刷新后回到默认收起（`Collapse` 非受控 + `defaultOpen=false`）。没上记忆是因为它需要一个新的持久化位点，而"排障面板每次都要重新点开"目前不构成投诉；若有人反馈"每次都要展开很烦"，改成受控 + 落 `settings` 即可。 | |
+| 未做（诚实边界） | ① 页头其余六块（成员芯片、发言模式、两条条件横幅、成员状态条）**保持常驻**——它们要么每轮都用、要么是 `role=alert/status` 的异常提示，折叠任何一条都会把"该被看见的东西"藏起来；② 弹窗级说明接不进无障碍树需要 `Modal` 支持 `describedBy`，属原语扩展，本批未做；③ 折叠态**不记忆**：切群或刷新后回到默认收起（`Collapse` 非受控 + `defaultOpen=false`）。没上记忆是因为它需要一个新的持久化位点，而"排障面板每次都要重新点开"目前不构成投诉；若有人反馈"每次都要展开很烦"，改成受控 + 落 `settings` 即可。
+
+### M6-f 世界书事件面板死路结案 + 两个原语缺口补完（①②③ 里的 ① 与 ③）
+
+**死路的机制与修法**。`stores/events.ts:updateEvent` 拿**合并后的整条事件**跑 `validateEvent`，而新建事件的 `name`/`description`/`keywords` 三样全空，于是任何单字段更新都被另外两样的"不能为空"顶回。修法不是放宽校验，而是**把两类错误分开、各拦在各该拦的位置**：
+
+| 函数 | 管什么 | 谁用 | 拦住的后果 |
+|---|---|---|---|
+| `validateEventValues` | 取值错误：名称超 50、描述超 2000、概率越界、正则非法 | `updateEvent` | 拒绝写入（写进去就是一个永远不成立的配置） |
+| `validateEventCompleteness` | 完整性错误：名称/描述为空、关键词型触发没关键词、依赖型没前置 | `triggerEvent` | 拒绝激活（连带挡住 `chat-context` 的自动触发，因为它也走 `triggerEvent`） |
+| `validateEvent` | 两者并集 | 保留给既有调用方，语义不变 | —— |
+
+**顺带修掉一处同源的噪声**：面板监听 `lastInfo` 弹成功提示。死路一修，逐字段输入就会**每敲一个字弹一条"已更新"**（事件名还没填时还会显示成"已更新 "）。所以 `updateEvent` 加第三个参数 `{ silent }`，面板 12 处字段写入统一走静默；离散动作（新建/触发/完成/删除）照旧有反馈。这条不是顺手优化——不做的话修完死路换来的是满屏 toast。
+
+**改写了 4 条既有用例，理由是它们钉的正是这个坑**（不是放宽）：`updateEvent('name' → '')` 从前断言"返回 false 且原值不变"，现改为断言"能存进去、但这条事件随即不能激活"；三条 `triggerEvent`/`completeEvent` 用例原本用裸 `createEvent`（三样全空）当夹具、断言能激活，现改用 `createValidEvent`，让被测的**状态前提**不再被完整性问题串扰。并集校验的边界（50 字、2000 字、概率 0/100）在 `tests/core/event-types.test.ts` 新增的 12 例里逐条钉住，含"拆分没把边界挪位"与"`validateEvent` 仍是两者并集（防漂移）"。
+
+**两个原语缺口**：
+- `FormField` 加 `label-extra` 插槽（渲染在 `<label>` 内部、必填星号之前）。有了它，"温度 [1.00]"、"作者深度 [4]"这类**标签里嵌实时数值**的字段才接得进原语——角色编辑器因此再转 7 块：温度、最大 Tokens、作者深度、图片 URL、首字母、等级、经验值。实测（Edge 无头，同版本）：`.form-field-hint` 被指到 **5/5 → 8/8**、`.field .field-label`（未接原语的字段标签）**8 → 0**、`.field-hint` 残留 **5 → 2**（那两条是"属性组为空"与"属性未启用"的**块级**说明，不属于任何单个控件，挂到控件上是撒谎）、悬空 label 仍 0、`#f-temp` 与 `#f-maxtok` 都拿到了 `aria-describedby`。
+- `Modal` 加 `describedBy` → 对话框的 `aria-describedby`。群聊两个弹窗开头那句"选择要加入群聊的角色（可多选）"、"生成一名临时 NPC…"说的是**整个对话框**，此前在无障碍树里是孤儿。实测弹窗 `[role=dialog]` 的 `aria-describedby="add-member-hint"`、目标节点确实在对话框内、标题的 `aria-labelledby` 未受影响。
+- 渐变那一对"起始色/结束色"**没接**：两个控件共用一条报错，`FormField` 是"一控件一实例"，各接一份会把同一句话在两个框下面重复一遍。
+
+**新增浏览器级用例 `e2e/ux-event-manual-trace.spec.ts`**（走用户手配这条路，与 M6-d 的"生成器 → 下一轮注入"是两条不同路径）：世界书事件面板逐字段配一条全局关键词事件 → 回对话（客户端跳转）→ 先发不含关键词的消息（负向对照：本轮无回显）→ 再发含关键词的：**同一轮触发并同一轮注入**（`scanAndApplyTriggers` 先应用触发再拼注入文本）→ 断言回显、事件名、跳 `/random-events?from=/chat`。已加入 webkit 的 `testMatch`。
+
+**故障注入四处，签名互不重叠**：① `updateEvent` 改回并集校验 → store 与面板共 5 条转红（含"逐字段输入一路存得进去"）；② 忽略 `{ silent }` → 只有"编辑不弹已更新"一条红，报的是 `expected '事件「断桥拦」已更新' to be '已创建新事件'`；③ `Modal` 的 `:aria-describedby` 置空 → 只有 describedBy 那条红；④ `label-extra` 插槽移出 `<label>` → 只有插槽位置那条红。
+
+**一处工具性踩坑，值得单独记**：③ 的第一次注入用 `sed` 在模板**属性列表里**写了 `aria-describedby="bogus-id" // 故障注入`，Vue 模板编译器报 `Illegal '/' in tags.`——但**上一次运行的转换缓存让 vitest 仍然报"9 passed"**，等于一次假绿。改成合法表达式（`:aria-describedby="undefined"`）重跑才转红。教训：模板文件里的注入必须写成合法语法，且"刚改完就绿"要怀疑缓存，至少 `grep` 一遍实际文件内容再下结论（与既有的"mtime 会撒谎"同族）。
+
+**验证证据（M6-f，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run build` / `lint`(0 error) / `i18n:check:strict`(206 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**，基线 131) | 退出码均 **0** |
+| `npx vitest run` | **185 files / 3856 passed / 3 skipped**（较 M6-e 的 183 / 3836 增 2 文件 20 例：`worldbook-events-panel-edit` 4、`modal-describes` 2、`event-types` 新增 12、编辑器接线 +1、store 改写 +1） |
+| E2E | msedge（`--workers=2`）**63 passed**（62 + 新那条）、webkit（`--workers=1`）**18 passed**、mobile 两 project **14 passed** |
+| 截图 | `docs/dev/evidence/ux-ia-guided-flow/m6-f-primitives/`：`editor-model-fields.png`（模型设置段，温度徽章在粗标签里、最大 Tokens 与等级/经验值同刻度）、`group-add-member-dialog.png`（添加成员弹窗，说明句已挂 `aria-describedby`；顺带拍到 M6-e 的"成员 Runtime 检视 [高级]"收起态） |
+| 未做（诚实边界） | ① **`:value` 单向绑定的老毛病仍在取值错误路径上**：粘贴一段超 2000 字的描述会被拒，但输入框里的字不会回退，用户看到的是"红 toast + 字还在"，store 里其实是旧值——彻底修要么改双向绑定 + 校验回滚，要么给这类字段加"当前值 vs 已存值"的可见差异，本批没做；② 世界书事件面板**没有**接 `FormField`（它的字段是 `form-label` + `:value` 手写体系，本批只修语义不动排版，避免一次改两件事）；③ 事件模板（`/random-events` 的 templates 页签）仍无浏览器级用例，本批的 e2e 走的是"无模板 ⇒ defaultProbability"分支。 | | |

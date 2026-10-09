@@ -43,8 +43,8 @@ describe('角色编辑器字段接线', () => {
     const wrapper = await mountEditor();
     const hints = wrapper.findAll('.form-field-hint');
 
-    // 默认编辑态下这批块里的说明条数（温度/最大令牌等的说明在别的分支里）
-    expect(hints.length).toBeGreaterThanOrEqual(5);
+    // 默认编辑态下这批块里的说明条数（M6-f 把温度/最大 Tokens/作者深度也接了进来）
+    expect(hints.length).toBeGreaterThanOrEqual(8);
     const described = new Set(
       wrapper
         .findAll('[aria-describedby]')
@@ -72,6 +72,22 @@ describe('角色编辑器字段接线', () => {
     expect(label.find('.sr-only').text()).toBe(t('common.required'));
     // DOM 原生 required 也要在（浏览器自带的必填提示与保存判据都依赖它）
     expect(wrapper.find('#f-name').attributes('required')).toBeDefined();
+  });
+
+  it('带实时数值的标签（温度）靠 label-extra 插槽接进原语，值仍在 label 内', async () => {
+    const wrapper = await mountEditor();
+    const label = wrapper.find('label[for="f-temp"]');
+    const badge = label.find('.value-badge');
+    const slider = wrapper.find('#f-temp');
+
+    expect(label.exists()).toBe(true);
+    // 值在 label 里面：读屏念标签时连着念"温度 1.00"，这正是这类字段以前接不进原语的原因
+    expect(badge.exists()).toBe(true);
+    expect(badge.text()).toBe('1.00');
+    // 而控件拿到了原来手写分支给不了的说明关联
+    const described = String(slider.attributes('aria-describedby')).split(' ');
+    const hintIds = wrapper.findAll('.form-field-hint').map((h) => h.attributes('id'));
+    expect(described.some((id) => hintIds.includes(id))).toBe(true);
   });
 
   it('属性组标题改成了分组标签，并被 aria-labelledby 引用', async () => {

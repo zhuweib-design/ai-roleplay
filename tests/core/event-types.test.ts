@@ -15,6 +15,8 @@ import {
   createDefaultCompletion,
   createDefaultEvent,
   validateEvent,
+  validateEventValues,
+  validateEventCompleteness,
   isTriggerable,
   isActive,
   isFinished,
@@ -406,6 +408,93 @@ describe('event-types (F17.1)', () => {
 
     test('active 状态返回 false', () => {
       expect(isFinished(makeEvent({ state: 'active' }))).toBe(false);
+    });
+  });
+
+  // ── 两类校验的分工（设计文档 §七 #21）──
+
+  describe('validateEventValues 只管取值错误', () => {
+    test('三样必填全空也不算取值错误（编辑不该被拦）', () => {
+      expect(
+        validateEventValues({
+          name: '',
+          description: '',
+          trigger: makeKeywordTrigger({ keywords: [] }),
+        })
+      ).toEqual([]);
+    });
+
+    test('超长名称是取值错误', () => {
+      expect(validateEventValues(makeEvent({ name: '一'.repeat(51) }))).toContain(
+        '事件名称不能超过 50 字符'
+      );
+    });
+
+    test('50 字边界仍放行（拆分没把边界挪位）', () => {
+      expect(validateEventValues(makeEvent({ name: '一'.repeat(50) }))).toEqual([]);
+      expect(validateEventValues(makeEvent({ description: '一'.repeat(2000) }))).toEqual([]);
+    });
+
+    test('概率越界是取值错误', () => {
+      expect(validateEventValues(makeEvent({ probability: 101 }))).toContain(
+        '触发概率必须在 0-100 之间'
+      );
+    });
+
+    test('非法正则是取值错误', () => {
+      const errors = validateEventValues(
+        makeEvent({ trigger: makeKeywordTrigger({ keywords: ['('], useRegex: true }) })
+      );
+      expect(errors).toEqual(['无效的正则表达式：(']);
+    });
+  });
+
+  describe('validateEventCompleteness 只管"还缺什么"', () => {
+    test('逐条列出缺的字段，顺序固定便于断言', () => {
+      expect(
+        validateEventCompleteness({
+          name: '',
+          description: '',
+          trigger: makeKeywordTrigger({ keywords: [] }),
+        })
+      ).toEqual(['事件名称不能为空', '事件描述不能为空', '关键词触发条件必须至少包含一个关键词']);
+    });
+
+    test('依赖型触发缺前置时报错', () => {
+      expect(
+        validateEventCompleteness(
+          makeEvent({ trigger: { type: 'dependency', requiredEvents: [] } })
+        )
+      ).toContain('前置依赖触发条件必须至少包含一个前置事件');
+    });
+
+    test('填全了就没有完整性错误', () => {
+      expect(validateEventCompleteness(makeEvent())).toEqual([]);
+    });
+  });
+
+  describe('validateEvent 仍是两类并集', () => {
+    test('既报缺字段也报取值非法（既有调用方语义不变）', () => {
+      const errors = validateEvent(
+        makeEvent({
+          name: '',
+          description: '一'.repeat(2001),
+          probability: 150,
+          trigger: makeKeywordTrigger({ keywords: [] }),
+        })
+      );
+      expect(errors).toContain('事件名称不能为空');
+      expect(errors).toContain('事件描述不能超过 2000 字符');
+      expect(errors).toContain('触发概率必须在 0-100 之间');
+      expect(errors).toContain('关键词触发条件必须至少包含一个关键词');
+      expect(errors.length).toBe(
+        validateEventValues(
+          makeEvent({ name: '', description: '一'.repeat(2001), probability: 150, trigger: makeKeywordTrigger({ keywords: [] }) })
+        ).length +
+          validateEventCompleteness(
+            makeEvent({ name: '', description: '一'.repeat(2001), probability: 150, trigger: makeKeywordTrigger({ keywords: [] }) })
+          ).length
+      );
     });
   });
 });

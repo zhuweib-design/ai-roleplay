@@ -104,4 +104,23 @@ describe('FormField', () => {
     });
     expect(wrapper.find('.form-field-optional').text()).toBe(t('common.optional'));
   });
+
+  it('label-extra 插槽渲染在 label 内部（"温度 [1.00]"这类带实时值的标签）', () => {
+    const wrapper = mount(FormField, {
+      props: { labelKey: 'charEdit.temperatureLabel', required: true },
+      slots: {
+        default: '<input :id="id" />',
+        'label-extra': '<span class="value-badge">1.00</span>',
+      },
+    });
+    const badge = wrapper.find('.value-badge');
+    const label = wrapper.find('label');
+
+    expect(badge.exists()).toBe(true);
+    // 在 label 里面，读屏念标签时会连着当前值一起念；放外面就只剩"温度"
+    expect(label.element.contains(badge.element)).toBe(true);
+    // 值在星号之前：星号是标签的结尾，读起来才是"温度 1.00 必填"
+    const html = label.element.innerHTML;
+    expect(html.indexOf('value-badge')).toBeLessThan(html.indexOf('form-field-required'));
+  });
 });

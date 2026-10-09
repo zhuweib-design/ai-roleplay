@@ -71,6 +71,8 @@ export default defineConfig({
         // M6-d：E11 与上面同一条链路形状（IndexedDB 造数 + 按请求分流的打桩 + 流式回复），
         // 且多一处依赖 Safari 的写法：客户端跳转保内存态事件表 + IndexedDB 快照轮询
         '**/ux-event-trace.spec.ts',
+        // M6-f：世界书事件面板逐字段编辑 + 同轮关键词触发注入，Safari 内核同样要实测一次
+        '**/ux-event-manual-trace.spec.ts',
         // M2-b9：滑块渐变/按压着色都靠 color-mix 与新式渐变分段，Safari 内核必须实测一次
         '**/ux-interaction-feedback.spec.ts',
       ],

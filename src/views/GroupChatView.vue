@@ -1460,9 +1460,10 @@ type="button"
     <Modal
       v-model="addMemberModalOpen"
       :title="t('group.addMemberTitle')"
+      described-by="add-member-hint"
     >
       <div class="add-member-form">
-        <p class="form-hint">{{ t('group.addMemberHint') }}</p>
+        <p id="add-member-hint" class="form-hint">{{ t('group.addMemberHint') }}</p>
         <ul class="char-pick-list tk-scroll" role="group" :aria-label="t('group.charPickAria')">
           <li v-for="c in addMemberAvailable" :key="c.id">
             <button
@@ -1536,9 +1537,10 @@ type="button"
     <Modal
       v-model="npcModalOpen"
       :title="t('group.npcTitle')"
+      described-by="npc-hint"
     >
       <div class="npc-generate-form">
-        <p class="form-hint">
+        <p id="npc-hint" class="form-hint">
           {{ t('group.npcHint') }}
         </p>
 

@@ -14,6 +14,7 @@ import type {
   CompletionCondition,
   EventState,
   StoryEvent,
+  StoryEventPatch,
 } from '@/core/event-types';
 import Icon from '@/components/common/Icon.vue';
 import Toast from '@/components/common/Toast.vue';
@@ -162,14 +163,24 @@ function deleteSelectedEvent() {
   selectedEventId.value = null;
 }
 
-function onEventNameInput(e: Event) {
+/**
+ * 字段编辑统一走这条：一律静默。
+ *
+ * 面板监听 `lastInfo` 弹成功提示，逐字段输入若各写一次 `lastInfo`，
+ * 敲四个字就弹四条"已更新"；而事件名还没填时那句提示会显示成"已更新 "。
+ * 编辑本来就不该有反馈，要反馈的是"触发/完成/删除"这类离散动作。
+ */
+function patchEvent(patch: StoryEventPatch): void {
   if (!selectedEvent.value) return;
-  eventsStore.updateEvent(selectedEvent.value.id, { name: (e.target as HTMLInputElement).value });
+  eventsStore.updateEvent(selectedEvent.value.id, patch, { silent: true });
+}
+
+function onEventNameInput(e: Event) {
+  patchEvent({ name: (e.target as HTMLInputElement).value });
 }
 
 function onEventDescriptionInput(e: Event) {
-  if (!selectedEvent.value) return;
-  eventsStore.updateEvent(selectedEvent.value.id, { description: (e.target as HTMLTextAreaElement).value });
+  patchEvent({ description: (e.target as HTMLTextAreaElement).value });
 }
 
 function onEventSceneChange(e: Event) {
@@ -177,7 +188,7 @@ function onEventSceneChange(e: Event) {
   const raw = (e.target as HTMLSelectElement).value;
   const sceneEntryId = raw === '' ? null : raw;
   const sceneName = sceneEntryId === null ? null : getSceneName(sceneEntryId);
-  eventsStore.updateEvent(selectedEvent.value.id, { sceneEntryId, sceneName });
+  patchEvent({ sceneEntryId, sceneName });
 }
 
 function onTriggerTypeChange(e: Event) {
@@ -193,28 +204,26 @@ function onTriggerTypeChange(e: Event) {
   } else {
     trigger = { type: 'time', storyTime: '' };
   }
-  eventsStore.updateEvent(selectedEvent.value.id, { trigger });
+  patchEvent({ trigger });
 }
 
 function onEventKeywordsInput(e: Event) {
   if (!selectedEvent.value || selectedEvent.value.trigger.type !== 'keyword') return;
   const raw = (e.target as HTMLInputElement).value;
   const keywords = raw.split(',').map((k) => k.trim()).filter((k) => k.length > 0);
-  eventsStore.updateEvent(selectedEvent.value.id, {
-    trigger: { ...selectedEvent.value.trigger, keywords },
-  });
+  patchEvent({ trigger: { ...selectedEvent.value.trigger, keywords } });
 }
 
 function onEventUseRegexChange(e: Event) {
   if (!selectedEvent.value || selectedEvent.value.trigger.type !== 'keyword') return;
-  eventsStore.updateEvent(selectedEvent.value.id, {
+  patchEvent({
     trigger: { ...selectedEvent.value.trigger, useRegex: (e.target as HTMLInputElement).checked },
   });
 }
 
 function onEventCaseSensitiveChange(e: Event) {
   if (!selectedEvent.value || selectedEvent.value.trigger.type !== 'keyword') return;
-  eventsStore.updateEvent(selectedEvent.value.id, {
+  patchEvent({
     trigger: { ...selectedEvent.value.trigger, caseSensitive: (e.target as HTMLInputElement).checked },
   });
 }
@@ -223,20 +232,17 @@ function onEventRequiredEventsInput(e: Event) {
   if (!selectedEvent.value || selectedEvent.value.trigger.type !== 'dependency') return;
   const raw = (e.target as HTMLInputElement).value;
   const requiredEvents = raw.split(',').map((k) => k.trim()).filter((k) => k.length > 0);
-  eventsStore.updateEvent(selectedEvent.value.id, {
-    trigger: { ...selectedEvent.value.trigger, requiredEvents },
-  });
+  patchEvent({ trigger: { ...selectedEvent.value.trigger, requiredEvents } });
 }
 
 function onEventProbabilityInput(e: Event) {
   if (!selectedEvent.value) return;
   const value = parseInt((e.target as HTMLInputElement).value, 10);
-  if (!isNaN(value)) eventsStore.updateEvent(selectedEvent.value.id, { probability: value });
+  if (!isNaN(value)) patchEvent({ probability: value });
 }
 
 function onEventRepeatableChange(e: Event) {
-  if (!selectedEvent.value) return;
-  eventsStore.updateEvent(selectedEvent.value.id, { repeatable: (e.target as HTMLInputElement).checked });
+  patchEvent({ repeatable: (e.target as HTMLInputElement).checked });
 }
 
 function onEventManualOnlyChange(e: Event) {
@@ -245,7 +251,7 @@ function onEventManualOnlyChange(e: Event) {
   const completion: CompletionCondition = manualOnly
     ? { manualOnly: true }
     : { manualOnly: false, keywords: [], useRegex: false };
-  eventsStore.updateEvent(selectedEvent.value.id, { completion });
+  patchEvent({ completion });
 }
 
 function onEventCompletionKeywordsInput(e: Event) {
@@ -257,7 +263,7 @@ function onEventCompletionKeywordsInput(e: Event) {
     keywords,
     useRegex: selectedEvent.value.completion.useRegex ?? false,
   };
-  eventsStore.updateEvent(selectedEvent.value.id, { completion });
+  patchEvent({ completion });
 }
 
 function triggerSelectedEvent() {

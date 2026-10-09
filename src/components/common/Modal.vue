@@ -23,6 +23,14 @@ const props = withDefaults(
     dismissible?: boolean;
     /** aria-label（无 title 时使用） */
     ariaLabel?: string;
+    /**
+     * 对话框内那段"整体说明"的 id（`aria-describedby`）。
+     *
+     * 为什么不是每个字段各自的 hint：有的弹窗开头是一句描述**整个对话框**的话
+     * （"从已创建的角色里挑成员"、"会生成一名临时 NPC 并直接加入本群"），
+     * 把它挂到某个控件上是撒谎——那句话说的是这个对话框在干什么，不是某个框的填法。
+     */
+    describedBy?: string;
   }>(),
   {
     dismissible: true,
@@ -123,6 +131,7 @@ onBeforeUnmount(() => {
           aria-modal="true"
           :aria-labelledby="title ? 'modal-title-' + instanceId : undefined"
           :aria-label="!title ? ariaLabel : undefined"
+          :aria-describedby="describedBy"
         >
           <header v-if="title" class="modal-header">
             <h2 :id="'modal-title-' + instanceId" class="modal-title">{{ title }}</h2>

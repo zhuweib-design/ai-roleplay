@@ -289,6 +289,21 @@
 - 新增 `tests/views/group-runtime-inspect-collapse.test.ts`（4 例：默认收起且下拉在 DOM、点标题展开、说明与"高级"标记在面板外、段标题是 `h3`）。故障注入 `:default-open=true` → 前三例分别转红且签名不同，`h3` 那例仍绿（正交）；撤销后复绿。
 - 双语各新增 2 键（`group.runtimeInspectTitle` / `Hint`）。全量：单测 **183 files / 3836 passed / 3 skipped**，E2E msedge **62**、webkit **17**、mobile **14** passed，`build` / `lint`(0 error) / `i18n:check[:strict]` / `check:css-conventions`(5/5) / `a11y:contrast`(121) 退出码 0；群聊 axe 与读源文本那条 QA 用例未改即通过。截图 `docs/dev/evidence/ux-ia-guided-flow/m6-e-group-header/`（改前 / 收起 / 展开三张）。
 
+### 修复（UX/IA M6-f：世界书"事件"面板配不出任何事件，§七 #21 结案）
+- `validateEvent` 拆成两类：`validateEventValues`（取值错误——名称超 50、描述超 2000、概率越界、正则非法，**拦写入**）与 `validateEventCompleteness`（完整性错误——名称/描述为空、关键词型没关键词、依赖型没前置，**拦激活**）；`validateEvent` 保留为两者并集，既有调用方语义不变。根因是 `updateEvent` 拿合并后的整条事件跑并集校验，而新建事件三样必填全空，任何单字段更新都被另外两样的"不能为空"顶回——面板输入框又是 `:value` 单向绑定，字看着还在、store 里是空的。
+- `triggerEvent` 补查完整性（自动触发路径 `chat-context` 也走它，所以配不全的事件既不会激活也不会被注入提示词）。
+- `updateEvent` 加第三个参数 `{ silent }`，面板 12 处字段写入统一静默：死路修好后若不管，逐字段输入会**每敲一个字弹一条"已更新"**（事件名还空着时显示成"已更新 "）。离散动作（新建/触发/完成/删除）照旧有反馈。
+- 改写 4 条既有用例（钉的正是这个坑，不是放宽）：`updateEvent(name → '')` 从"返回 false"改为"能存进去、但这条事件随即不能激活"；三条 `triggerEvent`/`completeEvent` 原本用裸 `createEvent` 当夹具，改用 `createValidEvent`，让被测的状态前提不被完整性串扰。新增 `tests/core/event-types.test.ts` 12 例（含 50/2000 字与概率 0/100 边界"拆分没挪位"、`validateEvent` 仍是并集）、`tests/components/worldbook-events-panel-edit.test.ts` 4 例（逐字段输入真存得进去、编辑不弹提示、没填全点触发被拒且逐条说缺什么、填全后同一按钮能激活）。
+- 新增 `e2e/ux-event-manual-trace.spec.ts`：在世界书面板逐字段配一条全局关键词事件 → 先发不含关键词的消息（负向对照，本轮无回显）→ 再发含关键词的，**同一轮触发并同一轮注入** → 断言回显、事件名、跳 `/random-events?from=/chat`。与 M6-d 的"生成器 → 下一轮注入"是两条不同路径；已加入 webkit `testMatch`。
+- 未做：`:value` 单向绑定在**取值错误**路径上仍会"字看着还在、store 是旧值"（粘贴超长描述会被拒但输入框不回退），彻底修需要改双向绑定或给出"当前值 vs 已存值"的可见差异；世界书事件面板本批只修语义不动排版，没接 `FormField`。
+
+### 新增（UX/IA M6-f：两个原语缺口补完，角色编辑器再转 7 块）
+- `FormField` 加 `label-extra` 插槽（渲染在 `<label>` 内、必填星号之前）。这是"温度 [1.00]"、"作者深度 [4]"这类**标签里嵌实时数值**的字段此前接不进原语的唯一原因。角色编辑器因此再转 7 块：温度、最大 Tokens、作者深度、图片 URL、首字母、等级、经验值。实测：字段说明被 `aria-describedby` 指到 **5/5 → 8/8**、未接原语的 `.field .field-label` **8 → 0**、旧 `.field-hint` 残留 **5 → 2**（那两条是"属性组为空""属性未启用"的块级说明，不属于任何控件）、悬空 label 仍 0。渐变那对"起始色/结束色"没接：两个控件共用一条报错，接成两份会把同一句话重复两遍。
+- `Modal` 加 `describedBy` → 对话框的 `aria-describedby`。群聊"添加成员"与"生成随机 NPC"两个弹窗开头那句话描述的是**整个对话框**，此前在无障碍树里是孤儿；实测 `[role=dialog]` 的 `aria-describedby="add-member-hint"` 且目标节点确实在对话框内、标题 `aria-labelledby` 不受影响。新增 `tests/components/modal-describes.test.ts` 2 例。
+- 故障注入四处、签名互不重叠：并集校验回归 → 5 条转红；忽略 `silent` → 只红"编辑不弹已更新"；`Modal` 的 `aria-describedby` 置空 → 只红 describedBy 那条；`label-extra` 移出 `<label>` → 只红插槽位置那条。
+- 一处工具性踩坑记在这里避免重犯：第一次注入把 `// 注释` 写进 Vue 模板的**属性列表**里，编译器报 `Illegal '/' in tags.`，但上一次运行的转换缓存让 vitest 仍报"通过"——一次假绿。模板文件里的注入必须写成合法语法，且"刚改完就绿"要先 `grep` 实际文件再下结论。
+- 全量：单测 **185 files / 3856 passed / 3 skipped**，E2E msedge **63**、webkit **18**、mobile **14** passed；`build` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions`(5/5) / `a11y:contrast`(121) 退出码 0。截图 `docs/dev/evidence/ux-ia-guided-flow/m6-f-primitives/`。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。

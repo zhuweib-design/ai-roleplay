@@ -820,66 +820,68 @@ function handleExport() {
           </div>
 
           <!-- 图片头像配置 -->
-          <div v-else class="field">
-            <label for="f-avatar-url" class="field-label">{{ t('charEdit.avatarUrl') }}</label>
-            <input
-              id="f-avatar-url"
-              v-model="form.avatar"
-              type="text"
-              class="field-input"
-              :class="{ 'has-error': errors.avatar }"
-              :aria-invalid="!!errors.avatar"
-              :aria-describedby="errors.avatar ? 'err-avatar' : undefined"
-              :placeholder="t('charEdit.avatarUrlPlaceholder')"
-              autocomplete="off"
-            />
-            <p v-if="errors.avatar" id="err-avatar" class="field-error" role="alert">
-              <Icon name="alert-triangle" :size="12" />
-              <span>{{ errors.avatar }}</span>
-            </p>
-
-            <div class="upload-row">
-              <button
-                type="button"
-                class="upload-btn"
-                @click="openAvatarPicker('camera')"
-              >
-                <span>{{ t('picker.camera') }}</span>
-              </button>
-              <button
-                type="button"
-                class="upload-btn"
-                @click="openAvatarPicker('album')"
-              >
-                <Icon name="image" :size="14" />
-                <span>{{ t('picker.album') }}</span>
-              </button>
+          <FormField
+            v-else
+            label-key="charEdit.avatarUrl"
+            html-for="f-avatar-url"
+            :error-text="errors.avatar"
+          >
+            <template #default="{ describedBy, invalid }">
               <input
-                ref="avatarInput"
-                type="file"
-                accept="image/*"
-                :capture="avatarCapture"
-                class="hidden-file-input"
-                aria-hidden="true"
-                tabindex="-1"
-                @change="handleAvatarSelected"
+                id="f-avatar-url"
+                v-model="form.avatar"
+                type="text"
+                class="field-input"
+                :class="{ 'has-error': invalid }"
+                :aria-invalid="invalid"
+                :aria-describedby="describedBy"
+                :placeholder="t('charEdit.avatarUrlPlaceholder')"
+                autocomplete="off"
               />
-              <span class="upload-hint">{{ t('charEdit.uploadHint') }}</span>
-            </div>
-          </div>
+              <div class="upload-row">
+                <button
+                  type="button"
+                  class="upload-btn"
+                  @click="openAvatarPicker('camera')"
+                >
+                  <span>{{ t('picker.camera') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="upload-btn"
+                  @click="openAvatarPicker('album')"
+                >
+                  <Icon name="image" :size="14" />
+                  <span>{{ t('picker.album') }}</span>
+                </button>
+                <input
+                  ref="avatarInput"
+                  type="file"
+                  accept="image/*"
+                  :capture="avatarCapture"
+                  class="hidden-file-input"
+                  aria-hidden="true"
+                  tabindex="-1"
+                  @change="handleAvatarSelected"
+                />
+                <span class="upload-hint">{{ t('charEdit.uploadHint') }}</span>
+              </div>
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-initial" class="field-label">{{ t('charEdit.initialLabel') }}</label>
-            <input
-              id="f-initial"
-              v-model="form.initial"
-              type="text"
-              class="field-input field-initial"
-              maxlength="2"
-              :placeholder="t('charEdit.initialPlaceholder')"
-              autocomplete="off"
-            />
-          </div>
+          <FormField label-key="charEdit.initialLabel" html-for="f-initial">
+            <template #default>
+              <input
+                id="f-initial"
+                v-model="form.initial"
+                type="text"
+                class="field-input field-initial"
+                maxlength="2"
+                :placeholder="t('charEdit.initialPlaceholder')"
+                autocomplete="off"
+              />
+            </template>
+          </FormField>
         </fieldset>
 
         <!-- 模型设置 -->
@@ -913,51 +915,54 @@ function handleExport() {
             </template>
           </FormField>
 
-          <div class="field">
-            <label for="f-temp" class="field-label">
-              {{ t('charEdit.temperatureLabel') }} <span class="value-badge">{{ form.temperature.toFixed(2) }}</span>
-            </label>
-            <input
-              id="f-temp"
-              v-model.number="form.temperature"
-              v-range
-              type="range"
-              min="0"
-              max="2"
-              step="0.05"
-              class="tk-range"
-              :aria-invalid="!!errors.temperature"
-              :aria-describedby="errors.temperature ? 'err-temp' : undefined"
-            />
-            <p v-if="errors.temperature" id="err-temp" class="field-error" role="alert">
-              <Icon name="alert-triangle" :size="12" />
-              <span>{{ errors.temperature }}</span>
-            </p>
-            <p v-else class="field-hint">{{ t('charEdit.temperatureHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.temperatureLabel"
+            html-for="f-temp"
+            hint-key="charEdit.temperatureHint"
+            :error-text="errors.temperature"
+          >
+            <template #label-extra>
+              <span class="value-badge" :class="{ err: errors.temperature }">{{ form.temperature.toFixed(2) }}</span>
+            </template>
+            <template #default="{ describedBy, invalid }">
+              <input
+                id="f-temp"
+                v-model.number="form.temperature"
+                v-range
+                type="range"
+                min="0"
+                max="2"
+                step="0.05"
+                class="tk-range"
+                :aria-invalid="invalid"
+                :aria-describedby="describedBy"
+              />
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-maxtok" class="field-label">{{ t('charEdit.maxTokensLabel') }}</label>
-            <input
-              id="f-maxtok"
-              :value="form.maxTokens ?? ''"
-              type="number"
-              min="1"
-              max="32768"
-              step="1"
-              class="field-input"
-              :class="{ 'has-error': errors.maxTokens }"
-              :placeholder="t('charEdit.maxTokensPlaceholder')"
-              :aria-invalid="!!errors.maxTokens"
-              :aria-describedby="errors.maxTokens ? 'err-maxtok' : undefined"
-              @input="onMaxTokensInput"
-            />
-            <p v-if="errors.maxTokens" id="err-maxtok" class="field-error" role="alert">
-              <Icon name="alert-triangle" :size="12" />
-              <span>{{ errors.maxTokens }}</span>
-            </p>
-            <p v-else class="field-hint">{{ t('charEdit.maxTokensHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.maxTokensLabel"
+            html-for="f-maxtok"
+            hint-key="charEdit.maxTokensHint"
+            :error-text="errors.maxTokens"
+          >
+            <template #default="{ describedBy, invalid }">
+              <input
+                id="f-maxtok"
+                :value="form.maxTokens ?? ''"
+                type="number"
+                min="1"
+                max="32768"
+                step="1"
+                class="field-input"
+                :class="{ 'has-error': invalid }"
+                :placeholder="t('charEdit.maxTokensPlaceholder')"
+                :aria-invalid="invalid"
+                :aria-describedby="describedBy"
+                @input="onMaxTokensInput"
+              />
+            </template>
+          </FormField>
         </fieldset>
 
         <!-- F01.6 角色属性 -->
@@ -1006,39 +1011,45 @@ function handleExport() {
               </FormField>
 
               <div class="attr-row">
-                <div class="field">
-                  <label for="f-level" class="field-label">
-                    {{ t('charEdit.levelLabel') }}
-                    <span v-if="errors.level" class="value-badge err" role="alert">{{ errors.level }}</span>
-                  </label>
-                  <input
-                    id="f-level"
-                    v-model.number="form.level"
-                    type="number"
-                    min="0"
-                    max="9999"
-                    step="1"
-                    class="field-input"
-                    :class="{ 'has-error': errors.level }"
-                    :aria-invalid="!!errors.level"
-                  />
-                </div>
-                <div class="field">
-                  <label for="f-exp" class="field-label">
-                    {{ t('charEdit.expLabel') }}
-                    <span v-if="errors.experience" class="value-badge err" role="alert">{{ errors.experience }}</span>
-                  </label>
-                  <input
-                    id="f-exp"
-                    v-model.number="form.experience"
-                    type="number"
-                    min="0"
-                    step="1"
-                    class="field-input"
-                    :class="{ 'has-error': errors.experience }"
-                    :aria-invalid="!!errors.experience"
-                  />
-                </div>
+                <FormField
+                  label-key="charEdit.levelLabel"
+                  html-for="f-level"
+                  :error-text="errors.level"
+                >
+                  <template #default="{ describedBy, invalid }">
+                    <input
+                      id="f-level"
+                      v-model.number="form.level"
+                      type="number"
+                      min="0"
+                      max="9999"
+                      step="1"
+                      class="field-input"
+                      :class="{ 'has-error': invalid }"
+                      :aria-invalid="invalid"
+                      :aria-describedby="describedBy"
+                    />
+                  </template>
+                </FormField>
+                <FormField
+                  label-key="charEdit.expLabel"
+                  html-for="f-exp"
+                  :error-text="errors.experience"
+                >
+                  <template #default="{ describedBy, invalid }">
+                    <input
+                      id="f-exp"
+                      v-model.number="form.experience"
+                      type="number"
+                      min="0"
+                      step="1"
+                      class="field-input"
+                      :class="{ 'has-error': invalid }"
+                      :aria-invalid="invalid"
+                      :aria-describedby="describedBy"
+                    />
+                  </template>
+                </FormField>
               </div>
 
               <div class="field" role="group" aria-labelledby="f-stats-label">
@@ -1125,28 +1136,30 @@ function handleExport() {
             </template>
           </FormField>
 
-          <div class="field">
-            <label for="f-depth" class="field-label">
-              {{ t('charEdit.authorDepthLabel') }} <span class="value-badge">{{ form.authorDepth }}</span>
-            </label>
-            <input
-              id="f-depth"
-              v-model.number="form.authorDepth"
-              v-range
-              type="range"
-              min="0"
-              max="50"
-              step="1"
-              class="tk-range"
-              :aria-invalid="!!errors.authorDepth"
-              :aria-describedby="errors.authorDepth ? 'err-depth' : undefined"
-            />
-            <p v-if="errors.authorDepth" id="err-depth" class="field-error" role="alert">
-              <Icon name="alert-triangle" :size="12" />
-              <span>{{ errors.authorDepth }}</span>
-            </p>
-            <p v-else class="field-hint">{{ t('charEdit.authorDepthHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.authorDepthLabel"
+            html-for="f-depth"
+            hint-key="charEdit.authorDepthHint"
+            :error-text="errors.authorDepth"
+          >
+            <template #label-extra>
+              <span class="value-badge">{{ form.authorDepth }}</span>
+            </template>
+            <template #default="{ describedBy, invalid }">
+              <input
+                id="f-depth"
+                v-model.number="form.authorDepth"
+                v-range
+                type="range"
+                min="0"
+                max="50"
+                step="1"
+                class="tk-range"
+                :aria-invalid="invalid"
+                :aria-describedby="describedBy"
+              />
+            </template>
+          </FormField>
         </fieldset>
 
         <!-- 需求7：世界书绑定（仅编辑模式） -->

@@ -38,6 +38,10 @@ const hasError = computed(() => Boolean(props.errorKey || props.errorText));
   <div class="form-field" :class="{ 'has-error': hasError }">
     <label class="form-field-label" :for="controlId">
       {{ t(labelKey) }}
+      <!-- 标签后缀：给"温度 [1.00]"这类标签里嵌实时数值的字段用（角色编辑器有四处）。
+           放在 label 内部，读屏念标签时会一起念到当前值；没有这个插槽的话
+           这类字段就只能继续手写 <label>，接不进本组件的 aria 关联。 -->
+      <slot name="label-extra" />
       <span v-if="required" class="form-field-required" aria-hidden="true">*</span>
       <span v-if="required" class="sr-only">{{ t('common.required') }}</span>
       <span v-else-if="$slots.optional" class="form-field-optional">{{ t('common.optional') }}</span>
