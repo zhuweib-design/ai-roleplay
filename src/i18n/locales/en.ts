@@ -133,6 +133,8 @@ const en: Record<MessageKey, string> = {
   'ctx.tokenHint': 'Values come from the real prompt tokens of each request; the limit is adjustable in Settings → Models.',
   'trace.summary': '{count} lore entries used this turn',
   'trace.openBook': 'Open lorebook “{name}”',
+  'trace.eventsSummary': '{count} random events carried into this turn',
+  'trace.eventsOpen': 'Open the random events page',
   // L 层：角色关联面板（判据唯一来源 src/core/relations.ts）
   'rel.title': 'Character links',
   'rel.hint': 'Each row jumps straight to the module it refers to',

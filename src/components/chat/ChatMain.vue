@@ -934,7 +934,7 @@ function startWithExample(text: string) {
           :key="msg.id"
           :data-message-id="msg.id"
           :class="{ 'message-search-active': highlightedMessageId === msg.id }"
-          v-memo="[msg.content, msg.thinking, msg.reasoningTokens, msg.status, msg.generating, msg.narration, msg.narrationAfter, highlightedMessageId === msg.id]"
+          v-memo="[msg.content, msg.thinking, msg.reasoningTokens, msg.status, msg.generating, msg.narration, msg.narrationAfter, msg.promptTrace, msg.eventTrace, highlightedMessageId === msg.id]"
           :msg="msg"
           @action="handleMessageAction"
           :ref="(el) => cacheMsgHeight(el, msg.id)"

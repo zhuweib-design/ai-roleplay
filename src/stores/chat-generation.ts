@@ -37,6 +37,7 @@ import type { Chat } from '../storage/types';
 import { uiCharToCard, uiMsgsToChatMsgs } from '../services/type-adapters';
 import { useEventsStore } from './events';
 import { buildChatSessionContext, collectLorebooksForCharacter } from './chat-context';
+import { toEventTraceItems } from '@core/event-trace';
 import {
   buildVectorRagInjection,
   getRagDynamicModel,
@@ -731,6 +732,10 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
             // 目标必须是 liveMsg（响应式消息）而不是 card：CharacterCard 带 [key: string]: unknown，
             // 写 card 能过 typecheck 但既不渲染也不落盘——E2E 实测过一次静默失效。
             liveMsg.promptTrace = info.activated.length ? info.activated : undefined;
+            // E11：随机事件同理挂到本条回复上。读 ctx 而不是事后查事件表——
+            // 事件表只在内存里（stores/events.ts 注明），刷新后当初那条就没了。
+            const eventTrace = toEventTraceItems(ctx.activatedEvents);
+            liveMsg.eventTrace = eventTrace.length ? eventTrace : undefined;
           },
           onEmotionUpdated: () => {
             void memoryStore.persistLocalMemoryStore();
@@ -995,6 +1000,8 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
     target.reasoningTokens = undefined;
     target.status = undefined;
     target.promptTrace = undefined;
+    // E11：本轮的事件痕迹属于上一轮，重新生成必须一起清掉
+    target.eventTrace = undefined;
     target.generating = true;
 
     // 转换 UI → 核心
@@ -1076,6 +1083,10 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
             tokenUsage.value.prompt += info.tokenCount;
             // L 层：把"这一轮到底注入了哪几条设定"挂到本条回复上（E02 此前算出来却不下传）
             target.promptTrace = info.activated.length ? info.activated : undefined;
+            // E11：重新生成走的是 allowEventTrigger=false，已激活的事件仍会注入，
+            // 所以痕迹同样要重算，不能留着上一轮的那条。
+            const eventTrace = toEventTraceItems(ctx.activatedEvents);
+            target.eventTrace = eventTrace.length ? eventTrace : undefined;
           },
           onEmotionUpdated: () => {
             void memoryStore.persistLocalMemoryStore();

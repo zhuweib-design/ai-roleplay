@@ -5,6 +5,7 @@ import type { IconName } from '@/components/common/icons';
 import ThinkingBlock from './ThinkingBlock.vue';
 import StatusHud from './StatusHud.vue';
 import PromptTraceSummary from './PromptTraceSummary.vue';
+import EventTraceSummary from './EventTraceSummary.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { computed, getCurrentInstance } from 'vue';
 import { t } from '@/i18n';
@@ -132,6 +133,8 @@ const assistantActions: MsgAction[] = [
 
       <!-- L 层：本轮注入了哪几条设定（可跳回来源世界书）；无注入痕迹时不渲染 -->
       <PromptTraceSummary :items="msg.promptTrace" />
+      <!-- E11：本轮带入了哪几条随机事件（可跳随机事件页）；无事件时不渲染 -->
+      <EventTraceSummary :items="msg.eventTrace" />
     </div>
   </div>
 </template>

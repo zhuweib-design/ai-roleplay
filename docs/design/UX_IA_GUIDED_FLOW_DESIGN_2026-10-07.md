@@ -153,7 +153,7 @@
 | E08 群聊忽略角色级参数 | C | **声明** | `group.capabilityNote` 页头明示（M2-b4） |
 | E09 语音 TTS → 设置「扩展」 | C | **A** | 语音芯片带原因与跳转（M2-a） |
 | E10 随机事件 → 场景名必须等于角色名 | C | **A**（M4-b4） | `/random-events` 挂上 `PrereqNotice` 三行前提；场景名与当前角色名不一致时给一跳（进该角色的编辑页，带回程）。判定集中在 `readiness.ts` 的 `useRandomEventPrereqs`，界面不再自行推断 |
-| E11 随机事件 → 对话注入 | C | **未覆盖（仍 C）** | 注入痕迹 v1 只列世界书命中，随机事件命中不显示 |
+| E11 随机事件 → 对话注入 | C | **A**（M6-c） | 气泡底部“本轮带入 N 条随机事件”回显，展开列事件名并可跳 `/random-events`（带回程）；痕迹与消息一起持久化，只带标识不带正文 |
 | E12 / E13 / E16 / E25 | D | **撤下** | 四条死控件已从界面移除（M2-b1） |
 | E14 故事 → 世界书/角色/事件 | A | **A** | 前测唯一一条，未动 |
 | E15 故事 → 对话 | B | **A**（M4-b4） | 聊天顶栏的故事时间由只读文本改为按钮，一跳 `/story?story=<id>` 并带回程；故事引擎只认 `stories` 里真实存在的 id |
@@ -166,7 +166,7 @@
 | E23 图片生成 → 对话消息 | E | **声明** | 图片页页头"产物只存进画廊，不会进入对话消息"（本批） |
 | E24 `tokenBudget` → 上下文面板 | C（假显示） | **A** | 真实 token 用量替换假预算条（M2-b2） |
 
-**后测合计（M4-b4 后）**：A **16** · 撤下 **4** · 声明 **4** · 未覆盖 **1**（E11）= 25。
+**后测合计（M6-c 后）**：A **17** · 撤下 **4** · 声明 **4** · 未覆盖 **0** = 25 —— §四 的口径目标（17 转 A + 4 撤下 + 4 声明）就此对齐。
 
 > 与 §四 目标口径（"17 转 A + 4 撤下 + 4 声明"）的差 **3 条**，全部来自同一处失算：目标把"给 `/random-events`、`/local-model` 挂 `PrereqNotice`"与"市场 URL 的显式声明"算进了已完成，实际只挂了 `/databank` 一处。这 3 条已登记为 §七 的续期项，不改口径数字来凑达标。
 用户"不知道模块之间怎么关联"不是主观感受，而是可测量事实：**25 条边里只有 1 条做到可见且可一跳**。
@@ -555,7 +555,7 @@ E12（`WorldBookView.vue:1565-1595`）、E13（`RandomEventsView.vue:177,497-511
 | 状态 | 条目 |
 |---|---|
 | **已落地** | N 层（nav-model 四组分层 / 三渲染器同源 / 路由派生高亮 / `/more` 聚合页 / 移动端底栏含群聊可达）；L 层（`/chat`·`/group` 就绪条、`/databank` 前提清单、`?cat=` 深链与设置页返回、世界书"已绑定角色"可点回、**E02 注入痕迹回显**、**E24 真实 token 用量**、**角色关联面板 M2-b5**、**全局"返回来源页" M2-b5**、**E17 群聊成员可点进编辑（M2-b6）**、**E20 市场安装结果可见可跳（M2-b6）**、**侧栏二次排版 + 入口显隐可编辑（M2-b7 / M2-b8：`/more` 的「侧栏入口」编辑器，钉底「更多」「设置」，收起的入口在「更多」页「已从侧栏收起」里仍可进）**）；G 层（`/guide` 任务中心 + rail/`/more` 常驻入口 + 首启欢迎改造）；V 层（设置 7 类、术语统一、**E12/E13/E16/E25 四条死控件撤除**、假预算条删除）；连续性（**D-Q F5 自动接回会话**、**D-R 会话归属纠偏**）；快速档（**M3-b3：角色"名字 + 设定 + 选书 + 建好并开始"四件事一屏做完，世界书"最小生效三步"，两者共用 StepFlow，快速档内已采用 FormField 做标签/说明/报错关联**）；空态收敛（**M3-b2：22 处手写 `.empty-state` 并入 `EmptyState`，删掉 30 条私有样式，12 个文件用组件；仅剩 `ChatMain` 的带芯片空态按设计保留**）；提示可达性（**M4-b1：33 处原生 `title=` 已按 `v-tip` 指令 / `aria-label` / 可见文字处置完毕，仅剩 1 处白名单，并由 `tests/accessibility/no-native-title.test.ts` 守着**）；引导原语（**M3-b1 `StepFlow` 一个组件伺候向导与清单两态，已接管任务卡两段重复步骤列表与新建会话弹窗指示器**、`HelpTip`、`FormField`，4 例 axe 全过）；关联缺口补四条（**E03 上下文面板按真实注入口径列全局书并可点进**、**E19 角色卡"已跟踪"标记可点回该角色版本历史**、**E22 图像 Provider 随设置持久化 + 与「模型接入」互填**、**E23 图片页页头声明产物不进对话**）；交互反馈（**M2-b9 滑块轨道按值着色 + 拇指光晕**、**M2-b9 全局按钮悬停/按下兜底**、**M2-b9 提示分类型时长 + 倒计时条 + 悬停暂停 + 队列上限**）；常规/高级折叠（**M4-b2：`Collapse` 原语接管设置页三处高级段——「外观」界面自定义、「数据」新分组「运维与兼容」四段（并把档案/备份/两项导出提到前面）、「模型」弹窗内默认采样参数，三处默认收起且用 `v-show` 保住草稿**）；四条边的补完与一处页面合并（**M4-b4：E10 随机事件前提横幅（场景名=角色名的字符串耦合首次出现在界面上，不一致可一跳回该角色）、E15 聊天故事时间改为可点回故事本体（`/story?story=`）、E21 市场索引地址的构建期声明、D-B 后半 `/profile` 并入设置→关于（旧链接重定向，`ProfileView.vue` 删除，`nav.profile`/`router.profile`/5 个 `profile.*` 死键清除）**）；`/chat` ⇄ `/group` 分段控件（**M6-a：两处页头共用 `ChatModeSwitch`，标签取自 nav-model，方向键只移焦点不跳转**）E08/E18 以 `group.capabilityNote` 显式声明"群聊不加载世界书与文档检索" |
-| **未落地（下面小节仍按目标态描述，别当成现状）** | `WorldBookView`·`CharacterEditorView`·`StoryEngineView`·`GroupChatView` 分区（M6-b 起）；**E11** 随机事件注入回显（M6-c） |
+| **未落地（下面小节仍按目标态描述，别当成现状）** | 四个巨型视图的分区：`CharacterEditorView` 已并入 `Collapse`（M6-b1），其余（`WorldBookView` / `StoryEngineView` / `GroupChatView` 的分区与 `FormField` 铺开）仍未做 |
 
 ### 6.1 新用户第一次打开（改造后）
 
@@ -1774,3 +1774,31 @@ M5-b1 改的是引导页，这批改的是"引导长在功能里"的那几处。
 | E2E | msedge（`--workers=2`）**61 passed**、mobile 两 project **14 passed**——`character-crud` / `ux-quick-forms` / `backup-restore` / `ux-relations-panel` / `chat-flow` / `group-chat-flow` 六条走"新建角色 → 完整表单 → 名称/设定/保存"的用例全部未改即通过（`#f-name`、`#f-desc`、`.header-btn.save`、`.editor-body` 四个硬选择器都保住了） |
 | 浏览器实测（Edge 无头，`/character/seraphina/edit`） | 打开属性开关 → 面板自动展开（`aria-expanded=true`、`panelVisible=true`、3 个控件）；点段标题 → 收起（`aria-expanded=false`）；`aria-controls` 指向的 id 在文档里**真实存在**；标题渲染为 `H3`；收起后面板内控件仍在 DOM 且 `display: none`（v-show 保草稿）。截图 `docs/dev/evidence/ux-ia-guided-flow/m6-b-editor-collapse/attr-open.png` / `attr-collapsed.png` |
 | 截图踩到的一个坑 | 首版截图里段标题是红的：那是全局"悬停把标题染成主色"的常态，指针停在刚点过的行上被一起拍了进来。截图前把指针移开才对——记录是因为它一度被误读成错误态 |
+
+### M6-c E11 随机事件注入回显（最后一条未覆盖边）
+
+**为什么必须在这一刻抓**：事件表**不落盘**（`stores/events.ts:10-11` 注明"事件仅在内存中维护"），刷新后当初注入的那条就不存在了；随机事件的历史 `results` 是"生成"历史、全局环形缓冲（上限 200 条）、**没有 chatId / messageId / eventId**，`sceneName` 还只是角色名。所以"这条回复当时带了哪条事件"事后无从回推，只能在组装提示词时随消息一起记下——与 `promptTrace` 完全同构。
+
+**改动面（六处，一条数据流）**
+
+| 层 | 位置 | 内容 |
+|---|---|---|
+| 判据源 | `chat-context.ts:186-199` | 注入文本算完之后，另存一份结构化 `activatedEvents = relevantEvents.filter(state==='active')`。顺序很关键：`scanAndApplyTriggers` 会**就地改事件状态**，先取就漏掉本轮刚被触发的那些 |
+| 裁剪视图 | 新增 `core/event-trace.ts` | `EventTraceItem { eventId, name, sceneName? }` + `toEventTraceItems()`。**不含 `description`**（模型生成的整段正文，既撑持久化体积也可能把未公开设定原文摊在会话里）；`sceneName` 为 null 时字段整个不写 |
+| 契约 | `types/index.ts` UIMessage、`core/character-card.ts` ChatMessage | 各加一个可选 `eventTrace?: EventTraceItem[]`。按 `schema-contract.ts:9-10` 的口径"新增可选字段可继续用当前版本"→ **零迁移**，`snapshot:migration:check` 与 `runtime:db:schema:check` 都不需要动（后者比对的是 PostgreSQL 的 SQL 文档与迁移文件，与消息字段无关） |
+| 落盘 | `type-adapters.ts` 两个方向 | 各加一行。**漏一边就静默丢字段**——这是 E02 那次"写 `card` 不写 `liveMsg`"教训的同族 |
+| 写回 | `chat-generation.ts` 三处 | 发送时写 `liveMsg.eventTrace`、重新生成前清空、重新生成后重算（重新生成走 `allowEventTrigger=false`，已激活事件仍会注入，所以痕迹必须重算而不是留着上一轮的） |
+| 渲染 | 新增 `chat/EventTraceSummary.vue` + `MessageBubble.vue` | 气泡底部一句"本轮带入 N 条随机事件"，展开列事件名 + 一个跳 `/random-events`（带 `from`）的去处。排版与 `prompt-trace` 同款，两条回显并排时看起来是一类东西 |
+
+**顺带修掉一个潜伏错**：`ChatMain.vue` 的消息 `v-memo` 依赖列表里**没有 `msg.promptTrace`**（E02 留下的）。目前无害，因为痕迹与 `content` 同拍写入；但任何"只改痕迹不改正文"的字段都不会重渲染。这次一并补上 `msg.promptTrace` 与 `msg.eventTrace`。
+
+**验证证据（M6-c，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` / `npm run build` / `lint`(0 error) / `i18n:check:strict`(206 文件) / `check:css-conventions`(5/5) / `a11y:contrast`(扫描 **121**) / `snapshot:migration:check` / `runtime:db:schema:check` / `check:csp` / `check:ort` | 退出码均 **0** |
+| `npx vitest run` | **181 files / 3827 passed / 3 skipped**（较 M6-b1 的 3813 增 14：`tests/core/event-trace.test.ts` 6 例、`tests/stores/chat-event-trace.test.ts` 4 例、`tests/components/event-trace-summary.test.ts` 4 例） |
+| 负向对照 | store 层三条对照：无激活事件 → 回复照常生成但 `eventTrace` 为 `undefined`；**已完成（`state='completed'`）的事件不算注入**；事件属于别的书时不注入（与注入文本同一判据） |
+| 故障注入 | 一次跑两处注入：A 让裁剪视图把 `description` 带上 → core 的"不带正文"与 store 的"只带名字不带正文"各自转红；B 让写回步骤不落到响应式消息 → store 的存在性断言转红。签名不同，可分别归因 |
+| E2E | msedge（`--workers=2`）第二轮 **61 passed**；webkit（`--workers=1`）**16**；mobile 两 project **14**。第一轮 msedge 有 1 条失败：`ux-gap-visibility.spec.ts:202`（E19 已跟踪标记，`char-tracked` 计数 0）——单跑两次均通过，且该条在 M4-b2 的全量跑里也以同样方式红过一次，属 §九 M4-b2 记录的 O-4 同族干扰，未据此改任何断言 |
+| 未做（诚实边界） | ① **没有浏览器级 E2E 走通真实生成链路**：事件是"上一轮生成、下一轮注入"，要在 e2e 里造出来得让打桩端点按请求分流（一次返回聊天回复、一次返回可解析的事件 JSON），再在 UI 里把场景名配成与角色名完全一致并把概率拉到 100。本批的覆盖停在 store + 组件两层，这条 e2e 登记为下一项；② 回显只报"注入了"，不报"模型采纳了"（后者无法从界面证明）；③ `severity` / `category` 不在 `StoryEvent` 上，只在生成结果记录里，所以回显条不显示严重度——要显示就得在 `generatedRandomEventToStoryEvent` 里把它们带进事件对象，属数据契约扩展，未做。 |

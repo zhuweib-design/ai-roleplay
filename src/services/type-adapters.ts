@@ -293,6 +293,8 @@ export function uiMsgToChatMsg(ui: UIMessage): ChatMessage {
     ...(ui.status ? { status: ui.status } : {}),
     // L 层：世界书注入痕迹随消息持久化（同款可选字段；无条目时不写）
     ...(ui.promptTrace && ui.promptTrace.length > 0 ? { promptTrace: ui.promptTrace } : {}),
+    // E11：随机事件注入痕迹随消息持久化（同款可选字段；无事件时不写）
+    ...(ui.eventTrace && ui.eventTrace.length > 0 ? { eventTrace: ui.eventTrace } : {}),
   };
 }
 
@@ -325,6 +327,8 @@ export function chatMsgToUiMsg(msg: ChatMessage): UIMessage | null {
     ...(msg.status ? { status: msg.status } : {}),
     // L 层：世界书注入痕迹回读（旧数据无此字段 → undefined → 不渲染回显）
     ...(msg.promptTrace && msg.promptTrace.length > 0 ? { promptTrace: msg.promptTrace } : {}),
+    // E11：随机事件注入痕迹回读（旧数据无此字段 → undefined → 不渲染回显）
+    ...(msg.eventTrace && msg.eventTrace.length > 0 ? { eventTrace: msg.eventTrace } : {}),
   };
 }
 

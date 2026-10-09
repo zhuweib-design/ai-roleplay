@@ -11,6 +11,7 @@ import { t } from '@/i18n';
 import type { ReasoningEffort, SamplingParams } from '@api/types';
 import type { CharacterStatus, StatusSchema } from '@core/status-schema';
 import type { PromptTraceItem } from '@core/lorebook-scanner';
+import type { EventTraceItem } from '@core/event-trace';
 import type { PresetId } from '@core/creation-preset';
 
 /** 单个属性项（键值对，支持数值或文本类型） */
@@ -72,6 +73,11 @@ export interface ChatMessage {
    * 旧数据无此字段 → undefined → 不渲染，零迁移。
    */
   promptTrace?: PromptTraceItem[];
+  /**
+   * E11：本轮注入的随机事件（裁剪视图，**不含正文**）。
+   * 与 promptTrace 同构：可选字段，旧数据无此字段 → undefined → 不渲染，零迁移。
+   */
+  eventTrace?: EventTraceItem[];
 }
 
 /**

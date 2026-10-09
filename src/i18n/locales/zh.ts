@@ -133,6 +133,8 @@ export default {
   'ctx.tokenHint': '数值来自各轮请求的真实 prompt token 累计；上限可在设置→模型调整。',
   'trace.summary': '本轮注入 {count} 条设定',
   'trace.openBook': '打开世界书「{name}」',
+  'trace.eventsSummary': '本轮带入 {count} 条随机事件',
+  'trace.eventsOpen': '打开随机事件页',
   // L 层：角色关联面板（判据唯一来源 src/core/relations.ts）
   'rel.title': '角色关联',
   'rel.hint': '每一行都能一跳到达对应模块',

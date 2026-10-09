@@ -8,7 +8,8 @@
 import type { CharacterAttributes } from '@core/character-card';
 import type { ReasoningEffort } from '@api/types';
 import type { CharacterStatus, StatusSchema, StatusHudConfig } from '@core/status-schema';
-import type { PromptTraceItem } from '@core/lorebook-scanner';
+import type { PromptTraceItem } from '@core/lorebook-scanner'
+import type { EventTraceItem } from '@core/event-trace';
 import { t } from '@/i18n';
 
 /**
@@ -64,6 +65,11 @@ export interface UIMessage {
    * 有值即可展开查看"这条回复用到了哪几条设定"，并可跳回来源世界书。
    */
   promptTrace?: PromptTraceItem[];
+  /**
+   * E11：本轮注入的随机事件（裁剪视图：事件名 + 场景标签，**不含正文**）。
+   * 必须在组装提示词那一刻写——事件表只在内存里，刷新后当初那条就没了。
+   */
+  eventTrace?: EventTraceItem[];
   timestamp: number;
 }
 

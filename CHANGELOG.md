@@ -253,6 +253,15 @@
 - 测试：`tests/components/collapse.test.ts` 10 → 13 例（受控时"外部说收起就是收起，点一下只发事件不偷改"、"外部改展开界面跟着变"、"不传 open 仍走非受控"）。
 - 全量：单测 **3813 passed**（178 文件），E2E msedge **61**、mobile **14** passed；六条走"新建角色 → 完整表单 → 名称/设定/保存"的用例未改即通过（`#f-name`/`#f-desc`/`.header-btn.save`/`.editor-body` 四个硬选择器全部保住）。浏览器实测：开关打开→面板自动展开、点段标题→收起、`aria-controls` 指向的 id 真实存在、标题为 `H3`、收起后控件仍在 DOM 且 `display:none`。
 
+### 新增（UX/IA M6-c：E11 随机事件注入回显，最后一条未覆盖边）
+- 助手气泡底部新增一句"本轮带入 N 条随机事件"，展开列事件名 + 一个跳 `/random-events`（带来源、可回）的去处。25 条依赖边到此 **A 17 · 撤下 4 · 声明 4 · 未覆盖 0**，与 §四 的口径目标对齐。
+- 痕迹必须在组装提示词那一刻抓：事件表**不落盘**（`stores/events.ts` 注明仅内存维护），随机事件的 `results` 是"生成"历史、全局环形缓冲、没有 chatId/messageId/eventId，事后无从回推"这条回复当时带了哪条事件"。做法与 `promptTrace` 完全同构。
+- 六处一条数据流：`chat-context` 在注入文本算完之后另存结构化 `activatedEvents`（顺序关键——`scanAndApplyTriggers` 会就地改事件状态）；新增 `core/event-trace.ts` 裁剪视图（**不含 description**，`sceneName` 为 null 时字段整个不写）；`UIMessage` 与持久化的 `ChatMessage` 各加一个可选字段（按 `schema-contract` 的"新增可选字段沿用当前版本"→ **零迁移**，两个 schema 门禁都不必动）；`type-adapters` 两个方向各加一行（漏一边就静默丢字段，E02 教训的同族）；`chat-generation` 三处写回（发送写、重新生成前清、重新生成后重算——该路径 `allowEventTrigger=false` 但已激活事件仍会注入）。
+- 顺带修掉一个潜伏错：`ChatMain` 的消息 `v-memo` 依赖里**没有 `msg.promptTrace`**（E02 留下）。目前无害（痕迹与正文同拍写入），但任何"只改痕迹不改正文"的字段都不会重渲染；这次一并补上两个痕迹字段。
+- 新增 14 例：`tests/core/event-trace.test.ts`（6，含"序列化结果不含事件正文"）、`tests/stores/chat-event-trace.test.ts`（4，含三条负向对照：无激活事件不写字段、`completed` 事件不算注入、属于别的书不算注入）、`tests/components/event-trace-summary.test.ts`（4）。故障注入一次跑两处（视图带上正文 / 不写回响应式消息），失败签名不同可分别归因。
+- 全量：单测 **3827 passed / 3 skipped**（181 文件），E2E msedge **61**、webkit **16**、mobile **14** passed，build 与 9 项静态门禁退出码 0。msedge 第一轮有 1 条 `ux-gap-visibility` E19 失败（`char-tracked` 计数 0），单跑两次均通过、且在 M4-b2 全量跑里以同种方式红过一次，属 O-4 同族干扰，未据此放宽任何断言。
+- 未做（诚实边界）：没有浏览器级 e2e 走通真实生成链路（事件是"上一轮生成、下一轮注入"，打桩端点需按请求分流，还要把场景名配成与角色名完全一致并拉满概率），本批覆盖停在 store + 组件两层；回显只报"注入了"不报"模型采纳了"；`severity`/`category` 不在 `StoryEvent` 上，故回显条不显示严重度。
+
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）
 - 世界书条目级"随机事件"开关与概率滑杆（字段 `lorebook.entry.randomEventEnabled/randomEventProbability` 在运行时零读取）、随机事件生成器的"绑定世界书"下拉（`generatorConfig.boundWorldBookId` 有写无读）、故事详情页的"关联世界书"下拉与已绑显示（`story.boundWorldBookId` 运行时零读取）、数据银行"聊天级文档"分区（该分区依赖 `chatDocuments`，而上传对话框只有全局/角色两档且检索管线硬编码 `scope='character'`，属三重不可达面板）。
 - 控件面：世界书 61 → 59、随机事件 22 → 21、故事 43 → 42、数据银行 19 → 17；四个文件合计减少 261 行；`stores/data-bank.ts` 的 `chatDocuments` getter 一并撤除。
