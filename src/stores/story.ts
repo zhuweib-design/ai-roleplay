@@ -2,6 +2,7 @@ import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { StorageAdapter } from '@/storage/storage-adapter';
+import { getStorageAdapter } from '@/storage/storage-factory';
 import { mergeKeptLocal } from '@/core/store-merge';
 import {
   type AnalysisDepth,
@@ -108,6 +109,14 @@ export const useStoryStore = defineStore('story', () => {
   // 注入的存储适配器
   let storageAdapter: StorageAdapter | null = null;
 
+  /**
+   * 故事列表是否已从存档读完。深链（`?story=<id>`）据此决定何时解析 id——
+   * 读库没完成时 `stories` 还是空的/旧的，直接判会"静默不选中"（M12-a 的角色版本
+   * 更糟，会悄悄写到另一条记录上，见 stores/character.ts 的同名闸门）。
+   */
+  const libraryLoaded = ref(false);
+  let loadInFlight: Promise<void> | null = null;
+
   // ── 计算属性 ──
 
   const currentStory = computed(
@@ -158,6 +167,38 @@ export const useStoryStore = defineStore('story', () => {
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityStory'), error: err instanceof Error ? err.message : String(err) });
     }
+  }
+
+  /** 视图可能比 App.vue 的注入更早挂载，所以自己把适配器准备好 */
+  async function ensureStorageAdapter(): Promise<StorageAdapter | null> {
+    if (storageAdapter) return storageAdapter;
+    try {
+      const adapter = getStorageAdapter();
+      await adapter.init();
+      storageAdapter = adapter;
+      return adapter;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * 等故事列表读完（没开始就自己开始，并发只读一遍）。
+   * 与 `stores/character.ts` 的同名方法是同一个契约，深链视图必须先等它再按 id 找数据。
+   */
+  async function ensureLoaded(): Promise<void> {
+    if (libraryLoaded.value) return;
+    if (loadInFlight) return loadInFlight;
+    loadInFlight = (async () => {
+      try {
+        await ensureStorageAdapter();
+        await loadFromStorage();
+      } finally {
+        libraryLoaded.value = true;
+        loadInFlight = null;
+      }
+    })();
+    return loadInFlight;
   }
 
   async function persistStory(id: string): Promise<void> {
@@ -1113,8 +1154,11 @@ export const useStoryStore = defineStore('story', () => {
     statusCounts,
     // 依赖注入
     setStorageAdapter,
+    /** 深链视图据此决定何时解析 URL 里的故事 id */
+    libraryLoaded,
     // 持久化
     loadFromStorage,
+    ensureLoaded,
     persistStory,
     deleteFromStorage,
     // 故事操作

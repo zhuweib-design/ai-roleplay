@@ -294,7 +294,8 @@ onMounted(async () => {
         logger.error('Storage', '从存储加载数据银行文档失败', err);
       }),
       // 迭代31 新增：加载故事引擎数据 (F16)
-      storyStore.loadFromStorage().catch((err) => {
+      // 同角色库：走 ensureLoaded，让深链视图与启动加载共用同一次读库
+      storyStore.ensureLoaded().catch((err) => {
         logger.error('Storage', '从存储加载故事失败', err);
       }),
       // E19：版本快照此前只在「版本管理」页挂载时加载 ⇒ 离开那一页就没有任何地方

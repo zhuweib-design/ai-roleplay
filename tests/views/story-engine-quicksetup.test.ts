@@ -37,6 +37,9 @@ vi.mock('@/stores/story', () => ({
     searchQuery: '',
     analyzeStoryWithText: vi.fn(),
     selectStory: mocks.selectStory,
+    // 深链要先等 store 读完（M13-a 的闸门），mock 里"已经读完"即可
+    ensureLoaded: () => Promise.resolve(),
+    libraryLoaded: { value: true },
     cancelAnalysis: vi.fn(),
     clearProtagonist: vi.fn(),
     createStoryFromFile: vi.fn(),
@@ -190,13 +193,15 @@ describe('StoryEngineView 深链选中 (?story=)', () => {
     setActivePinia(createPinia());
   });
 
-  it('带存在的 id 进来：选中那一条', async () => {
+  it('带存在的 id 进来：等 store 读完之后选中那一条', async () => {
     await mountView(createPinia(), '?story=s1');
+    await flushPromises();
     expect(mocks.selectStory).toHaveBeenCalledWith('s1');
   });
 
   it('带不存在的 id 进来：不改选中态', async () => {
     await mountView(createPinia(), '?story=nope');
+    await flushPromises();
     expect(mocks.selectStory).not.toHaveBeenCalled();
   });
 

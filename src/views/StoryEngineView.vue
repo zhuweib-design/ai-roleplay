@@ -71,9 +71,18 @@ const characterStore = useCharacterStore();
 function applyStoryQuery(): void {
   const raw = route.query.story;
   const id = Array.isArray(raw) ? raw[0] : raw;
-  if (typeof id === 'string' && store.stories.some((s) => s.id === id)) {
-    store.selectStory(id);
-  }
+  if (typeof id !== 'string') return;
+  // 必须等故事列表读完再判：读库没完成时这条 id 还不在内存里，原来的写法会
+  // **静默什么都不做**——从聊天页点故事时间跳过来，界面停在没选中的空态上。
+  void store.ensureLoaded().then(() => {
+    if (route.query.story !== id) return; // 等待期间用户又跳了，旧的那次作废
+    if (store.stories.some((s) => s.id === id)) {
+      store.selectStory(id);
+      return;
+    }
+    // 读完仍然没有 ⇒ 链接过期或手打错，说给用户听（原来同样静默）
+    showToast('error', t('story.notFound2'));
+  });
 }
 applyStoryQuery();
 watch(() => route.query.story, applyStoryQuery);

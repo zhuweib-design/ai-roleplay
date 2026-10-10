@@ -443,6 +443,21 @@
 - 这组数字推翻了 M11-b 写下的「1699s 用例工作量摊在 4 个 worker 上」：167 条串行只有约 510s，而 workers=4 全量墙钟 447s——**并发几乎没换来时间**，长用例排在关键路径上。M11-b 的结论（正路是分片）不变，但支撑它的数字已在配置注释里更正。
 - 未做：GitHub 侧没有实跑（本机无 `gh`、无推送授权），验证止于「分片切分正确 + 四片各自跑绿 + workflow YAML 解析通过」。
 
+### 修复（UX/IA M13-a：故事页 `?story=` 也在读库完成前下判断，静默停在空态）
+- 把"从 URL 里取记录 id"的地方全数了一遍：只有版本页 `?char=`、编辑页 `/character/:id/edit`（M12-a 已修）与故事引擎 `?story=`。第三处的表现是**静默什么都不做**——从聊天页点故事时间跳过来，界面停在没选中的空态上，用户以为链接坏了。现在先 `await store.ensureLoaded()`，读完仍没有那条就提示"找不到目标故事"。
+- `stores/story.ts` 补 `libraryLoaded` + `ensureLoaded()`（与角色库同一契约：没开始就读、正在读就等同一个 promise、读过不重读），`App.vue` 的启动加载改走它。设置页的 `?cat=` 是静态分类，不查 store，确认不需要闸门。
+- **世界书 / 数据银行 / 群聊 / 随机事件四个 store 有意不加闸门**：它们当前没有深链消费者，加了是为假想需求写代码。承重的是新守卫 `tests/views/deep-link-store-gate.test.ts`——递归扫 `src/views` + `src/components`，凡出现"URL 键是记录 id"（`char`/`story`/`id`/`group`/`book`/…）而文件里没有 `ensureLoaded(` 就红；同一文件里还断言"扫描器必须真的看到那三个已接闸门的视图"，防正则失配导致空转。守卫的边界写进注释：它查"这个文件有没有等闸门"，不查"等的那次是否覆盖了这个 id"，后者由深链用例负责。
+- 新增 5 例（故事闸门去重 1、故事深链 2、静态守卫 2）；三处故障注入各自变红：撤视图等待 ⇒ 故事用例红 2 条、把 `ensureLoaded()` 整段删掉 ⇒ 守卫红、撤 store 去重 ⇒ 红在"只读一遍库"。既有的 `story-engine-quicksetup` 因 mock 缺 `ensureLoaded` 红过，补 mock 才绿——**这条改动的爆炸半径就是"mock 了 store 的用例"**。
+
+### 新增（UX/IA M13-b：审计补 Tab 层，顺带挖出两条从来没被扫过的路由）
+- 新增"点开页面内每个 Tab 后再扫一遍"（21 条路由、本机探针数出 69 个可见 Tab；msedge 29.2s / webkit 37.9s）。Tab 不改 URL、面板多是 `v-show`，所以这层是真换出覆盖面。配套对照把两类判定的差异钉住：同一处注入，`placeholderOnly`（按可见性）在 Tab 切走后不该再报，`dupIds`（文档级违规）**切走仍要报**。
+- **修了"页面渲染出来了"这个证据本身**：原来数整页按钮，而 NavRail 常年就有 15 个，空白页也能过关；改成只数 `#app-main` 里路由自己渲染的控件。于是要挖出：审计清单里的 `/versions` 与 `/market` **从来没注册在 router 上**（真实路径是 `/character-version` 与 `/community-market`），router 又没有兜底路由 ⇒ M10–M12 三轮写的"21 条路由"实际是 19 条真 + 2 条空。清单已换成真实路径，并新增一条用例要求"清单里每条路径都必须出现在 `src/router/index.ts` 的注册表里"。
+- 新增 `settle(page)`：可见控件数连续两次不变才算渲染到位。固定 sleep 在这套应用里不可靠（内容要等 store 从 IndexedDB 读回来才出现，正是 M12-a 那个时序），而"扫到半个页面"不会报错、只会少扫。三层扫描（默认视图 / 展开折叠段 / 点开 Tab）现在都先 settle。
+
+### 变更（UX/IA M13-c：CI 分片实跑）
+- 推送 `feat/ux-ia-guided-flow` 后 GitHub Actions 的 e2e 四片实跑结果：（待填：每片耗时与是否全绿）
+
+
 
 
 ### 移除（UX/IA M2-b1：撤掉四条"配了没反应"的控件）

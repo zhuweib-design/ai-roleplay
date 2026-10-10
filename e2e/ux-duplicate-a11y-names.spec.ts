@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { audit, expandAllCollapsed } from './a11y-dup-audit';
+import fs from 'node:fs';
+import path from 'node:path';
+import { audit, expandAllCollapsed, visitTabs, settle, mainContent } from './a11y-dup-audit';
 
 /**
  * E2E · 实时 DOM 里的 id / 可访问名 / 命名来源审计（M10-b 立，M11-a 扩，M12-b 再扩）
@@ -29,11 +31,11 @@ const ROUTES = [
   '/databank',
   '/story',
   '/random-events',
-  '/market',
+  '/community-market',
   '/local-model',
   '/image-gen',
   '/archives',
-  '/versions',
+  '/character-version',
   '/guide',
   '/more',
   '/settings',
@@ -58,7 +60,22 @@ const CHUNKS: string[][] = [
   ROUTES.filter((_, i) => i % 2 === 1),
 ];
 
+/** 从 src/router/index.ts 里读出真实注册的路由路径 */
+function registeredRoutes(): string[] {
+  const src = fs.readFileSync(path.resolve(process.cwd(), 'src/router/index.ts'), 'utf8');
+  return [...src.matchAll(/path:\s*'([^']+)'/g)].map((m: RegExpMatchArray) => m[1] ?? '');
+}
+
 test.describe('实时 DOM 的 id 与可访问名唯一性', () => {
+  test('审计清单里每条路由都真的注册在 router 上', () => {
+    // M13-b 实测：清单里的 `/versions` 从来没注册过，router 也没有兜底路由，
+    // 于是那条"路由审计"一直在扫一个空白页——而整页按钮计数看不出问题（NavRail 撑着）。
+    const registered = new Set(registeredRoutes());
+    const missing = ROUTES.map((r) => r.split('?')[0]).filter((p) => !registered.has(p));
+    expect(missing, `这些路径没注册在 router 上：${missing.join(', ')}`).toEqual([]);
+    expect(registered.has('/'), '读到的路由表太短说明正则失配').toBe(true);
+  });
+
   for (const [idx, routes] of CHUNKS.entries()) {
     test(`第 ${idx + 1} 组共 ${routes.length} 条路由：无重复 id、无同区域同名、无仅靠占位符命名的控件`, async ({ page }) => {
       const violations: string[] = [];
@@ -66,16 +83,20 @@ test.describe('实时 DOM 的 id 与可访问名唯一性', () => {
       for (const route of routes) {
         await page.goto(route);
         await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
-        await page.waitForTimeout(400);
+        await settle(page);
         const res = await audit(page);
-        // 先确认这条路由真的渲染出了东西，否则"零违规"可能只是"零内容"
-        if (res.visibleButtons <= 2) violations.push(`${route} 可见按钮数 ${res.visibleButtons}，用例在此失去意义`);
-        if (res.idTotal <= 2) violations.push(`${route} 带 id 的元素只有 ${res.idTotal} 个，页面没渲染出来`);
+        // 只数路由自己渲染出来的东西：整页有 NavRail 的 15 个按钮兜底，
+        // 拿整页计数当"渲染出来了"的证据，空白页也能过（M13-b 实测就是这样漏掉死路由的）
+        const main = await mainContent(page);
+        // 只要求"有可见控件"：社区市场整块内容一个 id 都不带，那是合法写法
+        // （没有 aria 关联需求就不必发 id），拿 id 数当渲染证据会把正常页面判成空白。
+        if (main.buttons <= 0) violations.push(`${route} 主内容区一个可见控件都没有（多半是条不存在的路由）`);
+        if (res.visibleButtons <= 2) violations.push(`${route} 整页可见按钮数 ${res.visibleButtons}，用例在此失去意义`);
         for (const id of res.dupIds) violations.push(`${route} 重复 id：#${id}`);
         for (const row of res.sameRegionDupNames) violations.push(`${route} 同一区域里同名按钮：${row}`);
         for (const row of res.placeholderOnly) violations.push(`${route} 只有占位符没有标签：${row}`);
         for (const row of res.deadAnchors) violations.push(`${route} 跳转链接指向不存在的锚点：${row}`);
-        checked.push(`${route}(${res.idTotal} 个 id / ${res.visibleButtons} 个按钮)`);
+        checked.push(`${route}(主内容 ${main.buttons} 个控件 / 整页 ${res.idTotal} 个 id)`);
       }
       expect(violations, `已扫 ${checked.length} 条路由：\n${checked.join('\n')}`).toEqual([]);
     });
@@ -94,7 +115,7 @@ test.describe('实时 DOM 的 id 与可访问名唯一性', () => {
     for (const route of ROUTES) {
       await page.goto(route);
       await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
-      await page.waitForTimeout(300);
+      await settle(page);
       const { closedBefore, closedAfter } = await expandAllCollapsed(page);
       if (closedBefore === 0) {
         expanded.push(`${route}(没有收着的段)`);
@@ -126,7 +147,9 @@ test.describe('实时 DOM 的 id 与可访问名唯一性', () => {
   test('负向对照：藏在展开面板里的违规必须被展开扫出来', async ({ page }) => {
     // 选「数据」分类：M4-b2 把"运维与兼容"那几段默认收着，这里才有东西可展开
     await page.goto('/settings?cat=data');
-    await page.waitForSelector('#app button');
+    // 折叠段要等设置页读完 store 才出现，扫"半个页面"只会少扫不会报错，所以先等它出现
+    await page.waitForSelector('button.collapse-toggle:visible', { timeout: 15_000 });
+    await settle(page);
     const { closedBefore } = await expandAllCollapsed(page);
     expect(closedBefore, '这一页没有收着的段，换一条路由再验').toBeGreaterThan(0);
 
@@ -168,6 +191,98 @@ test.describe('实时 DOM 的 id 与可访问名唯一性', () => {
     });
     await page.waitForTimeout(200);
     expect((await audit(page)).placeholderOnly, '收起的面板里的控件不该算违规').toEqual([]);
+  });
+
+  /**
+   * M13-b：再往下一层——点开页面内的 Tab 之后。
+   *
+   * Tab 换的是面板内容且不改 URL，所以逐路由那层扫描永远只看见默认 Tab；
+   * 面板多是 `v-show`（切走的只是 display:none），判定只看可见元素 ⇒ 这一层是真换出了
+   * 新覆盖面。点了会换路由的分段控件（/chat ⇄ /group）单列出来，不假装覆盖。
+   */
+  test(`点开每个 Tab 后再扫一遍（共 ${ROUTES.length} 条路由）`, async ({ page }) => {
+    const violations: string[] = [];
+    const seen: string[] = [];
+    const navigatedAway: string[] = [];
+    let visitedTotal = 0;
+    for (const route of ROUTES) {
+      await page.goto(route);
+      await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
+      await settle(page);
+      const { visited, navigatedAway: away } = await visitTabs(page, route, async (label) => {
+        const res = await audit(page);
+        const at = `${route} · Tab「${label}」`;
+        for (const id of res.dupIds) violations.push(`${at} 重复 id：#${id}`);
+        for (const row of res.sameRegionDupNames) violations.push(`${at} 同一区域里同名按钮：${row}`);
+        for (const row of res.placeholderOnly) violations.push(`${at} 只有占位符没有标签：${row}`);
+        for (const row of res.deadAnchors) violations.push(`${at} 跳转链接指向不存在的锚点：${row}`);
+      });
+      visitedTotal += visited.length;
+      navigatedAway.push(...away.map((l) => `${route} · ${l}`));
+      if (visited.length) seen.push(`${route}(${visited.join('/')})`);
+    }
+    expect(violations, `Tab 层扫了 ${visitedTotal} 个可见 Tab：\n${seen.join('\n')}`).toEqual([]);
+    // 空转守卫：一条 Tab 都没扫到，说明选择器或路由列表出了问题
+    expect(visitedTotal, '没有任何路由带可见 Tab，本用例失去意义').toBeGreaterThan(3);
+    test.info().annotations.push({
+      type: 'info',
+      description: `换路由因而未覆盖的分段控件：${navigatedAway.join('、') || '无'}`,
+    });
+  });
+
+  /**
+  /**
+   * Tab 层的负向对照：可见性到底管不管用。
+   *
+   * 面板是 `v-show`，切走的 Tab 里节点还在 DOM 上。两类判定在这里的表现**故意不同**，
+   * 这条用例把差异钉住而不是假装一致：
+   * - 重复 id 是文档级违规（`getElementById` 不看可见性，指错就是指错）⇒ 切走仍要报；
+   * - 只靠 placeholder 命名的控件按可见性判定 ⇒ 切走不该再报。
+   * 少了这条，Tab 层的"零违规"完全可能只是"什么都没看见"。
+   */
+  test('负向对照：Tab 切走后，可见性判定收手、文档级判定仍然报', async ({ page }) => {
+    await page.goto('/random-events');
+    await page.waitForSelector('[role="tab"]:visible');
+    expect(
+      await page.locator('[role="tab"]:visible').count(),
+      '这条路由上至少要有两个 Tab 才验得出切换'
+    ).toBeGreaterThanOrEqual(2);
+
+    const injected = await page.evaluate(() => {
+      const panel = [...document.querySelectorAll('[role="tabpanel"]')].find(
+        (p) => p.getBoundingClientRect().height > 0
+      );
+      if (!panel) return null;
+      for (let i = 0; i < 2; i++) {
+        const dup = document.createElement('span');
+        dup.id = 'e2e-tab-dup';
+        panel.appendChild(dup);
+      }
+      const box = document.createElement('input');
+      box.type = 'text';
+      box.placeholder = 'Tab 面板里只有占位符';
+      panel.appendChild(box);
+      return panel.id;
+    });
+    expect(injected, '页面上找不到可见的 tabpanel').toBeTruthy();
+
+    const onActiveTab = await audit(page);
+    expect(onActiveTab.dupIds, `注入在可见面板 #${injected} 里却没报重复 id`).toContain('e2e-tab-dup');
+    expect(onActiveTab.placeholderOnly, '可见面板里只靠 placeholder 的控件没被抓到').toEqual([
+      'input[text] Tab 面板里只有占位符',
+    ]);
+
+    // 切到另一个 Tab：同一批节点还在 DOM 里，只是不可见
+    await page.locator('[role="tab"]:visible').nth(1).click();
+    await page.waitForTimeout(200);
+    expect(
+      await page.evaluate(() => document.querySelectorAll('#e2e-tab-dup').length),
+      '节点被顺带清掉了，这条对照不成立'
+    ).toBe(2);
+
+    const offTab = await audit(page);
+    expect(offTab.placeholderOnly, '切走的 Tab 里的控件不该算违规（判定只看可见元素）').toEqual([]);
+    expect(offTab.dupIds, '重复 id 是文档级违规，切走 Tab 也躲不掉').toContain('e2e-tab-dup');
   });
 
   test('负向对照：造出违规必须报出来，隐藏的重复不该误报', async ({ page }) => {

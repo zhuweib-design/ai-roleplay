@@ -151,3 +151,89 @@ export async function expandAllCollapsed(page: Page): Promise<{ closedBefore: nu
   }
   return { closedBefore, closedAfter: await page.locator(COLLAPSE_TOGGLE).count() };
 }
+
+/**
+ * 依次点开当前页面里的每个 Tab，在"这个 Tab 正被显示"的那一刻回调 `onActive`。
+ *
+ * 为什么单独一层：Tab 换的是面板内容、**不改 URL**，逐路由那层扫描永远只看见默认
+ * 那个 Tab。而面板多是 `v-show`（切走的只是 `display:none`），判定只看可见元素，
+ * 所以"切过来再扫"确实换出了新覆盖面，不是把同一份 DOM 数两遍。
+ *
+ * 点了会换路由的分段控件（`/chat ⇄ /group` 那类）不在本层覆盖范围内：
+ * 换走之后再回来，Tab 已经是初始态，扫它等于重扫默认视图。这类记在返回列表里，
+ * 由用例断言"至少扫到过可见 Tab"，不假装覆盖。
+ */
+export async function visitTabs(
+  page: Page,
+  route: string,
+  onActive: (label: string) => Promise<void>
+): Promise<{ visited: string[]; navigatedAway: string[] }> {
+  const visited: string[] = [];
+  const navigatedAway: string[] = [];
+  const base = route.split('?')[0];
+  const tabs = page.locator('[role="tab"]:visible');
+  const total = await tabs.count();
+  for (let i = 0; i < total; i++) {
+    const el = tabs.nth(i);
+    if ((await el.count()) === 0) break;
+    const raw = (await el.textContent()) ?? '';
+    const label = raw.trim().slice(0, 20) || `#${i}`;
+    await el.click({ timeout: 5_000 }).catch(() => undefined);
+    await page.waitForTimeout(120);
+    if (!page.url().includes(base)) {
+      navigatedAway.push(label);
+      await page.goto(route);
+      await page.waitForSelector('#app button', { timeout: 15_000 });
+      continue;
+    }
+    await onActive(label);
+    visited.push(label);
+  }
+  return { visited, navigatedAway };
+}
+
+/**
+ * 等页面"长稳"：可见按钮数连续两次不变即认为渲染到位。
+ *
+ * 固定 sleep 在这套应用里不可靠——各视图的内容要等 store 从 IndexedDB 读回来才出现
+ * （M12-a 那个缺陷就是这类时序）。审计扫到"半个页面"不会报错，只会**少扫**，
+ * 所以这里等到稳定为止，上限 3s。
+ */
+export async function settle(page: Page, maxMs = 3_000): Promise<number> {
+  const started = Date.now();
+  let last = -1;
+  let stable = 0;
+  while (Date.now() - started < maxMs) {
+    const now = await page.locator('#app button').count();
+    if (now === last) {
+      stable++;
+      if (stable >= 2) return now;
+    } else {
+      stable = 0;
+      last = now;
+    }
+    await page.waitForTimeout(150);
+  }
+  return last;
+}
+
+/**
+ * 路由自己渲染出来的那块内容里，可见按钮数与带 id 元素数。
+ *
+ * 审计需要它，因为整页计数被 NavRail 撑住：一条不存在的路由也能报"15 个按钮"，
+ * 于是"零违规"与"什么都没渲染"长得一模一样。
+ */
+export async function mainContent(page: Page): Promise<{ buttons: number; ids: number }> {
+  return page.evaluate(() => {
+    const main = document.querySelector('#app-main');
+    if (!main) return { buttons: -1, ids: -1 };
+    const visible = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+    };
+    return {
+      buttons: [...main.querySelectorAll('button, [role="button"], a, input, select, textarea')].filter(visible).length,
+      ids: main.querySelectorAll('[id]').length,
+    };
+  });
+}
