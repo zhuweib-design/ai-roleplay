@@ -52,15 +52,18 @@ async function readDescribed(page: Page): Promise<DescribedState> {
   });
 }
 
-/** 断言每条引用都落在本对话框内部且有实际文字，并返回引用到的文字 */
-async function expectDescribedResolved(page: Page, minTokens = 1): Promise<string[]> {
+/**
+ * 断言对话框的 aria-describedby **正好**是登记的那几条 id，
+ * 且每条都落在本对话框内部、有实际文字；返回引用到的文字。
+ */
+async function expectDescribedResolved(page: Page, expectedIds: string[]): Promise<string[]> {
   const state = await readDescribed(page);
   expect(state.found, '对话框未打开').toBe(true);
   expect(
     state.raw,
     `「${state.title}」没有 aria-describedby，读屏不会带出这段说明`
   ).not.toBe('');
-  expect(state.resolved.length, '引用 token 数').toBeGreaterThanOrEqual(minTokens);
+  expect(state.resolved.map((r) => r.id), '登记的 id 与实际引用不一致').toEqual(expectedIds);
   for (const r of state.resolved) {
     expect(r.exists, `#${r.id} 在运行时 DOM 里不存在`).toBe(true);
     expect(r.inside, `#${r.id} 存在但不在这个对话框内部`).toBe(true);
@@ -76,7 +79,7 @@ test.describe('首启欢迎窗', () => {
   test('欢迎窗开头那句说明接进了无障碍树', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.modal-title')).toHaveText('欢迎来到 AI 酒馆');
-    const texts = await expectDescribedResolved(page);
+    const texts = await expectDescribedResolved(page, ['onboarding-desc']);
     expect(texts.join(' ')).toContain('三步就能聊起来');
   });
 });
@@ -90,7 +93,7 @@ test.describe('编辑与删除确认', () => {
 
     await page.locator('.header-btn.back').click();
     await expect(page.locator('.modal-title')).toHaveText('未保存的修改');
-    const texts = await expectDescribedResolved(page);
+    const texts = await expectDescribedResolved(page, ['char-unsaved-desc']);
     expect(texts.join(' ')).toContain('有未保存的修改');
 
     // 页面上有三处「取消」（页头/表单底部/弹窗），必须限定在对话框里点
@@ -112,7 +115,7 @@ test.describe('编辑与删除确认', () => {
     await card.getByRole('button', { name: '删除角色' }).click();
     await expect(page.locator('.modal-title')).toHaveText('确认删除');
     // 两条引用：第一句是 v-if 的那句"确定要删除角色「X」吗"，第二句是不可撤销警告
-    const texts = await expectDescribedResolved(page, 2);
+    const texts = await expectDescribedResolved(page, ['char-list-delete-desc', 'char-list-delete-warning']);
     expect(texts[0]).toContain(name);
     expect(texts[1]).toContain('不可撤销');
 
@@ -132,7 +135,7 @@ test.describe('负向对照', () => {
     await expect(page.locator('.modal-title')).toHaveText('未保存的修改');
 
     // 接线本身是对的：先按原样过一遍
-    await expectDescribedResolved(page);
+    await expectDescribedResolved(page, ['char-unsaved-desc']);
 
     // 只改被验的那件事：把引用换成空气泡，不动弹窗内容
     await page.evaluate(() => {
@@ -145,11 +148,15 @@ test.describe('负向对照', () => {
 
     let message = '';
     try {
-      await expectDescribedResolved(page);
+      await expectDescribedResolved(page, ['char-unsaved-desc']);
     } catch (e) {
       message = String(e);
     }
-    expect(message, '检查没有报错，说明它是空转的').toContain('在运行时 DOM 里不存在');
+    // 报错就行，且必须点名那条被改坏的引用：先撞上"登记的 id 对不上"还是
+    // "解析不到节点"取决于检查顺序，两种都算它没有空转
+    expect(message, '检查没有报错，说明它是空转的').toMatch(
+      /登记的 id 与实际引用不一致|在运行时 DOM 里不存在/
+    );
     expect(message).toContain('probe-missing-id');
 
     // 页面上有三处「取消」（页头/表单底部/弹窗），必须限定在对话框里点

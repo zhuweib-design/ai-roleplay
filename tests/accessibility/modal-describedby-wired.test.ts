@@ -9,8 +9,9 @@
  * 同时钉一条下限：接上这条关系的弹窗数量不得倒退（曾经只有群聊两个）。
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { MODAL_DESCRIBED_BY_COVERAGE } from './modal-describedby-coverage.ledger';
 
 function vueFiles(dir: string): string[] {
   const out: string[] = [];
@@ -113,5 +114,44 @@ describe('Modal describedBy 的引用完整性', () => {
       sharedId.map((r) => `${r.file} #${r.id} -> ${(idDefs.get(r.id) ?? []).join(', ')}`),
       '有 described-by 指向重复定义的 id'
     ).toEqual([]);
+  });
+
+  it('每条引用都在覆盖台账里登记了归宿', () => {
+    // 台账是"这条引用有没有运行时证据"的账本：新增引用而不登记 ⇒ 这里直接红
+    const referenced = new Set(refs.map((r) => r.id));
+    const ledger = new Set(Object.keys(MODAL_DESCRIBED_BY_COVERAGE));
+    expect(
+      [...referenced].filter((id) => !ledger.has(id)).sort(),
+      '这些 described-by 还没在台账里登记'
+    ).toEqual([]);
+    expect(
+      [...ledger].filter((id) => !referenced.has(id)).sort(),
+      '台账里有条目已经不再被任何 Modal 引用，该删掉'
+    ).toEqual([]);
+  });
+
+  it('台账标 e2e 的条目，真的出现在它声明的那份 spec 里', () => {
+    const missing: string[] = [];
+    for (const [id, cov] of Object.entries(MODAL_DESCRIBED_BY_COVERAGE)) {
+      if (cov.status !== 'e2e') continue;
+      const file = `e2e/${cov.spec}.spec.ts`;
+      if (!existsSync(file)) {
+        missing.push(`${id} -> 声明的 ${file} 不存在`);
+        continue;
+      }
+      // 要求以**带引号的字面量**出现：只查子串的话，'wb-delete-desc-typo' 也算命中，
+      // 用例把 id 改错一个后缀时守卫就瞎了
+      if (!readFileSync(file, 'utf8').includes(`'${id}'`)) {
+        missing.push(`${id} -> ${file} 里没有以字面量出现（断言没钉住这条）`);
+      }
+    }
+    expect(missing, '有标 e2e 的条目其实没被验过').toEqual([]);
+  });
+
+  it('台账标 blocked 的条目必须写清缺什么，不许含糊', () => {
+    const weak = Object.entries(MODAL_DESCRIBED_BY_COVERAGE)
+      .filter(([, cov]) => cov.status === 'blocked' && cov.why.trim().length < 12)
+      .map(([id]) => id);
+    expect(weak, '有 blocked 条目没写原因（或原因太短）').toEqual([]);
   });
 });

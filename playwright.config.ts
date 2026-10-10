@@ -103,6 +103,8 @@ export default defineConfig({
         // 可访问名由各内核自己算；同一个按钮在页面上还有另外两处同名「取消」，
         // 名字算错就会点偏。Safari 必须实测一次
         '**/ux-modal-describedby.spec.ts',
+        // M9-d：同一套断言铺到 10 个弹窗，其中群聊向导、设置页折叠段展开在 Safari 下最容易点偏
+        '**/ux-modal-describedby-more.spec.ts',
       ],
       testIgnore: '**/mobile/**',
       use: { ...devices['Desktop Safari'] },
