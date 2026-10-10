@@ -454,8 +454,9 @@
 - **修了"页面渲染出来了"这个证据本身**：原来数整页按钮，而 NavRail 常年就有 15 个，空白页也能过关；改成只数 `#app-main` 里路由自己渲染的控件。于是要挖出：审计清单里的 `/versions` 与 `/market` **从来没注册在 router 上**（真实路径是 `/character-version` 与 `/community-market`），router 又没有兜底路由 ⇒ M10–M12 三轮写的"21 条路由"实际是 19 条真 + 2 条空。清单已换成真实路径，并新增一条用例要求"清单里每条路径都必须出现在 `src/router/index.ts` 的注册表里"。
 - 新增 `settle(page)`：可见控件数连续两次不变才算渲染到位。固定 sleep 在这套应用里不可靠（内容要等 store 从 IndexedDB 读回来才出现，正是 M12-a 那个时序），而"扫到半个页面"不会报错、只会少扫。三层扫描（默认视图 / 展开折叠段 / 点开 Tab）现在都先 settle。
 
-### 变更（UX/IA M13-c：CI 分片实跑）
-- 推送 `feat/ux-ia-guided-flow` 后 GitHub Actions 的 e2e 四片实跑结果：（待填：每片耗时与是否全绿）
+### 变更（UX/IA M13-c：分支已推送，但推送本身不触发 CI）
+- `feat/ux-ia-guided-flow` 已推到 origin（`e1d0bbd`，新建分支、非强推）。**推完发现 CI 不会因此跑起来**：`ci.yml` 的触发器是 `push: [master, main]` / `pull_request: [master, main]` / `workflow_dispatch`，功能分支的 push 不在里面。所以 M12-c 那套四片矩阵**至今一次都没在 GitHub 上跑过**，本地证据仍然只是"切分正确 + 四片各自跑绿 + YAML 解析通过"。
+- 要拿到真实 CI 证据只有两条路：开一个指向 master 的 PR（自动跑全套含四片 e2e），或在 Actions 里手动 Run workflow 并选这个分支。两者都需要用户点头/动手；本机没有 `gh`，也没有去动用已存的 Git 凭据调 API。
 
 
 
