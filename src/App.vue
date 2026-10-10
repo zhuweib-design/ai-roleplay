@@ -346,8 +346,11 @@ watch(activeProfile, (profile) => {
 </script>
 
 <template>
-  <!-- Skip link：键盘用户可跳过导航直达主内容（WCAG 2.4.1） -->
-  <a href="#main-content" class="skip-link">{{ t('app.skipToContent') }}</a>
+  <!-- Skip link：键盘用户可跳过导航直达主内容（WCAG 2.4.1）。
+       目标锚点在应用层的 <main id="app-main"> 上，而不是各视图里的 #main-content——
+       实测 21 条路由里有 8 条（数据银行/故事/随机事件/市场/本地模型/图像/版本管理/更多）
+       根本没提供那个 id，跳转链接点了等于没点。挂在应用层则每条路由都在，且不会重复。 -->
+  <a href="#app-main" class="skip-link">{{ t('app.skipToContent') }}</a>
   <div class="app-shell">
     <!-- 候选5：桌面版未实现功能提示（role=alert 供读屏即时播报） -->
     <div v-if="platformNotice" role="alert" class="platform-notice">
@@ -371,7 +374,7 @@ watch(activeProfile, (profile) => {
     <NavRail v-if="!isMobile" class="nav-rail-desktop" />
     <!-- 主内容区：由各视图自行渲染（含三栏布局等） -->
     <!-- 移动端主 Tab 页加 has-mobile-nav,内容底部留白避开底部导航 -->
-    <main class="app-main" :class="{ 'has-mobile-nav': showBottomNav }">
+    <main id="app-main" class="app-main" tabindex="-1" :class="{ 'has-mobile-nav': showBottomNav }">
       <router-view />
     </main>
     <!-- 移动端底部导航（≤640px 显示,主 Tab 页；断点口径以 src/core/viewport.ts 为唯一来源） -->

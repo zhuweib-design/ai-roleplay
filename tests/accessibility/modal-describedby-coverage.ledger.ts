@@ -9,6 +9,11 @@
  * - `e2e`：`e2e/ux-modal-describedby*.spec.ts` 里真的把它点开验过（`spec` 写用例名）；
  * - `blocked`：当前造不出那个界面状态，`why` 必须写清缺什么（不许写"以后再说"）。
  *
+ * M11-c 之后 **23 条全部是 `e2e`，`blocked` 清零**。回头看，原先 7 条"造不出"里有
+ * 6 条其实是"没去查数据怎么造"：图片在独立的 `ai-roleplay-images` 库、故事/文档/角色
+ * 直接写 IndexedDB、版本页的分支与合并全都有界面。剩下那条（消息删除）也只是需要
+ * 一条带历史的角色。教训写进设计文档 M11 节。
+ *
  * `tests/accessibility/modal-describedby-wired.test.ts` 会核对三方一致：
  * 源码里的引用集合 == 台账的键集合；标 `e2e` 的 id 必须真的出现在它声明的那份 spec 里；
  * 标 `blocked` 的必须带原因。新增引用而不登记 ⇒ 门禁直接红。
@@ -41,20 +46,8 @@ export const MODAL_DESCRIBED_BY_COVERAGE: Record<string, Coverage> = {
   'msg-delete-desc': { status: 'e2e', spec: 'ux-modal-describedby-seeded' },
   'story-delete-desc': { status: 'e2e', spec: 'ux-modal-describedby-seeded' },
   'db-delete-desc': { status: 'e2e', spec: 'ux-modal-describedby-seeded' },
-  'img-delete-desc': {
-    status: 'blocked',
-    why: '需要一张生成出来的图片；图像端点在 e2e 里没有打桩，本批未补，属"能做但未做"',
-  },
-  'img-clear-desc': {
-    status: 'blocked',
-    why: '同上：清空按钮只在已有图片时出现，同样缺图像打桩',
-  },
-  'cv-commit-desc': {
-    status: 'blocked',
-    why: '要先让角色进入版本跟踪并攒出一次可提交的差异；链路长度超出本批预算，未验证过能否走通',
-  },
-  'cv-conflict-desc': {
-    status: 'blocked',
-    why: '冲突弹窗需要两份分叉的版本记录；本批没有造出该状态的夹具（未验证是否可造）',
-  },
+  'img-delete-desc': { status: 'e2e', spec: 'ux-modal-describedby-seeded' },
+  'img-clear-desc': { status: 'e2e', spec: 'ux-modal-describedby-seeded' },
+  'cv-commit-desc': { status: 'e2e', spec: 'ux-modal-describedby-version' },
+  'cv-conflict-desc': { status: 'e2e', spec: 'ux-modal-describedby-version' },
 };

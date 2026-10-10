@@ -128,6 +128,9 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
 
   /** 当前仓库的分支列表 */
   const branches = computed<CharacterBranch[]>(() => {
+    // 必须订阅 tick：仓库是自己实现的命令式对象（增分支不会改任何 ref），
+    // 少了这一行 createBranch 后 toast 说"已创建"、列表却还停在旧内容，要刷新页面才看到
+    void versionTick.value;
     return currentRepository.value?.listBranches() ?? [];
   });
 

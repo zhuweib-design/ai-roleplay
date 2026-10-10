@@ -196,4 +196,34 @@ describe('世界书事件面板逐字段编辑', () => {
     expect(wrapper.find('.form-field-error').exists()).toBe(false);
     expect(wrapper.find(`#evt-kw-${id}`).classes()).not.toContain('is-rejected');
   });
+
+  it('面板里每个控件都有真实可访问名，不许靠 placeholder 顶替标签', async () => {
+    const wrapper = await mountPanelWithLorebook();
+    const id = await createEventViaPanel(wrapper);
+    // 条件渲染的控件也要覆盖：触发方式切到"依赖事件"、完成条件取消"仅手动完成"
+    await wrapper.find(`#evt-trigger-${id}`).setValue('dependency');
+    const manual = wrapper.find('.checkbox-label input[type="checkbox"]');
+    await manual.setValue(false);
+    const dep = wrapper.find(`#evt-dep-${id}`);
+    expect(dep.exists(), '依赖事件输入框没出现，条件没造对').toBe(true);
+
+    const offenders = [...(wrapper.element as HTMLElement).querySelectorAll(
+      'input, textarea, select'
+    )]
+      .filter((el) => (el as HTMLInputElement).type !== 'hidden')
+      .filter((el) => {
+        const hasLabel = !!(el as HTMLInputElement).labels?.length;
+        const hasAria = !!(el.getAttribute('aria-label') || el.getAttribute('aria-labelledby'));
+        return !hasLabel && !hasAria;
+      })
+      .map(
+        (el) =>
+          `${el.tagName.toLowerCase()}[${(el as HTMLInputElement).type}] ` +
+          `placeholder="${el.getAttribute('placeholder') ?? ''}"`
+      );
+
+    // 占位符不是标签：一输入就消失、颜色还常偏低，读屏与键盘用户都拿不到字段名
+    expect(offenders, '这些控件只有占位符，没有真实标签').toEqual([]);
+  });
+
 });

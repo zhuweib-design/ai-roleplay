@@ -109,8 +109,10 @@ export default defineConfig({
         '**/ux-modal-describedby.spec.ts',
         // M9-d：同一套断言铺到 10 个弹窗，其中群聊向导、设置页折叠段展开在 Safari 下最容易点偏
         '**/ux-modal-describedby-more.spec.ts',
-        // M10-a：这三条靠写 IndexedDB 造数才看得到，Safari 的 IDB 时序与 Chromium 不同，
-        // 造数是否赶得上应用开库必须在内核上实测一次
+        // M11-c：版本页两条要建分支、切分支、合并，Safari 下每步的按钮可达性都得实跑
+        '**/ux-modal-describedby-version.spec.ts',
+        // M10-a/M11-c：这几条靠写 IndexedDB 造数才看得到（含独立的图片库），Safari 的
+        // IDB 时序与 Chromium 不同，造数是否赶得上应用开库必须在内核上实测一次
         '**/ux-modal-describedby-seeded.spec.ts',
         // M10-b：审计的判定基础是"可见性 + 可访问名"，两者都靠几何与 accname 计算，
         // 正是各内核差异最容易显形的地方；且负向对照要在两个内核上都证明它不是空转

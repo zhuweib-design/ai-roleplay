@@ -685,14 +685,25 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                       />
                       <span>{{ t('wbEvents.completionManual') }}</span>
                     </label>
-                    <input
+                    <!-- 改前它只有 placeholder：占位符一输入就消失，读屏与键盘用户拿不到字段名。
+                         现在标签与说明各归各位，和其它字段同一套外壳。 -->
+                    <FormField
                       v-if="selectedEvent && !selectedEvent.completion.manualOnly"
-                      type="text"
-                      class="form-input"
-                      :value="keywordsToString(selectedEvent.completion.keywords)"
-                      @input="onEventCompletionKeywordsInput"
-                      :placeholder="t('wbEvents.completionPlaceholder')"
-                    />
+                      label-key="wbEvents.completionKeywordsLabel"
+                      :html-for="`evt-completion-kw-${selectedEvent.id}`"
+                      hint-key="wbEvents.completionKeywordsHint"
+                    >
+                      <template #default="{ describedBy }">
+                        <input
+                          :id="`evt-completion-kw-${selectedEvent.id}`"
+                          type="text"
+                          class="form-input"
+                          :value="keywordsToString(selectedEvent.completion.keywords)"
+                          :aria-describedby="describedBy"
+                          @input="onEventCompletionKeywordsInput"
+                        />
+                      </template>
+                    </FormField>
                   </div>
 
                   <div class="form-row state-row">

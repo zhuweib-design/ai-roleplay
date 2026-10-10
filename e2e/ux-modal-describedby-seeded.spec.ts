@@ -207,4 +207,79 @@ test.describe('造数才看得到的对话框', () => {
     expect(texts[0].length).toBeGreaterThan(4);
     await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();
   });
+
+/**
+ * 图片画廊存在**另一个库**里（`ai-roleplay-images` / store `gallery`，见
+ * `core/image-storage.ts`），所以这两个对话框不需要图像端点打桩——写两条记录进去就行。
+ * 上一轮台账把它写成"缺端点打桩"，那是没查存储位置就下的结论，本批更正。
+ */
+async function seedGallery(page: Page, count: number): Promise<void> {
+  await page.evaluate(async (n) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const r = indexedDB.open('ai-roleplay-images', 1);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        if (!d.objectStoreNames.contains('gallery')) {
+          const st = d.createObjectStore('gallery', { keyPath: 'id' });
+          st.createIndex('createdAt', 'createdAt', { unique: false });
+          st.createIndex('provider', 'provider', { unique: false });
+        }
+      };
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+    // 1x1 透明 PNG，够渲染一张卡片
+    const png =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('gallery', 'readwrite');
+      for (let i = 0; i < n; i++) {
+        tx.objectStore('gallery').put({
+          id: `e2e-img-${i}`,
+          data: png,
+          mimeType: 'image/png',
+          width: 1,
+          height: 1,
+          provider: 'mock',
+          createdAt: new Date(Date.now() + i).toISOString(),
+          params: { prompt: `E2E 说明接力图片 ${i}`, width: 1, height: 1, steps: 20, cfgScale: 7, seed: i },
+        });
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  }, count);
+}
+
+test.describe('图片画廊的两个对话框', () => {
+  test('删除图片确认：说明接进了无障碍树', async ({ page }) => {
+    await page.goto('/image-gen');
+    await seedGallery(page, 2);
+    await page.reload({ waitUntil: 'networkidle' });
+    // 画廊是标签页内容，默认停在「生成」，不切过去卡片不可见
+    await page.getByRole('tab', { name: /画廊/ }).click();
+    await expect(page.locator('.gallery-item')).toHaveCount(2);
+    await page.locator('.gallery-item').first().hover();
+    await page.locator('.gallery-item').first().getByRole('button', { name: '删除' }).click();
+    const texts = await expectDescribedResolved(page, ['img-delete-desc']);
+    expect(texts[0]).toContain('无法恢复');
+    await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();
+  });
+
+  test('清空画廊确认：说明接进了无障碍树，并清掉本批造的图', async ({ page }) => {
+    await page.goto('/image-gen');
+    await seedGallery(page, 2);
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.getByRole('tab', { name: /画廊/ }).click();
+    await page.getByRole('button', { name: '清空' }).click();
+    const texts = await expectDescribedResolved(page, ['img-clear-desc']);
+    expect(texts[0]).toContain('清空画廊');
+    // 收场：真的清空，画廊不留夹具图。
+    // 注意这个确认按钮的文案是「删除」而不是「清空」（common.delete），故按类名点
+    await page.locator('.modal-confirm').click();
+    await expect(page.locator('.gallery-item')).toHaveCount(0);
+  });
+});
+
 });

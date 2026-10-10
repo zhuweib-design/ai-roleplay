@@ -430,6 +430,8 @@ function goBack(): void {
           v-if="store.currentCharacterId"
           type="button"
           class="header-btn primary"
+          :disabled="!currentCharacter"
+          :aria-disabled="!currentCharacter"
           @click="openCommitModal"
         >
           <Icon name="save" :size="14" aria-hidden="true" />
