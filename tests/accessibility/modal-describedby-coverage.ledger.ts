@@ -18,9 +18,6 @@ export type Coverage =
   | { status: 'e2e'; spec: string }
   | { status: 'blocked'; why: string };
 
-/** 需要跑出一轮回复才会出现的入口，共用一条原因 */
-const NEEDS_CHAT_TURN = '要先跑出一轮回复才有该入口；本批没为它接注入链路那套打桩（见 ux-event-trace 的形状），属"能做但未做"';
-
 export const MODAL_DESCRIBED_BY_COVERAGE: Record<string, Coverage> = {
   // ── 已点开验过 ──
   'onboarding-desc': { status: 'e2e', spec: 'ux-modal-describedby' },
@@ -41,18 +38,9 @@ export const MODAL_DESCRIBED_BY_COVERAGE: Record<string, Coverage> = {
   'wb-generate-desc': { status: 'e2e', spec: 'ux-modal-describedby-more' },
 
   // ── 当前造不出界面状态，逐条写清缺什么 ──
-  'msg-delete-desc': {
-    status: 'blocked',
-    why: `${NEEDS_CHAT_TURN}（消息删除按钮只在已有气泡上出现）`,
-  },
-  'story-delete-desc': {
-    status: 'blocked',
-    why: '故事卡要先跑一次分析才有；分析走真实模型调用，e2e 侧只为注入链路准备了打桩端点',
-  },
-  'db-delete-desc': {
-    status: 'blocked',
-    why: '要先上传一份文档才有删除入口；本批没验证打桩环境下嵌入处理能否走完到"可删除"状态，故未接',
-  },
+  'msg-delete-desc': { status: 'e2e', spec: 'ux-modal-describedby-seeded' },
+  'story-delete-desc': { status: 'e2e', spec: 'ux-modal-describedby-seeded' },
+  'db-delete-desc': { status: 'e2e', spec: 'ux-modal-describedby-seeded' },
   'img-delete-desc': {
     status: 'blocked',
     why: '需要一张生成出来的图片；图像端点在 e2e 里没有打桩，本批未补，属"能做但未做"',

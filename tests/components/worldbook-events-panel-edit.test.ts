@@ -141,14 +141,21 @@ describe('世界书事件面板逐字段编辑', () => {
     //    打 `(` 之后输入框是空的，用户只会以为"我按了键盘没反应"）
     expect((wrapper.find(`#evt-kw-${id}`).element as HTMLInputElement).value).toBe('(');
     // ③ 这个差被明确说出来，而不是只靠闪一次的 toast
-    const note = wrapper.find('.reject-note');
+    const note = wrapper.find('.form-field-error');
     expect(note.exists()).toBe(true);
     expect(note.text()).toBe(
       t('wbEvents.saveRejected', { reason: '无效的正则表达式：(' })
     );
+    // 边打字边拒绝的字段必须走礼貌播报，不能每敲一个非法字符就打断读屏
     expect(note.attributes('role')).toBe('status');
     expect(wrapper.find(`#evt-kw-${id}`).attributes('aria-invalid')).toBe('true');
     expect(wrapper.find(`#evt-kw-${id}`).classes()).toContain('is-rejected');
+    // ④ 关键增益：这句话现在被控件的 aria-describedby 指到了。
+    //    改前它是控件之后的一个裸 <p>，读屏聚焦到输入框时完全带不出来。
+    const describedBy = wrapper.find(`#evt-kw-${id}`).attributes('aria-describedby') ?? '';
+    const errorId = note.attributes('id');
+    expect(errorId, '报错段落没有 id，接不进 aria-describedby').toBeTruthy();
+    expect(describedBy.split(/\s+/), '控件没指向那句拒绝说明').toContain(errorId);
   });
 
   it('勾掉"使用正则"时按框里现在那串写回，草稿不被 store 里的旧值顶掉', async () => {
@@ -162,14 +169,14 @@ describe('世界书事件面板逐字段编辑', () => {
     const regexBox = wrapper.findAll('.checkbox-row input[type="checkbox"]')[0]!;
     await regexBox.setValue(true);
     await typeInto(wrapper, `#evt-kw-${id}`, '(');
-    expect(wrapper.find('.reject-note').exists()).toBe(true);
+    expect(wrapper.find('.form-field-error').exists()).toBe(true);
 
     // 再取消勾选：这一下应当按"框里现在显示的 '(' "写回，而不是按 store 里的空数组
     await regexBox.setValue(false);
     const trig = eventsStore.getEvent(id)!.trigger;
     expect(trig.type === 'keyword' && trig.keywords).toEqual(['(']);
     expect(trig.type === 'keyword' && trig.useRegex).toBe(false);
-    expect(wrapper.find('.reject-note').exists()).toBe(false);
+    expect(wrapper.find('.form-field-error').exists()).toBe(false);
   });
 
   it('把值改对之后，"未保存"标注自己消失', async () => {
@@ -181,12 +188,12 @@ describe('世界书事件面板逐字段编辑', () => {
     const regexBox = wrapper.findAll('.checkbox-row input[type="checkbox"]')[0]!;
     await regexBox.setValue(true);
     await typeInto(wrapper, `#evt-kw-${id}`, '(');
-    expect(wrapper.find('.reject-note').exists()).toBe(true);
+    expect(wrapper.find('.form-field-error').exists()).toBe(true);
 
     await typeInto(wrapper, `#evt-kw-${id}`, '桥|河滩');
     const evt = eventsStore.getEvent(id)!;
     expect(evt.trigger.type === 'keyword' && evt.trigger.keywords).toEqual(['桥|河滩']);
-    expect(wrapper.find('.reject-note').exists()).toBe(false);
+    expect(wrapper.find('.form-field-error').exists()).toBe(false);
     expect(wrapper.find(`#evt-kw-${id}`).classes()).not.toContain('is-rejected');
   });
 });

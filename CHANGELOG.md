@@ -396,6 +396,20 @@
 - 6 处故障注入各自变红（漏登记 / 死条目 / spec 里没这条字面量 / spec 文件不存在 / 原因写成"以后再说" / 用例把 id 打错后缀），撤销复绿；全量单测 **191 files / 3896 passed / 3 skipped**（无障碍目录 42 例），全量 E2E **139 passed**（msedge 87 / webkit 38 / mobile 14），`build` 与全部静态门禁退出码 0。
 - 未做：7 条 `blocked` 仍无运行时证据（`msg-` / `story-` / `db-` 理论上可用 IndexedDB 造数补上，`img-*` 缺图像端点打桩，`cv-*` 缺版本分叉夹具，台账逐条写明）；没有加"`blocked` 条数不得增长"的下限，因为会挡住正常的新增引用；同页三处同名「取消」与 9 处重复 `id="main-content"` 仍未清理，本批用例是靠 `getByRole('dialog', { name })` 绕开的。
 
+### 新增（UX/IA M10-a/b：台账三条 blocked 转运行时证据 + 实时 id/可访问名审计）
+- 消息删除、故事删除、数据银行删除这三个对话框原来登记成"造不出界面状态"，实测是**能造、本批没做**：直接写 IndexedDB 即可（仓库里已有同法）。台账 `e2e` 从 16 条涨到 **19 条**，`blocked` 从 7 降到 4（图像两条缺端点打桩、版本两条缺分叉夹具）。台账措辞同时收紧：`why` 只能陈述做过/没做过，不许写未验证的因果（原来那句"嵌入通道未接通"根本没验过）。
+- **更正一条说过头了的判断**：M8-c 与 M9-d 都写过"9 处重复 `id="main-content"`、3 处 `panel-settings`、同页三处同名「取消」属既有的可访问名重复"。那是从静态扫描计数直接推的。实测 21 条路由的真实 DOM：**重复 id 为 0** —— 那些元素分属互斥的路由分支或 `display:none` 的移动变体。因此本批不改任何 id，而是把结论钉成门禁。
+- 新增 `e2e/ux-duplicate-a11y-names.spec.ts`（23 例，msedge + webkit 各一遍）：同一页面内 id 不得重复；同一个**条目容器**里不得有两个同名可见按钮（按容器分组判定，不靠白名单——"每条消息各有自己的删除"是正当重复）。自带负向对照：现场造一个重复 id、一个同容器同名、一个**隐藏的**同名，要求报出前两个、忽略第三个。
+
+### 变更（UX/IA M10-c：世界书事件面板接进表单原语）
+- 面板 5 个字段（名称、触发方式、关键词、前置事件、描述）原来是手写 `label + input + <span class="form-hint"> + <p class="reject-note">`：M7-b 的拒绝反馈看得见，但**读屏聚焦到输入框时带不出那句话**。接进 `FormField` 后由插槽参数把 `aria-describedby` / `aria-invalid` 绑到控件上，并删掉随之失效的 `.reject-note` 样式。
+- 原语补两个入口，都是这个面板逼出来的：`hintText`（说明随选项而变，写不成固定 i18n 键，否则只能继续做裸 `<span>`）与 `polite`（报错 `role` 由 `alert` 改 `status`——边打字边校验的字段每敲一个非法字符就打断读屏会变噪音；M7-b 当时特意选 `status`，接进原语不能把这个选择弄丢）。
+- 浏览器实测（Edge 无头）：勾"使用正则"后在关键词里打 `(`，运行时读到 `valueInBox:"("`、`aria-invalid:"true"`、`aria-describedby:"ff-cnpm8o-error"` 且该节点存在、`role:"status"`、文字为"这个值没有保存：无效的正则表达式：("。截图 `docs/dev/evidence/ux-ia-guided-flow/m10-c-events-field-wiring/rejected-field-linked.png`。
+- 单条预算再标定：套件从 139 涨到 191 条后，45s 只剩 1.1 倍余量（E11 那条**单跑 14.2s、全量并发下 40.6s**——慢在争抢不是用例变胖），故提到 60s（并发最差值的 1.5 倍），两次调整的理由与数字都写进配置注释。
+- 全量：单测 **191 files / 3899 passed / 3 skipped**（+6），E2E **191 passed 两轮**（墙钟 7.3–8.3 分钟），`build` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions`(5/5) / `a11y:contrast`(121) / 两个 schema 门禁 / `check:csp` / `check:ort` 退出码 0。
+- 未做：台账仍有 4 条 `blocked`；事件面板剩 4 个控件没接原语（概率滑块的标签里嵌实时百分比，`FormField` 只有 `label-extra` 插槽、没有插值参数；三个复选框不是"标签+控件+说明"形状）；审计只覆盖 21 条路由的默认视图，点开折叠段与对话框内部的重复名不在扫描范围内。
+
+
 
 
 

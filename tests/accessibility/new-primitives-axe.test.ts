@@ -59,6 +59,22 @@ describe('StepFlow / HelpTip / FormField 无障碍', () => {
     });
   });
 
+  it('FormField 礼貌播报（polite）形态无违规', async () => {
+    // 世界书事件面板的逐字段拒绝反馈用的就是这个形态：role="status" 而非 "alert"。
+    // 播报方式一改，关联与命名都要重新过一遍 axe，不能只靠上面那条同构用例。
+    await audit('formfield-polite', FormField, {
+      props: {
+        labelKey: 'wbEvents.keywordLabel',
+        hintText: '命中即注入',
+        errorText: '未保存：无效的正则表达式：(',
+        polite: true,
+      },
+      slots: {
+        default: '<input :id="id" :aria-describedby="describedBy" :aria-invalid="String(invalid)" value="(" />',
+      },
+    });
+  });
+
   it('角色快速档无违规', async () => {
     setActivePinia(createPinia());
     const router = createRouter({

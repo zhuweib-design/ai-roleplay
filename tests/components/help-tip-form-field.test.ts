@@ -72,6 +72,35 @@ describe('FormField', () => {
     expect(control.attributes('id')).toBeTruthy();
   });
 
+  it('hintText 让"说明随选项而变"的字段也能接进 aria-describedby', () => {
+    // 世界书事件面板的触发方式就是这种：每种方式各有一句解释，写不成固定 i18n 键。
+    // 没有这个入口时它只能是个裸 <span>，读屏念标签带不到说明。
+    const wrapper = mountField({ hintText: '关键词命中即注入' });
+    const hint = wrapper.find('.form-field-hint');
+    const control = wrapper.find('input');
+    expect(hint.text()).toBe('关键词命中即注入');
+    expect(
+      (control.attributes('aria-describedby') ?? '').split(/\s+/)
+    ).toContain(hint.attributes('id'));
+
+    // 反证：不传 hintText 时不该凭空造一个空说明节点，也不该留悬空引用
+    const bare = mountField();
+    expect(bare.find('.form-field-hint').exists()).toBe(false);
+    expect(bare.find('input').attributes('aria-describedby') ?? '').toBe('');
+  });
+
+  it('polite 把报错从打断式 alert 改成礼貌播报', () => {
+    const loud = mountField({ errorText: '说明文字' });
+    expect(loud.find('.form-field-error').attributes('role')).toBe('alert');
+
+    const quiet = mountField({ errorText: '说明文字', polite: true });
+    expect(quiet.find('.form-field-error').attributes('role')).toBe('status');
+    // 播报方式换了，关联不能丢：控件仍要指得到这句报错
+    expect(
+      (quiet.find('input').attributes('aria-describedby') ?? '').split(/\s+/)
+    ).toContain(quiet.find('.form-field-error').attributes('id'));
+  });
+
   it('说明与报错都挂进 aria-describedby，报错带 role=alert', () => {
     const wrapper = mountField({ hintKey: 'ctx.tokenHint', errorText: '名称不能为空' });
     const described = (wrapper.find('input').attributes('aria-describedby') ?? '').split(' ');

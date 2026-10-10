@@ -18,6 +18,7 @@ import type {
 } from '@/core/event-types';
 import Icon from '@/components/common/Icon.vue';
 import Toast from '@/components/common/Toast.vue';
+import FormField from '@/components/common/FormField.vue';
 import { t } from '@/i18n';
 
 const store = useLorebookStore();
@@ -487,23 +488,27 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                 </div>
 
                 <div class="event-editor-grid">
-                  <div class="form-row">
-                    <label class="form-label" :for="`evt-name-${selectedEvent.id}`">{{ t('wbEvents.nameLabel') }}</label>
-                    <input
-                      :id="`evt-name-${selectedEvent.id}`"
-                      type="text"
-                      class="form-input"
-                      :class="{ 'is-rejected': rejectedFields.name }"
-                      :aria-invalid="Boolean(rejectedFields.name)"
-                      :value="selectedEvent.name"
-                      @input="onEventNameInput"
-                      :placeholder="t('wbEvents.namePlaceholder')"
-                      maxlength="50"
-                    />
-                    <p v-if="rejectedFields.name" class="reject-note" role="status">
-                      {{ t('wbEvents.saveRejected', { reason: rejectedFields.name }) }}
-                    </p>
-                  </div>
+                  <FormField
+                    label-key="wbEvents.nameLabel"
+                    :html-for="`evt-name-${selectedEvent.id}`"
+                    :error-text="rejectedFields.name ? t('wbEvents.saveRejected', { reason: rejectedFields.name }) : undefined"
+                    polite
+                  >
+                    <template #default="{ describedBy, invalid }">
+                      <input
+                        :id="`evt-name-${selectedEvent.id}`"
+                        type="text"
+                        class="form-input"
+                        :class="{ 'is-rejected': rejectedFields.name }"
+                        :aria-invalid="invalid"
+                        :aria-describedby="describedBy"
+                        :value="selectedEvent.name"
+                        @input="onEventNameInput"
+                        :placeholder="t('wbEvents.namePlaceholder')"
+                        maxlength="50"
+                      />
+                    </template>
+                  </FormField>
 
                   <div class="form-row">
                     <label class="form-label" :for="`evt-scene-${selectedEvent.id}`">{{ t('wbEvents.sceneLabel') }}</label>
@@ -524,48 +529,57 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                     </select>
                   </div>
 
-                  <div class="form-row">
-                    <label class="form-label" :for="`evt-trigger-${selectedEvent.id}`">{{ t('wbEvents.triggerLabel') }}</label>
-                    <select
-                      :id="`evt-trigger-${selectedEvent.id}`"
-                      class="form-select"
-                      :value="selectedEvent.trigger.type"
-                      @change="onTriggerTypeChange"
-                    >
-                      <option
-                        v-for="opt in triggerTypeOptions"
-                        :key="opt.value"
-                        :value="opt.value"
+                  <!-- 说明文字随触发方式而变，不是固定 i18n 键 ⇒ 用 hintText 走同一条
+                       aria-describedby 通道（原来这是个裸 span，读屏念标签时带不到它） -->
+                  <FormField
+                    label-key="wbEvents.triggerLabel"
+                    :html-for="`evt-trigger-${selectedEvent.id}`"
+                    :hint-text="triggerTypeOptions.find((o) => o.value === selectedEvent?.trigger.type)?.desc"
+                  >
+                    <template #default="{ describedBy }">
+                      <select
+                        :id="`evt-trigger-${selectedEvent.id}`"
+                        class="form-select"
+                        :value="selectedEvent.trigger.type"
+                        :aria-describedby="describedBy"
+                        @change="onTriggerTypeChange"
                       >
-                        {{ opt.label }}
-                      </option>
-                    </select>
-                    <span class="form-hint">
-                      {{ triggerTypeOptions.find((o) => o.value === selectedEvent?.trigger.type)?.desc }}
-                    </span>
-                  </div>
+                        <option
+                          v-for="opt in triggerTypeOptions"
+                          :key="opt.value"
+                          :value="opt.value"
+                        >
+                          {{ opt.label }}
+                        </option>
+                      </select>
+                    </template>
+                  </FormField>
 
                   <div
                     v-if="selectedEvent && selectedEvent.trigger.type === 'keyword'"
                     class="form-row"
                   >
-                    <label class="form-label" :for="`evt-kw-${selectedEvent.id}`">
-                      {{ t('wbEvents.keywordLabel') }}
-                    </label>
-                    <input
-                      :id="`evt-kw-${selectedEvent.id}`"
-                      type="text"
-                      class="form-input"
-                      :class="{ 'is-rejected': rejectedFields.trigger }"
-                      :aria-invalid="Boolean(rejectedFields.trigger)"
-                      :value="keywordText()"
-                      @input="onEventKeywordsInput"
-                      :placeholder="t('wbEvents.keywordPlaceholder')"
-                    />
                     <!-- 单向绑定下 store 没收下这个值，框里却还写着：必须标出来 -->
-                    <p v-if="rejectedFields.trigger" class="reject-note" role="status">
-                      {{ t('wbEvents.saveRejected', { reason: rejectedFields.trigger }) }}
-                    </p>
+                    <FormField
+                      label-key="wbEvents.keywordLabel"
+                      :html-for="`evt-kw-${selectedEvent.id}`"
+                      :error-text="rejectedFields.trigger ? t('wbEvents.saveRejected', { reason: rejectedFields.trigger }) : undefined"
+                      polite
+                    >
+                      <template #default="{ describedBy, invalid }">
+                        <input
+                          :id="`evt-kw-${selectedEvent.id}`"
+                          type="text"
+                          class="form-input"
+                          :class="{ 'is-rejected': rejectedFields.trigger }"
+                          :aria-invalid="invalid"
+                          :aria-describedby="describedBy"
+                          :value="keywordText()"
+                          @input="onEventKeywordsInput"
+                          :placeholder="t('wbEvents.keywordPlaceholder')"
+                        />
+                      </template>
+                    </FormField>
                     <div class="checkbox-row">
                       <label>
                         <input
@@ -590,20 +604,23 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                     v-if="selectedEvent && selectedEvent.trigger.type === 'dependency'"
                     class="form-row"
                   >
-                    <label class="form-label" :for="`evt-dep-${selectedEvent.id}`">
-                      {{ t('wbEvents.dependencyLabel') }}
-                    </label>
-                    <input
-                      :id="`evt-dep-${selectedEvent.id}`"
-                      type="text"
-                      class="form-input"
-                      :value="keywordsToString(selectedEvent.trigger.requiredEvents)"
-                      @input="onEventRequiredEventsInput"
-                      :placeholder="t('wbEvents.dependencyPlaceholder')"
-                    />
-                    <span class="form-hint">
-                      {{ t('wbEvents.dependencyHint') }}
-                    </span>
+                    <FormField
+                      label-key="wbEvents.dependencyLabel"
+                      :html-for="`evt-dep-${selectedEvent.id}`"
+                      hint-key="wbEvents.dependencyHint"
+                    >
+                      <template #default="{ describedBy }">
+                        <input
+                          :id="`evt-dep-${selectedEvent.id}`"
+                          type="text"
+                          class="form-input"
+                          :value="keywordsToString(selectedEvent.trigger.requiredEvents)"
+                          :aria-describedby="describedBy"
+                          @input="onEventRequiredEventsInput"
+                          :placeholder="t('wbEvents.dependencyPlaceholder')"
+                        />
+                      </template>
+                    </FormField>
                   </div>
 
                   <div class="form-row form-row-inline">
@@ -635,23 +652,27 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
                   </div>
 
                   <div class="form-row">
-                    <label class="form-label" :for="`evt-desc-${selectedEvent.id}`">
-                      {{ t('wbEvents.descLabel') }}
-                    </label>
-                    <textarea
-                      :id="`evt-desc-${selectedEvent.id}`"
-                      class="form-textarea"
-                      :class="{ 'is-rejected': rejectedFields.description }"
-                      :aria-invalid="Boolean(rejectedFields.description)"
-                      :value="selectedEvent.description"
-                      @input="onEventDescriptionInput"
-                      :placeholder="t('wbEvents.descPlaceholder')"
-                      rows="5"
-                      maxlength="2000"
-                    ></textarea>
-                    <p v-if="rejectedFields.description" class="reject-note" role="status">
-                      {{ t('wbEvents.saveRejected', { reason: rejectedFields.description }) }}
-                    </p>
+                    <FormField
+                      label-key="wbEvents.descLabel"
+                      :html-for="`evt-desc-${selectedEvent.id}`"
+                      :error-text="rejectedFields.description ? t('wbEvents.saveRejected', { reason: rejectedFields.description }) : undefined"
+                      polite
+                    >
+                      <template #default="{ describedBy, invalid }">
+                        <textarea
+                          :id="`evt-desc-${selectedEvent.id}`"
+                          class="form-textarea"
+                          :class="{ 'is-rejected': rejectedFields.description }"
+                          :aria-invalid="invalid"
+                          :aria-describedby="describedBy"
+                          :value="selectedEvent.description"
+                          @input="onEventDescriptionInput"
+                          :placeholder="t('wbEvents.descPlaceholder')"
+                          rows="5"
+                          maxlength="2000"
+                        ></textarea>
+                      </template>
+                    </FormField>
                   </div>
 
                   <div class="form-row">
@@ -1004,13 +1025,6 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 .is-rejected:focus,
 .is-rejected:focus-visible {
   border-color: var(--destructive);
-}
-
-.reject-note {
-  margin: 2px 0 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--destructive);
 }
 
 .state-row {

@@ -18,16 +18,33 @@ const props = withDefaults(
     /** 控件的 id；不传则用 for 关联不到，只能靠插槽的 id */
     htmlFor?: string;
     hintKey?: MessageKey;
+    /**
+     * 说明文案已算好时使用（优先于 hintKey）。
+     *
+     * 给"说明随选项而变"的字段用，例如世界书事件面板的触发方式：每种触发方式各有
+     * 一句解释，写不成固定 i18n 键。没有这个入口的话这类说明只能继续做成裸 <span>，
+     * 读屏念到标签时带不到它。
+     */
+    hintText?: string;
     errorKey?: MessageKey;
     /** 报错文案已插值好时使用（优先于 errorKey） */
     errorText?: string;
+    /**
+     * 报错用 `role="status"`（礼貌播报）而不是默认的 `role="alert"`（打断式）。
+     *
+     * 给"边打字边校验"的字段用：世界书事件面板的逐字段拒绝反馈就是这种——
+     * 用户还在输入，每敲一个非法字符都打断一次读屏会把这条字段变成噪音。
+     */
+    polite?: boolean;
     required?: boolean;
   }>(),
-  { htmlFor: undefined, hintKey: undefined, errorKey: undefined, errorText: undefined }
+  { htmlFor: undefined, hintKey: undefined, hintText: undefined, errorKey: undefined, errorText: undefined, polite: false }
 );
 
 const uid = `ff-${Math.random().toString(36).slice(2, 8)}`;
-const hintId = computed(() => (props.hintKey ? `${uid}-hint` : undefined));
+const hintId = computed(() =>
+  props.hintKey || props.hintText ? `${uid}-hint` : undefined
+);
 const errorId = computed(() => (props.errorKey || props.errorText ? `${uid}-error` : undefined));
 const describedBy = computed(() => [hintId.value, errorId.value].filter(Boolean).join(' ') || undefined);
 const controlId = computed(() => props.htmlFor ?? `${uid}-control`);
@@ -47,8 +64,8 @@ const hasError = computed(() => Boolean(props.errorKey || props.errorText));
       <span v-else-if="$slots.optional" class="form-field-optional">{{ t('common.optional') }}</span>
     </label>
     <slot :id="controlId" :described-by="describedBy" :invalid="hasError" />
-    <p v-if="hintKey" :id="hintId" class="form-field-hint">{{ t(hintKey) }}</p>
-    <p v-if="hasError" :id="errorId" class="form-field-error" role="alert">
+    <p v-if="hintKey || hintText" :id="hintId" class="form-field-hint">{{ hintText ?? t(hintKey as MessageKey) }}</p>
+    <p v-if="hasError" :id="errorId" class="form-field-error" :role="polite ? 'status' : 'alert'">
       {{ errorText ?? t(errorKey as MessageKey) }}
     </p>
   </div>

@@ -43,14 +43,18 @@ export default defineConfig({
   workers: isCI ? 1 : 4,
   reporter: isCI ? [['github', {}], ['html', { open: 'never' }]] : 'list',
   /**
-   * 单条用例预算 45s（原 30s）。
+   * 单条用例预算 60s（原 30s → 45s → 60s，两次都是因为套件变长而重标的）。
    *
-   * 30s 对"多轮打桩 SSE + IndexedDB 造数"那几条是紧的：4 workers 全绿的一轮里
-   * 最慢的 `group-chat-flow` 用掉 18.8s，8 workers 的另一轮里 `ux-event-manual-trace`
-   * 跑到 25.0s 后撞在总超时上（红相是"最后一轮回复没出现"，不是断言不符）。
-   * 45s 是实测最差值的 1.8 倍；`contrast-axe` 自己 `setTimeout(90_000)`，不受影响。
+   * 30s 对"多轮打桩 SSE + IndexedDB 造数"那几条是紧的：4 workers 全绿的一轮里最慢的
+   * `group-chat-flow` 用掉 18.8s，8 workers 的另一轮里 `ux-event-manual-trace` 跑到
+   * 25.0s 后撞在总超时上（红相是"最后一轮回复没出现"，不是断言不符）。
+   *
+   * M10 把用例从 139 条加到 191 条之后，45s 的余量只剩 1.1 倍：同一台机器上
+   * E11 那条**单跑只要 14.2s**，全量并发下却要 40.6s —— 慢是并发争抢，不是用例变胖。
+   * 60s = 实测并发最差值的 1.5 倍、单跑最差值的 4.2 倍。`contrast-axe` 自己
+   * `setTimeout(90_000)`，不受影响。
    */
-  timeout: 45_000,
+  timeout: 60_000,
   use: {
     baseURL,
     trace: 'on-first-retry',
@@ -105,6 +109,12 @@ export default defineConfig({
         '**/ux-modal-describedby.spec.ts',
         // M9-d：同一套断言铺到 10 个弹窗，其中群聊向导、设置页折叠段展开在 Safari 下最容易点偏
         '**/ux-modal-describedby-more.spec.ts',
+        // M10-a：这三条靠写 IndexedDB 造数才看得到，Safari 的 IDB 时序与 Chromium 不同，
+        // 造数是否赶得上应用开库必须在内核上实测一次
+        '**/ux-modal-describedby-seeded.spec.ts',
+        // M10-b：审计的判定基础是"可见性 + 可访问名"，两者都靠几何与 accname 计算，
+        // 正是各内核差异最容易显形的地方；且负向对照要在两个内核上都证明它不是空转
+        '**/ux-duplicate-a11y-names.spec.ts',
       ],
       testIgnore: '**/mobile/**',
       use: { ...devices['Desktop Safari'] },
