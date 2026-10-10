@@ -60,6 +60,15 @@ export const useCharacterStore = defineStore('character', () => {
   // 注入的存储适配器（运行时由 App.vue 设置）
   let storageAdapter: StorageAdapter | null = null;
 
+  /**
+   * 角色库是否已从存档读完。
+   * `characters` 的初值是 mock 种子（第一条就是 `seraphina`），读库完成前
+   * 任何"按 id 找角色"都会落空——深链进来的视图必须先等这个标志。
+   */
+  const libraryLoaded = ref(false);
+  /** 正在进行的那次加载（并发调用共用同一个 promise，避免读两遍库） */
+  let loadInFlight: Promise<void> | null = null;
+
   // 最近一次错误（用于 UI 提示）
   const lastError = ref<string | null>(null);
   const lastInfo = ref<string | null>(null);
@@ -177,6 +186,29 @@ export const useCharacterStore = defineStore('character', () => {
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityChar'), error: err instanceof Error ? err.message : String(err) });
     }
+  }
+
+  /**
+   * 等角色库读完（还没开始就自己开始），并保证只读一遍。
+   *
+   * 版本页与编辑页都从 URL 拿角色 id，而读库没完成时那个 id 在内存里根本不存在：
+   * 版本页会退到"自动选中第一条"= 种子角色，于是提交打在**另一条角色**上
+   * （Safari/webkit 实测：整条版本历史的快照都是种子角色的描述）。
+   * App.vue 的启动加载也走这里，避免两处各起一次读库。
+   */
+  async function ensureLoaded(): Promise<void> {
+    if (libraryLoaded.value) return;
+    if (loadInFlight) return loadInFlight;
+    loadInFlight = (async () => {
+      try {
+        await ensureStorageAdapter();
+        await loadFromStorage();
+      } finally {
+        libraryLoaded.value = true;
+        loadInFlight = null;
+      }
+    })();
+    return loadInFlight;
   }
 
   /**
@@ -630,6 +662,8 @@ export const useCharacterStore = defineStore('character', () => {
     lastError,
     lastInfo,
     isGeneratingCharacter,
+    /** 角色库是否已从存档读完（深链视图据此决定何时解析角色 id） */
+    libraryLoaded,
     // 计算属性
     currentCharacter,
     filteredCharacters,
@@ -640,6 +674,7 @@ export const useCharacterStore = defineStore('character', () => {
     // 依赖注入
     setStorageAdapter,
     loadFromStorage,
+    ensureLoaded,
     persistCharacter,
     deleteFromStorage,
     // 动作

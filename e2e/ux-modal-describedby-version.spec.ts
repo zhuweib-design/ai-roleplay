@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { auditOpenDialog } from './a11y-dup-audit';
 
 /**
  * E2E · 版本管理页的两个对话框（M11-c）
@@ -37,6 +38,8 @@ async function expectDescribedResolved(page: Page, expectedIds: string[]): Promi
     expect(r.inside, `#${r.id} 存在但不在这个对话框内部`).toBe(true);
     expect(r.text.length, `#${r.id} 解析到了，但里面没有文字`).toBeGreaterThan(0);
   }
+  // M12-b：这一刻对话框已经开着，同一套重复 id/可访问名判定顺手跑一遍
+  expect(await auditOpenDialog(page), `对话框「${state.title}」内部有可访问名问题`).toEqual([]);
   return state.resolved.map((r) => r.text);
 }
 
@@ -166,19 +169,14 @@ test.describe('版本管理页', () => {
   });
 
   /**
-   * ⚠ 只在 Chromium 内核取证，Safari 下本夹具走不到冲突态。
-   *
-   * 现象：同样的步骤 webkit 上合并报的是"已合并分支「alt」（自动解决 0 个字段）"，
-   * 即两条分支的快照内容相同 ⇒ 没有冲突。逐层排过三件事：
-   * ① 切分支点错位置（`切换` 按钮只存在于非当前分支，靠 first/last 猜不可靠）→ 已改成按卡片定位并断言"当前"；
-   * ② 提交失败也关框（`onCommitSubmit` 无条件关框）→ 已改成断言"历史多一条"；
-   * ③ 保存是 fire-and-forget，版本页可能读到旧快照 → 已改成等列表里出现新描述。
-   * 三条都补上后 Chromium 稳定出冲突、webkit 仍不出。**下一步要查的是产品侧**：
-   * Safari 下版本页读到的角色快照为什么是旧的（怀疑 IDB 事务提交顺序或 store 复用），
-   * 若成立则是真缺陷。登记在设计文档 M11 节的"未做"里。
+   * 双内核都要取证。M11 时它只在 Chromium 过，原因是产品侧的：
+   * 版本页在角色库读完之前就决定了"这条 URL 是哪个角色"，Safari 读库慢一点，
+   * 于是落进"自动选中第一条"= mock 种子角色，两条分支提交的都是同一份种子快照
+   * ⇒ 合并自然"自动解决 0 个字段"。诊断证据（落盘的 `characterId` 是 `seraphina`、
+   * 每条 commit 的 snapshot 都是种子描述）见设计文档 M12-a 节。
+   * 修法是视图先 `await characterStore.ensureLoaded()`，并去掉"悄悄换角色"那条退路。
    */
-  test('合并冲突对话框：两条分支各改同一字段后合并', async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', '见上方注释：webkit 下夹具走不到冲突态，已登记待查');
+  test('合并冲突对话框：两条分支各改同一字段后合并', async ({ page }) => {
     const name = `E2E版本冲突-${Date.now()}`;
     const id = await createCharacter(page, name);
     await page.goto(`/character-version?char=${id}`);

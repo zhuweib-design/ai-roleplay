@@ -277,7 +277,9 @@ onMounted(async () => {
     // 各 store 的 loadFromStorage 之间无跨 store 依赖（函数体内无 useXxxStore 引用，已核实），
     // 由串行 await 改为并行，把 5 段等待压缩为 1 段（取最慢项）。
     await Promise.all([
-      characterStore.loadFromStorage().catch((err) => {
+      // 角色库走 ensureLoaded 而不是 loadFromStorage：深链进来的视图可能比这里更早挂载，
+      // 两边共用同一个 in-flight promise 才只会读一遍库。
+      characterStore.ensureLoaded().catch((err) => {
         logger.error('Storage', '从存储加载角色失败', err);
       }),
       // W3 新增：加载世界书与群聊

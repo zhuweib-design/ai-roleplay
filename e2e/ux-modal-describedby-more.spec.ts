@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { auditOpenDialog } from './a11y-dup-audit';
 
 /**
  * E2E · 对话框级说明的覆盖补全（M9-d，接 M8-c）
@@ -54,6 +55,8 @@ async function expectDescribedResolved(page: Page, expectedIds: string[]): Promi
     expect(r.inside, `#${r.id} 存在但不在这个对话框内部`).toBe(true);
     expect(r.text.length, `#${r.id} 解析到了，但里面没有文字`).toBeGreaterThan(0);
   }
+  // M12-b：这一刻对话框已经开着，同一套重复 id/可访问名判定顺手跑一遍
+  expect(await auditOpenDialog(page), `对话框「${state.title}」内部有可访问名问题`).toEqual([]);
   return state.resolved.map((r) => r.text);
 }
 

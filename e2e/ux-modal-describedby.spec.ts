@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { auditOpenDialog } from './a11y-dup-audit';
 
 /**
  * E2E · 对话框级说明在真实浏览器里接得上（M8-c）
@@ -69,6 +70,8 @@ async function expectDescribedResolved(page: Page, expectedIds: string[]): Promi
     expect(r.inside, `#${r.id} 存在但不在这个对话框内部`).toBe(true);
     expect(r.text.length, `#${r.id} 解析到了，但里面没有文字`).toBeGreaterThan(0);
   }
+  // M12-b：这一刻对话框已经开着，同一套重复 id/可访问名判定顺手跑一遍
+  expect(await auditOpenDialog(page), `对话框「${state.title}」内部有可访问名问题`).toEqual([]);
   return state.resolved.map((r) => r.text);
 }
 
@@ -98,6 +101,66 @@ test.describe('编辑与删除确认', () => {
 
     // 页面上有三处「取消」（页头/表单底部/弹窗），必须限定在对话框里点
     await page.getByRole('dialog', { name: '未保存的修改' }).getByRole('button', { name: '取消' }).click();
+  });
+
+  /**
+   * M12-b 的负向对照：对话框内部的重复必须报得出来。
+   *
+   * 上面每条用例里的 `auditOpenDialog` 都只断言"干净"，而"干净"有两种可能：
+   * 真的没有重复，或者判定根本没伸进对话框。这里在对话框内部现场造一对同名按钮和
+   * 一个重复 id，要求报出；只撤掉注入、留着真实按钮，再要求归零。
+   */
+  test('对话框内部的重复能被这套判定抓到', async ({ page }) => {
+    await page.goto('/character');
+    await page.getByRole('button', { name: '新建角色' }).click();
+    await page.getByRole('button', { name: '完整表单' }).click();
+    await page.getByLabel('名称').fill(`E2E对话框审计-${Date.now()}`);
+    await page.locator('.header-btn.back').click();
+    await expect(page.locator('.modal-title')).toHaveText('未保存的修改');
+    // 基线：判定伸进了对话框却什么都没抓到（不是"没伸进去"）
+    expect(await auditOpenDialog(page)).toEqual([]);
+
+    const injected = await page.evaluate(() => {
+      const d = document.querySelector('[role="dialog"]');
+      if (!d) throw new Error('对话框没打开，注入无处可去');
+      const real = d.querySelector<HTMLButtonElement>('.modal-confirm');
+      if (!real) throw new Error('对话框里没有可克隆的按钮');
+      const label = (real.textContent ?? '').trim();
+      const host = real.parentElement ?? d;
+      const twin = document.createElement('button');
+      twin.type = 'button';
+      twin.textContent = label;
+      twin.setAttribute('data-probe', '1');
+      host.insertBefore(twin, real.nextSibling);
+      for (let i = 0; i < 2; i++) {
+        const dup = document.createElement('span');
+        dup.id = 'e2e-dialog-dup';
+        dup.setAttribute('data-probe', '1');
+        host.appendChild(dup);
+      }
+      return {
+        label,
+        sameName: [...host.querySelectorAll('button')].filter((b) => (b.textContent ?? '').trim() === label).length,
+      };
+    });
+    expect(injected.sameName, '同名按钮没落到同一个容器里，判定当然抓不到').toBe(2);
+
+    const violations = await auditOpenDialog(page);
+    expect(
+      violations.filter((v) => v.includes('同名按钮')),
+      `对话框内同名按钮没被抓到：${JSON.stringify(violations)}`
+    ).toHaveLength(1);
+    expect(
+      violations.filter((v) => v.includes('重复 id')),
+      `对话框打开后的重复 id 没被抓到：${JSON.stringify(violations)}`
+    ).toHaveLength(1);
+
+    // 只撤注入的那两处，真实按钮仍在 ⇒ 回到"干净"是因为没有重复，不是因为没内容
+    await page.evaluate(() => {
+      for (const el of document.querySelectorAll('[data-probe]')) el.remove();
+    });
+    expect(await auditOpenDialog(page)).toEqual([]);
+    await page.keyboard.press('Escape');
   });
 
   test('列表删除确认：带 v-if 的那句说明在弹窗打开时确实存在', async ({ page }) => {

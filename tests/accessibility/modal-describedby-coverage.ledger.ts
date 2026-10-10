@@ -17,6 +17,12 @@
  * `tests/accessibility/modal-describedby-wired.test.ts` 会核对三方一致：
  * 源码里的引用集合 == 台账的键集合；标 `e2e` 的 id 必须真的出现在它声明的那份 spec 里；
  * 标 `blocked` 的必须带原因。新增引用而不登记 ⇒ 门禁直接红。
+ *
+ * M12-b 起这 23 条还多承担一件事：四条 spec 打开每条对话框的那一刻，除了核对
+ * `aria-describedby`，还会顺手跑一遍重复 id / 同容器同名 / 只靠 placeholder 的判定
+ * （实现见 `e2e/a11y-dup-audit.ts`）。"点开验过"从此不只验说明，也验这一层。
+ * 另外 `cv-conflict-desc` 原来只在 Chromium 取证（Safari 走不到冲突态），M12-a 查明
+ * 那是版本页把仓库绑到了种子角色上，修完双内核都过。
  */
 
 export type Coverage =

@@ -44,9 +44,15 @@ onMounted(async () => {
   if (!store.loaded) {
     await store.loadFromDisk();
   }
+  // 必须等角色库读完再决定"这条 URL 对应哪个角色"：`characters` 的初值是 mock 种子，
+  // 读库没完成时 URL 里那个 id 在内存里根本不存在，于是落到下面的"自动选中第一条"
+  // = 种子角色。webkit 实测就是这样：整条版本历史的快照全是种子角色的描述，
+  // 用户以为在给刚建的角色提交版本。
+  await characterStore.ensureLoaded();
   // E19：角色卡的"已跟踪"标记带 ?char= 进来，直接定位到那个角色
   const wanted = typeof route.query.char === 'string' ? route.query.char : '';
-  if (wanted && characterStore.characters.some((c) => c.id === wanted)) {
+  if (wanted) {
+    // 找不到就走 store 的报错，不再悄悄换成别的角色
     handleSelectCharacter(wanted);
     return;
   }

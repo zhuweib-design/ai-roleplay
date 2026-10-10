@@ -142,9 +142,23 @@ jobs:
   # E2E 门禁（已纳入默认门禁）: Playwright 真实浏览器跑 e2e/ 下全部 spec
   # - 三个 project：桌面功能（chromium/Edge）、移动端布局与核心功能（Pixel 5 视口）、WebKit（Safari 近似内核）
   # - 本地 Windows 用系统 Edge（免下载）+ 需 `npx playwright install webkit`；CI 安装 chromium + webkit
+  # - M12-c 分片 4 片并行。分片数与墙钟都是实测的（本机 Edge、复用已起的 dev server、每片 --workers=1）：
+  #     shard 1/4 = 42 条 2.3m，2/4 = 42 条 1.3m，3/4 = 49 条 3.2m，4/4 = 34 条 1.7m
+  #   ⇒ 串行走完 8.5m，分片后墙钟 ≈ 最慢那一片 3.2m（CI 还要加 npm ci + 浏览器安装与冷启动 vite，是下限）。
+  #   分片按文件切，`--list` 数出来 42/42/49/34 = 167，无重无漏。
+  # - 顺带纠正一个我之前的判断：M11 写的是"全套工作量约 1700s，摊在 4 个 worker 上"。
+  #   实测 167 条串行只有 510s，而本地 workers=4 的墙钟是 447s —— **并发几乎没换来时间**
+  #   （长用例排在关键路径上）。所以压墙钟的正路确实是分片，而不是继续调本地并发；
+  #   CI 也维持 1 worker（`workers: isCI ? 1 : 4`），确定性优先，红点轮换的成因见
+  #   playwright.config.ts 里的 workers 注释。
+  # - `fail-fast: false`：一片红不影响其余三片跑完，否则一次红就看不到另外三片的证据。
   e2e:
-    name: E2E (Playwright)
+    name: E2E (Playwright) shard ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -162,14 +176,15 @@ jobs:
       - name: Install Playwright browsers (chromium + webkit)
         run: npx playwright install --with-deps chromium webkit
 
-      - name: E2E tests
-        run: npm run test:e2e
+      - name: E2E tests (shard ${{ matrix.shard }}/4)
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/4
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          # artifact 名必须逐片唯一（actions/upload-artifact@v4 同名会直接报错）
+          name: playwright-report-shard-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
