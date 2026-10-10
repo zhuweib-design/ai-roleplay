@@ -2,6 +2,7 @@ import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { StorageAdapter } from '@/storage/storage-adapter';
+import { mergeKeptLocal } from '@/core/store-merge';
 import {
   type AnalysisDepth,
   type AnalysisProgress,
@@ -149,7 +150,8 @@ export const useStoryStore = defineStore('story', () => {
     if (!storageAdapter) return;
     try {
       const list = await storageAdapter.loadStories();
-      stories.value = list;
+      // 首帧窗口内新建的故事线要留住，理由同世界书（见 core/store-merge）
+      stories.value = mergeKeptLocal(list, stories.value);
       if (list.length > 0 && !currentStoryId.value) {
         currentStoryId.value = list[0]!.id;
       }

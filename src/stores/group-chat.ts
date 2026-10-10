@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { StorageAdapter } from '@/storage/storage-adapter';
 import type { CharacterCard } from '@/core/character-card';
+import { mergeKeptLocal } from '@/core/store-merge';
 import {
   type GroupChat,
   type GroupChatMessage,
@@ -115,7 +116,8 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     if (!storageAdapter) return;
     try {
       const list = await storageAdapter.loadGroupChats();
-      groups.value = list;
+      // 首帧窗口内新建的群聊要留住，理由同世界书（见 core/store-merge）
+      groups.value = mergeKeptLocal(list, groups.value);
       if (list.length > 0 && !currentGroupId.value) {
         currentGroupId.value = list[0]!.id;
       }

@@ -15,6 +15,7 @@ import {
   MAX_LOREBOOK_ENTRIES,
 } from '@/core/lorebook';
 import { createApiClient } from '../api';
+import { mergeKeptLocal } from '@/core/store-merge';
 import { useSettingsStore } from './settings';
 import {
   type WorldTemplateId,
@@ -117,7 +118,8 @@ export const useLorebookStore = defineStore('lorebook', () => {
     if (!storageAdapter) return;
     try {
       const list = await storageAdapter.loadLorebooks();
-      lorebooks.value = list;
+      // 首帧窗口内用户新建的书要留住（存档里已有、内存里刚建，整数组替换会把它变没）
+      lorebooks.value = mergeKeptLocal(list, lorebooks.value);
       if (list.length > 0 && !currentLorebookId.value) {
         currentLorebookId.value = list[0]!.id;
       }

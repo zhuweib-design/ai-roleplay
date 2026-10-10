@@ -289,6 +289,17 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
   const RANDOM_EVENTS_SCHEMA_VERSION = 1;
   let storageAdapter: Pick<StorageAdapter, 'loadSnapshot' | 'saveSnapshot'> | null = null;
   let loaded = false;
+  /**
+   * 首帧加载的在飞 promise。随机事件 store 是**整份快照**写入（模板、场景配置、生成器
+   * 设置、结果集一次全写），所以加载没落地前的任何写入都会把"还没读到存档的内存"落盘，
+   * 抹掉已有的模板与历史 —— 与 M9-a 的设置 store 同一类，机制也同一套：排队到加载之后。
+   */
+  let loadInFlight: Promise<void> | null = null;
+  /** 加载窗口内生成器配置的"改前 / 想改成"两份视图（M9-c 的以用户为准那一半） */
+  let configAtLoadStart: Partial<RandomEventGeneratorConfig> | null = null;
+  let configWantedDuringLoad: Partial<RandomEventGeneratorConfig> | null = null;
+  /** 回写用户改动时发起的写入，不能再等加载（否则等的是它自己） */
+  let applyingUserConfig = false;
 
   function setStorageAdapter(adapter: Pick<StorageAdapter, 'loadSnapshot' | 'saveSnapshot'> | null): void {
     storageAdapter = adapter;
@@ -297,6 +308,44 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
 
   async function loadFromStorage(): Promise<void> {
     if (!storageAdapter || loaded) return;
+    if (!loadInFlight) {
+      configAtLoadStart = { ...generatorConfig.value };
+      loadInFlight = (async () => {
+        await applyLoadedSnapshot();
+        // 存档落地后把用户在窗口里改过的那几项配置重新应用，否则他刚拨的开关被静默抹掉
+        const keep = keepUserConfigDuringLoad();
+        if (keep) {
+          applyingUserConfig = true;
+          try {
+            generatorConfig.value = { ...generatorConfig.value, ...keep };
+            await persistNow();
+          } finally {
+            applyingUserConfig = false;
+          }
+        }
+      })().finally(() => {
+        loadInFlight = null;
+        configAtLoadStart = null;
+        configWantedDuringLoad = null;
+      });
+    }
+    return loadInFlight;
+  }
+
+  /** 用户在加载窗口里改过的那几项生成器配置（只比标量项，模板/结果集仍以存档为准） */
+  function keepUserConfigDuringLoad(): Partial<RandomEventGeneratorConfig> | null {
+    if (!configWantedDuringLoad || !configAtLoadStart) return null;
+    const keep: Partial<RandomEventGeneratorConfig> = {};
+    for (const [key, value] of Object.entries(configWantedDuringLoad)) {
+      if (value !== (configAtLoadStart as Record<string, unknown>)[key]) {
+        (keep as Record<string, unknown>)[key] = value;
+      }
+    }
+    return Object.keys(keep).length > 0 ? keep : null;
+  }
+
+  async function applyLoadedSnapshot(): Promise<void> {
+    if (!storageAdapter) return;
     try {
       const raw = await storageAdapter.loadSnapshot<unknown>(RANDOM_EVENTS_SNAPSHOT_KEY);
       if (raw !== null) {
@@ -327,6 +376,11 @@ export const useRandomEventsStore = defineStore('randomEvents', () => {
 
   async function persistNow(): Promise<void> {
     if (!storageAdapter) return;
+    // 加载在飞时先等它落地，避免用"空快照 + 这一次改动"覆盖已有模板与历史
+    if (loadInFlight && !applyingUserConfig) {
+      configWantedDuringLoad ??= { ...generatorConfig.value };
+      return loadInFlight.then(() => persistNow());
+    }
     try {
       await storageAdapter.saveSnapshot(
         RANDOM_EVENTS_SNAPSHOT_KEY,

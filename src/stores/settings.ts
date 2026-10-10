@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed, toRaw } from 'vue';
 import type {
   ApiProfile,
+  AppSettings,
   ThemeName,
   ChatBackground,
   BubbleStyle,
@@ -861,42 +862,121 @@ export const useSettingsStore = defineStore('settings', () => {
    * AC20 安全：apiKey 字段以加密形式加载到内存。
    * 解密需在 unlock() 成功后通过 decryptAllApiKeys() 触发。
    */
+  /**
+   * 首帧加载窗口内"以用户为准"的字段（M9-b）。
+   *
+   * 两条限制，各有原因：
+   * - 不含集合类字段（`apiProfiles` / `quickReplies` / `uiSectionOpen` …）：它们在窗口里的值
+   *   是从"还没读到存档"的内存算出来的，回写等于用"默认值 + 一次点击"换掉存档里的整批记录，
+   *   比"把用户那次改动盖回"更糟。这些仍以存档为准。
+   * - 不含 `locale`：加载自己会先把浏览器语言探测一遍再被存档覆盖，中间态会被误当成用户改动。
+   */
+  const USER_WINS_KEYS = [
+    'theme',
+    'fontSize',
+    'customCss',
+    'creationPreset',
+    'maxContextTokens',
+    'reservedTokens',
+  ] as const;
+
+  /** 上述字段的当前值（同步读，用于比对"用户在窗口里改了哪几项"） */
+  function scalarView(): Partial<AppSettings> {
+    return {
+      theme: theme.value,
+      fontSize: fontSize.value,
+      customCss: customCss.value,
+      creationPreset: creationPreset.value,
+      maxContextTokens: maxContextTokens.value,
+      reservedTokens: reservedTokens.value,
+    };
+  }
+
+  /**
+   * 加载自己触发的写入：既不排"等加载"的队（否则首启自锁），也不参与
+   * "用户在窗口里改了什么"的取样——它带的就是存档值，取样它会让每次启动都多跑一遍回写。
+   */
+  function loadOwnWrite(fn: () => void): void {
+    insideLoadOwnWrite = true;
+    try {
+      fn();
+    } finally {
+      insideLoadOwnWrite = false;
+    }
+  }
+
+  /** 加载开始时内存里的那份（= 默认值）；窗口内用户那次写入想落的值 */
+  let scalarsAtLoadStart: Partial<AppSettings> | null = null;
+  let scalarsWantedDuringLoad: Partial<AppSettings> | null = null;
+
   async function loadFromStorage(): Promise<void> {
     // 登记"存档正在读"。App.vue 是在 onMounted 里才 await 这里的，也就是说界面已经挂好、
     // 按钮已经能点而数据还没回来——这期间发起的写入必须排队到加载落地之后，
     // 否则写下去的是内存里的默认值（apiProfiles 空），会把用户已有的配置抹掉。
     if (!loadInFlight) {
-      loadInFlight = applyStoredSettings().finally(() => {
+      scalarsAtLoadStart = { ...scalarView() };
+      loadInFlight = (async () => {
+        await applyStoredSettings();
+        // 存档落地后，把用户在窗口里改过的那几项**再应用一次**——否则他刚点的开关/主题
+        // 会被随后到达的存档静默抹掉（M9-a 登记的边界 ①）
+        const keep = keepUserChangesDuringLoad();
+        if (keep) {
+          // 这次回写发生在加载自己的流程里，不能再排"等加载"的队，否则等的是它自己
+          bypassLoadGate = true;
+          try {
+            await applyStoredSettings(keep);
+          } finally {
+            bypassLoadGate = false;
+          }
+        }
+      })().finally(() => {
         loadInFlight = null;
+        scalarsAtLoadStart = null;
+        scalarsWantedDuringLoad = null;
       });
     }
     return loadInFlight;
   }
 
-  async function applyStoredSettings(): Promise<void> {
+  /** 用户在加载窗口里改过、且属于"以用户为准"清单的那几项 */
+  function keepUserChangesDuringLoad(): Partial<AppSettings> | null {
+    if (!scalarsWantedDuringLoad || !scalarsAtLoadStart) return null;
+    const keep: Partial<AppSettings> = {};
+    for (const key of USER_WINS_KEYS) {
+      if (scalarsWantedDuringLoad[key] !== scalarsAtLoadStart[key]) {
+        Object.assign(keep, { [key]: scalarsWantedDuringLoad[key] });
+      }
+    }
+    return Object.keys(keep).length ? keep : null;
+  }
+
+  async function applyStoredSettings(source?: Partial<AppSettings>): Promise<void> {
     if (!storageAdapter) return;
     try {
-      const saved = await storageAdapter.loadSettings();
+      // 传 source = 回写用户改动，不再读存档、不再探测浏览器语言、也不再写首启默认值
+      const isPatch = source !== undefined;
+      const saved: Partial<AppSettings> = source ?? (await storageAdapter.loadSettings());
       // 空对象视为首次启动
       const hasSavedData =
-        saved &&
-        (saved.theme !== undefined ||
-          saved.fontSize !== undefined ||
-          (Array.isArray(saved.apiProfiles) && saved.apiProfiles.length > 0) ||
-          saved.activeApiProfileId !== undefined ||
-          // MODEL-03：仅设置了创作模式也应视为已有数据（否则该字段永远读不回来）
-          saved.creationPreset !== undefined);
+        isPatch ||
+        (!!saved &&
+          (saved.theme !== undefined ||
+            saved.fontSize !== undefined ||
+            (Array.isArray(saved.apiProfiles) && saved.apiProfiles.length > 0) ||
+            saved.activeApiProfileId !== undefined ||
+            // MODEL-03：仅设置了创作模式也应视为已有数据（否则该字段永远读不回来）
+            saved.creationPreset !== undefined));
       // P2-3：首访按浏览器语言兜底。此处先探测，若下方存在持久化语言则会被覆盖，
       // 因此「用户显式选择」始终优先，浏览器语言只作未选择时的默认值。
-      const detected = detectLocale();
+      const detected = isPatch ? locale.value : detectLocale();
       if (detected !== locale.value) {
         locale.value = detected;
         setI18nLocale(detected);
       }
 
       if (hasSavedData) {
-        if (saved.theme) setTheme(saved.theme);
-        if (typeof saved.fontSize === 'number') setFontSize(saved.fontSize);
+        if (saved.theme) loadOwnWrite(() => setTheme(saved.theme as ThemeName));
+        if (typeof saved.fontSize === 'number') loadOwnWrite(() => setFontSize(saved.fontSize as number));
         // T-13 加载语言（默认 zh）
         if (saved.locale === 'zh' || saved.locale === 'en') {
           locale.value = saved.locale;
@@ -1002,18 +1082,22 @@ export const useSettingsStore = defineStore('settings', () => {
         }
         // P1-4：按主密码状态初始化远程向量密钥的内存态
         // （已设主密码 -> locked，待 unlock 后解密；未设 -> plain，沿用明文）
-        syncRemoteApiKeyState();
+        // 回写用户改动时不再跑：它属于"刚读到存档"的一次性状态推导，重复执行会把
+        // 解密失败一类的错误信息覆盖掉（master-password 那组用例守着）。
+        if (!isPatch) {
+          syncRemoteApiKeyState();
+        }
         // 末尾重断言 data-theme：customTheme 注入后再次同步 DOM 与 store，
         // 避免异步启动时序导致 data-theme 回退为默认（刷新后自定义主题失效）
-        setTheme(theme.value);
+        loadOwnWrite(() => setTheme(theme.value));
       } else {
         // 首次启动：写入默认设置。这条写来自加载自己，若也去排"等加载落地"的队，
         // 就变成等它自己完成 ⇒ 启动即卡死（全量 e2e 表现为大面积超时）。
-        applyingStoredSettings = true;
+        bypassLoadGate = true;
         try {
           await persistSettings();
         } finally {
-          applyingStoredSettings = false;
+          bypassLoadGate = false;
         }
       }
     } catch (err) {
@@ -1140,11 +1224,20 @@ export const useSettingsStore = defineStore('settings', () => {
   /** 首帧存档加载的在飞 promise（见 `loadFromStorage`） */
   let loadInFlight: Promise<void> | null = null;
   /** 加载流程自己发起、且被它 await 的那次写入（首启默认快照）不能再等加载，否则自己等自己 */
-  let applyingStoredSettings = false;
+  let bypassLoadGate = false;
+  /**
+   * 加载往内存灌存档值时顺带触发的写入：照旧排队（半加载状态落盘会把还没赋值的
+   * apiProfiles 写成空），只是不参与"用户在窗口里改了什么"的取样。
+   */
+  let insideLoadOwnWrite = false;
 
   function persistSettings(): Promise<void> {
-    // 加载在飞时先等它落地再走正常写入：挡住"用默认值盖掉存档"这一类丢数据
-    if (loadInFlight && !applyingStoredSettings) {
+    // 加载在飞时先等它落地再走正常写入：挡住"用默认值盖掉存档"这一类丢数据。
+    // 同时记下**第一次**被挡住时的值——加载落地后靠它把用户那几项改动重新应用回去。
+    // 只记第一次是有意的：能进这条分支的写，要么是用户在存档到达前点的（要保护），
+    // 要么是加载自己往内存里灌存档值时触发的（与默认值的差异回写一遍是无操作）。
+    if (loadInFlight && !bypassLoadGate) {
+      if (!insideLoadOwnWrite) scalarsWantedDuringLoad ??= scalarView();
       return loadInFlight.then(() => persistSettings());
     }
     if (persistInFlight) {

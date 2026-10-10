@@ -9,6 +9,7 @@ import type {
   RAGConfig,
 } from '@/core/data-bank';
 import { MAX_FILE_SIZE } from '@/core/data-bank';
+import { mergeKeptLocal } from '@/core/store-merge';
 import { chunkDocument, buildChunks } from '@/core/document-chunker';
 import {
   retrieveRelevantChunks,
@@ -75,7 +76,8 @@ export const useDataBankStore = defineStore('data-bank', () => {
     if (!storageAdapter) return;
     try {
       const loaded = await storageAdapter.loadDocuments();
-      documents.value = loaded;
+      // 首帧窗口内上传的文档要留住，理由同世界书（见 core/store-merge）
+      documents.value = mergeKeptLocal(loaded, documents.value);
     } catch (e) {
       lastError.value = t('store.docLoadFailed', { error: (e as Error).message });
     }

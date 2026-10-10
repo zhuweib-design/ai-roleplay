@@ -18,9 +18,8 @@ const THEMES = ['dark', 'light', 'midnight', 'oled', 'theatre'];
 /**
  * 2026-09 全路由 × 全主题审计中曾出现违规的 7 条路由。
  * 采用**全量 5 主题**覆盖（7×5=35 次扫描）而非抽样：
- * 实测（本地 6 worker）35 次与 11 次抽样在**全量 E2E 墙钟耗时上相同（均 ~71s）**——
- * 该用例与其它 E2E 并行执行，未落在关键路径上；单独跑 `contrast-axe` 文件时
- * 35 次约 38s、11 次约 22s（+16s），仍在可接受范围。故用全覆盖换取零漏检。
+ * 用全覆盖（零漏检）而非 11 次抽样；代价是这条曾经是全套里最慢的单点，
+ * 因此下面按主题拆成了 5 条用例（见文件末尾的拆分原因）。
  */
 const AUDITED_ROUTES = [
   '/image-gen',
@@ -101,13 +100,16 @@ test('对比度：5 主题下对话页无 WCAG AA 颜色对比违规', async ({ 
   }
 });
 
-test('对比度：7 条审计路由 × 5 主题无 WCAG AA 颜色对比违规', async ({ page }) => {
-  // 35 次扫描 + 每次 450ms 稳定等待 → 单用例约 30s，超过默认 30s 超时，故显式放宽。
-  test.setTimeout(90_000);
-  await page.addInitScript({ content: axe.source });
-
-  // 按主题分组执行：同一主题只切换一次，再依次访问全部审计路由（降低切主题开销）
-  for (const theme of THEMES) {
+/**
+ * 按主题拆成 5 条用例，而不是 1 条跑完 35 次扫描。
+ *
+ * 合在一起时它要 90s（自己的预算）且经常撞穿——撞穿的那一轮它还在占着 CPU，
+ * 把同一批并行用例一起拖红（实测连带红过"任务中心"与 E19/E22）。
+ * 拆开之后每条只有 7 次扫描、约 8–12s，红的时候也能直接说出是哪个主题出的问题。
+ */
+for (const theme of THEMES) {
+  test(`对比度：审计路由 7 条在「${theme}」主题下无 WCAG AA 颜色对比违规`, async ({ page }) => {
+    await page.addInitScript({ content: axe.source });
     await applyTheme(page, theme);
     for (const route of AUDITED_ROUTES) {
       await page.goto(route);
@@ -118,5 +120,5 @@ test('对比度：7 条审计路由 × 5 主题无 WCAG AA 颜色对比违规', 
       const summary = violations.map((v) => `${v.id}(${v.nodes.length}): ${v.help}`).join(' | ');
       expect(violations, `route=${route} theme=${theme} → ${summary}`).toHaveLength(0);
     }
-  }
-});
+  });
+}

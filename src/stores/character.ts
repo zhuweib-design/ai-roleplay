@@ -5,6 +5,7 @@ import type { UICharacter } from '@/types';
 import { mockCharacters } from '../data/mock-data';
 import type { StorageAdapter } from '../storage/storage-adapter';
 import { getStorageAdapter } from '../storage/storage-factory';
+import { mergeKeptLocal } from '@/core/store-merge';
 import {
   uiCharToCard,
   cardToUiChar,
@@ -40,6 +41,8 @@ import {
 export const useCharacterStore = defineStore('character', () => {
   // ── 状态 ──
   const characters = ref<UICharacter[]>(structuredClone(mockCharacters));
+  /** 初始 mock 种子的 id：加载合并时不能把它们当成"用户在窗口内新建的角色" */
+  const seedCharacterIds = new Set(structuredClone(mockCharacters).map((c) => c.id));
   const currentCharacterId = ref('seraphina');
   const searchQuery = ref('');
   /** 需求1：当前过滤标签（空字符串表示不按标签过滤） */
@@ -156,12 +159,14 @@ export const useCharacterStore = defineStore('character', () => {
         // 用存储中的角色覆盖 mock
         // P2-11 Phase1: 保留角色卡 messages(loadChatHistory 未接线, 已持久化会话历史
         // 刷新后无法进 UI; 恢复行为符合产品预期, 也是超长对话压测的前置)
-        characters.value = cards.map((c) => {
+        const loadedCards = cards.map((c) => {
           const ui = cardToUiChar(c);
           const raw = (c as unknown as { messages?: unknown[] }).messages;
           if (Array.isArray(raw)) ui.messages = raw as UICharacter['messages'];
           return ui;
         });
+        // 首帧窗口内用户新建的角色要留住（存档那次读没带上它）；种子 mock 不算新建
+        characters.value = mergeKeptLocal(loadedCards, characters.value, seedCharacterIds);
         if (characters.value.length > 0 && !characters.value.find((c) => c.id === currentCharacterId.value)) {
           currentCharacterId.value = characters.value[0]!.id;
         }
