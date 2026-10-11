@@ -19,6 +19,22 @@ test.describe('任务中心', () => {
     await expect(page.locator('.guided-progress')).toContainText('/6');
   });
 
+  /**
+   * 步骤条半档的浏览器侧核对（M18 试点）：`gap: var(--space-1-5)` 若拼错，
+   * 声明失效只会让间隙变 0，肉眼在看图时很难发现，故在此钉死。
+   */
+  test('步骤条换成半档 token 后间隙仍是 6px', async ({ page }) => {
+    await page.goto('/guide');
+    const list = page.locator('.step-flow--checklist').first();
+    await expect(list).toBeVisible();
+    const got = await list.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const row = el.querySelector('.step-flow-row');
+      return { gap: cs.gap, rowFont: row ? getComputedStyle(row).fontSize : null };
+    });
+    expect(got).toEqual({ gap: '6px', rowFont: '13px' });
+  });
+
   test('当前该做的那一条默认就是展开的，进页面不必先点一次', async ({ page }) => {
     await page.goto('/guide');
 

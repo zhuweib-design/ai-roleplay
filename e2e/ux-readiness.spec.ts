@@ -10,6 +10,41 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('就绪状态与关联跳转', () => {
+  /**
+   * token 化后的像素中性证明（M18 试点）。
+   *
+   * 写错 CSS 变量名不会报错：`var(--space-1-5)` 拼错时该条声明直接失效，间隙悄悄变成 0。
+   * 所以这里在真实浏览器里量计算样式，钉住"换成半档后画面没动"这一件事。
+   */
+  test('就绪条换成结构层 token 后，计算样式仍是原来的像素值', async ({ page }) => {
+    await page.goto('/chat');
+    const bar = page.locator('.readiness-bar');
+    await expect(bar).toBeVisible();
+
+    const computed = await bar.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const chip = el.querySelector('.readiness-chip');
+      const chipCs = chip ? getComputedStyle(chip) : null;
+      return {
+        gap: cs.gap,
+        padTop: cs.paddingTop,
+        padLeft: cs.paddingLeft,
+        fontSize: cs.fontSize,
+        chipRadius: chipCs?.borderRadius,
+        chipFont: chipCs?.fontSize,
+      };
+    });
+    // 6px = --space-1-5、12px = --space-3、13px = --font-size-sm、999px = --radius-pill
+    expect(computed).toEqual({
+      gap: '6px',
+      padTop: '6px',
+      padLeft: '12px',
+      fontSize: '13px',
+      chipRadius: '999px',
+      chipFont: '13px',
+    });
+  });
+
   test('对话页就绪条渲染五个依赖芯片，未配置模型时点击可直达模型类并返回', async ({ page }) => {
     await page.goto('/chat');
 

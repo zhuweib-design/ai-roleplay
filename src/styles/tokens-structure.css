@@ -20,7 +20,13 @@
   --space-0: 0px;
   --space-px: 1px;
   --space-1: 4px;
+  /* 半档（M18 裁决 3）：产品实测有 62% 的"尺度外"字面量只落在 6px 与 10px 两个值上
+     （6px 292 处、10px 195 处，见 docs/design/TOKEN_PILOT_2026-10-11.md 第 3 节）。
+     补两档而不是把它们就近归档：归档等于 487 个元素的尺寸被悄悄改掉。
+     命名：`--space-N-M` 读作"N 又 M/10 档 × 4px"，即 1.5 档 = 6px、2.5 档 = 10px。 */
+  --space-1-5: 6px;
   --space-2: 8px;
+  --space-2-5: 10px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 20px;

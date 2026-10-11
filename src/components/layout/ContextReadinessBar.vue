@@ -71,10 +71,10 @@ function onChip(chip: ReadinessChip): void {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  /* 以下 6px / 5px / 3px / 7px 都落在 4px 基准尺的档位之外（尺度只有 4/8/12），
-     试点先保留字面量并登记进"尺度缺口"表——要么补一档细尺度，要么接受视觉微调。 */
-  gap: 6px;
-  padding: 6px var(--space-3);
+  /* 6px 已由 M18 裁决 3 补成半档 --space-1-5；剩下的 5px / 3px / 7px 仍不在阶上，
+     留在字面量里等逐处裁决（它们不构成批量归档的收益，补档反而让尺度变脏）。 */
+  gap: var(--space-1-5);
+  padding: var(--space-1-5) var(--space-3);
   border-bottom: var(--size-border-thin) solid var(--border);
   background: var(--card);
   font-size: var(--font-size-sm);

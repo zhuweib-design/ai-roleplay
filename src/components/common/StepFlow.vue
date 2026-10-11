@@ -162,8 +162,7 @@ function onKeydown(event: KeyboardEvent): void {
 .step-flow--checklist {
   display: flex;
   flex-direction: column;
-  /* 6px 在 4px 基准尺上没有对应档位（尺度里有 4/8/12，没有 6）——试点登记进"尺度缺口"表 */
-  gap: 6px;
+  gap: var(--space-1-5);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -214,8 +213,7 @@ function onKeydown(event: KeyboardEvent): void {
   /* 实测 22px 高时移动端几乎点不中（WCAG 2.2 最小目标 24×24 CSS px 都不达标）；
      30px 不在控件尺寸阶上，见尺度缺口表 */
   min-height: 30px;
-  /* 10px 也不在阶上（4/8/12），保留字面量并登记 */
-  padding: var(--space-1) 10px;
+  padding: var(--space-1) var(--space-2-5);
   border: var(--size-border-thin) solid var(--secondary);
   border-radius: var(--radius-sm);
   background: transparent;
