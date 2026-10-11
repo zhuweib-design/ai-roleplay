@@ -31,6 +31,12 @@ export default [
       '.workbuddy/**',
       '.workbuddy-ai/**',
       'out/**',
+      // 设计交付物与静态原型不算产品源码。2026-10-11 的现场事实：并行会话在
+      // `docs/design/ai-chat-ui-redesign/` 下放了一整套原型自带 js（9 个脚本），
+      // `eslint .` 立刻多出 23 条 no-undef/未用变量——那些是浏览器里跑的演示代码，
+      // 不该进产品门禁。配套断言见 `tests/tooling/lint-scope.test.ts`：
+      // docs/ 下一旦出现**被 git 跟踪的** js/mjs/ts，那条断言就红，逼一次"这是不是产品代码"的判断。
+      'docs/**',
     ],
   },
   js.configs.recommended,
