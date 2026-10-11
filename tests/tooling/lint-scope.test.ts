@@ -18,15 +18,33 @@ import { ESLint } from 'eslint';
 
 const SOURCE_EXT = /\.(js|mjs|cjs|ts|tsx|vue)$/;
 
+/**
+ * 探针在**模块加载阶段**求值，而不是写在用例体内。
+ *
+ * 第一次 `isPathIgnored` 会把 eslint.config.js 连同三个插件一起装起来：这份成本隔离跑
+ * 只有 1.2s，全量并发下却撞破 5s 默认超时——和 M15-c 里 snapshot-restore 那条同一形状
+ * （成本被记进用例计时，不等于用例自己的逻辑变慢）。断言的仍是真实判定结果，没放宽超时。
+ */
+const PROBE_PATHS = [
+  'docs/design/whatever-probe/probe.js',
+  'docs/design/ai-chat-ui-redesign/js/panel-toggle.js',
+  'src/main.ts',
+  'tests/tooling/lint-scope.test.ts',
+  'scripts/eval-run.mjs',
+];
+const eslint = new ESLint({ cwd: process.cwd() });
+// 探针路径不需要真实存在，isPathIgnored 只做配置匹配
+const ignored = Object.fromEntries(
+  await Promise.all(PROBE_PATHS.map(async (p) => [p, await eslint.isPathIgnored(p)]))
+);
+
 describe('lint 作用域', () => {
-  it('docs 下的文件被 ESLint 判为忽略，产品目录没有', async () => {
-    const eslint = new ESLint({ cwd: process.cwd() });
-    // 探针路径不需要真实存在，isPathIgnored 只做配置匹配
-    expect(await eslint.isPathIgnored('docs/design/whatever-probe/probe.js'), 'docs 原型没被忽略').toBe(true);
-    expect(await eslint.isPathIgnored('docs/design/ai-chat-ui-redesign/js/panel-toggle.js')).toBe(true);
-    expect(await eslint.isPathIgnored('src/main.ts'), 'src 被误忽略').toBe(false);
-    expect(await eslint.isPathIgnored('tests/tooling/lint-scope.test.ts'), 'tests 被误忽略').toBe(false);
-    expect(await eslint.isPathIgnored('scripts/eval-run.mjs'), 'scripts 被误忽略').toBe(false);
+  it('docs 下的文件被 ESLint 判为忽略，产品目录没有', () => {
+    expect(ignored['docs/design/whatever-probe/probe.js'], 'docs 原型没被忽略').toBe(true);
+    expect(ignored['docs/design/ai-chat-ui-redesign/js/panel-toggle.js']).toBe(true);
+    expect(ignored['src/main.ts'], 'src 被误忽略').toBe(false);
+    expect(ignored['tests/tooling/lint-scope.test.ts'], 'tests 被误忽略').toBe(false);
+    expect(ignored['scripts/eval-run.mjs'], 'scripts 被误忽略').toBe(false);
   });
 
   it('docs 下没有被 git 跟踪的源码文件（忽略 docs 不会藏住产品代码）', () => {
