@@ -19,8 +19,9 @@
  * - Toast role=alert 反馈
  * - 进度条 role="progressbar"
  */
-import { ref, computed, useTemplateRef, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, computed, useTemplateRef } from 'vue';
+import { useRouter } from 'vue-router';
+import { useDeepLinkId } from '@/composables/useDeepLinkId';
 import { useStoryStore } from '@/stores/story';
 import { useSettingsStore } from '@/stores/settings';
 import { useLorebookStore } from '@/stores/lorebook';
@@ -57,7 +58,6 @@ import {
 import { t } from '@/i18n';
 
 const router = useRouter();
-const route = useRoute();
 const store = useStoryStore();
 const settingsStore = useSettingsStore();
 const lorebookStore = useLorebookStore();
@@ -67,25 +67,21 @@ const characterStore = useCharacterStore();
  * E15：聊天页的故事时间现在可点进来，带 `?story=<id>` 时直接选中那一条。
  * 只认 stories 里真实存在的 id——手打的、或故事已删除留下的过期链接，
  * 都不该把界面停在一个空选中态上。
+ *
+ * 取 id、等读库、等待期间 URL 变化作废，全部收进 useDeepLinkId（M14-a）。
  */
-function applyStoryQuery(): void {
-  const raw = route.query.story;
-  const id = Array.isArray(raw) ? raw[0] : raw;
-  if (typeof id !== 'string') return;
-  // 必须等故事列表读完再判：读库没完成时这条 id 还不在内存里，原来的写法会
-  // **静默什么都不做**——从聊天页点故事时间跳过来，界面停在没选中的空态上。
-  void store.ensureLoaded().then(() => {
-    if (route.query.story !== id) return; // 等待期间用户又跳了，旧的那次作废
+useDeepLinkId({
+  key: 'story',
+  load: () => store.ensureLoaded(),
+  onResolved: (id) => {
     if (store.stories.some((s) => s.id === id)) {
       store.selectStory(id);
       return;
     }
     // 读完仍然没有 ⇒ 链接过期或手打错，说给用户听（原来同样静默）
     showToast('error', t('story.notFound2'));
-  });
-}
-applyStoryQuery();
-watch(() => route.query.story, applyStoryQuery);
+  },
+});
 
 // ── T-08: 一键生成设定（世界书 + 主角角色卡）──
 const quickGenTemplate = ref<CharacterTemplateId>('fantasy');

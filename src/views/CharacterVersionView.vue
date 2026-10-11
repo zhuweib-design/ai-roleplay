@@ -18,8 +18,9 @@
  * - Modal 焦点陷阱（通过 Modal 组件）
  * - Toast role=alert 反馈
  */
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useDeepLinkId } from '@/composables/useDeepLinkId';
 import { useCharacterVersionStore } from '@/stores/character-version';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
@@ -35,31 +36,32 @@ import {
 import { t } from '@/i18n';
 
 const router = useRouter();
-const route = useRoute();
 const store = useCharacterVersionStore();
 const characterStore = useCharacterStore();
 
 // ── 启动加载持久化 ──
-onMounted(async () => {
-  if (!store.loaded) {
-    await store.loadFromDisk();
-  }
-  // 必须等角色库读完再决定"这条 URL 对应哪个角色"：`characters` 的初值是 mock 种子，
-  // 读库没完成时 URL 里那个 id 在内存里根本不存在，于是落到下面的"自动选中第一条"
-  // = 种子角色。webkit 实测就是这样：整条版本历史的快照全是种子角色的描述，
-  // 用户以为在给刚建的角色提交版本。
+// E19：角色卡的"已跟踪"标记带 ?char= 进来，直接定位到那个角色。取 id、等两道闸门、
+// 等待期间 URL 变化作废，收进 useDeepLinkId（M14-a）。
+// 必须等角色库读完再决定"这条 URL 对应哪个角色"：`characters` 的初值是 mock 种子，
+// 读库没完成时 URL 里那个 id 在内存里根本不存在，于是落到"自动选中第一条"
+// = 种子角色。webkit 实测就是这样：整条版本历史的快照全是种子角色的描述，
+// 用户以为在给刚建的角色提交版本。
+const ensureVersionData = async (): Promise<void> => {
+  if (!store.loaded) await store.loadFromDisk();
   await characterStore.ensureLoaded();
-  // E19：角色卡的"已跟踪"标记带 ?char= 进来，直接定位到那个角色
-  const wanted = typeof route.query.char === 'string' ? route.query.char : '';
-  if (wanted) {
-    // 找不到就走 store 的报错，不再悄悄换成别的角色
-    handleSelectCharacter(wanted);
-    return;
-  }
-  // 自动选中第一个角色
-  if (!store.currentCharacterId && characterStore.characters.length > 0) {
-    handleSelectCharacter(characterStore.characters[0]!.id);
-  }
+};
+useDeepLinkId({
+  key: 'char',
+  load: ensureVersionData,
+  onResolved: (id) => handleSelectCharacter(id),
+  onMissing: async () => {
+    await ensureVersionData();
+    // 自动选中第一个角色
+    if (!store.currentCharacterId && characterStore.characters.length > 0) {
+      handleSelectCharacter(characterStore.characters[0]!.id);
+    }
+  },
+  reactive: false,
 });
 
 // ── Tab ──

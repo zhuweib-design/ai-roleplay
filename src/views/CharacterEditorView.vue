@@ -15,8 +15,9 @@
  * - 错误提示使用 aria-invalid + aria-describedby
  * - 保存按钮在表单未通过验证时禁用并提示原因
  */
-import { ref, computed, watch, onMounted, nextTick, useTemplateRef } from 'vue';
+import { ref, computed, watch, nextTick, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
+import { useDeepLinkId } from '@/composables/useDeepLinkId';
 import { useCharacterStore } from '@/stores/character';
 import { useLorebookStore } from '@/stores/lorebook';
 import { useSettingsStore } from '@/stores/settings';
@@ -261,33 +262,35 @@ function loadCharacter(c: UICharacter) {
   isDirty.value = false;
 }
 
-onMounted(() => {
-  if (props.id) {
-    const found = characterStore.characters.find((c) => c.id === props.id);
-    if (found) {
-      loadCharacter(found);
-      return;
-    }
-    // 找不到不等于角色不存在：深链进来时角色库可能还没从存档读完（`characters` 初值
-    // 只有 mock 种子）。原来这里直接报"角色不存在"并把用户弹回列表——新建的角色
-    // 在 Safari 下永远打不开。等读完再判一次；仍然找不到才是真的不存在。
-    // 同步分支保留是必须的：改成一律异步会让表单先渲染一帧"新建态"（渐变头像段闪一下），
-    // 那个回归由 tests/views/character-editor-field-wiring.test.ts 抓着。
-    void characterStore.ensureLoaded().then(() => {
-      const later = characterStore.characters.find((c) => c.id === props.id);
+// 同步快速路径：角色已在内存里就直接填表——改成一律异步会让表单先渲染一帧"新建态"
+// （渐变头像段闪一下），那个回归由 tests/views/character-editor-field-wiring.test.ts 抓着。
+// 找不到不等于角色不存在：深链进来时角色库可能还没从存档读完（`characters` 初值
+// 只有 mock 种子）。等读完再判一次交给 useDeepLinkId；仍然找不到才是真的不存在。
+const presetCharacter = props.id
+  ? characterStore.characters.find((c) => c.id === props.id)
+  : undefined;
+if (presetCharacter) {
+  loadCharacter(presetCharacter);
+} else if (props.id) {
+  useDeepLinkId({
+    key: 'id',
+    load: () => characterStore.ensureLoaded(),
+    onResolved: (id) => {
+      const later = characterStore.characters.find((c) => c.id === id);
       if (!later) {
         showToast('error', t('charEdit.notFound'));
         setTimeout(() => void router.replace({ name: 'character-list' }), 800);
         return;
       }
       loadCharacter(later);
-    });
-    return;
-  }
+    },
+    reactive: false,
+  });
+} else {
   // 新建模式：空表单
   form.value = emptyForm();
   isDirty.value = false;
-});
+}
 
 // 标记表单被修改
 watch(
