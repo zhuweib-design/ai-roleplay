@@ -39,6 +39,11 @@ export const useChatSessionStore = defineStore('chat-session', () => {
   async function loadAllSessions(characterIds: string[]): Promise<void> {
     const adapter = storageAdapterHolder.current;
     if (!adapter) return;
+    // 装载不是发生在真空里（M14-b，M9-a 同形状）：boot 之外这个函数还会在角色数量
+    // 变化时被 CharacterList 再次触发，窗口内 sessions 并不空——persistChat 会整条
+    // 替换并推进 updatedAt，置顶/归档/改名原地改但不推进 updatedAt，删除直接移除。
+    // 磁盘读发生在窗口开始前后皆有可能，整表替换会把窗口内的动作连同读旧值一起盖掉。
+    const before = new Map(sessions.value.map((s) => [s.id, s]));
     const all: Chat[] = [];
     for (const cid of characterIds) {
       try {
@@ -48,8 +53,25 @@ export const useChatSessionStore = defineStore('chat-session', () => {
         /* 单角色加载失败不影响其余 */
       }
     }
-    all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    sessions.value = all;
+    // 合并规则：
+    // - 窗口内被删除的会话（装载前在内存、现在不在）不许从磁盘快照里复活；
+    // - 其余磁盘条目先收下（含窗口内新建后落盘的）；
+    // - 装载开始前就存在、窗口结束时仍在内存里的 id 以内存版本为准——persistChat 的
+    //   updatedAt 一定不早于磁盘读值，置顶/归档/改名这类不推进 updatedAt 的原地改动
+    //   靠整条取内存找回；
+    // - 内存有而磁盘读里没有的 id 是窗口内新建（或其角色的读取已掠过）的会话，保留。
+    const alive = new Set(sessions.value.map((s) => s.id));
+    const merged = all.filter((s) => !(before.has(s.id) && !alive.has(s.id)));
+    for (const s of sessions.value) {
+      const i = merged.findIndex((x) => x.id === s.id);
+      if (i >= 0) {
+        if (before.has(s.id)) merged[i] = s;
+      } else {
+        merged.push(s);
+      }
+    }
+    merged.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    sessions.value = merged;
   }
 
   /**
