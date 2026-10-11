@@ -491,6 +491,23 @@
 - 本批实测：vitest 3921 用例 3918 通过 / 3 跳过（198 文件 196 通过 / 2 跳过），`eslint src tests e2e scripts` 0 error / 8 warning，`typecheck` 退出码 0；其余十项门禁在 366faf5 上全 0，覆盖率 80.36% 语句（阈值 78%）。
 - 一处需要决策的现场事实（非本批改动）：并行会话新增的未跟踪目录 `docs/design/ai-chat-ui-redesign/`（静态原型自带 js）会让 `npm run lint`（= `eslint .`）报 23 条 `no-undef`/未用变量。它现在还没进 git，所以已推的 366faf5 的 CI 不受影响；一旦提交，CI 的 lint 门会红——要么该目录自我忽略（`.gitignore` 或 eslint ignores），要么把那几个 js 补上全局声明。
 
+### 变更（UX/IA M15-b：静态原型请出 lint 范围，并钉住"docs 里不许藏产品代码"）
+- `eslint.config.js` 忽略 `docs/**`。起因是实测事实：`eslint .` 扫到 414 个文件、其中 11 个来自 docs，报出的 23 条错误全在并行会话新建的原型目录 `docs/design/ai-chat-ui-redesign/`（自带 9 个演示 js/mjs）——原型不是产品源码，被当成产品源码扫了。
+- 新增 `tests/tooling/lint-scope.test.ts` 两条断言把两头钉住：ESLint 自己的 `isPathIgnored` 判 docs 探针被忽略而 `src`/`tests`/`scripts` 没被误伤；`git ls-files docs` 里不允许出现被跟踪的 js/mjs/ts/vue（一旦出现即红，逼一次"这是不是产品代码"的判断）。探针求值放在模块加载阶段（首次调用要连插件一起装配置，隔离 1.2s、全量并发下撞破 5s 默认超时），未放宽超时。
+- 注入实测：撤掉 `'docs/**'` ⇒ 第一条红；`ls-files` 目标换成 scripts ⇒ 第二条红。还原后 `npm run lint` 退出码 0（0 error / 8 warning）。
+
+### 变更（UX/IA M15-c：全量墙钟 5.8m→8.5m 的归因，以及 CI 分片为什么这批不动）
+- 直接 A/B（同机同 dev server、msedge、`--repeat-each`，逐个摘掉等待）实测：E22 落盘轮询约 +0.2s、版本页 `toBeEnabled` ≈0、开框轮询 ≈0、扫描层 `gotoRendered`（11 条路由）约 +0.2s，四处合计半秒量级。全量对齐（run7→run8，155 条）中位差 +0.6s、|差|>5s 的 27 条里 19 慢 8 快，最大单条 +23.7s 与加固无关 ⇒ **墙钟增长不能归因给这些等待**，同一条扫描用例隔离 9 秒、全量 34 秒，由并发与本机其它会话主导。
+- 分片权重实测（用 run8 时长给 `--shard=i/4` 加权）：片1 507s / 片2 390s / 片3 515s / 片4 156s，最慢/最快 3.3x；msedge 的 a11y 全量扫描 + 7 条 contrast-axe 全在片1，webkit 扫描全在片3。Playwright 的 `--shard` 只按条数切不看权重。本批**不改分片**：CI 是 1 worker，与本地 4 worker 两种形状，没有 CI 侧时长就动分片等于猜（登记未做）。
+
+### 新增（UX/IA M15-d：接通第一条新深链 `?group=`，归档页跳转改由 URL 携带目标）
+- `stores/group-chat.ts` 补 `ensureLoaded()`（`loaded` 标志 + `loadInFlight` 去重），`App.vue` 启动链的群列表改走它，避免启动与深链各读一遍库。
+- `GroupChatView.vue` 接 `useDeepLinkId({ key: 'group', load: ensureLoaded })`：读完命中就选中，**读完仍没有这个群就明确提示"群聊不存在"**，不含糊切到别的群；`selectGroup` 用 `router.replace` 把群 id 写回地址栏，刷新与分享都带得住。
+- `ArchivesView.vue` 的「前往群聊」原来是 `router.push({ name: 'group' })` 之后命令式 `selectGroup(id)`——目标只活在内存里，刷新即丢。改为 `/group?group=<id>`，由群聊页在闸门之后自己认。
+- 测试：`tests/views/deep-link-group-query.test.ts` 4 条、`e2e/ux-deep-link-group.spec.ts` 4 条（真实浏览器；造数刻意让深链指向 updatedAt 较旧的群，否则"没等住就自动选中最新一条"这种退化看不出来）。注入两组必红：视图 `load` 换成不等闸门 ⇒ 单测红；归档页改回命令式选中 ⇒ e2e 红在地址栏断言。
+- 守卫随真实源码更新：`GATED_VIEWS` 由三个视图变四个，M14-a 文档里"三个视图"的说法以 M15-d 一节为准更正。
+- 第九轮全量 E2E：177 通过（7.2m，退出码 0），比上一轮多的 4 条就是群深链用例；墙钟没涨，与 M15-c 的结论一致。全量 vitest 3924 通过 / 3 跳过（200 文件：198 通过 / 2 跳过），`eslint .` 0 error，`typecheck` 退出码 0。
+
 
 
 

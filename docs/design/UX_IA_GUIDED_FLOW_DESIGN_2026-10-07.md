@@ -2552,3 +2552,69 @@ M14-a 的守卫只看文件里有没有 `useDeepLinkId(`，留着一个具体的
 | 其余十项门禁（schema/snapshot/i18n:strict/css/contrast+self-test/csp/ort/eval/audit/build+coverage） | 退出码均 0，实测于 366faf5（M15-a 只动了一个测试文件与一行注释，src 运行时未变）；覆盖率 All files 80.36% 语句 / 阈值 78% |
 
 | 未做（诚实边界） | ① `URLSearchParams` / `location.search` 直读记录 id 的写法不在扫描形状里——已核实 `src/views` 与 `src/components` 里今天没有这种写法（仅有的两处 `URLSearchParams` 是出站请求拼参，不在扫描目录）；② 括号配对遇到实参字符串里含 `)` 时会提前截断，截断方向是**保守**的（可能多报"没接住"，不会把没接的报成接了），这条只做了代码走读，没单独注入验证；③ CharacterEditorView 的同步快速路径仍用 `props.id` 直查内存，守卫看不见它，仍是 M14-a 登记的那条例外。 |
+
+### M15-b 原型目录请出 lint 范围，并钉住"docs 里不许藏产品代码"
+
+现场事实：并行会话往 `docs/design/ai-chat-ui-redesign/` 放了整套静态原型（自带 9 个演示 js/mjs）。`npm run lint` 是 `eslint .`，于是仓库"凭空"多 23 条 `no-undef`/未用变量。实测对照：`eslint .` 扫到 414 个文件，其中 **11 个来自 docs**，而报错的 5 个全在 docs——原型不是产品源码，被当成产品源码扫了。
+
+只忽略 `docs/**` 有个坏味道：将来真产品脚本写进 docs 就永远不被 lint。所以 `tests/tooling/lint-scope.test.ts` 两条断言把两头都钉住——① 用 ESLint 自己的 `isPathIgnored` 判 docs 探针被忽略、`src` / `tests` / `scripts` 没被误伤；② `git ls-files docs` 里不允许出现被跟踪的 js/mjs/ts/vue，一旦出现就红，逼一次"这是不是产品代码"的判断。
+
+探针求值放在**模块加载阶段**而不是用例体内：首次 `isPathIgnored` 会连插件一起装配置，隔离 1.2 秒、全量并发下撞破 5 秒默认超时（与 M15-c 里 snapshot-restore 同一形状）。没放宽超时。
+
+| 注入 | 结果 |
+|---|---|
+| 撤掉 eslint 里的 `'docs/**'` | 第一条红（搬去模块加载后仍是用例级红，不是文件级报错） |
+| 把 `git ls-files` 的目标从 docs 换成 scripts | 第二条红 |
+
+### M15-c 全量墙钟从 5.8m 涨到 8.5m，归因结论是"不是那四处等待"
+
+问的是加固的代价，答案是代价几乎不在加固上。两组实测：
+
+**A. 全量对齐（run7 加固三条落地前 → run8 四条齐）**：按标题对齐 155 条，中位差 **+0.6s**，净增 +209s；|差|>5s 的有 27 条，**19 条变慢、8 条变快**，最大单条 `ux-prompt-trace`(E02) +23.7s —— 与四处加固毫无关系。
+
+**B. 同机同 dev server 的直接 A/B**（msedge，`--repeat-each`，把每处等待逐个摘掉再跑）：
+
+| 加固 | 带着跑 | 摘掉跑 | 实测成本 |
+|---|---|---|---|
+| E22 落盘轮询 | 5.2 / 4.9 / 4.1s | 4.8 / 4.7 / 3.3s | 约 +0.2s |
+| 版本页 `toBeEnabled` | 6.5 / 5.5 / 2.9s | 6.2 / 5.1 / 3.0s | ≈0 |
+| 开框轮询 `openApiGatedDialog` | 6.0 / 3.7 / 5.1s | 6.0 / 3.7 / 4.7s | ≈0 |
+| 扫描层 `gotoRendered`（11 条路由） | 9.2 / 9.7s | 8.9 / 9.1s | 约 +0.2s |
+
+四处合计在**半秒量级**。同一条扫描用例隔离跑 9 秒、在全量里 34 秒——墙钟差异由并发与本机其它会话的负载主导，不是这些等待。
+
+**CI 分片怎么判**：用 run8 的实测时长给 `--shard=i/4` 逐片加权 ⇒ 片1 507s、片2 390s、片3 515s、片4 156s（有 3 条没匹配上时长，实际略高），最慢/最快 **3.3 倍**。形状很清楚：msedge 的 a11y 全量扫描 + 7 条 contrast-axe 全落在片1，webkit 的扫描全落在片3。Playwright 的 `--shard` 只按**用例条数**切、不看权重，要压平得把重文件拆开或自写分配。
+
+**这批不动分片**：CI 是 `workers: 1`，与本地 4 worker 是两种形状，没有 CI 侧实测时长之前改分片等于猜。等这一版 CI 的四片时长回来再决定（登记在未做）。
+
+### M15-d 接通第一条新深链 `?group=`：让"下一个加深链的人"这条路真跑一遍
+
+M15-a 的清单里 `group / book / lorebook / doc / document / event / scene` 七个键**项目里还没有对应深链**，守卫对它们只是断言。挑 `?group=` 真的接一条，目的是把"新写一个人接新键"这条路走通一次。
+
+改的是四段：
+
+1. `stores/group-chat.ts` 补 `ensureLoaded()`（`loaded` 标志 + `loadInFlight` 去重，`loadFromStorage` 落地时置位），与 character store 的闸门同形。
+2. `App.vue` 启动链里群列表改走 `ensureLoaded()`，避免启动与深链各起一次读库。
+3. `GroupChatView.vue` 用 `useDeepLinkId({ key: 'group', load: () => groupStore.ensureLoaded(), onResolved })`：命中就选中，**读完了仍没有这个群就说"群聊不存在"**，不含糊切到别的群（M12-a 那类"悄悄换目标"的形状在这里不再可能）。同时 `selectGroup` 用 `router.replace` 把群 id 写回地址栏，刷新与分享都带得住。
+4. `ArchivesView.vue` 的「前往群聊」原来是 `router.push({ name: 'group' })` 之后**命令式** `selectGroup(id)` —— 目标只活在内存里，刷新即丢、也不能分享。改成把目标写进 URL：`/group?group=<id>`，由群聊页在闸门之后自己认。
+
+测试：`tests/views/deep-link-group-query.test.ts` 4 条（闸门去重、等读完才选中并写回地址栏、找不到必须提示、无深链时视图不自己起读库），`e2e/ux-deep-link-group.spec.ts` 4 条真实浏览器（归档页入口写进 URL、刷新后仍在该群、指向不存在的群给可见提示、页面内换群地址栏跟着走）。e2e 造数刻意让**深链指向较旧的那个群**（列表按 updatedAt 倒序），否则"没等住就会自动选中最新一条"这种退化看不出来。
+
+| 注入 | 结果 |
+|---|---|
+| 视图的 `load` 换成不等闸门的 `Promise.resolve()` | 单测两条红（"深链没落到目标群上"） |
+| 归档页改回"push 后再命令式 selectGroup"（URL 不带目标） | e2e 入口那条红在地址栏断言 |
+
+守卫随之更新：`GATED_VIEWS` 从三个视图变四个（M14-a 文档里"三个视图"的说法以本节为准更正），而 `GroupChatView` 里 `route.query.group !== id` 这一直读之所以合法，正是因为 composable 的 `key` 字面量就是 `group` —— 这是 M15-a 那条"按键核对"在真实源码上的第一次生效。
+
+| 未做（诚实边界） | ① 分片调整：M15-c 已量到 3.3x 的极差，但 CI 侧时长一条都没测过，本批不动；② `?group=` 还没接进"返回来源页"的 `from` 契约（归档页跳过去不带 `from`，回路仍靠浏览器返回键）；③ 本地 A/B 每条只重复 2–3 次，没做统计显著性，只足以判断"成本在半秒量级"这个数量级结论；④ `docs/dev/{CODE_REVIEW_2026-09-28,OPTIMIZATION_DEMO,QUICK_START}.md` 里那 6 处 `groupChatStore.loadFromStorage()` 片段现在与启动链不符（本批改成 `ensureLoaded()`）。这三份都是**带日期的评审/演示记录**而非当前 API 契约，按"不改写历史文档"的既有约定留着，此处登记为已知失真。 |
+
+**验证证据（M15-b / M15-c / M15-d，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npx vitest run` | 200 文件：198 通过 / 2 跳过；3927 用例：**3924 通过 / 3 跳过**（比 M15-a 多 3 条：群深链单测 4 条里新增、lint 作用域 2 条） |
+| `npm run lint`（= `eslint .`，全仓） | 退出码 0，**0 error / 8 warning**（M15-b 之后原型目录不再进 lint） |
+| `npm run typecheck` | 退出码 0 |
+| 全量 E2E（第九轮，M15-d 之后） | **177 passed（7.2m），退出码 0**——上一轮是 173 条 8.5m，新增的 4 条就是群深链；墙钟没涨，与 M15-c 的"等待成本在半秒量级、墙钟由并发负载主导"一致 |
+| 故障注入 | ① eslint 去掉 `docs/**` ⇒ lint-scope 第一条红；② `ls-files` 目标换成 scripts ⇒ 第二条红；③ 视图 `load` 不等闸门 ⇒ 群深链单测两条红；④ 归档页改回命令式选中 ⇒ e2e 入口那条红在地址栏断言；⑤ 守卫退回"全文抓 key:" ⇒ 逐键覆盖与反证两条红（M15-a 已记） |
