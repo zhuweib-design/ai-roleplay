@@ -742,3 +742,19 @@
 - 新增 `tests/tooling/e2e-shard-groups.test.ts` 4 条：磁盘上每个 spec 恰好属于一组、每组非空且组数与矩阵一致、组间权重极差 ≤1.3、组文件确为脚本生成。这条覆盖断言当场抓到一个真漏洞：生成器最早把 project 名写成 `\w+`，带连字符的 `mobile-msedge`/`mobile-functional-msedge` 整块不进权重，两个 mobile spec 谁都不属于 ⇒ CI 会静默不跑它们。
 - 核对：四组 `--list` 条数 23+61+39+54 = 177（不重不漏）；组 1 按 CI 同款调用真跑 `23 passed (2.8m)`；从组文件删一个 spec ⇒ 覆盖断言红，还原后 4 条全绿。CI 侧的实际墙钟仍未经真实运行验证（GitHub 那边仍是零次实跑）。
 - 本批最终门禁（与提交同版本）：全量 vitest 3932 通过 / 3 跳过（202 文件：200 通过 / 2 跳过），`npm run lint`（= `eslint .`）退出码 0（0 error / 8 warning），`npm run typecheck` 退出码 0。
+
+### 变更（UX/IA M17-a：分片权重加过期门禁与 --check 复核）
+- `scripts/e2e-shard-groups.mjs` 现在把元数据一起写进 `e2e/shard-groups.mjs`：`MEASURED_AT`（跑数 ISO 时间）、`SOURCE_COMMIT`、`MEASURED_CASES`/`MEASURED_TOTAL_SEC`、逐 spec 的 `SPEC_WEIGHTS`，并导出 `groupWeights()`（按记录权重现算分组极差）。新增 `--check=<报告>`：用一份新跑数复核**现有**分组，极差 >1.3 或出现权重表里没有的 spec 即退码 1，不写文件。
+- `tests/tooling/e2e-shard-groups.test.ts` 从三条扩到六条（成员都得有记录权重且权重表不含已消失文件、现算极差 ≤1.3、`MEASURED_AT` 距今 ≤30 天）。四处注入各红一次；`--check` 正反两面都验：同一份跑数 1.003x 退码 0，把 a11y 扫描 18 行时长 ×3 后 2.93x 退码 1 并打印重生成命令。
+
+### 新增（UX/IA M17-b：接通第二条新深链 `?book=`，两个只跳页面不跳那一本的入口补全）
+- `stores/lorebook.ts` 补 `ensureLoaded()`（`loaded` 标志 + `loadInFlight` 去重），`App.vue` 启动链改走它。世界书是一次读全表（`loadLorebooks` 走 `getAll()` 后按 updatedAt 降序），闸门粒度即一次全量读。
+- `WorldBookView.vue` 接 `useDeepLinkId({ key: 'book' })`，**不传 `load`**：等哪个库由 M16-b 的登记表决定。命中即选中并用 `router.replace` 把书 id 写回地址栏（保留原 query，`from` 不被抹掉）；读完仍没有这本书时提示新增键 `wb.notFound`（zh/en 各一条）——该页读库完成后会默认选中第一本，"没命中"过去表现为安静打开另一本书。
+- 两个已有入口原先把手里的 id 扔掉：上下文面板 E03 那一跳（`ContextPanel.vue`）与注入痕迹 E02 那一跳（`PromptTraceSummary.vue`，`item.bookId` 就在手边）。两处都改为带 `book=<id>`，落地页打开的就是被点的那一本。
+- 测试：`tests/views/deep-link-book-query.test.ts` 4 条单测、`e2e/ux-deep-link-book.spec.ts` 3 条真实浏览器（造数让深链指向 updatedAt 较旧那本，否则分不清"命中"与"默认选中"）；E03/E02 两条既有 e2e 的断言升级为同时检查书 id 与落地高亮、回程芯片。注入：视图键名写成 `'story'` ⇒ e2e 两条红。
+- 两处自纠（都不是偶发）：① 已推送的 `d7b7cd3` 里 `new Error('深链键 … 没有登记闸门…')` 触发 `i18n:check:strict`——该门禁当时漏跑；开发者面向的抛错改用英文（扫描器豁免 logger/console 行，不豁免 new Error，这种串也不该进 UI 文案表）。② 第 11 轮全量里 `ux-prompt-trace`(E02) 双内核红，是既有断言钉住了"跳转不带 id"的旧行为，升级断言后转绿。
+- `tests/accessibility/components-axe.test.ts` 加 20s 显式余量：每条审计都要算一遍 axe 无障碍树，隔离最慢 1.0s、全量并发下 5.07s 撞破默认 5s 上限（红过一次）。与 M15 那次不同，这次成本确实在用例自己身上，所以给余量而非搬代码。
+
+### 收口（UX/IA M17：本轮门禁与跑数）
+- 第 12 轮全量 E2E（单 worker，M17 全部改动之后）：`180 passed (13.7m)`，退出码 0。权重表用这份干净跑数重生成：四组 203/202/203/202 秒，极差 1.006x，`MEASURED_CASES = 180`，35 个 spec 全覆盖（含新增的 `ux-deep-link-book.spec.ts`）。
+- 全量 vitest 3938 通过 / 3 跳过（203 文件：201 通过 / 2 跳过）；十二项静态门禁退出码全 0（上一批只跑了 lint/typecheck/单测三项，这次全套跑齐——正因如此才发现并修掉 M16-b 漏在 CI 里的 i18n 违规）。
