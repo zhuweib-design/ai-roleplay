@@ -2618,3 +2618,52 @@ M15-a 的清单里 `group / book / lorebook / doc / document / event / scene` �
 | `npm run typecheck` | 退出码 0 |
 | 全量 E2E（第九轮，M15-d 之后） | **177 passed（7.2m），退出码 0**——上一轮是 173 条 8.5m，新增的 4 条就是群深链；墙钟没涨，与 M15-c 的"等待成本在半秒量级、墙钟由并发负载主导"一致 |
 | 故障注入 | ① eslint 去掉 `docs/**` ⇒ lint-scope 第一条红；② `ls-files` 目标换成 scripts ⇒ 第二条红；③ 视图 `load` 不等闸门 ⇒ 群深链单测两条红；④ 归档页改回命令式选中 ⇒ e2e 入口那条红在地址栏断言；⑤ 守卫退回"全文抓 key:" ⇒ 逐键覆盖与反证两条红（M15-a 已记） |
+
+### M16-a `?group=` 补上回路：归档页跳转走 `from` 契约，落地页出现"返回来源页"
+
+M15-d 接通深链时登记的边界②就是这条：跳过去了，回来只能靠浏览器后退。回程其实早就有全局机制（`?from=` 白名单 + App.vue 顶部那枚 `.source-return` 芯片，M2-a 立的），缺的只是归档页没带上来源。
+
+改法是把 `router.push({ path: '/group', query: { group: id } })` 换成 `pushWithReturn({ name: 'group', query: { group: id } })`——契约本身负责写 `from`，视图不自己拼。群聊页 `selectGroup` 里那句 `router.replace({ query: { ...route.query, group: id } })` 保留原 query 再改 `group`，所以进来时带的 `from` 不会被换群动作抹掉。
+
+| 断言 | 实测 |
+|---|---|
+| e2e 从归档页点进去后 URL 带 `from`、`.source-return` 可见、点它回到 `/archives` | `e2e/ux-deep-link-group.spec.ts:83` 通过（msedge） |
+| 这条断言不是空转 | 注入：把跳转改回不带 `from` 的 `router.push` ⇒ 用例红在芯片可见性那一步（spec 第 94 行） |
+
+### M16-b 键 → 闸门登记成一张表，"键写对了、等错了库"这条路关掉
+
+M15-a 之后守卫核对到键名，还剩一个它看不见的错法：`useDeepLinkId({ key: 'group', load: () => characterStore.ensureLoaded() })` —— 时序照样对，`?group=` 却永远命不中，也不报错。这类"参数合法但指向错的库"没法用文本匹配可靠地抓（得理解代码），所以换个方向：**不让调用方挑库**。
+
+`src/core/deep-link-keys.ts` 成为唯一事实源：`DEEP_LINK_GATES = { char, id, group, story }` 每个键对应归属 store 的 `ensureLoaded()`；`DeepLinkKey` 由它派生，所以 `key` 写成没登记的名字**编译不过**；`useDeepLinkId` 的 `load` 变成可选，省略时闸门取自这张表。四个视图里三个改为不传 `load`（故事、角色编辑、群聊），版本页保留显式 `load` —— 它要等**两个**库（版本仓库 + 角色库），是这条契约里唯一合法的例外，注释里写明了。
+
+三道同时拦：登记表（运行时）、`DeepLinkKey`（编译时）、守卫（静态扫描，`M15-a` 那条升级为"composable 用的键必须登记在 `DEEP_LINK_GATES` 里"，登记表键名从源码读、不复制清单）。闸门被拒时 composable 记 `logger.error` 而不是静默不命中——静默正是 M12-a 那次难查的根因。
+
+| 注入 | 结果 |
+|---|---|
+| 把 `DEEP_LINK_GATES.group` 改指向故事库 | 运行时用例红（"等的是 groupChat 库的 ensureLoaded"不成立） |
+| 从登记表删掉 `group` | 四条同时红：守卫真实源码那条、守卫登记表那条、登记表键清单那条、运行时那条 |
+| 夹具用未登记的 `book` / `lorebook` | 守卫报"深链键 'x' 没登记在 DEEP_LINK_GATES"（负向对照已写进用例） |
+
+| 未做（诚实边界） | ① 版本页那条显式 `load` 仍靠注释与人工审查约束（它确实是两个库，登记表表达不了；要根治得让登记表支持"键 → 闸门数组"）；② 登记表只覆盖已经接线的四个键，`book / lorebook / doc / document / event / scene` 仍是清单里的候选，接线时才会被强制登记；③ `DeepLinkKey` 是编译期约束，动态拼键名（`useDeepLinkId({ key: someVar })`）绕过它——但那种写法本来就先被守卫的"key 不是字面量"报掉。 |
+
+### M16-c CI 的 e2e 四片从"按条数切"换成"按实测时长切"
+
+M15-c 只做了归因并把分片改动登记成未做，这一节把它做掉。动机不是猜的：`--shard=i/4` 按**用例条数**均分，不看每条跑多久，而 M15-c 用单 worker 全量跑数（`e2e-run10`，177 条 / 34 个 spec，串行 11.2 分钟）把每片权重算出来是 **507s / 390s / 515s / 156s，极差 3.31x** —— 墙钟由最慢那片决定，另外两台机器提前空闲。
+
+改法与护栏：
+
+- `scripts/e2e-shard-groups.mjs`：读一份 `--reporter=list` 跑数，按文件汇总时长（跨 project 相加），贪心均衡（LPT）成 N 组，写进 `e2e/shard-groups.mjs`；`--group=n` 打印该组文件清单。清单**不手抄**，权重来自实测。
+- `.github/workflows/ci.yml` 的 e2e job：`matrix.shard` → `matrix.group`，命令由 `--shard=N/4` 换成 `npm run test:e2e -- $(该组文件清单)`，artifact 名随之改成逐组唯一。
+- 结果：四组 **165 / 165 / 166 / 165 秒，极差 1.006x**（原来 3.31x）。
+- `tests/tooling/e2e-shard-groups.test.ts` 钉四条：每个磁盘上的 spec 恰好属于一组、每组非空、组数与矩阵一致、组间权重极差不超过 1.3 倍（超了就该重新生成），并断言组文件是生成的（带"请勿手改"与生成依据）。
+
+**为什么第 1 条不是洁癖**：生成器第一版把 project 名写成 `\w+`，而移动 project 叫 `mobile-msedge` / `mobile-functional-msedge` 带连字符 ⇒ 14 条用例整块没进权重表，两个 mobile spec 谁都不属于，**CI 会静默不跑它们**。是这条覆盖断言把漏洞顶出来的，不是靠人眼。
+
+| 实测 | 结果 |
+|---|---|
+| 四组 `--list` 条数 | 23 + 61 + 39 + 54 = **177**，与全量一致（不重不漏） |
+| 组 1 按 CI 同款调用真跑 | `23 passed (2.8m)`（预测权重 165s，吻合） |
+| 覆盖断言有牙 | 从组文件里删掉一个 spec ⇒ "每个 spec 恰好属于一组"红；还原后 4 条全绿 |
+| 全量单 worker 基线 | `177 passed (11.2m)`，退出码 0 —— 顺带说明 4 worker 下 8.5 分钟里，并发把单条时长抬了约 2.3 倍 |
+
+| 未做（诚实边界） | ① CI 上的实际墙钟改善还没被真实运行验证过（本批只证明"文件清单可用 + 权重算得平"，GitHub 那侧仍是零次实跑）；② 权重会随代码漂移过期，现在靠"极差 ≤1.3x"的断言兜一半，另一半要靠人工重生成，没有自动提醒；③ 单 worker 基线是在本机一次跑数上取的，CI 机器不同，绝对秒数不可比，只有"组间比例"这个用途成立。 |

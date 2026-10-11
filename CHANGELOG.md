@@ -723,3 +723,22 @@
 [0.4.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.4.0
 [0.3.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.3.0
 [0.2.0]: https://github.com/zhuweib-design/ai-roleplay/releases/tag/v0.2.0
+
+### 变更（UX/IA M16-a：`?group=` 补上回程，归档页走 `from` 契约）
+- `ArchivesView.vue` 的「前往群聊」由 `router.push({ path: '/group', query: { group } })` 改为 `pushWithReturn({ name: 'group', query: { group } })`，来源路径由契约写入，落地页顶部出现全局"返回来源页"芯片（`App.vue` 的 `.source-return`，M2-a 立的机制），不必再靠浏览器后退。群聊页换群时 `router.replace` 保留原 query，`from` 不会被抹掉。
+- e2e 断言扩到回程：进入后 `from` 在 URL 上、芯片可见、点它回 `/archives`。注入复查：改回不带 `from` 的 push ⇒ 用例红在芯片可见性那一步。
+
+### 变更（UX/IA M16-b：深链的"键 → 该等哪个库"登记成单一事实源）
+- 新增 `src/core/deep-link-keys.ts`：`DEEP_LINK_GATES`（`char`/`id` → 角色库，`group` → 群库，`story` → 故事库）、由它派生的 `DeepLinkKey` 类型、以及 `ensureDeepLinkLoaded(key)`（未登记的键直接抛错并指出去哪儿登记）。
+- `useDeepLinkId` 的 `load` 改为可选，省略时闸门取自登记表；闸门失败记 `logger.error` 而不是静默不命中。四个视图里三个不再自己传 `load`（故事、角色编辑、群聊）；版本页保留显式 `load`，因为它要等版本仓库 + 角色库两个库——这条例外在代码注释里写明。
+- 关掉的错法是 M15-a 那层还看不见的"键名写对了、等的是别的库"：时序照样成立，深链却永远命不中且不报错。现在三道一起拦：登记表（运行时）、`DeepLinkKey`（编译时）、守卫（静态扫描新增"composable 用的键必须登记在 DEEP_LINK_GATES"，登记表键名从源码读，不复制清单）。
+- 新增 `tests/core/deep-link-keys.test.ts` 3 条（未登记键抛错、登记表覆盖四个键、不传 `load` 时等的确实是登记表里那个库）。注入：`DEEP_LINK_GATES.group` 指向故事库 ⇒ 运行时用例红；从登记表删掉 `group` ⇒ 四条同时红（含守卫真实源码那条）。
+- 本批实测：全量 E2E（单 worker，覆盖 M16-a/M16-b 的接线改动）`177 passed (11.2m)`，退出码 0。
+
+### 变更（UX/IA M16-c：CI 的 e2e 四片改为按实测时长分组，替换只认条数的 --shard）
+- 新增 `scripts/e2e-shard-groups.mjs`：读一份 `--reporter=list` 跑数，按 spec 文件汇总单 worker 实测时长（跨 project 相加），贪心均衡成 N 组并生成 `e2e/shard-groups.mjs`；`--group=n` 供 CI 取该组文件清单。权重来自实测，不手抄。
+- `.github/workflows/ci.yml` 的 e2e job：`matrix.shard` → `matrix.group`，`--shard=N/4` 换成按组文件列表跑，artifact 名逐组唯一；job 上方那段分片说明同步重写（含旧结论里仍成立的部分）。
+- 实测依据：单 worker 全量 177 条 / 34 个 spec 串行 11.2 分钟（`177 passed`，退出码 0）。`--shard` 切出的四片权重是 507/390/515/156 秒（极差 3.31x，墙钟由最慢那片决定），按时长均衡后是 165/165/166/165 秒（极差 1.006x）。
+- 新增 `tests/tooling/e2e-shard-groups.test.ts` 4 条：磁盘上每个 spec 恰好属于一组、每组非空且组数与矩阵一致、组间权重极差 ≤1.3、组文件确为脚本生成。这条覆盖断言当场抓到一个真漏洞：生成器最早把 project 名写成 `\w+`，带连字符的 `mobile-msedge`/`mobile-functional-msedge` 整块不进权重，两个 mobile spec 谁都不属于 ⇒ CI 会静默不跑它们。
+- 核对：四组 `--list` 条数 23+61+39+54 = 177（不重不漏）；组 1 按 CI 同款调用真跑 `23 passed (2.8m)`；从组文件删一个 spec ⇒ 覆盖断言红，还原后 4 条全绿。CI 侧的实际墙钟仍未经真实运行验证（GitHub 那边仍是零次实跑）。
+- 本批最终门禁（与提交同版本）：全量 vitest 3932 通过 / 3 跳过（202 文件：200 通过 / 2 跳过），`npm run lint`（= `eslint .`）退出码 0（0 error / 8 warning），`npm run typecheck` 退出码 0。
