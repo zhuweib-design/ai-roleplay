@@ -283,7 +283,7 @@ onMounted(async () => {
         logger.error('Storage', '从存储加载角色失败', err);
       }),
       // W3 新增：加载世界书与群聊
-      lorebookStore.loadFromStorage().catch((err) => {
+      lorebookStore.ensureLoaded().catch((err) => {
         logger.error('Storage', '从存储加载世界书失败', err);
       }),
       groupChatStore.ensureLoaded().catch((err) => {

@@ -158,7 +158,10 @@ test.describe('注入痕迹（E02）', () => {
     await expect(bubble.locator('.trace-link')).toHaveText('E2E 痕迹世界');
 
     await bubble.locator('.trace-link').click();
-    await expect(page).toHaveURL(/\/worldbook\?from=\/chat$/);
+    // M17-b 起痕迹里的每个书名都带上自己的 id：跳过去打开的就是这一本，
+    // 而不是"世界书页恰好选中谁算谁"。原来这条只断言 `?from=`，看不见这个差别。
+    await expect(page).toHaveURL(/\/worldbook\?book=lb-e2e-trace&from=\/chat$/);
+    await expect(page.locator('.lorebook-item[aria-current="true"]')).toContainText('E2E 痕迹世界');
 
     // 痕迹随消息持久化：先证明它真的写进了 IndexedDB（而非只活在内存），再验证回读
     await expect

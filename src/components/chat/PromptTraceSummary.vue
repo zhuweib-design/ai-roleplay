@@ -41,7 +41,7 @@ const list = computed(() => props.items ?? []);
           class="trace-link"
           :data-rel-jump="`trace-${item.bookId}`"
           :aria-label="t('trace.openBook', { name: item.bookName })"
-          @click="pushWithReturn({ name: 'worldbook' })"
+          @click="pushWithReturn({ name: 'worldbook', query: { book: item.bookId } })"
         >
           {{ item.bookName }}
         </button>

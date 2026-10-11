@@ -160,8 +160,9 @@ describe('E03 生效世界书清单', () => {
     await flushPromises();
 
     expect(lorebookStore.currentLorebookId).toBe('lb-global');
-    // 跳转带 ?from= 才回得来（M2-b5 的回程契约）
-    expect(router.currentRoute.value.fullPath).toBe('/worldbook?from=/chat');
+    // 跳转带 ?from= 才回得来（M2-b5 的回程契约）；
+    // M17-b 起还带 ?book=，落地页打开的就是面板里点的那本，而不是"store 里恰好是哪本算哪本"。
+    expect(router.currentRoute.value.fullPath).toBe('/worldbook?book=lb-global&from=/chat');
   });
 
   it('聊天级世界书不列（它本来就不参与本角色注入）', async () => {

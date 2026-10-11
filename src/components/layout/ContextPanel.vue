@@ -75,7 +75,9 @@ const { pushWithReturn } = useReadinessJump();
 /** 面板里列出的每本书都可点进世界书页并选中它（E03：可见且可一跳） */
 function openLorebook(id: string): void {
   lorebookStore.selectLorebook(id);
-  pushWithReturn({ name: 'worldbook' });
+  // M17-b：把"要点开哪一本"写进 URL。原来只跳 /worldbook，落地页选中谁取决于
+  // store 里已经是什么——面板高亮的那本和页面打开的那本可能是两本，且刷新即丢。
+  pushWithReturn({ name: 'worldbook', query: { book: id } });
 }
 
 /**

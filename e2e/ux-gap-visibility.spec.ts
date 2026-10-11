@@ -128,7 +128,15 @@ test.describe('E03 上下文面板与真实注入一致', () => {
     await page.getByRole('button', { name: '选择角色 缺口验证角色' }).click();
 
     await page.locator('[data-rel-jump="ctx-world-global"]').click();
-    await expect(page).toHaveURL(/\/worldbook\?from=\/chat/);
+    // M17-b 起跳转带上"点的是哪一本"：落地页打开的就是面板里这一本，
+    // 而不是"store 里恰好选中谁算谁"，刷新/分享也带得住。
+    await expect(page).toHaveURL(/\/worldbook\?book=lb-e2e-gap-global&from=\/chat/);
+    // 落地页打开的就是面板里点的那本（不是"store 里恰好选中谁算谁"）
+    await expect(page.locator('.lorebook-item[aria-current="true"]')).toContainText('全局生效的那本书');
+    // 回程：带 from 进来就该一键回去（M2-b5 契约，M17-b 把这一跳也接上了）
+    await expect(page.locator('[data-rel-jump="source-return"]')).toBeVisible();
+    await page.locator('[data-rel-jump="source-return"]').click();
+    await expect(page).toHaveURL(/\/chat$/);
   });
 });
 

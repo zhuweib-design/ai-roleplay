@@ -65,6 +65,11 @@ export const useLorebookStore = defineStore('lorebook', () => {
   // 注入的存储适配器
   let storageAdapter: StorageAdapter | null = null;
 
+  // 世界书列表的加载闸门（深链 `?book=` 要用，见 src/composables/useDeepLinkId.ts）：
+  // loaded = "读库已经跑完一次"，loadInFlight 保证并发调用只起一次读。
+  const loaded = ref(false);
+  let loadInFlight: Promise<void> | null = null;
+
   // 最近一次错误/提示
   const lastError = ref<string | null>(null);
   const lastInfo = ref<string | null>(null);
@@ -125,7 +130,29 @@ export const useLorebookStore = defineStore('lorebook', () => {
       }
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityWorldbook'), error: err instanceof Error ? err.message : String(err) });
+    } finally {
+      loaded.value = true;
     }
+  }
+
+  /**
+   * 等世界书列表读完（还没开始就自己开始），并保证只读一遍。
+   *
+   * `/worldbook?book=<id>` 要在读库完成之后才认得出那本；没闸门时表现是
+   * "链接打开的是默认那本书"而不是报错——M12-a 在角色版本页上踩过同一形状。
+   * App.vue 的启动加载也走这里，两处不再各起一次全表读。
+   */
+  async function ensureLoaded(): Promise<void> {
+    if (loaded.value) return;
+    if (loadInFlight) return loadInFlight;
+    loadInFlight = (async () => {
+      try {
+        await loadFromStorage();
+      } finally {
+        loadInFlight = null;
+      }
+    })();
+    return loadInFlight;
   }
 
   async function persistLorebook(id: string): Promise<void> {
@@ -1259,6 +1286,8 @@ export const useLorebookStore = defineStore('lorebook', () => {
     // 依赖注入
     setStorageAdapter,
     loadFromStorage,
+    ensureLoaded,
+    loaded,
     persistLorebook,
     deleteFromStorage,
     // Lorebook 动作

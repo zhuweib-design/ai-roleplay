@@ -2046,6 +2046,7 @@ const en: Record<MessageKey, string> = {
   'wb.scopePersona': 'Persona',
   'wb.scopeChat': 'Chat',
   'wb.noDesc': 'No description',
+  'wb.notFound': 'That worldbook was not found',
   'wb.entryCount': '{count} entries',
   'wb.emptyList': 'No world books yet',
   'wb.createFirst': 'Create your first world book',

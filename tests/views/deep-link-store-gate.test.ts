@@ -142,6 +142,8 @@ export const GATED_VIEWS = [
   'CharacterVersionView.vue',
   'GroupChatView.vue',
   'StoryEngineView.vue',
+  // M17-b 接的第二条新深链：?book=
+  'WorldBookView.vue',
 ];
 
 // jsdom 环境里 import.meta.url 不是 file: URL，用 cwd 解析（vitest 固定在仓库根运行，
@@ -210,7 +212,7 @@ useDeepLinkId({ key: '${key}', load: () => Promise.resolve(), onResolved: (id) =
     }
     // 真实四个视图用的键都必须已在表上
     expect(registered, '真实源码里用到的键没都登记').toEqual(
-      expect.arrayContaining(['char', 'id', 'group', 'story'])
+      expect.arrayContaining(['char', 'id', 'group', 'story', 'book'])
     );
 
     // 反证：接了同键但那个键没登记 ⇒ 报
@@ -223,7 +225,17 @@ useDeepLinkId({ key: '${key}', load: () => Promise.resolve(), onResolved: (id) =
       }, ['char', 'group'])
     ).toEqual(["FakeView.vue → 深链键 'lorebook' 没登记在 DEEP_LINK_GATES"]);
 
-    // 默认用真实登记表：`book` 没登记，同键接住也照样报（这一层是新加的）
+    // 默认用真实登记表：`lorebook` 这个别名仍未登记，同键接住也照样报（这一层是 M16-b 加的）。
+    // 反过来说，`book` 从 M17-b 起已是真实接线的键，不能再当"未登记"的例子用。
+    expect(
+      findUngatedIdLookups({
+        'FakeView.vue': `
+        const v = route.query.lorebook as string; void v;
+        useDeepLinkId({ key: 'lorebook', onResolved: (id) => void id });
+      `,
+      })
+    ).toEqual(["FakeView.vue → 深链键 'lorebook' 没登记在 DEEP_LINK_GATES"]);
+    // 已登记的 book 用同键接住 ⇒ 不报
     expect(
       findUngatedIdLookups({
         'FakeView.vue': `
@@ -231,7 +243,7 @@ useDeepLinkId({ key: '${key}', load: () => Promise.resolve(), onResolved: (id) =
         useDeepLinkId({ key: 'book', onResolved: (id) => void id });
       `,
       })
-    ).toEqual(["FakeView.vue → 深链键 'book' 没登记在 DEEP_LINK_GATES"]);
+    ).toEqual([]);
   });
 
   it('负向对照：绕开、自 await、键错配、解构、非字面量、Tab 键干扰都要报', () => {

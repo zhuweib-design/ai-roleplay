@@ -11,6 +11,7 @@
  */
 import { useCharacterStore } from '@/stores/character';
 import { useGroupChatStore } from '@/stores/group-chat';
+import { useLorebookStore } from '@/stores/lorebook';
 import { useStoryStore } from '@/stores/story';
 
 /**
@@ -24,6 +25,7 @@ export const DEEP_LINK_GATES = {
   char: () => useCharacterStore().ensureLoaded(),
   id: () => useCharacterStore().ensureLoaded(),
   group: () => useGroupChatStore().ensureLoaded(),
+  book: () => useLorebookStore().ensureLoaded(),
   story: () => useStoryStore().ensureLoaded(),
 } as const;
 
@@ -43,7 +45,9 @@ export function ensureDeepLinkLoaded(key: string): Promise<void> {
   const gate = (DEEP_LINK_GATES as Record<string, (() => Promise<void>) | undefined>)[key];
   if (!gate) {
     return Promise.reject(
-      new Error(`深链键 "${key}" 没有登记闸门，请在 src/core/deep-link-keys.ts 的 DEEP_LINK_GATES 里补上归属 store`)
+      // 开发者面向的编程错误，不是 UI 文案：i18n 门禁（strict）豁免 logger/console 行，
+      // 但不豁免 new Error，所以这里用英文，避免为了过门把一个不该进文案表的串塞进 i18n。
+      new Error(`Deep link key "${key}" has no registered gate; add it to DEEP_LINK_GATES in src/core/deep-link-keys.ts`)
     );
   }
   return gate();

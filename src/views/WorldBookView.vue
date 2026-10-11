@@ -16,8 +16,9 @@
  * - 键盘可访问（Enter/Space 触发主操作）
  */
 import { ref, computed, watch, useTemplateRef, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useReadinessJump } from '@/composables/useReadinessJump';
+import { useDeepLinkId } from '@/composables/useDeepLinkId';
 import { useSectionMemory } from '@/composables/useSectionMemory';
 import { useLorebookStore } from '@/stores/lorebook';
 import Icon from '@/components/common/Icon.vue';
@@ -59,6 +60,7 @@ const quickFlowOpen = ref(false);
 const settingsStore = useSettingsStore();
 const characterStore = useCharacterStore();
 const router = useRouter();
+const route = useRoute();
 const { pushWithReturn } = useReadinessJump();
 
 /** 反向关系跳转：世界书 → 角色编辑（带来源，便于返回） */
@@ -349,7 +351,30 @@ function createLorebook() {
 
 function selectLorebook(id: string) {
   store.selectLorebook(id);
+  // 地址栏跟着当前书走（M17-b）：刷新/分享后仍在这本世界上，深链的另一半。
+  // 用 replace 是为了不让"连着点三本书"堆出三条历史记录；保留原 query 免得抹掉 from。
+  if (route.query.book !== id) {
+    void router.replace({ query: { ...route.query, book: id } });
+  }
 }
+
+/**
+ * 深链 `/worldbook?book=<id>`（M17-b，第二条按 URL 寻址的新深链）。
+ *
+ * 闸门由登记表给（src/core/deep-link-keys.ts 的 `book` → 世界书库）：视图只说键名。
+ * 读完了仍没有这本书时必须说出来 —— 世界书页在读库完成后会默认选中第一本，
+ * 不说就是"打开的是另一本书"，正是 M12-a 那类静默换目标的形状。
+ */
+useDeepLinkId({
+  key: 'book',
+  onResolved: (id) => {
+    if (!store.lorebooks.some((lb) => lb.id === id)) {
+      showToast('error', t('wb.notFound'));
+      return;
+    }
+    if (id !== store.currentLorebookId) selectLorebook(id);
+  },
+});
 
 function deleteLorebook(id: string) {
   deleteTargetId.value = id;

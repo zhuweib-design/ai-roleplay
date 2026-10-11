@@ -23,11 +23,12 @@ beforeEach(() => {
 
 describe('深链闸门登记表', () => {
   it('未登记的键拿不到闸门，报错里写清去哪儿登记', async () => {
+    // 用一个仍然没登记的键（M17-b 之后 book 已登记，lorebook 这个别名还没有）
     await expect(ensureDeepLinkLoaded('lorebook')).rejects.toThrow(/DEEP_LINK_GATES/);
   });
 
   it('登记表覆盖四个视图实际用到的键', () => {
-    expect(REGISTERED_DEEP_LINK_KEYS.sort()).toEqual(['char', 'group', 'id', 'story']);
+    expect(REGISTERED_DEEP_LINK_KEYS.sort()).toEqual(['book', 'char', 'group', 'id', 'story']);
     // 每个登记项都得是一个能返回 Promise 的闸门
     for (const key of REGISTERED_DEEP_LINK_KEYS) {
       expect(typeof DEEP_LINK_GATES[key]).toBe('function');

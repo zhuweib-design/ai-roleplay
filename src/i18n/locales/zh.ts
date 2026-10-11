@@ -2047,6 +2047,7 @@ export default {
   'wb.scopePersona': 'Persona',
   'wb.scopeChat': '对话',
   'wb.noDesc': '无描述',
+  'wb.notFound': '找不到那本世界书',
   'wb.entryCount': '{count} 条',
   'wb.emptyList': '暂无世界书',
   'wb.createFirst': '创建第一个世界书',
