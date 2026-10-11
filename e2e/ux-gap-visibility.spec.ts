@@ -151,6 +151,49 @@ test.describe('E22 图像 Provider 配置不再刷新即丢', () => {
     await page.locator('#model').fill('e2e-image-model');
     await page.locator('#api-key').fill('sk-e2e-persist-me');
 
+    // persistSettings 是 fire-and-forget 的 IndexedDB 写入：填完立刻 reload，
+    // 并发抢 CPU 时 IDB 事务可能排在 reload 之后，值就丢了（第 4、5 轮全量各红过一次）。
+    // 等库里真的读到新 endpoint 再刷新——等值，不等时间。
+    //
+    // 用 expect.poll 而不是 page.waitForFunction：后者在这个 Playwright 版本里
+    // **不等页面里 async 函数返回的 Promise**（Promise 对象恒为真 ⇒ 立刻满足），
+    // 负向对照实测：把判定改成 `async () => false` 用例照样绿。expect.poll 在 Node 侧
+    // await 回调，才是真闸门。
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(async () => {
+            const db = await new Promise<IDBDatabase>((resolve, reject) => {
+              const req = indexedDB.open('ai-roleplay');
+              req.onsuccess = () => resolve(req.result);
+              req.onerror = () => reject(req.error);
+            });
+            try {
+              const val = await new Promise<Record<string, unknown> | undefined>(
+                (resolve, reject) => {
+                  const req = db
+                    .transaction('settings', 'readonly')
+                    .objectStore('settings')
+                    .get('app');
+                  req.onsuccess = () => resolve(req.result as Record<string, unknown> | undefined);
+                  req.onerror = () => reject(req.error);
+                }
+              );
+              return (
+                (val?.imageGenConfig as { endpoint?: string } | undefined)?.endpoint ===
+                'https://img.example.test/v1'
+              );
+            } finally {
+              db.close();
+            }
+          }),
+        {
+          timeout: 10_000,
+          message: '设置快照里的 imageGenConfig.endpoint 一直没变成新值（写入没落地？）',
+        }
+      )
+      .toBe(true);
+
     await page.reload();
     await dismissWelcomeModal(page);
     await page.getByRole('tab', { name: '设置' }).click();
@@ -202,10 +245,17 @@ test.describe('E19 已跟踪可查', () => {
   test('进过一次版本页的角色，卡片上出现可点回的标记', async ({ page }) => {
     await seedCharacter(page, 'e2e-gap-char', '缺口验证角色');
 
-    // 版本页会在挂载时选中第一个角色并懒建仓库 ⇒ 该角色从此"已跟踪"
+    // 版本页会在挂载时选中第一个角色并懒建仓库 ⇒ 该角色从此"已跟踪"。
+    // 只等"下拉可见"不够：那不证明 selectCharacter 已跑、懒建仓库已落盘——
+    // 负载高时用例会在选中完成前就跳走，刷新后仓库不存在，标记永远出不来。
+    // 等到 select 的 value 真的变成目标角色（同步建仓已发生），再给
+    // fire-and-forget 的快照写入留出落地时间，然后才离开页面。
     await page.goto('/character-version');
     await dismissWelcomeModal(page);
-    await expect(page.locator('.cv-char-select, select').first()).toBeVisible();
+    const cvSelect = page.locator('.cv-char-select, select').first();
+    await expect(cvSelect).toBeVisible();
+    await expect(cvSelect).toHaveValue('e2e-gap-char', { timeout: 15_000 });
+    await page.waitForTimeout(300);
 
     await page.goto('/character');
     await dismissWelcomeModal(page);

@@ -97,6 +97,29 @@ async function createApiProfile(page: Page, name = 'E2E 说明接力档位'): Pr
   if (await activate.count()) await activate.first().click();
 }
 
+/**
+ * 点开"要先有 API 档位"的入口（世界书 AI 生成 / 随机生成角色）。
+ *
+ * 这两个视图的入口有前置校验：内存里还没有可用档位时只弹一条提示、不开框
+ * （`src/views/WorldBookView.vue:375`、`src/views/CharactersView.vue:190`）。
+ * 夹具刚在设置页建好档位，接着整页 reload ⇒ 档位得从 IndexedDB 读回来，
+ * 抢在读回之前点就只会看到提示（第 6 轮 msedge 红，失败快照里是
+ * alert「未配置 API 连接，请先在设置页添加 API 配置」而按钮确实点到了）。
+ * 判定用"点一下看框开没开"，等的是结果不是时间。
+ */
+async function openApiGatedDialog(page: Page, buttonName: string): Promise<void> {
+  const button = page.getByRole('button', { name: buttonName });
+  await expect
+    .poll(
+      async () => {
+        await button.click({ timeout: 3_000 }).catch(() => undefined);
+        return await page.locator('[role="dialog"]').isVisible().catch(() => false);
+      },
+      { timeout: 15_000, message: `点「${buttonName}」始终没开出确认框（API 档位一直没读回来？）` }
+    )
+    .toBe(true);
+}
+
 /** 建一个群聊（向导里挑得到成员就挑一个） */
 async function createGroup(page: Page, name: string): Promise<void> {
   await page.goto('/group');
@@ -147,7 +170,7 @@ test.describe('世界书页', () => {
   test('AI 生成世界观确认：说明讲清会生成什么', async ({ page }) => {
     await createApiProfile(page);
     await page.goto('/worldbook');
-    await page.getByRole('button', { name: 'AI 生成' }).click();
+    await openApiGatedDialog(page, 'AI 生成');
     const texts = await expectDescribedResolved(page, ['wb-generate-desc']);
     expect(texts.join(' ')).toContain('世界');
     await closeDialog(page, /AI 生成世界观/);
@@ -218,7 +241,7 @@ test.describe('角色列表页', () => {
   test('随机生成角色：说明与"要花一次调用"的提示接进了无障碍树', async ({ page }) => {
     await createApiProfile(page);
     await page.goto('/character');
-    await page.getByRole('button', { name: '随机生成角色' }).click();
+    await openApiGatedDialog(page, '随机生成角色');
     const texts = await expectDescribedResolved(page, ['char-generate-desc']);
     expect(texts.join(' ').length).toBeGreaterThan(4);
     await closeDialog(page, /生成/);

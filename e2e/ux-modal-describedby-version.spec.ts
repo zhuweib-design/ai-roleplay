@@ -162,7 +162,12 @@ test.describe('版本管理页', () => {
     await page.goto(`/character-version?char=${id}`);
     await page.waitForSelector('.page-body, [role="tabpanel"]');
 
-    await page.getByRole('button', { name: '提交' }).first().click();
+    // 页头提交按钮 :disabled="!currentCharacter"——webkit 读回角色库慢，
+    // 先渲染出的是禁用按钮，抢在读回之前点等于没点，对话框永远开不出来。
+    // （同文件冲突用例的 commitWithMessage 早就等了 toBeEnabled，这里补齐。）
+    const commitBtn = page.getByRole('button', { name: '提交' }).first();
+    await expect(commitBtn).toBeEnabled({ timeout: 15_000 });
+    await commitBtn.click();
     const texts = await expectDescribedResolved(page, ['cv-commit-desc']);
     expect(texts[0].length).toBeGreaterThan(4);
     await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { audit, expandAllCollapsed, visitTabs, settle, mainContent } from './a11y-dup-audit';
@@ -66,6 +66,28 @@ function registeredRoutes(): string[] {
   return [...src.matchAll(/path:\s*'([^']+)'/g)].map((m: RegExpMatchArray) => m[1] ?? '');
 }
 
+/**
+ * 进一条路由，并等**路由自己那块内容**渲染出来。
+ *
+ * 原来三处扫描都是 `waitForSelector('#app button')` + `settle`，这两个证据都不够：
+ * NavRail 的 15 个按钮撑住了整页计数（M13-b 就因为这个放过死路由），而 `settle`
+ * 看的是"#app button 数量连稳两次"——主内容还空着、NavRail 已稳定，它照样返回。
+ * Vite 按需编译慢时 `/`（重定向到 /chat，视图是懒 chunk）就会出现这种半帧，
+ * 第 7 轮全量报"`/` 主内容区一个可见控件都没有"就是这么来的。
+ * 判定不变（零控件仍然算违规），只是把"等"换成看对的东西。
+ */
+async function gotoRendered(page: Page, route: string): Promise<void> {
+  await page.goto(route);
+  await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
+  await expect
+    .poll(async () => (await mainContent(page)).buttons, {
+      timeout: 15_000,
+      message: `${route} 主内容区 15 秒内没出现可见控件`,
+    })
+    .toBeGreaterThan(0);
+  await settle(page);
+}
+
 test.describe('实时 DOM 的 id 与可访问名唯一性', () => {
   test('审计清单里每条路由都真的注册在 router 上', () => {
     // M13-b 实测：清单里的 `/versions` 从来没注册过，router 也没有兜底路由，
@@ -81,9 +103,7 @@ test.describe('实时 DOM 的 id 与可访问名唯一性', () => {
       const violations: string[] = [];
       const checked: string[] = [];
       for (const route of routes) {
-        await page.goto(route);
-        await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
-        await settle(page);
+        await gotoRendered(page, route);
         const res = await audit(page);
         // 只数路由自己渲染出来的东西：整页有 NavRail 的 15 个按钮兜底，
         // 拿整页计数当"渲染出来了"的证据，空白页也能过（M13-b 实测就是这样漏掉死路由的）
@@ -110,12 +130,13 @@ test.describe('实时 DOM 的 id 与可访问名唯一性', () => {
    * `closedAfter` 必须归零，否则这个用例就退化成"又扫了一遍默认视图"。
    */
   test(`展开所有折叠段后再扫一遍（共 ${ROUTES.length} 条路由）`, async ({ page }) => {
+    // 单跑实测 29–45s，四 worker 并发下 Vite 按需编译会被抢到 60s 默认上限之外
+    // （两次全量各红在"goto 等 load 超时"，都不是断言失败）——给足余量，断言不变。
+    test.setTimeout(150_000);
     const violations: string[] = [];
     const expanded: string[] = [];
     for (const route of ROUTES) {
-      await page.goto(route);
-      await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
-      await settle(page);
+      await gotoRendered(page, route);
       const { closedBefore, closedAfter } = await expandAllCollapsed(page);
       if (closedBefore === 0) {
         expanded.push(`${route}(没有收着的段)`);
@@ -201,14 +222,14 @@ test.describe('实时 DOM 的 id 与可访问名唯一性', () => {
    * 新覆盖面。点了会换路由的分段控件（/chat ⇄ /group）单列出来，不假装覆盖。
    */
   test(`点开每个 Tab 后再扫一遍（共 ${ROUTES.length} 条路由）`, async ({ page }) => {
+    // 同上：69 个 Tab 的扫描单跑就要 38–45s，并发下 60s 默认上限余量不够。
+    test.setTimeout(150_000);
     const violations: string[] = [];
     const seen: string[] = [];
     const navigatedAway: string[] = [];
     let visitedTotal = 0;
     for (const route of ROUTES) {
-      await page.goto(route);
-      await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
-      await settle(page);
+      await gotoRendered(page, route);
       const { visited, navigatedAway: away } = await visitTabs(page, route, async (label) => {
         const res = await audit(page);
         const at = `${route} · Tab「${label}」`;
