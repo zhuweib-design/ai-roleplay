@@ -16,8 +16,9 @@
  * - 键盘可访问（Tab 导航、Enter 发送、Esc 关闭弹窗）
  */
 import { ref, computed, watch, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useReadinessJump } from '@/composables/useReadinessJump';
+import { useDeepLinkId } from '@/composables/useDeepLinkId';
 import { useSectionMemory } from '@/composables/useSectionMemory';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useChatStore } from '@/stores/chat';
@@ -64,6 +65,7 @@ const chatStore = useChatStore();
 const characterStore = useCharacterStore();
 const settingsStore = useSettingsStore();
 const router = useRouter();
+const route = useRoute();
 
 // E17：成员此前在界面上只是一个名字（看得见进不去）。点成员名直接到该角色的编辑页，
 // 并带上来源，配合全局"返回来源页"让用户不会回不到群聊。
@@ -319,7 +321,32 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 function selectGroup(id: string) {
   groupStore.selectGroup(id);
   void syncRemoteTurnsForGroup(id);
+  // 地址栏跟着当前群走（M15-d）：刷新或分享后仍落回这个群，深链的另一半。
+  // 用 replace 是为了不让"连着点三个群"堆出三条历史记录。
+  if (route.query.group !== id) {
+    void router.replace({ query: { ...route.query, group: id } });
+  }
 }
+
+/**
+ * 深链 `/group?group=<id>`（M15-d）。
+ *
+ * 这是 M15-a 把守卫升级成"按键核对"之后**新接的第一条**深链：目的之一是让
+ * "下一个加深链的人"这条路径真跑一遍——群列表在读库完成前没有这个 id，
+ * 所以必须走 useDeepLinkId 的闸门，而不是在 setup 里直查 `groups`。
+ * 找不到就明确提示（不悄悄换群，理由同 M12-a 那次"写到别的角色身上"）。
+ */
+useDeepLinkId({
+  key: 'group',
+  load: () => groupStore.ensureLoaded(),
+  onResolved: (id) => {
+    if (!groupStore.groups.some((g) => g.id === id)) {
+      showToast('error', t('group.notFound'));
+      return;
+    }
+    if (id !== groupStore.currentGroupId) selectGroup(id);
+  },
+});
 
 /**
  * 拉取服务端公共回合并合并到本地历史（跨设备历史同步）。

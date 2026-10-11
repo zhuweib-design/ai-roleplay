@@ -155,10 +155,12 @@ function viewGroup(g: GroupChat) {
 
 function goToGroupChat() {
   if (!viewingGroup.value) return;
+  const id = viewingGroup.value.id;
   viewModalOpen.value = false;
-  void router.push({ name: 'group' });
-  // 选中该群聊
-  groupStore.selectGroup(viewingGroup.value.id);
+  // 原来这里是"push 到 /group，然后命令式 selectGroup"——目标只活在内存里：
+  // 刷新、分享、或群列表读得比导航慢时都会落回别的群。M15-d 改由 URL 携带目标，
+  // 群聊页用 useDeepLinkId 等读完再认（见 GroupChatView 的同名键接线）。
+  void router.push({ path: '/group', query: { group: id } });
 }
 </script>
 

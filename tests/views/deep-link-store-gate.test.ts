@@ -111,8 +111,16 @@ export function findUngatedIdLookups(sources: Record<string, string>): string[] 
   return hits.sort();
 }
 
-/** 已经接入了 composable 的视图（正则失配时这条会先红） */
-export const GATED_VIEWS = ['CharacterEditorView.vue', 'CharacterVersionView.vue', 'StoryEngineView.vue'];
+/**
+ * 已经接入了 composable 的视图（正则失配时这条会先红）。
+ * GroupChatView 是 M15-d 新接的 `?group=`，也是守卫升级成"按键核对"后第一条真接线的深链。
+ */
+export const GATED_VIEWS = [
+  'CharacterEditorView.vue',
+  'CharacterVersionView.vue',
+  'GroupChatView.vue',
+  'StoryEngineView.vue',
+];
 
 // jsdom 环境里 import.meta.url 不是 file: URL，用 cwd 解析（vitest 固定在仓库根运行，
 // 下面 files.length 的守卫兜住跑错目录的情况）

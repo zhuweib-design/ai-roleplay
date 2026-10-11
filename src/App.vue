@@ -286,7 +286,7 @@ onMounted(async () => {
       lorebookStore.loadFromStorage().catch((err) => {
         logger.error('Storage', '从存储加载世界书失败', err);
       }),
-      groupChatStore.loadFromStorage().catch((err) => {
+      groupChatStore.ensureLoaded().catch((err) => {
         logger.error('Storage', '从存储加载群聊失败', err);
       }),
       // 迭代26 新增：加载数据银行文档 (F09)
