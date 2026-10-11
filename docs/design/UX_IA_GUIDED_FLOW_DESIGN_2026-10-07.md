@@ -2443,11 +2443,13 @@ M10、M11 两轮都把"审计只看各路由的默认视图"登记成边界，�
 
 还补了 `settle(page)`：可见按钮数连续两次不变才算渲染到位。固定 sleep 在这套应用里不可靠——内容要等 store 从 IndexedDB 读回来才出现（就是 M12-a 那个时序），而"扫到半个页面"不会报错，只会少扫。
 
-#### ③ 分支推上去了，但"推上去"不等于"CI 会跑"
+#### ③ 分支推上去了，但"推上去"不等于"CI 会跑"——后来的手动 dispatch 补上了真证据
 
-`feat/ux-ia-guided-flow` 已推到 origin（`e1d0bbd`，新建分支、非强推）。推完立刻发现一件事：**功能分支的 push 不在这个 workflow 的触发器里**（只有 `push: [master, main]`、`pull_request: [master, main]`、`workflow_dispatch`）。也就是说 M12-c 那套四片矩阵至今一次都没在 GitHub 上跑过，我能给的仍然只有本地证据（切分正确 + 四片各自跑绿 + YAML 解析通过）。
+`feat/ux-ia-guided-flow` 已推到 origin（`e1d0bbd`，新建分支、非强推）。推完发现：**功能分支的 push 不在这个 workflow 的触发器里**（只有 `push: [master, main]`、`pull_request: [master, main]`、`workflow_dispatch`）。用户随后在 Actions 里手动 Run workflow 跑了这个分支，拿到 GitHub 侧第一份实跑证据（2026-10-10）：
 
-要在 GitHub 上拿到真证据只有两条路：开一个指向 master 的 PR（自动跑全套，含四片 e2e），或在 Actions 里手动 Run workflow 选这个分支。本机没有 `gh`，我也不会去翻已存的 Git 凭据调 API——这一步得你点头或动手。
+- **E2E 四片全绿**（shard 1–4），**Tauri Build 绿**——M12-c 的分片矩阵在 GitHub 上按设计工作：一片一份 artifact、互不遮蔽。
+- **Quality Gates 红，且只红在依赖审计**（Dependency audit (high and above)，5 条漏洞：@vue/server-renderer <3.5.42 high、source-map-js high、postcss-selector-parser <7.1.6 moderate）。这与此前本地观察一致：是仓库既有依赖漂移，与本分支改动无关；修复走 `npm audit fix` + eslint-plugin-vue 主版本升级，另立批次处理。
+- 结论：**分片矩阵本体在 CI 上验证通过**；审计门红属于依赖漂移，不构成对本批改动的质疑。
 
 **验证证据（M13-a/b/c，与代码同版本）**
 
@@ -2458,5 +2460,78 @@ M10、M11 两轮都把"审计只看各路由的默认视图"登记成边界，�
 | 全量 E2E（四 project，`workers=4`） | **172 passed，0 红 0 跳过**，墙钟 5.8m（167 → 172 条：Tab 层 2 条 + 路由注册 1 条 + 面板/Tab 对照各 1） |
 | 审计清单 | 21 条路径全部注册在 router 上；Tab 层扫到 69 个可见 Tab |
 | 故障注入 | 见 ①②两节 |
-| CI 分片 | 分支已推送，但功能分支 push 不触发 workflow ⇒ **GitHub 侧仍零次实跑**，需要 PR 或手动 dispatch |
+| CI 实跑（用户手动 dispatch，2026-10-10） | **E2E 四片全绿 + Tauri Build 绿**；Quality Gates 仅红在依赖审计（5 条漏洞，既有漂移，与本批无关，另行修复） |
 | 未做（诚实边界） | ① 世界书/数据银行/群聊/随机事件四个 store 没有 `ensureLoaded`，因为当前没有深链消费者；将来新增时守卫会要求补，但**守卫只看文件里有没有这个调用**，不看它是否真的覆盖了那次解析；② Tab 层不覆盖"点了会换路由"的分段控件（`/chat ⇄ /group`），用例把它们记在注释里而不是假装扫过；③ 折叠段与 Tab 两层仍不含"点开下拉菜单/悬浮浮层"的状态；④ 审计的 `#app-main` 证据要求"至少一个可见控件"，纯文本页（若将来出现）会被判成空白。 |
+
+### M13-d 依赖审计门修复：npm audit 5 条清零
+
+**为什么修**：CI 实跑（见 M13-c ③）证实 Quality Gates 只红在依赖审计。三条：@vue/server-renderer <3.5.42（high，XSS）与 source-map-js ≤1.2.1（high，DoS）都是非破坏性补丁升级；postcss-selector-parser <7.1.6（moderate，CPU 耗尽）的修复路径是把 eslint-plugin-vue 从 9.33 升到 10.11.1（主版本）。
+
+升级要点（各自都有真实代价，不是白拿的）：
+
+1. **eslint-plugin-vue v10 的 flat 配置不再自带浏览器全局声明**——升级后 lint 直接多出 127 条 `no-undef`（window/document/localStorage 等）。在 `eslint.config.js` 显式补 `globals.browser`（.vue 与 .mjs 两处作用域）。
+2. npm 对"先卸旧版再装新版"以外的解析路径会在 vue-eslint-parser 的 peer 声明上自锁（ERESOLVE 报告自相矛盾），卸了重装即解。
+3. 本机 npm 镜像（npmmirror）没有实现 audit 端点，`npm audit` 必须加 `--registry=https://registry.npmjs.org`；lockfile 的 resolved 本来就全指向官方源，升级不污染 lock。
+
+| 门禁 | 结果 |
+|---|---|
+| `npm audit --registry=https://registry.npmjs.org` | **0 vulnerabilities**（vue 3.5.40→3.5.43、source-map-js 1.2.1→1.2.2、eslint-plugin-vue 9.33→10.11.1、postcss-selector-parser 6.1.4→7.1.6） |
+| `lint` | 0 error / 6 warning（与升级前基线相同）。**后续更正**：M14-a 新增的 `tests/composables/use-deep-link-id.test.ts` 在同文件里定义多个内联桩组件，带来 2 条 `vue/one-component-per-file` warning ⇒ 本轮实测为 **0 error / 8 warning**（与 `tests/core/tip.test.ts` 等既有测试文件同形，是 warning 不是 error，未压） |
+| 其余 Quality Gates（schema/snapshot/i18n/eval/css/contrast/csp/ort/coverage/build） | 退出码均 0；`eval:manifest` 被门禁重写的 `commit`/`ranAt` 按既有约定撤销，未混进提交 |
+| 全量 vitest / 全量 E2E | 见 M14 证据表（与本批同一次收口） |
+
+### M14-a 深链闸门收进共享 composable `useDeepLinkId`，守卫升级
+
+**为什么不停在 M13-a**：M13-a 的守卫只能查"文件里有没有 `ensureLoaded(`"，等闸门的写法仍各视图各一套——版本页 onMounted 里 await、编辑页同步快速路径 + `.then` 兜底、故事页 watch + 作废检查。下一个加 `?group=` 的人多半抄错细节（比如忘了"等待期间 URL 变了要作废"）。所以把整段时序收进 `src/composables/useDeepLinkId.ts`：URL 取 id（query 优先、params 回落）、等闸门、作废检查、`reactive`/一次性两种模式、无 id 时的 `onMissing` 钩子。三个视图全部改走它：
+
+- **StoryEngineView**：`applyStoryQuery` + watch 整段换成一次 `useDeepLinkId` 调用（reactive 默认开）。
+- **CharacterVersionView**：onMounted 整段换成 composable；"无深链时自动选中第一个角色"走 `onMissing`；`?char=` 存在时自动选中不发生（与原语义一致）。
+- **CharacterEditorView**：同步快速路径保留（一律异步会让表单闪一帧"新建态"，有既有用例钉着）；"内存里找不到 → 等库读完再判"的兜底路径换走 composable（params 回落 `/character/:id/edit`）。
+
+守卫同步升级：`tests/views/deep-link-store-gate.test.ts` 从"文件里要有 `ensureLoaded(`"改成"必须出现 `useDeepLinkId(`"，并新增一条负向对照——**自己 await 闸门也算绕开**（M13-a 那版会放过这种写法）。
+
+**故障注入**：① 撤掉 composable 的作废检查 ⇒ "闸门等待期间 URL 换目标"用例红；② 编辑器/版本页/故事页三处接线由守卫与既有深链用例（版本页绑定、编辑页深链、故事深链、missing toast）兜住。
+
+### M14-b M9-c 两个遗留 store 的首帧窗口审计：events 无此形态，聊天会话索引有一个真窗口
+
+M9-c 当时明确登记"events 与聊天消息 store 未纳入审计"，本批补上，结论一好一坏：
+
+**events（内存态事件表）——形态结构性不存在，不改代码**。`stores/events.ts` 头注释与实现一致：事件只在内存维护、生命周期跟随会话，没有任何持久化路径，也没有异步加载器会在首帧填充它（全仓唯一整表赋值是设置页的手动导入，用户主动触发）。没有"稍后到达的存档"，就谈不上被盖回。
+
+**聊天消息 store——`loadAllSessions` 的整表替换是一个真实窗口，已修**。boot 路径安全（App.vue 在适配器与角色库就绪后才 await 它，且窗口期索引为空、用户无从写入；`restoreLatestSession` 也有 D-Q 守卫），但这个函数还有第二个触发点：CharacterList 对 `characters.length` 的 watch（immediate），角色数量一变就再跑一遍。那时索引非空，窗口内三类动作会被"磁盘快照整表替换"盖掉：置顶/归档/改名（原地改、不推进 updatedAt）、删除（被磁盘快照复活）、persistChat 刚同步进索引的新会话（其角色的 `loadChats` 已掠过则丢失）。修法是合并而非替换：窗口前已存在且现在仍在内存的 id 以内存版本为准，窗口内删除的不复活，内存独有的保留，最后按 updatedAt 排序。
+
+**验证证据（M13-d / M14-a / M14-b / M14-c，与代码同版本）**
+
+| 门禁 | 结果 |
+|---|---|
+| `npx vitest run` | 198 文件：196 通过 / 2 跳过；3920 用例：3917 通过 / 3 跳过 |
+| 全量 E2E（第八轮，M14-c 四条加固齐了之后） | **173 passed（8.5m），退出码 0**——七轮以来首次全绿。墙钟从第 5 轮的 5.8m 涨到 8.5m，代价是四处确定性等待（等值/等框/等主内容）取代了原来的"点下去再说"，不是断言变慢 |
+| `npm audit` / 其余门禁 | 见 M13-d 证据表，本轮未变动 |
+| `npm run lint`（本轮实测） | 退出码 0：**0 error / 8 warning**（基线 6 条 + M14-a 新测试文件的 2 条 `vue/one-component-per-file`，属既有测试夹具同形） |
+| 故障注入 | ① loadAllSessions 退回整表替换 ⇒ 窗口两条用例全红；② 撤 composable 作废检查 ⇒ 对应用例红；③ E22 落盘轮询改判一个错端点 ⇒ 用例红；④ `openApiGatedDialog` 轮询恒假 ⇒ 世界书用例红；⑤ `gotoRendered` 阈值改不可能满足 ⇒ 扫描用例红在等待处 |
+| events 审计 | 无持久化、无异步填充（代码走读 + 全仓引用核查），登记不改 |
+
+| 未做（诚实边界） | ① CharacterEditorView 的同步快速路径仍在 setup 里直查 `characters`（有意的渲染优化，找不到时自然落进 composable 的等库路径），守卫因此只要求"用 composable"，不禁止"先查一次内存"；② 合并规则假设"窗口内的内存版本比磁盘读新"——单实例本地应用成立，将来若有多端同步需求需重审；③ events 的结论是"形态不存在"，没有（也无法）写一条用例去证明不存在。 |
+
+### M14-c e2e 竞态收口：三条真因、一处假闸门，以及全量七轮的实况
+
+M13-d/M14 这批动的是产品时序（深链闸门、会话索引合并），回归全靠 e2e，所以顺手把全量 E2E 连跑了八轮。总数恒定 173 条，红的位置每轮不同：第 1 轮 170、第 2 轮 171、第 3 轮 172、第 4 轮 172、第 5 轮 171、第 6 轮 172、第 7 轮 172，**第 8 轮 173 全绿**（8.5 分钟，四条加固齐了之后；比加固前慢约 1 分钟，代价就是这些等待）。**没有一条是断言逻辑错**，全是并发下"等得不对"。逐条查到底，四类真因 + 一处我自己的假闸门：
+
+1. **E22 图像 Provider 刷新即丢**（第 4、5 轮红）。`setImageGenConfig` 里是 `void persistSettings()`——fire-and-forget 的 IndexedDB 写入，测试填完三个字段立刻 `page.reload()`，并发抢 CPU 时写事务排在 reload 之后。修法：reload 前轮询库里 `settings/app` 的 `imageGenConfig.endpoint` 真变成新值（等值，不等时间）。
+2. **版本页提交对话框（webkit）**（第 5 轮红）。页头提交按钮绑了 `:disabled="!currentCharacter"`（`CharacterVersionView.vue:441`），Safari 读回角色库慢，先渲染出的是禁用态；同文件的冲突用例早就 `toBeEnabled` 等了，describedby 用例没等。修法：补齐等待。
+3. **世界书页 AI 生成 / 随机生成角色**（第 6 轮红）。这两个入口有产品级前置校验：内存里还没有可用档位时**只弹提示、不开框**（`WorldBookView.vue:375`、`CharactersView.vue:190`）。夹具 `createApiProfile` 在设置页建好档位后整页 reload，档位得从 IndexedDB 读回来，抢在读回之前点就只会看到提示。第 6 轮失败快照里就是这个 alert（"未配置 API 连接，请先在设置页添加 API 配置"，而按钮确实点到了 `[active]`）。修法：`openApiGatedDialog` 按"点一下看框开没开"轮询，两处调用点都换过去。
+4. **a11y 扫描的"进路由"等法本身就错**（第 7 轮红：`/` 主内容区一个可见控件都没有）。三条扫描都用 `waitForSelector('#app button, #app [role="button"]')` + `settle` 当"页面渲染好了"的证据，但整页计数被 NavRail 的 15 个按钮撑住——这正是 M13-b 已经点出过的陷阱（当时用它放过过死路由）；`settle` 看的是"#app button 数量连稳两次"，主内容还空着、NavRail 已稳，它照样返回。Vite 按需编译慢时 `/`（重定向到懒加载的 /chat 视图）就是这种半帧。修法：抽 `gotoRendered`，等的是**路由自己那块内容**（`#app-main`）里出现可见控件，判定本身不变（零控件仍然算违规），三处调用点统一换。
+
+**我自己写的那条假闸门（值得记下来）**：第 1 条最初是用 `page.waitForFunction(async () => …IDB 比对…)` 实现的，看着对，实测无效——这个 Playwright 版本的 `waitForFunction` **不等页面里 async 函数返回的 Promise**，Promise 对象恒为真 ⇒ 立刻满足。揭穿它的办法是负向对照：把判定改成 `async () => false`，用例照样绿。改成 `expect.poll(async () => page.evaluate(...))`（Node 侧真的 await）后，同一条注入（比对值改成错的端点）用例立刻红在等待处。结论并入既有的"断言必须有牙"标准：**新加的等待一律先做一次"让它必须失败"的注入**。
+
+顺带一条 vitest 的：`tests/storage/snapshot-restore.test.ts` 群聊投递队列那条，用例体内 `await import('@/stores/chat')` 把整个模块的 transform 成本记进了**这一条用例的计时**——隔离 1.8 秒，全量并发下 5.07 秒撞破 5 秒默认超时。改成文件顶部静态导入（同目录其他用例本来就这么写），成本挪到文件加载阶段；**没有**顺手放宽这条的超时，保留默认值当下次的探针。全量回到 3917 通过 / 3 跳过。
+
+| 加固项 | 有牙证明 |
+|---|---|
+| E22 落盘轮询（`expect.poll`） | 比对值改成错端点 ⇒ 红在轮询处（第 195 行） |
+| `openApiGatedDialog` | 轮询恒假 ⇒ 世界书用例红 |
+| `gotoRendered`（扫描层） | 阈值改成不可能满足 ⇒ 红在 `gotoRendered` 内，报错带路由名 |
+| 版本页 `toBeEnabled` | 断言本身即真值判定，未再注入 |
+
+| 未做（诚实边界） | ① 竞态类加固只能证明"闸门会红"，不能证明"race 已消失"——第 8 轮 173 全绿是"这台机器、这个并发度、这一次没撞上"，CI 四片是另一个并发度，仍未实跑过；② 第 1 轮的 contrast-axe(dark) 与 webkit Tab 扫描红因判为负载抖动（隔离重跑均绿），未再复现即未单独加固；③ `waitForFunction` 的坑只扫了 e2e 目录（现在仅存在于注释里），vitest 侧没用过这个 API。 |
+

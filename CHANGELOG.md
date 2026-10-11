@@ -454,9 +454,36 @@
 - **修了"页面渲染出来了"这个证据本身**：原来数整页按钮，而 NavRail 常年就有 15 个，空白页也能过关；改成只数 `#app-main` 里路由自己渲染的控件。于是要挖出：审计清单里的 `/versions` 与 `/market` **从来没注册在 router 上**（真实路径是 `/character-version` 与 `/community-market`），router 又没有兜底路由 ⇒ M10–M12 三轮写的"21 条路由"实际是 19 条真 + 2 条空。清单已换成真实路径，并新增一条用例要求"清单里每条路径都必须出现在 `src/router/index.ts` 的注册表里"。
 - 新增 `settle(page)`：可见控件数连续两次不变才算渲染到位。固定 sleep 在这套应用里不可靠（内容要等 store 从 IndexedDB 读回来才出现，正是 M12-a 那个时序），而"扫到半个页面"不会报错、只会少扫。三层扫描（默认视图 / 展开折叠段 / 点开 Tab）现在都先 settle。
 
-### 变更（UX/IA M13-c：分支已推送，但推送本身不触发 CI）
-- `feat/ux-ia-guided-flow` 已推到 origin（`e1d0bbd`，新建分支、非强推）。**推完发现 CI 不会因此跑起来**：`ci.yml` 的触发器是 `push: [master, main]` / `pull_request: [master, main]` / `workflow_dispatch`，功能分支的 push 不在里面。所以 M12-c 那套四片矩阵**至今一次都没在 GitHub 上跑过**，本地证据仍然只是"切分正确 + 四片各自跑绿 + YAML 解析通过"。
-- 要拿到真实 CI 证据只有两条路：开一个指向 master 的 PR（自动跑全套含四片 e2e），或在 Actions 里手动 Run workflow 并选这个分支。两者都需要用户点头/动手；本机没有 `gh`，也没有去动用已存的 Git 凭据调 API。
+### 变更（UX/IA M13-c：分支已推送，推送不触发 CI，证据由手动 dispatch 补上）
+- `feat/ux-ia-guided-flow` 已推到 origin（`e1d0bbd`，新建分支、非强推）。推完发现 `ci.yml` 的触发器（`push: [master, main]` / `pull_request: [master, main]` / `workflow_dispatch`）不含功能分支 push，M12-c 那套四片矩阵当时在 GitHub 侧零次实跑。
+- **后续（2026-10-10）：用户在 Actions 里手动 Run workflow 跑了该分支，拿到第一份 GitHub 实跑证据——E2E 四片全绿、Tauri Build 绿，分片矩阵本体验证通过；Quality Gates 仅红在依赖审计（5 条漏洞：@vue/server-renderer <3.5.42 high、source-map-js high、postcss-selector-parser <7.1.6 moderate），属仓库既有依赖漂移，与本分支改动无关，另批修复。**
+
+### 修复（UX/IA M13-d：依赖审计门清零，npm audit 5 条 → 0）
+- `vue` 3.5.40 → 3.5.43（连带 @vue/server-renderer，high XSS）、`source-map-js` 1.2.1 → 1.2.2（high DoS）为非破坏补丁；`eslint-plugin-vue` 9.33 → 10.11.1（主版本）带起 `postcss-selector-parser` 6.1.4 → 7.1.6（moderate）。`npm audit` 归零。
+- eslint-plugin-vue v10 的 flat 配置不再自带浏览器全局声明，升级瞬间多出 127 条 `no-undef`；`eslint.config.js` 为 `.vue` 与 `.mjs` 显式补 `globals.browser`（部分 .mjs 探针会在浏览器页面取值）。
+- 两处环境事实记档：本机 npm 镜像未实现 audit 端点，`npm audit` 需 `--registry=https://registry.npmjs.org`（lockfile resolved 本就全指向官方源，不受影响）；npm 在 vue-eslint-parser 的 peer 解析上会自锁，卸旧装新即解。
+- 验证：lint 0 error（6 warning 与升级前基线相同）；Quality Gates 其余各步（schema/snapshot/i18n/eval/css/contrast/csp/ort/coverage/build）退出码均 0。
+
+### 变更（UX/IA M14-a：深链闸门收进共享 composable `useDeepLinkId`，静态守卫升级）
+- 新增 `src/composables/useDeepLinkId.ts`：URL 取 id（query 优先、params 回落）→ 等加载闸门 → 等待期间 URL 变化作废，一个组件里收拢三处视图此前各写各的时序；支持 `reactive`（watch）/一次性两种模式与 `onMissing`（无深链时的默认选中路径）。
+- StoryEngineView（`?story=`）、CharacterVersionView（`?char=`，自动选中走 `onMissing`）、CharacterEditorView（`/character/:id/edit` 的等库兜底；同步快速路径有意保留，避免表单闪一帧"新建态"）全部改走 composable。
+- 守卫 `tests/views/deep-link-store-gate.test.ts` 从"文件里要有 `ensureLoaded(`"升级为"必须出现 `useDeepLinkId(`"，新增负向对照：自己 await 闸门也算绕开。
+- 新增 composable 单测 6 条（含"闸门悬着时换目标，旧解析必须作废"）；故障注入：撤作废检查 ⇒ 对应用例红。
+
+### 修复（UX/IA M14-b：M9-c 遗留两处首帧窗口审计——events 无此形态；聊天会话索引装载改合并）
+- `stores/events.ts` 审计结论：事件纯内存、无持久化、无异步填充（唯一整表赋值是设置页手动导入），M9-a/M9-b 的"写入被存档盖回"形态结构性不存在，不改代码（走读 + 全仓引用核查，登记于设计文档）。
+- `stores/chat-session.ts` 的 `loadAllSessions` 原为整表替换：boot 路径安全（适配器就绪后才 await、窗口期索引为空），但 CharacterList 在角色数量变化时会再次触发，此时窗口内置顶/归档/改名（不推进 updatedAt）、删除（被磁盘快照复活）、persistChat 刚进索引的新会话都可能被盖掉。改为合并：窗口前已存在且仍在内存的 id 以内存版本为准、窗口内删除的不复活、内存独有的保留。
+- 新增 `tests/stores/chat-session-load-window.test.ts` 2 条（挂起 loadChats 造出真实窗口）；故障注入：退回整表替换 ⇒ 两条全红。
+
+### 修复（UX/IA M14-c：e2e 三条真竞态、一处假闸门，vitest 一条被计时冤枉的用例）
+- E22 图像 Provider：`setImageGenConfig` 走 `void persistSettings()`（fire-and-forget 的 IndexedDB 写），用例填完立刻 `page.reload()`，并发下写事务排在 reload 之后 ⇒ 值丢。改为 reload 前轮询库内 `settings/app` 的 `imageGenConfig.endpoint` 到新值。
+- 版本页提交对话框（webkit）：页头提交按钮 `:disabled="!currentCharacter"`，Safari 读回角色库慢，点在禁用态上等于没点；补 `toBeEnabled`（同文件冲突用例本来就有）。
+- 世界书 AI 生成 / 随机生成角色：两处入口有产品级前置校验（内存无可用档位时只弹提示不开框，`WorldBookView.vue:375`、`CharactersView.vue:190`），夹具建完档位后整页 reload，档位要从 IndexedDB 读回；失败快照证实是 alert「未配置 API 连接…」而非框没渲染。新增 `openApiGatedDialog`（按"点一下看框开没开"轮询），两处调用点换过去。
+- **假闸门教训**：第一版 E22 等待用 `page.waitForFunction(async () => …)`，这个 Playwright 版本不等页面 async 函数返回的 Promise（Promise 对象恒为真 ⇒ 立刻满足），负向对照 `async () => false` 仍绿才揭穿；改 `expect.poll` + `page.evaluate`（Node 侧 await）后同一条注入立刻红。
+- `tests/storage/snapshot-restore.test.ts` 群聊投递队列那条：用例体内 `await import('@/stores/chat')` 把整模块 transform 记进该用例计时（隔离 1.8s、全量并发 5.07s 撞破 5s 默认超时），改为文件顶部静态导入；未放宽超时，保留默认值当探针。
+- a11y 三条扫描用例的"进路由"等法本身是错的：`waitForSelector('#app button')` + `settle` 都被 NavRail 的 15 个按钮撑住（M13-b 就因为这种证据放过过死路由），Vite 按需编译慢时 `/`（重定向到懒加载的 /chat）主内容还是空的，`settle` 却因 NavRail 计数稳定提前返回 ⇒ 报"`/` 主内容区一个可见控件都没有"（第 7 轮红这条）。抽出 `gotoRendered`：等的是**路由自己那块内容**出现控件，判定不变；注入不可能满足的阈值 ⇒ 红在 `gotoRendered` 内并带路由名。
+- 全量实况：173 条总数下第 1–7 轮依次 170 / 171 / 172 / 172 / 171 / 172 / 172 通过，红的位置每轮不同且都不是断言逻辑错；四条加固齐了之后的第 8 轮 **173 全绿**（8.5 分钟，退出码 0；比加固前慢约 1 分钟，代价就是这些等待）。vitest 回到 3917 通过 / 3 跳过（198 文件：196 通过 / 2 跳过）。
+
 
 
 
