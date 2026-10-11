@@ -3,6 +3,10 @@ import tseslint from 'typescript-eslint';
 import pluginVue from 'eslint-plugin-vue';
 import globals from 'globals';
 
+// eslint-plugin-vue v10 起 flat 配置不再自带浏览器全局声明，
+// 需要在这里显式给出（否则 window/document 等全部 no-undef）。
+const browserGlobals = { ...globals.browser, Worker: 'readonly' };
+
 // ESLint 9 flat config — T-14 质量防线「代码质量/风格」层
 // 错误类(阻断): 未用变量(忽略下划线占位); type-aware 规则(no-floating-promises/await-thenable)已提升 error 强化 CI 防线
 // 风格类(仅 warn, 不阻断): 引号 / 分号 / 组件命名 等
@@ -37,6 +41,7 @@ export default [
     // extraFileExtensions 让 TS 项目服务能解析 .vue 单文件组件
     files: ['**/*.vue'],
     languageOptions: {
+      globals: browserGlobals,
       parserOptions: {
         parser: tseslint.parser,
         projectService: true,
@@ -58,9 +63,10 @@ export default [
     },
   },
   {
-    // Node 构建脚本：注入 node 全局，避免 no-undef 误报
+    // Node 构建脚本：注入 node 全局，避免 no-undef 误报；
+    // 部分 .mjs 探针会在浏览器页面上取值，顺带给浏览器全局
     files: ['**/*.mjs'],
-    languageOptions: { globals: { ...globals.node } },
+    languageOptions: { globals: { ...globals.node, ...browserGlobals } },
   },
   {
     // 类型声明文件：vue shim 标准写法允许空对象类型

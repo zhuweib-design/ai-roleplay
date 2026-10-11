@@ -61,7 +61,7 @@
     "axe-core": "^4.12.1",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.5",
-    "eslint-plugin-vue": "^9.33.0",
+    "eslint-plugin-vue": "^10.11.1",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^25.0.0",
     "pg": "^8.23.0",
