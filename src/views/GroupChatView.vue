@@ -338,7 +338,7 @@ function selectGroup(id: string) {
  */
 useDeepLinkId({
   key: 'group',
-  load: () => groupStore.ensureLoaded(),
+  // 闸门由登记表给：视图只说键名，不自己挑要等哪个库（M16-b 关掉"键对、库错"这条路）
   onResolved: (id) => {
     if (!groupStore.groups.some((g) => g.id === id)) {
       showToast('error', t('group.notFound'));

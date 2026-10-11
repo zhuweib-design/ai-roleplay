@@ -72,7 +72,7 @@ const characterStore = useCharacterStore();
  */
 useDeepLinkId({
   key: 'story',
-  load: () => store.ensureLoaded(),
+  // 闸门由登记表给（src/core/deep-link-keys.ts）：视图只说键名，不自己挑库
   onResolved: (id) => {
     if (store.stories.some((s) => s.id === id)) {
       store.selectStory(id);

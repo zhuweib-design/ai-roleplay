@@ -91,17 +91,39 @@ function composableKeys(text: string): { literals: string[]; nonLiteral: number 
 }
 
 /**
- * @param sources 文件名 → 源码
- * @returns 违规清单：`文件 → 直读但没被同键接住的记录 id 键`
+ * 登记表里真实存在的键（`src/core/deep-link-keys.ts` 的 DEEP_LINK_GATES 成员）。
+ *
+ * M16-b 起，"这个键该等哪个库"由那张表决定；视图用了没登记的键，运行时拿不到闸门。
+ * 守卫这里从源码读键名，避免测试与实现各写一份清单而悄悄漂移。
  */
-export function findUngatedIdLookups(sources: Record<string, string>): string[] {
+function registeredKeys(): string[] {
+  const src = fs.readFileSync(path.resolve(process.cwd(), 'src/core/deep-link-keys.ts'), 'utf8');
+  const body = /DEEP_LINK_GATES\s*=\s*\{([\s\S]*?)\}\s*as const/.exec(src)?.[1] ?? '';
+  const keys = [...body.matchAll(/(?:^|[\s,{])(\w+)\s*:\s*\(\)/g)].map((m) => m[1] ?? '');
+  expect(keys.length, `从 DEEP_LINK_GATES 读到 0 个键，八成是正则失配`).toBeGreaterThan(0);
+  return keys;
+}
+
+/**
+ * @param sources 文件名 → 源码
+ * @param registered 已登记的深链键（默认读真实登记表；逐键覆盖那条用例传的是"假装全都登记了"）
+ * @returns 违规清单：`文件 → 直读但没被同键接住的记录 id 键`／`文件 → 用了没登记的键`
+ */
+export function findUngatedIdLookups(
+  sources: Record<string, string>,
+  registered: string[] = registeredKeys()
+): string[] {
   const hits: string[] = [];
   for (const [file, text] of Object.entries(sources)) {
     const recordKeys = [...directUrlKeys(text)].filter(
       (k) => RECORD_ID_KEYS.has(k) && !NON_RECORD_KEYS.has(k)
     );
-    if (recordKeys.length === 0) continue;
     const { literals, nonLiteral } = composableKeys(text);
+    // M16-b：用了没登记的键 ⇒ 运行时拿不到闸门（composable 的 load 缺省要靠这张表）
+    for (const k of literals.filter((x) => !registered.includes(x))) {
+      hits.push(`${file} → 深链键 '${k}' 没登记在 DEEP_LINK_GATES`);
+    }
+    if (recordKeys.length === 0) continue;
     const ungated = recordKeys.filter((k) => !literals.includes(k));
     if (ungated.length > 0) hits.push(`${file} → ${ungated.sort().join(', ')}`);
     if (nonLiteral > 0 && ungated.length > 0) {
@@ -160,31 +182,73 @@ describe('深链必须按同一个键走 useDeepLinkId', () => {
    * "接对 ⇒ 不报""没接 ⇒ 必报"，把清单变成断言。
    */
   it('RECORD_ID_KEYS 里每个键都真的被这套判定覆盖', () => {
+    // 这一条只问"同键核对"管不管得住每个声明过的键，所以给一张"全都登记了"的假登记表；
+    // 真登记表面（M16-b）由下面那条单独的用例核对。
+    const allRegistered = [...RECORD_ID_KEYS];
     for (const key of RECORD_ID_KEYS) {
       const ungated = `const v = route.query.${key} as string; void v;`;
-      expect(findUngatedIdLookups({ 'K.vue': ungated }), `键 ${key} 没走 composable 却没被报出来`).toEqual([
+      expect(findUngatedIdLookups({ 'K.vue': ungated }, allRegistered), `键 ${key} 没走 composable 却没被报出来`).toEqual([
         `K.vue → ${key}`,
       ]);
       const gated = `${ungated}
 useDeepLinkId({ key: '${key}', load: () => Promise.resolve(), onResolved: (id) => void id });`;
-      expect(findUngatedIdLookups({ 'K.vue': gated }), `键 ${key} 已经用同键接住，不该误报`).toEqual([]);
+      expect(findUngatedIdLookups({ 'K.vue': gated }, allRegistered), `键 ${key} 已经用同键接住，不该误报`).toEqual([]);
     }
   });
 
+  /**
+   * M16-b 新加的第二层：composable 用的键必须在登记表 `DEEP_LINK_GATES` 里。
+   *
+   * 缺省闸门现在来自那张表（视图不传 `load` 时），用了没登记的键 ⇒ 运行时拿不到闸门。
+   * 光靠类型拦不住"键名来自动态拼接"这类写法，所以这里再钉一层静态的。
+   */
+  it('composable 用的键必须登记在 DEEP_LINK_GATES 里', () => {
+    const registered = registeredKeys();
+    // 登记表自己是清单的子集：登记了清单外的键说明两边漂移了
+    for (const k of registered) {
+      expect(RECORD_ID_KEYS.has(k), `登记表里的键 ${k} 不在 RECORD_ID_KEYS 清单里`).toBe(true);
+    }
+    // 真实四个视图用的键都必须已在表上
+    expect(registered, '真实源码里用到的键没都登记').toEqual(
+      expect.arrayContaining(['char', 'id', 'group', 'story'])
+    );
+
+    // 反证：接了同键但那个键没登记 ⇒ 报
+    expect(
+      findUngatedIdLookups({
+        'FakeView.vue': `
+        const v = route.query.lorebook as string; void v;
+        useDeepLinkId({ key: 'lorebook', load: () => store.ensureLoaded(), onResolved: (id) => void id });
+      `,
+      }, ['char', 'group'])
+    ).toEqual(["FakeView.vue → 深链键 'lorebook' 没登记在 DEEP_LINK_GATES"]);
+
+    // 默认用真实登记表：`book` 没登记，同键接住也照样报（这一层是新加的）
+    expect(
+      findUngatedIdLookups({
+        'FakeView.vue': `
+        const v = route.query.book as string; void v;
+        useDeepLinkId({ key: 'book', onResolved: (id) => void id });
+      `,
+      })
+    ).toEqual(["FakeView.vue → 深链键 'book' 没登记在 DEEP_LINK_GATES"]);
+  });
+
   it('负向对照：绕开、自 await、键错配、解构、非字面量、Tab 键干扰都要报', () => {
+    const allRegistered = [...RECORD_ID_KEYS];
     const offender = `
       const id = route.query.group as string;
       store.groups.find((g) => g.id === id);
     `;
-    expect(findUngatedIdLookups({ 'FakeView.vue': offender })).toEqual(['FakeView.vue → group']);
+    expect(findUngatedIdLookups({ 'FakeView.vue': offender }, allRegistered)).toEqual(['FakeView.vue → group']);
 
     // 自己 await 闸门也算绕开——M13-a 那版会放过这种写法，M14-a 起必须走 composable
     expect(findUngatedIdLookups({ 'FakeView.vue': `${offender}
-void store.ensureLoaded();` })).toEqual(['FakeView.vue → group']);
+void store.ensureLoaded();` }, allRegistered)).toEqual(['FakeView.vue → group']);
 
     // 同一份代码，真的用同一个键接住了就不再报
     expect(findUngatedIdLookups({ 'FakeView.vue': `${offender}
-useDeepLinkId({ key: 'group', load: () => store.ensureLoaded(), onResolved: (id) => void id });` })).toEqual([]);
+useDeepLinkId({ key: 'group', load: () => store.ensureLoaded(), onResolved: (id) => void id });` }, allRegistered)).toEqual([]);
 
     /**
      * M14-a 那版的洞：文件里出现过 `useDeepLinkId(` 就放行，接的是哪个键不管。
@@ -195,13 +259,13 @@ useDeepLinkId({ key: 'group', load: () => store.ensureLoaded(), onResolved: (id)
       store.lorebooks.find((b) => b.id === bookId);
       useDeepLinkId({ key: 'char', load: () => characterStore.ensureLoaded(), onResolved: (id) => void id });
     `;
-    expect(findUngatedIdLookups({ 'FakeView.vue': mismatched }), '接错键也算没接住，M14-a 那版会放过').toEqual([
+    expect(findUngatedIdLookups({ 'FakeView.vue': mismatched }, allRegistered), '接错键也算没接住，M14-a 那版会放过').toEqual([
       'FakeView.vue → book',
     ]);
 
     // 解构写法同样要抓
     expect(
-      findUngatedIdLookups({ 'FakeView.vue': 'const { scene } = route.query; void scene;' }),
+      findUngatedIdLookups({ 'FakeView.vue': 'const { scene } = route.query; void scene;' }, allRegistered),
       '解构取键的写法没被抓'
     ).toEqual(['FakeView.vue → scene']);
 
@@ -209,14 +273,14 @@ useDeepLinkId({ key: 'group', load: () => store.ensureLoaded(), onResolved: (id)
     expect(findUngatedIdLookups({ 'FakeView.vue': `
       const docId = route.query.doc as string;
       useDeepLinkId({ key: docKey, load: () => store.ensureLoaded(), onResolved: (id) => void id });
-    ` })).toEqual(['FakeView.vue → doc', 'FakeView.vue → useDeepLinkId 的 key 不是字面量，守卫无法核对键名']);
+    ` }, allRegistered)).toEqual(['FakeView.vue → doc', 'FakeView.vue → useDeepLinkId 的 key 不是字面量，守卫无法核对键名']);
 
     // Tab 定义里的 `key:` 不能被当成 composable 的键（视图里满地都是这种对象）
     expect(findUngatedIdLookups({ 'FakeView.vue': `
       const tabs = [{ key: 'doc', label: '文档' }, { key: 'history', label: '历史' }];
       void tabs;
       const docId = route.query.doc as string;
-    ` }), '无关对象里的 key 误当成闸门').toEqual(['FakeView.vue → doc']);
+    ` }, allRegistered), '无关对象里的 key 误当成闸门').toEqual(['FakeView.vue → doc']);
 
     /**
      * 括号配对只在**这一次调用的实参范围**内找 key：这里 composable 接的是 'char'，
@@ -228,7 +292,7 @@ useDeepLinkId({ key: 'group', load: () => store.ensureLoaded(), onResolved: (id)
       const tabs = [{ key: 'doc', label: '文档' }];
       void tabs;
       const docId = route.query.doc as string;
-    ` }), '别处的 key 字面量被误当成这个键的闸门').toEqual(['FakeView.vue → doc']);
+    ` }, allRegistered), '别处的 key 字面量被误当成这个键的闸门').toEqual(['FakeView.vue → doc']);
 
     const settingsLike = `
       const cat = route.query.cat;
@@ -236,6 +300,6 @@ useDeepLinkId({ key: 'group', load: () => store.ensureLoaded(), onResolved: (id)
       if (typeof cat === 'string') activeCategory.value = cat;
       void back;
     `;
-    expect(findUngatedIdLookups({ 'SettingsView.vue': settingsLike }), '分类与回程键不该被当成记录 id').toEqual([]);
+    expect(findUngatedIdLookups({ 'SettingsView.vue': settingsLike }, allRegistered), '分类与回程键不该被当成记录 id').toEqual([]);
   });
 });

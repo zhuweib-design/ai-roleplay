@@ -274,7 +274,7 @@ if (presetCharacter) {
 } else if (props.id) {
   useDeepLinkId({
     key: 'id',
-    load: () => characterStore.ensureLoaded(),
+    // 闸门由登记表给（`id` 归属角色库）
     onResolved: (id) => {
       const later = characterStore.characters.find((c) => c.id === id);
       if (!later) {

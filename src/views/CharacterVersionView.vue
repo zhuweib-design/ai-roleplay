@@ -52,6 +52,8 @@ const ensureVersionData = async (): Promise<void> => {
 };
 useDeepLinkId({
   key: 'char',
+  // 这里自己传 load 是登记过的例外：版本页要**等两个**库（版本仓库 + 角色库），
+  // 登记表只能给一个键对应一个库。其余视图都让登记表决定等谁。
   load: ensureVersionData,
   onResolved: (id) => handleSelectCharacter(id),
   onMissing: async () => {

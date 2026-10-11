@@ -10,11 +10,13 @@ import { defineComponent, h } from 'vue';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
 import { useDeepLinkId } from '../../src/composables/useDeepLinkId';
+import type { DeepLinkKey } from '@/core/deep-link-keys';
 
 type Log = string[];
 
 interface Case {
-  key: string;
+  /** M16-b 起 key 受登记表约束，夹具也用它，免得测的是一个编译不过的写法 */
+  key: DeepLinkKey;
   reactive?: boolean;
   withMissing?: boolean;
 }
