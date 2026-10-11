@@ -88,6 +88,12 @@ test.describe('群聊深链 ?group=', () => {
 
     await expect(page).toHaveURL(new RegExp(`/group\\?group=${TARGET_ID}`));
     await expect(page.locator('.group-item[aria-current="true"]')).toContainText('E2E 深链目标群');
+
+    // M16-a：跳转带上了 from，落地页要有"返回来源页"，一键能回归档列表
+    // （回路走 App.vue 的全局芯片，见 composables/useReadinessJump.ts 的 from 白名单）
+    await expect(page.locator('[data-rel-jump="source-return"]')).toBeVisible();
+    await page.locator('[data-rel-jump="source-return"]').click();
+    await expect(page).toHaveURL(/\/archives$/);
   });
 
   test('刷新后还在同一个群（目标由地址栏带住，不只活在内存里）', async ({ page }) => {

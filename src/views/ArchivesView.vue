@@ -20,6 +20,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGroupChatStore } from '@/stores/group-chat';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import Icon from '@/components/common/Icon.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
 import Avatar from '@/components/common/Avatar.vue';
@@ -31,6 +32,8 @@ import { t } from '@/i18n';
 
 const groupStore = useGroupChatStore();
 const router = useRouter();
+// 「前往群聊」用带返回路径的跳转契约（from 白名单见 composables/useReadinessJump.ts）
+const { pushWithReturn } = useReadinessJump();
 
 /** 返回对话页 */
 function goBack() {
@@ -160,7 +163,9 @@ function goToGroupChat() {
   // 原来这里是"push 到 /group，然后命令式 selectGroup"——目标只活在内存里：
   // 刷新、分享、或群列表读得比导航慢时都会落回别的群。M15-d 改由 URL 携带目标，
   // 群聊页用 useDeepLinkId 等读完再认（见 GroupChatView 的同名键接线）。
-  void router.push({ path: '/group', query: { group: id } });
+  // M16-a 再补上回路：走 pushWithReturn 的 `from` 契约，落地页自动出现"返回来源页"，
+  // 不必靠浏览器后退。
+  pushWithReturn({ name: 'group', query: { group: id } });
 }
 </script>
 
