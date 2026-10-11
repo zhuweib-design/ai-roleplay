@@ -2,6 +2,9 @@
 
 import './styles/tokens.css';
 import './styles/themes.css';
+// 结构层 token（L1，与主题无关）：只放尺度，不放颜色；单独一个文件是为了
+// 让"改名"与"换肤"两件事能被分开评审（见 docs/design/TOKEN_PILOT_2026-10-11.md）
+import './styles/tokens-structure.css';
 import './styles/base.css';
 import './styles/layout.css';
 import './styles/responsive.css';

@@ -71,37 +71,40 @@ function onChip(chip: ReadinessChip): void {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  /* 以下 6px / 5px / 3px / 7px 都落在 4px 基准尺的档位之外（尺度只有 4/8/12），
+     试点先保留字面量并登记进"尺度缺口"表——要么补一档细尺度，要么接受视觉微调。 */
   gap: 6px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 6px var(--space-3);
+  border-bottom: var(--size-border-thin) solid var(--border);
   background: var(--card);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--muted-foreground);
 }
 
 .readiness-bar.compact {
-  padding: 4px 8px;
-  gap: 4px;
+  padding: var(--space-1) var(--space-2);
+  gap: var(--space-1);
 }
 
 .readiness-summary {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-right: 4px;
+  margin-right: var(--space-1);
 }
 
 .readiness-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
+  padding: 3px var(--space-2);
+  border: var(--size-border-thin) solid var(--border);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   cursor: pointer;
+  transition: var(--transition-colors);
 }
 
 @media (hover: hover) {
@@ -112,14 +115,14 @@ function onChip(chip: ReadinessChip): void {
 }
 
 .readiness-chip:focus-visible {
-  outline: 2px solid var(--ring, var(--secondary));
-  outline-offset: 1px;
+  outline: var(--focus-ring-width) solid var(--ring, var(--secondary));
+  outline-offset: var(--size-border-thin);
 }
 
 .chip-dot {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   background: var(--muted-foreground);
 }
 

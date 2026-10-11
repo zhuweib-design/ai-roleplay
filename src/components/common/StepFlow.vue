@@ -117,23 +117,23 @@ function onKeydown(event: KeyboardEvent): void {
 .step-flow--wizard {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm, 8px);
-  margin-bottom: 4px;
+  gap: var(--gap-inline-sm);
+  margin-bottom: var(--space-1);
 }
 
 .step-flow-dot {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
+  width: var(--size-control-xs);
+  height: var(--size-control-xs);
+  border: var(--size-border-thin) solid var(--border);
+  border-radius: var(--radius-circle);
   background: var(--card-elevated);
   color: var(--muted-foreground);
   font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
 }
 
 .step-flow-dot.active {
@@ -143,10 +143,10 @@ function onKeydown(event: KeyboardEvent): void {
 }
 
 .step-flow-line {
-  width: 32px;
-  height: 2px;
+  width: var(--space-7);
+  height: var(--size-border-thick);
   background: var(--border);
-  transition: background 0.2s ease;
+  transition: background-color var(--duration-normal) var(--ease-standard);
 }
 
 .step-flow-line.active {
@@ -154,14 +154,15 @@ function onKeydown(event: KeyboardEvent): void {
 }
 
 .step-flow-label {
-  margin-left: 4px;
-  font-size: 13px;
+  margin-left: var(--space-1);
+  font-size: var(--font-size-sm);
   color: var(--foreground);
 }
 
 .step-flow--checklist {
   display: flex;
   flex-direction: column;
+  /* 6px 在 4px 基准尺上没有对应档位（尺度里有 4/8/12，没有 6）——试点登记进"尺度缺口"表 */
   gap: 6px;
   margin: 0;
   padding: 0;
@@ -171,8 +172,8 @@ function onKeydown(event: KeyboardEvent): void {
 .step-flow-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: var(--gap-inline-sm);
+  font-size: var(--font-size-sm);
   color: var(--foreground);
 }
 
@@ -181,13 +182,16 @@ function onKeydown(event: KeyboardEvent): void {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  /* 18px 同样不在控件尺寸阶（24/28/36/44）上，见尺度缺口表 */
   width: 18px;
   height: 18px;
-  border-radius: 50%;
-  background: var(--muted);
+  border-radius: var(--radius-circle);
+  /* 原来是 var(--muted)：该变量全仓无定义 ⇒ 这圈底其实一直没画出来。
+     换成 --card-elevated 是**有意的视觉变化**，试点用它说明"迁移会顺带显形死引用"。 */
+  background: var(--card-elevated);
   color: var(--muted-foreground);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
 }
 
 .step-flow-row.done .step-flow-no {
@@ -207,34 +211,36 @@ function onKeydown(event: KeyboardEvent): void {
 
 .step-flow-action {
   flex-shrink: 0;
-  /* 实测 22px 高时移动端几乎点不中（WCAG 2.2 最小目标 24×24 CSS px 都不达标） */
+  /* 实测 22px 高时移动端几乎点不中（WCAG 2.2 最小目标 24×24 CSS px 都不达标）；
+     30px 不在控件尺寸阶上，见尺度缺口表 */
   min-height: 30px;
-  padding: 4px 10px;
-  border: 1px solid var(--secondary);
-  border-radius: var(--radius-sm, 8px);
+  /* 10px 也不在阶上（4/8/12），保留字面量并登记 */
+  padding: var(--space-1) 10px;
+  border: var(--size-border-thin) solid var(--secondary);
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--secondary);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   cursor: pointer;
 }
 
 .step-flow-done {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--muted-foreground);
 }
 
 .step-flow-note {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--muted-foreground);
 }
 
 @media (max-width: 640px) {
   /* 触控目标上的字号提到 16px，避免 iOS 聚焦放大（门禁 i7 同口径） */
   .step-flow-action {
-    font-size: 16px;
-    min-height: 44px;
+    font-size: var(--font-size-lg);
+    min-height: var(--size-control-touch);
   }
 }
 
