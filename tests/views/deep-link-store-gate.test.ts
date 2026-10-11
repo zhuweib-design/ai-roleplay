@@ -1,18 +1,26 @@
 /**
- * 静态守卫：按 URL 里的记录 id 找数据的视图，必须走共享 composable `useDeepLinkId`（M14-a）
+ * 静态守卫：按 URL 里的记录 id 找数据的视图，必须走共享 composable `useDeepLinkId`，
+ * 而且**它接的键要和被直读的键是同一个**（M13-a 立，M14-a 收拢，M15-a 按键核对）
  *
  * 起因是 M12-a：版本页在角色库从 IndexedDB 读完之前就解析 `?char=`，匹配不到就退到
  * "选中第一条"，于是整条版本历史悄悄写在 mock 种子角色身上（Safari 稳定复现，
  * Chromium 只是快到来得及）。同类的 `?story=` 也是同一时刻下判断，后果是静默不选中。
  *
- * M13-a 先立过一版"文件里有没有 `ensureLoaded(`"的扫描；M14-a 把等闸门的整段时序
- * 收进 `src/composables/useDeepLinkId.ts`（取 id、等闸门、等待期间 URL 变化作废），
- * 守卫随之升级：出现"URL 键长得像记录 id"却没有 `useDeepLinkId(` ⇒ 红——
- * 不允许绕开 composable 自己 await。
+ * 守卫跟着事实走了三层：
+ * - M13-a：文件里要有 `ensureLoaded(`。被 M14-a 否掉——自己 await 也算绕开闸门时序。
+ * - M14-a：文件里要有 `useDeepLinkId(`。这层仍然有个洞：**它只看"出现过"**，于是
+ *   "读了 `?book=`，却用 `useDeepLinkId({ key: 'char' })` 接另一个键"照样放行，
+ *   而 `?group=` `?doc=` 这些还没人用的键，一旦用错就完全没人管。
+ * - M15-a：按键核对。直读的记录 id 键必须出现在某个 `useDeepLinkId(` 调用的 `key:`
+ *   字面量里；`key` 写成变量（守卫看不见键名）也算违规。
  *
- * 两条反证保证这条守卫不是空转：
- * - 现场喂一段没有走 composable 的源码，扫描器必须报出来；接上后必须不报；
- * - 扫描器必须在真实源码里真的看到那三个已接入的视图（看不到就是正则失配）。
+ * 一个必须处理的干扰：视图里满地是 `{ key: 'history', label: … }` 这种 Tab 定义，
+ * 全文抓 `key:` 会把它们当成 composable 的键而误放行，所以 `key` 只在**括号配对出来的
+ * 那次调用实参范围内**取。
+ *
+ * 反证（都实测过会红）：绕开 composable、自己 await、键名错配、解构写法、key 非字面量、
+ * Tab 键干扰；另外对 `RECORD_ID_KEYS` 里全部十个键逐个跑一遍"接对不报 / 接错必报"，
+ * 免得清单写了 `book` 却只有 `char` 真的被测过。
  */
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
@@ -35,19 +43,69 @@ const RECORD_ID_KEYS = new Set([
 /** 这些键不是记录 id（`cat` 是静态分类、`from` 是回程路径），不该被误伤 */
 const NON_RECORD_KEYS = new Set(['cat', 'from', 'q', 'lang']);
 
+/** 源码里"直接从 URL 取来的键名"：点号、方括号字符串、解构三种写法 */
+function directUrlKeys(text: string): Set<string> {
+  const keys = new Set<string>();
+  for (const m of text.matchAll(/route\.(?:query|params)\.([A-Za-z_]\w*)/g)) keys.add(m[1] ?? '');
+  for (const m of text.matchAll(/route\.(?:query|params)\[\s*['"](\w+)['"]\s*\]/g)) keys.add(m[1] ?? '');
+  // const { char, group } = route.query —— 键名在花括号里，不在 route.query.X 形状里
+  for (const m of text.matchAll(/(?:const|let)\s*\{([^}]*)\}\s*=\s*route\.(?:query|params)/g)) {
+    for (const raw of (m[1] ?? '').split(',')) {
+      const name = raw.trim().split(/[:\s]/)[0];
+      if (name) keys.add(name);
+    }
+  }
+  return keys;
+}
+
+/**
+ * 每次 `useDeepLinkId(` 调用声明的键。
+ *
+ * 只看括号配对出来的那段实参：全文抓 `key:` 会把 `{ key: 'history', label: … }`
+ * 这类 Tab 定义也算进来，于是"根本没接这个键"能被一行无关的 Tab 骗成"接了"。
+ */
+function composableKeys(text: string): { literals: string[]; nonLiteral: number } {
+  const literals: string[] = [];
+  let nonLiteral = 0;
+  for (const m of text.matchAll(/useDeepLinkId\s*\(/g)) {
+    const open = (m.index ?? 0) + m[0].length - 1;
+    let depth = 0;
+    let end = open;
+    for (let i = open; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '(') depth++;
+      else if (ch === ')') {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    const callText = text.slice(open, end + 1);
+    const km = /(?:^|[\s,(])key\s*:\s*['"]([^'"]+)['"]/.exec(callText);
+    if (km) literals.push(km[1] ?? '');
+    else nonLiteral++; // 没有字面量 key：要么写成变量（看不见键名），要么根本没写
+  }
+  return { literals, nonLiteral };
+}
+
 /**
  * @param sources 文件名 → 源码
- * @returns 违规清单：`文件 → 用到的 URL 键`
+ * @returns 违规清单：`文件 → 直读但没被同键接住的记录 id 键`
  */
 export function findUngatedIdLookups(sources: Record<string, string>): string[] {
   const hits: string[] = [];
   for (const [file, text] of Object.entries(sources)) {
-    const keys = new Set<string>();
-    for (const m of text.matchAll(/route\.(?:query|params)\.([A-Za-z_]\w*)/g)) keys.add(m[1] ?? '');
-    for (const m of text.matchAll(/route\.(?:query|params)\[\s*['"](\w+)['"]\s*\]/g)) keys.add(m[1] ?? '');
-    const recordKeys = [...keys].filter((k) => RECORD_ID_KEYS.has(k) && !NON_RECORD_KEYS.has(k));
-    if (recordKeys.length > 0 && !/useDeepLinkId\s*\(/.test(text)) {
-      hits.push(`${file} → ${recordKeys.sort().join(', ')}`);
+    const recordKeys = [...directUrlKeys(text)].filter(
+      (k) => RECORD_ID_KEYS.has(k) && !NON_RECORD_KEYS.has(k)
+    );
+    if (recordKeys.length === 0) continue;
+    const { literals, nonLiteral } = composableKeys(text);
+    const ungated = recordKeys.filter((k) => !literals.includes(k));
+    if (ungated.length > 0) hits.push(`${file} → ${ungated.sort().join(', ')}`);
+    if (nonLiteral > 0 && ungated.length > 0) {
+      hits.push(`${file} → useDeepLinkId 的 key 不是字面量，守卫无法核对键名`);
     }
   }
   return hits.sort();
@@ -79,7 +137,7 @@ function readViews(): Record<string, string> {
   return out;
 }
 
-describe('深链必须走 useDeepLinkId', () => {
+describe('深链必须按同一个键走 useDeepLinkId', () => {
   it('真实源码里没有"按 URL 记录 id 找数据却没走 composable"的视图', () => {
     const sources = readViews();
     const gated = Object.keys(sources).filter((f) => /useDeepLinkId\s*\(/.test(sources[f] ?? '')).sort();
@@ -88,7 +146,24 @@ describe('深链必须走 useDeepLinkId', () => {
     expect(findUngatedIdLookups(sources), '这些视图会在读库完成前解析 URL 里的记录 id').toEqual([]);
   });
 
-  it('负向对照：绕开 composable 要报、接上不报、非记录 id 的键不误伤', () => {
+  /**
+   * 守卫自己也得接住每一个声明过的键：清单里写了 `book`，但真实源码只有 char/story/id
+   * 用过，于是 `?book=` 的接线从来没被这条守卫验过。这里对十个键逐个跑一遍
+   * "接对 ⇒ 不报""没接 ⇒ 必报"，把清单变成断言。
+   */
+  it('RECORD_ID_KEYS 里每个键都真的被这套判定覆盖', () => {
+    for (const key of RECORD_ID_KEYS) {
+      const ungated = `const v = route.query.${key} as string; void v;`;
+      expect(findUngatedIdLookups({ 'K.vue': ungated }), `键 ${key} 没走 composable 却没被报出来`).toEqual([
+        `K.vue → ${key}`,
+      ]);
+      const gated = `${ungated}
+useDeepLinkId({ key: '${key}', load: () => Promise.resolve(), onResolved: (id) => void id });`;
+      expect(findUngatedIdLookups({ 'K.vue': gated }), `键 ${key} 已经用同键接住，不该误报`).toEqual([]);
+    }
+  });
+
+  it('负向对照：绕开、自 await、键错配、解构、非字面量、Tab 键干扰都要报', () => {
     const offender = `
       const id = route.query.group as string;
       store.groups.find((g) => g.id === id);
@@ -99,9 +174,53 @@ describe('深链必须走 useDeepLinkId', () => {
     expect(findUngatedIdLookups({ 'FakeView.vue': `${offender}
 void store.ensureLoaded();` })).toEqual(['FakeView.vue → group']);
 
-    // 同一份代码，真的走了 composable 就不再报
+    // 同一份代码，真的用同一个键接住了就不再报
     expect(findUngatedIdLookups({ 'FakeView.vue': `${offender}
 useDeepLinkId({ key: 'group', load: () => store.ensureLoaded(), onResolved: (id) => void id });` })).toEqual([]);
+
+    /**
+     * M14-a 那版的洞：文件里出现过 `useDeepLinkId(` 就放行，接的是哪个键不管。
+     * 这里读 `?book=` 却用 key:'char' 接另一个角色——必须报。
+     */
+    const mismatched = `
+      const bookId = route.query.book as string;
+      store.lorebooks.find((b) => b.id === bookId);
+      useDeepLinkId({ key: 'char', load: () => characterStore.ensureLoaded(), onResolved: (id) => void id });
+    `;
+    expect(findUngatedIdLookups({ 'FakeView.vue': mismatched }), '接错键也算没接住，M14-a 那版会放过').toEqual([
+      'FakeView.vue → book',
+    ]);
+
+    // 解构写法同样要抓
+    expect(
+      findUngatedIdLookups({ 'FakeView.vue': 'const { scene } = route.query; void scene;' }),
+      '解构取键的写法没被抓'
+    ).toEqual(['FakeView.vue → scene']);
+
+    // key 写成变量：守卫看不见键名，不能当成"接住了"
+    expect(findUngatedIdLookups({ 'FakeView.vue': `
+      const docId = route.query.doc as string;
+      useDeepLinkId({ key: docKey, load: () => store.ensureLoaded(), onResolved: (id) => void id });
+    ` })).toEqual(['FakeView.vue → doc', 'FakeView.vue → useDeepLinkId 的 key 不是字面量，守卫无法核对键名']);
+
+    // Tab 定义里的 `key:` 不能被当成 composable 的键（视图里满地都是这种对象）
+    expect(findUngatedIdLookups({ 'FakeView.vue': `
+      const tabs = [{ key: 'doc', label: '文档' }, { key: 'history', label: '历史' }];
+      void tabs;
+      const docId = route.query.doc as string;
+    ` }), '无关对象里的 key 误当成闸门').toEqual(['FakeView.vue → doc']);
+
+    /**
+     * 括号配对只在**这一次调用的实参范围**内找 key：这里 composable 接的是 'char'，
+     * 后面 Tab 数组里恰好有个 `key: 'doc'`，直读 `?doc=` 仍然必须报。
+     * 若哪天配对逻辑退化成"全文抓 key:"，这条就会变绿——那正是 M14-a 版的漏法。
+     */
+    expect(findUngatedIdLookups({ 'FakeView.vue': `
+      useDeepLinkId({ key: 'char', load: () => characterStore.ensureLoaded(), onResolved: (id) => void id });
+      const tabs = [{ key: 'doc', label: '文档' }];
+      void tabs;
+      const docId = route.query.doc as string;
+    ` }), '别处的 key 字面量被误当成这个键的闸门').toEqual(['FakeView.vue → doc']);
 
     const settingsLike = `
       const cat = route.query.cat;

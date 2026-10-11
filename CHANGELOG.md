@@ -484,6 +484,13 @@
 - a11y 三条扫描用例的"进路由"等法本身是错的：`waitForSelector('#app button')` + `settle` 都被 NavRail 的 15 个按钮撑住（M13-b 就因为这种证据放过过死路由），Vite 按需编译慢时 `/`（重定向到懒加载的 /chat）主内容还是空的，`settle` 却因 NavRail 计数稳定提前返回 ⇒ 报"`/` 主内容区一个可见控件都没有"（第 7 轮红这条）。抽出 `gotoRendered`：等的是**路由自己那块内容**出现控件，判定不变；注入不可能满足的阈值 ⇒ 红在 `gotoRendered` 内并带路由名。
 - 全量实况：173 条总数下第 1–7 轮依次 170 / 171 / 172 / 172 / 171 / 172 / 172 通过，红的位置每轮不同且都不是断言逻辑错；四条加固齐了之后的第 8 轮 **173 全绿**（8.5 分钟，退出码 0；比加固前慢约 1 分钟，代价就是这些等待）。vitest 回到 3917 通过 / 3 跳过（198 文件：196 通过 / 2 跳过）。
 
+### 变更（UX/IA M15-a：深链守卫升级到"键对得上"，并把未用的 URL 键变成断言）
+- `tests/views/deep-link-store-gate.test.ts`：M14-a 版只要求文件里出现过 `useDeepLinkId(`，接的是哪个键不管——"读 `?book=` 却用 `key: 'char'` 接另一个记录"照样放行，且失败形态是深链静默不命中。改为按键核对：直读的每个记录 id 键必须出现在某次调用的 `key:` 字面量里；`key` 写成变量单独报"无法核对键名"；取 `key` 只在括号配对出的那次实参范围内做，因此满地都是的 `{ key: 'history', label: … }` Tab 定义骗不过守卫。新增解构写法（`const { group } = route.query`）的抓取。
+- 逐键演练：`RECORD_ID_KEYS` 十个键逐个跑"接对不报 / 没接必报"，`group / book / lorebook / doc / document / event / scene` 这七个项目里还没有深链消费者的键，从清单里的一行字变成断言。
+- 注入实测：把 `composableKeys` 退回全文抓 `key:` 的旧形状 ⇒ 逐键覆盖与反证两条同时红（`2 failed | 1 passed`）；还原后 3 条全绿。`useDeepLinkId.ts` 头注释同步改为新规则表述。
+- 本批实测：vitest 3921 用例 3918 通过 / 3 跳过（198 文件 196 通过 / 2 跳过），`eslint src tests e2e scripts` 0 error / 8 warning，`typecheck` 退出码 0；其余十项门禁在 366faf5 上全 0，覆盖率 80.36% 语句（阈值 78%）。
+- 一处需要决策的现场事实（非本批改动）：并行会话新增的未跟踪目录 `docs/design/ai-chat-ui-redesign/`（静态原型自带 js）会让 `npm run lint`（= `eslint .`）报 23 条 `no-undef`/未用变量。它现在还没进 git，所以已推的 366faf5 的 CI 不受影响；一旦提交，CI 的 lint 门会红——要么该目录自我忽略（`.gitignore` 或 eslint ignores），要么把那几个 js 补上全局声明。
+
 
 
 

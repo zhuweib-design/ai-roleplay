@@ -2535,3 +2535,20 @@ M13-d/M14 这批动的是产品时序（深链闸门、会话索引合并），�
 
 | 未做（诚实边界） | ① 竞态类加固只能证明"闸门会红"，不能证明"race 已消失"——第 8 轮 173 全绿是"这台机器、这个并发度、这一次没撞上"，CI 四片是另一个并发度，仍未实跑过；② 第 1 轮的 contrast-axe(dark) 与 webkit Tab 扫描红因判为负载抖动（隔离重跑均绿），未再复现即未单独加固；③ `waitForFunction` 的坑只扫了 e2e 目录（现在仅存在于注释里），vitest 侧没用过这个 API。 |
 
+
+### M15-a 守卫从"出现过 composable"升级到"键对得上"，并把"下一个加深链的人"变成演练
+
+M14-a 的守卫只看文件里有没有 `useDeepLinkId(`，留着一个具体的洞：**接的是哪个键不管**。于是"读 `?book=` 却用 `useDeepLinkId({ key: 'char' })` 接另一个角色"这种写法照样放行——表现是深链永远不命中，而且不报错（闸门等的是另一个键，回调拿到的 id 也不是 URL 里那个）。同类的漏法还有三种：解构取键（`const { group } = route.query`）、`key` 写成变量（守卫看不见键名）、以及最阴的一种——把无关对象里的 `key:` 当成闸门（视图里满地是 `{ key: 'history', label: … }` 这种 Tab 定义）。
+
+现在的判定：文件里直读的每个记录 id 键，必须出现在某次 `useDeepLinkId(` 调用的 `key:` **字面量**里；`key` 不是字面量时单独报一条"无法核对键名"。取 `key` 只在括号配对出来的那次调用实参范围内做，所以 Tab 定义骗不过去。
+
+**演练（不是设想，是实测）**：把 `composableKeys` 退回"全文抓 `key:`"的 M14-a 形状 ⇒ 逐键覆盖那条与反证那条**两条同时红**（实测输出 `2 failed | 1 passed`）；再把一个 `?doc=` 的直读配上 `key: 'char'` ⇒ 必报 `FakeView.vue → doc`。十个声明过的键逐个跑"接对不报 / 没接必报"，`group / book / lorebook / doc / document / event / scene` 这七个**项目里还没有对应深链**的键，从此不是清单里的一行字，而是断言。
+
+| 门禁（M15-a 版本实测） | 结果 |
+|---|---|
+| `npx vitest run` | 198 文件：196 通过 / 2 跳过；3921 用例：**3918 通过 / 3 跳过**（比 M14-c 多一条，就是逐键覆盖那条） |
+| `npx eslint src tests e2e scripts` + 三个配置文件 | 退出码 0，0 error / 8 warning（warning 全是测试夹具"同文件多组件"，与既有的同形） |
+| `npm run typecheck` | 退出码 0 |
+| 其余十项门禁（schema/snapshot/i18n:strict/css/contrast+self-test/csp/ort/eval/audit/build+coverage） | 退出码均 0，实测于 366faf5（M15-a 只动了一个测试文件与一行注释，src 运行时未变）；覆盖率 All files 80.36% 语句 / 阈值 78% |
+
+| 未做（诚实边界） | ① `URLSearchParams` / `location.search` 直读记录 id 的写法不在扫描形状里——已核实 `src/views` 与 `src/components` 里今天没有这种写法（仅有的两处 `URLSearchParams` 是出站请求拼参，不在扫描目录）；② 括号配对遇到实参字符串里含 `)` 时会提前截断，截断方向是**保守**的（可能多报"没接住"，不会把没接的报成接了），这条只做了代码走读，没单独注入验证；③ CharacterEditorView 的同步快速路径仍用 `props.id` 直查内存，守卫看不见它，仍是 M14-a 登记的那条例外。 |

@@ -11,7 +11,8 @@ import { useRoute } from 'vue-router';
  * 就作废这一次，全是这里的职责；视图只提供"读完后拿这个 id 做什么"。
  *
  * 守卫（tests/views/deep-link-store-gate.test.ts）要求：凡是按 URL 记录 id 找数据的
- * 视图，源码里必须出现 `useDeepLinkId(`——不允许绕开这里自己 await。
+ * 视图，那个键必须由某次 `useDeepLinkId({ key: '<同一个键>' })` 接住——键写错、写成
+ * 变量、或干脆自己 await 闸门，都算违规。
  */
 export interface DeepLinkIdOptions {
   /** URL 键（query 优先，缺省回落到 params，如 /character/:id/edit 的 `id`） */
