@@ -142,23 +142,26 @@ jobs:
   # E2E 门禁（已纳入默认门禁）: Playwright 真实浏览器跑 e2e/ 下全部 spec
   # - 三个 project：桌面功能（chromium/Edge）、移动端布局与核心功能（Pixel 5 视口）、WebKit（Safari 近似内核）
   # - 本地 Windows 用系统 Edge（免下载）+ 需 `npx playwright install webkit`；CI 安装 chromium + webkit
-  # - M12-c 分片 4 片并行。分片数与墙钟都是实测的（本机 Edge、复用已起的 dev server、每片 --workers=1）：
-  #     shard 1/4 = 42 条 2.3m，2/4 = 42 条 1.3m，3/4 = 49 条 3.2m，4/4 = 34 条 1.7m
-  #   ⇒ 串行走完 8.5m，分片后墙钟 ≈ 最慢那一片 3.2m（CI 还要加 npm ci + 浏览器安装与冷启动 vite，是下限）。
-  #   分片按文件切，`--list` 数出来 42/42/49/34 = 167，无重无漏。
-  # - 顺带纠正一个我之前的判断：M11 写的是"全套工作量约 1700s，摊在 4 个 worker 上"。
-  #   实测 167 条串行只有 510s，而本地 workers=4 的墙钟是 447s —— **并发几乎没换来时间**
-  #   （长用例排在关键路径上）。所以压墙钟的正路确实是分片，而不是继续调本地并发；
-  #   CI 也维持 1 worker（`workers: isCI ? 1 : 4`），确定性优先，红点轮换的成因见
-  #   playwright.config.ts 里的 workers 注释。
+  # - M16-c：四片改成**按实测时长分组**，不再用 `--shard=i/4`。
+  #   `--shard` 只按用例条数切、不看每条跑多久。2026-10-11 用单 worker 全量实测（177 条 / 34 个 spec）
+  #   给每条用例的时长按文件汇总，`--shard` 切出来四片是 507s / 390s / 515s / 156s（最慢片是最快片的
+  #   3.31 倍），整套墙钟由最慢那片决定、其余三台机器提前空闲。按时长贪心均衡后是
+  #   165s / 165s / 166s / 165s（极差 1.006 倍）。
+  #   清单由 scripts/e2e-shard-groups.mjs 从那份跑数生成到 e2e/shard-groups.mjs，CI 按组取文件列表；
+  #   tests/tooling/e2e-shard-groups.test.ts 守住"每个 spec 恰好属于一组"——清单是生成的就可能漏，
+  #   漏掉的那条在 CI 上静默不跑，比慢一点严重得多（生成器最早把 project 名写成 \w+，
+  #   整个移动 project 没进权重，两个 mobile spec 因此落空，正是这条断言抓到的）。
+  # - 分片墙钟的历史实测（M12-c，`--shard` 时期）：单 worker 串行 42/42/49/34 条 = 2.3/1.3/3.2/1.7 分钟。
+  #   当时那个"并发几乎没换来时间"的结论仍然成立：CI 维持 1 worker（`workers: isCI ? 1 : 4`），
+  #   确定性优先，压墙钟的正路是分片而不是调并发。
   # - `fail-fast: false`：一片红不影响其余三片跑完，否则一次红就看不到另外三片的证据。
   e2e:
-    name: E2E (Playwright) shard ${{ matrix.shard }}/4
+    name: E2E (Playwright) group ${{ matrix.group }}/4
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        group: [1, 2, 3, 4]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -176,15 +179,19 @@ jobs:
       - name: Install Playwright browsers (chromium + webkit)
         run: npx playwright install --with-deps chromium webkit
 
-      - name: E2E tests (shard ${{ matrix.shard }}/4)
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}/4
+      - name: E2E tests (weight-balanced group ${{ matrix.group }}/4)
+        run: |
+          # 文件清单来自 e2e/shard-groups.mjs（scripts/e2e-shard-groups.mjs 按实测时长生成）
+          FILES=$(node scripts/e2e-shard-groups.mjs --group=${{ matrix.group }})
+          echo "本组文件：$FILES"
+          npm run test:e2e -- $FILES
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           # artifact 名必须逐片唯一（actions/upload-artifact@v4 同名会直接报错）
-          name: playwright-report-shard-${{ matrix.shard }}
+          name: playwright-report-group-${{ matrix.group }}
           path: |
             playwright-report/
             test-results/
