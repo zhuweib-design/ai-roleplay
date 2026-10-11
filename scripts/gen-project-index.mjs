@@ -317,6 +317,7 @@ const CURATED = {
   'scripts/important-guard.mjs': '门禁：!important 棘轮守卫（基线锁定，只许降不许升）',
   'scripts/css-conventions-guard.mjs': '门禁：CSS 约定守卫单一入口（编排断点 / 视口 / hover / !important / 控件字号五项子检查）',
   'scripts/i7-control-font-size-guard.mjs': '门禁：移动断点内可编辑控件字号 ≥16px 兜底（I-7，防 iOS 聚焦放大页面）',
+  'scripts/token-guard.mjs': '门禁：token 死引用按文件棘轮（--strict 卡新增裸引用未定义变量）+ 合成夹具自测（--self-test），无参数时输出 A/B/C/D 四类体检',
   'scripts/check-contrast.mjs': '门禁：5 套主题关键色对对比度 ≥ AA',
   'scripts/contrast-audit.mjs': '审计：对比度全量扫描报告',
   'scripts/i18n-scan.mjs': '门禁：硬编码中文 UI 文案扫描（strict 模式）',

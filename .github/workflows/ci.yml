@@ -91,6 +91,21 @@ jobs:
       - name: CSS conventions guard (check:css-conventions)
         run: npm run check:css-conventions
 
+      # Token 死引用棘轮（M18 试点 → M19 入门禁）：组件层裸引用一个没定义的 CSS 变量时，
+      # 浏览器会把整条声明丢掉 —— 今天就是失效代码，不是风格问题。实测存量 74 处 / 4 文件
+      # （StoryEngineView 独占 55），属 M21 要逐条映射的遗留，所以按 !important 棘轮同一套路：
+      # **按文件锁**基线，只许减不许增。只锁总数会被"这里减 5、那里加 5"抵消成平局（探针实测过）。
+      - name: Token dead-reference ratchet (check:token-baseline)
+        run: npm run check:token-baseline
+
+      # 上一条棘轮的自测：用合成夹具跑同一份扫描代码，钉住三类已被实测到的判定边界
+      # （运行时 setProperty 注入的键不算违规、src/styles 的 hex 是调色板不是绕过、带兜底归 B 类），
+      # 以及"总数抵消仍须红"。防死门禁 —— 2026-10-07 的对比度门禁就是硬编码后与代码脱钩永远绿灯。
+      # 破坏性验证（2026-10-11 实跑）：把运行时白名单去掉 / 把 styles 混进 A 类 / 棘轮退化成只看总数，
+      # 三种改写都让本步骤变红，对应断言逐条点名。
+      - name: Token guard self-test
+        run: npm run token:self-test
+
       # 无障碍对比度门禁（P1-2 重构）：不再硬编码色值，改为
       #   A) 读 tokens.css/themes.css 真实变量，递归解析 var() 与 color-mix()
       #   B) 扫描 src/ 下实际出现的 color × background 配对（含同色染层合成）
