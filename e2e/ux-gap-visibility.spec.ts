@@ -159,14 +159,23 @@ test.describe('E22 图像 Provider 配置不再刷新即丢', () => {
     await page.locator('#model').fill('e2e-image-model');
     await page.locator('#api-key').fill('sk-e2e-persist-me');
 
-    // persistSettings 是 fire-and-forget 的 IndexedDB 写入：填完立刻 reload，
-    // 并发抢 CPU 时 IDB 事务可能排在 reload 之后，值就丢了（第 4、5 轮全量各红过一次）。
-    // 等库里真的读到新 endpoint 再刷新——等值，不等时间。
-    //
-    // 用 expect.poll 而不是 page.waitForFunction：后者在这个 Playwright 版本里
-    // **不等页面里 async 函数返回的 Promise**（Promise 对象恒为真 ⇒ 立刻满足），
-    // 负向对照实测：把判定改成 `async () => false` 用例照样绿。expect.poll 在 Node 侧
-    // await 回调，才是真闸门。
+    /**
+     * persistSettings 是 fire-and-forget 的 IndexedDB 写入：填完立刻 reload，
+     * 并发抢 CPU 时 IDB 事务可能排在 reload 之后，值就丢了（第 4、5 轮全量各红过一次）。
+     *
+     * 但"等 endpoint 落盘"是**等错了对象**：设置是每改一次就写一次盘，而 endpoint 是这里
+     * 第一个被 fill 的字段 —— 它在 #api-key 还没输入之前就已经落盘了，于是 poll 立刻通过，
+     * 后面那次带密钥的写入还在飞，reload 就读到"端点/模型都对、密钥是空"。
+     * 实测正是这个形状（全量 4 worker 下红的那次：#endpoint 与 #model 都恢复成功，
+     * 只有 #api-key 为空）。
+     *
+     * 判据因此改成**三个字段一起等**：等价于"最后那次写入已落地"。等值，不等时间。
+     *
+     * 用 expect.poll 而不是 page.waitForFunction：后者在这个 Playwright 版本里
+     * **不等页面里 async 函数返回的 Promise**（Promise 对象恒为真 ⇒ 立刻满足），
+     * 负向对照实测：把判定改成 `async () => false` 用例照样绿。expect.poll 在 Node 侧
+     * await 回调，才是真闸门。
+     */
     await expect
       .poll(
         async () =>
@@ -187,20 +196,21 @@ test.describe('E22 图像 Provider 配置不再刷新即丢', () => {
                   req.onerror = () => reject(req.error);
                 }
               );
-              return (
-                (val?.imageGenConfig as { endpoint?: string } | undefined)?.endpoint ===
-                'https://img.example.test/v1'
-              );
+              const cfg = val?.imageGenConfig as
+                | { endpoint?: string; model?: string; apiKey?: string }
+                | undefined;
+              // 返回实际读到的三元组：失败信息里能直接看出"盘上停在哪一步"
+              return [cfg?.endpoint, cfg?.model, cfg?.apiKey].join(' | ');
             } finally {
               db.close();
             }
           }),
         {
           timeout: 10_000,
-          message: '设置快照里的 imageGenConfig.endpoint 一直没变成新值（写入没落地？）',
+          message: '盘上的 imageGenConfig 三个字段没同时到新值（最后一次写入没落地？）',
         }
       )
-      .toBe(true);
+      .toBe('https://img.example.test/v1 | e2e-image-model | sk-e2e-persist-me');
 
     await page.reload();
     await dismissWelcomeModal(page);
