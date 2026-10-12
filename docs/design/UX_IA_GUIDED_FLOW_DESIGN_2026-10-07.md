@@ -2953,13 +2953,20 @@ M20-a 把中性网扩到第三个目标（`/chat` 表面，基线 5,848 个读�
 
 - 中性网加 `nav-rail` 目标时，第一版把 `.nav-item` 的**过渡中间帧** `rgb(83, 86, 98)` 记进了基线——那是 `#AEB2C0` 与 `#161823` 之间的一帧，既不是改前也不是改后的值。改成"连采两次直到一致"，并做牙齿实测（注入 `--foreground` ⇒ 点名 terminal 的 `.nav-item.active` 并红）。
 - axe 的 `settle()` 从固定 450ms 改成轮询 `document.getAnimations()`。9 款 × 4 worker 下固定等待不够：实测 theatre 红在 `.nav-item.active`，axe 报的字色 `#2d2618` 与底色 `#ca536f` **都不属于任何一套皮肤**，正是 `.15s` 颜色过渡的中间帧。这类红会被当成"新皮肤带进来的问题"，实际是审计器自己采早了。
-- `theme-flow` 的皮肤清单原来还是手写八条（M23-b 只并了三处里的一部分），加第 9 款时它红了——红法说明兜底有效，但"记得改两处"不等于"不需要改"，改成取 `THEME_PRESETS`。顺带纠正该文件注释的一处错话：键盘切换主题**是**写持久化的。
+- `theme-flow` 的皮肤清单原来还是手写八条（M23-b 只并了三处里的一部分），加第 9 款时它红了——红法说明兜底有效，但"记得改两处"不等于"不需要改"，改成取 `THEME_PRESETS`。
+
+**还有一条是跑完全量才看见的**（第一次只跑了那四个 spec，全绿，我就写了"9 条全绿"）：全量 4 worker 下中性网 brutal 一条红 143 处，而**每一条实得值都是 dark 的**（`rgb(245,245,247)`、`12px` 圆角、`1px` 边框）。根因不在颜色，在**主题写盘是异步的**：点卡后 DOM 立刻生效（`data-theme` 那条断言过了），但紧接着导航会让文档重新加载，应用读盘读到旧值就回落默认皮肤——采到的是一份"没人见过的状态"。`theme-flow` 的 `Expected oled / Received brutal` 是同因的另一面。
+
+修法是新增公共模块 `e2e/theme-persistence.ts`，四个用例共用一份"点卡 → 确认落盘"。这里有个反直觉的点值得记：**判据不能是"reload 后看 `data-theme`"**，那样看着最真实，实际会稳定失败（brutal 在 30s 内一次都没成立过）——reload 让应用重新读盘读到旧值，那次读档回写又盖掉刚点的新值，每轮都输。判据必须是**直接读 IndexedDB 的 `settings/app` 记录**，不引入导航也不重载。
+
+我上一轮据此写进注释的"键盘切换确实会写持久化"也是错的结论——它来自"单跑必绿"。实测是**会写，但异步落盘**。两处注释都已按此改写。
 
 | 验证（与提交同版本） | 结果 |
 |---|---|
 | 对比度门禁 | 9 款 × 27 项语义配对全达标；扫描存量 126 ≤ 基线 131；E 独有低对比配对 **0 处**（它带进来的 16 处全部与 light/ink 同形，是产品老账） |
 | 中性网 | 9 条全绿，基线 7,191 个读数；与 HEAD 逐条比对 **改动 0 处**、新增 1,343 处（新皮肤 799 + 新目标在 8 款老皮肤上 544） |
-| axe | 11 条全绿（含 brutal 的 7 条路由）；`settle()` 改造后并发下不再红 |
+| axe | 11 条全绿（含 brutal 的 7 条路由）；`settle()` 与落盘判据改造后并发下不再红 |
+| 全量 msedge | **131 通过 / 1 红（5.2m）**。红的是 `ux-gap-visibility.spec.ts:152`（E22 图像 Provider 的 `#api-key` 刷新后为空，`#endpoint`/`#model` 都恢复成功），单跑该 spec 7/7 全绿，该文件最后一次改动是 907da52，与本批无关——同一类"异步落盘 + 立刻 reload"，只是多走一层主密码加密写入。已登记待办，不在本批顺手修 |
 | 静态门禁 | `typecheck` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions` 5/5 / `check:token-baseline` / `token:self-test` 9/9 / `check:important` / `check:hover` / `check:breakpoints` / `check:viewport` 退出码 0 |
 | 单测 | `tests/i18n` + `tests/stores/settings` + `tests/tooling` 90 条通过 |
 
