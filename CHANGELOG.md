@@ -863,3 +863,12 @@
 - axe 真实浏览器审计：`ink` 的 7 条路由从 1 处违规到 **0**；八款皮肤各 27 项语义配对全达标；扫描存量 120 ≤ 基线 131。
 - 「E 新粗野」仍不落地，堵点量化了：全仓 **51 处、25 个文件**把 `--secondary` 当**文字色**用（`color: var(--secondary)`），而该套辅色是亮粉 `#FF5C8A`，压在浅底上 2.43。要么给它一个更深的辅色（原型没有），要么把"辅色做填充"与"辅色做强调文字"拆成两个 token（51 处迁移，对现有主题是中性改动）。这条已单独立项，不靠调高门禁基线绕过。
 - 本批验证：`typecheck` 0、`eslint --quiet` 0 error、主题相关 e2e 28 条全绿（含 `contrast-axe` 八款 × 7 路由）、中性基线 4,488 个读数且**原有 7 款 3,927 个读数一字未变**。
+
+### 变更（UX/IA M20-a：对话区表面迁入 token，实测像素中性）
+- 中性网加第三个目标 `chat-surface`（`/chat` 的页头/页脚/输入区/令牌徽标等 10 个选择器），基线从 4,488 涨到 **5,848 个读数**，原有两目标的 4,488 个读数逐条比对一字未变。
+- 迁移范围只到"网采得到的那部分"：`src/styles/layout.css` 的 `.chat-header` / `.chat-title` / `.chat-token` / `.chat-actions` / `.chat-footer` / `.chat-input` 与 `ChatMain.vue` 的 `.chat-name` / `.model-badge`。10px 与 6px 两个间隙正是 M18 补的半档第一次在对话区用上（`--space-2-5`）。
+- 留字面量并写明原因的：`height/min-height: 56px`（控件阶只有 24/28/36/44）、`font-size: 15px`、`line-height: 1.55`、`.model-badge` 的 `padding: 2px 8px`（2px 不在阶上，不写半 token 半字面量）。
+- **一条纪律**：只改中性网采得到的规则。`.msg-bubble` / `.gen-text` / `.cache-rate` / `.chat-messages` / `.chat-composer` 等在本次实测路径上不可见（先访问设置页切主题再回 `/chat` 时消息列表是空的；首探看到的 6 条气泡属于另一条恢复出来的会话），所以它们的规则留给 M20-b 造好会话数据后再动 —— 不改没测的东西，比"顺手一起改"更安全。
+- 新目标的牙齿实测：把 `.chat-header` 的左右内边距从 `var(--space-4)` 换成 `var(--space-3)` ⇒ 中性网点名 `chat-surface/oled/.chat-header { padding-left }: 16px → 12px`（还原后 8 条全绿）。
+- 本批验证：`lint` / `check:css-conventions` / `check:token-baseline` / `typecheck` 退出码 0；中性网 8 条全绿；全局 D 类字面量 px 3,647 → 3,639。
+- 一次自伤记录（照实写）：还原注入时用了 `git checkout -- src/styles/layout.css`，把该文件**未提交的迁移改动一起抹掉**了，随后按行重做并复验。教训是还原注入必须用"只回滚那一处"的定向脚本，不能用整文件 checkout。

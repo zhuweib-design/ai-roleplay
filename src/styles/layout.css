@@ -156,11 +156,12 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  /* 56px 不在控件尺寸阶（24/28/36/44）上，见尺度缺口 */
   height: 56px;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   background: var(--card);
-  border-bottom: 1px solid var(--border);
-  gap: 10px;
+  border-bottom: var(--size-border-thin) solid var(--border);
+  gap: var(--space-2-5);
 }
 
 .chat-title {
@@ -168,13 +169,13 @@
   align-items: center;
   min-width: 0;
   flex: 1 1 0;
-  gap: 10px;
+  gap: var(--space-2-5);
 }
 
 .chat-token {
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--muted-foreground);
   white-space: nowrap;
 }
@@ -184,7 +185,7 @@
   align-items: center;
   justify-content: flex-end;
   flex: 0 0 auto;
-  gap: 4px;
+  gap: var(--gap-inline-xs);
 }
 
 .chat-messages {
@@ -202,9 +203,9 @@
   display: flex;
   align-items: flex-end;
   flex-shrink: 0;
-  padding: 12px 16px 16px;
+  padding: var(--space-3) var(--space-4) var(--space-4);
   background: var(--card);
-  border-top: 1px solid var(--border);
+  border-top: var(--size-border-thin) solid var(--border);
 }
 
 .chat-composer {
@@ -225,11 +226,13 @@
 
 .chat-input {
   width: 100%;
+  /* 56px 高、15px 字号、1.55 行高都不在阶上（控件阶 44/36/28、字号阶 14/16、行高阶 1.5/1.7），
+     留字面量并登记；padding 这一项可中性入阶 */
   min-height: 56px;
   max-height: 200px;
   background: transparent;
   border: none;
-  padding: 8px 4px;
+  padding: var(--space-2) var(--space-1);
   color: var(--foreground);
   font-size: 15px;
   resize: none;

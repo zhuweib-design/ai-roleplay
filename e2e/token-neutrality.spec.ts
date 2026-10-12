@@ -1,5 +1,5 @@
 /**
- * E2E · token 迁移的像素中性回归网（M19-a）
+ * E2E · token 迁移的像素中性回归网（M19-a 建网，M20-a 扩到对话区表面）
  *
  * 要防的事故只有一件：**CSS 变量名写错不会报错，只会让那条声明静默失效**。
  * 静态守卫（scripts/token-guard.mjs）能抓"全仓没人定义"的那一类，抓不到
@@ -73,6 +73,28 @@ const TARGETS: Array<{ id: string; route: string; open?: string; selectors: read
       '.extension-block .form-row input[type="range"]',
       '.extension-block .form-row input[type="number"]',
       '.extension-block .form-row select',
+    ],
+  },
+  {
+    id: 'chat-surface',
+    route: '/chat',
+    /**
+     * 对话区一族（M20-a）。清单只列"走中性网这条路径时必定可见"的元素 ——
+     * 先访问设置页切主题再回 /chat 时，消息列表是空的（首探直接进 /chat 看到的 6 条气泡
+     * 属于另一条恢复出来的会话），所以 `.msg-bubble` / `.gen-text` / `.cache-rate` 这类
+     * 条件元素留到 M20-b 造好会话数据后再补，不拿"偶尔在"的选择器凑数（那会让网空转）。
+     */
+    selectors: [
+      '.chat-header',
+      '.chat-title',
+      '.chat-name',
+      '.chat-actions',
+      '.panel-toggle-btn',
+      '.model-badge',
+      '.chat-token',
+      '.chat-main',
+      '.chat-footer',
+      '.chat-input',
     ],
   },
   {
@@ -323,7 +345,7 @@ if (UPDATE) {
    * 而且红了直接说出是哪套主题出的问题。
    */
   for (const theme of THEMES) {
-    test(`像素中性网：「${theme}」主题下两个设置面板的计算样式与基线一致`, async ({ page }) => {
+    test(`像素中性网：「${theme}」主题下三个目标的计算样式与基线一致`, async ({ page }) => {
       assertViewport(page);
       const base = loadBaseline();
       await applyTheme(page, theme);

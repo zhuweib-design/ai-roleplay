@@ -1236,7 +1236,7 @@ function startWithExample(text: string) {
 .chat-name {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 16px;
+  font-size: var(--font-size-lg);
   color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
@@ -1249,7 +1249,7 @@ function startWithExample(text: string) {
   background: color-mix(in srgb, var(--secondary) 12%, transparent);
   /* 文字向 foreground 提亮，保证 on 彩色浅底 ≥4.5:1（theatre 粉色系 12% 底 4.38:1 → 提亮后达标） */
   color: color-mix(in srgb, var(--secondary) 78%, var(--foreground));
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
