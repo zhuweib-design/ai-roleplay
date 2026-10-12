@@ -15,6 +15,10 @@
  *   `display:none` 的元素仍会返回它自己那份计算值，所以取错对象不会报错，只会把
  *   "别的面板长什么样"当成这个面板的基线。取不到可见匹配就当红，不许凑数。
  * - **选择器没匹配到可见元素 ⇒ 直接红**。这条是上面的反面保障：基线不能靠空值凑数。
+ * - **一条主题一条用例**（不是串成一条）。量出来的：串成一条时单跑 5.7s，但本地 4 worker
+ *   全量并发下要 39–50s，而配置的单测预算是 60s——playwright.config.ts 的注释早就写着
+ *   "并发下随机红 1–3 条，红相是负载不是回归"。贴着上限的安全网一定会被当成噪声忽略，
+ *   所以切开：单条并发下约 12s，余量 5 倍，红了还能直接说出是哪套主题出的问题。
  * - 只跑桌面 project（msedge / CI chromium）。webkit 由既有的对比度与主题 e2e 覆盖，
  *   同一份计算样式在两个内核各存一份基线，会让"改 token"变成"改两份基线"，评审成本翻倍。
  *
@@ -187,115 +191,141 @@ type Baseline = {
   samples: Record<string, Record<string, Record<string, Record<string, string>>>>;
 };
 
-const diffLines: string[] = [];
+type ThemeSamples = Record<string, Record<string, string>>;
 
-function compareSample(targetId: string, theme: string, got: Record<string, Record<string, string>>, base: Record<string, Record<string, Record<string, string>>> | undefined) {
-  if (!base) {
-    diffLines.push(`${targetId}/${theme}：基线里没有这一项（新增目标要先跑 NEUTRALITY_UPDATE=1）`);
-    return;
-  }
-  for (const sel of Object.keys(got)) {
-    const b = base[sel];
-    if (!b) {
-      diffLines.push(`${targetId}/${theme}/${sel}：基线里没有这个选择器`);
-      continue;
+/** 采一个主题下所有目标；空转守卫与空值守卫都在这里就地失败 */
+async function sampleTheme(page: Page, theme: string): Promise<Record<string, ThemeSamples>> {
+  const out: Record<string, ThemeSamples> = {};
+  for (const t of TARGETS) {
+    await page.goto(t.route);
+    if (t.open) {
+      const trigger = page.locator(t.open).first();
+      await expect(trigger).toBeVisible();
+      await trigger.click();
     }
-    for (const p of Object.keys(got[sel])) {
-      if (got[sel][p] !== b[p]) diffLines.push(`${targetId}/${theme}/${sel} { ${p} }: ${b[p]} → ${got[sel][p]}`);
-    }
-  }
-  for (const sel of Object.keys(base)) {
-    if (!got[sel]) diffLines.push(`${targetId}/${theme}/${sel}：现在页面上量不到了（基线里它是有值的）`);
-  }
-}
-
-test('像素中性网：5 主题 × 2 个设置面板的计算样式与基线一致', async ({ page }) => {
-  const size = page.viewportSize();
-  expect(
-    { width: size?.width ?? -1, height: size?.height ?? -1 },
-    '基线是在固定视口下量的，视口变了必须先重生成基线再评审差异'
-  ).toEqual(VIEWPORT);
-
-  const collected: Baseline['samples'] = {};
-  for (const theme of THEMES) {
-    await applyTheme(page, theme);
-    for (const t of TARGETS) {
-      await page.goto(t.route);
-      if (t.open) {
-        const trigger = page.locator(t.open).first();
-        await expect(trigger).toBeVisible();
-        await trigger.click();
-      }
-      // 等到清单里**每个**选择器都有可见匹配再采：路由切换中间态、以及上面那个
-      // open 点击后的 Vue 重渲染，都还没落地就采样会把"还没渲染"记进基线。
-      await expect
-        .poll(
-          async () =>
-            page.evaluate(
-              (sels) =>
-                sels.filter((sel) =>
-                  [...document.querySelectorAll(sel)].some((e) => (e as HTMLElement).offsetParent !== null)
-                ).length,
-              [...t.selectors]
-            ),
-          { message: `${t.route} 在 ${theme} 下有选择器始终量不到可见元素`, timeout: 10_000 }
-        )
-        .toBe(t.selectors.length);
-      const sample = await collect(page, t.selectors);
-      ((collected[t.id] ??= {})[theme] as Record<string, Record<string, string>>) = sample;
-    }
+    // 等到清单里**每个**选择器都有可见匹配再采：路由切换中间态、以及上面那个
+    // open 点击后的 Vue 重渲染，都还没落地就采样会把"还没渲染"记进基线。
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(
+            (sels) =>
+              sels.filter((sel) =>
+                [...document.querySelectorAll(sel)].some((e) => (e as HTMLElement).offsetParent !== null)
+              ).length,
+            [...t.selectors]
+          ),
+        { message: `${t.route} 在 ${theme} 下有选择器始终量不到可见元素`, timeout: 20_000 }
+      )
+      .toBe(t.selectors.length);
+    out[t.id] = await collect(page, t.selectors);
   }
 
-  const missing = Object.entries(collected).flatMap(([id, byTheme]) =>
-    Object.entries(byTheme).flatMap(([theme, sels]) =>
-      Object.entries(sels)
-        .filter(([, rec]) => '__missing__' in rec)
-        .map(([sel, rec]) => `${id}/${theme}/${sel}：${rec.__missing__}`)
-    )
+  const missing = Object.entries(out).flatMap(([id, sels]) =>
+    Object.entries(sels)
+      .filter(([, rec]) => '__missing__' in rec)
+      .map(([sel, rec]) => `${id}/${theme}/${sel}：${rec.__missing__}`)
   );
   expect(missing, '有选择器在这个页面上找不到可见元素 ⇒ 这张网在空转，不许用默认值凑基线').toEqual([]);
 
   /**
    * 空串一律算失败：`getPropertyValue` 拿到不认识的名字就返回 ''，而 '' 与 '' 是"一致"的。
-   * 这一条把上面那个坑变成结构性拦不住的写法——属性名写错的那一刻用例就红，而不是静默少测。
+   * 这一条把上面那个坑变成结构性拦得住的写法——属性名写错的那一刻用例就红，而不是静默少测。
    */
-  const blanks = Object.entries(collected).flatMap(([id, byTheme]) =>
-    Object.entries(byTheme).flatMap(([theme, sels]) =>
-      Object.entries(sels).flatMap(([sel, rec]) =>
-        Object.entries(rec)
-          .filter(([, v]) => v === '')
-          .map(([p]) => `${id}/${theme}/${sel} 的 ${p} 读到空值`)
-      )
+  const blanks = Object.entries(out).flatMap(([id, sels]) =>
+    Object.entries(sels).flatMap(([sel, rec]) =>
+      Object.entries(rec)
+        .filter(([, v]) => v === '')
+        .map(([p]) => `${id}/${theme}/${sel} 的 ${p} 读到空值`)
     )
   );
   expect(blanks, `有 ${blanks.length} 个属性读不到值（属性名写错？）：\n${blanks.slice(0, 12).join('\n')}`).toEqual([]);
 
-  if (UPDATE) {
-    const payload: Baseline = {
-      generatedAt: new Date().toISOString().slice(0, 10),
-      viewport: VIEWPORT,
-      themes: [...THEMES],
-      props: [...PROPS],
-      samples: collected,
-    };
-    fs.writeFileSync(BASELINE_FILE, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
-    const n = Object.values(collected).reduce((a, byTheme) => a + Object.values(byTheme).reduce((b, s) => b + Object.keys(s).length * PROPS.length, 0), 0);
-    console.log(`已写基线 ${path.relative(ROOT, BASELINE_FILE)}：${n} 个属性读数`);
-    expect(n).toBeGreaterThan(0);
-    return;
-  }
+  return out;
+}
 
+function checkSample(got: Record<string, ThemeSamples>, base: Baseline, theme: string) {
+  const diffs: string[] = [];
+  for (const t of TARGETS) {
+    const b = base.samples[t.id]?.[theme];
+    if (!b) {
+      diffs.push(`${t.id}/${theme}：基线里没有这一项（新增目标要先跑 NEUTRALITY_UPDATE=1）`);
+      continue;
+    }
+    for (const sel of Object.keys(got[t.id])) {
+      if (!b[sel]) {
+        diffs.push(`${t.id}/${theme}/${sel}：基线里没有这个选择器`);
+        continue;
+      }
+      for (const p of Object.keys(got[t.id][sel])) {
+        if (got[t.id][sel][p] !== b[sel][p]) diffs.push(`${t.id}/${theme}/${sel} { ${p} }: ${b[sel][p]} → ${got[t.id][sel][p]}`);
+      }
+    }
+    for (const sel of Object.keys(b)) {
+      if (!got[t.id][sel]) diffs.push(`${t.id}/${theme}/${sel}：现在页面上量不到了（基线里它是有值的）`);
+    }
+  }
+  const n = Object.values(got).reduce((a, sels) => a + Object.keys(sels).length * PROPS.length, 0);
+  expect(
+    diffs,
+    `${n} 个属性读数里有 ${diffs.length} 处不一致：\n${diffs.slice(0, 15).join('\n')}${diffs.length > 15 ? `\n（其余 ${diffs.length - 15} 处省略）` : ''}`
+  ).toEqual([]);
+}
+
+/** 基线文件自身的形状：视口、主题清单、属性清单都必须与代码一致，否则差异不可解释 */
+function loadBaseline(): Baseline {
   expect(fs.existsSync(BASELINE_FILE), `基线文件不存在：${path.relative(ROOT, BASELINE_FILE)}`).toBe(true);
   const base = JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf8')) as Baseline;
   expect(base.viewport, `基线记录的视口与当前不符（${base.viewport.width}x${base.viewport.height}）`).toEqual(VIEWPORT);
   expect(base.themes, '基线覆盖的主题要就是这 5 套').toEqual([...THEMES]);
   expect([...base.props].sort(), '基线采的属性要就是这一组').toEqual([...PROPS].sort());
+  return base;
+}
 
-  for (const t of TARGETS) {
+function assertViewport(page: Page) {
+  const size = page.viewportSize();
+  expect(
+    { width: size?.width ?? -1, height: size?.height ?? -1 },
+    '基线是在固定视口下量的，视口变了必须先重生成基线再评审差异'
+  ).toEqual(VIEWPORT);
+}
+
+if (UPDATE) {
+  // 只在本机手动跑：一次启动串完 5 套主题再写文件（并行写同一份 JSON 会互相盖掉）。
+  test.setTimeout(180_000);
+  test('重生成基线：5 主题 × 2 面板的计算样式（NEUTRALITY_UPDATE=1 专用）', async ({ page }) => {
+    assertViewport(page);
+    const samples: Baseline['samples'] = {};
     for (const theme of THEMES) {
-      compareSample(t.id, theme, collected[t.id][theme], base.samples[t.id]?.[theme]);
+      await applyTheme(page, theme);
+      const got = await sampleTheme(page, theme);
+      for (const [id, rec] of Object.entries(got)) ((samples[id] ??= {})[theme] as ThemeSamples) = rec;
     }
+    const n = Object.values(samples).reduce((a, byTheme) => a + Object.values(byTheme).reduce((b, s) => b + Object.keys(s).length * PROPS.length, 0), 0);
+    const payload: Baseline = {
+      generatedAt: new Date().toISOString().slice(0, 10),
+      viewport: VIEWPORT,
+      themes: [...THEMES],
+      props: [...PROPS],
+      samples,
+    };
+    fs.writeFileSync(BASELINE_FILE, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+    console.log(`已写基线 ${path.relative(ROOT, BASELINE_FILE)}：${n} 个属性读数`);
+    expect(n).toBeGreaterThan(0);
+  });
+} else {
+  /**
+   * 一条主题一条用例，理由是量出来的：整条串在一起时单跑 5.7s，但 4 worker 全量并发下要
+   * 39–50s，而配置的单测预算是 60s（playwright.config.ts 的注释就写着"并发下随机红 1–3 条"）。
+   * 贴着上限的安全网会被当噪声忽略，所以切成 5 条各测一套主题——单条并发下 ~12s，余量 5 倍，
+   * 而且红了直接说出是哪套主题出的问题。
+   */
+  for (const theme of THEMES) {
+    test(`像素中性网：「${theme}」主题下两个设置面板的计算样式与基线一致`, async ({ page }) => {
+      assertViewport(page);
+      const base = loadBaseline();
+      await applyTheme(page, theme);
+      checkSample(await sampleTheme(page, theme), base, theme);
+    });
   }
-  const total = Object.values(collected).reduce((a, byTheme) => a + Object.values(byTheme).reduce((b, s) => b + Object.keys(s).length * PROPS.length, 0), 0);
-  expect(diffLines, `${total} 个属性读数里有 ${diffLines.length} 处不一致：\n${diffLines.slice(0, 15).join('\n')}${diffLines.length > 15 ? `\n（其余 ${diffLines.length - 15} 处省略）` : ''}`).toEqual([]);
-});
+}
