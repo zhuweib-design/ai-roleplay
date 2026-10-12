@@ -2876,3 +2876,22 @@ M19 的前半不是迁移，是先做安全网：M18 定的纪律是"改名批�
 | 单测 | `tests/i18n` + `tests/stores/settings` + `tests/tooling` 81 条通过 |
 | 全量 e2e（4 worker） | 194 passed / 1 failed（9.1m）。红的是 `ux-modal-describedby-seeded`(webkit) 撞 60s 单测上限，**单跑该 spec 5 条全绿、该条只 3.2s** ⇒ 配置注释已承认的负载红相（本会话第三次）。CI 是 `workers: 1` + `retries: 2`，本地预算是否抬到 90s 另议 |
 | 撤出是否干净 | `grep 'ink'` 在 src/e2e 只剩 `thinking` / `Linked` 等无关词；`.swatch-ink` 与卡片条目、i18n 键、themes.css 块全部移除（typecheck 与 lint 0 error） |
+
+### M23-e 与 M20-a：徽章一族全局收口、墨纸落地成功，对话区表面迁入 token
+
+两批的账都在 CHANGELOG 逐条落了，这里只记一个方法论收获：**"新增皮肤带进多少低对比配对"这个指标，绝大多数时候量的不是新皮肤，而是产品自己的历史欠账。** 墨纸第一次被拒时带进 34 处；把"边框色当填充"这一族（`.size-badge` / `.provider-badge` / `.status-badge` / `.file-badge` / `.group-count`）全局收口后，同一批规则在 7 套老皮肤上一次性消掉 33 处（扫描 122 → 89），墨纸重测只剩 4 处，再逐条改它自己的取值（橙 `#9A6B12`→`#8F630F` 让评分星 4.41→5.00、绿 `#2F6B45`→`#2A6040` 让"可用"标签 4.24→4.94）就落地了，axe 在 7 条路由上从违规到 0。**先收公共欠账再评新皮肤，顺序反了就会错杀设计。**
+
+M20-a 把中性网扩到第三个目标（`/chat` 表面，基线 5,848 个读数，原有 4,488 个一字未变），并确立一条纪律：**只改网采得到的规则**。气泡、生成中提示、缓存率这些在"切过主题再回 /chat"的路径上不渲染（首探看到的 6 条气泡属于另一条恢复出来的会话），它们的字面量留给 M20-b 造好会话数据后再动。代价是本批少改几个文件，收益是"绿"这个字仍然有意义。
+
+### 皮肤去留：把决定所需的事实摊开（等拍板，不写投机代码）
+
+现状是内置 8 套（旧 5：dark / light / midnight / oled / theatre；新 3：terminal / aurora / ink），与 M18"维持 5 套内置"的裁决冲突。收口需要三类事实，前两类已核实：
+
+| 事实 | 结论 |
+|---|---|
+| 有没有使用数据可依据 | **没有**。`src` 下无埋点、无统计上报（grep `gtag` / `analytics` / `track(` 零命中），主题值只存在本地 IndexedDB `settings.app` 与 Tauri 的 `settings/app.json`。"哪套有人用"只能靠产品判断 |
+| 新 3 套与旧 5 套的对应关系 | aurora 与 terminal 都是深色（可替 dark）；ink 是浅色（可替 light）；**midnight（深蓝）、oled（纯黑省电）、theatre（墨黑 + 烛金 + 衬线标题）在通用 5 款里没有对应物**——因为 D 樱雾玻璃与 E 新粗野还没落地 |
+| 砍一套要动的地方（实测清单） | `ThemeName` 联合、`THEME_PRESETS`、设置页卡片条目、i18n 两条键（zh/en 必须同步，`tests/i18n.test.ts:49` 会抓）、`themes.css` 块、预览色块、`theme-flow` 清单；三处 e2e 皮肤清单已接 `THEME_PRESETS` 无需改；中性基线要重生成；砍 `theatre` 还牵动 vendored 衬线字体（Playfair / Noto Serif SC，约 5.8MB）的去留；砍 `dark` 牵动 `index.html` 的 `theme-color` 与 `settings.ts:66` 的默认值 |
+| 老用户存档里的旧值 | 现在有兜底但**没有映射**：`normalizeThemeName()` 把未知值落回默认皮肤（M23-b 建的）。真要砍必须同时补一张"旧 id → 新 id"别名表，否则用户会觉得主题被偷偷改了 |
+
+建议（等你拍）：**这一轮先不收口到 5 套**。先用同一条命令把二次元 8 款也量一遍（`SKINS=f,g,h,i,j,k,l,m node scripts/skin-preview.mjs`），13 套的实测数字齐了再一次性定最终 5 套——那时"砍哪几套 + 旧值映射表 + 字体去留"能在一个批次里做完，而不是现在砍 3 套、之后又为 ACG 皮肤加回来。现在就写一张空的别名表不算完成这件事，所以这一条我只摊事实、不动代码。
