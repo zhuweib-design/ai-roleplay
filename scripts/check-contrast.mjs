@@ -211,13 +211,19 @@ const semanticChecks = [
   { name: '次要文本/背景', fg: 'muted-foreground', bg: 'background' },
   { name: '次要文本/卡片', fg: 'muted-foreground', bg: 'card' },
   { name: '次要文本/浮起卡片', fg: 'muted-foreground', bg: 'card-elevated' },
-  { name: '强调文本(secondary)/背景', fg: 'secondary', bg: 'background' },
-  { name: '强调文本(secondary)/卡片', fg: 'secondary', bg: 'card' },
   { name: '品牌文本(primary-fg)/背景', fg: 'primary-fg', bg: 'background' },
   { name: '品牌文本(primary-fg)/卡片', fg: 'primary-fg', bg: 'card' },
   { name: '错误文本(destructive)/卡片', fg: 'destructive', bg: 'card' },
+  // 「强调文本(secondary)/…」三条曾长期挂在清单里，但 M23-f 之后**没有任何规则**再把
+  // --secondary 当文字色用（49 处全部迁到派生的 --secondary-text；实测 grep 只剩
+  // border-left-color 两处非文字用途）。它们于是变成"皮肤必须让辅色既能当填充又能当文字"
+  // 这条并不存在的设计要求——E 新粗野的亮粉按设计就只做色块与边框。文字那一档由下面
+  // 【派生】secondary-text/… 三条继续把关，删掉的是重复的那一半。
   { name: '主按钮文字 on-primary/primary', fg: 'on-primary', bg: 'primary' },
-  { name: '次按钮文字 on-accent/secondary', fg: 'on-accent', bg: 'secondary' },
+  // 「次按钮文字 on-accent/secondary」这条写的是 M23-f 之前的模型：那时"压在辅色上的字"
+  // 和"压在 error/橙/蓝填充上的字"共用 --on-accent 一个槽。E 新粗野实测证明两者方向相反
+  // （亮粉上要黑字、暗红上要白字），槽位已拆成 --on-secondary / --on-accent 两个。
+  // 辅色那一半由下面那条 on-secondary/secondary 把关，这里不再重复指认错的 token。
   { name: '错误提示 error-fg/error-bg', fg: 'error-fg', bg: 'error-bg' },
   { name: '成功提示 success-fg/success-bg', fg: 'success-fg', bg: 'success-bg' },
   { name: '信息文本 accent-blue/背景', fg: 'accent-blue', bg: 'background' },
@@ -234,6 +240,17 @@ const semanticChecks = [
   { name: '【派生】warning-text/卡片', fg: 'warning-text', bg: 'card' },
   { name: '【派生】accent-blue-text/背景', fg: 'accent-blue-text', bg: 'background' },
   { name: '【派生】accent-blue-text/卡片', fg: 'accent-blue-text', bg: 'card' },
+  // ↓ M23-f 新增：辅色填充上的反色文字。它此前只能在真实页面上量出来（axe / skin-preview），
+  // 要等皮肤落地后才被 B 段抓到；加进 A 段是为了**写皮肤的时候**就拦住。
+  // 依据：E 新粗野实测亮粉 #FF5C8A 上白字只有 2.94，而同套暗红填充上黑字只有 3.34
+  // ⇒ --on-accent 与 --on-secondary 是两个配对，必须各有一条断言。
+  // 故障注入实测：把 brutal 的 --on-secondary 换成 #FFFFFF ⇒ A 段红并点名 2.94。
+  //
+  // 刻意**没有**加 on-accent × error 这一对：它确实也是真实配对（6 处按钮用它），
+  // 但 light 主题现在就是 #FFFFFF on #E5484D = 3.91，属 B 段棘轮里的存量。
+  // 把它提进 A 段等于把一条存量债变成硬门禁 ⇒ 门禁常红，或者逼一次"改浅色主题的红"
+  // 这种没被要求的视觉改动。先记在这里，等那条存量真被收口时再提。
+  { name: '辅色填充上的文字 on-secondary/secondary', fg: 'on-secondary', bg: 'secondary' },
 ];
 
 // ── B. 扫描真实样式：实际出现的 color × background 配对 ─────────────────────
@@ -291,24 +308,45 @@ function evaluatePair(fgExpr, bgExpr, vars) {
 
 if (process.argv.includes('--self-test')) {
   const darkVars = themeVars.get('dark');
-  // 正样本：应当达标
-  const okPair = evaluatePair('var(--on-accent)', 'var(--secondary)', darkVars);
+  // 正样本：压在辅色填充上的文字（M23-f 之后由 --on-secondary 承担）应当达标
+  const okPair = evaluatePair('var(--on-secondary)', 'var(--secondary)', darkVars);
   // 负样本：历史缺陷形态（白字叠亮青）——必须被判为不达标
   const badPair = evaluatePair('var(--on-media)', 'var(--secondary)', darkVars);
 
   let pass = true;
   if (!okPair || okPair.ratio < AA) {
-    console.error(`✗ 自检失败：正样本 on-accent/secondary 应达标，实际 ${okPair?.ratio?.toFixed(2) ?? 'n/a'}`);
+    console.error(`✗ 自检失败：正样本 on-secondary/secondary 应达标，实际 ${okPair?.ratio?.toFixed(2) ?? 'n/a'}`);
     pass = false;
   }
   if (!badPair || badPair.ratio >= AA) {
     console.error(`✗ 自检失败：负样本 on-media/secondary 应不达标，实际 ${badPair?.ratio?.toFixed(2) ?? 'n/a'}`);
     pass = false;
   }
-  console.log('─── 自检（正/负样本） ───');
-  console.log(`  正样本 on-accent/secondary = ${okPair?.ratio.toFixed(2)}:1（期望 ≥ ${AA}）`);
+  /**
+   * 第三条样本是 2026-10-12 补的：A 段主循环曾经把配对名写成 `var(${check.fg})`（少两个连字符），
+   * 于是每条配对都解析成 null、全部被"跳过而非误报"吃掉，门禁打印"全部达标"而 `--self-test` 照样绿
+   * ——因为自检自己手写的是带前缀的 `var(--on-accent)`，恰好测不到那个调用点。
+   * 这条样本走**与 A 段完全相同的取值路径**（semanticChecks + `--` 前缀拼接），
+   * 任何一条配对在某主题下解析不出来，自检就红，空跑不可能再溜过去。
+   */
+  const blind = [];
+  for (const themeName of themeNames) {
+    const vars = themeVars.get(themeName);
+    for (const check of semanticChecks) {
+      if (!evaluatePair(`var(--${check.fg})`, `var(--${check.bg})`, vars)) {
+        blind.push(`${themeName} 的「${check.name}」`);
+      }
+    }
+  }
+  if (blind.length > 0) {
+    console.error(`✗ 自检失败：有 ${blind.length} 条配对在某主题下解析不出颜色（正在空跑），例如：${blind.slice(0, 3).join('；')}`);
+    pass = false;
+  }
+  console.log('─── 自检（正/负样本 + 全配对非空跑） ───');
+  console.log(`  正样本 on-secondary/secondary = ${okPair?.ratio.toFixed(2)}:1（期望 ≥ ${AA}）`);
   console.log(`  负样本 on-media/secondary  = ${badPair?.ratio.toFixed(2)}:1（期望 < ${AA}）`);
-  console.log(pass ? '\n✓ 自检通过：门禁能区分正负样本。' : '\n✗ 自检未通过。');
+  console.log(`  ${semanticChecks.length} 项配对 × ${themeNames.length} 主题 = ${semanticChecks.length * themeNames.length} 条，全部解析出颜色：${blind.length === 0 ? '是' : `否（${blind.length} 条空跑）`}`);
+  console.log(pass ? '\n✓ 自检通过：门禁能区分正负样本，且没有在空跑。' : '\n✗ 自检未通过。');
   process.exit(pass ? 0 : 1);
 }
 
@@ -335,12 +373,22 @@ let semanticFailed = 0;
 let scanFailed = 0;
 
 console.log(`── A. 关键语义配对（${semanticChecks.length} 项 × ${themeNames.length} 主题）──`);
+/** 结构性防呆：任何一条配对求值成 null 就说明这条在空跑（历史事故见下面注释） */
+const unresolved = [];
 for (const themeName of themeNames) {
   const vars = themeVars.get(themeName);
   const themeFails = [];
   for (const check of semanticChecks) {
-    const res = evaluatePair(`var(${check.fg})`, `var(${check.bg})`, vars);
-    if (!res) continue; // 变量未定义（如该主题未覆盖），跳过而非误报
+    // 必须补 `--` 前缀：semanticChecks 里存的是裸名（'foreground'），而 resolveValue 只认
+    // `var(--x)`。这里曾写成 `var(${check.fg})` ⇒ 每条都解析成 null ⇒ 全部 continue 跳过
+    // ⇒ 门禁照样打印"27 项全部达标"。`--self-test` 也是绿的，因为它自己写的是带前缀的
+    // `var(--on-accent)`，恰好测不到这个调用点。2026-10-12 加两条新配对、拿"亮粉上放白字"
+    // 做故障注入时才发现注入根本没红——注入的是数据，闸门读的是空气。
+    const res = evaluatePair(`var(--${check.fg})`, `var(--${check.bg})`, vars);
+    if (!res) {
+      unresolved.push(`${themeName} 的「${check.name}」：--${check.fg} on --${check.bg} 解析不出颜色`);
+      continue;
+    }
     if (res.ratio < AA) themeFails.push({ check, res });
   }
   const total = semanticChecks.length;
@@ -353,6 +401,12 @@ for (const themeName of themeNames) {
       console.log(`      FAIL  ${check.name}: ${res.ratio.toFixed(2)}:1  (${res.fg} on ${res.bg})`);
     }
   }
+}
+if (unresolved.length > 0) {
+  console.log(`\n✗ A 段有 ${unresolved.length} 条配对解析不出颜色 —— 这条门禁正在空跑，它的绿不能作为验证证据：`);
+  for (const u of unresolved.slice(0, 12)) console.log(`    ${u}`);
+  if (unresolved.length > 12) console.log(`    …其余 ${unresolved.length - 12} 条`);
+  process.exit(1);
 }
 
 console.log(`\n── B. 实际样式扫描（${scannedPairs.length} 处 color×background 配对）──`);
