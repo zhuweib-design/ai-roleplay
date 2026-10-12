@@ -2853,3 +2853,25 @@ M19 的前半不是迁移，是先做安全网：M18 定的纪律是"改名批�
 | 静态门禁全套 | `typecheck` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions` / `check:token-baseline` / `token:self-test` 退出码 0 |
 
 | 未做（诚实边界） | ① 只落了 5 款里的 1 款；A/B/E 的改法已给到具体色号与实测比值但没落地，D 挂在"缺一个更深的紫"；② 旧 5 套皮肤（dark/light/midnight/oled/theatre）与"内置共 5 套"的裁决现在冲突（实际 6 套），去留要用户定；③ 45 行 `var(--tk-*)` 直引仍未收口（换肤换不全的主因）；④ 二次元 8 款未测；⑤ `scripts/ui-shot.mjs` 的"设置页各分类"那一步已失效（点 `[role=tab]` 超时，设置导航早已改成 radio），本轮只拿到 15 张路由截图；⑥ `scripts/contrast-audit.mjs` 仍是孤儿脚本（手写四套色值、漏 light、不在 CI），换肤越多它越失真。 |
+
+### M23-d 第二款「极光夜曲」落地、「墨纸」按实测撤出：对照里"改一处文字色"的说法被修正
+
+落地第二条皮肤时，对照文档给 A 的判断（"改一处按钮文字色即可"）被实测扩写了：该套辅色 `#4FD1C5` 是亮青，`--on-accent` 若沿用原型给的纯白，得到的是 **1.87:1**，而且一次命中 `.filter-tab.active`、`.quick-char-submit`、`.step-flow-row.done .step-flow-no`、`.active-badge`、`.badge-active` 等一批"填充 secondary + 文字 on-accent"的组件用法。改成该套自己的深墨 `#0A0B14` 后这些配对全部达标，落地后 A 对对比度扫描的贡献是 **0 处**。
+
+| 皮肤 | 语义配对（27 项） | 真实 DOM 扫描新增 | 处置 |
+|---|---|---|---|
+| terminal | 全达标 | 1 处（既有 badge 配对，随后被 `--badge-bg/--badge-fg` 收掉） | 已落地 |
+| aurora | 全达标 | **0 处** | 已落地 |
+| ink（墨纸） | 全达标 | **34 处** | 做完后撤出本批 |
+
+墨纸撤出的理由不是"效果不好"，是**门禁账算不过来**：它那 34 处与现有 `light` 主题同类的老缺陷（提供方徽章把品牌色写死在组件里、压在 badge 底上；`set-primary:hover` 橙压米 3.71），而对比度棘轮基线 131 已被现有皮肤占满（当前扫描 122）。把墨纸塞进去只能靠"上调基线"来放行，那等于把门禁调高——正是 M18-c 立棘轮时要避免的失效模式。取值与改法完整留在 CHANGELOG 的 M23-d 条目，等"徽章/提供方色"收口批一起落地。
+
+顺带把这条教训写回对照文档：**"改一处文字色"只是就语义配对而言；真实页面上还有一整批"填充 secondary + 文字 on-accent"的用法，所以任何亮辅色的皮肤都必须同时定义 `--on-accent`。**
+
+| 验证 | 结果 |
+|---|---|
+| 对比度门禁 | 通过：8 款皮肤（含撤出前的 ink）各 27 项语义配对全达标；扫描存量 122 ≤ 基线 131，aurora 贡献 0 |
+| 主题相关 e2e | 24 条全绿（`theme-flow` / `theme-visual` 7 款 / `contrast-axe` / 中性网 7 款）。三处皮肤清单在 M23-b 已接进 `THEME_PRESETS`，本批加皮肤它们**零改动**就多测一列 |
+| 中性基线 | 重生成到 3,927 个读数（7 款）；**原有 6 款的 3,366 个读数逐条比对一字未变** |
+| 单测 | `tests/i18n` + `tests/stores/settings` + `tests/tooling` 81 条通过 |
+| 撤出是否干净 | `grep 'ink'` 在 src/e2e 只剩 `thinking` / `Linked` 等无关词；`.swatch-ink` 与卡片条目、i18n 键、themes.css 块全部移除（typecheck 与 lint 0 error） |
