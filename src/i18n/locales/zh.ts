@@ -2353,6 +2353,8 @@ export default {
   'settingsView.themeTheatreDesc': '墨黑底 + 烛金强调，衬线标题',
   'settingsView.themeTerminal': '新终端',
   'settingsView.themeTerminalDesc': '纯黑底 + 荧光青细线，等宽字形与直角',
+  'settingsView.themeAurora': '极光夜曲',
+  'settingsView.themeAuroraDesc': '靛黑夜色 + 极光紫，玻璃模糊与柔光',
   'settingsView.themeCustom': '自定义',
   'settingsView.themeCustomDesc': '上传图片自动提取主色，生成专属主题',
   'settingsView.themeChanged': '主题已切换为：{name}',

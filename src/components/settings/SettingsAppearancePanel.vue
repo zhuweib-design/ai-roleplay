@@ -372,6 +372,12 @@ const themeOptions = computed<ThemeOption[]>(() => [
     swatchClass: 'swatch-terminal',
   },
   {
+    value: 'aurora',
+    label: t('settingsView.themeAurora'),
+    description: t('settingsView.themeAuroraDesc'),
+    swatchClass: 'swatch-aurora',
+  },
+  {
     value: 'custom',
     label: t('settingsView.themeCustom'),
     description: t('settingsView.themeCustomDesc'),
@@ -959,6 +965,10 @@ URL
 
 .swatch-terminal {
   background: linear-gradient(135deg, #05070a, #38f2c8);
+}
+
+.swatch-aurora {
+  background: linear-gradient(135deg, #0a0b14, #8b7cf6);
 }
 
 .swatch-custom {

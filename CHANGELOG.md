@@ -846,3 +846,9 @@
 - 第 15 轮全量 e2e（单 worker）：**192 passed（20.3m）**。权重表按它重生成，`MEASURED_CASES = 192`，37 个 spec 全覆盖，`--check` 复核同一份跑数 ⇒ "分组仍然够平，无需重生成"。
 - 时长从上一轮单 worker 的 12.4m 涨到 20.3m，按 spec 归因（同一台机器、同一 dev server）：新增的 `mobile-control-font-size` 只占 +25s，其余增长落在**本轮没碰过的** spec 上——`contrast-axe` +108s（皮肤从 5 涨到 6，多一整列）、`ux-duplicate-a11y-names` +80s、`ux-modal-describedby-more` +38s、`group-chat-flow` +29s。这个形状更像长跑的 dev server 变慢（端口 5179 那个是被 `E2E_REUSE_SERVER=1` 复用的，本会话在它上面做了数十次 HMR），而不是用例变胖。**该假设未验证**：重启 dev server 再跑一次对照需要动别人也在这个端口上用的服务，没有擅自做。
 - 静态门禁：`typecheck` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions` / `a11y:contrast`（terminal 27 项全达标，扫描存量 122 ≤ 基线 131）/ `check:token-baseline` / `token:self-test` 退出码 0；`tests/tooling` 8 条全绿。
+
+### 新增（UX/IA M23-d：第二款原型皮肤「极光夜曲」进产品；「墨纸」按实测撤出本批）
+- `html[data-theme='aurora']` 落地（第 7 个内置皮肤）。落地时改掉了原型给的一处取值：该套辅色 `#4FD1C5` 是亮青，`--on-accent` 沿用原型的纯白会得到 **1.87:1**（扫描点到 `.filter-tab.active` / `.quick-char-submit` / `.step-flow-row.done .step-flow-no` / `.active-badge` 等一批"填充 secondary + 文字 on-accent"的用法），改为该套深墨 `#0A0B14` 后这些配对全部达标 ⇒ 新增皮肤对对比度扫描的贡献是 **0 处**。
+- 「墨纸」（原型 B 款）先落地又**按实测撤出**：它的 27 项语义配对全达标，但真实 DOM 扫描带进 **34 处**新的低对比配对（与现有 `light` 主题同类的老缺陷：提供方徽章写死品牌色压在 badge 底上、`set-primary:hover` 的橙压米 3.71 等）。对比度棘轮是"只许降不许升"，基线 131 已被现有皮肤占满，硬塞进去就等于把门禁调高 ⇒ 撤出，等"徽章/提供方色"那条收口批一起处理。取值与改法保留在本条与对照文档里，落地时可直接取用。
+- 皮肤清单仍是单一来源：`ThemeName` / `THEME_PRESETS` / 设置页卡片 / 预览色块 / `theme-flow` 逐条加，`contrast-axe`、`theme-visual`、`token-neutrality` 三处**没改一行**就多测了新皮肤（这是 M23-b 把清单接进 `THEME_PRESETS` 的回款）。
+- 本批验证：`typecheck` 0；`a11y:contrast` 通过（8 款语义配对各 27 项全达标，扫描存量 122 ≤ 基线 131，aurora 贡献 0）；主题相关 e2e 24 条全绿；中性基线重生成到 3,927 个读数（7 款皮肤），**原有 6 款的 3,366 个读数逐条比对一字未变**；`tests/i18n` + `tests/stores/settings` + `tests/tooling` 81 条通过。

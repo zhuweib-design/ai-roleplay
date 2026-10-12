@@ -295,3 +295,73 @@ html[data-theme='terminal'] {
   --font-display: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas, "Microsoft YaHei", monospace;
   --font-sans: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas, "Microsoft YaHei", monospace;
 }
+
+/* ─── 极光夜曲（原型 A 款 Aurora Nocturne）───
+   靛黑夜色 + 极光紫主色 + 青绿辅色 + 玻璃模糊。
+   落地条件（见 docs/design/THEME_5_GENERIC_PREVIEW/通用五款对照.md）：真实页面上 3 处
+   不达标全部是"白字压在极光紫上"（3.33），所以主按钮/填充态的文字色取该套的深墨
+   `#0A0B14`（压在 #8B7CF6 上实测 5.89），不用原型给的 accent-contrast 纯白。 */
+html[data-theme='aurora'] {
+  --background: #0A0B14;
+  --card: #12141F;
+  --card-elevated: #1D2133;
+  --video-bg: #0C0E18;
+
+  --foreground: #ECEEF7;
+  --muted-foreground: #A7AEC6;
+  /* 该套辅色 #4FD1C5 是亮青，白字压上去只有 1.87 ⇒ 填充态文字一律用深墨
+     （与 C 新终端同一处置：亮主色必须配深字） */
+  --on-accent: #0A0B14;
+  --on-primary: #0A0B14;
+  --primary-foreground: #0A0B14;
+
+  --border: rgba(255, 255, 255, 0.18);
+
+  --primary: #8B7CF6;
+  --primary-fg: #9E92F8;
+  --secondary: #4FD1C5;
+  --ring: #A99BFF;
+
+  --success: #4ADE80;
+  --success-bg: rgba(74, 222, 128, 0.16);
+  --success-fg: #4ADE80;
+
+  --destructive: #F87171;
+  --error: #F87171;
+  --error-bg: rgba(248, 113, 113, 0.16);
+  --error-fg: #F87171;
+
+  --warning-fg: #FBBF24;
+  --warning-bg: rgba(251, 191, 36, 0.16);
+  --warning-border: rgba(251, 191, 36, 0.36);
+  --danger-fg: #F87171;
+  --danger-bg: rgba(248, 113, 113, 0.16);
+  --danger-border: rgba(248, 113, 113, 0.36);
+
+  --accent-blue: #60A5FA;
+  --accent-orange: #FBBF24;
+
+  --tag-blue: #60A5FA;
+  --tag-green: #4ADE80;
+  --tag-purple: #9E92F8;
+  --tag-gray: #A7AEC6;
+
+  --badge-bg: rgba(139, 124, 246, 0.16);
+  --badge-fg: #ECEEF7;
+
+  --scrim-modal: rgba(5, 6, 12, 0.66);
+  --scrim-mask: rgba(5, 6, 12, 0.66);
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-shell: 28px;
+
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-popup: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+
