@@ -15,6 +15,7 @@ import axe from 'axe-core';
  */
 // 清单来自 src/types 的 THEME_PRESETS（唯一的内置皮肤来源），新增皮肤不必再改这里
 import { THEME_PRESETS } from '../src/types';
+import { applyThemeAndWait } from './theme-persistence';
 
 const THEMES: string[] = [...THEME_PRESETS];
 
@@ -47,12 +48,14 @@ async function axeContrast(page: Page) {
   return results.violations ?? [];
 }
 
-/** 切换到指定主题：dark 为默认主题无需切换；其余需在设置页点击主题卡并等待持久化写入 IndexedDB */
+/**
+ * 切换到指定主题：dark 为默认主题无需切换。
+ * 落盘判据用 `theme-persistence.ts` 里那份（直接读 IndexedDB，不导航不 reload）——
+ * 本用例是在同一个页面里连着切 9 款皮肤，用 reload 验证会稳定失败。
+ */
 async function applyTheme(page: Page, theme: string) {
   if (theme === 'dark') return;
-  await page.goto('/settings');
-  await page.locator(`.theme-card[data-value="${theme}"]`).click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+  await applyThemeAndWait(page, theme, '/settings');
   await page.waitForTimeout(300);
 }
 

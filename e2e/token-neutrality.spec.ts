@@ -37,6 +37,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import { THEME_PRESETS } from '../src/types';
+import { applyThemeAndWait } from './theme-persistence';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -172,13 +173,13 @@ const PROPS = [
 
 test.use({ viewport: VIEWPORT });
 
-/** 切主题：走真实 UI（设置页主题卡），等 data-theme 落地，再等计算样式不再变才采样 */
+/**
+ * 切主题：走真实 UI（设置页主题卡），并等它**真的落盘**再返回（见 `theme-persistence.ts`）。
+ * 不等这一步，下面 `goto(t.route)` 会让文档重新加载、回落到默认皮肤，
+ * 整份基线就采成了另一套皮肤（实测 brutal 一条红 143 处，实得值全是 dark 的）。
+ */
 async function applyTheme(page: Page, theme: string): Promise<void> {
-  await page.goto('/settings?cat=appearance');
-  const card = page.locator(`.theme-card[data-value="${theme}"]`);
-  await expect(card).toBeVisible();
-  await card.click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+  await applyThemeAndWait(page, theme);
   // 主题切换带颜色过渡，过渡中间态会让"半混合色"进基线（axe 那边为此踩过 450ms 的坑）。
   // 这里不用固定等待：轮询到连续两次读数相同才算稳，最多 2.5s。
   await expect

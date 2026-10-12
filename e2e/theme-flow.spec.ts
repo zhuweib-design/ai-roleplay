@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { THEME_PRESETS } from '../src/types';
+import { waitForPersistedTheme } from './theme-persistence';
 
 /**
  * E2E · 主题系统 (F09)
@@ -29,9 +30,7 @@ test('主题：切换全部内置皮肤并验证 data-theme 与键盘导航', as
   // 卡片总数 = 内置皮肤 + custom：皮肤清单若还有别处手写而漏改，这里会露出来
   await expect(page.locator('.theme-card[data-value]')).toHaveCount(themes.length + 1);
 
-  // radiogroup 键盘导航：聚焦暗夜剧场后按 ArrowLeft 回到 OLED（验证键盘导航即时响应）。
-  // 顺带纠正本文件旧注释的一处错话：键盘切换**是**会写持久化的 —— 循环里最后点击的是清单
-  // 末尾那款，而下面的刷新断言回来的仍是 OLED，只有"键盘那次切换落过盘"才解释得通。
+  // radiogroup 键盘导航：聚焦暗夜剧场后按 ArrowLeft 回到 OLED（验证键盘导航的即时响应）。
   const theatre = page.locator('.theme-card[data-value="theatre"]');
   await theatre.focus();
   await expect(theatre).toBeFocused();
@@ -39,7 +38,18 @@ test('主题：切换全部内置皮肤并验证 data-theme 与键盘导航', as
   await expect(page.locator('.theme-card[data-value="oled"]')).toHaveAttribute('aria-checked', 'true');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'oled');
 
-  // 刷新后主题保持：回到的应是**最后一次切换**（键盘那次）选中的 OLED，而不是循环末尾的皮肤
+  /**
+   * 刷新后主题保持。这里刻意**不复用上面那次键盘切换**做持久化断言：
+   * 主题写盘是异步的，实测 4 worker 并发跑全量时，reload 回来的是循环末尾点击的那款
+   * （brutal）而不是键盘选中的 oled —— 也就是"DOM 已切换、盘还没写"。单跑必绿，
+   * 所以这个竞态一直藏着。（本文件旧注释先说"键盘不写持久化"，我上一轮又反向改成了
+   * "键盘确实写持久化"，两句都是拿单次运行的结果当结论；实测结论是：**写，但是异步落盘**。）
+   *
+   * 落盘的判据用"读 IndexedDB 那条设置记录"，不用"reload 后看 data-theme"——后者看着更真实，
+   * 实际会稳定失败：reload 让应用重新读盘读到旧值，那次读档回写又盖掉刚点的新值。
+   */
+  await page.locator('.theme-card[data-value="oled"]').click();
+  await waitForPersistedTheme(page, 'oled');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'oled');
 });
