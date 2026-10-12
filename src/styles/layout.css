@@ -72,11 +72,11 @@
 }
 
 /* 激活态：整颗填充 secondary 底色 + 反色文字（用户明确要求背景填充而非左侧竖线）。
-   文字色必须走 `var(--primary-foreground, var(--background))` 这条既有约定：
-   仓库里并没有定义 --primary-foreground，全部靠回退值；写死 #fff 会在青色主题下
-   得到 #fff on #7df9ff = 1.24 的对比度（axe 三条用例实测）。 */
+   文字色走 `--primary-foreground`：这条变量原先全仓没定义、一直靠回退值，2026-10-12 起
+   在 tokens.css 里显式定义为"今天的兜底值"（画面不变），换皮肤时逐套覆写。
+   写死 #fff 会在青色主题下得到 #fff on #7df9ff = 1.24 的对比度（axe 三条用例实测）。 */
 .nav-item.active {
-  color: var(--primary-foreground, var(--background));
+  color: var(--primary-foreground);
   background: var(--secondary);
 }
 

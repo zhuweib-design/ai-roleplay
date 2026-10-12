@@ -75,6 +75,17 @@
   --on-media: #FFFFFF;
   --on-accent: #161823;
 
+  /* 填充色之上的文字色（导航激活项、主按钮这类"整块填充 + 反色文字"）
+     取值 = 今天的实际生效值：`layout.css` 一直在写 `var(--primary-foreground, var(--background))`，
+     而这个变量全仓没定义过，永远走兜底。这里把它定义成兜底值 ⇒ 画面零变化，
+     但换皮肤时能逐套覆写（浅色皮肤沿用兜底会得到 3.0 级的对比，实测见
+     docs/design/THEME_5_GENERIC_PREVIEW/通用五款对照.md）。 */
+  --primary-foreground: var(--background);
+
+  /* 遮罩层（弹窗 0.65 / 移动端抽屉 0.5 是现状两个值，换肤时逐套覆写） */
+  --scrim-modal: rgba(0, 0, 0, 0.65);
+  --scrim-mask: rgba(0, 0, 0, 0.5);
+
   /* Border · 分隔线（≥3:1 vs card，满足 WCAG 1.4.11 非文本 UI 组件对比） */
   --border: #666C9E;
 

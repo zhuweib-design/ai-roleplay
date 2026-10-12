@@ -813,3 +813,11 @@
 - 第 14 轮全量 e2e（4 worker，切分之后）：**187 passed（7.5m）**，本轮新增的五条主题用例并发下各 10.0–12.1s（切分前那条串起来的用例并发下 39–50s，配置的单测预算是 60s）。
 - 静态门禁：`lint` / `check:css-conventions`(5/5) / `a11y:contrast` + 自检 / `check:token-baseline`(74 ≤ 基线 74) / `token:self-test`(9/9) / `i18n:check:strict` / `typecheck` 退出码全 0；`npx vitest run` 201 文件 3938 用例通过 / 3 跳过；`tests/tooling` 8 条全绿。
 - 注入与对照（本批共六处，各自红过、还原后全绿）：错一档 token、假选择器、驼峰属性名、基线属性清单不符、权重表漏 spec、A 类棘轮新增一条。
+
+### 变更（UX/IA M23-a 前置修：把"永远走兜底"的死引用与两处写死遮罩接进 token）
+- `src/styles/tokens.css` 新增三条语义变量：`--primary-foreground`（取值 = 今天的实际生效值 `var(--background)`）、`--scrim-modal` `rgba(0,0,0,.65)`、`--scrim-mask` `rgba(0,0,0,.5)`。
+- `src/styles/layout.css:79` 的 `color: var(--primary-foreground, var(--background))` 去掉兜底：该变量原先**全仓没定义**，永远走回退值，浅色皮肤下回退成"该套背景色当文字"必然糊（对照实测：D 款 5 处 3.03、E 款 5 处 2.43）。现在它是有定义的语义槽，换肤时逐套覆写。
+- `Modal.vue:167` 与 `base.css:243` 的写死黑遮罩改走 `--scrim-modal` / `--scrim-mask`（原型每套自带 `--color-bg-scrim`，不接进来则浅色皮肤的弹窗发脏）。
+- 三处都按"计算值不变"来做并在真实浏览器里核过：`.nav-item.active` 文字仍是 `rgb(11, 11, 16)`、`.modal-overlay` 仍是 `rgba(0, 0, 0, 0.65)`、`.overlay-mask` 仍是 `rgba(0, 0, 0, 0.5)`。中性网 5 条主题用例全绿（2,805 个读数零差异）。
+- 体检读数变化：B 类（未定义但有兜底）36 → **27**，正是 `--primary-foreground` 的 9 处；C 类组件层字面量颜色 146 → 145（遮罩那处进了 token 定义层）。A 类 74 不变。
+- 新增 `scripts/skin-preview.mjs`：把原型的配色注入**真实产品页面**出截图并逐元素算 WCAG 对比度（渐变/图片底不参与计数、单独列出交给人看）。对照结果与逐套改法见 `docs/design/THEME_5_GENERIC_PREVIEW/通用五款对照.md`。

@@ -164,7 +164,7 @@ onBeforeUnmount(() => {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--scrim-modal);
   display: flex;
   align-items: center;
   justify-content: center;
