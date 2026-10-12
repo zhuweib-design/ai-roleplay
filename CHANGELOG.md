@@ -853,3 +853,13 @@
 - 皮肤清单仍是单一来源：`ThemeName` / `THEME_PRESETS` / 设置页卡片 / 预览色块 / `theme-flow` 逐条加，`contrast-axe`、`theme-visual`、`token-neutrality` 三处**没改一行**就多测了新皮肤（这是 M23-b 把清单接进 `THEME_PRESETS` 的回款）。
 - 本批验证：`typecheck` 0；`a11y:contrast` 通过（8 款语义配对各 27 项全达标，扫描存量 122 ≤ 基线 131，aurora 贡献 0）；主题相关 e2e 24 条全绿；中性基线重生成到 3,927 个读数（7 款皮肤），**原有 6 款的 3,366 个读数逐条比对一字未变**；`tests/i18n` + `tests/stores/settings` + `tests/tooling` 81 条通过。
 - 全量 e2e（4 worker，八款皮肤后）：**194 passed / 1 failed（9.1m）**。红的那条是 `ux-modal-describedby-seeded`（webkit，数据银行删除确认）撞在 60s 单测上限，而**单跑同一 spec 5 条全绿、该条只花 3.2s** ⇒ 属 `playwright.config.ts` 注释里已承认的"并发下随机红 1–3 条，红相是负载不是回归"（本会话第三次观测到同类：`token-neutrality`、`ux-event-trace`、这次）。CI 侧 `workers: 1` + `retries: 2` 会吸收；本地单测预算要不要从 60s 抬到 90s 是另一个决定（它同时决定失败暴露的速度），本批没动。
+
+### 变更（UX/IA M23-e：徽章一类低对比全局收口，「墨纸」第二次尝试落地成功）
+- 徽章的默认填充从 `var(--border)` 换成 `var(--card-elevated)`（文字仍 `--muted-foreground`）。这是一次**有意的视觉改动**（老主题的徽章略微变深），换来的是扫描存量 **122 → 89**（−33 处）：`.size-badge` / `.provider-badge` / `.status-badge` / `.file-badge` / `.group-count` 这一族在每套主题上都是 2.0~2.5 级，根因是"边框 token 被拿去当填充"。另把 `VectorModelPanel.vue` 最后一处反序写法（color 在前）也接进 badge token。
+- 「墨纸」重做验证并**落地**（第 8 个内置皮肤）。第一次撤出的 34 处里 33 处就是上面这一族，全局收口后它只剩 4 处，逐条处理：
+  - 社区市场评分星 `.rating`：`#9A6B12` 压在纸白上 4.41（axe 实测，差 0.09）→ 该套的 `--accent-orange`/`--warning-fg` 同档压深到 `#8F630F`（5.00）；
+  - 本地模型页 `.header-tag.available`：`#2F6B45` 压在 success 淡底上 4.24 → `--success`/`--success-fg`/`--tag-green` 压深到 `#2A6040`（4.94）。
+  两处都是"改这套皮肤自己的取值"，没有动组件。
+- axe 真实浏览器审计：`ink` 的 7 条路由从 1 处违规到 **0**；八款皮肤各 27 项语义配对全达标；扫描存量 120 ≤ 基线 131。
+- 「E 新粗野」仍不落地，堵点量化了：全仓 **51 处、25 个文件**把 `--secondary` 当**文字色**用（`color: var(--secondary)`），而该套辅色是亮粉 `#FF5C8A`，压在浅底上 2.43。要么给它一个更深的辅色（原型没有），要么把"辅色做填充"与"辅色做强调文字"拆成两个 token（51 处迁移，对现有主题是中性改动）。这条已单独立项，不靠调高门禁基线绕过。
+- 本批验证：`typecheck` 0、`eslint --quiet` 0 error、主题相关 e2e 28 条全绿（含 `contrast-axe` 八款 × 7 路由）、中性基线 4,488 个读数且**原有 7 款 3,927 个读数一字未变**。

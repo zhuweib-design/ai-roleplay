@@ -378,6 +378,12 @@ const themeOptions = computed<ThemeOption[]>(() => [
     swatchClass: 'swatch-aurora',
   },
   {
+    value: 'ink',
+    label: t('settingsView.themeInk'),
+    description: t('settingsView.themeInkDesc'),
+    swatchClass: 'swatch-ink',
+  },
+  {
     value: 'custom',
     label: t('settingsView.themeCustom'),
     description: t('settingsView.themeCustomDesc'),
@@ -969,6 +975,10 @@ URL
 
 .swatch-aurora {
   background: linear-gradient(135deg, #0a0b14, #8b7cf6);
+}
+
+.swatch-ink {
+  background: linear-gradient(135deg, #f4f1ea, #b23a2f);
 }
 
 .swatch-custom {

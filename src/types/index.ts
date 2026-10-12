@@ -245,6 +245,7 @@ export type ThemeName =
   | 'theatre'
   | 'terminal'
   | 'aurora'
+  | 'ink'
   | 'custom';
 
 /** 字号档位：12 / 14 / 16 / 18 */
@@ -284,6 +285,7 @@ export const THEME_PRESETS: readonly ThemeName[] = [
   'theatre',
   'terminal',
   'aurora',
+  'ink',
 ] as const;
 
 /** 读档归一：不在白名单里的值（旧版本存档、手改数据）落回默认皮肤 */

@@ -364,4 +364,71 @@ html[data-theme='aurora'] {
   --shadow-popup: 0 16px 48px rgba(0, 0, 0, 0.55);
 }
 
+/* ─── 墨纸（原型 B 款 Ink Paper）───
+   纸白底 + 朱砂红主色 + 衬线标题，无模糊、小圆角，走"印刷页"的读感。
+   第一次落地时因真实 DOM 扫描带进 34 处低对比配对而撤出（M23-d）；那 34 处里 33 处
+   是"徽章拿边框色当填充"这一类，已在 M23-e 全局收口（扫描 122 → 89），故重做验证。
+   语义配对的达标线：填充态文字一律用该套 accent-contrast 纯白（纸白 #FAF8F3 压 warning
+   只有 4.41，纯白 4.68）。 */
+html[data-theme='ink'] {
+  --background: #F4F1EA;
+  --card: #FAF8F3;
+  --card-elevated: #FFFFFF;
+  --video-bg: #F0ECE3;
 
+  --foreground: #1C1A17;
+  --muted-foreground: #57534B;
+  --on-accent: #FFFFFF;
+  --on-primary: #FFFFFF;
+  --primary-foreground: #FFFFFF;
+
+  --border: rgba(28, 26, 23, 0.32);
+
+  --primary: #B23A2F;
+  --primary-fg: #96291F;
+  --secondary: #3F6B5C;
+  --ring: #B23A2F;
+
+  --success: #2A6040;
+  --success-bg: rgba(42, 96, 64, 0.12);
+  --success-fg: #2A6040;
+
+  --destructive: #A32B22;
+  --error: #A32B22;
+  --error-bg: rgba(163, 43, 34, 0.12);
+  --error-fg: #A32B22;
+
+  --warning-fg: #8F630F;
+  --warning-bg: rgba(143, 99, 15, 0.14);
+  --warning-border: rgba(143, 99, 15, 0.36);
+  --danger-fg: #A32B22;
+  --danger-bg: rgba(163, 43, 34, 0.12);
+  --danger-border: rgba(163, 43, 34, 0.36);
+
+  --accent-blue: #2F5D8C;
+  --accent-orange: #8F630F;
+
+  --tag-blue: #2F5D8C;
+  --tag-green: #2A6040;
+  --tag-purple: #7C3A5F;
+  --tag-gray: #57534B;
+
+  --badge-bg: rgba(178, 58, 47, 0.1);
+  --badge-fg: #1C1A17;
+
+  --scrim-modal: rgba(28, 26, 23, 0.42);
+  --scrim-mask: rgba(28, 26, 23, 0.42);
+
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-shell: 10px;
+
+  --shadow-card: 0 1px 2px rgba(28, 26, 23, 0.07);
+  --shadow-elevated: 0 2px 6px rgba(28, 26, 23, 0.08);
+  --shadow-popup: 0 6px 18px rgba(28, 26, 23, 0.1);
+
+  --font-display: "Playfair Display", "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+}

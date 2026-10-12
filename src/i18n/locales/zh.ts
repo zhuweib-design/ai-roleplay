@@ -2355,6 +2355,8 @@ export default {
   'settingsView.themeTerminalDesc': '纯黑底 + 荧光青细线，等宽字形与直角',
   'settingsView.themeAurora': '极光夜曲',
   'settingsView.themeAuroraDesc': '靛黑夜色 + 极光紫，玻璃模糊与柔光',
+  'settingsView.themeInk': '墨纸',
+  'settingsView.themeInkDesc': '纸白底 + 朱砂红，衬线标题与小圆角',
   'settingsView.themeCustom': '自定义',
   'settingsView.themeCustomDesc': '上传图片自动提取主色，生成专属主题',
   'settingsView.themeChanged': '主题已切换为：{name}',

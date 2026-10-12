@@ -919,8 +919,8 @@ select.field-input {
   padding: 1px 8px;
   font-size: 10px;
   font-weight: 600;
-  color: var(--muted-foreground);
-  background: var(--border);
+  color: var(--badge-fg);
+  background: var(--badge-bg);
   border-radius: var(--radius-pill);
   font-family: var(--font-mono);
 }

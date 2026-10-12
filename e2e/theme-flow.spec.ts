@@ -18,6 +18,7 @@ test('主题：切换全部内置皮肤并验证 data-theme 与键盘导航', as
     { value: 'oled', label: 'OLED 黑' },
     { value: 'terminal', label: '新终端' },
     { value: 'aurora', label: '极光夜曲' },
+    { value: 'ink', label: '墨纸' },
   ];
 
   // 逐个点击切换：aria-checked + data-theme 同步

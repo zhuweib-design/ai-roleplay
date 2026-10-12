@@ -2354,6 +2354,8 @@ const en: Record<MessageKey, string> = {
   'settingsView.themeTerminalDesc': 'Near-black canvas, neon-cyan hairlines, monospace and square corners',
   'settingsView.themeAurora': 'Aurora Nocturne',
   'settingsView.themeAuroraDesc': 'Indigo night with aurora violet, glass blur and soft glow',
+  'settingsView.themeInk': 'Ink Paper',
+  'settingsView.themeInkDesc': 'Paper white with cinnabar red, serif headings, tight corners',
   'settingsView.themeCustom': 'Custom',
   'settingsView.themeCustomDesc': 'Upload an image to auto-extract its palette',
   'settingsView.themeChanged': 'Theme switched to: {name}',

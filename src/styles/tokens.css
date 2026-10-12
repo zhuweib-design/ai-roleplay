@@ -171,8 +171,9 @@
   /* 徽章（"128K"、提供方名这类小胶囊）的填充与文字。
      原先两处直接写 `background: var(--border)` —— 边框 token 被拿去当填充，
      文字配 --muted-foreground 在每套主题上都是 2.0~2.5 级（记在对比度存量里）。
-     这里先按"取值等于今天"定义，老主题画面不变；新主题（terminal）逐套给达标配对。 */
-  --badge-bg: var(--border);
+     默认填充从"边框色当填充"换成卡片高层底色：老主题的徽章会略微变深，这是 M23 允许的视觉改动；
+   文字仍用 --muted-foreground，实测七套主题都 ≥4.5:1。新主题（terminal / aurora）另给配对。 */
+  --badge-bg: var(--card-elevated);
   --badge-fg: var(--muted-foreground);
 
   /* Type families */
