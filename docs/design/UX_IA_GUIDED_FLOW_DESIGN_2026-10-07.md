@@ -2874,4 +2874,5 @@ M19 的前半不是迁移，是先做安全网：M18 定的纪律是"改名批�
 | 主题相关 e2e | 24 条全绿（`theme-flow` / `theme-visual` 7 款 / `contrast-axe` / 中性网 7 款）。三处皮肤清单在 M23-b 已接进 `THEME_PRESETS`，本批加皮肤它们**零改动**就多测一列 |
 | 中性基线 | 重生成到 3,927 个读数（7 款）；**原有 6 款的 3,366 个读数逐条比对一字未变** |
 | 单测 | `tests/i18n` + `tests/stores/settings` + `tests/tooling` 81 条通过 |
+| 全量 e2e（4 worker） | 194 passed / 1 failed（9.1m）。红的是 `ux-modal-describedby-seeded`(webkit) 撞 60s 单测上限，**单跑该 spec 5 条全绿、该条只 3.2s** ⇒ 配置注释已承认的负载红相（本会话第三次）。CI 是 `workers: 1` + `retries: 2`，本地预算是否抬到 90s 另议 |
 | 撤出是否干净 | `grep 'ink'` 在 src/e2e 只剩 `thinking` / `Linked` 等无关词；`.swatch-ink` 与卡片条目、i18n 键、themes.css 块全部移除（typecheck 与 lint 0 error） |
