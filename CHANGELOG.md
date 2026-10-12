@@ -792,3 +792,24 @@
 - 判断：**不按 CI 数字重加权**。同 SHA 两次之间三组差 ≤10%，只有组 3 从 123s 跳到 198s（+60%），那是单组的一次离群（文件清单完全相同，不可能是分组问题），拿它改分组就是追噪声。`--check` 的 ≤1.3x 阈值继续按本地单 worker 口径判。
 - 关掉的边界：台账上挂最久的"e2e 分片只在本地等价环境跑过，CI 并发度下一次都没实跑"。
 - 未闭合：每个 e2e job 的"Install Playwright browsers"固定开销 45–68s（占 job 的 26–37%）未做缓存；CI 读数没进权重过期门禁，离群只能人工读；"0.6 倍"来自两次同 SHA 样本，是量出来的近似而非校准系数。
+
+### 测试（UX/IA M19-a：像素中性回归网，5 主题 × 33 个选择器 × 17 个属性）
+- 新增 `e2e/token-neutrality.spec.ts` + 入库基线 `e2e/neutrality-baseline.json`（2,805 个读数）。裁判用真实浏览器的 `getComputedStyle` 而不是截图：截图要人看，计算样式能直接进断言；静态守卫（M18-c 的 `token-guard --strict`）抓不到"引用了一个合法存在但档位不同的 token"。
+- 建网时踩到一个会让网"绿着但什么都没测"的坑：`getPropertyValue` 只认 CSS 连字符名，写成驼峰（`rowGap`）返回空串，而空串与空串"一致"——注入 `gap: 16px→12px` 时用例照样绿。修法是把属性名全改连字符，并加两条结构性守卫：**读到空值即红**、**选择器量不到可见元素即红**。后者针对设置页 7 个面板 `v-show` 互斥：`/settings?cat=extension` 下 `.settings-section` 有 13 个匹配、只有 1 个可见（探针实测），取错对象不报错，只会把别的面板当成基线。
+- 牙齿四条实测：等价 token 替换（`16px/20px` → `--gap-stack-lg/--space-5`）绿；错一档（→ `--space-3`）红并点名 `row-gap: 16px → 12px`；假选择器红在"空转"；驼峰属性名红在"读到空值"。
+- 用例形状按量出来的数字改过一次：串成一条时单跑 5.7s 但 4 worker 全量并发下 39–50s，贴着 `playwright.config.ts` 的 60s 单测预算（该文件注释早写着"并发下随机红 1–3 条，红相是负载不是回归"）；**切成一条主题一条用例后并发下 10.0–12.1s**，余量 5 倍且红了直接说是哪套主题。切分后用 UPDATE 重生成基线，与已入库版本除日期外逐字节等价。
+- `NEUTRALITY_UPDATE=1` 是唯一的基线再生成入口；M19–M22 的纪律是这几批必须中性，所以"需要跑 UPDATE"本身就该先当 bug 查。
+
+### 变更（UX/IA M19-b：设置面板一族的前两块迁入 token，实测像素中性）
+- `SettingsExtensionPanel.vue`、`SettingsAboutPanel.vue` 的桌面可见规则迁入 L1 结构层：含字面量 px 的声明从 30 行 / 32 个值与 33 行 / 36 个值降到 6 行 / 6 个与 7 行 / 8 个，全局 `token-guard` 的 D 类从 3,701 降到 3,647（**去掉 54 个值**，与两文件对账一致）。A 类 74 处与 C 类 146 处不变——本批不该碰，也确实没碰。
+- 用的档位：`--gap-stack-lg / --gap-inline-md / --gap-inline-sm / --gap-stack-sm / --gap-stack-xs`、`--space-5 / --space-4 / --space-3 / --space-2-5 / --space-2 / --space-1-5 / --space-px`、`--font-size-lg/md/sm/xs/2xs`、`--line-height-normal`、`--radius-sm / --radius-circle`、`--size-border-thin`。半步（6px、10px）在本批真的用上了：`padding: 6px 10px` → `var(--space-1-5) var(--space-2-5)`。
+- 保留字面量有清单（13 行）并写明原因：4 行在 `@media (max-width: 640px)` 里（中性网看不见断点块 ⇒ 纪律是本批不动断点块）、2 行 `min/max-width` 尺寸、1 行 `padding: 14px 16px`（14 不在阶上，不写半 token 半字面量）、2 行 34px 头像、2 行 15px 字号、1 行 I7 的 `font-size: 16px`（`i7-control-font-size-guard.mjs` 按数字判 ≥16px，写成 token 就把那条兜底的证据擦掉了）。
+- 新量出的既有缺陷：两个面板的样式里死选择器很多（`SettingsExtensionPanel` 18 个类里 12 个、`SettingsAboutPanel` 25 个里 7 个，scoped + 类名不在本模板 ⇒ 规则永不命中），而 I7 守卫的"已覆盖"只看同文件同选择器有没有 ≥16px 兜底，**这些死规则会被算成已覆盖**。这条要先变成断言再动，不在改名批顺手删。
+- 本批验证：中性网 5 条全绿（2,805 个读数零差异）；`lint` / `check:css-conventions` / `a11y:contrast` + 自检 / `check:token-baseline` / `token:self-test` / `i18n:check:strict` / `typecheck` 退出码全 0；全量 vitest 3938 通过 / 3 跳过；全量 e2e 在 4 worker 下 187 passed（7.5m）。
+- 未闭合（诚实边界）：断点块内的规则不在本网覆盖范围；只跑一个桌面内核（webkit 无这份账）；死选择器与 I7 误判只登记未修；`ux-event-trace` 在 4 worker 下红过一次、撞在 60s 单测上限（单跑量级 14s，属配置注释已承认的负载红相，本批未改其预算）；B 类 36 处兜底仍未逐条判。
+
+### 收口（UX/IA M19：本轮门禁与跑数）
+- 第 13 轮全量 e2e（**单 worker**，M19 全部改动之后）：**187 passed（12.4m）**，退出码 0。权重表用这份跑数重生成：四组 182 / 183 / 182 / 183 秒，极差 **1.008x**，`MEASURED_CASES = 187`，36 个 spec 全覆盖（含 `token-neutrality.spec.ts`）。`--check` 复核同一份跑数 ⇒ "分组仍然够平，无需重生成"。
+- 第 14 轮全量 e2e（4 worker，切分之后）：**187 passed（7.5m）**，本轮新增的五条主题用例并发下各 10.0–12.1s（切分前那条串起来的用例并发下 39–50s，配置的单测预算是 60s）。
+- 静态门禁：`lint` / `check:css-conventions`(5/5) / `a11y:contrast` + 自检 / `check:token-baseline`(74 ≤ 基线 74) / `token:self-test`(9/9) / `i18n:check:strict` / `typecheck` 退出码全 0；`npx vitest run` 201 文件 3938 用例通过 / 3 跳过；`tests/tooling` 8 条全绿。
+- 注入与对照（本批共六处，各自红过、还原后全绿）：错一档 token、假选择器、驼峰属性名、基线属性清单不符、权重表漏 spec、A 类棘轮新增一条。

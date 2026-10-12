@@ -77,10 +77,10 @@ const showLoginPanel = ref(false);
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
+  gap: var(--gap-stack-lg);
+  padding: var(--space-5);
   background: var(--card);
-  border: 1px solid var(--border);
+  border: var(--size-border-thin) solid var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -88,23 +88,23 @@ const showLoginPanel = ref(false);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--gap-inline-md);
   flex-wrap: wrap;
 }
 
 .section-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--gap-inline-sm);
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--foreground);
   margin: 0;
 }
 
 .section-hint {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--muted-foreground);
   margin: 0;
 }
@@ -143,12 +143,13 @@ const showLoginPanel = ref(false);
 .data-mgmt-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--gap-stack-lg);
 }
 
 .data-mgmt-row {
+  /* 14px 不在 4px 阶上（半步只补了 6/10），整条 shorthand 保留字面量，不写半 token 半字面量 */
   padding: 14px 16px;
-  border: 1px solid var(--border);
+  border: var(--size-border-thin) solid var(--border);
   border-radius: var(--radius-md);
   background: var(--card-elevated, var(--card));
 }
@@ -156,21 +157,21 @@ const showLoginPanel = ref(false);
 .data-mgmt-block {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--gap-stack-sm);
 }
 
 .data-mgmt-subtitle {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--foreground);
 }
 
 .data-mgmt-hint {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--muted-foreground);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 /* ── 本地用户（原 /profile 唯一内容块）── */
@@ -178,24 +179,25 @@ const showLoginPanel = ref(false);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--gap-inline-md);
   flex-wrap: wrap;
 }
 
 .account-user {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: var(--gap-inline-md);
 }
 
 .account-avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* 34px 不在头像阶（20/28/40/56/88）上、15px 不在字号阶（14/16）上，两处留字面量 */
   width: 34px;
   height: 34px;
   flex: 0 0 auto;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   background: var(--primary);
   color: var(--on-primary);
   font-size: 15px;
@@ -205,14 +207,14 @@ const showLoginPanel = ref(false);
 .account-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--gap-stack-xs);
   min-width: 0;
 }
 
 .account-name-line {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--gap-inline-sm);
   margin: 0;
 }
 
@@ -223,23 +225,23 @@ const showLoginPanel = ref(false);
 }
 
 .account-active {
-  padding: 1px 8px;
+  padding: var(--space-px) var(--space-2);
   border-radius: var(--radius-pill);
   background: var(--primary);
   color: var(--on-primary);
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
 }
 
 .account-login-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
+  gap: var(--space-1-5);
+  padding: var(--space-1-5) var(--space-2-5);
+  border: var(--size-border-thin) solid var(--border);
   border-radius: var(--radius-md);
   background: var(--card-elevated, var(--card));
   color: var(--foreground);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   cursor: pointer;
 }
 
@@ -247,12 +249,12 @@ const showLoginPanel = ref(false);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--gap-inline-md);
   margin: 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-  font-size: 12px;
-  line-height: 1.5;
+  padding-top: var(--space-3);
+  border-top: var(--size-border-thin) solid var(--border);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
   color: var(--muted-foreground);
 }
 </style>
