@@ -872,3 +872,15 @@
 - 新目标的牙齿实测：把 `.chat-header` 的左右内边距从 `var(--space-4)` 换成 `var(--space-3)` ⇒ 中性网点名 `chat-surface/oled/.chat-header { padding-left }: 16px → 12px`（还原后 8 条全绿）。
 - 本批验证：`lint` / `check:css-conventions` / `check:token-baseline` / `typecheck` 退出码 0；中性网 8 条全绿；全局 D 类字面量 px 3,647 → 3,639。
 - 一次自伤记录（照实写）：还原注入时用了 `git checkout -- src/styles/layout.css`，把该文件**未提交的迁移改动一起抹掉**了，随后按行重做并复验。教训是还原注入必须用"只回滚那一处"的定向脚本，不能用整文件 checkout。
+
+### 变更（UX/IA M23-f：三类"一色多用"各归其槽，第 9 款皮肤「新粗野」落地）
+- **`--secondary` 当文字色用的 49 处迁到派生 token `--secondary-text`**（24 个文件），并把 `ChatMain.vue` 里那条手写的 `color-mix(in srgb, var(--secondary) 78%, var(--foreground))` 收进同一个 token（取值不变）。该 token 的既有语义就是"强调色作文字时的可读变体"，此前只有 3 处用它、49 处绕过它。实测 8 款皮肤的"辅色文字压在 card 上"比值全部变好：`light` 5.17→6.90、`theatre` 5.12→6.42、`oled` 7.45→8.90、`ink` 5.70→7.31；静态对比度扫描存量 **119 → 110**。
+- **22 处"辅色当填充 + 反色文字"并到新增的 `--on-secondary`**（默认 `var(--on-accent)` ⇒ 现有 8 款零变化）。起因是 E 新粗野实测：亮粉 `#FF5C8A` 上白字只有 **2.94**，而同套暗红填充上黑字只有 **3.34** —— 一个 `--on-accent` 撑不住两种配对。顺带删掉 M23-a 引入、迁移后已零消费者的 `--primary-foreground`（含 terminal/aurora/ink 三处覆写，其值与同套 `--on-accent` 完全相同）。
+- **1 处"边框色当填充"补 `--on-border-fill`**（默认 `var(--foreground)`）：`CommunityMarketView` 的 ghost 按钮 hover 用 `--border` 当填充，而 E 的边框与正文同为纯黑 ⇒ 实测 **1.00:1** 的隐形文字。全仓 `background: var(--border)` 共 14 处，只有这一处配了文字。
+- 新增第 9 款内置皮肤 `brutal`（E 新粗野：米纸底 `#EFE9DC` + 纯黑 2px 硬边框 + 零圆角 + 实心偏移投影 + 电光蓝）。与原型取值不同的四处，全部由实测决定：`--on-accent` 白 / `--on-secondary` 黑（见上）、`--secondary-text` 指到深粉 `#A8134A`（亮粉按设计不做 13px 文字，但产品有 4 处把辅色当文字）、红从 `#C42B22` 压到 `#96190F`（axe 实测 `.header-tag.unavailable` 在 20% 染层上只有 4.34，`#A81F17` 仍差 0.16）。
+- 门禁自身的两个缺陷一并修掉，都不是皮肤的问题：
+  - 中性网加 `nav-rail` 第四个目标，并把采样改成**连采两次直到一致**。第一版把 `.nav-item` 的过渡中间帧 `rgb(83, 86, 98)` 记进了基线——那是 `#AEB2C0` 与 `#161823` 之间的一帧，既不是改前也不是改后的值，这条目标会永远在测一个没人见过的状态。牙齿实测：`.nav-item.active` 文字色改成 `--foreground` ⇒ 9 条里点名 terminal 并红。
+  - axe 的 `settle()` 从固定 `waitForTimeout(450)` 改成轮询 `document.getAnimations()` 直到没有 running/paused 动画。9 款皮肤 × 4 worker 下固定等待不够：实测 theatre 红在 `.nav-item.active`，axe 报的字色 `#2d2618` 与底色 `#ca536f` **都不属于任何一套皮肤**，正是 .15s 颜色过渡的中间帧。
+- `e2e/theme-flow.spec.ts` 的皮肤清单改为取 `THEME_PRESETS`。它原先是手写八条，靠"卡片总数 = 清单数 + custom"兜漏改——加第 9 款时它确实红了，但红法是"记得改两处"而不是"不需要改"。同时纠正该文件注释里的一处错话：键盘切换主题**是**会写持久化的（循环末尾点击的是清单最后一款，而刷新后回来的是键盘选中的 OLED）。
+- 本批验证（与提交同版本）：`typecheck` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions`(5/5) / `check:token-baseline` / `token:self-test`(9/9) / `check:important` / `check:hover` / `check:breakpoints` / `check:viewport` 全部退出码 0；对比度门禁 9 款 × 27 项语义配对全达标、扫描存量 126 ≤ 基线 131；中性网 9 条全绿（基线 **7,191 个读数**，与 HEAD 逐条比对：**改动 0 处**、新增 1,343 处 = 新皮肤 799 + 新目标在 8 款老皮肤上的 544）；axe 11 条全绿；`theme-flow` / `theme-visual` 全绿；单测 90 条通过。
+- 诚实边界：中性网只覆盖 47 个选择器，本批迁移的站点大多在它之外 ⇒ "改动 0 处"是**覆盖范围内**的中性证明，全局证明靠语义配对 27 项 × 9 款 + 扫描存量下降 + axe。E 落进产品的仍只是它 142 个 token 里的 36 个（25%），`--component-*` / `--effect-*` 那一层还没有槽位。
