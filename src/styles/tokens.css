@@ -73,14 +73,18 @@
   --foreground: #F5F5F7;
   --muted-foreground: #AEB2C0;
   --on-media: #FFFFFF;
+  /* 压在饱和填充（error / primary-fg / accent-orange 这类）上的反色文字 */
   --on-accent: #161823;
-
-  /* 填充色之上的文字色（导航激活项、主按钮这类"整块填充 + 反色文字"）
-     取值 = 今天的实际生效值：`layout.css` 一直在写 `var(--primary-foreground, var(--background))`，
-     而这个变量全仓没定义过，永远走兜底。这里把它定义成兜底值 ⇒ 画面零变化，
-     但换皮肤时能逐套覆写（浅色皮肤沿用兜底会得到 3.0 级的对比，实测见
-     docs/design/THEME_5_GENERIC_PREVIEW/通用五款对照.md）。 */
-  --primary-foreground: var(--background);
+  /* 压在**亮**辅色填充上的反色文字（导航激活项、空态主按钮这类"亮辅色整块填充 + 反色文字"）。
+     默认等于 --on-accent ⇒ 现有 8 款皮肤画面不变；只有当一套皮肤的辅色很亮、
+     而 error/primary-fg 那些填充偏暗时（E 新粗野实测：亮粉 #FF5C8A 上白字只有 2.94，
+     而同套的暗红 #C42B22 上黑字只有 3.34），才需要各写一个值。
+     两个槽分开是因为它们**确实**是两种配对，不是为了好看。 */
+  --on-secondary: var(--on-accent);
+  /* 压在"边框色当填充"那一族上的文字色（ghost 按钮 hover 实测 14 处用 --border 作填充）。
+     默认等于 --foreground ⇒ 现有 8 款皮肤画面不变；E 新粗野的边框与正文同为纯黑，
+     沿用兜底会得到 1.00:1 的隐形文字，所以它要自己指一次。 */
+  --on-border-fill: var(--foreground);
 
   /* 遮罩层（弹窗 0.65 / 移动端抽屉 0.5 是现状两个值，换肤时逐套覆写） */
   --scrim-modal: rgba(0, 0, 0, 0.65);

@@ -1396,7 +1396,7 @@ function handleExport() {
 
 .create-mode-btn.active {
   border-color: var(--secondary);
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .create-quick {
@@ -1437,7 +1437,7 @@ function handleExport() {
 @media (hover: hover) and (pointer: fine) {
   .header-btn:hover {
     border-color: var(--secondary);
-    color: var(--secondary);
+    color: var(--secondary-text);
   }
 }
 
@@ -1540,7 +1540,7 @@ function handleExport() {
   border-radius: var(--radius-pill);
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .field-input {
@@ -1637,7 +1637,7 @@ function handleExport() {
 
 .type-btn.active {
   background: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
 }
 
 .type-btn:focus-visible {
@@ -1714,7 +1714,7 @@ function handleExport() {
 @media (hover: hover) and (pointer: fine) {
   .upload-btn:hover {
     border-color: var(--secondary);
-    color: var(--secondary);
+    color: var(--secondary-text);
   }
 }
 
@@ -1837,7 +1837,7 @@ function handleExport() {
 
 .preview-tags {
   font-size: 12px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   margin: 0;
 }
 
@@ -1930,7 +1930,7 @@ function handleExport() {
 
 .attr-badge {
   font-size: 10px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   background: color-mix(in srgb, var(--secondary) 12%, transparent);
   padding: 1px 6px;
   border-radius: var(--radius-pill);
@@ -2019,7 +2019,7 @@ function handleExport() {
 @media (hover: hover) and (pointer: fine) {
   .add-stat-btn:hover {
     border-color: var(--secondary);
-    color: var(--secondary);
+    color: var(--secondary-text);
   }
 }
 

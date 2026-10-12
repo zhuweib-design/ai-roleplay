@@ -507,7 +507,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
 }
 
 .conv-pin {
-  color: var(--secondary);
+  color: var(--secondary-text);
   flex-shrink: 0;
 }
 

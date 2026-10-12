@@ -195,7 +195,7 @@ function onKeydown(event: KeyboardEvent): void {
 
 .step-flow-row.done .step-flow-no {
   background: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
 }
 
 .step-flow-text {
@@ -217,7 +217,7 @@ function onKeydown(event: KeyboardEvent): void {
   border: var(--size-border-thin) solid var(--secondary);
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: var(--font-size-xs);
   cursor: pointer;
 }

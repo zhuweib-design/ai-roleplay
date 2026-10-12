@@ -149,7 +149,7 @@ function submit(): void {
   border: 1px solid var(--secondary);
   border-radius: var(--radius-sm, 8px);
   background: var(--secondary);
-  color: var(--on-accent, var(--background));
+  color: var(--on-secondary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

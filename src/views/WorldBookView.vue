@@ -1913,7 +1913,7 @@ function strategyLabel(s: LorebookStrategy): string {
 .link-btn {
   background: none;
   border: none;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
   text-decoration: underline;
@@ -2002,7 +2002,7 @@ function strategyLabel(s: LorebookStrategy): string {
   border: 1px dashed var(--secondary);
   border-radius: var(--radius-sm, 8px);
   background: transparent;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
 }
@@ -2220,7 +2220,7 @@ function strategyLabel(s: LorebookStrategy): string {
 
 .world-desc-tag {
   font-size: 10px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   padding: 2px 6px;
   background: color-mix(in srgb, var(--secondary) 12%, transparent);
   border-radius: var(--radius-sm);
@@ -2241,7 +2241,7 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 .add-world-btn {
-  color: var(--secondary);
+  color: var(--secondary-text);
   border-color: var(--border);
 }
 
@@ -2539,7 +2539,7 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 .entry-toggle.active {
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2643,7 +2643,7 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 .action-btn.duplicate {
-  color: var(--secondary);
+  color: var(--secondary-text);
   border-color: var(--border);
 }
 
@@ -2904,7 +2904,7 @@ function strategyLabel(s: LorebookStrategy): string {
   border: 1px solid var(--secondary);
   border-radius: 999px;
   background: transparent;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
 }

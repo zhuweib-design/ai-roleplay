@@ -1798,7 +1798,7 @@ type="button"
 .link-btn {
   background: none;
   border: none;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
   text-decoration: underline;
@@ -2400,7 +2400,7 @@ type="button"
 
 .msg-sender {
   font-size: 11px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   margin-bottom: 2px;
   font-weight: 500;
 }
@@ -2664,7 +2664,7 @@ type="button"
 }
 
 .check-icon {
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .empty-add {

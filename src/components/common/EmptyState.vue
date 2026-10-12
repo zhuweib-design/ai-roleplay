@@ -111,7 +111,7 @@ const titleId = computed(() => `${uid}-title`);
   border: 1px solid var(--secondary);
   border-radius: var(--radius-sm, 8px);
   background: var(--secondary);
-  color: var(--primary-foreground, var(--background));
+  color: var(--on-secondary);
   font-size: 13px;
   cursor: pointer;
 }

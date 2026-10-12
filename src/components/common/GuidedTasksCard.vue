@@ -332,7 +332,7 @@ function openGuidePage(): void {
 /* 「打开任务清单」那颗按钮的配色（尺寸已在分组选择器里给过） */
 .guided-step-action {
   border-color: var(--secondary);
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .guided-foot-row {
@@ -341,7 +341,7 @@ function openGuidePage(): void {
 
 .guided-next {
   border-color: var(--secondary);
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .guided-next-title {

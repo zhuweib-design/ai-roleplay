@@ -309,7 +309,7 @@ function cardAria(entry: NavEntry): string {
   padding: 2px 10px;
   border: 1px solid var(--secondary);
   border-radius: 999px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
 }
 
@@ -365,7 +365,7 @@ function cardAria(entry: NavEntry): string {
   border: 1px solid var(--border);
   border-radius: 999px;
   background: none;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
 }
@@ -379,7 +379,7 @@ function cardAria(entry: NavEntry): string {
 @media (hover: hover) {
   .more-prefs-edit:hover {
     background: var(--secondary);
-    color: var(--primary-foreground, var(--background));
+    color: var(--on-secondary);
   }
 
   .more-prefs-reset:hover {

@@ -2818,7 +2818,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 }
 
 .card-btn.import-btn {
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 @media (hover: hover) and (pointer: fine) {

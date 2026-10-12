@@ -780,7 +780,7 @@ function tagsPreview(tags: string[]): string {
 @media (hover: hover) and (pointer: fine) {
   .header-btn:hover {
     border-color: var(--secondary);
-    color: var(--secondary);
+    color: var(--secondary-text);
   }
 }
 
@@ -1040,7 +1040,7 @@ function tagsPreview(tags: string[]): string {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 16px;
   pointer-events: none;
   z-index: 5;
@@ -1092,13 +1092,13 @@ function tagsPreview(tags: string[]): string {
 .generate-btn {
   background: var(--card-elevated);
   border-color: var(--secondary);
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .generate-btn:hover:not(:disabled) {
     background: var(--secondary);
-    color: var(--on-accent);
+    color: var(--on-secondary);
   }
 }
 
@@ -1124,7 +1124,7 @@ function tagsPreview(tags: string[]): string {
   display: block;
   margin-top: 4px;
   font-size: 11px;
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .template-grid {
@@ -1187,7 +1187,7 @@ function tagsPreview(tags: string[]): string {
   justify-content: center;
   gap: 10px;
   padding: 16px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   background: color-mix(in srgb, var(--secondary) 8%, transparent);
   border-radius: var(--radius-md);
@@ -1205,7 +1205,7 @@ function tagsPreview(tags: string[]): string {
 .modal-generate {
   background: var(--secondary);
   border-color: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
 }
 
 @media (hover: hover) and (pointer: fine) {

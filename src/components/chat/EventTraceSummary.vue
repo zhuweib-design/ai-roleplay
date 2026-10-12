@@ -106,7 +106,7 @@ const list = computed(() => props.items ?? []);
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
 }

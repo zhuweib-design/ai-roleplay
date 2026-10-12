@@ -600,7 +600,7 @@ watch(
 /* 选中信息 */
 .selection-info {
   font-size: 12px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   padding: 4px 0;
 }
 

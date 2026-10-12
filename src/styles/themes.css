@@ -235,9 +235,8 @@ html[data-theme='terminal'] {
   --foreground: #D6F5EC;
   --muted-foreground: #7FA79E;
   --on-accent: #03130F;
+  /* 这套主色是荧光青，白字只有 1.2 级，压在它上面的文字必须深墨 */
   --on-primary: #03130F;
-  /* 填充主色/辅色之上的文字色：这套主色是荧光青，白字只有 1.2 级，必须深墨 */
-  --primary-foreground: #03130F;
 
   /* Border · 荧光青半透明细线（≥3:1 vs card，非文本 UI 对比） */
   --border: rgba(56, 242, 200, 0.4);
@@ -313,7 +312,6 @@ html[data-theme='aurora'] {
      （与 C 新终端同一处置：亮主色必须配深字） */
   --on-accent: #0A0B14;
   --on-primary: #0A0B14;
-  --primary-foreground: #0A0B14;
 
   --border: rgba(255, 255, 255, 0.18);
 
@@ -380,7 +378,6 @@ html[data-theme='ink'] {
   --muted-foreground: #57534B;
   --on-accent: #FFFFFF;
   --on-primary: #FFFFFF;
-  --primary-foreground: #FFFFFF;
 
   --border: rgba(28, 26, 23, 0.32);
 
@@ -431,4 +428,92 @@ html[data-theme='ink'] {
   --shadow-popup: 0 6px 18px rgba(28, 26, 23, 0.1);
 
   --font-display: "Playfair Display", "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   E 新粗野（Neo-Brutal）—— 原型 docs/design/ai-chat-ui-redesign/css/theme-e.css
+   米纸底 + 纯黑 2px 硬边框 + 零圆角 + 实心偏移投影；主色电光蓝、辅色亮粉。
+   形状语言（radius 全 0、描边 2/3px）走 `html[data-theme=…]` 前缀，理由见 terminal 块注释：
+   tokens-structure.css 在 themes.css 之后引入，同特指度时后引入者赢。
+
+   与原型取值不同的三处，都是为了"真实页面上读得清"而改，不是抄错：
+   ① --on-accent 用该套自己的纯黑而不是原型的白 —— 亮粉 #FF5C8A 上白字只有 2.94，
+      黑字 7.1；这条配对由 .nav-item.active 等 22 处共用（M23-f 把两个槽并成一个）。
+   ② --secondary-text 单独指到深粉 —— 亮粉按设计只做色块与边框，不做 13px 文字，
+      但产品有 4 处把辅色当文字色用（"随机生成"、世界书三步走入口）。
+   ③ --accent-orange / --warning-fg 从 #C77700 压到 #8A5200 —— 它们同时被当文字色用，
+      静态门禁的语义配对里就有"警示文本 accent-orange/背景"这一项。
+   ═══════════════════════════════════════════════════════════════════════ */
+html[data-theme='brutal'] {
+  --background: #EFE9DC;
+  --card: #FBF7EF;
+  --card-elevated: #FFFFFF;
+  --video-bg: #E8E1D2;
+
+  --foreground: #111111;
+  --muted-foreground: #3D3A33;
+  --on-media: #111111;
+  /* 亮粉填充上要黑字（白字实测 2.94），暗红/电光蓝填充上要白字 —— 两个槽分开才立得住 */
+  --on-accent: #FFFFFF;
+  --on-secondary: #111111;
+  --on-primary: #FFFFFF;
+  /* 这套的边框与正文同为纯黑：ghost 按钮 hover 用边框色当填充，沿用兜底会得到 1.00 的隐形字 */
+  --on-border-fill: #FBF7EF;
+
+  --border: #111111;
+
+  --primary: #2B5BFF;
+  --primary-fg: #1E4AE8;
+  --secondary: #FF5C8A;
+  --secondary-text: #A8134A;
+  --ring: #111111;
+
+  --success: #175A33;
+  --success-bg: #D6F2E1;
+  --success-fg: #175A33;
+
+  /* 红要同时当"20% 染层上的文字"用：#C42B22 差 1.2 档、#A81F17 仍差 0.16（实测
+     .header-tag.unavailable 得到 4.34），压到 #96190F 才在染层上到 4.7。 */
+  --destructive: #96190F;
+  --error: #96190F;
+  --error-bg: #FFDCDC;
+  --error-fg: #96190F;
+  --danger-fg: #96190F;
+  --danger-bg: #FFDCDC;
+  --danger-border: #96190F;
+
+  --warning-fg: #8A5200;
+  --warning-bg: #FFEBCC;
+  --warning-border: #8A5200;
+  --accent-blue: #1E4AE8;
+  --accent-orange: #8A5200;
+
+  --tag-blue: #1E4AE8;
+  --tag-green: #1E6B3F;
+  --tag-purple: #A8134A;
+  --tag-gray: #3D3A33;
+
+  --badge-bg: rgba(17, 17, 17, 0.1);
+  --badge-fg: #111111;
+
+  --scrim-modal: rgba(17, 17, 17, 0.55);
+  --scrim-mask: rgba(17, 17, 17, 0.55);
+
+  --shadow-card: 3px 3px 0 #111111;
+  --shadow-elevated: 4px 4px 0 #111111;
+  --shadow-popup: 6px 6px 0 #111111;
+
+  --font-display: "Archivo", "Inter", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-sans: "Archivo", "Inter", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-shell: 0px;
+  --size-border-thin: 2px;
+  --size-border-thick: 3px;
 }

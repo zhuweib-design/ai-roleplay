@@ -1483,7 +1483,7 @@ watch(
 }
 
 .preset-param-source.is-preset {
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .section-hint {
@@ -1566,7 +1566,7 @@ watch(
 }
 
 .theme-check {
-  color: var(--secondary);
+  color: var(--secondary-text);
   flex-shrink: 0;
 }
 
@@ -1771,7 +1771,7 @@ watch(
 
 .active-badge {
   background: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
   font-size: 10px;
   padding: 2px 6px;
   border-radius: var(--radius-pill);
@@ -1961,7 +1961,7 @@ watch(
 .action-btn.activate {
   background: var(--secondary);
   border-color: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2252,7 +2252,7 @@ select.field-input {
 
 .size-badge[data-size='small'] {
   background: color-mix(in srgb, var(--secondary) 18%, transparent);
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .size-badge[data-size='medium'] {

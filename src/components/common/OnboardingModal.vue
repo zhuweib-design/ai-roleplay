@@ -149,7 +149,7 @@ function goChat(): void {
   height: 20px;
   border-radius: 50%;
   background: var(--secondary);
-  color: var(--primary-foreground, var(--background));
+  color: var(--on-secondary);
   font-size: 13px;
 }
 
@@ -164,7 +164,7 @@ function goChat(): void {
   align-items: center;
   gap: 4px;
   margin-left: auto;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 12px;
 }
 

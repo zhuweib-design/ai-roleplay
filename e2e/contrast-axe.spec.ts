@@ -57,15 +57,28 @@ async function applyTheme(page: Page, theme: string) {
 }
 
 /**
- * 等待 toast/消息淡入等过渡动画结束，再运行 axe。
+ * 等过渡动画全部结束再跑 axe。
  *
- * 为什么必须是 450ms、不要为了提速改小：
- * 实测对话页消息淡入期间元素处于半透明中间态，若在 ~350ms 采样，axe 会把
- * 混合后的中间色误判为对比度不足（dark /chat 曾误报 6 个 .msg-narration 节点，
- * 稳定后为 0）。450ms 留足过渡余量，避免这类「假阳性」。
+ * 原先是固定 `waitForTimeout(450)`：实测对话页消息淡入期间元素处于半透明中间态，
+ * ~350ms 采样会让 axe 把混合后的中间色误判为对比度不足（dark /chat 曾误报 6 个
+ * `.msg-narration`，稳定后为 0）。但固定时长是**猜的**：皮肤加到 9 款、4 worker 并发时
+ * 它就不够了——实测「theatre + 9 款皮肤 + 4 worker」会红在 `.nav-item.active` 上，
+ * axe 报的字色 #2d2618、底色 #ca536f 两个都不属于任何一套皮肤，正是 .15s 颜色过渡的中间帧。
+ *
+ * 改成问浏览器"还有在跑的动画吗"：`document.getAnimations()` 覆盖 transition 与 animation
+ * 两类，长度为 0 才是真的静止。留 300ms 下限是为了不在"动画还没被派发出去"时就抢先通过。
  */
 async function settle(page: Page) {
-  await page.waitForTimeout(450);
+  await page.waitForTimeout(300);
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() =>
+          document.getAnimations().filter((a) => a.playState === 'running' || a.playState === 'paused').length
+        ),
+      { message: '2.5s 内仍有动画在跑，axe 会采到过渡中间色', timeout: 2500 }
+    )
+    .toBe(0);
 }
 
 test('对比度：每款皮肤下设置页无 WCAG AA 颜色对比违规', async ({ page }) => {

@@ -96,7 +96,7 @@ const { pushWithReturn } = useReadinessJump();
   border: 1px solid var(--secondary);
   border-radius: 999px;
   background: transparent;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
 }
@@ -104,7 +104,7 @@ const { pushWithReturn } = useReadinessJump();
 @media (hover: hover) {
   .prereq-action:hover {
     background: var(--secondary);
-    color: var(--primary-foreground, var(--background));
+    color: var(--on-secondary);
   }
 }
 

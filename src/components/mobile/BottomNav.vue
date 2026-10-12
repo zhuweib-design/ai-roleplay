@@ -64,7 +64,7 @@ const tabs = mobileTabEntries().map((entry) => ({
   transition: color 0.12s ease;
 }
 .bottom-nav-item.active {
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 .bottom-nav-label {
   font-size: 10px;

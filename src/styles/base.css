@@ -110,7 +110,7 @@ textarea,
 }
 .hover-cyan { transition: color .15s ease, border-color .15s ease; }
 @media (hover: hover) and (pointer: fine) {
-  .hover-cyan:hover { color: var(--secondary); border-color: var(--secondary); }
+  .hover-cyan:hover { color: var(--secondary-text); border-color: var(--secondary); }
 }
 .hover-red { transition: color .15s ease; }
 @media (hover: hover) and (pointer: fine) {

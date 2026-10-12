@@ -1248,7 +1248,7 @@ function startWithExample(text: string) {
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--secondary) 12%, transparent);
   /* 文字向 foreground 提亮，保证 on 彩色浅底 ≥4.5:1（theatre 粉色系 12% 底 4.38:1 → 提亮后达标） */
-  color: color-mix(in srgb, var(--secondary) 78%, var(--foreground));
+  color: var(--secondary-text);
   font-size: var(--font-size-2xs);
   font-weight: 500;
   white-space: nowrap;

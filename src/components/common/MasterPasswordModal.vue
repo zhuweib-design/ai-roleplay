@@ -489,7 +489,7 @@ function handleKeydown(e: KeyboardEvent) {
 
 .mpm-submit {
   background: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
 }
 
 @media (hover: hover) and (pointer: fine) {

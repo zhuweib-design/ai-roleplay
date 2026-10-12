@@ -504,7 +504,7 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
 
 .active-badge {
   background: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
   font-size: 10px;
   padding: 2px 6px;
   border-radius: var(--radius-pill);
@@ -517,7 +517,7 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
   margin-left: 6px;
   font-size: 10px;
   font-weight: 600;
-  color: var(--on-accent);
+  color: var(--on-secondary);
   background: var(--secondary);
   border-radius: var(--radius-pill);
   text-transform: uppercase;

@@ -207,7 +207,7 @@ const assistantActions: MsgAction[] = [
 }
 
 .gen-text {
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 12px;
 }
 

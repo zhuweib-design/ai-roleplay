@@ -1146,7 +1146,7 @@ type="button"
   border: 1px solid var(--secondary);
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 0.8rem;
   cursor: pointer;
 }
@@ -1188,7 +1188,7 @@ type="button"
   border: 1px solid var(--secondary);
   border-radius: 0.4rem;
   background: transparent;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 0.8rem;
   cursor: pointer;
 }
@@ -1199,11 +1199,11 @@ type="button"
 @media (hover: hover) {
   .installed-go:hover {
     background: var(--secondary);
-    color: var(--primary-foreground, var(--background));
+    color: var(--on-secondary);
   }
   .installed-go.ghost:hover {
     background: var(--border);
-    color: var(--foreground);
+    color: var(--on-border-fill);
   }
 }
 .installed-go:focus-visible {

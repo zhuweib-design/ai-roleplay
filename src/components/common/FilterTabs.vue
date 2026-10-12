@@ -227,8 +227,8 @@ function onKeydown(e: KeyboardEvent): void {
 
 .filter-tab.active {
   background: var(--secondary, #5b8def);
-  /* 青色底上用深色文字（--on-accent），保证 ≥4.5:1；白字 on 亮青仅 ~1.1:1 不可见 */
-  color: var(--on-accent, #161823);
+  /* 亮辅色底上用该套定义的"辅色上的字"（--on-secondary），保证 ≥4.5:1；白字 on 亮青仅 ~1.1:1 不可见 */
+  color: var(--on-secondary, #161823);
   border-color: var(--secondary, #5b8def);
   font-weight: 600;
 }

@@ -236,7 +236,7 @@ export const MODEL_CATEGORIES: readonly ModelCategoryMeta[] = [
   { value: 'embedding', label: t('types.catEmbedding'), description: t('types.catEmbeddingDesc') },
 ] as const;
 
-/** 主题名：深色（默认）/ 亮色 / 午夜蓝 / OLED 黑 / 暗夜剧场 / 新终端 / 极光夜曲 / 墨纸 / 自定义（图片提取） */
+/** 主题名：深色（默认）/ 亮色 / 午夜蓝 / OLED 黑 / 暗夜剧场 / 新终端 / 极光夜曲 / 墨纸 / 新粗野 / 自定义（图片提取） */
 export type ThemeName =
   | 'dark'
   | 'light'
@@ -246,6 +246,7 @@ export type ThemeName =
   | 'terminal'
   | 'aurora'
   | 'ink'
+  | 'brutal'
   | 'custom';
 
 /** 字号档位：12 / 14 / 16 / 18 */
@@ -286,6 +287,7 @@ export const THEME_PRESETS: readonly ThemeName[] = [
   'terminal',
   'aurora',
   'ink',
+  'brutal',
 ] as const;
 
 /** 读档归一：不在白名单里的值（旧版本存档、手改数据）落回默认皮肤 */

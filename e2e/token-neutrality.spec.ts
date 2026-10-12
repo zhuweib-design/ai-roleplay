@@ -98,6 +98,17 @@ const TARGETS: Array<{ id: string; route: string; open?: string; selectors: read
     ],
   },
   {
+    id: 'nav-rail',
+    route: '/chat',
+    /**
+     * 侧栏激活项一族（M23-f）。`.nav-item.active` 是"整块填充辅色 + 反色文字"这一配对的
+     * 代表元素，M23-f 把它的文字色从 `--primary-foreground`（= 页面底色）并进 `--on-accent`
+     * ——同一个视觉配对原先开两个槽，换皮肤要记两处、漏一处就出现"亮辅色配亮字"。
+     * 这条改动不在前三个目标里，不补这一项，网对本次改动就是绿的但没测到。
+     */
+    selectors: ['.nav-rail', '.nav-item', '.nav-item.active', '.nav-item.active .nav-label'],
+  },
+  {
     id: 'settings-about',
     route: '/settings?cat=about',
     /**
@@ -207,6 +218,26 @@ async function collect(page: Page, selectors: readonly string[]): Promise<Record
   );
 }
 
+/**
+ * 采两次直到一致才返回。
+ *
+ * 为什么必须有这一步：`.nav-item` 这类元素带 `transition: color .15s`，路由切换后
+ * 主题过渡还在跑，单次采样会把**过渡中间帧**记进基线（实测第一版把侧栏激活项的
+ * `color` 记成了 rgb(83, 86, 98) —— 那是 #AEB2C0 与 #161823 之间的一帧，
+ * 既不是改前的值也不是改后的值，于是这条目标永远在测一个没人见过的状态）。
+ * applyTheme 里那次轮询只盯 `html` 的 background-color，管不到子元素自己的过渡。
+ */
+async function collectStable(page: Page, selectors: readonly string[]): Promise<Record<string, ThemeSamples>> {
+  let prev = await collect(page, selectors);
+  for (let i = 0; i < 12; i++) {
+    await page.waitForTimeout(120);
+    const next = await collect(page, selectors);
+    if (JSON.stringify(prev) === JSON.stringify(next)) return next;
+    prev = next;
+  }
+  throw new Error('连续 1.4s 内计算样式仍未静止：采到的会是过渡中间帧');
+}
+
 type Baseline = {
   generatedAt: string;
   viewport: { width: number; height: number };
@@ -242,7 +273,7 @@ async function sampleTheme(page: Page, theme: string): Promise<Record<string, Th
         { message: `${t.route} 在 ${theme} 下有选择器始终量不到可见元素`, timeout: 20_000 }
       )
       .toBe(t.selectors.length);
-    out[t.id] = await collect(page, t.selectors);
+    out[t.id] = await collectStable(page, t.selectors);
   }
 
   const missing = Object.entries(out).flatMap(([id, sels]) =>
@@ -317,7 +348,7 @@ function assertViewport(page: Page) {
 if (UPDATE) {
   // 只在本机手动跑：一次启动串完 5 套主题再写文件（并行写同一份 JSON 会互相盖掉）。
   test.setTimeout(180_000);
-  test('重生成基线：每款皮肤 × 2 面板的计算样式（NEUTRALITY_UPDATE=1 专用）', async ({ page }) => {
+  test('重生成基线：每款皮肤 × 全部目标的计算样式（NEUTRALITY_UPDATE=1 专用）', async ({ page }) => {
     assertViewport(page);
     const samples: Baseline['samples'] = {};
     for (const theme of THEMES) {
@@ -345,7 +376,7 @@ if (UPDATE) {
    * 而且红了直接说出是哪套主题出的问题。
    */
   for (const theme of THEMES) {
-    test(`像素中性网：「${theme}」主题下三个目标的计算样式与基线一致`, async ({ page }) => {
+    test(`像素中性网：「${theme}」主题下 ${TARGETS.length} 个目标的计算样式与基线一致`, async ({ page }) => {
       assertViewport(page);
       const base = loadBaseline();
       await applyTheme(page, theme);

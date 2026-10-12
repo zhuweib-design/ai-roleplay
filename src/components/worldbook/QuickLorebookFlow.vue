@@ -278,7 +278,7 @@ function makeGlobal(): void {
   border: 1px solid var(--secondary);
   border-radius: var(--radius-sm, 8px);
   background: transparent;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
 }
@@ -302,7 +302,7 @@ function makeGlobal(): void {
 .quick-wb-done {
   margin: 0;
   font-size: 12px;
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 @media (max-width: 640px) {

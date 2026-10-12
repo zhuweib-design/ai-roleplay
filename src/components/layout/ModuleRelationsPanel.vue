@@ -132,7 +132,7 @@ function go(row: RelationRow): void {
   border: 1px solid var(--secondary);
   border-radius: 999px;
   background: transparent;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
 }
@@ -140,7 +140,7 @@ function go(row: RelationRow): void {
 @media (hover: hover) {
   .relations-go:hover {
     background: var(--secondary);
-    color: var(--primary-foreground, var(--background));
+    color: var(--on-secondary);
   }
 }
 

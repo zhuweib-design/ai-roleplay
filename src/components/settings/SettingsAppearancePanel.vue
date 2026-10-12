@@ -384,6 +384,12 @@ const themeOptions = computed<ThemeOption[]>(() => [
     swatchClass: 'swatch-ink',
   },
   {
+    value: 'brutal',
+    label: t('settingsView.themeBrutal'),
+    description: t('settingsView.themeBrutalDesc'),
+    swatchClass: 'swatch-brutal',
+  },
+  {
     value: 'custom',
     label: t('settingsView.themeCustom'),
     description: t('settingsView.themeCustomDesc'),
@@ -981,6 +987,12 @@ URL
   background: linear-gradient(135deg, #f4f1ea, #b23a2f);
 }
 
+/* 新粗野：硬切三段（米纸 / 亮粉 / 电光蓝），不用柔化渐变——这套的形状语言就是直角硬边 */
+.swatch-brutal {
+  background: linear-gradient(135deg, #efe9dc 0 50%, #ff5c8a 50% 75%, #2b5bff 75% 100%);
+  border: 2px solid #111111;
+}
+
 .swatch-custom {
   background: repeating-conic-gradient(#4b5563 0% 25%, #9ca3af 0% 50%) 50% / 8px 8px;
 }
@@ -1067,7 +1079,7 @@ URL
 }
 
 .theme-check {
-  color: var(--secondary);
+  color: var(--secondary-text);
   flex-shrink: 0;
 }
 
@@ -1202,7 +1214,7 @@ URL
 
 .active-badge {
   background: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
   font-size: 10px;
   padding: 2px 6px;
   border-radius: var(--radius-pill);
@@ -1385,7 +1397,7 @@ select.field-input {
   margin-left: 6px;
   font-size: 10px;
   font-weight: 600;
-  color: var(--on-accent);
+  color: var(--on-secondary);
   background: var(--secondary);
   border-radius: var(--radius-pill);
   text-transform: uppercase;
