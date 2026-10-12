@@ -882,9 +882,25 @@
   - 中性网加 `nav-rail` 第四个目标，并把采样改成**连采两次直到一致**。第一版把 `.nav-item` 的过渡中间帧 `rgb(83, 86, 98)` 记进了基线——那是 `#AEB2C0` 与 `#161823` 之间的一帧，既不是改前也不是改后的值，这条目标会永远在测一个没人见过的状态。牙齿实测：`.nav-item.active` 文字色改成 `--foreground` ⇒ 9 条里点名 terminal 并红。
   - axe 的 `settle()` 从固定 `waitForTimeout(450)` 改成轮询 `document.getAnimations()` 直到没有 running/paused 动画。9 款皮肤 × 4 worker 下固定等待不够：实测 theatre 红在 `.nav-item.active`，axe 报的字色 `#2d2618` 与底色 `#ca536f` **都不属于任何一套皮肤**，正是 .15s 颜色过渡的中间帧。
 - `e2e/theme-flow.spec.ts` 的皮肤清单改为取 `THEME_PRESETS`。它原先是手写八条，靠"卡片总数 = 清单数 + custom"兜漏改——加第 9 款时它确实红了，但红法是"记得改两处"而不是"不需要改"。同时纠正该文件注释里的一处错话：键盘切换主题**是**会写持久化的（循环末尾点击的是清单最后一款，而刷新后回来的是键盘选中的 OLED）。
-- 本批验证（与提交同版本）：`typecheck` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions`(5/5) / `check:token-baseline` / `token:self-test`(9/9) / `check:important` / `check:hover` / `check:breakpoints` / `check:viewport` 全部退出码 0；对比度门禁 9 款 × 27 项语义配对全达标、扫描存量 126 ≤ 基线 131；中性网 9 条全绿（基线 **7,191 个读数**，与 HEAD 逐条比对：**改动 0 处**、新增 1,343 处 = 新皮肤 799 + 新目标在 8 款老皮肤上的 544）；axe 11 条全绿；`theme-flow` / `theme-visual` 全绿；单测 90 条通过。
+- 本批验证（与提交同版本）：`typecheck` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions`(5/5) / `check:token-baseline` / `token:self-test`(9/9) / `check:important` / `check:hover` / `check:breakpoints` / `check:viewport` 全部退出码 0；对比度门禁 9 款全达标（**这一条当时写的"27 项语义配对全达标"是假的**，A 段当时正在空跑，见下面两条）、扫描存量 126 ≤ 基线 131；中性网 9 条全绿（基线 **7,191 个读数**，与 HEAD 逐条比对：**改动 0 处**、新增 1,343 处 = 新皮肤 799 + 新目标在 8 款老皮肤上的 544）；axe 11 条全绿；`theme-flow` / `theme-visual` 全绿；单测 90 条通过。
 - 追加一条（第一次全量跑数之后才归因清楚）：上面"中性网 9 条全绿"是单跑那四个 spec 的结果，**全量 4 worker 下 brutal 仍红 143 处**，且每一条实得值都是 dark 的（`rgb(245,245,247)` / `12px` 圆角 / `1px` 边框）。根因不是颜色，是**主题写盘异步**：点卡的同步 DOM 生效（`data-theme` 断言过了），但紧接着的导航让文档重新加载、应用读盘读到旧值 ⇒ 回落默认皮肤，整份基线采成了另一套。`theme-flow` 的 `Expected oled / Received brutal` 是同因另一面。
   - 修法收进新公共模块 `e2e/theme-persistence.ts`，四个用例共用。判据必须是"**直接读 IndexedDB 的 `settings/app` 记录**"，不能是"reload 后看 `data-theme`"——后者实测会**稳定失败**（brutal 在 30s 内一次都没成立过）：reload 让应用重新读盘读到旧值，那次读档回写又盖掉刚点的新值，每轮都输。
   - 我上一轮写进 `theme-flow` 注释的"键盘切换确实会写持久化"是错的结论（拿单跑必绿当依据）；实测结论是**会写，但异步落盘**，注释已按此改写。同一轮里我还把持久化断言从键盘那次切换改成跟在点击后面，避免断言依赖一个未等的写。
+
+### 修复（UX/IA M23-f 续：对比度门禁 A 段一直在空跑）
+- 主循环把配对名写成 `var(${check.fg})`，少两个连字符，而 `resolveValue` 只认 `var(--x)` ⇒ 每条配对解析成 null ⇒ 被"跳过而非误报"吃掉 ⇒ 门禁打印"27 项全部达标"而**从未算过一次**。`--self-test` 也是绿的，因为它手写的是带前缀的 `var(--on-accent)`，恰好测不到这个调用点；CI 两步（`a11y:contrast` / `a11y:contrast:self-test`）都绿，所以这状态能长期存在。
+- 发现方式：给门禁加两条新配对后做故障注入——把 brutal 的 `--on-accent` 换成白字（亮粉上实测 2.94），A 段照样打印达标。**注入的是数据，闸门读的是空气。**
+- 修完 A 段真跑起来，立刻暴露三条与 M23-f 之后模型不符的断言，逐条按"这条配对现在真存在吗"处置，而不是把门禁调松：
+  - 删 `强调文本(secondary)/背景|卡片`：49 处已迁 `--secondary-text`，实测 grep 无任何规则再把 `--secondary` 当文字色用（只剩两处 `border-left-color`）。文字那一档由已有的 `【派生】secondary-text/…` 三条把关。
+  - `次按钮文字 on-accent/secondary` 换成新增的 `on-secondary/secondary` 并设为自检正样本——旧那条写的是拆槽之前的模型，而 E 实测亮粉上要黑字、同套暗红填充上要白字，方向相反。
+  - **刻意不加** `on-accent × error`：它确实是真实配对（6 处按钮），但 `light` 现在就是 `#FFFFFF on #E5484D` = 3.91，属 B 段棘轮存量；提进 A 段等于把存量债变硬门禁，要么常红要么逼一次没被要求的视觉改动。理由写在代码注释里，等那条存量收口时再提。
+- 自检加第三条样本：走与 A 段完全相同的取值路径，逐条确认 25 项 × 9 主题 = **225 个组合**都真解析得出颜色，否则退出码 1。负向对照实测：把前缀改回去 ⇒ 自检报"225 条空跑"且退出码 1；还原 ⇒ 0。
+- 自定义主题那条链（`src/core/theme-extractor.ts` 的 `['on-accent','secondary']` 等）没动：它生成的 `secondary` 按构造同时满足"作填充"与"作文字"，单槽模型对它是成立的；而 `--on-secondary` 默认值就是 `var(--on-accent)`，自定义主题不改也拿到正确表现。
+- 修后现状：A 段 25 项 × 9 款全达标；B 段扫描 126 ≤ 基线 131；`contrast-axe` + `custom-theme-contrast` 12 条全绿。
+
+### 测试（UX/IA M23-f 续：E22 密钥落盘竞态，等的字段是第一个填的那个）
+- `e2e/ux-gap-visibility.spec.ts:152` 的 poll 只等 `imageGenConfig.endpoint`，而 endpoint 是该用例**第一个**被 fill 的字段：设置每改一次写一次盘，于是它在密钥还没输入之前就已落盘、poll 立刻通过，随后那次带密钥的写入还在飞 ⇒ reload 读到"端点/模型都对、密钥是空"。全量 4 worker 下红的形状正是这样。
+- 判据改为三字段同时到位（等价于"最后一次写入已落地"），并把盘上实得的三元组返回出来，失败时能直接看出停在哪一步。牙齿实测：期望值故意写错 ⇒ 用例红并打出实得值。
+- 同类形状在 e2e 里还有 5 处（guided-tasks 跳过态、prompt/event trace 会话恢复、batch-import、relations-panel），本轮 4 次全量里一次都没红——它们的断言是"等 DOM 到达某个只有写盘完成后才会出现的状态"，竞态被断言本身挡住。E22 这处会漏是因为 poll 主动把等待对象选错了。**先记账不动这 5 处**（无红证，改它们属于没被要求的重构）。
   - 全量重跑：131 通过 / 1 红，红的是 `e2e/ux-gap-visibility.spec.ts:152`（E22 图像 Provider 的 `#api-key` 刷新后为空，`#endpoint` / `#model` 都恢复成功），单跑该 spec 7/7 全绿，该文件最后一次改动是 907da52（M17-b），与本批无关 —— 同一类"异步落盘 + 立刻 reload"，只是多走一层主密码加密写入。已登记待办，不在本批顺手修。
 - 诚实边界：中性网只覆盖 47 个选择器，本批迁移的站点大多在它之外 ⇒ "改动 0 处"是**覆盖范围内**的中性证明，全局证明靠语义配对 27 项 × 9 款 + 扫描存量下降 + axe。E 落进产品的仍只是它 142 个 token 里的 36 个（25%），`--component-*` / `--effect-*` 那一层还没有槽位。
