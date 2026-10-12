@@ -45,16 +45,30 @@ function readWeights(reportPath) {
   // 早先只写 \w 时整个移动 project 的 14 条用例不进权重，两个 mobile spec
   // 因此没进任何组 ⇒ CI 会静默不跑它们（覆盖断言抓到过这个）。
   const anyLine =
-    /^\s*\S+\s+\d+\s+\[[\w-]+\]\s+›\s+(\S+?\.spec\.\w+):\d+:\d+\s+›.*?\((\d+(?:\.\d+)?)(ms|s)\)/;
+    /^\s*\S+\s+\d+\s+\[[\w-]+\]\s+›\s+(\S+?\.spec\.\w+):\d+:\d+\s+›.*?\((\d+(?:\.\d+)?)(ms|s|m)\)/;
+  // 看起来像用例结果行却没被上面解析出来的，必须报错而不是静默少算：
+  // 早先单位只写 (ms|s)，于是一条打成 `(1.1m)` 的用例整条不进权重（2026-10-12 抓到）。
+  const looksLikeResult = /^\s*(?:ok|passed|failed|skipped|✘|x)\s+\d+\s+\[[\w-]+\]\s+›\s+\S+:\d+:\d+/;
   const weights = new Map();
+  const unparsed = [];
   let counted = 0;
   for (const raw of text.split(/\r?\n/)) {
     const m = anyLine.exec(raw);
-    if (!m) continue;
+    if (!m) {
+      if (looksLikeResult.test(raw)) unparsed.push(raw.trim().slice(0, 140));
+      continue;
+    }
     const rel = m[1].replace(/\\/g, '/');
-    const sec = parseFloat(m[2]) / (m[3] === 'ms' ? 1000 : 1);
+    const v = parseFloat(m[2]);
+    const sec = m[3] === 'ms' ? v / 1000 : m[3] === 'm' ? v * 60 : v;
     weights.set(rel, (weights.get(rel) ?? 0) + sec);
     counted++;
+  }
+  if (unparsed.length > 0) {
+    throw new Error(
+      `${reportPath} 里有 ${unparsed.length} 行像用例结果却没解析出时长，权重会静默少算：\n` +
+        unparsed.slice(0, 5).join('\n')
+    );
   }
   if (weights.size === 0) {
     throw new Error(`从 ${reportPath} 没解析出任何用例时长（要 --reporter=list 的产物）`);

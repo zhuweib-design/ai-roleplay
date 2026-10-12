@@ -831,3 +831,18 @@
 - 主题卡预览色是死的：`.swatch-*` 五条渐变定义在 `SettingsModelPanel.vue` 的 scoped 样式里，而卡片渲染在 `SettingsAppearancePanel.vue` ⇒ 实测 `getComputedStyle('.theme-swatch').backgroundImage === 'none'`。搬进正确归属并补 `swatch-terminal` / `swatch-custom`（后者原本连定义都没有）。
 - `theme-flow` 加一条"卡片总数 = 清单数 + custom"的断言，防止以后新增皮肤却漏测。
 - 本批验证：`typecheck` 0；`a11y:contrast` 通过且打印「terminal：27 项全部达标」；`i18n:check:strict` / `check:css-conventions` / `check:token-baseline` 全 0；`contrast-axe` 8 条（含 terminal 的 7 路由）全绿；`theme-visual` 6 条、`theme-flow` 1 条、中性网 6 条全绿；中性基线重生成到 3,366 个读数，**前五款的 2,805 个读数逐条比对一字未变**（加皮肤没动老画面）。
+
+### 测试（UX/IA M23-c：I-7 加运行时判定，静态守卫"被死规则算成已覆盖"这条路关掉）
+- 新增 `e2e/mobile-control-font-size.spec.ts`：在 390 与 640 两个宽度下遍历 19 条路由，取所有**可见**的 `input / textarea / select`，读浏览器最终算出的字号，任何一条 <16px 即红并点名"哪条路由、哪个控件、祖先是谁"。
+- 为什么要运行时版本：`scripts/i7-control-font-size-guard.mjs` 判"已覆盖"的依据是同文件里存在同选择器且 ≥16px 的规则，而设置面板一族有成批"scoped 样式 + 类名不在本模板"的死规则——在真实 DOM 上实测（用元素的 `data-v-*` 归属判定）：`SettingsExtensionPanel.vue` 样式里的 `.field-input` / `.form-textarea` / `.custom-css-textarea` / `.data-mgmt-select` / `.profile-input` / `.action-btn` / `.theme-grid` / `.fontsize-grid` / `.settings-view` 共 9 个类，元素全都不带本组件 scope ⇒ 规则命不中，但静态守卫会把它们当"已兜底"。
+- 牙齿实测：把 `SettingsExtensionPanel` 的 I7 兜底 `font-size: 16px` 改成 13px ⇒ 两个宽度同时红，报出 `select / input[type=number] / input[type=password] 字号 13px（祖先 form-row）` 六条；还原后两条用例全绿（各 17.6s / 17.7s）。
+- 现状：产品今天没有 <16px 的可见可编辑控件（守卫是防回归，不是修 bug）。
+
+### 修复（UX/IA M23-c 续：分片权重生成器会静默漏掉打成"分钟"的用例行）
+- `scripts/e2e-shard-groups.mjs` 的解析式单位只写 `(ms|s)`，而 Playwright 的 list reporter 对超过 60s 的用例打成 `(1.1m)` ⇒ 那条用例整条不进权重，`MEASURED_CASES` 也少算（本轮实测：日志里 192 条，生成器数出 191）。单位补上 `m` 并做换算，权重重生成后四组 299 / 299 / 301 / 299s，极差 1.006x。
+- 同类问题不能只靠"这次发现了"：新增守卫——**看起来像用例结果行却没解析出时长的，直接报错**并列出样本。对照实测：喂一条 `(1.1h)` 的假行给 `--report`，生成器抛错退出码 1（以前是静默少算）。
+
+### 收口（UX/IA M23：本轮门禁与跑数）
+- 第 15 轮全量 e2e（单 worker）：**192 passed（20.3m）**。权重表按它重生成，`MEASURED_CASES = 192`，37 个 spec 全覆盖，`--check` 复核同一份跑数 ⇒ "分组仍然够平，无需重生成"。
+- 时长从上一轮单 worker 的 12.4m 涨到 20.3m，按 spec 归因（同一台机器、同一 dev server）：新增的 `mobile-control-font-size` 只占 +25s，其余增长落在**本轮没碰过的** spec 上——`contrast-axe` +108s（皮肤从 5 涨到 6，多一整列）、`ux-duplicate-a11y-names` +80s、`ux-modal-describedby-more` +38s、`group-chat-flow` +29s。这个形状更像长跑的 dev server 变慢（端口 5179 那个是被 `E2E_REUSE_SERVER=1` 复用的，本会话在它上面做了数十次 HMR），而不是用例变胖。**该假设未验证**：重启 dev server 再跑一次对照需要动别人也在这个端口上用的服务，没有擅自做。
+- 静态门禁：`typecheck` / `lint`(0 error) / `i18n:check:strict` / `check:css-conventions` / `a11y:contrast`（terminal 27 项全达标，扫描存量 122 ≤ 基线 131）/ `check:token-baseline` / `token:self-test` 退出码 0；`tests/tooling` 8 条全绿。
