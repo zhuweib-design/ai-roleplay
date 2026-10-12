@@ -2350,6 +2350,8 @@ const en: Record<MessageKey, string> = {
   'settingsView.themeOledDesc': 'Pure black background, OLED power saving',
   'settingsView.themeTheatre': 'Dark Theatre',
   'settingsView.themeTheatreDesc': 'Ink black + candle gold accents, serif headings',
+  'settingsView.themeTerminal': 'Neo Terminal',
+  'settingsView.themeTerminalDesc': 'Near-black canvas, neon-cyan hairlines, monospace and square corners',
   'settingsView.themeCustom': 'Custom',
   'settingsView.themeCustomDesc': 'Upload an image to auto-extract its palette',
   'settingsView.themeChanged': 'Theme switched to: {name}',

@@ -1,13 +1,14 @@
 import { test } from '@playwright/test';
+import { THEME_PRESETS } from '../src/types';
 
 /**
  * E2E · 主题视觉快照（视觉优化 需求6）
  *
- * 为每个深色主题生成设置页与对话页的全页截图，供人工核验：
+ * 为每款内置皮肤生成设置页与对话页的全页截图，供人工核验：
  * 背景/卡片/边框层级、文本对比、按钮/输入框/焦点环、图标清晰度。
  * 截图输出至 test-results/theme-shots/{theme}-{page}.png
  */
-const themes = ['dark', 'light', 'midnight', 'oled', 'theatre'];
+const themes: string[] = [...THEME_PRESETS];
 
 for (const theme of themes) {
   test(`视觉快照：${theme} 主题设置页与对话页`, async ({ page }) => {

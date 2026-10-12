@@ -168,6 +168,13 @@
   --tag-purple: #C084FC;
   --tag-gray: #9CA3AF;
 
+  /* 徽章（"128K"、提供方名这类小胶囊）的填充与文字。
+     原先两处直接写 `background: var(--border)` —— 边框 token 被拿去当填充，
+     文字配 --muted-foreground 在每套主题上都是 2.0~2.5 级（记在对比度存量里）。
+     这里先按"取值等于今天"定义，老主题画面不变；新主题（terminal）逐套给达标配对。 */
+  --badge-bg: var(--border);
+  --badge-fg: var(--muted-foreground);
+
   /* Type families */
   --font-display: Inter, "TikTok Display", ui-sans-serif, sans-serif;
   --font-sans: Inter, "TikTok Sans", ui-sans-serif, sans-serif;

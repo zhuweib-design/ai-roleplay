@@ -8,7 +8,7 @@
  * `getComputedStyle`，不是截图：截图要人看，计算样式可以直接进断言。
  *
  * 覆盖形状：
- * - **5 套主题各采一遍**。结构层（尺寸/间距/字号）与主题无关，但语义层的色是每套主题
+ * - **每款内置皮肤各采一遍**（清单取自 THEME_PRESETS，新增一款就多一列）。结构层（尺寸/间距/字号）与主题无关，但语义层的色是每套主题
  *   重定义 25–29 个变量得来的，只测 dark 等于没测剩下四套。
  * - **只取可见的那个匹配**。设置页 7 个面板是 v-show 互斥，全部挂在 DOM 上：
  *   `/settings?cat=extension` 下 `.settings-section` 有 13 个匹配、只有 1 个可见（探针实测）。
@@ -36,6 +36,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
+import { THEME_PRESETS } from '../src/types';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -43,7 +44,8 @@ const BASELINE_FILE = path.join(ROOT, 'e2e', 'neutrality-baseline.json');
 const UPDATE = process.env.NEUTRALITY_UPDATE === '1';
 const VIEWPORT = { width: 1280, height: 720 };
 
-const THEMES = ['dark', 'light', 'midnight', 'oled', 'theatre'] as const;
+/** 皮肤清单取自 src/types 的 THEME_PRESETS：新增一款就多测一列，不靠人记得改这里 */
+const THEMES: readonly string[] = THEME_PRESETS;
 
 /**
  * 每个面板一族一条目标。路由用 `?cat=`（M15-a 的守卫已经把它登记成合法的分类深链键，
@@ -277,7 +279,7 @@ function loadBaseline(): Baseline {
   expect(fs.existsSync(BASELINE_FILE), `基线文件不存在：${path.relative(ROOT, BASELINE_FILE)}`).toBe(true);
   const base = JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf8')) as Baseline;
   expect(base.viewport, `基线记录的视口与当前不符（${base.viewport.width}x${base.viewport.height}）`).toEqual(VIEWPORT);
-  expect(base.themes, '基线覆盖的主题要就是这 5 套').toEqual([...THEMES]);
+  expect(base.themes, '基线覆盖的皮肤要就是 THEME_PRESETS 这一组').toEqual([...THEMES]);
   expect([...base.props].sort(), '基线采的属性要就是这一组').toEqual([...PROPS].sort());
   return base;
 }
@@ -293,7 +295,7 @@ function assertViewport(page: Page) {
 if (UPDATE) {
   // 只在本机手动跑：一次启动串完 5 套主题再写文件（并行写同一份 JSON 会互相盖掉）。
   test.setTimeout(180_000);
-  test('重生成基线：5 主题 × 2 面板的计算样式（NEUTRALITY_UPDATE=1 专用）', async ({ page }) => {
+  test('重生成基线：每款皮肤 × 2 面板的计算样式（NEUTRALITY_UPDATE=1 专用）', async ({ page }) => {
     assertViewport(page);
     const samples: Baseline['samples'] = {};
     for (const theme of THEMES) {

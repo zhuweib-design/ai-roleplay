@@ -889,8 +889,8 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
   margin-left: auto;
   padding: 1px 6px;
   border-radius: 10px;
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: var(--badge-bg);
+  color: var(--badge-fg);
   font-size: 11px;
 }
 

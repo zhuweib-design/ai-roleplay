@@ -1541,62 +1541,10 @@ watch(
   gap: 10px;
 }
 
-.theme-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--video-bg);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color .15s ease, background-color .15s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .theme-card:hover {
-    border-color: var(--secondary);
-  }
-}
-
-.theme-card:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-}
-
-.theme-card.active {
-  border-color: var(--secondary);
-  background: color-mix(in srgb, var(--secondary) 10%, transparent);
-}
-
-.theme-swatch {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.swatch-dark {
-  background: linear-gradient(135deg, #0B0B10, #161823);
-}
-
-.swatch-light {
-  background: linear-gradient(135deg, #F7F8FA, #FFFFFF);
-}
-
-.swatch-midnight {
-  background: linear-gradient(135deg, #0A0E27, #1A2048);
-}
-
-.swatch-oled {
-  background: linear-gradient(135deg, #000000, #141414);
-}
-
-.swatch-theatre {
-  background: linear-gradient(135deg, #0C0A09, #201A12);
-}
+/* 2026-10-12 删掉此处 56 行死样式：`.theme-card / .theme-swatch / .swatch-*` 是从
+   Round-3 拆分前带过来的，本组件模板里没有任何 theme-card（实测 grep 模板零命中），
+   而卡片渲染在 SettingsAppearancePanel.vue ⇒ scoped 样式跨不过组件。
+   预览色块的正确归属已搬到 SettingsAppearancePanel.vue。 */
 
 .theme-info {
   display: flex;
@@ -1831,8 +1779,8 @@ watch(
 }
 
 .provider-badge {
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: var(--badge-bg);
+  color: var(--badge-fg);
   font-size: 10px;
   padding: 2px 6px;
   border-radius: var(--radius-pill);
@@ -2298,8 +2246,8 @@ select.field-input {
   font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-pill);
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: var(--badge-bg);
+  color: var(--badge-fg);
 }
 
 .size-badge[data-size='small'] {
@@ -2324,8 +2272,8 @@ select.field-input {
   font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-pill);
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: var(--badge-bg);
+  color: var(--badge-fg);
 }
 
 .status-badge[data-status='loaded'] {

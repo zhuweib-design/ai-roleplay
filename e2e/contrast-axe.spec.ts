@@ -4,20 +4,23 @@ import axe from 'axe-core';
 /**
  * E2E · 颜色对比度（WCAG 2.1 AA · 需求6）
  *
- * 在真实浏览器（Edge 渲染）中运行 axe color-contrast 规则，验证全部 5 主题
+ * 在真实浏览器（Edge 渲染）中运行 axe color-contrast 规则，验证全部内置皮肤
  * （dark / light / midnight / oled / theatre）下：
  * - 文本对比 ≥4.5:1、非文本 ≥3:1
  *
  * 覆盖范围：
- * 1) 设置页（主题卡片、分类侧边栏、输入框、按钮、标签、分隔线）· 5 主题
- * 2) 对话页（导航栏、消息区、输入框等主交互组件）· 5 主题
- * 3) 2026-09 全路由审计中出过违规的 7 条路由 · **全量 5 主题**（7×5=35 次扫描）
+ * 1) 设置页（主题卡片、分类侧边栏、输入框、按钮、标签、分隔线）· 每款皮肤一次
+ * 2) 对话页（导航栏、消息区、输入框等主交互组件）· 每款皮肤一次
+ * 3) 2026-09 全路由审计中出过违规的 7 条路由 · **全部内置皮肤**（7 × 皮肤数 次扫描）
  */
-const THEMES = ['dark', 'light', 'midnight', 'oled', 'theatre'];
+// 清单来自 src/types 的 THEME_PRESETS（唯一的内置皮肤来源），新增皮肤不必再改这里
+import { THEME_PRESETS } from '../src/types';
+
+const THEMES: string[] = [...THEME_PRESETS];
 
 /**
  * 2026-09 全路由 × 全主题审计中曾出现违规的 7 条路由。
- * 采用**全量 5 主题**覆盖（7×5=35 次扫描）而非抽样：
+ * 采用**全部内置皮肤**覆盖（7 × 皮肤数 次扫描）而非抽样：
  * 用全覆盖（零漏检）而非 11 次抽样；代价是这条曾经是全套里最慢的单点，
  * 因此下面按主题拆成了 5 条用例（见文件末尾的拆分原因）。
  */
@@ -65,7 +68,7 @@ async function settle(page: Page) {
   await page.waitForTimeout(450);
 }
 
-test('对比度：5 主题下设置页无 WCAG AA 颜色对比违规', async ({ page }) => {
+test('对比度：每款皮肤下设置页无 WCAG AA 颜色对比违规', async ({ page }) => {
   // 注入本地 axe-core（离线可用，不依赖 CDN）。
   // 用 addInitScript 而非 addScriptTag：addInitScript 经 CDP 原生注入，
   // 不受页面 CSP（script-src 'self'）拦截，且需在 goto 前注册。
@@ -83,7 +86,7 @@ test('对比度：5 主题下设置页无 WCAG AA 颜色对比违规', async ({ 
   }
 });
 
-test('对比度：5 主题下对话页无 WCAG AA 颜色对比违规', async ({ page }) => {
+test('对比度：每款皮肤下对话页无 WCAG AA 颜色对比违规', async ({ page }) => {
   // 测量静态终态：系统减弱动画会禁用消息淡入，避免并发渲染时抽样到半透明帧。
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript({ content: axe.source });

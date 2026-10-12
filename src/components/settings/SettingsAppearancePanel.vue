@@ -366,6 +366,12 @@ const themeOptions = computed<ThemeOption[]>(() => [
     swatchClass: 'swatch-theatre',
   },
   {
+    value: 'terminal',
+    label: t('settingsView.themeTerminal'),
+    description: t('settingsView.themeTerminalDesc'),
+    swatchClass: 'swatch-terminal',
+  },
+  {
     value: 'custom',
     label: t('settingsView.themeCustom'),
     description: t('settingsView.themeCustomDesc'),
@@ -928,6 +934,37 @@ URL
   flex-shrink: 0;
 }
 
+/* 每张卡片的预览色。这组规则原先只在 SettingsModelPanel.vue 里定义，
+   而卡片渲染在本组件 ⇒ scoped 样式跨不过去，六张卡的色块实测是透明的
+   （`getComputedStyle('.theme-swatch').backgroundImage === 'none'`）。搬进来才生效。 */
+.swatch-dark {
+  background: linear-gradient(135deg, #0b0b10, #161823);
+}
+
+.swatch-light {
+  background: linear-gradient(135deg, #f7f8fa, #ffffff);
+}
+
+.swatch-midnight {
+  background: linear-gradient(135deg, #0a0e27, #1a2048);
+}
+
+.swatch-oled {
+  background: linear-gradient(135deg, #000000, #141414);
+}
+
+.swatch-theatre {
+  background: linear-gradient(135deg, #0c0a09, #201a12);
+}
+
+.swatch-terminal {
+  background: linear-gradient(135deg, #05070a, #38f2c8);
+}
+
+.swatch-custom {
+  background: repeating-conic-gradient(#4b5563 0% 25%, #9ca3af 0% 50%) 50% / 8px 8px;
+}
+
 /* F08.4 自定义主题编辑器 */
 .custom-theme-editor {
   display: flex;
@@ -1153,8 +1190,8 @@ URL
 }
 
 .provider-badge {
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: var(--badge-bg);
+  color: var(--badge-fg);
   font-size: 10px;
   padding: 2px 6px;
   border-radius: var(--radius-pill);
@@ -1706,8 +1743,8 @@ select.field-input {
   font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-pill);
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: var(--badge-bg);
+  color: var(--badge-fg);
 }
 
 .status-badge {
@@ -1717,8 +1754,8 @@ select.field-input {
   font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-pill);
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: var(--badge-bg);
+  color: var(--badge-fg);
 }
 
 .status-badge[data-status='loaded'] {

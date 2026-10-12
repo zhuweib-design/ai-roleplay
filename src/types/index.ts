@@ -236,8 +236,8 @@ export const MODEL_CATEGORIES: readonly ModelCategoryMeta[] = [
   { value: 'embedding', label: t('types.catEmbedding'), description: t('types.catEmbeddingDesc') },
 ] as const;
 
-/** 主题名：深色（默认）/ 亮色 / 午夜蓝 / OLED 黑 / 暗夜剧场 / 自定义（图片提取） */
-export type ThemeName = 'dark' | 'light' | 'midnight' | 'oled' | 'theatre' | 'custom';
+/** 主题名：深色（默认）/ 亮色 / 午夜蓝 / OLED 黑 / 暗夜剧场 / 新终端 / 自定义（图片提取） */
+export type ThemeName = 'dark' | 'light' | 'midnight' | 'oled' | 'theatre' | 'terminal' | 'custom';
 
 /** 字号档位：12 / 14 / 16 / 18 */
 export type FontSizePreset = 12 | 14 | 16 | 18;
@@ -263,7 +263,18 @@ export interface CustomTheme {
   tokens: Record<string, string>;
 }
 
-export const THEME_PRESETS: readonly ThemeName[] = ['dark', 'light', 'midnight', 'oled', 'theatre'] as const;
+/**
+ * 内置皮肤 id（不含 custom）。既是设置页卡片的顺序来源，也是读档白名单。
+ * 2026-10-12 起被真正引用：此前它是死常量，读档处用 `saved.theme as ThemeName` 裸强转，
+ * 未知值会原样写进 `data-theme` ⇒ CSS 找不到选择器就静默回落默认皮肤，随后又被回写盘。
+ */
+export const THEME_PRESETS: readonly ThemeName[] = ['dark', 'light', 'midnight', 'oled', 'theatre', 'terminal'] as const;
+
+/** 读档归一：不在白名单里的值（旧版本存档、手改数据）落回默认皮肤 */
+export function normalizeThemeName(value: unknown, fallback: ThemeName = 'dark'): ThemeName {
+  if (value === 'custom') return 'custom';
+  return (THEME_PRESETS as readonly string[]).includes(String(value)) ? (value as ThemeName) : fallback;
+}
 
 /**
  * 聊天背景配置 (F08.2)

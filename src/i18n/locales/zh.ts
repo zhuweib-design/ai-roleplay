@@ -2351,6 +2351,8 @@ export default {
   'settingsView.themeOledDesc': '纯黑背景，OLED 省电模式',
   'settingsView.themeTheatre': '暗夜剧场',
   'settingsView.themeTheatreDesc': '墨黑底 + 烛金强调，衬线标题',
+  'settingsView.themeTerminal': '新终端',
+  'settingsView.themeTerminalDesc': '纯黑底 + 荧光青细线，等宽字形与直角',
   'settingsView.themeCustom': '自定义',
   'settingsView.themeCustomDesc': '上传图片自动提取主色，生成专属主题',
   'settingsView.themeChanged': '主题已切换为：{name}',

@@ -213,3 +213,85 @@
      Playfair Display 用于拉丁字形，Noto Serif SC 覆盖中文，离线回退系统衬线 */
   --font-display: "Playfair Display", "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
 }
+
+/* ─── 新终端（原型 C 款 Neo Terminal）───
+   纯黑底 + 荧光青/信号绿 + 等宽字形 + 直角 + 辉光代替阴影。
+   落地依据：docs/design/THEME_5_GENERIC_PREVIEW/通用五款对照.md —— 这一款在真实产品页面
+   四条路由上实测**零处**文本对比度不达标（它是五款里唯一"亮主色配深字"的）。
+
+   必须用 `html[data-theme=…]` 而不是 `[data-theme=…]`：本文件在 main.ts 里排在
+   tokens-structure.css 之前，而两者的选择器特指度相同（都是 0,1,0），
+   所以圆角/字号这类**结构层**变量若写普通属性选择器会被后引入的 `:root` 盖掉。
+   实测：`[data-theme='dark']{--radius-md:3px}` 算出来仍是 8px，加 `html` 前缀才得 3px。
+   颜色类变量不受此影响（tokens.css 排在本文件之前）。 */
+html[data-theme='terminal'] {
+  /* Surface · 近黑冷调，层级靠 1px 荧光青细线而非亮度差 */
+  --background: #05070A;
+  --card: #070B10;
+  --card-elevated: #0D141C;
+  --video-bg: #03050A;
+
+  /* Content · 青白正文 */
+  --foreground: #D6F5EC;
+  --muted-foreground: #7FA79E;
+  --on-accent: #03130F;
+  --on-primary: #03130F;
+  /* 填充主色/辅色之上的文字色：这套主色是荧光青，白字只有 1.2 级，必须深墨 */
+  --primary-foreground: #03130F;
+
+  /* Border · 荧光青半透明细线（≥3:1 vs card，非文本 UI 对比） */
+  --border: rgba(56, 242, 200, 0.4);
+
+  --primary: #38F2C8;
+  --primary-fg: #5CF7D5;
+  --secondary: #7CFF6B;
+  --ring: #38F2C8;
+
+  --success: #7CFF6B;
+  --success-bg: rgba(124, 255, 107, 0.12);
+  --success-fg: #7CFF6B;
+
+  --destructive: #FF5C6C;
+  --error: #FF5C6C;
+  --error-bg: rgba(255, 92, 108, 0.14);
+  --error-fg: #FF5C6C;
+
+  --warning-fg: #FFB020;
+  --warning-bg: rgba(255, 176, 32, 0.14);
+  --warning-border: rgba(255, 176, 32, 0.36);
+  --danger-fg: #FF5C6C;
+  --danger-bg: rgba(255, 92, 108, 0.14);
+  --danger-border: rgba(255, 92, 108, 0.36);
+
+  --accent-blue: #4DD8FF;
+  --accent-orange: #FFB020;
+
+  /* 标签色：近黑底上全部提亮到 on card ≥4.5:1 */
+  --tag-blue: #4DD8FF;
+  --tag-green: #7CFF6B;
+  --tag-purple: #38F2C8;
+  --tag-gray: #7FA79E;
+
+  /* 徽章：沿用"边框当填充"会得到 2.5 级，这里换成荧光青的淡填充 + 青白文字（实测 13.6:1） */
+  --badge-bg: rgba(56, 242, 200, 0.12);
+  --badge-fg: #D6F5EC;
+
+  /* 遮罩：这套的辉光语言要求遮罩更实，否则扫描线纹理会透过弹窗 */
+  --scrim-modal: rgba(0, 0, 0, 0.72);
+  --scrim-mask: rgba(0, 0, 0, 0.72);
+
+  /* 形状语言：直角 + 1px 细线，阴影换成同色辉光 */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 3px;
+  --radius-shell: 4px;
+  --shadow-card: 0 0 8px rgba(56, 242, 200, 0.12);
+  --shadow-elevated: 0 0 16px rgba(56, 242, 200, 0.14);
+  --shadow-popup: 0 0 28px rgba(56, 242, 200, 0.16);
+
+  /* 通篇等宽：这套的识别度一半来自字形（tnum 让数字对齐） */
+  --font-display: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas, "Microsoft YaHei", monospace;
+  --font-sans: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas, "Microsoft YaHei", monospace;
+}

@@ -12,6 +12,7 @@ import type {
   ThinkingConfig,
   SamplingOverrides,
 } from '@/types';
+import { normalizeThemeName } from '@/types';
 import type { StatusHudConfig } from '@core/status-schema';
 import { DEFAULT_STATUS_HUD_CONFIG, normalizeStatusHudConfig } from '@core/status-schema';
 import { normalizePresetId, type PresetId } from '@core/creation-preset';
@@ -481,6 +482,9 @@ export const useSettingsStore = defineStore('settings', () => {
    * 切换主题，并立即应用到 <html data-theme>
    */
   function setTheme(t: ThemeName) {
+    // 归一在唯一的 DOM 写入点做：未知值（旧存档、手改数据、被删掉的主题 id）落回默认皮肤，
+    // 而不是写进 data-theme 后靠 CSS 找不到选择器"看起来像回落"（那样还会被回写盘固化）
+    t = normalizeThemeName(t);
     theme.value = t;
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', t);
@@ -975,7 +979,7 @@ export const useSettingsStore = defineStore('settings', () => {
       }
 
       if (hasSavedData) {
-        if (saved.theme) loadOwnWrite(() => setTheme(saved.theme as ThemeName));
+        if (saved.theme) loadOwnWrite(() => setTheme(normalizeThemeName(saved.theme)));
         if (typeof saved.fontSize === 'number') loadOwnWrite(() => setFontSize(saved.fontSize as number));
         // T-13 加载语言（默认 zh）
         if (saved.locale === 'zh' || saved.locale === 'en') {

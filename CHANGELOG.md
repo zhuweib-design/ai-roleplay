@@ -821,3 +821,13 @@
 - 三处都按"计算值不变"来做并在真实浏览器里核过：`.nav-item.active` 文字仍是 `rgb(11, 11, 16)`、`.modal-overlay` 仍是 `rgba(0, 0, 0, 0.65)`、`.overlay-mask` 仍是 `rgba(0, 0, 0, 0.5)`。中性网 5 条主题用例全绿（2,805 个读数零差异）。
 - 体检读数变化：B 类（未定义但有兜底）36 → **27**，正是 `--primary-foreground` 的 9 处；C 类组件层字面量颜色 146 → 145（遮罩那处进了 token 定义层）。A 类 74 不变。
 - 新增 `scripts/skin-preview.mjs`：把原型的配色注入**真实产品页面**出截图并逐元素算 WCAG 对比度（渐变/图片底不参与计数、单独列出交给人看）。对照结果与逐套改法见 `docs/design/THEME_5_GENERIC_PREVIEW/通用五款对照.md`。
+
+### 新增（UX/IA M23-b：第一款原型皮肤「新终端」落进产品，成为第 6 个内置主题）
+- 落地依据是真实页面的实测而不是原型截图：`docs/design/THEME_5_GENERIC_PREVIEW/通用五款对照.md` 量出这一款在四条路由上**零处**文本对比度不达标（五款里唯一"亮主色配深字"的），所以先落它。
+- `src/styles/themes.css` 新增 `html[data-theme='terminal']` 块（40 条语义变量：近黑表面、荧光青细线、等宽字形、直角、辉光代替阴影、专属遮罩与徽章配对）。
+- **一条不显然的 CSS 约束（实测过）**：主题块要覆写**结构层**变量（圆角/字号/边框宽）必须写 `html[data-theme=…]`。因为 main.ts 的引入顺序是 tokens → themes → tokens-structure，而 `[data-theme='x']` 与 `:root` 特指度相同（0,1,0），后引入者赢。实验：`[data-theme='dark']{--radius-md:3px}` 算出来仍是 8px，加 `html` 前缀才得 3px。颜色类变量不受影响（tokens.css 在前）。
+- 徽章配对收口：`.size-badge` / `.provider-badge` 这类"拿 `background: var(--border)` 当填充 + `--muted-foreground` 当文字"共 7 处，改走新增的 `--badge-bg` / `--badge-fg`。默认值等于今天（老主题画面不变），新主题给达标配对（实测 13.6:1）。对比度扫描存量 129 → 122。
+- 主题 id 的单一来源接上：`THEME_PRESETS` 原先是**全仓无引用的死常量**，读档处 `saved.theme as ThemeName` 裸强转 ⇒ 未知值原样写进 `data-theme`、CSS 找不到就静默回落再被回写盘。现在 `normalizeThemeName()` 在唯一 DOM 写入点 `setTheme()` 与读档处各归一一次，`e2e/{contrast-axe,theme-visual,token-neutrality}.spec.ts` 三处手写皮肤清单改为取自 `THEME_PRESETS`（新增皮肤不再靠人记得改测试）。
+- 主题卡预览色是死的：`.swatch-*` 五条渐变定义在 `SettingsModelPanel.vue` 的 scoped 样式里，而卡片渲染在 `SettingsAppearancePanel.vue` ⇒ 实测 `getComputedStyle('.theme-swatch').backgroundImage === 'none'`。搬进正确归属并补 `swatch-terminal` / `swatch-custom`（后者原本连定义都没有）。
+- `theme-flow` 加一条"卡片总数 = 清单数 + custom"的断言，防止以后新增皮肤却漏测。
+- 本批验证：`typecheck` 0；`a11y:contrast` 通过且打印「terminal：27 项全部达标」；`i18n:check:strict` / `check:css-conventions` / `check:token-baseline` 全 0；`contrast-axe` 8 条（含 terminal 的 7 路由）全绿；`theme-visual` 6 条、`theme-flow` 1 条、中性网 6 条全绿；中性基线重生成到 3,366 个读数，**前五款的 2,805 个读数逐条比对一字未变**（加皮肤没动老画面）。

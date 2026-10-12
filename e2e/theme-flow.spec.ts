@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test';
 
 /**
  * E2E · 主题系统 (F09)
- * 5 主题切换 + data-theme 生效 + radiogroup 键盘导航
+ * 每款内置皮肤切换 + data-theme 生效 + radiogroup 键盘导航
  */
-test('主题：切换全部 5 主题并验证 data-theme 与键盘导航', async ({ page }) => {
+test('主题：切换全部内置皮肤并验证 data-theme 与键盘导航', async ({ page }) => {
   await page.goto('/settings');
 
   const group = page.getByRole('radiogroup', { name: '选择主题' });
@@ -16,6 +16,7 @@ test('主题：切换全部 5 主题并验证 data-theme 与键盘导航', async
     { value: 'midnight', label: '午夜蓝' },
     { value: 'theatre', label: '暗夜剧场' },
     { value: 'oled', label: 'OLED 黑' },
+    { value: 'terminal', label: '新终端' },
   ];
 
   // 逐个点击切换：aria-checked + data-theme 同步
@@ -25,6 +26,9 @@ test('主题：切换全部 5 主题并验证 data-theme 与键盘导航', async
     await expect(card).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('html')).toHaveAttribute('data-theme', t.value);
   }
+
+  // 卡片总数 = 本用例点过的皮肤 + custom：新增一款皮肤却没改这份清单时，这里先红
+  await expect(page.locator('.theme-card[data-value]')).toHaveCount(themes.length + 1);
 
   // radiogroup 键盘导航：聚焦暗夜剧场后按 ArrowLeft 回到 OLED（验证键盘导航即时响应；
   // 注意应用当前键盘切换主题不触发持久化写入，故持久化断言仍基于最后一次“点击”的 oled）
