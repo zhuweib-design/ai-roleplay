@@ -1849,7 +1849,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   .cancel-btn:hover {
     background: var(--error-bg, rgba(220, 38, 38, 0.1));
     border-color: var(--error);
-    color: var(--error);
+    color: var(--error-fg);
   }
 }
 
@@ -2003,7 +2003,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 
 .status-badge.status-failed {
   background: rgba(220, 38, 38, 0.15);
-  color: var(--error);
+  color: var(--error-fg);
 }
 
 .card-expand {
@@ -2307,7 +2307,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   .delete-btn:hover:not(:disabled) {
     background: var(--error-bg, rgba(220, 38, 38, 0.1));
     border-color: var(--error);
-    color: var(--error);
+    color: var(--error-fg);
   }
 }
 

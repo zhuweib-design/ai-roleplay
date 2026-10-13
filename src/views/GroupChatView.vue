@@ -1960,7 +1960,7 @@ type="button"
 }
 
 .action-btn.delete {
-  color: var(--error);
+  color: var(--error-fg);
   border-color: var(--error);
 }
 

@@ -246,11 +246,15 @@ const semanticChecks = [
   // ⇒ --on-accent 与 --on-secondary 是两个配对，必须各有一条断言。
   // 故障注入实测：把 brutal 的 --on-secondary 换成 #FFFFFF ⇒ A 段红并点名 2.94。
   //
-  // 刻意**没有**加 on-accent × error 这一对：它确实也是真实配对（6 处按钮用它），
-  // 但 light 主题现在就是 #FFFFFF on #E5484D = 3.91，属 B 段棘轮里的存量。
-  // 把它提进 A 段等于把一条存量债变成硬门禁 ⇒ 门禁常红，或者逼一次"改浅色主题的红"
-  // 这种没被要求的视觉改动。先记在这里，等那条存量真被收口时再提。
+  // 刻意**没有**加 on-accent × warning：它同样是真实配对（"AI 生成"那类按钮），但
+  // 9 款里 light/ink 的 warning 填充仍配不上白字，提进来等于把存量债变硬门禁。
   { name: '辅色填充上的文字 on-secondary/secondary', fg: 'on-secondary', bg: 'secondary' },
+  // on-accent × error 在 M24-a 提了进来。它当初不能加，是因为 light 就是 #FFFFFF on
+  // #E5484D = 3.91，属 B 段棘轮存量，硬提会让门禁常红。收口做法不是放宽阈值，而是
+  // ① 把"用 --error 当文字色"的 9 处规则改指 --error-fg（它本来就是错误色的文字档），
+  // ② light 的 --error 于是可以只按"填充 + 白字"定值，压一档到 #D34247 = 4.53。
+  // 存量还清一条，门禁就硬一分。
+  { name: '错误填充上的文字 on-accent/error', fg: 'on-accent', bg: 'error' },
 ];
 
 // ── B. 扫描真实样式：实际出现的 color × background 配对 ─────────────────────
@@ -367,7 +371,7 @@ console.log('══════════════════════�
  *
  * 收敛后请同步下调此值；若某次改动使数字上升，说明引入了新的低对比度配对。
  */
-const BASELINE_SCAN_FAILURES = 131;
+const BASELINE_SCAN_FAILURES = 89;
 
 let semanticFailed = 0;
 let scanFailed = 0;

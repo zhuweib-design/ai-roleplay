@@ -2299,7 +2299,7 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 .action-btn.delete {
-  color: var(--error);
+  color: var(--error-fg);
   border-color: var(--error);
 }
 
@@ -2847,7 +2847,7 @@ function strategyLabel(s: LorebookStrategy): string {
   background: rgba(255, 82, 82, 0.1);
   border: 1px solid var(--error);
   border-radius: var(--radius-md);
-  color: var(--error);
+  color: var(--error-fg);
   font-size: 13px;
 }
 

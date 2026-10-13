@@ -1086,7 +1086,7 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 }
 
 .action-btn.fail {
-  color: var(--error);
+  color: var(--error-fg);
   border-color: var(--error);
 }
 @media (hover: hover) and (pointer: fine) {

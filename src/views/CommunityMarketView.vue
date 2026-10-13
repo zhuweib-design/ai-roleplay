@@ -1226,7 +1226,7 @@ type="button"
   cursor: default;
 }
 .remote-error {
-  color: var(--error);
+  color: var(--error-fg);
   font-size: 0.8rem;
   margin: 0.25rem 0;
 }

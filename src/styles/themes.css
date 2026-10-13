@@ -40,6 +40,10 @@
   --success-fg: #065F46;
 
   --destructive: #DC2626;
+  /* --error 在这套里既当"删除类按钮的填充"（配 --on-accent 白字）又曾被当文字色用。
+     文字那一档 2026-10-13 起全部改走 --error-fg（9 处），于是这里可以按"填充 + 白字"来定值：
+     原来继承 :root 的 #E5484D 白字只有 3.91，压一档到 #D34247 得到 4.53。 */
+  --error: #D34247;
   --error-bg: #FEE2E2;
   --error-fg: #991B1B;
 
@@ -48,7 +52,7 @@
      - accent-orange #B45309 on #FFFFFF ≈ 4.6:1 ✓ / #FFFFFF on #B45309 ≈ 4.6:1 ✓ */
   --accent-blue: #2563EB;
   --accent-orange: #B45309;
-  --warning-fg: #B45309;
+  --warning-fg: #9D4808;
   --warning-bg: rgba(180, 83, 9, 0.12);
   --warning-border: rgba(180, 83, 9, 0.30);
   --danger-bg: rgba(220, 38, 38, 0.10);

@@ -756,7 +756,7 @@ const prereqRows = useDataBankPrereqs();
 @media (hover: hover) and (pointer: fine) {
   .delete-btn:hover {
     background: color-mix(in srgb, var(--error) 10%, transparent);
-    color: var(--error);
+    color: var(--error-fg);
   }
 }
 
