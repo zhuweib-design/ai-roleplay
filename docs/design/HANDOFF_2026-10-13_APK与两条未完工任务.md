@@ -68,11 +68,32 @@
 - 起 `vite preview` 后真浏览器跑 9 条路由（`/`、`/chat`、`/group`、`/character`、`/worldbook`、`/databank`、`/image-gen`、`/settings?cat=model`、`/settings?cat=security`）：**全部 `data-app-ready=1`、控制台与页面异常 0 条**。环境判定 `tauriInternals=false`、`indexedDB` 在、`serviceWorker` 在。
 - 密钥/主密码加密走 `crypto.subtle`（`src/core/api-key-crypto.ts:146-197`），WebView 是安全上下文，能用。
 
-没验、不能下结论的三项：备份与恢复（`src/core/backup.ts`、`backup-crypto.ts` 到底走浏览器下载还是 Tauri 保存对话框）；本地 ONNX/ORT 推理在安卓 WebView 的可用性（`scripts/check-ort-firstscreen.mjs` 只测过桌面，安卓 WebView 的 wasm 内存上限是真实风险）；CORS。
+没验、不能下结论的两项：备份与恢复（`src/core/backup.ts`、`backup-crypto.ts` 到底走浏览器下载还是 Tauri 保存对话框）；本地 ONNX/ORT 推理在安卓 WebView 的可用性（`scripts/check-ort-firstscreen.mjs` 只测过桌面，安卓 WebView 的 wasm 内存上限是真实风险）。CORS 原本是第三项，2026-10-14 已量，见下。
 
-CORS 是**最硬的一条**：Web 分支是裸 `fetch`（`src/api/openai-client.ts:86`、`:228`），受 CORS 约束。这个应用之所以有 Tauri 客户端，就是因为多数中转和 provider 不发 CORS 头——桌面端走 Rust reqwest 绕过去了，Capacitor 的 WebView 不会帮你绕。用户当前那个中转带 CORS 所以能通，但用户自填的任意 endpoint 大概率不通，表现为请求被浏览器静默拦掉（不会进上面那 0 条报错）。要治得引 Capacitor Http 插件或在网络层加"WebView 下改走原生请求"的分支。
+**CORS 这条已经量过（2026-10-14），原文"最硬的一条"这个判断被推翻了一半。** 判据不是猜 OPTIONS，而是在真实 Edge 里发应用同一形状的请求：`fetch` 能读到响应 ⇒ 跨域放行；`fetch` 抛 `TypeError` 但 `mode:'no-cors'` 能到 ⇒ 服务器可达、被 CORS 拦；两者都不通 ⇒ 不可达，不计入结论。Origin 用 `http://localhost`，与 Capacitor 安卓 WebView 的 origin 同一形态。
 
-顺序建议（2026-10-13 续更新）：任务 A 与任务 B 已收口，接下来是治 CORS → 上 Capacitor 出 debug APK 装真机 → 拿真机验上面三项未测。补一条与本目录既有事实相关的提醒：APK 的 WebView 里 `isTauriEnv()` 为 false，走的就是任务 A 这条 Web 降级，而 `webkitdirectory` 在安卓 WebView 上是否可用**没实测过**——不可用时面板会给"改用 zip 上传"的提示（`vector.dirPickUnsupported`），zip 那条路径是 `userStore.uploadFromZip` → IndexedDB，逻辑上是通的，但同样没在 WebView 里跑过。
+| endpoint | 判定 |
+| --- | --- |
+| api.openai.com | 放行（HTTP 401） |
+| api.deepseek.com | 放行（401） |
+| api.moonshot.cn | 放行（401） |
+| dashscope.aliyuncs.com | 放行（401） |
+| api.siliconflow.cn | 放行（401） |
+| api.groq.com | 放行（401） |
+| openrouter.ai | 放行（401） |
+| generativelanguage.googleapis.com | 放行（400） |
+| 用户自己在用的那个中转 | 放行（401） |
+| open.bigmodel.cn（智谱） | 被 CORS 拦（服务器可达） |
+| api.anthropic.com | 缺一个请求头，已修，见下 |
+| 127.0.0.1:11434（ollama） | 本机没跑服务，未测 |
+
+十条里九条放行 ⇒ "多数 provider 不发 CORS 头"不成立；真正的拦点是**自建与小中转这条长尾**，本次样本没覆盖到它，别把 9/10 当成"长尾也没事"。
+
+修掉的一条（顺带影响桌面版）：`api.anthropic.com` 之前**一直**连不通，原因不是服务端政策，是我们少带官方要求的 `anthropic-dangerous-direct-browser-access: true`。同一套头做 A/B：不带 ⇒ 被 CORS 拦（服务器可达）；带上 ⇒ 放行到 HTTP 401。`AnthropicClient` 走的是 `fetch`（不是 Rust reqwest），所以这条在 Tauri 桌面版里同样存在，`anthropic-client.ts:24` 原来那句"官方支持 CORS，Web 与 Tauri 通用"是错的，已改。补进 `buildHeaders` 与 `listModels` 两处，各有一条单测断言这个头存在（注释掉即红，实测过）；再用应用自己的"测试连接"在真实浏览器里复跑一次，结果从"网络请求失败"那一类变成 `API 错误 401: invalid x-api-key`。
+
+**决策：现在不引 Capacitor Http。** 理由是按上面的读数，WebView 下绝大多数配置能直接跑；为一条长尾把所有请求改走原生，代价是丢掉 `fetch` 的中止语义并要重写 `openai-client` 的读流。该做的是把"被 CORS 拦"变得可诊断：`classifyFetchError` 现在把 CORS 与断网统一归到 `network`（`openai-client.ts:323` 的注释自己就写着"TypeError 信息无法直接区分"），而 `diagnostics.ts:53` 那套 `cors` 分类和四条建议**当前没有任何代码路径产生它**。用一个 `mode:'no-cors'` 探测请求就能三分（no-cors 到得了 ⇒ 是 CORS；也到不了 ⇒ 真不可达），把它接进 `ApiError.kind='cors'`，用户看到的就不再是"网络请求失败"这种含糊话。真要治智谱那类服务端不发头的，再按"仅对该 endpoint 改道原生"设计 Capacitor Http，不做全局默认。
+
+顺序建议（2026-10-14 更新）：任务 A、B 已收口，CORS 已量并修掉 Anthropic 那条 ⇒ 下一步是上 Capacitor 出 debug APK 装真机，然后拿真机验剩下两项未测（备份恢复、ORT 在 WebView 的内存上限）。装机前值得先做那条小改：把 `ApiError.kind='cors'` 真的接出来（`diagnostics.ts:53` 那套建议现在没人产生），否则手机上"连不上"与"这家不接受浏览器跨域"在界面上是同一种含糊话。另补一条与本目录既有事实相关的提醒：APK 的 WebView 里 `isTauriEnv()` 为 false，走的就是任务 A 这条 Web 降级，而 `webkitdirectory` 在安卓 WebView 上是否可用**没实测过**——不可用时面板会给"改用 zip 上传"的提示（`vector.dirPickUnsupported`），zip 那条路径是 `userStore.uploadFromZip` → IndexedDB，逻辑上是通的，但同样没在 WebView 里跑过。
 
 ## 约束（别踩）
 

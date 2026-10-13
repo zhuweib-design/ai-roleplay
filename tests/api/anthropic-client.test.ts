@@ -145,6 +145,10 @@ describe('AnthropicClient', () => {
       expect(headers['x-api-key']).toBe('sk-ant-test');
       expect(headers['anthropic-version']).toBe('2023-06-01');
       expect(headers['Authorization']).toBeUndefined();
+      // 少了这个头，官方端点就不返回 Access-Control-Allow-Origin，浏览器与 Tauri/WebView 的
+      // fetch 会被静默拦成 "Failed to fetch"（2026-10-14 真实浏览器 A/B：不带 ⇒ CORS 拦，
+      // 带上 ⇒ 401 到达服务器）。断言它存在，是防它被当成"多余的头"清理掉。
+      expect(headers['anthropic-dangerous-direct-browser-access']).toBe('true');
 
       const body = JSON.parse(init.body as string) as Record<string, unknown>;
       expect(body.max_tokens).toBe(4096); // 未指定时兜底
@@ -362,7 +366,7 @@ describe('AnthropicClient', () => {
   describe('listModels', () => {
     it('解析 data[].id', async () => {
       const client = makeClient();
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
         mockResponse(
           JSON.stringify({
             data: [{ id: 'claude-3-5-sonnet-20241022' }, { id: 'claude-3-haiku-20240307' }],
@@ -373,6 +377,9 @@ describe('AnthropicClient', () => {
         'claude-3-5-sonnet-20241022',
         'claude-3-haiku-20240307',
       ]);
+      // GET 也受同一条 CORS 约束，这个头不能只在 POST 路径上带
+      const headers = (spy.mock.calls[0] as [string, RequestInit])[1].headers as Record<string, string>;
+      expect(headers['anthropic-dangerous-direct-browser-access']).toBe('true');
     });
   });
 });
