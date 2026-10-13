@@ -53,7 +53,14 @@ const THEMES: readonly string[] = THEME_PRESETS;
  * 站内 `/settings?cat=model` 这类跳转早就在用），不用点击导航 ⇒ 少一层时序依赖。
  * 选择器取自各面板模板里的结构类名，只列"承载样式的那层"，不列纯文本节点。
  */
-const TARGETS: Array<{ id: string; route: string; open?: string; selectors: readonly string[] }> = [
+const TARGETS: Array<{
+  id: string;
+  route: string;
+  open?: string;
+  /** 采样前的准备步骤（例如造一条会话）。在 `page.goto(route)` 之后调用 */
+  prepare?: (page: Page) => Promise<void>;
+  selectors: readonly string[];
+}> = [
   {
     id: 'settings-extension',
     route: '/settings?cat=extension',
@@ -108,6 +115,21 @@ const TARGETS: Array<{ id: string; route: string; open?: string; selectors: read
      * 这条改动不在前三个目标里，不补这一项，网对本次改动就是绿的但没测到。
      */
     selectors: ['.nav-rail', '.nav-item', '.nav-item.active', '.nav-item.active .nav-label'],
+  },
+  {
+    id: 'chat-bubbles',
+    route: '/chat',
+    /**
+     * 气泡族（M20-b）。清单只收"生成结束后仍然稳定可见、且 reload 后一模一样"的 5 个选择器 ——
+     * 实测过：`.gen-text` 是流式期间的指示器，生成完就消失；`.msg-narration` / `.cache-rate` /
+     * `.thinking-*` 在这次夹具下可见数恒为 0。把它们列进来，网就是在空转（M19-a 立的纪律）。
+     *
+     * 会话数据走真实链路造：打桩 chat completions 接口（`/mock` 前缀那条）返回 SSE，
+     * 设置页建一个指向 /mock 的 API 配置，然后在 /chat 发一条消息。
+     * 不用演示种子是因为它只在首帧物化、不落盘，任何一次离开 /chat 都会丢（实测过四条路径）。
+     */
+    prepare: seedConversation,
+    selectors: ['.chat-messages', '.msg-bubble', '.msg-bubble.msg-assistant', '.msg-bubble.msg-user', '.chat-composer'],
   },
   {
     id: 'settings-about',
@@ -172,6 +194,91 @@ const PROPS = [
 ] as const;
 
 test.use({ viewport: VIEWPORT });
+
+/** OpenAI 兼容的 SSE 响应体，与 `chat-flow.spec.ts` 同一形状 */
+const SSE_BODY =
+  ['中性网', '气泡', '夹具', '回复']
+    .map((c) => `data: ${JSON.stringify({ choices: [{ delta: { role: 'assistant', content: c }, finish_reason: null }] })}`)
+    .join('\n\n') + '\n\ndata: [DONE]\n';
+
+/**
+ * 造一条能活过导航的会话：打桩流式接口 → 建 API 配置 → 发一条消息 → **等它写进 IndexedDB**。
+ *
+ * 最后那一步不是保险，是必须：实测在写入落地前 reload，读回来的就是没有消息的旧快照
+ * （同一个竞态在 E22 那条用例上红过一次）。等值，不等时间。
+ */
+async function seedConversation(page: Page): Promise<void> {
+  const port = process.env.E2E_PORT ?? '5173';
+  await page.route('**/mock/v1/chat/completions', (route) =>
+    void route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      headers: { 'cache-control': 'no-cache', connection: 'keep-alive' },
+      body: SSE_BODY,
+    })
+  );
+
+  await page.goto('/settings?cat=model');
+  const profile = page.getByText('E2E 中性网夹具').first();
+  if ((await profile.count()) === 0) {
+    await page.getByRole('button', { name: '新增 API 配置' }).click();
+    await page.locator('#p-name').fill('E2E 中性网夹具');
+    await page.locator('#p-baseurl').fill(`http://localhost:${port}/mock`);
+    await page.locator('#p-model').fill('gpt-4o');
+    await page.locator('#p-apikey').fill('test-key');
+    await page.getByRole('button', { name: '创建', exact: true }).click();
+  }
+  await profile.waitFor({ state: 'visible', timeout: 15_000 });
+  const activate = page.getByRole('button', { name: '激活此 API 配置' });
+  if (await activate.count()) await activate.first().click();
+
+  await page.goto('/chat');
+  /**
+   * 幂等：重生成基线那条用例是在**同一个页面里连着过 9 款皮肤**，本函数会被调用 9 次；
+   * 每次都再发一条消息的话，助手气泡数就变成 2、3、…，断言与基线都不稳定
+   * （实测 `toHaveCount(1)` 收到 2）。已经有助手气泡就直接复用，不再发。
+   */
+  if (await page.locator('.msg-bubble.msg-assistant').count() === 0) {
+    const input = page.getByLabel('输入消息');
+    await expect(input).toBeEnabled({ timeout: 15_000 });
+    await input.fill('中性网气泡夹具：今晚酒馆开门吗');
+    await page.getByRole('button', { name: '发送消息' }).click();
+  }
+  await expect(page.locator('.msg-bubble.msg-assistant').first()).toBeVisible({ timeout: 20_000 });
+
+  // 等盘：chats 里那条会话的 messages 至少 2 条（用户 1 + 助手 1）才算夹具就绪
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            new Promise<number>((resolve) => {
+              const req = indexedDB.open('ai-roleplay');
+              req.onsuccess = () => {
+                const db = req.result;
+                if (!db.objectStoreNames.contains('chats')) {
+                  db.close();
+                  resolve(-1);
+                  return;
+                }
+                const all = db.transaction('chats', 'readonly').objectStore('chats').getAll();
+                all.onsuccess = () => {
+                  db.close();
+                  const rows = (all.result ?? []) as Array<{ messages?: unknown[] }>;
+                  resolve(Math.max(0, ...rows.map((r) => r.messages?.length ?? 0)));
+                };
+                all.onerror = () => {
+                  db.close();
+                  resolve(-2);
+                };
+              };
+              req.onerror = () => resolve(-3);
+            })
+        ),
+      { message: '夹具消息没写进 IndexedDB 的 chats store', timeout: 20_000, intervals: [300, 600, 1200] }
+    )
+    .toBeGreaterThanOrEqual(2);
+}
 
 /**
  * 切主题：走真实 UI（设置页主题卡），并等它**真的落盘**再返回（见 `theme-persistence.ts`）。
@@ -252,6 +359,14 @@ type ThemeSamples = Record<string, Record<string, string>>;
 /** 采一个主题下所有目标；空转守卫与空值守卫都在这里就地失败 */
 async function sampleTheme(page: Page, theme: string): Promise<Record<string, ThemeSamples>> {
   const out: Record<string, ThemeSamples> = {};
+  /**
+   * 准备步骤在**整轮采样之前**跑一次，不挂在单个目标上。
+   * 挂在目标上实测会自相矛盾：seed 要建 API 配置，那是全局状态——重生成路径是
+   * 同一个页面连着过 9 款皮肤，第 1 款主题的 chat-surface 采在"还没建 Profile"时
+   * （`.model-badge` 是待处理的那档颜色），第 2 款起采在"已建"时（另一档颜色），
+   * 基线里同一目标就有了两种真值。验证时每条用例是全新上下文，全部采在"未准备"态 ⇒ 红。
+   */
+  for (const t of TARGETS) if (t.prepare) await t.prepare(page);
   for (const t of TARGETS) {
     await page.goto(t.route);
     if (t.open) {
