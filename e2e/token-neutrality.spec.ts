@@ -714,5 +714,7 @@ test('正在生成的那一刻：抓住 .gen-text 与 .gen-dot，断言它们的
   expect(
     new Set(rows.map((r) => r.color)).size,
     `3 款皮肤下 .gen-text 只有 1 种颜色 ⇒ 它没跟着皮肤走：\n${rows.map((r) => `${r.theme}: ${r.color}`).join('\n')}`
-  ).toBe(3);
+  ).toBeGreaterThanOrEqual(2);
+  // 判据是"至少 2 种"，不是"3 款各不同"：两款皮肤的 --secondary-text 撞值是合法设计，
+  // 要求互不相同会假红。这条断言要拦的是"恒等于同一个值"（那就是没跟着皮肤走）。
 });

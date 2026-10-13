@@ -11,10 +11,10 @@
 - 门禁现状（跑这些命令即可复现）：
   - `npm run a11y:contrast` → 扫描存量 **67** = 基线 67；A 段 26 项 × 9 款全达标。
   - `npm run a11y:contrast:self-test` → 225 个组合全部解析得出颜色（这条是防"门禁空跑"的，见下）。
-  - `npx playwright test e2e/token-neutrality.spec.ts --project=msedge` → 9 条全绿，基线 **5 个目标 / 8,568 个读数**（2026-10-13 续：气泡族补了 `.thinking-block` / `.thinking-header` / `.thinking-body` / `.thinking-tokens` 四个选择器，+612）。
+  - `npx playwright test e2e/token-neutrality.spec.ts --project=msedge` → **11 条全绿**（9 条皮肤基线网 + 2 条"那一刻"采样器），基线 **5 个目标 / 8,568 个读数**（2026-10-13 续：气泡族补了 `.thinking-block` / `.thinking-header` / `.thinking-body` / `.thinking-tokens` 四个选择器，+612）。
   - `npm run check:css-conventions` / `check:token-baseline` / `token:self-test` 均退出码 0。
   - 全量单测 `npx vitest run` → 201 files / 3,940 passed / 3 skipped。
-  - 全量 e2e：4 worker 复跑 **203 条全绿 / 6.7 分钟**；单 worker 终态跑数 **203 条全绿 / 12.1 分钟**，`e2e/shard-groups.mjs` 已按它重生成（4 组 179/179/178/179s，极差 1.007x；`token-neutrality` 权重 54.2 → 61.4，就是多出来的四个选择器与那次展开点击）。**新增一个 e2e 文件就必须重生成一次**，否则 `tests/tooling/e2e-shard-groups.test.ts` 红在"分组 37 项 vs 磁盘 38 个 spec"。
+  - 全量 e2e：4 worker 复跑 **203 条全绿 / 6.7 分钟**；单 worker 终态跑数 **205 条全绿 / 16.6 分钟**（多出的是下面那两条"那一刻"用例），`e2e/shard-groups.mjs` 已按它重生成（4 组 245/244/245/244s，极差 1.005x；`token-neutrality` 权重 22.0 → 83.8）。**新增一个 e2e 文件就必须重生成一次**，否则 `tests/tooling/e2e-shard-groups.test.ts` 红在"分组项数 ≠ 磁盘 spec 数"。
 - 今天在这一串里修掉的两个门禁自身缺陷，别退回去了：
   1. `scripts/check-contrast.mjs` 的 A 段主循环曾把配对名拼成 `var(${check.fg})`（少 `--`），导致 26 项全部解析成 null、被"跳过而非误报"吃掉、恒打印"全部达标"。现在自检会用**与 A 段相同的取值路径**逐条确认 225 个组合都能解析，解析不出即退出码 1。
   2. 中性网的可见性轮询原来只报个数（"期望 7 实得 6"），现在返回"缺哪几个"，红了直接点名。
