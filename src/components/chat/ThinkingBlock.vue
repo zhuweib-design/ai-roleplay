@@ -127,7 +127,7 @@ const reasoningTokensText = computed(() =>
 
 <style scoped>
 .thinking-block {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--space-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--muted-foreground) 6%, transparent);
@@ -137,14 +137,14 @@ const reasoningTokensText = computed(() =>
 .thinking-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   width: 100%;
   min-height: 32px;
-  padding: 6px var(--spacing-sm);
+  padding: var(--space-1-5) var(--space-2);
   background: none;
   border: none;
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   cursor: pointer;
   text-align: left;
 }
@@ -158,7 +158,7 @@ const reasoningTokensText = computed(() =>
 /* P1：思考 token 数（等宽数字避免数字变化时宽度跳动；比标题略小，不抢主语） */
 .thinking-tokens {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   font-variant-numeric: tabular-nums;
   opacity: 0.75;
   white-space: nowrap;
@@ -200,15 +200,15 @@ const reasoningTokensText = computed(() =>
 }
 
 .thinking-body {
-  padding: 0 var(--spacing-sm) var(--spacing-sm);
+  padding: 0 var(--space-2) var(--space-2);
   margin: 0;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   line-height: 1.65;
   color: var(--muted-foreground);
   white-space: pre-wrap;
   word-break: break-word;
   border-top: 1px solid var(--border);
-  padding-top: var(--spacing-sm);
+  padding-top: var(--space-2);
   max-height: 320px;
   overflow-y: auto;
 }

@@ -120,16 +120,41 @@ const TARGETS: Array<{
     id: 'chat-bubbles',
     route: '/chat',
     /**
-     * 气泡族（M20-b）。清单只收"生成结束后仍然稳定可见、且 reload 后一模一样"的 5 个选择器 ——
-     * 实测过：`.gen-text` 是流式期间的指示器，生成完就消失；`.msg-narration` / `.cache-rate` /
-     * `.thinking-*` 在这次夹具下可见数恒为 0。把它们列进来，网就是在空转（M19-a 立的纪律）。
+     * 气泡族（M20-b）。清单只收"生成结束后仍然稳定可见、且 reload 后一模一样"的选择器。
+     *
+     * `.thinking-block` 进得来：思考内容随消息一起落 IndexedDB，打桩回片用
+     * `delta.reasoning_content` 喂它（`openai-client.ts:572` 读 reasoning_content || reasoning）。
+     *
+     * `.cache-rate` 进不来，而且与 SSE 回片形状无关：它的显示条件是
+     * `chatStore.prefixCacheHitRate !== null`，而 `cacheUsage` 是 store 里的内存 ref，
+     * 下面每个目标采样前那句 `goto(t.route)` 是整页重载，一重载就归零。
+     * 2026-10-13 用"非零 hit/miss 且放在 [DONE] 之前"的正确回片实测过，可见数仍是 0。
+     * 它和 `.gen-text` 同属"生成中的那一刻"那一族，要护就得在不重载的页面生命周期里采。
+     *
+     * `.msg-narration` 在这次夹具下可见数恒为 0。把这些列进来，网就是在空转（M19-a 立的纪律）。
      *
      * 会话数据走真实链路造：打桩 chat completions 接口（`/mock` 前缀那条）返回 SSE，
      * 设置页建一个指向 /mock 的 API 配置，然后在 /chat 发一条消息。
      * 不用演示种子是因为它只在首帧物化、不落盘，任何一次离开 /chat 都会丢（实测过四条路径）。
      */
     prepare: seedConversation,
-    selectors: ['.chat-messages', '.msg-bubble', '.msg-bubble.msg-assistant', '.msg-bubble.msg-user', '.chat-composer'],
+    /**
+     * `.thinking-body` 是折叠态不渲染的（ThinkingBlock.vue:116 的 v-if），所以采样前先点一次
+     * `.thinking-header` 把它召唤出来 —— 与 settings-about 那条 `open: '.account-login-btn'` 同一手法。
+     * 展开只影响思考正文那一段的高度，气泡本体与头部样式不变，其余选择器的读数不受这次点击影响。
+     */
+    open: '.thinking-header',
+    selectors: [
+      '.chat-messages',
+      '.msg-bubble',
+      '.msg-bubble.msg-assistant',
+      '.msg-bubble.msg-user',
+      '.chat-composer',
+      '.thinking-block',
+      '.thinking-header',
+      '.thinking-body',
+      '.thinking-tokens',
+    ],
   },
   {
     id: 'settings-about',
@@ -197,9 +222,31 @@ test.use({ viewport: VIEWPORT });
 
 /** OpenAI 兼容的 SSE 响应体，与 `chat-flow.spec.ts` 同一形状 */
 const SSE_BODY =
-  ['中性网', '气泡', '夹具', '回复']
-    .map((c) => `data: ${JSON.stringify({ choices: [{ delta: { role: 'assistant', content: c }, finish_reason: null }] })}`)
-    .join('\n\n') + '\n\ndata: [DONE]\n';
+  [
+    // 首片带 reasoning_content：`.thinking-block` 只在消息有思考时才渲染（ThinkingBlock.vue:99），
+    // 而思考随消息一起落 IndexedDB，所以它活得过下面 `goto(t.route)` 那次整页重载
+    `data: ${JSON.stringify({
+      choices: [{ delta: { role: 'assistant', content: '中性网', reasoning_content: '先想一步' }, finish_reason: null }],
+    })}`,
+    ...['气泡', '夹具', '回复'].map(
+      (c) => `data: ${JSON.stringify({ choices: [{ delta: { role: 'assistant', content: c }, finish_reason: null }] })}`
+    ),
+    // usage 出现在 [DONE] 之前、且 hit+miss 必须大于 0，否则 `prefixCacheHitRate` 恒为 null
+    // （chat-generation.ts:246 —— 全 0 与"没上报"在界面上是同一种表现）
+    // reasoning_tokens 走官方字段 `completion_tokens_details`，它决定 `.thinking-tokens` 渲不渲染
+    // （ThinkingBlock.vue:84 只认"正数"，0 和 undefined 一样不展示）
+    `data: ${JSON.stringify({
+      choices: [],
+      usage: {
+        prompt_tokens: 100,
+        completion_tokens: 20,
+        total_tokens: 120,
+        prompt_cache_hit_tokens: 60,
+        prompt_cache_miss_tokens: 40,
+        completion_tokens_details: { reasoning_tokens: 30 },
+      },
+    })}`,
+  ].join('\n\n') + '\n\ndata: [DONE]\n';
 
 /**
  * 造一条能活过导航的会话：打桩流式接口 → 建 API 配置 → 发一条消息 → **等它写进 IndexedDB**。
