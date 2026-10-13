@@ -376,19 +376,23 @@ async function sampleTheme(page: Page, theme: string): Promise<Record<string, Th
     }
     // 等到清单里**每个**选择器都有可见匹配再采：路由切换中间态、以及上面那个
     // open 点击后的 Vue 重渲染，都还没落地就采样会把"还没渲染"记进基线。
+    // 轮询返回"缺哪些"而不是"缺几个"：只报个数的话，红了还得再跑一次去猜是谁
+    // （2026-10-13 加 .cache-rate 时踩的就是这个——报"期望 7 实得 6"，三次试错才知道缺的是它）。
     await expect
       .poll(
         async () =>
           page.evaluate(
-            (sels) =>
-              sels.filter((sel) =>
-                [...document.querySelectorAll(sel)].some((e) => (e as HTMLElement).offsetParent !== null)
-              ).length,
+            (sels) => {
+              const gone = sels.filter(
+                (sel) => ![...document.querySelectorAll(sel)].some((e) => (e as HTMLElement).offsetParent !== null)
+              );
+              return gone.length === 0 ? '全部可见' : `缺 ${gone.length}/${sels.length}：${gone.join(' | ')}`;
+            },
             [...t.selectors]
           ),
         { message: `${t.route} 在 ${theme} 下有选择器始终量不到可见元素`, timeout: 20_000 }
       )
-      .toBe(t.selectors.length);
+      .toBe('全部可见');
     out[t.id] = await collectStable(page, t.selectors);
   }
 
