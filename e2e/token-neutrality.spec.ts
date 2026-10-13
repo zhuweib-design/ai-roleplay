@@ -37,7 +37,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import { THEME_PRESETS } from '../src/types';
-import { applyThemeAndWait } from './theme-persistence';
+import { applyThemeAndWait, waitForPersistedTheme } from './theme-persistence';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -254,17 +254,9 @@ const SSE_BODY =
  * 最后那一步不是保险，是必须：实测在写入落地前 reload，读回来的就是没有消息的旧快照
  * （同一个竞态在 E22 那条用例上红过一次）。等值，不等时间。
  */
-async function seedConversation(page: Page): Promise<void> {
+/** 建一个指向 /mock 的 API 配置并激活：走真实 UI，已有就只激活（幂等） */
+async function ensureMockProfile(page: Page): Promise<void> {
   const port = process.env.E2E_PORT ?? '5173';
-  await page.route('**/mock/v1/chat/completions', (route) =>
-    void route.fulfill({
-      status: 200,
-      contentType: 'text/event-stream',
-      headers: { 'cache-control': 'no-cache', connection: 'keep-alive' },
-      body: SSE_BODY,
-    })
-  );
-
   await page.goto('/settings?cat=model');
   const profile = page.getByText('E2E 中性网夹具').first();
   if ((await profile.count()) === 0) {
@@ -278,6 +270,19 @@ async function seedConversation(page: Page): Promise<void> {
   await profile.waitFor({ state: 'visible', timeout: 15_000 });
   const activate = page.getByRole('button', { name: '激活此 API 配置' });
   if (await activate.count()) await activate.first().click();
+}
+
+async function seedConversation(page: Page): Promise<void> {
+  await page.route('**/mock/v1/chat/completions', (route) =>
+    void route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      headers: { 'cache-control': 'no-cache', connection: 'keep-alive' },
+      body: SSE_BODY,
+    })
+  );
+
+  await ensureMockProfile(page);
 
   await page.goto('/chat');
   /**
@@ -551,3 +556,163 @@ if (UPDATE) {
     });
   }
 }
+
+/**
+ * 「生成中的那一刻」一族：`.cache-rate`（M20-b 续）
+ *
+ * 上面那张基线网采不到它，原因写在该目标的注释里：网每个目标采样前那句 `goto(t.route)` 是整页
+ * 重载，而 `cacheUsage` 是 store 里的内存 ref（`chat-generation.ts:242`），一重载就归零。
+ * 这条用例待在**同一次页面生命周期**里 —— 发完消息后靠侧栏做客户端路由跳转来切皮肤（不重载），
+ * 徽标就一直亮着。切皮肤仍走真实 UI（设置页主题卡）并等落盘，只是不走 `page.goto`。
+ *
+ * 断言的不是快照，而是"这个元素的样式确实由皮肤槽位解析出来"：
+ * - `color` 必须等于同一页里现搭的探针（`color: var(--green, #9ece6a)`）—— token 改名或写错当场红；
+ * - `color` 必须不等于父级 `.chat-token`（`--muted-foreground`）—— 写错 token 的典型表现是
+ *   "静默继承父色"，看着不像坏了，只比探针那条拦得住一半；
+ * - 9 款皮肤的 `color` 至少出现 2 种不同值 —— 全一样说明它一直吃兜底色，压根没跟着皮肤走；
+ * - `font-size` 必须等于根元素 `--font-size-2xs` 的解析值（这一条把"字面量 11px"换成 token 时不会松口，
+ *   换成错档位当场红）。
+ */
+test('生成中的那一刻：不重载页面切完 9 款皮肤，命中率徽标一直在且样式由皮肤驱动', async ({ page }) => {
+  assertViewport(page);
+  await seedConversation(page);
+
+  const rows: Array<{ theme: string; color: string; probeColor: string; parentColor: string; fontSize: string; rootToken: string }> = [];
+  for (const theme of THEMES) {
+    await page.locator('[data-rel-jump="nav-settings"]').click();
+    await page.getByRole('tab', { name: '外观' }).click();
+    const card = page.locator(`.theme-card[data-value="${theme}"]`);
+    await expect(card).toBeVisible();
+    await card.click();
+    await waitForPersistedTheme(page, theme);
+
+    await page.locator('[data-rel-jump="nav-chat"]').click();
+    // 徽标还在 = 这条用例的前提（内存态没被重载打掉）成立；丢了就是链路退化，不是皮肤问题
+    await expect(page.locator('.cache-rate'), `${theme}：切皮肤后 .cache-rate 不见了`).toBeVisible();
+
+    const s = await page.evaluate(() => {
+      const el = [...document.querySelectorAll('.cache-rate')].find(
+        (e) => (e as HTMLElement).offsetParent !== null
+      ) as HTMLElement;
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--green, #9ece6a)';
+      document.body.appendChild(probe);
+      const probeColor = getComputedStyle(probe).color;
+      probe.remove();
+      return {
+        color: getComputedStyle(el).color,
+        probeColor,
+        parentColor: getComputedStyle(el.closest('.chat-token') as HTMLElement).color,
+        fontSize: getComputedStyle(el).fontSize,
+        rootToken: getComputedStyle(document.documentElement).getPropertyValue('--font-size-2xs').trim(),
+      };
+    });
+    rows.push({ theme, ...s });
+
+    expect(s.color, `${theme}：.cache-rate 的 color 与 var(--green) 解析值不一致（token 名写错或被改名？）`).toBe(s.probeColor);
+    expect(s.color, `${theme}：.cache-rate 的颜色等于父级 .chat-token ⇒ 它在静默继承父色`).not.toBe(s.parentColor);
+    expect(s.fontSize, `${theme}：.cache-rate 的 font-size ${s.fontSize} 与 --font-size-2xs ${s.rootToken} 不一致`).toBe(s.rootToken);
+  }
+
+  const distinct = new Set(rows.map((r) => r.color));
+  expect(
+    distinct.size,
+    `9 款皮肤只量出 ${distinct.size} 种颜色 ⇒ 这个徽标没跟着皮肤走（一直在吃兜底色）。逐条：\n${rows
+      .map((r) => `${r.theme}: ${r.color}`)
+      .join('\n')}`
+  ).toBeGreaterThanOrEqual(2);
+});
+
+/**
+ * 这一族只跑 3 款皮肤，而不是上面的 9 款：断言的是"这条声明引用的是哪个槽位"，
+ * 槽位名写错在每一款皮肤下都会塌成继承色，3 款足够把它区分出来；
+ * 而"同一配对在不同皮肤下会不会撞色"那种问题由 `npm run a11y:contrast` 静态扫，两处不重复铺。
+ */
+const STREAM_THEMES = ['dark', 'light', 'brutal'];
+
+/**
+ * 「正在生成的那一刻」一族：`.gen-text` / `.gen-dot`（M20-b 续）
+ *
+ * 难点是这些元素只在流式期间存在。抓住它的手法是量出来的，不是猜的：把打桩回话**延迟**住
+ * （`route.fulfill` 之前 await 600ms），这段时间 `.gen-text` 连续可见——实测探针延迟 0ms 时
+ * 还能看见 2 个 100ms 采样、延迟 300ms 时 4 个、900ms 时 10 个，所以 600ms 有充足余量。
+ *
+ * 同一个探针也量出一条边界：`.thinking-pulse` 抓不住。它要"思考内容已到"且"仍在生成"，
+ * 而 fulfill 是全有或全无——回话没到整块 thinking 都不渲染，回话一到流立即关闭、
+ * `generating` 落回 false。它的 6px 圆点因此仍不受换肤回归保护，作为边界登记在这里。
+ */
+test('正在生成的那一刻：抓住 .gen-text 与 .gen-dot，断言它们的样式由皮肤槽位解析', async ({ page }) => {
+  assertViewport(page);
+  await ensureMockProfile(page);
+
+  // 只注册一次：多条 route 会按注册顺序反向匹配，循环里再注册会让上一轮的延迟句柄还在场上
+  await page.route('**/mock/v1/chat/completions', (route) => {
+    void (async () => {
+      await new Promise((r) => setTimeout(r, 600));
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        headers: { 'cache-control': 'no-cache', connection: 'keep-alive' },
+        body: SSE_BODY,
+      });
+    })();
+  });
+
+  const rows: Array<{ theme: string; color: string; probeColor: string }> = [];
+  for (const theme of STREAM_THEMES) {
+    await page.goto('/settings?cat=appearance');
+    const card = page.locator(`.theme-card[data-value="${theme}"]`);
+    await expect(card).toBeVisible();
+    await card.click();
+    await waitForPersistedTheme(page, theme);
+
+    // 侧栏客户端跳转回 /chat：不重载文档，生成状态才不被打掉
+    await page.locator('[data-rel-jump="nav-chat"]').click();
+    const input = page.getByLabel('输入消息');
+    await expect(input).toBeEnabled({ timeout: 15_000 });
+    await input.fill(`这一刻：${theme}`);
+    await page.getByRole('button', { name: '发送消息' }).click();
+
+    await expect(page.locator('.gen-text'), `${theme}：没抓住"正在生成"的窗口`).toBeVisible({ timeout: 8_000 });
+
+    const s = await page.evaluate(() => {
+      const visible = (sel: string) =>
+        [...document.querySelectorAll(sel)].find((e) => (e as HTMLElement).offsetParent !== null) as HTMLElement;
+      const textEl = visible('.gen-text');
+      const dotEl = visible('.gen-dot');
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--secondary-text)';
+      document.body.appendChild(probe);
+      const probeColor = getComputedStyle(probe).color;
+      probe.remove();
+      const root = getComputedStyle(document.documentElement);
+      const px = (v: string) => v.trim();
+      return {
+        color: getComputedStyle(textEl).color,
+        probeColor,
+        parentColor: getComputedStyle(textEl.parentElement as HTMLElement).color,
+        fontSize: getComputedStyle(textEl).fontSize,
+        tokenFontSize: px(root.getPropertyValue('--font-size-xs')),
+        rowGap: getComputedStyle(dotEl).rowGap,
+        tokenGap: px(root.getPropertyValue('--space-1-5')),
+        marginTop: getComputedStyle(dotEl).marginTop,
+        tokenMargin: px(root.getPropertyValue('--space-2-5')),
+      };
+    });
+    rows.push({ theme, color: s.color, probeColor: s.probeColor });
+
+    expect(s.color, `${theme}：.gen-text 的 color 与 var(--secondary-text) 解析值不一致`).toBe(s.probeColor);
+    expect(s.color, `${theme}：.gen-text 继承了父级颜色 ⇒ 它的槽位引用没生效`).not.toBe(s.parentColor);
+    expect(s.fontSize, `${theme}：.gen-text 的 font-size ${s.fontSize} 与 --font-size-xs ${s.tokenFontSize} 不一致`).toBe(s.tokenFontSize);
+    expect(s.rowGap, `${theme}：.gen-dot 的 gap ${s.rowGap} 与 --space-1-5 ${s.tokenGap} 不一致`).toBe(s.tokenGap);
+    expect(s.marginTop, `${theme}：.gen-dot 的 margin-top ${s.marginTop} 与 --space-2-5 ${s.tokenMargin} 不一致`).toBe(s.tokenMargin);
+
+    // 等这一轮流结束再切下一款皮肤，避免上一轮的"生成中"元素混进下一次采样
+    await expect(page.locator('.gen-text'), `${theme}：这一轮生成没收尾`).toHaveCount(0, { timeout: 20_000 });
+  }
+
+  expect(
+    new Set(rows.map((r) => r.color)).size,
+    `3 款皮肤下 .gen-text 只有 1 种颜色 ⇒ 它没跟着皮肤走：\n${rows.map((r) => `${r.theme}: ${r.color}`).join('\n')}`
+  ).toBe(3);
+});

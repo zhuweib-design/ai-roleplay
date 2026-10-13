@@ -1262,7 +1262,7 @@ function startWithExample(text: string) {
 
 /* 前缀缓存命中率徽标 */
 .cache-rate {
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   color: var(--green, #9ece6a);
   cursor: help;
 }

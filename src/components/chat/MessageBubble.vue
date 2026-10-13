@@ -194,8 +194,8 @@ const assistantActions: MsgAction[] = [
 .gen-dot {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 10px;
+  gap: var(--space-1-5);
+  margin-top: var(--space-2-5);
 }
 
 .gen-dot .dot {
@@ -208,7 +208,7 @@ const assistantActions: MsgAction[] = [
 
 .gen-text {
   color: var(--secondary-text);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 
 .msg-toolbar {
