@@ -11,7 +11,7 @@
 - 门禁现状（跑这些命令即可复现）：
   - `npm run a11y:contrast` → 扫描存量 **67** = 基线 67；A 段 26 项 × 9 款全达标。
   - `npm run a11y:contrast:self-test` → 225 个组合全部解析得出颜色（这条是防"门禁空跑"的，见下）。
-  - `npx playwright test e2e/token-neutrality.spec.ts --project=msedge` → **11 条全绿**（9 条皮肤基线网 + 2 条"那一刻"采样器），基线 **5 个目标 / 8,568 个读数**（2026-10-13 续：气泡族补了 `.thinking-block` / `.thinking-header` / `.thinking-body` / `.thinking-tokens` 四个选择器，+612）。
+  - `npx playwright test e2e/token-neutrality.spec.ts --project=msedge` → **12 条全绿**（9 条皮肤基线网 + 3 条"那一刻"采样器：命中率徽标 / 生成中指示器 / 本地稳定率徽标），基线 **5 个目标 / 8,568 个读数**（2026-10-13 续：气泡族补了 `.thinking-block` / `.thinking-header` / `.thinking-body` / `.thinking-tokens` 四个选择器，+612）。
   - `npm run check:css-conventions` / `check:token-baseline` / `token:self-test` 均退出码 0。
   - 全量单测 `npx vitest run` → 201 files / 3,940 passed / 3 skipped。
   - 全量 e2e：4 worker 复跑 **203 条全绿 / 6.7 分钟**；单 worker 终态跑数 **205 条全绿 / 16.6 分钟**（多出的是下面那两条"那一刻"用例），`e2e/shard-groups.mjs` 已按它重生成（4 组 245/244/245/244s，极差 1.005x；`token-neutrality` 权重 22.0 → 83.8）。**新增一个 e2e 文件就必须重生成一次**，否则 `tests/tooling/e2e-shard-groups.test.ts` 红在"分组项数 ≠ 磁盘 spec 数"。
@@ -51,7 +51,10 @@
 - **M20-b 的正题（`ThinkingBlock.vue` 字面量迁移）已做完且像素中性**：`gap: 6px` → `var(--space-1-5)`、`padding: 6px var(--spacing-sm)` → `var(--space-1-5) var(--space-2)`、`font-size: 12px` → `var(--font-size-xs)`、`font-size: 11px` → `var(--font-size-2xs)`、`--spacing-sm` 旧别名全部换掉（`.thinking-block` 的 `margin-bottom`、`.thinking-body` 的两处 padding）。9 款全绿，且基线里 `.thinking-header { row-gap }` = 6px、`{ padding-top }` = 6px、`{ padding-left }` = 8px、`{ font-size }` = 12px 这些读数都在——不是白迁。
 - **牙齿又验了一次**：把 `gap` 从 `var(--space-1-5)` 改成合法但档位不同的 `var(--space-2)`，网红在 `chat-bubbles/terminal/.thinking-header { row-gap }: 6px → 8px`（这正是这张网存在的理由：静态守卫抓不到"引用合法但换了尺度"）。
 - **仍刻意不收进网**：`.thinking-pulse`（`generating && !expanded` 的瞬态）与 `.gen-text`，以及 `.thinking-pulse` 里那对 `width/height: 6px`。
-- **气泡族下一批可迁的**：`MessageBubble.vue:95` 的 `:style="msg.narration ? 'margin-top: 6px' : ''"` 是内联字面量，网采不到内联样式的 token 归属，要先决定是把它挪进 class 还是登记成边界。
+- **气泡族剩下的裸区已逐条判过，不是一句"以后再说"**：
+  - `.cache-rate.local`（本地稳定率徽标）现在有它自己的一条"那一刻"用例：供应商不报缓存字段时，第二轮发送才出现（`chat-generation.ts:297` 那句 `if (prev.lastPrefix !== '')` 决定第一轮 total 仍是 0）。两条对照都红过：把 `--cyan` 写成 `--cya` ⇒ 红在取色与探针不一致；把那句守卫改成无条件累加 ⇒ 红在"第一轮不该有徽标"。它的颜色走的是 `tokens.css:250` 那条 `--cyan: var(--secondary)` 别名链，不是直接皮肤键——别名一旦被拆掉，界面上就变成恒定兜底青蓝，这条网拦的就是这个。
+  - `.msg-narration` / `.msg-narration-after`（各一条 6px）**没有可迁的用户界面**：全仓 grep 下来 `narration`/`narrationAfter` 的**写入点只有 `src/data/mock-data.ts`**（演示种子），生成链路里没有任何地方赋值，`type-adapters.ts:19` 那句注释写着"由 prompt-builder 单独处理（Phase E 实现）"——即未实现。所以这两条规则（连同 `MessageBubble.vue:95` 那个内联 `margin-top: 6px`）是在给一个产品当前产生不出来的状态排版，迁它等于给死代码刷漆。要做的是先决定 Phase E 到底做不做。
+  - `.msg-toolbar`（`top:-13px` / `right:6px` / `gap:1px` / `padding:3px`）：它是 `opacity:0` 隐藏的，不是 `display:none`，所以中性网其实**采得到**；但这几条全是仓库口径里"刻意保留字面量"的非档位值，且偏移量不在采样属性清单里，这一批没有要迁的东西，就不为它扩清单（M19-a 的纪律是"清单跟着这轮会碰的规则走"）。
 
 ## 任务 C：APK 路线（结论：壳可行，但有四处必须先修/先测）
 

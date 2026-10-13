@@ -718,3 +718,91 @@ test('正在生成的那一刻：抓住 .gen-text 与 .gen-dot，断言它们的
   // 判据是"至少 2 种"，不是"3 款各不同"：两款皮肤的 --secondary-text 撞值是合法设计，
   // 要求互不相同会假红。这条断言要拦的是"恒等于同一个值"（那就是没跟着皮肤走）。
 });
+
+/** 与 SSE_BODY 同形但不带 usage 分片：供应商不报缓存字段时走的是本地代理指标那条岔路 */
+const SSE_BODY_NO_USAGE = ['稳定率', '夹具', '回复']
+  .map((c) => `data: ${JSON.stringify({ choices: [{ delta: { role: 'assistant', content: c }, finish_reason: null }] })}`)
+  .join('\n\n') + '\n\ndata: [DONE]\n';
+
+/**
+ * 「供应商不报缓存字段」那一支：`.cache-rate.local`（M20-b 续）
+ *
+ * 这是 `ChatMain.vue:779` 那条 `v-else-if`，条件比另一个徽标更刁：
+ * `prefixCacheHitRate === null`（没人报缓存）**且** `prefixStableRate !== null`。
+ * 而 `prefixStability.total` 只在**第二次及以后**的请求上才加（`chat-generation.ts:297` 那句
+ * `if (prev.lastPrefix !== '')`），所以第一轮发送后界面上什么都不会出现。
+ * 两个条件都锁住：先验"第一轮没有徽标"，再验"第二轮有"。只验后者会放过
+ * "把 total 提前到第一轮就加"这种改动 —— 那会让稳定率显示成 0/1 的假数字。
+ *
+ * 取色链也顺手记在这里：`.cache-rate.local` 用的是 `var(--cyan, #7dcfff)`，而 `--cyan`
+ * 是 `tokens.css:250` 对 `--secondary` 的别名 —— 它跟着皮肤走是因为那条别名链，
+ * 一旦有人把别名拆掉，界面上就变成恒定的兜底青蓝。探针与"至少 2 种"两条断言就是拦这个的。
+ */
+test('供应商不报缓存字段：本地稳定率徽标在第二轮出现，且取色仍走皮肤槽位', async ({ page }) => {
+  assertViewport(page);
+  await ensureMockProfile(page);
+  await page.route('**/mock/v1/chat/completions', (route) =>
+    void route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      headers: { 'cache-control': 'no-cache', connection: 'keep-alive' },
+      body: SSE_BODY_NO_USAGE,
+    })
+  );
+
+  await page.goto('/chat');
+  const input = page.getByLabel('输入消息');
+  await expect(input).toBeEnabled({ timeout: 15_000 });
+
+  /** 发一条并等到助手气泡数变成 `after`（新开的库里没有历史消息，条数是确定的） */
+  const send = async (text: string, after: number) => {
+    await input.fill(text);
+    await page.getByRole('button', { name: '发送消息' }).click();
+    await expect(page.locator('.msg-bubble.msg-assistant')).toHaveCount(after, { timeout: 20_000 });
+  };
+
+  await send('稳定率夹具：第一轮', 1);
+  await expect(page.locator('.cache-rate')).toHaveCount(0);
+  // 这一条是"状态机"的一半：第一轮 total 还是 0，两个徽标都不该出现
+  await expect(page.locator('.cache-rate.local')).toHaveCount(0);
+
+  await send('稳定率夹具：第二轮', 2);
+  await expect(page.locator('.cache-rate.local'), '第二轮仍没出现本地稳定率徽标').toBeVisible();
+
+  const rows: Array<{ theme: string; color: string }> = [];
+  for (const theme of STREAM_THEMES) {
+    // 这里不能 page.goto：稳定率的累计是内存态，整页重载会清零（上面 .cache-rate 那条同一手法）
+    await page.locator('[data-rel-jump="nav-settings"]').click();
+    await page.getByRole('tab', { name: '外观' }).click();
+    const card = page.locator(`.theme-card[data-value="${theme}"]`);
+    await expect(card).toBeVisible();
+    await card.click();
+    await waitForPersistedTheme(page, theme);
+    await page.locator('[data-rel-jump="nav-chat"]').click();
+    await expect(page.locator('.cache-rate.local'), `${theme}：切皮肤后稳定率徽标不见了`).toBeVisible();
+
+    const s = await page.evaluate(() => {
+      const el = [...document.querySelectorAll('.cache-rate.local')].find(
+        (e) => (e as HTMLElement).offsetParent !== null
+      ) as HTMLElement;
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--cyan, #7dcfff)';
+      document.body.appendChild(probe);
+      const probeColor = getComputedStyle(probe).color;
+      probe.remove();
+      return {
+        color: getComputedStyle(el).color,
+        probeColor,
+        parentColor: getComputedStyle(el.closest('.chat-token') as HTMLElement).color,
+      };
+    });
+    rows.push({ theme, color: s.color });
+    expect(s.color, `${theme}：.cache-rate.local 的 color 与 var(--cyan) 解析值不一致`).toBe(s.probeColor);
+    expect(s.color, `${theme}：.cache-rate.local 继承了父级颜色 ⇒ 别名链断了`).not.toBe(s.parentColor);
+  }
+
+  expect(
+    new Set(rows.map((r) => r.color)).size,
+    `3 款皮肤下稳定率徽标只有 1 种颜色 ⇒ 它没跟着皮肤走：\n${rows.map((r) => `${r.theme}: ${r.color}`).join('\n')}`
+  ).toBeGreaterThanOrEqual(2);
+});
