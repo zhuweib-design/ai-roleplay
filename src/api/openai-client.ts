@@ -2,6 +2,7 @@ import type { ApiClient } from './api-client';
 import type { ChatRequest, ChatStream, ApiErrorKind } from './types';
 import { ApiError } from './types';
 import { buildChatCompletionsUrl, buildModelsUrl, toOpenAIMessage, toDevProxyUrl } from './openai-protocol';
+import { isHostReachable } from './cors-probe';
 import { t } from '@/i18n';
 
 /**
@@ -95,7 +96,7 @@ export class OpenAIClient implements ApiClient {
         yield { type: 'error', error: t('api.stopped') };
         return;
       }
-      throw this.classifyFetchError(err);
+      throw await this.classifyFetchError(err);
     }
 
     if (!res.ok) {
@@ -288,7 +289,7 @@ export class OpenAIClient implements ApiClient {
       if (err instanceof Error && err.name === 'AbortError') {
         throw new ApiError(t('api.stopped'), undefined, this.provider, 'aborted');
       }
-      throw this.classifyFetchError(err);
+      throw await this.classifyFetchError(err);
     }
   }
 
@@ -300,8 +301,11 @@ export class OpenAIClient implements ApiClient {
    * 2. CORS 预检失败（OPTIONS 请求被拒）
    * 3. HTTPS 证书无效（混合内容拦截等）
    * 4. URL 格式错误（如缺少协议头）
+   *
+   * 1 与 2 在 `TypeError` 层面无法分辨（浏览器刻意如此），所以走 `isHostReachable` 那次
+   * 只测连通性的探测把它们分开：能连上 ⇒ `cors`，连不上 ⇒ `network`。见 `cors-probe.ts`。
    */
-  private classifyFetchError(err: unknown): ApiError {
+  private async classifyFetchError(err: unknown): Promise<ApiError> {
     const rawMsg = err instanceof Error ? err.message : String(err);
     const lower = rawMsg.toLowerCase();
 
@@ -320,8 +324,15 @@ export class OpenAIClient implements ApiClient {
       err instanceof TypeError &&
       /failed to fetch|network request failed|load failed/i.test(rawMsg)
     ) {
-      // 进一步细分：若 baseUrl 是跨域且未配置 CORS，多半是 CORS 问题
-      // 但 TypeError 信息无法直接区分，这里按"网络或 CORS"统一返回 network kind
+      // 这两种在界面上必须分开说：一个是"地址/网络不对"，一个是"地址对但这家不接受浏览器直连"
+      if (await isHostReachable(this.config.baseUrl)) {
+        return new ApiError(
+          t('api.corsBlocked', { msg: rawMsg }),
+          undefined,
+          this.provider,
+          'cors'
+        );
+      }
       return new ApiError(
         t('api.networkFailed', { msg: rawMsg }),
         undefined,

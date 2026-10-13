@@ -8,6 +8,7 @@ import {
   toAnthropicTools,
 } from './anthropic-protocol';
 import { toDevProxyUrl } from './openai-protocol';
+import { isHostReachable } from './cors-probe';
 import {
   toAnthropicBudget,
   resolveAnthropicThinkingMode,
@@ -183,7 +184,7 @@ export class AnthropicClient implements ApiClient {
         yield { type: 'error', error: t('api.stopped') };
         return;
       }
-      throw this.classifyFetchError(err);
+      throw await this.classifyFetchError(err);
     }
 
     if (!res.ok) {
@@ -364,11 +365,11 @@ export class AnthropicClient implements ApiClient {
       if (err instanceof Error && err.name === 'AbortError') {
         throw new ApiError(t('api.stopped'), undefined, this.provider, 'aborted');
       }
-      throw this.classifyFetchError(err);
+      throw await this.classifyFetchError(err);
     }
   }
 
-  private classifyFetchError(err: unknown): ApiError {
+  private async classifyFetchError(err: unknown): Promise<ApiError> {
     const rawMsg = err instanceof Error ? err.message : String(err);
     const lower = rawMsg.toLowerCase();
 
@@ -384,6 +385,15 @@ export class AnthropicClient implements ApiClient {
       err instanceof TypeError &&
       /failed to fetch|network request failed|load failed/i.test(rawMsg)
     ) {
+      // 与 OpenAI 客户端同一判据：能连上这家 ⇒ 是跨域被拦，连不上 ⇒ 才是网络/地址问题
+      if (await isHostReachable(this.config.baseUrl)) {
+        return new ApiError(
+          t('api.corsBlocked', { msg: rawMsg }),
+          undefined,
+          this.provider,
+          'cors'
+        );
+      }
       return new ApiError(
         t('api.networkFailed', { msg: rawMsg }),
         undefined,

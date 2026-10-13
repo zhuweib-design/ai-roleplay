@@ -2776,6 +2776,7 @@ const en: Record<MessageKey, string> = {
   'api.respMissingData': 'Invalid response format: missing data array (this service may not support /models; enter the model name manually)',
   'api.urlInvalid': 'Invalid URL: {msg} (check that baseUrl starts with http:// or https://)',
   'api.networkFailed': 'Network request failed: {msg} (possible causes: 1. offline 2. API unreachable 3. CORS blocked 4. invalid HTTPS certificate)',
+  'api.corsBlocked': 'Cross-origin request blocked: {msg} (the API host is reachable, but it does not allow browser cross-origin access)',
   'api.timeout': 'Request timed out: {msg}',
   'api.networkFailed2': 'Network request failed: {msg}',
   'api.httpError': 'API error {status}: {detail}',

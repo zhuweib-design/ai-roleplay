@@ -2777,6 +2777,7 @@ export default {
   'api.respMissingData': '响应格式错误：缺少 data 数组（该服务可能不支持 /models 接口，请手动输入模型名）',
   'api.urlInvalid': 'URL 格式错误：{msg}（请检查 baseUrl 是否以 http:// 或 https:// 开头）',
   'api.networkFailed': '网络请求失败：{msg}（可能原因：1.网络断开 2.API 地址不可达 3.跨域 CORS 被拦截 4.HTTPS 证书无效）',
+  'api.corsBlocked': '跨域请求被拦截：{msg}（这个 API 地址能连通，但服务商不允许浏览器直接调用它）',
   'api.timeout': '请求超时：{msg}',
   'api.networkFailed2': '网络请求失败：{msg}',
   'api.httpError': 'API 错误 {status}: {detail}',

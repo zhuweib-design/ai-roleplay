@@ -83,17 +83,23 @@
 | openrouter.ai | 放行（401） |
 | generativelanguage.googleapis.com | 放行（400） |
 | 用户自己在用的那个中转 | 放行（401） |
-| open.bigmodel.cn（智谱） | 被 CORS 拦（服务器可达） |
+| open.bigmodel.cn（智谱） | **分路径**：`/api/paas/v4` 放行（拿到它自己的 401 中文报错），`/paas/v4` 被 CORS 拦。两条都在真实浏览器里复验过 |
 | api.anthropic.com | 缺一个请求头，已修，见下 |
 | 127.0.0.1:11434（ollama） | 本机没跑服务，未测 |
 
-十条里九条放行 ⇒ "多数 provider 不发 CORS 头"不成立；真正的拦点是**自建与小中转这条长尾**，本次样本没覆盖到它，别把 9/10 当成"长尾也没事"。
+十条里九条放行 ⇒ "多数 provider 不发 CORS 头"不成立；真正的拦点是**自建与小中转这条长尾**，本次样本没覆盖到它，别把 9/10 当成"长尾也没事"。同一件事的另一面：同一个服务商的不同路径可能一个放行一个拦，所以任何"CORS 已验"的结论都必须带上路径。
 
 修掉的一条（顺带影响桌面版）：`api.anthropic.com` 之前**一直**连不通，原因不是服务端政策，是我们少带官方要求的 `anthropic-dangerous-direct-browser-access: true`。同一套头做 A/B：不带 ⇒ 被 CORS 拦（服务器可达）；带上 ⇒ 放行到 HTTP 401。`AnthropicClient` 走的是 `fetch`（不是 Rust reqwest），所以这条在 Tauri 桌面版里同样存在，`anthropic-client.ts:24` 原来那句"官方支持 CORS，Web 与 Tauri 通用"是错的，已改。补进 `buildHeaders` 与 `listModels` 两处，各有一条单测断言这个头存在（注释掉即红，实测过）；再用应用自己的"测试连接"在真实浏览器里复跑一次，结果从"网络请求失败"那一类变成 `API 错误 401: invalid x-api-key`。
 
-**决策：现在不引 Capacitor Http。** 理由是按上面的读数，WebView 下绝大多数配置能直接跑；为一条长尾把所有请求改走原生，代价是丢掉 `fetch` 的中止语义并要重写 `openai-client` 的读流。该做的是把"被 CORS 拦"变得可诊断：`classifyFetchError` 现在把 CORS 与断网统一归到 `network`（`openai-client.ts:323` 的注释自己就写着"TypeError 信息无法直接区分"），而 `diagnostics.ts:53` 那套 `cors` 分类和四条建议**当前没有任何代码路径产生它**。用一个 `mode:'no-cors'` 探测请求就能三分（no-cors 到得了 ⇒ 是 CORS；也到不了 ⇒ 真不可达），把它接进 `ApiError.kind='cors'`，用户看到的就不再是"网络请求失败"这种含糊话。真要治智谱那类服务端不发头的，再按"仅对该 endpoint 改道原生"设计 Capacitor Http，不做全局默认。
+**决策：不引 Capacitor Http，并已把"被跨域拦"接成可诊断的分类（2026-10-14 落地）。** 不引的理由按上面的读数：WebView 下绝大多数配置能直接跑；为一条长尾把所有请求改走原生，代价是丢掉 `fetch` 的中止语义并要重写 `openai-client` 的读流。
 
-顺序建议（2026-10-14 更新）：任务 A、B 已收口，CORS 已量并修掉 Anthropic 那条 ⇒ 下一步是上 Capacitor 出 debug APK 装真机，然后拿真机验剩下两项未测（备份恢复、ORT 在 WebView 的内存上限）。装机前值得先做那条小改：把 `ApiError.kind='cors'` 真的接出来（`diagnostics.ts:53` 那套建议现在没人产生），否则手机上"连不上"与"这家不接受浏览器跨域"在界面上是同一种含糊话。另补一条与本目录既有事实相关的提醒：APK 的 WebView 里 `isTauriEnv()` 为 false，走的就是任务 A 这条 Web 降级，而 `webkitdirectory` 在安卓 WebView 上是否可用**没实测过**——不可用时面板会给"改用 zip 上传"的提示（`vector.dirPickUnsupported`），zip 那条路径是 `userStore.uploadFromZip` → IndexedDB，逻辑上是通的，但同样没在 WebView 里跑过。
+落地的那条小改，以及它为什么比我原先写的更微妙：
+- 原先我记的是"`diagnostics.ts` 那套 cors 建议没有任何代码路径产生它"——**这句只对了一半**。`chat-error.ts:90` 靠 `/cors/i.test(err.message)` 确实能命中，因为 `api.networkFailed` 那句中文兜底里恰好有"CORS"四个字母。所以聊天气泡里的提示一直是对的，而 `ApiError.kind` 本身从来没被设成 `'cors'`：凡按 kind 分流的地方（`ApiErrorModal`、`diagnostics` 的建议、`llm-retry` 的重试白名单）拿到的都是 `network`。这是一种"靠措辞碰巧匹配"的脆弱耦合——改一句 i18n 文案就会静默丢掉跨域引导。
+- 现在用一次**只测连通性**的探测把两类分开（`src/api/cors-probe.ts`）：`mode:'no-cors'` 不受 `Access-Control-Allow-Origin` 管束，打得通 ⇒ 原失败是跨域；打不通 ⇒ 才是网络/地址。探测刻意只打 origin 根路径、不带请求体（把同一份对话体重发一次会被服务商计第二次费），并带 3 秒上界（黑洞型网络里 `fetch` 不会自己失败）。
+- 连带收益：`llm-retry` 的白名单是 `rate-limit / server / network`，被跨域拦过去被当成瞬时错误重试两轮，现在归 `cors` ⇒ 不再重试。
+- 界面级实测两类各一次（真实 Edge、应用自己的"测试连接"）：`https://open.bigmodel.cn/paas/v4` ⇒ "跨域请求被拦截：…（这个 API 地址能连通，但服务商不允许浏览器直接调用它）"；一个不存在的域名 ⇒ 仍是"网络请求失败（可能原因 1-4）"。单测 9 条锁住判据本身，含两条负向对照（把分类器改成无视探测 ⇒ 红；探测必须打在根路径且无请求体）。
+
+顺序建议（2026-10-14 再更新）：任务 A、B 已收口，CORS 已量、Anthropic 直连头已修、"被跨域拦"已接成可诊断分类（见上）⇒ 剩下的就是上 Capacitor 出 debug APK 装真机，然后拿真机验剩下两项未测（备份恢复、ORT 在 WebView 的内存上限）。另补一条与本目录既有事实相关的提醒：APK 的 WebView 里 `isTauriEnv()` 为 false，走的就是任务 A 这条 Web 降级，而 `webkitdirectory` 在安卓 WebView 上是否可用**没实测过**——不可用时面板会给"改用 zip 上传"的提示（`vector.dirPickUnsupported`），zip 那条路径是 `userStore.uploadFromZip` → IndexedDB，逻辑上是通的，但同样没在 WebView 里跑过。
 
 ## 约束（别踩）
 
