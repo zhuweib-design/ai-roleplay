@@ -4,56 +4,54 @@
 
 ## 仓库当前状态
 
-- 分支 `feat/ux-ia-guided-flow`，HEAD `c83fd8f`，工作区干净（只有两个刻意不入库的未跟踪目录：`docs/design/THEME_BRUTAL_SHOTS/` 截图、`docs/design/ai-chat-ui-redesign/` 原型源）。
-- 本地领先远端 1 个提交（`c83fd8f` 未推送）。推送需要用户单独点头，"继续"不算授权。
+- 分支 `feat/ux-ia-guided-flow`，HEAD `3a83302`（这份文档本身）。本地领先远端 2 个提交（`c83fd8f`、`3a83302` 未推送）。推送需要用户单独点头，"继续"不算授权。
+- **2026-10-13 续的工作还没提交**，在工作区里：`VectorModelPanel.vue`（任务 A 的竞态修复）、`ThinkingBlock.vue`（M20-b 字面量迁移）、`e2e/model-install-web.spec.ts`（新增）、`e2e/token-neutrality.spec.ts` + `e2e/neutrality-baseline.json`（夹具与基线）、`tests/core/model-file-adapter.test.ts`（环境选择守卫）、`e2e/shard-groups.mjs`（权重重生成）。按仓库纪律这是**两批**：逻辑修复一批、token 迁移一批，别混进同一个 commit。
+- 未跟踪目录仍只有刻意不入库的两个：`docs/design/THEME_BRUTAL_SHOTS/` 截图、`docs/design/ai-chat-ui-redesign/` 原型源。
 - 内置皮肤 9 套：dark / light / midnight / oled / theatre / terminal / aurora / ink / brutal。
 - 门禁现状（跑这些命令即可复现）：
   - `npm run a11y:contrast` → 扫描存量 **67** = 基线 67；A 段 26 项 × 9 款全达标。
   - `npm run a11y:contrast:self-test` → 225 个组合全部解析得出颜色（这条是防"门禁空跑"的，见下）。
-  - `npx playwright test e2e/token-neutrality.spec.ts --project=msedge` → 9 条全绿，基线 **5 个目标 / 7,956 个读数**。
+  - `npx playwright test e2e/token-neutrality.spec.ts --project=msedge` → 9 条全绿，基线 **5 个目标 / 8,568 个读数**（2026-10-13 续：气泡族补了 `.thinking-block` / `.thinking-header` / `.thinking-body` / `.thinking-tokens` 四个选择器，+612）。
   - `npm run check:css-conventions` / `check:token-baseline` / `token:self-test` 均退出码 0。
+  - 全量单测 `npx vitest run` → 201 files / 3,940 passed / 3 skipped。
+  - 全量 e2e：4 worker 复跑 **203 条全绿 / 6.7 分钟**；单 worker 终态跑数 **203 条全绿 / 12.1 分钟**，`e2e/shard-groups.mjs` 已按它重生成（4 组 179/179/178/179s，极差 1.007x；`token-neutrality` 权重 54.2 → 61.4，就是多出来的四个选择器与那次展开点击）。**新增一个 e2e 文件就必须重生成一次**，否则 `tests/tooling/e2e-shard-groups.test.ts` 红在"分组 37 项 vs 磁盘 38 个 spec"。
 - 今天在这一串里修掉的两个门禁自身缺陷，别退回去了：
   1. `scripts/check-contrast.mjs` 的 A 段主循环曾把配对名拼成 `var(${check.fg})`（少 `--`），导致 26 项全部解析成 null、被"跳过而非误报"吃掉、恒打印"全部达标"。现在自检会用**与 A 段相同的取值路径**逐条确认 225 个组合都能解析，解析不出即退出码 1。
   2. 中性网的可见性轮询原来只报个数（"期望 7 实得 6"），现在返回"缺哪几个"，红了直接点名。
 
-## 任务 A：修 `model-fs-ipc` 没有 Web 降级（PWA 下模型导入必抛错）
+## 任务 A：已完成（2026-10-13 续），但原来的定位是错的
 
-优先级最高，因为它是**今天就存在**的产品缺陷，与出不出 APK 无关。
+**这份文档上一版说"PWA 下模型导入必抛错"——不成立。** 现场核实：`VectorModelPanel.vue` 里所有 `modelFsIpc` 调用都包在 `if (isTauriEnv())` 内，模板里 Tauri 专属按钮是 `v-if="isTauriEnv()"`；真 Edge 打开 `/settings?cat=retrieval` 零页面异常。`model-fs-ipc.ts` 确实没有 Web 分支，但它压根不会被非 Tauri 环境执行到——选择条件在 `createModelFileAdapter()`（`model-file-adapter.ts:160`），判"是不是 Tauri"在这里是对的，不用改成"有没有原生文件能力"。
 
-证据（已实测定位）：
+**真缺陷在降级路径自己身上，已修**：`<input webkitdirectory>` 是回调式的，`pickAndInstall()` 里 `input.click()` 一返回就去做 `refreshInstalled()` 和"模型安装完成"的 toast，而文件还在 `onchange` 里往 IndexedDB 写。实测形状：文件确实进了 IndexedDB（键 `model/bge-small-zh-v1.5/model.onnx` 在），但"已安装"列表是空的，用户看到的是"未安装本地模型"。改成 `pickDirectoryFiles()` 返回 Promise，拿到文件、写完库才刷新与提示；取消时不占 `installing`（部分内核取消不回报任何事件，否则按钮一直灰着）。
 
-- `src/core/model-fs-ipc.ts:17` 无条件 `const { invoke } = await import('@tauri-apps/api/core')`，随后 `invoke('pick_model_dir' | 'list_model_dir' | 'read_model_file' | ...)`，**没有任何非 Tauri 分支**。
-- 调用方：`src/core/model-file-adapter.ts:137-155`（`hasModel` / `copyFiles` / `readModel` / `readModelText` / `listInstalled`）、`src/core/vector-model-tauri.ts:16-27`、`src/components/settings/VectorModelPanel.vue:115-116`（`pickDir`）。
-- 旁边已经有两套实现：`src/core/vector-model-storage.ts`（IndexedDB 版，走 `indexedDB`）与 `src/core/vector-model-tauri.ts`（桌面版），`VectorModelPanel.vue:27` 在两者间选。所以缺的不是重写，是**选择条件写错了**：判的是"是不是 Tauri"，应该判"有没有原生文件能力"。
-- 动手前先读 `src/App.vue:245-248`：那里用 `TauriFSAdapter.getUnimplementedFeatureNames()` 主动提示"未实现能力"。说明当年是有意留白，不是漏写——改的时候要把这份提示的口径一起对齐，别让它变成谎报。
+留下的三道锁（都做过负向对照，详见下一节）：
 
-验收标准（都要做，缺一条不算完成）：
+1. `e2e/model-install-web.spec.ts`：面板可达 + Tauri 专属入口不出现 + 整页没加载过 `@tauri-apps/api/*`。
+2. 同文件第二条：点"选择模型文件夹"→ 真实目录夹具 → 断言 IDB 键到位 **且已安装列表看得见**（只断言"不报错"会放过"降级分支没跑到"）。
+3. `tests/core/model-file-adapter.test.ts` 新增 `createModelFileAdapter 的环境选择`：非 Tauri 下 spy 一次 `invoke` 都不发；同一文件里把 `__TAURI_INTERNALS__` 装上，spy 必须真的被调用（证明这条不是空跑）。
 
-1. 浏览器环境（`window.__TAURI_INTERNALS__` 不存在）下，设置→模型 里点"选择模型目录"不抛未捕获异常，走 File System Access API 或 `<input type=file>` 的降级路径，并能真的把一个模型装进 IndexedDB。
-2. 负向对照：把降级分支临时改成 `throw`，确认有用例红；还原后绿。守卫自己可能是空跑的，必须双向验。
-3. 加一条 e2e 或单测锁住"非 Tauri 环境不调用 `invoke`"——最省事的写法是断言 `model-fs-ipc` 的导出在非 Tauri 下走的是另一条实现，而不是断言"没报错"（没报错和没跑到是两回事）。
+**没验的**：webkit 内核下"取消不回报事件"那条兜底没实测，只按 Chromium 的 `cancel` 事件写的；`installing` 期间按钮不再禁用（选择框是原生模态，点不到第二次），这一点没写用例。
 
-## 任务 B：中性网气泡族（`.cache-rate` 卡住，`.thinking-block` 已通）
+## 任务 B：已完成（2026-10-13 续），`.cache-rate` 是结构性采不到、与 SSE 形状无关
 
 背景：M20-a 立了纪律"只改中性网采得到的规则"，气泡族采不到所以留到现在。这一轮把夹具建起来了。
 
 已完成（在 HEAD 里）：
 
 - `e2e/token-neutrality.spec.ts` 新增 `chat-bubbles` 目标 + `seedConversation` 夹具：打桩 chat completions → 设置页建指向 `/mock` 的 API 配置 → `/chat` 真实发一条消息 → **等 IndexedDB 的 `chats` 记录里 `messages` 到位**（等值不等时间）。
-- 清单收了 5 个稳定可见的选择器：`.chat-messages`、`.msg-bubble`、`.msg-bubble.msg-assistant`、`.msg-bubble.msg-user`、`.chat-composer`。
+- 清单收了 5 个稳定可见的选择器：`.chat-messages`、`.msg-bubble`、`.msg-bubble.msg-assistant`、`.msg-bubble.msg-user`、`.chat-composer`（2026-10-13 续补到 9 个，见下面"结论与剩下的事"）。
 - 牙齿实测过：`.chat-composer` 的 `border-radius` 从 `var(--radius-xl)` 改成 21px ⇒ 网点名 `chat-bubbles/terminal/.chat-composer { border-top-left-radius }: 3px → 21px`。
 - 已迁字面量（像素中性，被上面这张网量出来的）：气泡 `padding: 12px var(--spacing-md)` → `var(--space-3) var(--space-4)`、`font-size: 14px` → `var(--font-size-md)`；`.chat-messages` 的 `padding 16px 24px` → `var(--space-4) var(--space-6)`、`gap 4px` → `var(--space-1)`；`.chat-composer` 的 `padding 12px 12px 10px` → `var(--space-3) var(--space-3) var(--space-2-5)`。
 
-未完成，卡在哪：
+结论与剩下的事：
 
-- 想再加两个选择器，试过一次就退了（没留红网）。结果分两半：
-  - `.thinking-block` **可以**：桩里发 `delta.reasoning_content` 分片它就渲染。产品侧 `src/api/openai-client.ts:571` 读 `reasoning_content || reasoning`；2026-10-13 用真实中转（`hub.aiminmumuxi.date` 的 `step-5-preview`）实测过它确实发这个字段。
-  - `.cache-rate` **不行**：三种 usage 写法都拿不到值——① 合进带 `finish_reason: 'stop'` 的 chunk；② 单独一个 `choices: []` 的末 chunk；③ 挂在还带 delta 的正文 chunk 上。三次都报同一个 `.cache-rate` 缺失。
-- 下一步该做的不是继续猜 SSE 形状，是**打点定位**：在 `src/stores/chat-generation.ts:768` 的 `onUsage` 回调里临时打印它到底有没有被调、拿到的 `promptCacheHitTokens` 是多少。已知读数是 `v-if="chatStore.prefixCacheHitRate !== null"`（`ChatMain.vue:772-773`），而 `prefixCacheHitRate` 只在 `hitTokens + missTokens > 0` 时非 null（`chat-generation.ts:245-248`）。所以三种可能：`onUsage` 没被调；被调但字段名不匹配；被调但被 profile capability 过滤。打一次点就能三分一。
-- 顺带一条已排除的错误结论：`.cache-rate` 读的是 `usage.prompt_cache_hit_tokens`（`chat-generation.ts:771`），**不是** `prompt_tokens_details.cached_tokens`。真实中转连发两轮 950 token 长 prompt 后 `cached_tokens` 恒为 0，所以这件事不能靠真机测，必须由桩给。
-- 另外 `.gen-text`（生成中指示器）和 `.thinking-pulse`（`generating && !expanded`）是结构上的瞬态，等样式静止后必然不存在——**刻意不要收进中性网**，否则网空转。要保护它们得单独写"生成中的那一刻"的断言，或者明确写进边界承认不受换肤回归保护。
-
-清单加进去之后的事（原 M20-b 的正题）：迁 `ThinkingBlock.vue` 的字面量 —— `gap: 6px` → `var(--space-1-5)`、`padding: 6px var(--spacing-sm)` → `var(--space-1-5) var(--space-2)`、`font-size: 12px` → `var(--font-size-xs)`、`font-size: 11px` → `var(--font-size-2xs)`、`--spacing-sm` 旧别名换掉。迁完中性网必须 9 条全绿且**基线里能看到这些选择器的新读数**（看不见就说明白迁了）。
+- **`.cache-rate` 采不到，原因不是回片形状**：它的显示条件是 `chatStore.prefixCacheHitRate !== null`，而 `cacheUsage` 是 `chat-generation.ts:242` 里的**内存 ref**；中性网每个目标采样前那句 `goto(t.route)` 是整页重载，一重载就归零。2026-10-13 续用"非零 hit/miss 且放在 `[DONE]` 之前"的正确回片实测（这种形状在单测里早就锁过：`tests/api/openai-client.test.ts:669`），可见数仍是 0，网直接点名 `缺 1/7：.cache-rate`。所以它和 `.gen-text` 同属"生成中的那一刻"那一族——要护就得在**不重载的页面生命周期里**单独写断言，挂进这张网只会让它空转。这条判断已写进 `token-neutrality.spec.ts` 的 `chat-bubbles` 注释里。
+- **`.thinking-block` 一族四个选择器已进网**：`.thinking-block` / `.thinking-header` / `.thinking-body` / `.thinking-tokens`。配套改了夹具：回片首片带 `delta.reasoning_content`（思考随消息落 IndexedDB，活得过 reload），末片带 `usage.completion_tokens_details.reasoning_tokens`（`ThinkingBlock.vue:84` 只认正数，0 与没上报同一种表现），并给该目标加 `open: '.thinking-header'` 把折叠正文召唤出来（`.thinking-body` 是 v-if）。读数从 7,956 → 8,568，多出来的正好是 4 个选择器 × 9 款 × 17 属性。
+- **M20-b 的正题（`ThinkingBlock.vue` 字面量迁移）已做完且像素中性**：`gap: 6px` → `var(--space-1-5)`、`padding: 6px var(--spacing-sm)` → `var(--space-1-5) var(--space-2)`、`font-size: 12px` → `var(--font-size-xs)`、`font-size: 11px` → `var(--font-size-2xs)`、`--spacing-sm` 旧别名全部换掉（`.thinking-block` 的 `margin-bottom`、`.thinking-body` 的两处 padding）。9 款全绿，且基线里 `.thinking-header { row-gap }` = 6px、`{ padding-top }` = 6px、`{ padding-left }` = 8px、`{ font-size }` = 12px 这些读数都在——不是白迁。
+- **牙齿又验了一次**：把 `gap` 从 `var(--space-1-5)` 改成合法但档位不同的 `var(--space-2)`，网红在 `chat-bubbles/terminal/.thinking-header { row-gap }: 6px → 8px`（这正是这张网存在的理由：静态守卫抓不到"引用合法但换了尺度"）。
+- **仍刻意不收进网**：`.thinking-pulse`（`generating && !expanded` 的瞬态）与 `.gen-text`，以及 `.thinking-pulse` 里那对 `width/height: 6px`。
+- **气泡族下一批可迁的**：`MessageBubble.vue:95` 的 `:style="msg.narration ? 'margin-top: 6px' : ''"` 是内联字面量，网采不到内联样式的 token 归属，要先决定是把它挪进 class 还是登记成边界。
 
 ## 任务 C：APK 路线（结论：壳可行，但有四处必须先修/先测）
 
@@ -74,7 +72,7 @@
 
 CORS 是**最硬的一条**：Web 分支是裸 `fetch`（`src/api/openai-client.ts:86`、`:228`），受 CORS 约束。这个应用之所以有 Tauri 客户端，就是因为多数中转和 provider 不发 CORS 头——桌面端走 Rust reqwest 绕过去了，Capacitor 的 WebView 不会帮你绕。用户当前那个中转带 CORS 所以能通，但用户自填的任意 endpoint 大概率不通，表现为请求被浏览器静默拦掉（不会进上面那 0 条报错）。要治得引 Capacitor Http 插件或在网络层加"WebView 下改走原生请求"的分支。
 
-顺序建议：先做任务 A（必抛错那条），再治 CORS，再上 Capacitor 出 debug APK 装真机，最后拿真机验上面三项未测。
+顺序建议（2026-10-13 续更新）：任务 A 与任务 B 已收口，接下来是治 CORS → 上 Capacitor 出 debug APK 装真机 → 拿真机验上面三项未测。补一条与本目录既有事实相关的提醒：APK 的 WebView 里 `isTauriEnv()` 为 false，走的就是任务 A 这条 Web 降级，而 `webkitdirectory` 在安卓 WebView 上是否可用**没实测过**——不可用时面板会给"改用 zip 上传"的提示（`vector.dirPickUnsupported`），zip 那条路径是 `userStore.uploadFromZip` → IndexedDB，逻辑上是通的，但同样没在 WebView 里跑过。
 
 ## 约束（别踩）
 
