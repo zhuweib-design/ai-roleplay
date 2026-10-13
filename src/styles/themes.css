@@ -390,27 +390,27 @@ html[data-theme='ink'] {
   --secondary: #3F6B5C;
   --ring: #B23A2F;
 
-  --success: #2A6040;
+  --success: #2A5F3F;
   --success-bg: rgba(42, 96, 64, 0.12);
-  --success-fg: #2A6040;
+  --success-fg: #2A5F3F;
 
-  --destructive: #A32B22;
-  --error: #A32B22;
+  --destructive: #9E2A21;
+  --error: #9E2A21;
   --error-bg: rgba(163, 43, 34, 0.12);
-  --error-fg: #A32B22;
+  --error-fg: #9E2A21;
 
-  --warning-fg: #8F630F;
+  --warning-fg: #7A540D;
   --warning-bg: rgba(143, 99, 15, 0.14);
   --warning-border: rgba(143, 99, 15, 0.36);
-  --danger-fg: #A32B22;
+  --danger-fg: #9E2A21;
   --danger-bg: rgba(163, 43, 34, 0.12);
   --danger-border: rgba(163, 43, 34, 0.36);
 
-  --accent-blue: #2F5D8C;
-  --accent-orange: #8F630F;
+  --accent-blue: #2C5784;
+  --accent-orange: #7A540D;
 
-  --tag-blue: #2F5D8C;
-  --tag-green: #2A6040;
+  --tag-blue: #2C5784;
+  --tag-green: #2A5F3F;
   --tag-purple: #7C3A5F;
   --tag-gray: #57534B;
 
