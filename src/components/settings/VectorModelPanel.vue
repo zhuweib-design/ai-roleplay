@@ -107,11 +107,11 @@ const canPickDirectory =
 
 /** Web:目录选择(File System Access);Tauri:系统目录对话框 */
 async function pickAndInstall() {
-  installing.value = true;
   installMsg.value = '';
   try {
     const adapter = createModelFileAdapter();
     if (isTauriEnv()) {
+      installing.value = true;
       const { modelFsIpc } = await import('@/core/model-fs-ipc');
       const dir = await modelFsIpc.pickDir(t('vector.pickTitle'));
       if (!dir) return;
@@ -119,16 +119,12 @@ async function pickAndInstall() {
       const files = await adapter.importFromDir('bge-small-zh-v1.5', dir);
       installMsg.value = t('vector.copied', { files: files.join(', ') });
     } else if (canPickDirectory) {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.webkitdirectory = true;
-      input.onchange = async () => {
-        const files = Array.from(input.files ?? []);
-        if (files.length === 0) return;
-        const saved = await adapter.importFromDir('bge-small-zh-v1.5', files);
-        installMsg.value = t('vector.copiedFiles', { count: saved.length });
-      };
-      input.click();
+      // 取消时部分内核不回报任何事件，所以这段不占用 installing —— 否则按钮会一直灰着
+      const picked = await pickDirectoryFiles();
+      if (!picked) return;
+      installing.value = true;
+      const saved = await adapter.importFromDir('bge-small-zh-v1.5', picked);
+      installMsg.value = t('vector.copiedFiles', { count: saved.length });
     } else {
       // 能力缺失（如移动端 iOS Safari 无 webkitdirectory）：不静默失败，给出替代路径
       showToast('info', t('vector.dirPickUnsupported'));
@@ -142,6 +138,25 @@ async function pickAndInstall() {
   } finally {
     installing.value = false;
   }
+}
+
+/**
+ * `<input webkitdirectory>` 是回调式的：click() 立刻返回，change 里的写库还在飞，
+ * 外层却已经去刷新列表并提示"安装完成"了（实测：文件已进 IndexedDB，已安装列表仍空）。
+ * 包成 Promise 让调用方等到文件真的拿到；取消（没选任何文件）返回 null。
+ */
+function pickDirectoryFiles(): Promise<File[] | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.webkitdirectory = true;
+    input.addEventListener('change', () => {
+      const files = Array.from(input.files ?? []);
+      resolve(files.length > 0 ? files : null);
+    });
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
 }
 
 async function saveRemote() {
