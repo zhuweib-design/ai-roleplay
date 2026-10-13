@@ -153,8 +153,8 @@ const assistantActions: MsgAction[] = [
   max-width: min(70%, 40em);
   width: fit-content;
   border-radius: var(--radius-md);
-  padding: 12px var(--spacing-md);
-  font-size: 14px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-md);
   line-height: 1.7;
   word-wrap: break-word;
   white-space: pre-wrap;
