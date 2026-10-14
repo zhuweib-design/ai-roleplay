@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AI 酒馆</string>
+    <string name="title_activity_main">AI 酒馆</string>
+    <string name="package_name">com.zhuweib.airoleplay</string>
+    <string name="custom_url_scheme">com.zhuweib.airoleplay</string>
+</resources>
