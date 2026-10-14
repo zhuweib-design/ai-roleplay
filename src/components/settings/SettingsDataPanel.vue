@@ -178,7 +178,11 @@ async function handleExportBackup() {
     });
     // 已解锁主密码 → 加密备份文件；未设置 → 明文备份
     const password = settings.isUnlocked ? settings.getSessionMasterPassword() : undefined;
-    await downloadBackupFile(data, password);
+    const outcome = await downloadBackupFile(data, password);
+    if (outcome === 'cancelled') {
+      // 用户在系统保存面板里取消了：不能说"备份已导出"
+      return;
+    }
     showToast(
       'success',
       t('settingsView.exportBackup', {
@@ -209,9 +213,10 @@ function handleExportCharacterPng() {
   try {
     // 将 UICharacter 转换为 CharacterCard（复用 type-adapters）
     void import('@/services/type-adapters')
-      .then(({ uiCharToCard }) => {
+      .then(async ({ uiCharToCard }) => {
         const card = uiCharToCard(char);
-        downloadCharacterPng(card);
+        const outcome = await downloadCharacterPng(card);
+        if (outcome === 'cancelled') return;
         showToast('success', t('settingsView.pngExported', { name: char.name }));
       })
       .catch((err) => {
@@ -247,7 +252,8 @@ async function handleExportChatMarkdown() {
     // 取最新的对话
     const latestChat = chats[0]!;
     // 导出名称跟随该角色关联的世界资料，不再读取全局“当前身份”。
-    downloadChatMarkdown(latestChat, char.name, getWorldUserDisplayName(char.id));
+    const mdOutcome = await downloadChatMarkdown(latestChat, char.name, getWorldUserDisplayName(char.id));
+    if (mdOutcome === 'cancelled') return;
     showToast('success', t('settingsView.mdExported', { name: char.name }));
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));

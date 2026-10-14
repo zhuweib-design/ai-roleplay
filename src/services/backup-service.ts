@@ -13,6 +13,8 @@
  */
 
 import type { StorageAdapter } from '@/storage/storage-adapter';
+import { saveBlob } from '@/utils/save-blob';
+import type { SaveOutcome } from '@/utils/save-blob';
 import type { CharacterCard } from '@/core/character-card';
 import { exportV2Card, importV2Card } from '@/core/character-card';
 import type { Chat } from '@/storage/types';
@@ -382,23 +384,17 @@ export async function importBackup(
 export async function downloadBackupFile(
   data: BackupData,
   masterPassword?: string
-): Promise<void> {
-  const json = JSON.stringify(data, null, 2);
-  const content = masterPassword
-    ? await encryptBackup(json, masterPassword)
-    : json;
-  const blob = new Blob([content], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+): Promise<SaveOutcome> {
   const safeDate = new Date(data.exportedAt).toISOString().slice(0, 10);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = masterPassword
+  const filename = masterPassword
     ? `ai-roleplay-backup-${safeDate}.enc.json`
     : `ai-roleplay-backup-${safeDate}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // 数据生产者传进去：WebView 路径下它要在保存面板弹出来之后才跑（见 utils/save-blob.ts）
+  return saveBlob(filename, async () => {
+    const json = JSON.stringify(data, null, 2);
+    const content = masterPassword ? await encryptBackup(json, masterPassword) : json;
+    return new Blob([content], { type: 'application/json' });
+  });
 }
 
 /**
@@ -497,23 +493,18 @@ export function exportChatMarkdown(
 /**
  * 触发下载对话 Markdown 文件
  */
-export function downloadChatMarkdown(
+export async function downloadChatMarkdown(
   chat: Chat,
   characterName: string,
   userName?: string
-): void {
+): Promise<SaveOutcome> {
   const md = exportChatMarkdown(chat, characterName, userName);
-  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
   const safeName = characterName.replace(/[^\w\u4e00-\u9fa5-]/g, '_');
   const safeDate = new Date(chat.updatedAt).toISOString().slice(0, 10);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${safeName}-${t('backup.mdFilenameChat')}-${safeDate}.md`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  return saveBlob(
+    `${safeName}-${t('backup.mdFilenameChat')}-${safeDate}.md`,
+    () => new Blob([md], { type: 'text/markdown;charset=utf-8' })
+  );
   // T-06 审计
   auditLogger.record('chat_export_md', `${characterName} / ${chat.messages.length} msgs`, 'ok');
 }
@@ -716,17 +707,10 @@ export async function importCharacterPng(file: File): Promise<CharacterCard | nu
 /**
  * 触发下载嵌入角色卡的 PNG
  */
-export function downloadCharacterPng(card: CharacterCard): void {
+export async function downloadCharacterPng(card: CharacterCard): Promise<SaveOutcome> {
   const blob = exportCharacterPng(card);
-  const url = URL.createObjectURL(blob);
   const safeName = card.name.replace(/[^\w\u4e00-\u9fa5-]/g, '_');
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${safeName}.png`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  return saveBlob(`${safeName}.png`, () => blob);
   // T-06 审计
   auditLogger.record('character_export_png', `${card.name}`, 'ok');
 }

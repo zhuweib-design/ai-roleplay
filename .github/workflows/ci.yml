@@ -91,6 +91,14 @@ jobs:
       - name: CSS conventions guard (check:css-conventions)
         run: npm run check:css-conventions
 
+      # 存盘方式守卫（2026-10-14 安卓模拟器实测立）：blob + `<a download>` 在 Capacitor 的
+      # WebView 里静默无效（不报错、无下载记录、全盘搜不到文件），所以存盘必须走 utils/save-blob.ts。
+      # 存量 6 处按文件锁基线，只许降不许升；新增文件或加一处即红。
+      - name: Save-blob guard (check:save-blob)
+        run: npm run check:save-blob
+      - name: Save-blob guard self-test
+        run: npm run check:save-blob:self-test
+
       # Token 死引用棘轮（M18 试点 → M19 入门禁）：组件层裸引用一个没定义的 CSS 变量时，
       # 浏览器会把整条声明丢掉 —— 今天就是失效代码，不是风格问题。实测存量 74 处 / 4 文件
       # （StoryEngineView 独占 55），属 M21 要逐条映射的遗留，所以按 !important 棘轮同一套路：

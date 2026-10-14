@@ -516,7 +516,7 @@ function handleStop() {
 }
 
 // 导出当前对话为 Markdown 文件（第5条）
-function handleExportChat() {
+async function handleExportChat() {
   const msgs = char.value.messages;
   if (msgs.length === 0) {
     toastMessage.value = t('chat.emptyChat');
@@ -532,7 +532,9 @@ function handleExportChat() {
     createdAt: new Date(msgs[0]!.timestamp).toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  downloadChatMarkdown(chat, char.value.name, getWorldUserDisplayName(char.value.id));
+  const outcome = await downloadChatMarkdown(chat, char.value.name, getWorldUserDisplayName(char.value.id));
+  // 用户在系统保存面板里取消 ⇒ 不报"已导出"
+  if (outcome === 'cancelled') return;
   toastMessage.value = t('chat.exportedMarkdown');
   toastType.value = 'success';
   toastOpen.value = true;
