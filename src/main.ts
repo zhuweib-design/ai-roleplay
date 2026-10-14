@@ -15,6 +15,7 @@ import { createPinia } from 'pinia';
 import router from './router';
 import { vRange } from './core/range-fill';
 import { vTip } from './core/tip';
+import { installPresetInputBehavior } from './core/preset-input';
 import App from './App.vue';
 
 const app = createApp(App);
@@ -24,4 +25,6 @@ app.use(router);
 app.directive('range', vRange);
 // 全局指令：键盘/触屏可达的提示气泡（替代原生 title，见 src/core/tip.ts）
 app.directive('tip', vTip);
+// 全局行为：有预设值的输入框聚焦清空、未改动失焦回填（见 src/core/preset-input.ts）
+installPresetInputBehavior();
 app.mount('#app');

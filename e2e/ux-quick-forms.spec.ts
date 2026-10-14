@@ -100,3 +100,76 @@ test.describe('世界书最小生效三步', () => {
     await expect(page.locator('.quick-wb .step-flow-row.done')).toHaveCount(0);
   });
 });
+
+/**
+ * 预设值输入框的聚焦行为（见 src/core/preset-input.ts）
+ *
+ * 挂在"快速档"这个文件里而不是新开一个 spec：新开文件要重跑一次单 worker 全量
+ * 才能补 CI 分片权重（一次 12–17 分钟），而这条用例测的就是表单聚焦行为，主题相合。
+ *
+ * 三段各锁一件事，缺一段就是不同的 bug：
+ * 1. 聚焦即清空，且原值挪到 placeholder（看不见原值 = 用户不敢动）；
+ * 2. 没改就走开 ⇒ 原值回来，且**没有**任何一次写盘（清空的值若被当成用户改动，
+ *    默认值就静默丢了 —— 这条最狠，界面上完全看不出来）；
+ * 3. 真改了 ⇒ 值留下并落进 IndexedDB 的设置记录（读盘，不靠 reload 后看 DOM：
+ *    设置写盘是异步的，reload 抢在写之前读到的是旧值，那样稳定假绿/假红）。
+ */
+test.describe('预设值输入框的聚焦行为', () => {
+  /** 读盘上设置记录里的某个字段（键与形状见 e2e/theme-persistence.ts 的注释） */
+  async function readPersistedSetting(page: import('@playwright/test').Page, key: string) {
+    return page.evaluate(
+      (k) =>
+        new Promise<unknown>((resolve) => {
+          const req = indexedDB.open('ai-roleplay');
+          req.onsuccess = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains('settings')) {
+              db.close();
+              resolve('(库里没有 settings store)');
+              return;
+            }
+            const get = db.transaction('settings', 'readonly').objectStore('settings').get('app');
+            get.onsuccess = () => {
+              db.close();
+              const rec = get.result as { value?: Record<string, unknown> } & Record<string, unknown>;
+              resolve((rec?.value as Record<string, unknown> | undefined)?.[k] ?? rec?.[k]);
+            };
+            get.onerror = () => {
+              db.close();
+              resolve('(读取失败)');
+            };
+          };
+          req.onerror = () => resolve('(打开失败)');
+        }),
+      key
+    );
+  }
+
+  test('聚焦清空并可看见原值；未改动失焦回填且不写盘；改了就落进设置记录', async ({ page }) => {
+    await page.goto('/settings?cat=model');
+    await page.waitForSelector('html[data-app-ready="1"]', { state: 'attached', timeout: 30_000 });
+    const max = page.getByLabel('上下文窗口上限 (Token)');
+    await expect(max).toHaveValue('8192');
+    const before = await readPersistedSetting(page, 'maxContextTokens');
+
+    // 1) 聚焦：值被挪走，原值改由 placeholder 顶上
+    await max.click();
+    await expect(max).toHaveValue('');
+    await expect(max).toHaveAttribute('placeholder', '8192');
+
+    // 2) 一个字没输就走开：原值回来，临时 placeholder 撤掉，盘上记录没被动过
+    await page.keyboard.press('Tab');
+    await expect(max).toHaveValue('8192');
+    expect(await max.evaluate((el) => el.hasAttribute('placeholder'))).toBe(false);
+    expect(await readPersistedSetting(page, 'maxContextTokens')).toEqual(before);
+
+    // 3) 真的改：新值留下，并等它写进设置记录
+    await max.click();
+    await max.fill('16384');
+    await page.keyboard.press('Tab');
+    await expect(max).toHaveValue('16384');
+    await expect
+      .poll(() => readPersistedSetting(page, 'maxContextTokens'), { timeout: 15_000 })
+      .toBe(16384);
+  });
+});
