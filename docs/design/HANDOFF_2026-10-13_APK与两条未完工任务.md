@@ -4,17 +4,20 @@
 
 ## 仓库当前状态
 
-- 分支 `feat/ux-ia-guided-flow`，HEAD `3a83302`（这份文档本身）。本地领先远端 2 个提交（`c83fd8f`、`3a83302` 未推送）。推送需要用户单独点头，"继续"不算授权。
-- **2026-10-13 续的工作还没提交**，在工作区里：`VectorModelPanel.vue`（任务 A 的竞态修复）、`ThinkingBlock.vue`（M20-b 字面量迁移）、`e2e/model-install-web.spec.ts`（新增）、`e2e/token-neutrality.spec.ts` + `e2e/neutrality-baseline.json`（夹具与基线）、`tests/core/model-file-adapter.test.ts`（环境选择守卫）、`e2e/shard-groups.mjs`（权重重生成）。按仓库纪律这是**两批**：逻辑修复一批、token 迁移一批，别混进同一个 commit。
-- 未跟踪目录仍只有刻意不入库的两个：`docs/design/THEME_BRUTAL_SHOTS/` 截图、`docs/design/ai-chat-ui-redesign/` 原型源。
+- 分支 `feat/ux-ia-guided-flow`。本会话累计 9 笔提交：任务 A 竞态修复、思考块 token 迁移、交接文档更正、"那一刻"三条采样器与 `.cache-rate`/`.gen-text`/`.gen-dot` 入阶、Anthropic 直连头、CI 分片权重重生成、导出存盘统一走 saveBlob + 守卫、Capacitor 安卓壳与出包脚本、本条文档更新。
+- Capacitor 出包已入库：`capacitor.config.ts`、`android/`（55 个文件；`local.properties` 与 build 产物被 `android/.gitignore` 挡在外面，所以新 clone 由脚本自己补）、`scripts/android-apk.mjs`。APK 产物在 `installer/`，**不入库**（本仓 `.gitignore` 自身未跟踪，加规则只对本机有效，所以只能靠不执行 `git add installer/`）。
+- 门禁清单多了两条：`npm run check:save-blob` 与 `:self-test`（已进 `ci.yml`）。全量 e2e 现为 **206 条 / 38 个文件**，而权重表是按 205 条那轮跑的 ⇒ 差约 8 秒，守卫不红（它判项数、时效、极差，不判权重精度），下次新增 e2e **文件**时一并重生成即可。
+- 本地领先远端 8 个提交，全部未推送。推送需要用户单独点头，"继续"不算授权。
+- 未跟踪目录只剩刻意不入库的两个：`docs/design/THEME_BRUTAL_SHOTS/` 截图、`docs/design/ai-chat-ui-redesign/` 原型源；另加 `installer/`（APK 产物，见上）。
 - 内置皮肤 9 套：dark / light / midnight / oled / theatre / terminal / aurora / ink / brutal。
 - 门禁现状（跑这些命令即可复现）：
   - `npm run a11y:contrast` → 扫描存量 **67** = 基线 67；A 段 26 项 × 9 款全达标。
   - `npm run a11y:contrast:self-test` → 225 个组合全部解析得出颜色（这条是防"门禁空跑"的，见下）。
   - `npx playwright test e2e/token-neutrality.spec.ts --project=msedge` → **12 条全绿**（9 条皮肤基线网 + 3 条"那一刻"采样器：命中率徽标 / 生成中指示器 / 本地稳定率徽标），基线 **5 个目标 / 8,568 个读数**（2026-10-13 续：气泡族补了 `.thinking-block` / `.thinking-header` / `.thinking-body` / `.thinking-tokens` 四个选择器，+612）。
   - `npm run check:css-conventions` / `check:token-baseline` / `token:self-test` 均退出码 0。
-  - 全量单测 `npx vitest run` → 201 files / 3,940 passed / 3 skipped。
-  - 全量 e2e：4 worker 复跑 **203 条全绿 / 6.7 分钟**；单 worker 终态跑数 **205 条全绿 / 16.6 分钟**（多出的是下面那两条"那一刻"用例），`e2e/shard-groups.mjs` 已按它重生成（4 组 245/244/245/244s，极差 1.005x；`token-neutrality` 权重 22.0 → 83.8）。**新增一个 e2e 文件就必须重生成一次**，否则 `tests/tooling/e2e-shard-groups.test.ts` 红在"分组项数 ≠ 磁盘 spec 数"。
+  - 全量单测 `npx vitest run` → **202 files / 3,949 passed / 3 skipped**（含跨域分类器那 9 条）。
+  - 全量 e2e：**4 worker 205 条全绿 / 6.7 分钟**；**单 worker 终态 205 条全绿 / 16.6 分钟**，`e2e/shard-groups.mjs` 就是按这份跑数生成的（4 组 245/244/245/244s，极差 1.005x；`token-neutrality` 权重 22.0 → 83.8）。之后又加了第三条"那一刻"用例，现在 `npx playwright test --list` 是 **206 条 / 38 个文件** ⇒ 权重表比磁盘少一条用例（约 8 秒）。**守卫不会因此红**：它判的是"每个 spec 恰好属于一组 + 权重不过期 + 极差 ≤1.3"，不判用例条数；`android/` 这批落地后一起重生成即可。
+  - **新增一个 e2e 文件（不是新增一条用例）就必须重生成权重**，否则 `tests/tooling/e2e-shard-groups.test.ts` 红在"分组项数 ≠ 磁盘 spec 数"。重生成要先跑一次单 worker 全量（这台机器实测 12–17 分钟）。
 - 今天在这一串里修掉的两个门禁自身缺陷，别退回去了：
   1. `scripts/check-contrast.mjs` 的 A 段主循环曾把配对名拼成 `var(${check.fg})`（少 `--`），导致 26 项全部解析成 null、被"跳过而非误报"吃掉、恒打印"全部达标"。现在自检会用**与 A 段相同的取值路径**逐条确认 225 个组合都能解析，解析不出即退出码 1。
   2. 中性网的可见性轮询原来只报个数（"期望 7 实得 6"），现在返回"缺哪几个"，红了直接点名。
@@ -56,13 +59,65 @@
   - `.msg-narration` / `.msg-narration-after`（各一条 6px）**没有可迁的用户界面**：全仓 grep 下来 `narration`/`narrationAfter` 的**写入点只有 `src/data/mock-data.ts`**（演示种子），生成链路里没有任何地方赋值，`type-adapters.ts:19` 那句注释写着"由 prompt-builder 单独处理（Phase E 实现）"——即未实现。所以这两条规则（连同 `MessageBubble.vue:95` 那个内联 `margin-top: 6px`）是在给一个产品当前产生不出来的状态排版，迁它等于给死代码刷漆。要做的是先决定 Phase E 到底做不做。
   - `.msg-toolbar`（`top:-13px` / `right:6px` / `gap:1px` / `padding:3px`）：它是 `opacity:0` 隐藏的，不是 `display:none`，所以中性网其实**采得到**；但这几条全是仓库口径里"刻意保留字面量"的非档位值，且偏移量不在采样属性清单里，这一批没有要迁的东西，就不为它扩清单（M19-a 的纪律是"清单跟着这轮会碰的规则走"）。
 
-## 任务 C：APK 路线（结论：壳可行，但有四处必须先修/先测）
+## 任务 C：APK 路线（2026-10-14 已出 debug 包，并在安卓模拟器上实测）
 
-用户 2026-10-13 改口要出 APK，并指定参考 `D:\AI_data\xiaoshuo_skill_kaifa`。
+APK 出来了，也装进模拟器量过了——这一节把原来的"纸面推断"换成了读数。
 
-参考项目的做法（已读，可照搬）：Capacitor 套 Web 产物 + `novel-studio/scripts/android-apk.mjs`（156 行）。流程是 `vite build` → 模型瘦身 → 清旧 assets models → `cap sync` → 检测 JDK，若 <21 自动把 Capacitor 硬编码的 `JavaVersion.VERSION_21` 降到 17 → `gradlew assembleDebug --rerun-tasks`（debug keystore 自动签名）→ 复制 APK 到 `installer/`。两个细节值得抄：`--rerun-tasks` 是因为 `cap sync` 增量同步会残留旧模型目录且 gradle 命中缓存不重编；JDK 降级是因为 Capacitor 8 写死 21。
+工具链不用装：`D:\AI_data\xiaoshuo_skill_kaifa\.android-toolchain\` 里有 JDK 21 与完整 SDK，本机还有一台**已经跑着的**模拟器（`adb devices` ⇒ `emulator-5554`，AVD `ns36`，API 36）。出包三步（都踩过坑，记在下面）：`npm run build` ⇒ `npx cap add android` ⇒ `android\gradlew.bat -p android assembleDebug`。产物 `android/app/build/outputs/apk/debug/app-debug.apk`，27.3 MB，debug 签名可直接装。三个必改项，不改就构建失败：
+1. 生成的 wrapper 指 `gradle-8.14.3-**all**.zip`，而本机缓存里只有完整的 `-**bin**`；直连 services.gradle.org 会下到一半断（我第一次就死在这）。把 `android/gradle/wrapper/gradle-wrapper.properties` 的 `distributionUrl` 改成 `-bin.zip`，并用全局 `~/.gradle`（不要在项目里另建 GRADLE_USER_HOME）。
+2. `google()` / `mavenCentral()` 在这台机器上拉不动：`android/build.gradle` 两个 repositories 块里**先**加 `https://maven.aliyun.com/repository/google` 与 `.../public`，再保留官方源兜底。
+3. `android/local.properties` 不会自动生成，得自己写 `sdk.dir=...`，否则 gradle 找不到 SDK。
 
-工具链不用下载：`D:\AI_data\xiaoshuo_skill_kaifa\.android-toolchain\` 里有 `jdk-21.0.12.1+1`（`bin/java.exe` 在）和完整 SDK（`build-tools` / `cmdline-tools` / `platform-tools` / `platforms` / `system-images` / `emulator`，`licenses` 目录存在说明许可已接受）。SDK 路径写在该项目的 `novel-studio/android/local.properties`。这些都不在 PATH 里，要用环境变量显式指。
+**WebView 环境实测**（`adb install -r` ⇒ `am start -n com.zhuweib.airoleplay/.MainActivity` ⇒ Capacitor 的 debug 包自带 WebView 远程调试，`adb forward tcp:9333 localabstract:webview_devtools_remote_<pid>` 后用原生 CDP `Runtime.evaluate`；注意 Playwright 的 `connectOverCDP` 对安卓 WebView **拿不到已有页面**，contexts 是空的）：
+
+| 读数 | 值 | 意义 |
+| --- | --- | --- |
+| `location.origin` | `https://localhost` | Capacitor 的 `androidScheme:'https'` |
+| `window.isSecureContext` / `crypto.subtle` | true / true | 密钥与主密码加密可用（这条原来只是推断） |
+| `'__TAURI_INTERNALS__' in window` | **false** | 确认走 Web 适配器分支，任务 A 那套 `isTauriEnv()` 守卫在真机上是挡住的 |
+| `'webkitdirectory' in HTMLInputElement.prototype` | **true** | 原来"安卓 WebView 可能选不了文件夹"的担心不成立，目录安装这条路可用 |
+| `window.showDirectoryPicker` | true | File System Access 也在 |
+| `indexedDB` / `serviceWorker` | true / true | 存储与 PWA 注册能力在 |
+| `html[data-app-ready]` | `1` | 应用真的起来了并跑到 `/chat`，首屏 6 条气泡（演示种子） |
+| `.nav-item` 数 | 0 | 手机视口下侧栏按既有设计卸载（底栏承接） |
+
+**CORS 在设备路径上的读数，和我上一轮写的"桌面浏览器 9/10 放行"不是一回事。** 上一轮那数是从桌面 Edge 拿的，而 Edge 走系统代理；这轮直接在 WebView 里发（设备直连、无代理），并且**每家用应用真实会发的请求头**——上一版探针我犯了个污染性错误：把 anthropic 专用头加到了所有请求上，会让别家的预检因"允许的头部清单里没有它"而失败，`moonshot` 与 `openrouter` 那两条假红就是这么来的，重测后都放行。
+
+| 终点（各家真实头） | 设备直连读数 |
+| --- | --- |
+| api.deepseek.com | 放行（HTTP 401） |
+| api.moonshot.cn | 放行（HTTP 401） |
+| dashscope.aliyuncs.com | 放行（HTTP 401） |
+| api.siliconflow.cn | 放行（HTTP 401） |
+| openrouter.ai | 放行（HTTP 401） |
+| 用户自己在用的那个中转 | 放行（HTTP 401） |
+| open.bigmodel.cn `/api/paas/v4` | 放行（HTTP 401） |
+| api.groq.com | 被跨域拦（根路径可达） |
+| open.bigmodel.cn `/paas/v4` | 被跨域拦（根路径可达） |
+| api.anthropic.com（带官方那个直连头） | 被跨域拦（根路径可达） |
+| api.openai.com / generativelanguage.googleapis.com | 网络不可达（8 秒超时，不计入跨域结论） |
+
+⇒ 设备路径上是 **7 放行 / 3 拦**，而且被拦的两条里有 `api.anthropic.com`：同一个请求头组合在桌面代理路径上是"放行 401"、在设备直连上是"被拦"。所以上一轮那个"少带一个头"的修复是**必要但不充分**——它修的是我们这侧的缺项，修完桌面能用；手机上还拦着。
+⇒ 更要紧的是：**从 WebView 内部区分不了"这家真的不发 CORS 头"和"跨境链路被中间网络干扰"**（两者表现都是预检没回来而根路径又能连）。groq / anthropic / openai / gemini 全在境外，这个模式更像后者。因此 `CapacitorHttp` 那个开关**仍然先不开**：如果真实原因是链路干扰，把请求改走原生栈并不能治好，却要先付"所有请求脱离浏览器网络栈、中止语义与流式读法重验"的代价（参考项目就记着：跨源 POST 走原生插件时 `AbortSignal` 不透传、原生侧无超时，他们给 streamChat 加了硬超时 race 才敢开）。
+⇒ 真要定论，下一步不是改代码，是**换网络路径复测同一张表**：同一台手机用蜂窝数据、以及挂代理各测一次。如果只有直连拦 ⇒ 是链路问题，开 CapacitorHttp 无用；如果挂着代理也拦 ⇒ 才是服务端政策，那时再开并配套补中止与超时。
+
+**这一条已经能收口了（2026-10-14 续，直连层再量一次，不必等手机）。** 绕开浏览器、直接对同批 endpoint 发真实 POST（带 `Origin: https://localhost` + 无效密钥，看服务端到底回什么）：
+
+| 终点 | 直连响应 | 换真实安卓 WebView 的 UA 再发一次 |
+| --- | --- | --- |
+| api.anthropic.com | 403，**没有任何 `access-control-*` 头** | 仍是 403 ⇒ 与 UA 无关，是 CDN/服务端拒绝这个客户端 |
+| api.groq.com | 403，无 `access-control-*` | 仍是 403 |
+| api.moonshot.cn | 401 + `Access-Control-Allow-Origin: https://localhost` | —（本来就通） |
+| api.deepseek.com | 401 + 回显 Origin | — |
+| api.openai.com / generativelanguage.googleapis.com | 连接超时（curl 退出码 28），链路层就到不了 | — |
+
+⇒ 结论修正：**上一条那句"分不清是政策还是链路干扰"现在分得清了**，而且两种都不是 `CapacitorHttp` 能治的。403 是服务端拒绝这个客户端，换成原生请求一样被拒；超时是链路不通，换成原生也一样。所以"开了 CapacitorHttp 被拦的三家就通了"这个假设**被否**，这个开关继续不打开是对的。
+⇒ 开它唯一的真实收益是把状态码读出来（403 变成"禁止访问 403"而不是"跨域失败"），而这我们已经用另一种方式做到了：`cors-probe.ts` 那次只测连通性的探测就是"根路径可达 ⇒ 提示是跨域/被拒，不是密钥错"。
+⇒ 还有一条本机做不到的腿：`127.0.0.1:10808` 那个 SOCKS 此刻不接受连接（四条全 000），所以"挂代理复测"在这台机器上没做成，能做的已经被上面这张表替代了；蜂窝数据那一条只有真机能答。
+
+顺带订正上一轮写的两句话：其一，"桌面浏览器 9/10 放行"不能当 APK 的依据，读表必须带"哪条网络路径 + 哪个 origin + 哪套请求头"三件事；其二，用 `curl` 量 CORS 时不打 `OPTIONS` 状态码是错的——`000`（连不上）会被记成"没有 ACAO 头"。
+
+背景与参考：用户 2026-10-13 改口要出 APK，并指定参考 `D:\AI_data\xiaoshuo_skill_kaifa`（那边走的是 Capacitor 套 Web 产物 + `novel-studio/scripts/android-apk.mjs`：`vite build` → 模型瘦身 → 清旧 assets models → `cap sync` → JDK 探测 → `gradlew assembleDebug --rerun-tasks` → 复制进 `installer/`）。**本仓没有照抄的两处**：没有 `public/models/` 那批内置权重，所以不需要"模型瘦身 + 清旧 assets"这一步；本机 JDK 是 21，不需要参考项目那段把 `JavaVersion.VERSION_21` 降到 17 的补丁。`--rerun-tasks` 保留了（`cap sync` 是增量同步，gradle 会命中缓存复用上次产物）。
 
 本仓已实测的部分：
 
@@ -71,30 +126,13 @@
 - 起 `vite preview` 后真浏览器跑 9 条路由（`/`、`/chat`、`/group`、`/character`、`/worldbook`、`/databank`、`/image-gen`、`/settings?cat=model`、`/settings?cat=security`）：**全部 `data-app-ready=1`、控制台与页面异常 0 条**。环境判定 `tauriInternals=false`、`indexedDB` 在、`serviceWorker` 在。
 - 密钥/主密码加密走 `crypto.subtle`（`src/core/api-key-crypto.ts:146-197`），WebView 是安全上下文，能用。
 
-没验、不能下结论的两项：备份与恢复（`src/core/backup.ts`、`backup-crypto.ts` 到底走浏览器下载还是 Tauri 保存对话框）；本地 ONNX/ORT 推理在安卓 WebView 的可用性（`scripts/check-ort-firstscreen.mjs` 只测过桌面，安卓 WebView 的 wasm 内存上限是真实风险）。CORS 原本是第三项，2026-10-14 已量，见下。
+没验、不能下结论的一项：本地 ONNX/ORT 推理在**真机** WebView 的可用性（`scripts/check-ort-firstscreen.mjs` 只测过桌面；本轮那台模拟器是 x86_64、内存宽裕，拿它量 ONNX 会偏乐观）。CORS 原本是第三项，2026-10-14 已在桌面与设备两条路径上各量一次，读数就在本节的两张表里。
 
-**CORS 这条已经量过（2026-10-14），原文"最硬的一条"这个判断被推翻了一半。** 判据不是猜 OPTIONS，而是在真实 Edge 里发应用同一形状的请求：`fetch` 能读到响应 ⇒ 跨域放行；`fetch` 抛 `TypeError` 但 `mode:'no-cors'` 能到 ⇒ 服务器可达、被 CORS 拦；两者都不通 ⇒ 不可达，不计入结论。Origin 用 `http://localhost`，与 Capacitor 安卓 WebView 的 origin 同一形态。
-
-| endpoint | 判定 |
-| --- | --- |
-| api.openai.com | 放行（HTTP 401） |
-| api.deepseek.com | 放行（401） |
-| api.moonshot.cn | 放行（401） |
-| dashscope.aliyuncs.com | 放行（401） |
-| api.siliconflow.cn | 放行（401） |
-| api.groq.com | 放行（401） |
-| openrouter.ai | 放行（401） |
-| generativelanguage.googleapis.com | 放行（400） |
-| 用户自己在用的那个中转 | 放行（401） |
-| open.bigmodel.cn（智谱） | **分路径**：`/api/paas/v4` 放行（拿到它自己的 401 中文报错），`/paas/v4` 被 CORS 拦。两条都在真实浏览器里复验过 |
-| api.anthropic.com | 缺一个请求头，已修，见下 |
-| 127.0.0.1:11434（ollama） | 本机没跑服务，未测 |
-
-十条里九条放行 ⇒ "多数 provider 不发 CORS 头"不成立；真正的拦点是**自建与小中转这条长尾**，本次样本没覆盖到它，别把 9/10 当成"长尾也没事"。同一件事的另一面：同一个服务商的不同路径可能一个放行一个拦，所以任何"CORS 已验"的结论都必须带上路径。
+**桌面浏览器路径的对照读数（只对 PWA / 桌面版成立，别当 APK 依据）。** 同一套判据在真实 Edge（origin `http://localhost`）里量到的放行面比设备上宽得多：openai、gemini、groq、moonshot、openrouter 都判"放行"，而这几条里有四条在设备直连路径上是"被拦"或"不可达"。差别只有一处——那台 Edge 走系统代理，而手机没有。判据本身是：`fetch` 能读到响应 ⇒ 放行；`fetch` 抛 `TypeError` 但 `mode:'no-cors'` 打到 origin 根路径能回 ⇒ 服务器可达、被跨域拦；两边都不回 ⇒ 不可达，不计入。
 
 修掉的一条（顺带影响桌面版）：`api.anthropic.com` 之前**一直**连不通，原因不是服务端政策，是我们少带官方要求的 `anthropic-dangerous-direct-browser-access: true`。同一套头做 A/B：不带 ⇒ 被 CORS 拦（服务器可达）；带上 ⇒ 放行到 HTTP 401。`AnthropicClient` 走的是 `fetch`（不是 Rust reqwest），所以这条在 Tauri 桌面版里同样存在，`anthropic-client.ts:24` 原来那句"官方支持 CORS，Web 与 Tauri 通用"是错的，已改。补进 `buildHeaders` 与 `listModels` 两处，各有一条单测断言这个头存在（注释掉即红，实测过）；再用应用自己的"测试连接"在真实浏览器里复跑一次，结果从"网络请求失败"那一类变成 `API 错误 401: invalid x-api-key`。
 
-**决策：不引 Capacitor Http，并已把"被跨域拦"接成可诊断的分类（2026-10-14 落地）。** 不引的理由按上面的读数：WebView 下绝大多数配置能直接跑；为一条长尾把所有请求改走原生，代价是丢掉 `fetch` 的中止语义并要重写 `openai-client` 的读流。
+**CapacitorHttp 此刻是关着的**，理由与"该在什么条件下打开它"都写在上面那张设备表后面那段，配置位置在 `capacitor.config.ts`（连同为什么先不开，以及参考项目开它时踩到的 `AbortSignal` 不透传、原生侧无超时这两个坑）。
 
 落地的那条小改，以及它为什么比我原先写的更微妙：
 - 原先我记的是"`diagnostics.ts` 那套 cors 建议没有任何代码路径产生它"——**这句只对了一半**。`chat-error.ts:90` 靠 `/cors/i.test(err.message)` 确实能命中，因为 `api.networkFailed` 那句中文兜底里恰好有"CORS"四个字母。所以聊天气泡里的提示一直是对的，而 `ApiError.kind` 本身从来没被设成 `'cors'`：凡按 kind 分流的地方（`ApiErrorModal`、`diagnostics` 的建议、`llm-retry` 的重试白名单）拿到的都是 `network`。这是一种"靠措辞碰巧匹配"的脆弱耦合——改一句 i18n 文案就会静默丢掉跨域引导。
@@ -102,7 +140,28 @@
 - 连带收益：`llm-retry` 的白名单是 `rate-limit / server / network`，被跨域拦过去被当成瞬时错误重试两轮，现在归 `cors` ⇒ 不再重试。
 - 界面级实测两类各一次（真实 Edge、应用自己的"测试连接"）：`https://open.bigmodel.cn/paas/v4` ⇒ "跨域请求被拦截：…（这个 API 地址能连通，但服务商不允许浏览器直接调用它）"；一个不存在的域名 ⇒ 仍是"网络请求失败（可能原因 1-4）"。单测 9 条锁住判据本身，含两条负向对照（把分类器改成无视探测 ⇒ 红；探测必须打在根路径且无请求体）。
 
-顺序建议（2026-10-14 再更新）：任务 A、B 已收口，CORS 已量、Anthropic 直连头已修、"被跨域拦"已接成可诊断分类（见上）⇒ 剩下的就是上 Capacitor 出 debug APK 装真机，然后拿真机验剩下两项未测（备份恢复、ORT 在 WebView 的内存上限）。另补一条与本目录既有事实相关的提醒：APK 的 WebView 里 `isTauriEnv()` 为 false，走的就是任务 A 这条 Web 降级，而 `webkitdirectory` 在安卓 WebView 上是否可用**没实测过**——不可用时面板会给"改用 zip 上传"的提示（`vector.dirPickUnsupported`），zip 那条路径是 `userStore.uploadFromZip` → IndexedDB，逻辑上是通的，但同样没在 WebView 里跑过。
+顺序建议（2026-10-14 三更新）：任务 A、B 已收口；CORS 已量（桌面与设备两条路径都量了）、Anthropic 直连头已修（必要不充分）、"被跨域拦"已接成可诊断分类；debug APK 已出并在模拟器上验过环境。剩下的按这个顺序：
+1. **换网络路径复测那张设备表**（同一台手机：蜂窝数据一次、挂代理一次）。这是当前唯一能决定"开不开 CapacitorHttp"的证据——桌面与模拟器都不能替代。
+2. 装真机验两项仍未测的：备份与恢复走的是浏览器下载还是原生保存对话框；本地 ONNX/ORT 在真机 WebView 的内存上限（模拟器是 x86_64、内存宽裕，量出来偏乐观，别拿它当结论）。
+3. `android/` 这套原生壳要不要入库、要不要照参考项目那样写一个 `scripts/android-apk.mjs` 把"构建→sync→gradle→复制到交付目录"封成一条命令，都是待定项（现在这三步是手工执行的，参数见上面那三个必改项）。
+
+已经变成读数、不必再猜的三件事：WebView 里 `webkitdirectory` 为 true（目录安装可用）、`__TAURI_INTERNALS__` 为 false（Web 降级分支确实被选中）、`crypto.subtle` 在 `https://localhost` 下可用（密钥与主密码加密不是问题）。
+
+## 备份/导出在 APK 里是死按钮（已测、已修 3 处并立了守卫，剩 6 处进基线）
+
+在模拟器上用 CDP 把 `downloadBackupFile` 那段原样跑了一遍（blob → objectURL → `a[download]` → click）：**不报错、没有下载记录、`find /sdcard` 全盘搜不到那个文件、logcat 一条相关日志都没有**。手机上点了就是没反应。全仓这个模式共 **9 处**（备份包、对话 Markdown、角色卡 PNG、审核日志、故事脚本、角色 JSON、世界书、快捷回复、群聊 ST）。
+
+反方向是好的：同一台 WebView 里 `<input type="file">` 会正常拉起系统文档选择器（logcat 抓到 `GET_CONTENT → com.google.android.documentsui/.picker.PickActivity`），所以"恢复备份 / 导入"这一侧不用动。
+
+修法与读数：同一台 WebView 里 `window.showSaveFilePicker()` 能用（实测真把保存界面拉起来了，抛的是 `AbortError`＝用户取消，不是 `NotSupportedError`）。于是新增 `src/utils/save-blob.ts`：
+
+- **只在 UA 带 `; wv)`（安卓 WebView 标记）时走系统保存面板**；桌面 Chrome / PWA / Safari 保持既有的直接下载。那里的 `showSaveFilePicker` 也存在，每次都弹面板是用户没要求的改动。
+- **先弹面板、再算 Blob**。`showSaveFilePicker()` 要求用户手势，而各站点在存盘前都要 `await` 一段取数据的异步工作；"await 800ms / 3000ms 后面势是否还在"这条没测完（那台模拟器正被另一个会话用着，顶层界面已经切到 `com.novelstudio.app`，我就停手了），所以按**最不依赖手势存续**的写法实现，并用单测把顺序钉住（`['picker:…','makeBlob','write:5','close']`；把算数据挪到弹面板之前 ⇒ 两条用例红，实测过）。
+- 返回 `'saved' | 'cancelled'`：用户在面板里取消时调用方**不得**报"已导出"。旧写法点了就 toast 成功，这是顺手补的界面诚实问题。
+
+本批改了 3 处（`downloadBackupFile` / `downloadChatMarkdown` / `downloadCharacterPng` 及其 4 个调用点），剩 6 处登记在 `scripts/save-blob-guard.mjs` 的基线里（只许降不许升；新增文件或加一处即红；`--self-test` 造一处违规证明尺子还在咬，红与绿都验过）。守卫已进 `package.json`（`check:save-blob` / `:self-test`）与 `ci.yml`。
+
+没做成的验证：改完后**没有在设备上点一次真实的"导出备份"**看它是否弹面板——那要再次占用另一会话在用的模拟器。验证方法是现成的：装 `installer/AI酒馆-1.0.0-debug.apk` ⇒ 设置→数据→导出备份 ⇒ `adb logcat | grep GET_CONTENT` 应出现 documentsui 的 PickActivity。这条留给下一次，或由你在手机上直接看。
 
 ## 约束（别踩）
 
