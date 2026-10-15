@@ -4,14 +4,14 @@ import axe from 'axe-core';
 /**
  * E2E · 颜色对比度（WCAG 2.1 AA · 需求6）
  *
- * 在真实浏览器（Edge 渲染）中运行 axe color-contrast 规则，验证全部内置皮肤
- * （dark / light / midnight / oled / theatre）下：
+ * 在真实浏览器（Edge 渲染）中运行 axe color-contrast 规则，验证**全部内置皮肤**
+ * （清单取自 `src/types` 的 THEME_PRESETS，见下方 `THEMES`）下：
  * - 文本对比 ≥4.5:1、非文本 ≥3:1
  *
- * 覆盖范围：
- * 1) 设置页（主题卡片、分类侧边栏、输入框、按钮、标签、分隔线）· 每款皮肤一次
- * 2) 对话页（导航栏、消息区、输入框等主交互组件）· 每款皮肤一次
- * 3) 2026-09 全路由审计中出过违规的 7 条路由 · **全部内置皮肤**（7 × 皮肤数 次扫描）
+ * 覆盖范围（三组都是"每款内置皮肤一条独立用例"，不是一条循环跑完全部皮肤）：
+ * 1) 设置页（主题卡片、分类侧边栏、输入框、按钮、标签、分隔线）
+ * 2) 对话页（导航栏、消息区、输入框等主交互组件）
+ * 3) 2026-09 全路由审计中出过违规的 7 条路由 · 每条皮肤各扫一遍（7 次/条）
  */
 // 清单来自 src/types 的 THEME_PRESETS（唯一的内置皮肤来源），新增皮肤不必再改这里
 import { THEME_PRESETS } from '../src/types';
@@ -84,13 +84,21 @@ async function settle(page: Page) {
     .toBe(0);
 }
 
-test('对比度：每款皮肤下设置页无 WCAG AA 颜色对比违规', async ({ page }) => {
-  // 注入本地 axe-core（离线可用，不依赖 CDN）。
-  // 用 addInitScript 而非 addScriptTag：addInitScript 经 CDP 原生注入，
-  // 不受页面 CSP（script-src 'self'）拦截，且需在 goto 前注册。
-  await page.addInitScript({ content: axe.source });
-
-  for (const theme of THEMES) {
+/**
+ * 同样按主题拆成每条一款，而不是每条跑完 9 款。
+ *
+ * 理由与文件末尾那条 7 路由审计完全一样，而且是被同一件事逼出来的：内置皮肤从 5 款
+ * 涨到 9 款后，这两条各要 9 次「goto + 切皮肤 + 等动画静止 + 跑 axe」，实测在 8 worker
+ * 并发下**双双用掉整整 60s 撞穿预算**（红相是 timeout，不是对比度违规），4 worker 也会
+ * 随机红。拆开之后每条只做一款一件事，红的时候直接说出是哪款出的问题。
+ * 先例见本文件末尾 `for (const theme of THEMES)` 那段——它当初就是为同样的撞穿拆的。
+ */
+for (const theme of THEMES) {
+  test(`对比度：设置页在「${theme}」主题下无 WCAG AA 颜色对比违规`, async ({ page }) => {
+    // 注入本地 axe-core（离线可用，不依赖 CDN）。
+    // 用 addInitScript 而非 addScriptTag：addInitScript 经 CDP 原生注入，
+    // 不受页面 CSP（script-src 'self'）拦截，且需在 goto 前注册。
+    await page.addInitScript({ content: axe.source });
     await page.goto('/settings');
     await applyTheme(page, theme);
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
@@ -99,15 +107,14 @@ test('对比度：每款皮肤下设置页无 WCAG AA 颜色对比违规', async
     const violations = await axeContrast(page);
     const summary = violations.map((v) => `${v.id}(${v.nodes.length}): ${v.help}`).join(' | ');
     expect(violations, `theme=${theme} → ${summary}`).toHaveLength(0);
-  }
-});
+  });
+}
 
-test('对比度：每款皮肤下对话页无 WCAG AA 颜色对比违规', async ({ page }) => {
-  // 测量静态终态：系统减弱动画会禁用消息淡入，避免并发渲染时抽样到半透明帧。
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.addInitScript({ content: axe.source });
-
-  for (const theme of THEMES) {
+for (const theme of THEMES) {
+  test(`对比度：对话页在「${theme}」主题下无 WCAG AA 颜色对比违规`, async ({ page }) => {
+    // 测量静态终态：系统减弱动画会禁用消息淡入，避免并发渲染时抽样到半透明帧。
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.addInitScript({ content: axe.source });
     await applyTheme(page, theme);
     await page.goto('/chat');
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
@@ -116,8 +123,8 @@ test('对比度：每款皮肤下对话页无 WCAG AA 颜色对比违规', async
     const violations = await axeContrast(page);
     const summary = violations.map((v) => `${v.id}(${v.nodes.length}): ${v.help}`).join(' | ');
     expect(violations, `theme=${theme} → ${summary}`).toHaveLength(0);
-  }
-});
+  });
+}
 
 /**
  * 按主题拆成 5 条用例，而不是 1 条跑完 35 次扫描。

@@ -63,17 +63,42 @@ async function collectUnderSized(page: Page): Promise<string[]> {
   }, MIN_PX);
 }
 
+/**
+ * 按"宽度 × 路由分组"切开，而不是一条用例跑完 19 条路由。
+ *
+ * 起因：全量 8 worker 实测这两条各用掉整整 60s 撞穿预算（红相是 timeout，不是字号违规），
+ * 4 worker 也会随机红。一条用例里 19 次 `page.goto` 走的是 vite 的按需编译，冷模块图
+ * 在并发下被放大——慢是并发争抢，不是断言变多。沿用本仓库既有做法：**沿用例本来就在
+ * 遍历的那个维度切**（这里是路由），切完一条只有 4–5 次导航，红的时候也能直接说出
+ * 是哪一段路由出的问题。下面那条"分组必须等于原清单"的自检保证切开没漏路由。
+ */
+const CHUNK = 5;
+const ROUTE_GROUPS: string[][] = [];
+for (let i = 0; i < ROUTES.length; i += CHUNK) ROUTE_GROUPS.push(ROUTES.slice(i, i + CHUNK));
+
+test('I-7 用例的路由分组没有漏掉任何一条路由', () => {
+  expect(ROUTE_GROUPS.flat()).toEqual(ROUTES);
+});
+
 for (const width of [390, 640]) {
-  test(`移动端 I-7 运行时判定：${width}px 宽下所有可见可编辑控件字号 ≥16px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 844 });
-    const offenders: string[] = [];
-    for (const route of ROUTES) {
-      await page.goto(route);
-      await expect.poll(async () => page.locator('#app button').count()).toBeGreaterThan(0);
-      await page.keyboard.press('Escape').catch(() => {});
-      const bad = await collectUnderSized(page);
-      offenders.push(...bad.map((b) => `${route} → ${b}`));
-    }
-    expect(offenders, `以下可编辑控件在 ${width}px 下字号 <${MIN_PX}px（iOS Safari 聚焦会放大整页）：\n${offenders.join('\n')}`).toEqual([]);
-  });
+  for (const [gi, group] of ROUTE_GROUPS.entries()) {
+    test(
+      `移动端 I-7 运行时判定：${width}px 宽 · 路由第 ${gi + 1}/${ROUTE_GROUPS.length} 组（${group[0]}…${group.at(-1)}）`,
+      async ({ page }) => {
+        await page.setViewportSize({ width, height: 844 });
+        const offenders: string[] = [];
+        for (const route of group) {
+          await page.goto(route);
+          await expect.poll(async () => page.locator('#app button').count()).toBeGreaterThan(0);
+          await page.keyboard.press('Escape').catch(() => {});
+          const bad = await collectUnderSized(page);
+          offenders.push(...bad.map((b) => `${route} → ${b}`));
+        }
+        expect(
+          offenders,
+          `以下可编辑控件在 ${width}px 下字号 <${MIN_PX}px（iOS Safari 聚焦会放大整页）：\n${offenders.join('\n')}`
+        ).toEqual([]);
+      }
+    );
+  }
 }

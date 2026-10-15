@@ -106,16 +106,21 @@ async function createApiProfile(page: Page, name = 'E2E 说明接力档位'): Pr
  * 抢在读回之前点就只会看到提示（第 6 轮 msedge 红，失败快照里是
  * alert「未配置 API 连接，请先在设置页添加 API 配置」而按钮确实点到了）。
  * 判定用"点一下看框开没开"，等的是结果不是时间。
+ *
+ * 2026-10-16 全量 4 worker 这一条红过一次（失败原文就是下面那句提示），单跑该文件 20 条
+ * 全绿、这一条 7.1s ⇒ 负载下的读回竞态，不是回归。原来的预算是"点一次最多等 3s、总共
+ * 试 15s"，而它需要的恰好就是"别的规格把 CPU 占满时的那几秒"，于是红相和真 bug 长得一样。
+ * 抬到 8s / 25s：单跑耗时的 3.5 倍，仍在 60s 单测预算内留 2 倍余量。
  */
 async function openApiGatedDialog(page: Page, buttonName: string): Promise<void> {
   const button = page.getByRole('button', { name: buttonName });
   await expect
     .poll(
       async () => {
-        await button.click({ timeout: 3_000 }).catch(() => undefined);
+        await button.click({ timeout: 8_000 }).catch(() => undefined);
         return await page.locator('[role="dialog"]').isVisible().catch(() => false);
       },
-      { timeout: 15_000, message: `点「${buttonName}」始终没开出确认框（API 档位一直没读回来？）` }
+      { timeout: 25_000, message: `点「${buttonName}」始终没开出确认框（API 档位一直没读回来？）` }
     )
     .toBe(true);
 }

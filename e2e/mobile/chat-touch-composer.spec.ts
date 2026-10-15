@@ -73,15 +73,93 @@ async function cleanup(page: import('@playwright/test').Page) {
   }, CHAR_ID);
 }
 
-/** 打开到该角色的聊天页 */
+/** 读回刚种的角色：返回它的消息条数，读不到返回 -1（用作"写进去了"的同步点） */
+async function readSeededMessageCount(page: import('@playwright/test').Page): Promise<number> {
+  return page.evaluate(
+    (id) =>
+      new Promise<number>((resolve) => {
+        const req = indexedDB.open('ai-roleplay', 6);
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction(['characters'], 'readonly');
+          const get = tx.objectStore('characters').get(id);
+          get.onsuccess = () => resolve(get.result?.messages?.length ?? -1);
+          get.onerror = () => resolve(-1);
+          tx.oncomplete = () => db.close();
+        };
+        req.onerror = () => resolve(-1);
+      }),
+    CHAR_ID
+  );
+}
+
+/**
+ * 打开到该角色的聊天页。
+ *
+ * 这里要做**两次**整页加载（一次上原点写 IndexedDB、一次让应用重新读回来）。
+ * 它在并发下红过两次（8 worker 红"输入条"那条、3 worker 红"负向对照"那条），
+ * 而同一个文件的其它用例在同一轮里只花 2.0–5.9s ——**差一个数量级**，说明红的那条
+ * 不是"被排队拖慢"，而是最后那句等待根本不会过去。所以每一步都各给一句能自证的报错：
+ * 先确认种进了库，再确认第二次导航后**还在**（应用若在卸载时把内存里的空列表回写，
+ * 就是这一步先红），最后才等气泡。原来那句裸 `waitFor()` 只会留下一行
+ * `Test timeout of 60000ms exceeded`，三种原因分不开。
+ */
 async function openChat(page: import('@playwright/test').Page) {
   await page.goto('/');
   await seed(page);
+  // 同步点读存储本体，不靠"再等一会儿"
+  await expect
+    .poll(() => readSeededMessageCount(page), {
+      timeout: 20_000,
+      message: '角色没写进 IndexedDB 的 characters store（种数失败，与显示无关）',
+    })
+    .toBe(6);
   await page.goto('/chat');
-  await page.locator('.msg-bubble').first().waitFor();
+  const stillThere = await readSeededMessageCount(page);
+  expect(
+    stillThere,
+    '第二次导航后库里没有那条角色了：应用把内存里的空列表回写盖掉了刚种的数据（不是渲染慢）'
+  ).toBeGreaterThanOrEqual(0);
+  /**
+   * 显式点一次角色行，**不依赖应用"自动打开上次的会话"**：那条路径在这个夹具上是竞态的
+   * （实测同一轮里有的用例过、有的 30s 等不到气泡，而当时的报错只会说 timeout）。
+   * 与 `e2e/long-history-scroll.spec.ts:171` 同一做法，差别是本 project 是 393px 移动视口：
+   * 角色列表在 ≤640px 是离屏抽屉（`responsive.css:18`），必须先点顶栏「打开角色列表」
+   * （`ChatMain.vue:783`）把它拉进来，否则角色行永远量不到——这一点是实测踩出来的，
+   * 直接 getByRole 找角色行会得到"element(s) not found"。
+   *
+   * 三步各给一句分叉读数：库里有 → 抽屉里找得到角色行 → 点完有气泡。
+   */
+  await page.getByRole('button', { name: '打开角色列表' }).click();
+  /**
+   * 名字匹配必须用**子串**：角色行的无障碍名有两种，是当前角色时带后缀
+   * （`charList.selectChar` = 「选择角色 {name}」/ `charList.selectCharCurrent` =
+   * 「选择角色 {name}（当前）」，见 `CharacterList.vue:207`）。
+   * 我一开始写成 `^选择角色 …$` 全锚定，于是"应用已经自动打开这条会话"的那些用例
+   * 反而找不到角色行、20s 后报"store 没读出来"——假象是数据没读到，实际是我的正则筛掉了。
+   * 用 `exact: false` 两种名字都收，红的时候才真的指向数据。
+   */
+  const row = page.getByRole('button', { name: `选择角色 ${CHAR_NAME}`, exact: false });
+  await expect(
+    row,
+    `库里有那条角色（${stillThere} 条消息），但抽屉里找不到它的角色行：store 没读出来`
+  ).toBeVisible({ timeout: 20_000 });
+  await row.click();
+  await expect(
+    page.locator('.msg-bubble').first(),
+    `已点进那条角色（库里 ${stillThere} 条消息），聊天页却没有气泡：会话没打开`
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 test.describe('移动端聊天页：输入条 + 长按动作条', () => {
+  /**
+   * 每条 90s（配置默认 60s）。本文件的夹具每条用例都要付两次整页冷启动
+   * （上原点写 IndexedDB + 让应用重新读回来），实测同一文件里通过的用例是 2.0–5.9s，
+   * 而红过的那两条都是 60s 撞穿——差一个数量级，所以这条预算只是给两次冷启动留余量，
+   * **真正的定位靠 `openChat` 里那三句分开的判据**（种进库 / 导航后还在 / 首屏出气泡）。
+   */
+  test.setTimeout(90_000);
+
   test.afterEach(async ({ page }) => {
     await cleanup(page);
   });
