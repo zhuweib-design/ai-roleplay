@@ -245,8 +245,15 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   visibility: hidden;
   transition: opacity .25s ease, visibility .25s ease;
   z-index: var(--z-overlay-mask);
+  /* 看不见的遮罩不能吃东西：visibility 跟着 opacity 一起过渡 .25s，
+     所以抽屉关完后的 .25s 里它仍是 hit-test 目标。真机与 e2e 都量到过——
+     从角色抽屉选完角色后立刻长按气泡，落点 elementFromPoint 返回的是
+     DIV.overlay-mask（vis=visible, op=0.68），300ms 后才变回 DIV.msg-turn。
+     用户看到的症状是"刚选完角色，那一下长按/点击没反应"。
+     pointer-events 不随 visibility 的过渡走，active 时才收回可点。 */
+  pointer-events: none;
 }
-.overlay-mask.active { opacity: 1; visibility: visible; }
+.overlay-mask.active { opacity: 1; visibility: visible; pointer-events: auto; }
 
 /* 移动端抽屉通用 */
 .drawer { transform: translateX(-100%); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
