@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心理活动（旁白段）文风与样式样板 · 2026-10-15</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   样板说明：本文件是独立的静态预览，不属于应用运行时，不改任何组件。
+   色值与字号全部抄自仓库真实 token：
+     tokens.css :root（dark 默认）/ themes.css [data-theme='light']
+     tokens-structure.css：--font-size-sm 13px / --font-size-md 14px、--space-* 阶
+   目的：让「心理活动」的排法与文风在手机宽度下可判读，确认后再进实现。
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 真实 token 值（两套主题） */
+[data-t="dark"]{
+  --background:#0B0B10; --card:#1A1C2B; --foreground:#F5F5F7; --muted-foreground:#AEB2C0;
+  --secondary:#25F4EE; --primary:#DC1434; --border:#666C9E; --user-bg:#1a1320;
+}
+[data-t="light"]{
+  --background:#F7F8FA; --card:#FFFFFF; --foreground:#161823; --muted-foreground:#5D5F6B;
+  --secondary:#0A7A77; --primary:#C81E45; --border:#DCDCE2; --user-bg:#f3e6ea;
+}
+
+*{box-sizing:border-box}
+body{margin:0;padding:24px 20px 60px;background:#222;font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;color:#eee}
+h1{font-size:20px;margin:0 0 6px}
+h2{font-size:15px;margin:34px 0 4px;color:#fff}
+.note{font-size:13px;line-height:1.7;color:#c9c9c9;max-width:900px;margin:0 0 14px}
+.note code{background:#00000055;padding:1px 5px;border-radius:3px;font-size:12px}
+.grid{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.cell{width:390px;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+.cell-label{font-size:11px;letter-spacing:.04em;padding:6px 10px;background:#333;color:#ddd;border-bottom:1px solid #444}
+.chat{padding:14px 12px;background:var(--background);min-height:120px}
+
+/* ── 真实气泡规格（对齐 MessageBubble.vue:152-173 + responsive.css:59） ── */
+.bubble{
+  max-width:min(88%,40em);width:fit-content;border-radius:8px;
+  padding:12px 16px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-wrap:break-word;
+}
+.ai{background:color-mix(in srgb,var(--secondary) 5%,transparent);border-left:2px solid var(--secondary);color:var(--foreground)}
+.me{margin-left:auto;background:color-mix(in srgb,var(--primary) 8%,transparent);color:var(--foreground)}
+.turn{margin-top:14px}
+
+/* ── 方案 A：气泡外 + 左竖线 + 不斜体（文档 §6.6 的推荐态）
+   竖线与气泡的 2px 左边框取同一 x（margin-left:0），旁白正文因此比气泡正文
+   靠左一个气泡内边距（16px），层次靠这一点而不是靠外突。 ── */
+.psy-a{
+  max-width:min(88%,40em);margin:6px 0 6px 0;
+  padding-left:10px;border-left:2px solid color-mix(in srgb,var(--secondary) 45%,var(--border));
+  font-size:13px;line-height:1.7;color:var(--muted-foreground);
+}
+
+/* ── 方案 B：气泡外 + 斜体 + 缩进、无竖线（沿用现有 .msg-narration 的观感） ── */
+.psy-b{
+  max-width:min(88%,40em);margin:6px 0 6px 12px;
+  font-size:13px;line-height:1.7;color:var(--muted-foreground);font-style:italic;
+}
+
+/* ── 方案 C：气泡外 + 纯空行与缩进、无装饰（最接近小说正文排法） ── */
+.psy-c{
+  max-width:min(88%,40em);margin:10px 0 10px 18px;
+  font-size:13px;line-height:1.85;color:var(--muted-foreground);
+}
+
+/* ── 现状：心理混在气泡里（今天要被换掉的样子） ── */
+.nowin{font-size:14px;line-height:1.7;color:var(--foreground)}
+.nowin em{font-style:italic;color:var(--muted-foreground);display:block;margin-top:6px}
+
+table{border-collapse:collapse;font-size:12px;margin-top:10px;background:#1b1b1b;color:#ddd}
+th,td{border:1px solid #3a3a3a;padding:6px 9px;text-align:left;white-space:nowrap}
+th{background:#2a2a2a;font-weight:600}
+.ok{color:#7ee2a8}.warn{color:#f0c274}
+</style>
+</head>
+<body>
+
+<h1>心理活动（旁白段）文风与样式样板</h1>
+<p class="note">
+读法：每格是一台 390px 宽的手机屏幕。<b>同一套文字</b>分别用四种排法呈现——三种候选样式（A 竖线 / B 斜体缩进 / C 纯空行）加一种<b>现状对照</b>（心理混在气泡里、气泡内斜体）。
+判定目标有两个：<b>一、文风对不对</b>（叙述是否读起来像第一人称小说、角色是否不自称"我"）；<b>二、排法选哪个</b>。
+人称口径：<b>"我"永远指用户</b>，虚拟角色在旁白里用名字（或"她/他"）指代，绝不用"我"；对白里（标记外）角色可以自称"我"。
+配套规则与验收断言见 <code>docs/design/OPT_PLAN_2026-10-15_移动端与五项体验重构.md</code> 第 6 节。
+</p>
+
+<h2>方案 A · 气泡外 + 左竖线（文档推荐态）</h2>
+<p class="note">心理段完全退出气泡：没有气泡底、不吃气泡那 16px 内边距。竖线与气泡左侧那条 2px 辅色边取<b>同一 x</b>（实测对齐，不外突），"退出感"来自它没有底色、字号降一档、颜色降一档，以及正文比气泡正文靠左几个像素（实测数字见下方规格表）。<b>不用斜体</b>——中文正文里的斜体读起来像译制片。</p>
+<div class="grid">
+
+  <div class="cell" data-t="light">
+    <div class="cell-label">A · 浅色主题</div>
+    <div class="chat">
+      <div class="bubble me turn">你这么早就来了？等很久了吧。</div>
+      <div class="turn">
+        <div class="bubble ai">没有，我也刚到。</div>
+        <div class="psy-a">沈知微有点紧张的看着我，把已经凉掉的杯子又往自己这边挪了挪。</div>
+        <div class="bubble ai">水刚烧上，你先坐一会儿。</div>
+      </div>
+      <div class="bubble me turn">我下周可能要去别的城市，短时间回不来。</div>
+      <div class="turn">
+        <div class="bubble ai">那是好事，机会难得。</div>
+        <div class="psy-a">沈知微笑着应我，声音却比平时轻了些，筷子在碗沿上停住，好一会儿没再动。</div>
+        <div class="bubble ai">什么时候走？我送你去车站。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cell" data-t="dark">
+    <div class="cell-label">A · 深色主题（默认）</div>
+    <div class="chat">
+      <div class="bubble me turn">你这么早就来了？等很久了吧。</div>
+      <div class="turn">
+        <div class="bubble ai">没有，我也刚到。</div>
+        <div class="psy-a">沈知微有点紧张的看着我，把已经凉掉的杯子又往自己这边挪了挪。</div>
+        <div class="bubble ai">水刚烧上，你先坐一会儿。</div>
+      </div>
+      <div class="bubble me turn">我下周可能要去别的城市，短时间回不来。</div>
+      <div class="turn">
+        <div class="bubble ai">那是好事，机会难得。</div>
+        <div class="psy-a">沈知微笑着应我，声音却比平时轻了些，筷子在碗沿上停住，好一会儿没再动。</div>
+        <div class="bubble ai">什么时候走？我送你去车站。</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<h2>方案 B · 气泡外 + 斜体缩进（沿用现有旁白观感）</h2>
+<p class="note">等于把仓库里已经预留的 <code>.msg-narration</code>（斜体 + muted 色，<code>MessageBubble.vue:179-192</code>）从气泡<b>里面</b>搬到<b>外面</b>。改动最小，但斜体在长段中文上会发虚。</p>
+<div class="grid">
+  <div class="cell" data-t="light">
+    <div class="cell-label">B · 浅色主题</div>
+    <div class="chat">
+      <div class="bubble me turn">你是不是一直有话想跟我说？</div>
+      <div class="turn">
+        <div class="bubble ai">没有。</div>
+        <div class="psy-b">沈知微别开眼去看窗外，喉结轻轻动了一下，还是什么都没说。</div>
+        <div class="bubble ai">……你别瞎想。</div>
+      </div>
+    </div>
+  </div>
+  <div class="cell" data-t="dark">
+    <div class="cell-label">B · 深色主题</div>
+    <div class="chat">
+      <div class="bubble me turn">你是不是一直有话想跟我说？</div>
+      <div class="turn">
+        <div class="bubble ai">没有。</div>
+        <div class="psy-b">沈知微别开眼去看窗外，喉结轻轻动了一下，还是什么都没说。</div>
+        <div class="bubble ai">……你别瞎想。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>方案 C · 气泡外 + 纯空行与缩进（最无装饰）</h2>
+<p class="note">没有竖线、没有斜体，只靠留白与行高（1.85）把它和对白分开。最像小说正文，代价是与对白的区分度最低，长对话里容易被扫读成对白。</p>
+<div class="grid">
+  <div class="cell" data-t="light">
+    <div class="cell-label">C · 浅色主题</div>
+    <div class="chat">
+      <div class="bubble me turn">你今天话特别少，是不是在生我气。</div>
+      <div class="turn">
+        <div class="bubble ai">我生什么气。</div>
+        <div class="psy-c">她被我戳中了，耳根有点发红，于是故意低头去翻那本早就看完了的名册。</div>
+        <div class="bubble ai">是你在生我的气吧，一进门就不看我。</div>
+      </div>
+    </div>
+  </div>
+  <div class="cell" data-t="dark">
+    <div class="cell-label">C · 深色主题</div>
+    <div class="chat">
+      <div class="bubble me turn">你今天话特别少，是不是在生我气。</div>
+      <div class="turn">
+        <div class="bubble ai">我生什么气。</div>
+        <div class="psy-c">她被我戳中了，耳根有点发红，于是故意低头去翻那本早就看完了的名册。</div>
+        <div class="bubble ai">是你在生我的气吧，一进门就不看我。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>现状对照 · 心理混在气泡里（这一轮要换掉的形态）</h2>
+<p class="note">今天的真实结构：只有 <code>{{ msg.content }}</code> 一整段文本在气泡里（<code>MessageBubble.vue:95</code>），即使写了 <code>narration</code> 字段，它也渲染在<b>气泡内部</b>且顺序是旁白-对白-旁白（<code>:94,96</code>），与"对白-心理-对白"的要求相反。</p>
+<div class="grid">
+  <div class="cell" data-t="light">
+    <div class="cell-label">现状 · 浅色主题</div>
+    <div class="chat">
+      <div class="bubble me turn">那次是我不好，我不该替你决定。</div>
+      <div class="turn">
+        <div class="bubble ai"><span class="nowin">都过去了。沈知微的手指在袖口里攥了一下，又慢慢松开。她看我的眼神里，那点绷了很久的东西忽然塌下来。你肯这么说，我就没什么不放下的了。</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="cell" data-t="dark">
+    <div class="cell-label">现状 · 深色主题</div>
+    <div class="chat">
+      <div class="bubble me turn">那次是我不好，我不该替你决定。</div>
+      <div class="turn">
+        <div class="bubble ai"><span class="nowin">都过去了。沈知微的手指在袖口里攥了一下，又慢慢松开。她看我的眼神里，那点绷了很久的东西忽然塌下来。你肯这么说，我就没什么不放下的了。</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>同一场景的第五种情绪（供判文风，排法固定用方案 A）</h2>
+<div class="grid">
+  <div class="cell" data-t="light">
+    <div class="cell-label">A · 浅色主题</div>
+    <div class="chat">
+      <div class="bubble me turn">你就不用等我了，今晚回不来。</div>
+      <div class="turn">
+        <div class="bubble ai">嗯，我知道了。</div>
+        <div class="psy-a">沈知微应得很快，快到她自己都觉得突兀。她把手机扣在桌上，过了一会儿又翻过来，看那行没有新消息的字。</div>
+        <div class="bubble ai">你记得吃饭，别又空着肚子熬到后半夜。</div>
+      </div>
+    </div>
+  </div>
+  <div class="cell" data-t="dark">
+    <div class="cell-label">A · 深色主题</div>
+    <div class="chat">
+      <div class="bubble me turn">你就不用等我了，今晚回不来。</div>
+      <div class="turn">
+        <div class="bubble ai">嗯，我知道了。</div>
+        <div class="psy-a">沈知微应得很快，快到她自己都觉得突兀。她把手机扣在桌上，过了一会儿又翻过来，看那行没有新消息的字。</div>
+        <div class="bubble ai">你记得吃饭，别又空着肚子熬到后半夜。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>规格数值与实测对比度（数字来自本仓库 token，不是估的）</h2>
+<table>
+  <tr><th>项</th><th>取值</th><th>来源 / 实测</th></tr>
+  <tr><td>对白字号</td><td>14px</td><td>tokens-structure.css:61 --font-size-md</td></tr>
+  <tr><td>旁白字号</td><td>13px</td><td>tokens-structure.css:60 --font-size-sm（比正文降一档）</td></tr>
+  <tr><td>行高</td><td>A/B 1.7，C 1.85</td><td>与气泡一致（MessageBubble.vue:158）</td></tr>
+  <tr><td>旁白色</td><td>--muted-foreground</td><td>light #5D5F6B / dark #AEB2C0（tokens.css:74、themes.css:24）</td></tr>
+  <tr><td>竖线色</td><td>color-mix(secondary 45%, border)</td><td>装饰元素，不参与文本对比度判定</td></tr>
+  <tr><td>气泡底（AI）</td><td>color-mix(secondary 5%, transparent)</td><td>MessageBubble.vue:165，落到页面底后实测为 light #ebf2f3 / dark #0c171b</td></tr>
+  <tr><td>旁白对比度 on 气泡底</td><td class="ok">light 5.58:1 / dark 8.62:1</td><td>本轮脚本实算，均 ≥4.5 AA</td></tr>
+  <tr><td>旁白对比度 on 页面底</td><td class="ok">light 5.96:1 / dark 9.28:1</td><td>旁白在气泡外，这是它真正的落点</td></tr>
+  <tr><td>门禁余量</td><td class="warn">零</td><td>a11y:contrast 存量 67 = 基线 67，新增低对比配对即红；上面两个数说明这一档颜色安全</td></tr>
+  <tr><td>最大宽度</td><td>min(88%, 40em)</td><td>与移动端气泡同宽（responsive.css:59），保证左右缘对齐</td></tr>
+</table>
+
+<h2>要你定的四件事（定了才能进实现）</h2>
+<p class="note">
+1. <b>排法选 A / B / C 哪个</b>。我的默认选 A：区分度够、又不把心理做成"卡片"，且竖线方向与 AI 气泡左边的 2px 辅色边（<code>MessageBubble.vue:166</code>）同向，读起来是"同一条声部的延伸"。<br>
+2. <b>旁白里能不能用"她/他"指代角色</b>。上面 C 组和第五格用了"她"。若要求一律用名字（更不会与用户的"我"混），提示词就多一条硬约束，模型违规率会上升。我的默认：允许"名字（每段首次）+ 她/他（后续）"。<br>
+3. <b>标记字符</b>。倾向 <code>⟦ ⟧</code>（U+27E6/27E7），因为正文里还要过 <code>&lt;status&gt;</code> 与 <code>&lt;think&gt;</code> 两层解析（<code>chat-manager.ts:474-483</code>），尖括号系要绕的坑更多；中文小说正文里也几乎不会出现这两个符号。<br>
+4. <b>心理段要不要进上下文</b>（即下一轮喂给模型时，这段旁白留不留）。我的默认是<b>留</b>：它既是格式示范也是角色连续性的一部分；代价是每轮多几百 token，而输出预算已由 <code>src/core/token-budget.ts</code> 按最大上下文自动推导，不会因此溢出。
+</p>
+
+</body>
+</html>

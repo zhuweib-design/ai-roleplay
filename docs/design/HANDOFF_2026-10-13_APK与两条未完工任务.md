@@ -2,6 +2,10 @@
 
 给新会话用。这份文档自足，不需要读上一个会话的对话记录。
 
+> 2026-10-15 追加：移动端与五项体验的重构指导文档已另立一份，见
+> `docs/design/OPT_PLAN_2026-10-15_移动端与五项体验重构.md`。其中专项 D（长按动作条）与
+> 专项 E（输入条）已实现并带实测；本文档里"导出是死按钮""token 口径"两节仍然有效。
+
 ## 仓库当前状态
 
 - 分支 `feat/ux-ia-guided-flow`。本会话累计 9 笔提交：任务 A 竞态修复、思考块 token 迁移、交接文档更正、"那一刻"三条采样器与 `.cache-rate`/`.gen-text`/`.gen-dot` 入阶、Anthropic 直连头、CI 分片权重重生成、导出存盘统一走 saveBlob + 守卫、Capacitor 安卓壳与出包脚本、本条文档更新。
@@ -142,26 +146,71 @@ APK 出来了，也装进模拟器量过了——这一节把原来的"纸面推
 
 顺序建议（2026-10-14 三更新）：任务 A、B 已收口；CORS 已量（桌面与设备两条路径都量了）、Anthropic 直连头已修（必要不充分）、"被跨域拦"已接成可诊断分类；debug APK 已出并在模拟器上验过环境。剩下的按这个顺序：
 1. **换网络路径复测那张设备表**（同一台手机：蜂窝数据一次、挂代理一次）。这是当前唯一能决定"开不开 CapacitorHttp"的证据——桌面与模拟器都不能替代。
-2. 装真机验两项仍未测的：备份与恢复走的是浏览器下载还是原生保存对话框；本地 ONNX/ORT 在真机 WebView 的内存上限（模拟器是 x86_64、内存宽裕，量出来偏乐观，别拿它当结论）。
+2. 导出那一半已量完（2026-10-14：在模拟器上点是"弹不出保存面板"，原因是 WebView 没实现该 API —— 见下一节；要修得走原生插件）。仍未测的只剩：本地 ONNX/ORT 在真机 WebView 的内存上限（模拟器是 x86_64、内存宽裕，量出来偏乐观，别拿它当结论）；以及"导入/恢复"那一侧在真机上的表现（只验过 webkitdirectory 与 `<input type=file>` 能拉起选择器）。
 3. `android/` 这套原生壳要不要入库、要不要照参考项目那样写一个 `scripts/android-apk.mjs` 把"构建→sync→gradle→复制到交付目录"封成一条命令，都是待定项（现在这三步是手工执行的，参数见上面那三个必改项）。
 
 已经变成读数、不必再猜的三件事：WebView 里 `webkitdirectory` 为 true（目录安装可用）、`__TAURI_INTERNALS__` 为 false（Web 降级分支确实被选中）、`crypto.subtle` 在 `https://localhost` 下可用（密钥与主密码加密不是问题）。
 
-## 备份/导出在 APK 里是死按钮（已测、已修 3 处并立了守卫，剩 6 处进基线）
+## 备份/导出在 APK 里是死按钮（2026-10-14：9 处全收敛到 saveBlob、基线清零；真机复测——**弹不出保存面板**，API 是桩）
 
 在模拟器上用 CDP 把 `downloadBackupFile` 那段原样跑了一遍（blob → objectURL → `a[download]` → click）：**不报错、没有下载记录、`find /sdcard` 全盘搜不到那个文件、logcat 一条相关日志都没有**。手机上点了就是没反应。全仓这个模式共 **9 处**（备份包、对话 Markdown、角色卡 PNG、审核日志、故事脚本、角色 JSON、世界书、快捷回复、群聊 ST）。
 
 反方向是好的：同一台 WebView 里 `<input type="file">` 会正常拉起系统文档选择器（logcat 抓到 `GET_CONTENT → com.google.android.documentsui/.picker.PickActivity`），所以"恢复备份 / 导入"这一侧不用动。
 
-修法与读数：同一台 WebView 里 `window.showSaveFilePicker()` 能用（实测真把保存界面拉起来了，抛的是 `AbortError`＝用户取消，不是 `NotSupportedError`）。于是新增 `src/utils/save-blob.ts`：
+`src/utils/save-blob.ts` 是唯一的存盘入口：
 
-- **只在 UA 带 `; wv)`（安卓 WebView 标记）时走系统保存面板**；桌面 Chrome / PWA / Safari 保持既有的直接下载。那里的 `showSaveFilePicker` 也存在，每次都弹面板是用户没要求的改动。
-- **先弹面板、再算 Blob**。`showSaveFilePicker()` 要求用户手势，而各站点在存盘前都要 `await` 一段取数据的异步工作；"await 800ms / 3000ms 后面势是否还在"这条没测完（那台模拟器正被另一个会话用着，顶层界面已经切到 `com.novelstudio.app`，我就停手了），所以按**最不依赖手势存续**的写法实现，并用单测把顺序钉住（`['picker:…','makeBlob','write:5','close']`；把算数据挪到弹面板之前 ⇒ 两条用例红，实测过）。
-- 返回 `'saved' | 'cancelled'`：用户在面板里取消时调用方**不得**报"已导出"。旧写法点了就 toast 成功，这是顺手补的界面诚实问题。
+- **只在 UA 带 `; wv)`（安卓 WebView 标记）时去够系统保存面板**；桌面 Chrome / PWA / Safari 保持既有的直接下载（那里的 `showSaveFilePicker` 也存在，每次都弹面板是用户没要求的改动）。
+- **先弹面板、再算 Blob**（`showSaveFilePicker()` 要用户手势，而各站点在存盘前都要 `await` 取数据）。顺序用单测钉住：`['picker:…','makeBlob','write:5','close']`，把算数据挪到弹面板之前 ⇒ 两条用例红（实测过）。
+- 返回 `'saved' | 'cancelled'`：取消时调用方**不得**报"已导出"。单测含一条负向对照（安卓 WebView + AbortError ⇒ 返回 false 且 lastInfo 保持为空）。
 
-本批改了 3 处（`downloadBackupFile` / `downloadChatMarkdown` / `downloadCharacterPng` 及其 4 个调用点），剩 6 处登记在 `scripts/save-blob-guard.mjs` 的基线里（只许降不许升；新增文件或加一处即红；`--self-test` 造一处违规证明尺子还在咬，红与绿都验过）。守卫已进 `package.json`（`check:save-blob` / `:self-test`）与 `ci.yml`。
+**2026-10-14 本批把剩下 6 处也换完**（`downloadV2` / `downloadLorebook` / `downloadGroupSt` / `exportQuickRepliesSt` / `downloadScripts` / `handleExportAuditLog` 及其调用点），`scripts/save-blob-guard.mjs` 的 **BASELINE 清空为 0**：除 `save-blob.ts` 外任何一处 `URL.createObjectURL(` 都直接红；`--self-test` 造一处违规证明尺子还在咬（红与绿都验过）。守卫已进 `package.json`（`check:save-blob` / `:self-test`）与 `ci.yml`。
 
-没做成的验证：改完后**没有在设备上点一次真实的"导出备份"**看它是否弹面板——那要再次占用另一会话在用的模拟器。验证方法是现成的：装 `installer/AI酒馆-1.0.0-debug.apk` ⇒ 设置→数据→导出备份 ⇒ `adb logcat | grep GET_CONTENT` 应出现 documentsui 的 PickActivity。这条留给下一次，或由你在手机上直接看。
+### 真机复测结论（2026-10-14，这条推翻了上一版的判断）
+
+上一版写着"同一台 WebView 里 `window.showSaveFilePicker()` 能用（实测会拉起 documentsui，抛 AbortError ＝用户取消）"——**这两句都不成立**。这一轮把"设备上点导出 → 到底弹不弹保存面板"补完了：
+
+| 读数 | 值 |
+| --- | --- |
+| `typeof window.showSaveFilePicker` | `function`（存在，所以上一版没怀疑它） |
+| 从应用按钮点（真实触摸 `Input.dispatchTouchEvent`，覆盖 4 处：导出备份 / 快捷回复 / 审核日志 / 角色 JSON） | 4 处都**确实调到了**该 API，文件名也对（`ai-roleplay-backup-….json` / `quick-replies-ST.json` / `audit-log-….json` / `Kael.json`）⇒ 这 6 处的改造本身是通的 |
+| 该调用返回什么 | **14ms 抛 `AbortError: The user aborted a request.`**，前台仍是应用，logcat 无 `CREATE_DOCUMENT`/`GET_CONTENT` |
+| 对照探针（往页面注入一个按钮、真实触摸、**完全不经过应用代码**） | 同样 14ms AbortError ⇒ 与用户手势、与调用顺序都无关 |
+| 系统侧（`adb shell am start -a android.intent.action.CREATE_DOCUMENT …`） | **能弹**：前台变成 `documentsui/.picker.PickActivity`（截图见 `qoder_交付/2026-10-14_导出真机验证/shots/adb-create-document.png`） |
+
+⇒ **Chrome 133 Android WebView 没实现 File System Access 的保存面板**，`showSaveFilePicker` 只是个桩。上一版看到的 AbortError 不是"用户取消"，是桩立刻中止；`NotSupportedError` 那条猜测也不对——它连"不支持"都不报，表现得就像用户秒取消。
+
+⇒ 所以 saveBlob 的 WebView 分支现在是**空转**：手机上点导出仍然没反应，而且比改造前更安静（AbortError 被归成 cancel，连 toast 都没有）。这不是换 6 处造成的，是这条路的终点到头了。
+
+⇒ 要真修只能走原生。姊妹项目 `D:\AI_data\xiaoshuo_skill_kaifa\novel-studio` 已有实证解法：自定义 Capacitor 插件 `NovelExport`（`NovelExportPlugin.java`）——`begin({filename, mime, choose})` 用原生 ACTION_CREATE_DOCUMENT 弹"另存为"（也可直接写系统下载目录并回显落点）、`append` 按 192KB 分块传 base64 避免大 payload 过桥、`finish/abort`；他们的注释写着"Android WebView 的 blob 下载不一定落盘，必须等待系统文件写入成功后才返回成功"，真机复验报的也是"没有弹窗，找不到文件"。本仓目前**没装任何 Capacitor 插件**（`android/…/capacitor.plugins.json` 是 `[]`），Capacitor 核心也没注册 DownloadListener，所以 blob 下载没有原生兜底。
+
+⇒ 本仓这一轮还测到的边界：覆盖的是模拟器（x86_64、Chrome 133 WebView、Android 16）。真机 WebView 版本可能不同，但"WebView 不支持 FS Access 保存面板"是 WebView 的架构性缺口，不是这台模拟器的毛病——真机要复验的是**原生插件那条路**，不是这个桩会不会变好。
+
+## Token 口径（2026-10-14 用户定的新规矩）：不设输出上限，模型只配"最大上下文"
+
+原话是"不限制 token 最大值，只需要设置模型时设置模型的最大上下文，其他的自动适配、自动压缩，不要出现溢出的现象"。这条推翻了此前各处写死的输出上限（世界创建 2000、扩展 1500、角色 1500、NPC 1000、随机事件 600），也删掉了两处过时口径。
+
+**实现**（`src/core/token-budget.ts`）：
+
+- 输出预算 = `模型最大上下文 − 本次输入实测 − 预留`；下限 512（再小写不出完整结构）。
+- 输入装不下时按固定顺序压缩：① 截断大块源文本（小说素材 / 已有条目摘要）② 从最早的历史消息开始丢 ③ 兜底截断最长那条消息并**保住尾部**（生成类提示词的 JSON 结构说明在尾部，砍尾等于砍掉格式要求）。全程保证 `输入 + 输出 ≤ 上下文 − 预留`。
+- 接线的调用点：世界创建 / 世界扩展 / 角色生成 / 群聊 NPC / 随机事件 / 故事分块分析 / 故事脚本生成 / 聊天主路（`chat-manager`，流式也带同一套预算）。
+
+**模型设置**：`ApiProfile.contextWindow`（新增，表单里带 4K/8K/32K/128K/256K 常用档位按钮）是唯一旋钮；没填就回退全局 `settings.maxContextTokens`（那个入口保留，文案已改成"模型没单独填时用它"）。同时**撤掉**了 `profile.maxTokens` 与角色级 `maxTokens` 两个输出上限旋钮（含角色编辑器、上下文面板、类型、i18n 键；`ChatManagerConfig.maxTokens` 及其 overrides 也一并移除，防止重新长出旋钮）。
+
+**兜底**：输出预算可能超过某家模型自身的输出上限（它比上下文小），供应商会回 400。客户端识别到 400 且正文提到 `max_tokens` 时，**去掉该字段重发一次**（`OpenAIClient.retryWithoutMaxTokens`，非流式与流式都接）。有正向用例（重发后成功且第二次请求没有 `max_tokens`）与两条负向对照（与 max_tokens 无关的 400 不重发；请求本来就没带也不重发）。
+
+**量过的数**（gpt-tokenizer 按各 Prompt 自己写的字数区间造样例，用来说明"为什么原来的写死值必然截断"）：
+
+| 生成点 | 最小 | 中位 | 提示词上限 |
+| --- | --- | --- | --- |
+| 世界创建 | 1838 | 3895 | 8093 |
+| 世界扩展 | 960 | 2357 | 4316 |
+| 角色卡 | 459 | 906 | 1371 |
+| 群聊 NPC | 322 | — | 918 |
+
+**配套清理**：删掉 `tests/stores/maxtokens-priority.qa-independent.test.ts`（它验的是已移除的"角色级 → Profile 级"优先级链，历史在 `3d3572c`）；`tests/stores/character-generate.test.ts` 里的防漂移断言改成"character store 里不得再出现写死的 `maxTokens: 数字`"。
+
+**防重入的坑（改这里别踩）**：`isGeneratingX` 标志必须在**异步准备之前**就立起来。第一版把 `prepareGenerationPrompt` 放在标志之前，连点两次会在准备窗口里双双通过检查，`character-generate` 的防重入用例直接超时红。
 
 ## 约束（别踩）
 
