@@ -497,36 +497,100 @@ describe('useSettingsStore — F5 单元测试', () => {
 
     // ── P2-3：首访按浏览器语言兜底，持久化值优先 ──
 
-    it('首访（无持久化语言）时按 navigator.language 兜底为 en', async () => {
-      const originalLang = Object.getOwnPropertyDescriptor(navigator, 'language');
+    /**
+     * 把"浏览器是英文"这件事表达完整。
+     * detectLocale 的取值顺序是 `navigator.languages[0]` 优先、`navigator.language` 兜底，
+     * 只 stub 后者会静默失效（测试环境已把 languages 声明为 ['zh-CN','en-US']，
+     * 见 tests/setup-locale.ts），所以两个都得改。
+     */
+    async function withEnglishBrowser<T>(body: () => Promise<T>): Promise<T> {
+      const original = ['language', 'languages'].map((k) => [k, Object.getOwnPropertyDescriptor(navigator, k)] as const);
       Object.defineProperty(navigator, 'language', { configurable: true, value: 'en-US' });
+      Object.defineProperty(navigator, 'languages', { configurable: true, value: ['en-US'] });
       try {
-        const mock = new MockStorageAdapter();
-        mock.loadData = {}; // 首次启动，无 locale
+        return await body();
+      } finally {
+        for (const [key, desc] of original) {
+          if (desc) Object.defineProperty(navigator, key, desc);
+          else Reflect.deleteProperty(navigator, key);
+        }
+      }
+    }
+
+    // ── P2-3 / 首帧语言：初值同步求出，加载只负责用真值覆盖，不得回盖 ──
+    //
+    // 「首访按浏览器语言兜底」这条现在由 i18n 在模块求值时完成（见 tests/i18n.test.ts 的
+    // "localeRef 初值"两组用例）。加载路径里那次重新探测已经删掉：它不知道有镜像，
+    // 会把用户显式选过的语言盖回浏览器语言。下面几条钉的是"盖不回来"。
+
+    it('用户显式选过中文后，英文浏览器环境的加载不会把它盖回 en', async () => {
+      localStorage.removeItem('aijiuguan.locale');
+      initLocale('zh');
+      await withEnglishBrowser(async () => {
         const store = useSettingsStore();
+        store.setLocale('zh'); // 显式选择：同时写镜像
+        const mock = new MockStorageAdapter();
+        mock.loadData = {}; // 存档里没有 locale 可读，只有浏览器语言可"探测"
         store.setStorageAdapter(mock);
         await store.loadFromStorage();
-        expect(store.locale).toBe('en');
-      } finally {
-        if (originalLang) Object.defineProperty(navigator, 'language', originalLang);
-        else Reflect.deleteProperty(navigator, 'language');
-      }
+        expect(store.locale).toBe('zh');
+      });
+      localStorage.removeItem('aijiuguan.locale');
     });
 
     it('持久化的语言选择优先于浏览器语言（不被覆盖）', async () => {
-      const originalLang = Object.getOwnPropertyDescriptor(navigator, 'language');
-      Object.defineProperty(navigator, 'language', { configurable: true, value: 'en-US' });
-      try {
+      await withEnglishBrowser(async () => {
         const mock = new MockStorageAdapter();
         mock.loadData = { theme: 'dark', locale: 'zh' }; // 用户此前显式选了中文
         const store = useSettingsStore();
         store.setStorageAdapter(mock);
         await store.loadFromStorage();
         expect(store.locale).toBe('zh');
-      } finally {
-        if (originalLang) Object.defineProperty(navigator, 'language', originalLang);
-        else Reflect.deleteProperty(navigator, 'language');
-      }
+      });
+    });
+
+    /**
+     * 首帧不闪语言，靠的是 localStorage 里那份同步镜像（见 src/i18n/index.ts）。
+     * 镜像只有两个写入口：用户显式选择、读到持久化值。这两条把它们各钉住。
+     */
+    it('用户显式切换语言 ⇒ 写入同步镜像', () => {
+      localStorage.removeItem('aijiuguan.locale');
+      const store = useSettingsStore();
+      store.setLocale('en');
+      expect(localStorage.getItem('aijiuguan.locale')).toBe('en');
+      store.setLocale('zh');
+      expect(localStorage.getItem('aijiuguan.locale')).toBe('zh');
+      localStorage.removeItem('aijiuguan.locale');
+    });
+
+    it('读到持久化语言 ⇒ 用它刷新镜像（浏览器语言是英文也不影响）', async () => {
+      localStorage.removeItem('aijiuguan.locale');
+      await withEnglishBrowser(async () => {
+        const mock = new MockStorageAdapter();
+        mock.loadData = { theme: 'dark', locale: 'zh' };
+        const store = useSettingsStore();
+        store.setStorageAdapter(mock);
+        await store.loadFromStorage();
+        expect(localStorage.getItem('aijiuguan.locale')).toBe('zh');
+      });
+      localStorage.removeItem('aijiuguan.locale');
+    });
+
+    it('负向对照：空存档的加载不改语言、也不写镜像', async () => {
+      localStorage.removeItem('aijiuguan.locale');
+      initLocale('zh');
+      await withEnglishBrowser(async () => {
+        const mock = new MockStorageAdapter();
+        mock.loadData = {}; // 首访：没有持久化语言
+        const store = useSettingsStore();
+        store.setStorageAdapter(mock);
+        const before = store.locale;
+        await store.loadFromStorage();
+        // 加载不再重探浏览器语言：所以既不该改 locale，也不该把探测值钉进镜像
+        expect(store.locale).toBe(before);
+        expect(localStorage.getItem('aijiuguan.locale')).toBeNull();
+      });
+      localStorage.removeItem('aijiuguan.locale');
     });
 
     it('存储为空时保留默认值并写入默认设置', async () => {

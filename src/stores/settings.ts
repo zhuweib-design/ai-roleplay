@@ -52,7 +52,13 @@ import {
 } from '@core/api-key-crypto';
 import { setRemoteApiKeyState } from '@core/remote-api-key-state';
 import { exportQuickRepliesToStJson, importQuickRepliesFromSt } from '@core/st-compat';
-import { setLocale as setI18nLocale, t as i18nT, detectLocale, type Locale } from '@/i18n';
+import {
+  setLocale as setI18nLocale,
+  getLocale,
+  writeLocaleMirror,
+  t as i18nT,
+  type Locale,
+} from '@/i18n';
 
 /**
  * Settings Store (Phase F)
@@ -72,7 +78,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const theme = ref<ThemeName>('dark');
   const fontSize = ref<number>(14);
   /** T-13：界面语言（与 i18n 模块 localeRef 同步，持久化到 AppSettings.locale） */
-  const locale = ref<Locale>('zh');
+  // 初值向 i18n 要（它同步读过镜像/浏览器语言），否则 store 里的 'zh' 会与已渲染的语言不一致
+  const locale = ref<Locale>(getLocale());
   const apiProfiles = ref<ApiProfile[]>([]);
   const activeApiProfileId = ref<string | null>(null);
 
@@ -528,6 +535,8 @@ export const useSettingsStore = defineStore('settings', () => {
   function setLocale(l: Locale) {
     locale.value = l;
     setI18nLocale(l);
+    // 用户显式选择才写镜像：i18n 用它决定下一帧首屏语言（探测值不写，见 i18n/index.ts）
+    writeLocaleMirror(l);
     void persistSettings();
   }
 
@@ -880,7 +889,8 @@ export const useSettingsStore = defineStore('settings', () => {
    * - 不含集合类字段（`apiProfiles` / `quickReplies` / `uiSectionOpen` …）：它们在窗口里的值
    *   是从"还没读到存档"的内存算出来的，回写等于用"默认值 + 一次点击"换掉存档里的整批记录，
    *   比"把用户那次改动盖回"更糟。这些仍以存档为准。
-   * - 不含 `locale`：加载自己会先把浏览器语言探测一遍再被存档覆盖，中间态会被误当成用户改动。
+   * - 不含 `locale`：初值是同步求出的（镜像 > 浏览器语言），读到存档里的显式选择时它还会
+   *   再变一次；这个"加载中途变了"不是用户改动，混进窗口会被当成用户改动而保留。
    */
   const USER_WINS_KEYS = [
     'theme',
@@ -979,14 +989,10 @@ export const useSettingsStore = defineStore('settings', () => {
             saved.activeApiProfileId !== undefined ||
             // MODEL-03：仅设置了创作模式也应视为已有数据（否则该字段永远读不回来）
             saved.creationPreset !== undefined));
-      // P2-3：首访按浏览器语言兜底。此处先探测，若下方存在持久化语言则会被覆盖，
-      // 因此「用户显式选择」始终优先，浏览器语言只作未选择时的默认值。
-      const detected = isPatch ? locale.value : detectLocale();
-      if (detected !== locale.value) {
-        locale.value = detected;
-        setI18nLocale(detected);
-      }
-
+      // P2-3：首访按浏览器语言兜底 —— 这件事已由 i18n 在模块求值时同步做完
+      // （`locale` 的初值就是 getLocale()：用户选过的镜像 > 浏览器语言 > zh）。
+      // 这里不再重探一次：探测比镜像晚、又不知道镜像的存在，重探会把用户显式选过的
+      // 语言盖回浏览器语言。持久化值仍在下方 hasSavedData 分支里覆盖，优先级不变。
       if (hasSavedData) {
         if (saved.theme) loadOwnWrite(() => setTheme(normalizeThemeName(saved.theme)));
         if (typeof saved.fontSize === 'number') loadOwnWrite(() => setFontSize(saved.fontSize as number));
@@ -994,6 +1000,8 @@ export const useSettingsStore = defineStore('settings', () => {
         if (saved.locale === 'zh' || saved.locale === 'en') {
           locale.value = saved.locale;
           setI18nLocale(saved.locale);
+          // 刷新同步镜像：下次冷启动的首帧就直接是这个值，不再闪
+          writeLocaleMirror(saved.locale);
         }
         if (Array.isArray(saved.apiProfiles)) apiProfiles.value = saved.apiProfiles;
         if (typeof saved.activeApiProfileId !== 'undefined') {

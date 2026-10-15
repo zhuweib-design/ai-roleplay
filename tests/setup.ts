@@ -2,11 +2,15 @@
  * 全局测试环境 setup（Phase G4）
  *
  * 内容：
- * 1. fake-indexeddb：让依赖 IndexedDB 的 store 在 jsdom 下可运行
- * 2. File.text() polyfill：jsdom 部分版本缺失
- * 3. matchMedia / IntersectionObserver / ResizeObserver polyfill：Vue 组件挂载所需
- * 4. 加载全局 CSS：让 axe-core 可验证部分样式相关规则（如颜色对比度）
+ * 1. 声明测试环境的浏览器语言（`./setup-locale`，必须排第一，见该文件说明）
+ * 2. fake-indexeddb：让依赖 IndexedDB 的 store 在 jsdom 下可运行
+ * 3. File.text() polyfill：jsdom 部分版本缺失
+ * 4. matchMedia / IntersectionObserver / ResizeObserver polyfill：Vue 组件挂载所需
+ * 5. 加载全局 CSS：让 axe-core 可验证部分样式相关规则（如颜色对比度）
  */
+
+// 必须排在所有会 import 应用代码的语句之前：localeRef 的初值在这里被求值
+import './setup-locale';
 import 'fake-indexeddb/auto';
 
 // ── File.text() polyfill ──
