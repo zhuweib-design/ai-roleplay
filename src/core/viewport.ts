@@ -26,6 +26,8 @@ const queries = {
   mobile: '(max-width: 640px)',
   tablet: '(min-width: 641px) and (max-width: 1024px)',
   desktop: '(min-width: 1025px)',
+  /** 指针形态（能力查询，非断点）：coarse = 手指。用于「软键盘没有 Shift 键」这类端差异 */
+  coarse: '(pointer: coarse)',
 } as const;
 
 function mq(q: string): boolean {
@@ -41,6 +43,7 @@ export const isCompact = ref(mq(queries.compact));
 export const isMobile = ref(mq(queries.mobile));
 export const isTablet = ref(mq(queries.tablet));
 export const isDesktop = ref(mq(queries.desktop));
+export const isCoarsePointer = ref(mq(queries.coarse));
 
 let bound = false;
 function update() {
@@ -48,6 +51,7 @@ function update() {
   isMobile.value = mq(queries.mobile);
   isTablet.value = mq(queries.tablet);
   isDesktop.value = mq(queries.desktop);
+  isCoarsePointer.value = mq(queries.coarse);
 }
 function bind() {
   if (bound || typeof window === 'undefined') return;
@@ -63,5 +67,5 @@ function unbind() {
 export function useViewport() {
   onMounted(bind);
   onUnmounted(unbind);
-  return { isCompact, isMobile, isTablet, isDesktop, breakpoints };
+  return { isCompact, isMobile, isTablet, isDesktop, isCoarsePointer, breakpoints };
 }

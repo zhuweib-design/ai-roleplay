@@ -31,9 +31,6 @@ export function uiCharToCard(ui: UICharacter): CharacterCard {
   const statusSchema = normalizeStatusSchema(ui.statusSchema);
   const statusInstruction =
     ui.statusInstruction === 'on' || ui.statusInstruction === 'off' ? ui.statusInstruction : null;
-  // T-16：未设置的 maxTokens 不落盘（undefined = 回落 Profile 级，绝不用 0 表示未设置）
-  const maxTokens = numOrUndefined(ui.maxTokens);
-
   return {
     id: ui.id,
     name: ui.name,
@@ -66,7 +63,6 @@ export function uiCharToCard(ui: UICharacter): CharacterCard {
       model: ui.model,
       ...(ui.profileId !== undefined && ui.profileId !== null ? { profileId: ui.profileId } : {}),
       temperature: ui.temperature,
-      ...(maxTokens !== undefined ? { maxTokens } : {}),
       avatarType: ui.avatarType,
       ...(ui.gradientFrom ? { gradientFrom: ui.gradientFrom } : {}),
       ...(ui.gradientTo ? { gradientTo: ui.gradientTo } : {}),
@@ -84,17 +80,6 @@ export function uiCharToCard(ui: UICharacter): CharacterCard {
       ...(ui.boundPresetId ? { boundPresetId: ui.boundPresetId } : {}),
     },
   };
-}
-
-/**
- * T-16：把「已设置」的数值收敛为 number，其余（null / undefined / NaN / 非数字）收敛为 undefined
- *
- * 未设置必须保持 undefined —— 落盘时省略该键、下发时不传该参数，
- * 从而让上一档（Profile 级 → 供应商默认）真正有机会生效。
- */
-function numOrUndefined(v: unknown): number | undefined {
-  // 0 / 负数不是合法的最大 token 数（合法区间 1~32768）→ 按未设置处理
-  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined;
 }
 
 /**
@@ -233,13 +218,7 @@ export function cardToUiChar(
     temperature: ext?.temperature ?? (legacy('temperature') as number | undefined) ?? overrides?.temperature ?? 1.0,
     /**
      * T-16：未设置时**不再兜底 4096**
-     * 旧的硬兜底会让每个角色都携带一个"显式 4096"，从而无条件覆盖 Profile 级
-     * maxTokens（死代码）。未设置即 undefined → 回落 Profile 级 → 不传。
      */
-    maxTokens:
-      numOrUndefined(ext?.maxTokens) ??
-      numOrUndefined(legacy('maxTokens')) ??
-      numOrUndefined(overrides?.maxTokens),
     worldEntries: overrides?.worldEntries ?? [],
     tokenBudget: overrides?.tokenBudget ?? {
       character: 0,

@@ -13,9 +13,14 @@ import type {
   SamplingOverrides,
 } from '@/types';
 import { normalizeThemeName } from '@/types';
+import { saveBlob, type SaveOutcome } from '@/utils/save-blob';
 import type { StatusHudConfig } from '@core/status-schema';
 import { DEFAULT_STATUS_HUD_CONFIG, normalizeStatusHudConfig } from '@core/status-schema';
 import { normalizePresetId, type PresetId } from '@core/creation-preset';
+import {
+  normalizeNarrationPerspective,
+  type NarrationPerspective,
+} from '@core/narration';
 import {
   DEFAULT_THINKING_CONFIG,
   DEFAULT_MAX_CONTEXT_TOKENS,
@@ -135,6 +140,14 @@ export const useSettingsStore = defineStore('settings', () => {
    * 仅作**建议层**：角色级 / Profile 级显式设置的参数仍优先。
    */
   const creationPreset = ref<PresetId>('balanced');
+
+  /**
+   * 心理活动（旁白段）里指代用户的代词：'me' = 「我」，'you' = 「你」。
+   *
+   * 这是**注入给模型的叙事规则**的一部分，不改写历史消息：切换后新的一条回复
+   * 用新视角，之前生成的仍是旧视角（否则用户会看到自己的旧对话被人动过）。
+   */
+  const narrationPerspective = ref<NarrationPerspective>('me');
 
   /**
    * P1 角色状态栏全局偏好
@@ -744,19 +757,14 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // ── T-07: SillyTavern Quick Reply 格式互导 ──
 
-  /** 导出全部 Quick Reply 为 ST JSON 并触发下载 */
-  function exportQuickRepliesSt(): boolean {
+  /**
+   * 导出全部 Quick Reply 为 ST JSON 给用户存盘
+   *
+   * 返回 'cancelled' 时调用方不得报"已导出"（用户在系统保存面板里取消了）
+   */
+  function exportQuickRepliesSt(): Promise<SaveOutcome> {
     const json = exportQuickRepliesToStJson(quickReplies.value);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `quick-replies-ST.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    return true;
+    return saveBlob(`quick-replies-ST.json`, () => new Blob([json], { type: 'application/json' }));
   }
 
   /** 从 ST Quick Reply JSON 导入（追加到现有列表，label 冲突自动去重） */
@@ -846,7 +854,6 @@ export const useSettingsStore = defineStore('settings', () => {
       model: 'gpt-4o',
       category: 'chat',
       isPrimary: false,
-      maxTokens: 4096,
     };
   }
 
@@ -880,6 +887,7 @@ export const useSettingsStore = defineStore('settings', () => {
     'fontSize',
     'customCss',
     'creationPreset',
+    'narrationPerspective',
     'maxContextTokens',
     'reservedTokens',
   ] as const;
@@ -891,6 +899,7 @@ export const useSettingsStore = defineStore('settings', () => {
       fontSize: fontSize.value,
       customCss: customCss.value,
       creationPreset: creationPreset.value,
+      narrationPerspective: narrationPerspective.value,
       maxContextTokens: maxContextTokens.value,
       reservedTokens: reservedTokens.value,
     };
@@ -1056,6 +1065,10 @@ export const useSettingsStore = defineStore('settings', () => {
         if (saved.creationPreset !== undefined) {
           creationPreset.value = normalizePresetId(saved.creationPreset);
         }
+        // 旁白人称（旧数据缺字段时保留默认 'me'；脏值回落默认）
+        if (saved.narrationPerspective !== undefined) {
+          narrationPerspective.value = normalizeNarrationPerspective(saved.narrationPerspective);
+        }
         // P1 加载状态栏偏好（向后兼容：无字段时保留默认值；脏字段回落默认）
         if (saved.statusHudConfig && typeof saved.statusHudConfig === 'object') {
           statusHudConfig.value = normalizeStatusHudConfig(saved.statusHudConfig);
@@ -1197,6 +1210,8 @@ export const useSettingsStore = defineStore('settings', () => {
         samplingDefaults: samplingDefaults.value ? { ...toRaw(samplingDefaults.value) } : null,
         // MODEL-03 创作模式
         creationPreset: creationPreset.value,
+        // 旁白人称
+        narrationPerspective: narrationPerspective.value,
         // P1 状态栏偏好
         statusHudConfig: { ...toRaw(statusHudConfig.value) },
         // M7-d 折叠段开合记忆
@@ -1301,6 +1316,11 @@ export const useSettingsStore = defineStore('settings', () => {
     creationPreset.value = normalizePresetId(value);
   }
 
+  /** 切换旁白人称；非法值由 normalizeNarrationPerspective 归一，避免脏数据进持久化 */
+  function setNarrationPerspective(value: unknown): void {
+    narrationPerspective.value = normalizeNarrationPerspective(value);
+  }
+
   /**
    * P1：更新状态栏全局偏好（局部 patch，未给字段保持原值）
    * 调用方负责在需要落盘时调用 persistSettings()
@@ -1398,6 +1418,9 @@ export const useSettingsStore = defineStore('settings', () => {
     samplingDefaults,
     // MODEL-03 创作模式
     creationPreset,
+    // 旁白人称（我 / 你）
+    narrationPerspective,
+    setNarrationPerspective,
     statusHudConfig,
     // M7-d 折叠段开合记忆
     uiSectionOpen,

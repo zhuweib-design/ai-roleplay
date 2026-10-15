@@ -120,15 +120,6 @@ export interface UICharacter {
   authorNote: string;
   authorDepth: number;
   temperature: number;
-  /**
-   * 需求3：单次回复最大 Tokens（角色级覆盖）
-   *
-   * **可选**（T-16 语义）：`undefined` / `null` = 未设置 = 向下回落
-   * —— 角色级 → Profile 级 → 不传（供应商默认）。
-   * 绝不用 0 或魔法数字表示"未设置"：历史上它是必填 number（默认 4096），
-   * 导致 Profile 级 `maxTokens` 被无条件覆盖而永不生效（死代码），本轮改为可选修掉。
-   */
-  maxTokens?: number;
   worldEntries: WorldEntry[];
   tokenBudget: TokenBudget;
   /** P0-2：角色级思考强度覆盖；undefined/null = 跟随 Profile */
@@ -169,10 +160,11 @@ export interface ApiProfile {
   /** 需求3：是否为该分类的主模型（每分类至多 1 个） */
   isPrimary?: boolean;
   /**
-   * 需求3：默认最大 Tokens（角色未单独设置 maxTokens 时使用）
-   * 未设置时回退到 ChatManager 默认值
+   * 模型的最大上下文（token）。这是模型设置里**唯一**需要填的量：
+   * 输出预算与输入压缩都由它推导（见 core/token-budget.ts），不再有人工输出上限。
+   * 未设置时回退全局 `settings.maxContextTokens`。
    */
-  maxTokens?: number;
+  contextWindow?: number;
   /**
    * P0-2：该模型是否支持推理强度
    * - 'auto'（默认）：按模型名启发式判定
@@ -370,6 +362,12 @@ export interface AppSettings {
   creationPreset?: import('@core/creation-preset').PresetId;
   /** P1：状态栏全局偏好（缺省 → DEFAULT_STATUS_HUD_CONFIG） */
   statusHudConfig?: StatusHudConfig;
+  /**
+   * 心理活动（旁白段）里指代用户的那个代词：'me' = 「我」，'you' = 「你」。
+   * 缺省 'me'，与需求原话「xxx 有点紧张的看着我」一致。
+   * 只影响注入给模型的叙事规则，不改写已经生成好的历史消息。
+   */
+  narrationPerspective?: import('@core/narration').NarrationPerspective;
   /**
    * 可折叠段的开合记忆（M7-d）：段标识 → 是否展开。
    *

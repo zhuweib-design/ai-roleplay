@@ -5,13 +5,17 @@
  * 背景（2026-10-14 在安卓模拟器上实测）：Capacitor 的 WebView 里
  * `URL.createObjectURL(blob)` + `<a download>` + `click()` 是**静默无效**的 ——
  * 不抛错、无下载记录、`/sdcard` 全盘搜不到文件，用户点了像没反应。
- * 同一台 WebView 里 `window.showSaveFilePicker()` 可用（会拉起系统保存界面）。
- * 所以存盘必须走 `src/utils/save-blob.ts` 的 `saveBlob()`：WebView 用系统保存面板，
- * 其余环境保持既有下载行为，并且能区分"存下了"与"用户取消"。
+ * 所以存盘统一走 `src/utils/save-blob.ts` 的 `saveBlob()`（单一入口，接原生时只改这一处）。
+ *
+ * 注意：本文件上一版说"WebView 里 showSaveFilePicker 可用、会拉起系统保存界面"是错的。
+ * 2026-10-14 复测：该 API 在 Chrome 133 Android WebView 里是桩，调用后 14ms 抛 AbortError、
+ * 不弹任何界面；系统侧能弹（adb 发 CREATE_DOCUMENT 可拉起 documentsui），是 WebView 没接。
+ * 详见 save-blob.ts 顶部注释。
  *
  * 规则：src 下除 save-blob.ts 外，任何人再写 `URL.createObjectURL(` 就红。
- * 存量 6 处登记在下面 BASELINE 里（只允许减少），新增文件/新增处数 ⇒ 退码 1。
- * 为什么要基线而不是"以后再说"：本仓的教训是"下一个人加第 N+1 处时没有任何东西提醒他"。
+ * 存量已清零（2026-10-14：9 处导出全部改走 saveBlob），所以 BASELINE 现在是空表，
+ * 任何一处新增（无论新文件还是旧文件）都直接红。
+ * 为什么要清零而不是留基线：本仓的教训是"下一个人加第 N+1 处时没有任何东西提醒他"。
  *
  * 用法：
  *   node scripts/save-blob-guard.mjs              # 校验
@@ -25,15 +29,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'src');
 const ALLOWED = 'src/utils/save-blob.ts';
 
-/** 存量债务（文件 → 处数）。清掉一处就把数字改小，清完就删掉这一行 */
-const BASELINE = {
-  'src/components/settings/SettingsDataPanel.vue': 1,
-  'src/core/story-importer.ts': 1,
-  'src/stores/character.ts': 1,
-  'src/stores/group-chat.ts': 1,
-  'src/stores/lorebook.ts': 1,
-  'src/stores/settings.ts': 1,
-};
+/**
+ * 存量债务（文件 → 处数）。清掉一处就把数字改小，清完就删掉这一行。
+ * 现在是空的：`URL.createObjectURL(` 只允许出现在 ALLOWED（save-blob.ts）里。
+ */
+const BASELINE = {};
 
 const CREATE_RE = /URL\.createObjectURL\s*\(/g;
 

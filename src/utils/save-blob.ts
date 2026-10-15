@@ -6,8 +6,23 @@
  * 不抛错、不报"下载被阻止"、`/sdcard` 全盘搜不到文件、logcat 一条下载记录都没有。
  * 也就是说全仓 9 处导出（备份包、角色卡 PNG、对话 Markdown、审核日志、快捷回复、
  * 世界书、故事、群聊、角色 JSON）在手机上点了都没反应。
- * 同一台 WebView 里 `window.showSaveFilePicker()` 是能用的（实测会拉起
- * `com.google.android.documentsui` 的保存界面），所以这里在它上面改走那条路。
+ *
+ * 2026-10-14 复测订正（重要）：本文件原先那句"同一台 WebView 里
+ * `window.showSaveFilePicker()` 能用、会拉起 documentsui"——**不成立**。
+ * 这个 API 在这台 WebView（Chrome 133 Android WebView）里是个桩：函数存在、能调用，
+ * 但 14ms 就抛 `AbortError: Failed to execute 'showSaveFilePicker' on 'Window':
+ * The user aborted a request.`，既不拉起任何界面，logcat 里也没有 CREATE_DOCUMENT/GET_CONTENT。
+ * 对照探针（往页面里注入一个按钮、真实触摸触发、完全不经过应用代码）复现同样结果，
+ * 所以与用户手势、与"先弹面板再算 Blob"这段顺序都无关。系统侧本身是好的：
+ * `adb shell am start -a android.intent.action.CREATE_DOCUMENT ...` 能正常拉起
+ * `com.google.android.documentsui/.picker.PickActivity` 保存界面（有截图）。
+ *
+ * 因此下面 WebView 分支目前是**空转**的：拿到 AbortError ⇒ 返回 'cancelled' ⇒ 界面既不报错也不提示。
+ * 要真修得走原生，姊妹项目 `D:\AI_data\xiaoshuo_skill_kaifa\novel-studio` 的做法是自定义
+ * Capacitor 插件 `NovelExport`（原生 ACTION_CREATE_DOCUMENT + 分块 base64 落盘，注释里写着
+ * "Android WebView 的 blob 下载不一定落盘"），那条路已经在同一台模拟器上产出过文件。
+ * 保留本文件的价值：全仓 9 处导出已收敛到这一个入口（`scripts/save-blob-guard.mjs` 守着），
+ * 将来接原生只改这一处。
  *
  * 顺序是刻意反过来的：**先弹面板，再算 Blob**。
  * 因为 `showSaveFilePicker()` 要求用户手势，而各导出站点在真正存盘前都要先

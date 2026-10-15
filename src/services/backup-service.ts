@@ -16,6 +16,7 @@ import type { StorageAdapter } from '@/storage/storage-adapter';
 import { saveBlob } from '@/utils/save-blob';
 import type { SaveOutcome } from '@/utils/save-blob';
 import type { CharacterCard } from '@/core/character-card';
+import { stripNarrationMarkers } from '@/core/narration';
 import { exportV2Card, importV2Card } from '@/core/character-card';
 import type { Chat } from '@/storage/types';
 import type { AppSettings } from '@/types';
@@ -480,7 +481,8 @@ export function exportChatMarkdown(
     lines.push(`## ${roleLabel} ${speaker}`);
     lines.push('');
     if (msg.content) {
-      lines.push(msg.content);
+      // 导出的 Markdown 是给人读/给人续写的，去掉 ⟦⟧ 但保留心理段文字本身
+      lines.push(stripNarrationMarkers(msg.content));
     } else {
       lines.push(t('backup.mdEmptyMsg'));
     }

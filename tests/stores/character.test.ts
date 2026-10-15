@@ -326,9 +326,9 @@ describe('useCharacterStore — E5 单元测试', () => {
       const id2 = 'test-char-bind-2';
       const id3 = 'test-char-bind-3';
       store.characters.push(
-        { id: id1, name: 'C1', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, maxTokens: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
-        { id: id2, name: 'C2', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, maxTokens: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
-        { id: id3, name: 'C3', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, maxTokens: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } }
+        { id: id1, name: 'C1', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
+        { id: id2, name: 'C2', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
+        { id: id3, name: 'C3', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } }
       );
       // id1 和 id2 绑定 lb-shared，id3 绑定 lb-other
       store.bindWorldBook(id1, 'lb-shared');
@@ -594,7 +594,7 @@ describe('useCharacterStore — E5 单元测试', () => {
       expect(store.lastError).toContain('找不到要导出的角色');
     });
 
-    it('downloadV2 应触发浏览器下载并返回 true', () => {
+    it('downloadV2 应触发浏览器下载并返回 true', async () => {
       const store = useCharacterStore();
       const newId = store.createCharacter();
 
@@ -617,22 +617,45 @@ describe('useCharacterStore — E5 单元测试', () => {
         } as unknown as HTMLAnchorElement;
       }) as typeof document.createElement;
 
-      const ok = store.downloadV2(newId);
-      expect(ok).toBe(true);
-      expect(clickSpy).toHaveBeenCalled();
-      expect(store.lastInfo).toContain('已导出');
-
-      // 恢复
-      URL.createObjectURL = originalCreate;
-      URL.revokeObjectURL = originalRevoke;
-      document.createElement = originalCreateElement;
-      appendChildSpy.mockRestore();
-      removeChildSpy.mockRestore();
+      try {
+        const ok = await store.downloadV2(newId);
+        expect(ok).toBe(true);
+        expect(clickSpy).toHaveBeenCalled();
+        expect(store.lastInfo).toContain('已导出');
+      } finally {
+        // 恢复
+        URL.createObjectURL = originalCreate;
+        URL.revokeObjectURL = originalRevoke;
+        document.createElement = originalCreateElement;
+        appendChildSpy.mockRestore();
+        removeChildSpy.mockRestore();
+      }
     });
 
-    it('downloadV2 不存在的 id 应返回 false', () => {
+    it('downloadV2 在安卓 WebView 里被用户取消 ⇒ 返回 false 且不写"已导出"', async () => {
       const store = useCharacterStore();
-      const ok = store.downloadV2('___nonexistent___');
+      const newId = store.createCharacter();
+      store.clearLastError();
+
+      // 安卓 WebView 的 UA 标记 + 用户在系统保存面板按下取消
+      const abort = Object.assign(new Error('user aborted'), { name: 'AbortError' });
+      vi.stubGlobal('navigator', {
+        userAgent: 'Mozilla/5.0 (Linux; Android 16; sdk_gphone64_x86_64; wv) Chrome/133 Mobile Safari/537.36',
+      });
+      vi.stubGlobal('window', { showSaveFilePicker: vi.fn(async () => { throw abort; }) });
+      try {
+        const ok = await store.downloadV2(newId);
+        expect(ok).toBe(false);
+        // 用户取消时界面不许说"已导出"（lastInfo 保持为空）
+        expect(store.lastInfo).toBeNull();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('downloadV2 不存在的 id 应返回 false', async () => {
+      const store = useCharacterStore();
+      const ok = await store.downloadV2('___nonexistent___');
       expect(ok).toBe(false);
       expect(store.lastError).toContain('找不到要导出的角色');
     });

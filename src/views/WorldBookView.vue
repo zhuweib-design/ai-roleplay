@@ -390,7 +390,7 @@ function confirmDelete() {
 }
 
 function exportLorebook(id: string) {
-  store.downloadLorebook(id);
+  void store.downloadLorebook(id);
 }
 
 // ── 迭代27 · F06.8: 世界观 AI 生成 ──
@@ -415,10 +415,25 @@ function selectTemplate(id: WorldTemplateId) {
   selectedTemplateId.value = id;
 }
 
+/**
+ * 生成的这本世界归谁：'' = 全局（所有角色都注入），否则归属该角色并自动绑到他身上。
+ * 以前这里没有选择，生成的永远是全局书 —— 用户在某个角色的语境里点"生成世界观"，
+ * 结果造出来的东西对所有角色生效，这正是"绑定感缺失"的来源。
+ */
+const generateOwnerId = ref('');
+
 /** 执行 AI 生成新世界 */
 async function confirmGenerate() {
-  const lbId = await store.generateRandomWorldbook(selectedTemplateId.value);
+  const ownerId = generateOwnerId.value;
+  const lbId = await store.generateRandomWorldbook(
+    selectedTemplateId.value,
+    ownerId ? 'character' : 'global',
+    undefined,
+    ownerId || undefined
+  );
   if (lbId) {
+    // 角色侧的 boundWorldBookIds 才是生效判定的正向数据源，光写书上的 characterId 不够
+    if (ownerId) characterStore.bindWorldBook(ownerId, lbId);
     generateModalOpen.value = false;
     showToast('success', store.lastInfo ?? t('wb.generated'));
   } else {
@@ -1719,6 +1734,22 @@ function strategyLabel(s: LorebookStrategy): string {
           </button>
         </div>
 
+        <div class="gen-owner">
+          <label class="gen-owner-label" for="gen-owner-select">{{ t('wb.genOwnerLabel') }}</label>
+          <select
+            id="gen-owner-select"
+            v-model="generateOwnerId"
+            class="form-select"
+            :disabled="store.isGeneratingWorld"
+          >
+            <option value="">{{ t('wb.genOwnerGlobal') }}</option>
+            <option v-for="c in characterStore.characters" :key="c.id" :value="c.id">
+              {{ c.name }}
+            </option>
+          </select>
+          <p class="generate-hint">{{ t('wb.genOwnerHint') }}</p>
+        </div>
+
         <div v-if="store.isGeneratingWorld" class="generating-state" role="status" aria-live="polite">
           <Icon name="refresh-cw" :size="16" />
           <span>{{ t('wb.generatingWorld') }}</span>
@@ -2777,6 +2808,24 @@ function strategyLabel(s: LorebookStrategy): string {
   color: var(--muted-foreground);
   font-size: 13px;
   line-height: 1.5;
+}
+
+/* 生成 Modal 里的"这本世界归谁" */
+.gen-owner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.gen-owner-label {
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.gen-owner select {
+  width: 100%;
 }
 
 .template-grid {

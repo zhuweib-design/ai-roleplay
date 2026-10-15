@@ -17,6 +17,8 @@ import {
 // F10.3 随机 NPC 生成（v1.1 新增）
 import { createApiClient } from '@/api';
 import { useSettingsStore } from './settings';
+import { saveBlob } from '@/utils/save-blob';
+import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
 import { exportGroupChatToStJson, importGroupChatFromSt } from '@/core/st-compat';
 import type { CharacterTemplateId } from '@core/character-generator';
 import {
@@ -185,21 +187,20 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     return exportGroupChatToStJson(g);
   }
 
-  /** 触发下载 ST 格式群聊 JSON */
-  function downloadGroupSt(groupId: string): boolean {
+  /**
+   * 导出 ST 格式群聊 JSON 给用户存盘
+   *
+   * @returns true 表示真的存下了；false = 找不到 / 用户在系统保存面板取消（都不得报"已导出"）
+   */
+  async function downloadGroupSt(groupId: string): Promise<boolean> {
     const json = exportGroupToStJson(groupId);
     if (json === null) return false;
     const g = groups.value.find((x) => x.id === groupId);
     const safeName = (g?.name ?? 'group').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = t('group.stExportName', { name: safeName });
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const outcome = await saveBlob(t('group.stExportName', { name: safeName }), () =>
+      new Blob([json], { type: 'application/json' })
+    );
+    if (outcome === 'cancelled') return false;
     lastInfo.value = t('group.exportedSt', { name: g?.name ?? '' });
     return true;
   }
@@ -950,17 +951,23 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     }
 
     const apiClient = createApiClient(profile);
-    const messages = buildNpcGenerationMessages(params);
 
+    // 先立"生成中"标志，再做异步准备（防重入不能等异步准备）
     isGeneratingNpc.value = true;
 
     try {
-      // 调用 API（非流式，温度 1.0 增加创意，Token 限制 1000）
+      // 调用 API（非流式，温度 1.0 增加创意；输出预算由模型上下文推导）
+      const prepared = await prepareGenerationPrompt(
+        () => buildNpcGenerationMessages(params),
+        undefined,
+        resolveContextWindow(profile, settingsStore.maxContextTokens),
+        settingsStore.reservedTokens
+      );
       const raw = await apiClient.chat({
-        messages,
+        messages: prepared.messages,
         model: profile.model,
         temperature: 1.0,
-        maxTokens: 1000,
+        maxTokens: prepared.maxTokens,
       });
 
       // 解析返回

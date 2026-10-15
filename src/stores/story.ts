@@ -48,6 +48,7 @@ import {
   mergeResults,
   createAnalysisResult,
 } from '@core/story-analyzer';
+import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
 import { createApiClient } from '../api';
 import { useSettingsStore } from './settings';
 import { useCharacterStore } from './character';
@@ -410,21 +411,28 @@ export const useStoryStore = defineStore('story', () => {
           ? buildPreviousContext(prevResult)
           : undefined;
 
-        const messages = buildAnalysisMessages(
-          chunks[i]!,
-          story.depth,
-          i,
-          chunks.length,
-          previousContext,
-          story.templateId
+        // 分块文本超预算时自动截断（保头），输出预算由模型上下文推导
+        const prepared = await prepareGenerationPrompt(
+          (src) =>
+            buildAnalysisMessages(
+              src ?? chunks[i]!,
+              story.depth,
+              i,
+              chunks.length,
+              previousContext,
+              story.templateId
+            ),
+          chunks[i],
+          resolveContextWindow(profile, settingsStore.maxContextTokens),
+          settingsStore.reservedTokens
         );
 
         try {
           const raw = await apiClient.chat({
-            messages,
+            messages: prepared.messages,
             model: profile.model,
             temperature: 0.3,
-            maxTokens: 2000,
+            maxTokens: prepared.maxTokens,
             signal,
           });
 
@@ -472,18 +480,24 @@ export const useStoryStore = defineStore('story', () => {
         };
 
         try {
-          const scriptMessages = buildScriptGenerationMessages(
-            merged.characters,
-            merged.scenes,
-            merged.events,
-            merged.worldInfo,
-            story.templateId
+          const prepared = await prepareGenerationPrompt(
+            () =>
+              buildScriptGenerationMessages(
+                merged.characters,
+                merged.scenes,
+                merged.events,
+                merged.worldInfo,
+                story.templateId
+              ),
+            undefined,
+            resolveContextWindow(profile, settingsStore.maxContextTokens),
+            settingsStore.reservedTokens
           );
           const scriptRaw = await apiClient.chat({
-            messages: scriptMessages,
+            messages: prepared.messages,
             model: profile.model,
             temperature: 0.5,
-            maxTokens: 2000,
+            maxTokens: prepared.maxTokens,
             signal,
           });
           scripts = parseScriptResult(scriptRaw);
@@ -728,16 +742,19 @@ export const useStoryStore = defineStore('story', () => {
   }
 
   /**
-   * 导出故事脚本为 JSON 文件下载
+   * 导出故事脚本为 JSON 文件存盘
+   *
+   * 用户在系统保存面板取消时不写 lastInfo（调用方不得报"已导出"）
    */
-  function exportScripts(storyId: string): void {
+  async function exportScripts(storyId: string): Promise<void> {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story || story.scripts.length === 0) {
       lastError.value = t('story.noScripts');
       return;
     }
     const filename = `${story.sourceFileName.replace(/\.[^.]+$/, '')}-scripts.json`;
-    downloadScripts(story.scripts, filename);
+    const outcome = await downloadScripts(story.scripts, filename);
+    if (outcome === 'cancelled') return;
     lastInfo.value = t('story.scriptsExported', { count: story.scripts.length });
   }
 

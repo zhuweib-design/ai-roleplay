@@ -57,6 +57,8 @@ import { createSlashCommandContext } from '@/core/variable-store';
 import { extensionRegistry } from '@/core/extension-loader';
 import { useStoryStore } from './story';
 import { countTokens } from '@/core/token-counter';
+import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
+import { stripNarrationMarkers } from '@core/narration';
 import { getBuiltinToolDefinitions, executeBuiltinTool } from '@/core/tool-registry';
 import { loadGlobalVariables, setGlobalVariable } from '@/core/variable-store';
 import { useDataBankStore } from './data-bank';
@@ -359,12 +361,13 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
       model: profile.model,
       userName: options?.userName ?? 'User',
       systemPrompt: options?.systemPrompt ?? '',
-      // 上下文长度：显式 options 优先，其次全局设置缓存（由 applyRuntimeLlmControls 同步）
-      maxContextTokens: options?.maxContextTokens ?? globalMaxContextTokens,
+      // 上下文长度：模型设置里填的最大上下文优先，其次显式 options，最后全局设置缓存。
+      // 这是用户唯一需要设置的模型参数；输出预算与压缩都由它推导。
+      maxContextTokens: resolveContextWindow(
+        profile,
+        options?.maxContextTokens ?? globalMaxContextTokens
+      ),
       reservedTokens: options?.reservedTokens ?? globalReservedTokens,
-      // 需求3/T-16: API Profile 默认最大 Tokens
-      // 角色级未设置时 overrides 里不写该键 → 本值真正生效（此前被角色级必填 4096 无条件覆盖）
-      maxTokens: profile.maxTokens,
       // P0-3：Profile 级采样参数（角色级显式设置时在 overrides 里覆盖）
       ...buildSamplingConfigPatch(profile.sampling),
       // P0-2：Profile 级默认思考强度（仅 capability 可用时才注入）
@@ -415,16 +418,8 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
       temperature: character.temperature,
       ...buildSamplingConfigPatch(character.sampling),
     };
-    /**
-     * T-16：角色级 maxTokens 为可选，未设置时**不写该键**。
-     * 写在对象里（哪怕是 undefined）都会被 `{...config, ...overrides}` 覆盖掉
-     * Profile 级默认值 —— 这正是 profile.maxTokens 沦为死代码的原因。
-     */
-    const charMaxTokens = character.maxTokens;
-    // 0 与负数不是合法的 max_tokens（合法区间 1~32768），按"未设置"处理（fail-open）
-    if (typeof charMaxTokens === 'number' && Number.isFinite(charMaxTokens) && charMaxTokens > 0) {
-      overrides.maxTokens = charMaxTokens;
-    }
+    // 输出上限不再作为旋钮（角色级/Profile 级都不再写 maxTokens）：
+    // 由 chat-manager 按"模型最大上下文 − 预留 − 输入实测"自动推导。
     // P0-2：capability 为 none 时静默丢弃角色级思考强度（不报错、不打断对话）
     const capability = activeProfileForCapability
       ? resolveReasoningCapability(activeProfileForCapability)
@@ -460,11 +455,20 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
       // 角色级 ext.statusInstruction 由 chat-manager 在本轮请求里再覆盖（'on'/'off' 优先）
       patch.statusInstructionEnabled = settingsStore.statusHudConfig?.enabled === true;
 
-      // 上下文长度：同步全局设置到缓存，并在未被显式 options 覆盖时下发到 config
-      // （修复：此前 chat-manager / store 硬编码 8192/1024，接入大上下文模型无法生效）
+      // 旁白人称（我 / 你）：每轮从设置带下去。切换只影响**下一条**回复的提示词，
+      // 已生成的历史里写的是当时的视角，不做任何回写。
+      patch.narrationPerspective = settingsStore.narrationPerspective;
+
+      // 上下文长度：模型设置里填的"最大上下文"优先，否则用全局设置。
+      // （此前这里无条件写全局值，会把模型级的上下文覆盖掉）
       globalMaxContextTokens = settingsStore.maxContextTokens;
       globalReservedTokens = settingsStore.reservedTokens;
-      if (explicitMaxContextTokens === undefined) patch.maxContextTokens = settingsStore.maxContextTokens;
+      if (explicitMaxContextTokens === undefined) {
+        patch.maxContextTokens = resolveContextWindow(
+          activeProfileForCapability,
+          settingsStore.maxContextTokens
+        );
+      }
       if (explicitReservedTokens === undefined) patch.reservedTokens = settingsStore.reservedTokens;
 
       // 摘要接线（2026-09-21）：把当前会话的摘要传给 chat-manager，用于下一轮注入
@@ -1156,7 +1160,8 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
   }
 
   function copyMessage(msg: UIMessage): void {
-    navigator.clipboard?.writeText(msg.content).catch(() => {});
+    // 复制出去的是给人读的正文，不能带 ⟦⟧ 这两个只服务于渲染的标记
+    navigator.clipboard?.writeText(stripNarrationMarkers(msg.content)).catch(() => {});
   }
 
   function deleteMessage(character: UICharacter, msgId: string): void {
@@ -1380,15 +1385,21 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
         activeEventNames: eventsStore.getActiveEvents().map((e) => e.name),
       };
 
-      const messages = buildRandomEventMessages(params);
+      // 输出预算由模型上下文推导（不再写死 600）
+      const prepared = await prepareGenerationPrompt(
+        () => buildRandomEventMessages(params),
+        undefined,
+        resolveContextWindow(profile, settingsStore.maxContextTokens),
+        settingsStore.reservedTokens
+      );
 
       // 调用 LLM 生成事件内容
       const apiClient = createApiClient(profile);
       const raw = await apiClient.chat({
-        messages,
+        messages: prepared.messages,
         model: profile.model,
         temperature: 1.0,
-        maxTokens: 600,
+        maxTokens: prepared.maxTokens,
       });
 
       const generated = parseGeneratedRandomEvent(raw);

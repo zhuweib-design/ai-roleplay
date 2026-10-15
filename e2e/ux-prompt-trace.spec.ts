@@ -146,7 +146,9 @@ test.describe('注入痕迹（E02）', () => {
     await input.fill('今晚酒馆开门吗');
     await page.getByRole('button', { name: '发送消息' }).click();
 
-    const bubble = page.locator('.msg-bubble.msg-assistant').last();
+    // 作用域是"这一轮"（.msg-turn）而不是单个气泡：一次回复可能拆成
+    // 「对白 — 心理 — 对白」多个气泡，注入痕迹描述的是整轮
+    const bubble = page.locator('.msg-turn').last();
     await expect(bubble).toContainText('你好，旅人！', { timeout: 15_000 });
 
     const toggle = bubble.locator('.trace-toggle');
@@ -199,7 +201,7 @@ test.describe('注入痕迹（E02）', () => {
     await expect(page).toHaveURL(/\/chat/);
     await page.reload();
 
-    const restored = page.locator('.msg-bubble.msg-assistant').last();
+    const restored = page.locator('.msg-turn').last();
     await expect(restored).toContainText('你好，旅人！', { timeout: 15_000 });
     const persisted = restored.locator('.trace-toggle');
     await expect(persisted).toBeVisible();

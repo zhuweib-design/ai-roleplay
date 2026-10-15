@@ -20,6 +20,7 @@ import {
   buildWorldExtendMessages,
   parseGeneratedWorld,
   parseExtendedRegions,
+  describeWorldParseFailure,
 } from '@core/world-generator';
 import type { LorebookEntry, WorldDescription } from '@core/lorebook';
 
@@ -447,6 +448,67 @@ describe('world-generator (F06.8)', () => {
       const result = parseGeneratedWorld(raw);
       expect(result).not.toBeNull();
       expect(result!.regions[0]!.subAreas).toEqual([]);
+    });
+  });
+
+  /**
+   * 这组是"界面上那句无法解析"的取证分类。
+   * 背景（2026-10-14 用户报障）：创建世界观报"无法解析 AI 返回的世界数据"，
+   * 但这句话背后至少有五种成因（空返回 / 不是 JSON / 被截断 / 顶层字段不对 / 大区缺 title），
+   * 处理方式各不相同。分类器必须把它们分开，且每条都带证据（字数、开头、顶层字段名）。
+   */
+  describe('describeWorldParseFailure 解析失败分类', () => {
+    const okWorld = {
+      world: { name: '世界', type: 'fantasy', keys: ['k'], content: 'c' },
+      regions: [{ title: '大区', keys: ['k'], content: 'c', subAreas: [] }],
+    };
+
+    test('空返回 ⇒ empty（思考型模型只回思考过程时的表现）', () => {
+      expect(describeWorldParseFailure('').kind).toBe('empty');
+      expect(describeWorldParseFailure('   \n  ').kind).toBe('empty');
+      expect(describeWorldParseFailure('').chars).toBe(0);
+    });
+
+    test('纯文字、连花括号都没有 ⇒ not-json，并把开头原样带出来', () => {
+      const f = describeWorldParseFailure('很抱歉，我无法完成这个请求。');
+      expect(f.kind).toBe('not-json');
+      expect(f.preview).toContain('很抱歉');
+    });
+
+    test('被截断在半路的 JSON ⇒ broken-json（这正是那句话最常见的真实成因）', () => {
+      const full = JSON.stringify(okWorld, null, 2);
+      const cut = full.slice(0, Math.floor(full.length * 0.7)); // 模拟撞上输出上限
+      // 截断后确实解析不出 → 旧代码只能报"无法解析"
+      expect(parseGeneratedWorld(cut)).toBeNull();
+      const f = describeWorldParseFailure(cut);
+      expect(f.kind).toBe('broken-json');
+      expect(f.chars).toBe(cut.length);
+    });
+
+    test('JSON 完整但缺 world.name ⇒ no-world，并报出顶层字段名', () => {
+      const raw = JSON.stringify({ world: { type: 'fantasy' }, regions: okWorld.regions });
+      expect(parseGeneratedWorld(raw)).toBeNull();
+      const f = describeWorldParseFailure(raw);
+      expect(f.kind).toBe('no-world');
+      expect(f.keys).toEqual(['world', 'regions']);
+    });
+
+    test('regions 为空 ⇒ no-regions', () => {
+      const raw = JSON.stringify({ world: okWorld.world, regions: [] });
+      expect(parseGeneratedWorld(raw)).toBeNull();
+      expect(describeWorldParseFailure(raw).kind).toBe('no-regions');
+    });
+
+    test('大区用了 name 而不是 title ⇒ region-shape，并报出有几个', () => {
+      const raw = JSON.stringify({
+        world: okWorld.world,
+        regions: [{ name: '大区甲', keys: ['k'], content: 'c' }],
+      });
+      expect(parseGeneratedWorld(raw)).toBeNull();
+      const f = describeWorldParseFailure(raw);
+      expect(f.kind).toBe('region-shape');
+      expect(f.regionCount).toBe(1);
+      expect(f.keys).toContain('regions');
     });
   });
 

@@ -31,6 +31,7 @@ import type {
 import type { WorldType, WorldDescription, LorebookEntry } from './lorebook';
 import type { StoryEvent as EventSystemEvent } from './event-types';
 import { t } from '@/i18n';
+import { saveBlob, type SaveOutcome } from '@/utils/save-blob';
 
 // ── 导入目标 Port 接口（store 需实现，便于 mock 测试） ──
 
@@ -449,19 +450,13 @@ export function exportScriptsAsJson(scripts: StoryScript[]): string {
 }
 
 /**
- * 触发脚本文件下载（浏览器环境）
+ * 触发脚本文件存盘（浏览器下载 / 安卓 WebView 系统保存面板）
+ *
+ * 返回 'cancelled' 时调用方不得报"已导出"
  */
-export function downloadScripts(scripts: StoryScript[], filename: string): void {
+export function downloadScripts(scripts: StoryScript[], filename: string): Promise<SaveOutcome> {
   const json = exportScriptsAsJson(scripts);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  return saveBlob(filename, () => new Blob([json], { type: 'application/json' }));
 }
 
 // ── 辅助函数 ──

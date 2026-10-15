@@ -202,21 +202,29 @@
 
 .chat-footer {
   display: flex;
-  align-items: flex-end;
+  /* 原来是 row + 子项 .chat-composer{width:100%}：快捷回复条一旦配置出来，
+     就要和满宽的输入区抢同一行宽度。两者本来是上下关系，改成 column。
+     （没实测到它真的溢出过，这里只按布局关系摆正，不认领一个没见过的缺陷） */
+  flex-direction: column;
+  align-items: stretch;
   flex-shrink: 0;
-  padding: var(--space-3) var(--space-4) var(--space-4);
+  /* 底部安全区：配合 index.html 的 viewport-fit=cover，刘海/Home 条不压住发送键 */
+  padding: var(--space-2) var(--space-4) calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
   background: var(--card);
   border-top: var(--size-border-thin) solid var(--border);
 }
 
 .chat-composer {
   display: flex;
-  flex-direction: column;
+  /* 输入区在左、发送键在右，贴底对齐（多行时按钮落右下角，与主流 IM 一致） */
+  flex-direction: row;
+  align-items: flex-end;
+  gap: var(--space-2);
   width: 100%;
   background: var(--video-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  padding: var(--space-3) var(--space-3) var(--space-2-5);
+  padding: var(--space-2);
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 
@@ -226,15 +234,18 @@
 }
 
 .chat-input {
-  width: 100%;
-  /* 56px 高、15px 字号、1.55 行高都不在阶上（控件阶 44/36/28、字号阶 14/16、行高阶 1.5/1.7），
-     留字面量并登记；padding 这一项可中性入阶 */
-  min-height: 56px;
-  max-height: 200px;
+  /* 高度单源：JS 只写 height，上下限全部由这里的 min/max-height 夹取。
+     旧写法在 ChatMain.vue 里另写死 56/200，与 ≤640 档的 48/160 打架（两处限制、两套数）。 */
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 36px;
+  max-height: 160px;
   background: transparent;
   border: none;
-  padding: var(--space-2) var(--space-1);
+  padding: var(--space-1-5) var(--space-1);
   color: var(--foreground);
+  /* 15px 字号与 1.55 行高都不在阶上（控件阶 44/36/28、字号阶 14/16、行高阶 1.5/1.7），
+     留字面量并登记；≤640 档由 responsive.css 提到 16px 防 iOS 聚焦放大 */
   font-size: 15px;
   resize: none;
   outline: none;
@@ -256,8 +267,9 @@
 .composer-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 4px;
+  /* 旧值是 space-between 而容器里只有发送键一个子项 ⇒ 按钮被推到最左，
+     看起来像"发送键在左边"。右置由 .chat-composer 的 row 布局天然决定。 */
+  flex-shrink: 0;
 }
 
 .composer-actions {

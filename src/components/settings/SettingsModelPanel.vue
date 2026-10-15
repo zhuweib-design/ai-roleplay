@@ -24,6 +24,8 @@ import Collapse from '@/components/common/Collapse.vue';
 import { useSectionMemory } from '@/composables/useSectionMemory';
 import type { ApiProfile } from '@/types';
 import type { ModelSize } from '@/core/local-model-engine';
+import type { NarrationPerspective } from '@/core/narration';
+import type { MessageKey } from '@/i18n';
 import Icon from '@/components/common/Icon.vue';
 import Modal from '@/components/common/Modal.vue';
 import { showToast } from '@/utils/toast-service';
@@ -56,8 +58,9 @@ const form = ref({
   apiKey: '',
   model: '',
   category: 'chat' as 'chat' | 'image-video' | 'embedding',
-  // T-16: maxTokens 允许为空(undefined=不传,由供应商默认;用户可设置)
-  maxTokens: undefined as number | undefined,
+  // 模型最大上下文：空 = 未设置 = 用全局默认。输出预算与输入压缩都由它推导，
+  // 不再单独设输出上限（见 core/token-budget.ts）
+  contextWindow: '' as string | number,
   // P0-2: 推理强度支持三态（auto=按模型名启发式；on/off=用户强制纠偏）
   reasoningSupport: 'auto' as 'auto' | 'on' | 'off',
   // P0-2: Profile 级默认思考强度（空串 = 不设置）
@@ -67,6 +70,19 @@ const form = ref({
   presencePenalty: '' as string | number,
   frequencyPenalty: '' as string | number,
 });
+
+/** 常用上下文档位（token）：点一下填进去，省得手输 */
+/** 常用模型上下文档位（K=1024；1M = 1048576）。更小或更偏的档位仍可直接在输入框里填 */
+const CONTEXT_PRESETS = [32768, 65536, 131072, 278528, 409600, 614400, 1048576];
+
+/** 32768 → 32K，1048576 → 1M（按 1024 进制，档位值本身就是 1024 的整数倍） */
+function formatK(n: number): string {
+  if (n >= 1024 * 1024) {
+    const m = n / (1024 * 1024);
+    return `${Number.isInteger(m) ? m : m.toFixed(1)}M`;
+  }
+  return n >= 1024 ? `${Math.round((n / 1024) * 10) / 10}K` : String(n);
+}
 
 /**
  * P0-3：把表单里的采样输入转为 `number | undefined`
@@ -111,6 +127,21 @@ function onPresetChange(id: PresetId): void {
   showToast('success', t('preset.applied', { name: presetLabel(id) }));
 }
 
+/** 旁白人称的两个选项（顺序即界面顺序；'me' 是默认值） */
+const narrativeOptions: Array<{
+  id: NarrationPerspective;
+  labelKey: MessageKey;
+  descKey: MessageKey;
+}> = [
+  { id: 'me', labelKey: 'narrative.me', descKey: 'narrative.meDesc' },
+  { id: 'you', labelKey: 'narrative.you', descKey: 'narrative.youDesc' },
+];
+
+function onNarrativeChange(value: NarrationPerspective): void {
+  settings.setNarrationPerspective(value);
+  void settings.persistSettings();
+}
+
 // ── 本地模型（第9条：与云端统一管理） ──
 const modelMgmtTab = ref<'cloud' | 'local'>('cloud');
 
@@ -148,7 +179,6 @@ function addLocalModelAsProfile(modelId: string) {
     baseUrl: '',
     apiKey: '',
     model: modelId,
-    maxTokens: 4096,
   };
   settings.addApiProfile(profile);
   showToast('success', t('modelPanel.profileAdded', { name: profile.name }));
@@ -193,13 +223,15 @@ const errors = computed<Record<string, string>>(() => {
     else if (!/^https?:\/\//.test(form.value.baseUrl)) e.baseUrl = t('modelPanel.baseUrlInvalid');
   }
   if (!form.value.model.trim()) e.model = t('modelPanel.modelRequired');
-  // T-16: maxTokens 允许为空(空=供应商默认)
+  // 最大上下文允许留空（空 = 用全局默认）；填了就必须是 ≥1024 的数
+  const cw = Number(form.value.contextWindow);
   if (
-    form.value.maxTokens !== undefined &&
-    form.value.maxTokens !== null &&
-    (form.value.maxTokens < 1 || form.value.maxTokens > 32768)
+    form.value.contextWindow !== '' &&
+    form.value.contextWindow !== undefined &&
+    form.value.contextWindow !== null &&
+    (!Number.isFinite(cw) || cw < 1024)
   ) {
-    e.maxTokens = t('modelPanel.maxTokensInvalid');
+    e.contextWindow = t('modelPanel.contextWindowInvalid');
   }
   // apiKey 不强制（部分代理服务无需鉴权）
   return e;
@@ -337,7 +369,7 @@ function resetForm() {
     apiKey: '',
     model: 'gpt-4o',
     category: 'chat',
-    maxTokens: undefined as number | undefined,
+    contextWindow: '' as string | number,
     reasoningSupport: 'auto' as 'auto' | 'on' | 'off',
     reasoningEffort: '' as '' | 'low' | 'medium' | 'high',
     topP: '' as string | number,
@@ -351,7 +383,7 @@ function openCreateModal() {
   const tpl = settings.createProfileTemplate();
   form.value = {
     ...tpl,
-    maxTokens: tpl.maxTokens ?? undefined,
+    contextWindow: tpl.contextWindow ?? '',
     category: (tpl.category ?? 'chat') as 'chat' | 'image-video' | 'embedding',
     reasoningSupport: (tpl.reasoningSupport ?? 'auto') as 'auto' | 'on' | 'off',
     reasoningEffort: (tpl.reasoningEffort ?? '') as '' | 'low' | 'medium' | 'high',
@@ -366,7 +398,7 @@ function openCreateModal() {
 function openEditModal(profile: ApiProfile) {
   form.value = {
     ...profile,
-    maxTokens: profile.maxTokens ?? undefined,
+    contextWindow: profile.contextWindow ?? '',
     provider: profile.provider as 'openai' | 'anthropic' | 'custom' | 'deepseek',
     category: (profile.category ?? 'chat') as 'chat' | 'image-video' | 'embedding',
     reasoningSupport: (profile.reasoningSupport ?? 'auto') as 'auto' | 'on' | 'off',
@@ -417,8 +449,11 @@ function saveProfile() {
     apiKey: form.value.apiKey.trim(),
     model: form.value.model.trim(),
     category: form.value.category,
-    // T-16: 空值保存为 undefined(不传 max_tokens,供应商默认);0/NaN/'' 视为空
-    maxTokens: form.value.maxTokens ? form.value.maxTokens : undefined,
+    // 空值保存为 undefined（回退全局默认）；0/NaN/'' 视为空
+    contextWindow:
+      form.value.contextWindow === '' || form.value.contextWindow == null || !Number.isFinite(Number(form.value.contextWindow))
+        ? undefined
+        : Number(form.value.contextWindow),
     // P0-2: 推理强度支持三态 + Profile 级默认档位（空串 = 不设置）
     reasoningSupport: form.value.reasoningSupport,
     reasoningEffort: form.value.reasoningEffort === '' ? null : form.value.reasoningEffort,
@@ -946,6 +981,38 @@ watch(
       <p v-else class="preset-hint">{{ t('preset.customHint') }}</p>
     </section>
 
+    <!-- 心理活动（旁白段）的人称视角。它只改**注入给模型的叙事规则**，
+         不回写历史消息：切换后下一条回复用新视角，之前生成的仍是旧视角。 -->
+    <section class="settings-section" aria-labelledby="narrative-title">
+      <header class="section-header">
+        <h2 id="narrative-title" class="section-title">
+          <Icon name="palette" :size="16" />
+          <span>{{ t('narrative.title') }}</span>
+        </h2>
+      </header>
+      <p class="preset-hint">{{ t('narrative.hint') }}</p>
+      <!-- 样式复用上面「创作模式」那一组：同一个面板里"全局多选一"就该长一个样，
+           不为这一节另造一套 fieldset/radio 的 CSS -->
+      <fieldset class="preset-fieldset">
+        <legend class="preset-legend">{{ t('narrative.label') }}</legend>
+        <label v-for="opt in narrativeOptions" :key="opt.id" class="preset-option">
+          <input
+            type="radio"
+            name="narrative-perspective"
+            class="preset-radio"
+            :value="opt.id"
+            :checked="settings.narrationPerspective === opt.id"
+            :aria-label="t(opt.labelKey)"
+            @change="onNarrativeChange(opt.id)"
+          />
+          <span class="preset-option-body">
+            <span class="preset-option-label">{{ t(opt.labelKey) }}</span>
+            <span class="preset-option-desc">{{ t(opt.descKey) }}</span>
+          </span>
+        </label>
+      </fieldset>
+    </section>
+
     <Modal
       v-model="editModalOpen"
       :title="editMode === 'create' ? t('modelPanel.createTitle') : t('modelPanel.editTitle')"
@@ -1086,25 +1153,39 @@ watch(
         </div>
 
         <div class="form-field">
-          <label for="p-maxtok" class="field-label">{{ t('modelPanel.maxTokensLabel') }}</label>
+          <label for="p-ctxwin" class="field-label">{{ t('modelPanel.contextWindowLabel') }}</label>
           <input
-            id="p-maxtok"
-            v-model.number="form.maxTokens"
+            id="p-ctxwin"
+            v-model="form.contextWindow"
             type="number"
-            min="1"
-            max="32768"
-            step="1"
+            min="1024"
+            step="1024"
             class="field-input"
-            :class="{ 'has-error': errors.maxTokens }"
-            :aria-invalid="!!errors.maxTokens"
-            :aria-describedby="errors.maxTokens ? 'err-maxtok' : undefined"
-            :placeholder="t('modelPanel.maxTokensPlaceholder')"
+            :class="{ 'has-error': errors.contextWindow }"
+            :aria-invalid="!!errors.contextWindow"
+            :aria-describedby="errors.contextWindow ? 'err-ctxwin' : undefined"
+            :placeholder="t('modelPanel.contextWindowPlaceholder')"
           />
-          <p v-if="errors.maxTokens" id="err-maxtok" class="field-error" role="alert">
+          <p v-if="errors.contextWindow" id="err-ctxwin" class="field-error" role="alert">
             <Icon name="alert-triangle" :size="12" />
-            <span>{{ errors.maxTokens }}</span>
+            <span>{{ errors.contextWindow }}</span>
           </p>
-          <p class="field-hint">{{ t('modelPanel.maxTokensHint') }}</p>
+          <div class="ctx-presets" role="group" :aria-label="t('modelPanel.contextWindowPresetsAria')">
+            <button
+              v-for="p in CONTEXT_PRESETS"
+              :key="p"
+              type="button"
+              class="action-btn"
+              :class="{ activate: Number(form.contextWindow) === p }"
+              @click="form.contextWindow = p"
+            >
+              {{ formatK(p) }}
+            </button>
+            <button type="button" class="action-btn" @click="form.contextWindow = ''">
+              {{ t('modelPanel.contextWindowClear') }}
+            </button>
+          </div>
+          <p class="field-hint">{{ t('modelPanel.contextWindowHint') }}</p>
         </div>
 
         <!-- P0-2：推理强度支持（三态，纠正启发式误判） -->
@@ -1505,6 +1586,13 @@ watch(
   font-size: 11px;
   color: var(--muted-foreground);
   margin: 0;
+}
+
+.ctx-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .data-mgmt-btn {

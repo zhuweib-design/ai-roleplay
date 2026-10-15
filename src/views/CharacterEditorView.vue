@@ -4,7 +4,7 @@
  *
  * 功能：
  * - 路由参数 :id 存在时为编辑模式（加载现有角色），否则为新建模式
- * - 表单字段：名称、头像（gradient/image URL）、描述、标签、模型、温度、maxTokens、作者笔记、作者深度
+ * - 表单字段：名称、头像（gradient/image URL）、描述、标签、模型、温度、作者笔记、作者深度
  * - 实时预览：右侧显示 Avatar + 名称 + 描述
  * - 表单验证：名称必填
  * - 操作：保存 / 取消 / 删除（编辑模式，带确认 Modal） / 导出 V2（编辑模式）
@@ -62,6 +62,16 @@ const unboundWorldBooks = computed(() => {
 /** 绑定选择框的当前值 */
 const selectedBindId = ref('');
 
+/**
+ * 新建态的待绑定清单：以前整个"世界书绑定"区在 `v-if="isEditMode"` 里，
+ * 而新建角色恰恰是最需要选世界的时刻 —— 于是新角色一律零绑定地出生，
+ * 用户要退出去编辑页再绑一次。这里改成创建成功后一次性绑上。
+ */
+const pendingWorldBookIds = ref<string[]>([]);
+
+/** 新建态勾选清单（全部世界书） */
+const allWorldBooks = computed(() => lorebookStore.lorebooks);
+
 /** 绑定选中的世界书到当前角色 */
 function bindSelectedWorldBook(): void {
   if (!props.id || !selectedBindId.value) return;
@@ -99,8 +109,6 @@ interface FormState {
   model: string;
   profileId: string | null;
   temperature: number;
-  /** T-16：null = 未设置（回落 Profile 级 → 供应商默认），绝不用 0 表示 */
-  maxTokens: number | null;
   authorNote: string;
   authorDepth: number;
   favorite: boolean;
@@ -127,7 +135,6 @@ const emptyForm = (): FormState => ({
   model: 'GPT-4o',
   profileId: null,
   temperature: 1.0,
-  maxTokens: null,
   authorNote: '',
   authorDepth: 4,
   favorite: false,
@@ -171,13 +178,6 @@ const errors = computed<Record<string, string>>(() => {
   }
   if (form.value.temperature < 0 || form.value.temperature > 2) {
     e.temperature = t('charEdit.tempRange');
-  }
-  // T-16：留空（null）= 未设置，合法；仅填写时才校验范围
-  if (
-    form.value.maxTokens !== null &&
-    (form.value.maxTokens < 1 || form.value.maxTokens > 32768)
-  ) {
-    e.maxTokens = t('charEdit.maxTokensRange');
   }
   if (form.value.authorDepth < 0 || form.value.authorDepth > 50) {
     e.authorDepth = t('charEdit.depthRange');
@@ -242,10 +242,6 @@ function loadCharacter(c: UICharacter) {
     model: c.model,
     profileId: c.profileId ?? null,
     temperature: c.temperature,
-    maxTokens:
-      typeof c.maxTokens === 'number' && Number.isFinite(c.maxTokens) && c.maxTokens > 0
-        ? c.maxTokens
-        : null,
     authorNote: c.authorNote,
     authorDepth: c.authorDepth,
     favorite: c.favorite,
@@ -321,7 +317,6 @@ const previewCharacter = computed<UICharacter>(() => ({
   authorNote: form.value.authorNote,
   authorDepth: form.value.authorDepth,
   temperature: form.value.temperature,
-  maxTokens: form.value.maxTokens ?? undefined,
   worldEntries: [],
   tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
   // F01.6 角色属性预览
@@ -469,21 +464,6 @@ function removeStat(index: number): void {
   form.value.stats.splice(index, 1);
 }
 
-/**
- * T-16：maxTokens 输入（空串 = 清空 = 未设置，回落 Profile 级）
- *
- * 不用 `v-model.number`：空输入会被解析为 NaN，无法区分"未设置"与"填错了"。
- */
-function onMaxTokensInput(e: Event): void {
-  const raw = (e.target as HTMLInputElement).value.trim();
-  if (raw === '') {
-    form.value.maxTokens = null;
-    return;
-  }
-  const v = Number(raw);
-  form.value.maxTokens = Number.isFinite(v) ? v : null;
-}
-
 function buildPatch(): Partial<UICharacter> {
   const attributes = buildAttributes();
   return {
@@ -500,8 +480,6 @@ function buildPatch(): Partial<UICharacter> {
     model: form.value.model,
     profileId: form.value.profileId,
     temperature: form.value.temperature,
-    // T-16：null = 未设置 → undefined（回落 Profile 级），与 personality/scenario 同款
-    maxTokens: form.value.maxTokens ?? undefined,
     authorNote: form.value.authorNote,
     authorDepth: form.value.authorDepth,
     favorite: form.value.favorite,
@@ -527,7 +505,13 @@ function handleSave() {
     // 新建：先 createCharacter 再 updateCharacter
     const newId = characterStore.createCharacter();
     characterStore.updateCharacter(newId, buildPatch());
-    showToast('success', t('charEdit.created'));
+    const bound = pendingWorldBookIds.value.filter((id) =>
+      characterStore.bindWorldBook(newId, id)
+    ).length;
+    showToast(
+      'success',
+      bound > 0 ? t('charEdit.createdWithWorlds', { count: bound }) : t('charEdit.created')
+    );
     setTimeout(() => void router.replace({ name: 'character-list' }), 600);
   }
 }
@@ -551,7 +535,7 @@ function confirmLeaveEditor() {
 // ── 导出 V2 ──
 function handleExport() {
   if (!props.id) return;
-  characterStore.downloadV2(props.id);
+  void characterStore.downloadV2(props.id);
 }
 </script>
 
@@ -954,29 +938,7 @@ function handleExport() {
             </template>
           </FormField>
 
-          <FormField
-            label-key="charEdit.maxTokensLabel"
-            html-for="f-maxtok"
-            hint-key="charEdit.maxTokensHint"
-            :error-text="errors.maxTokens"
-          >
-            <template #default="{ describedBy, invalid }">
-              <input
-                id="f-maxtok"
-                :value="form.maxTokens ?? ''"
-                type="number"
-                min="1"
-                max="32768"
-                step="1"
-                class="field-input"
-                :class="{ 'has-error': invalid }"
-                :placeholder="t('charEdit.maxTokensPlaceholder')"
-                :aria-invalid="invalid"
-                :aria-describedby="describedBy"
-                @input="onMaxTokensInput"
-              />
-            </template>
-          </FormField>
+          <!-- 输出上限不再是角色级旋钮：由"模型最大上下文 − 预留 − 输入"自动推导 -->
         </fieldset>
 
         <!-- F01.6 角色属性 -->
@@ -1177,12 +1139,28 @@ function handleExport() {
         </fieldset>
 
         <!-- 需求7：世界书绑定（仅编辑模式） -->
-        <fieldset v-if="isEditMode" class="form-section">
+        <fieldset class="form-section">
           <legend class="section-title">{{ t('charEdit.wbTitle') }}</legend>
           <p class="field-hint">
-            {{ t('charEdit.wbHint') }}
+            {{ isEditMode ? t('charEdit.wbHint') : t('charEdit.wbCreateHint') }}
           </p>
 
+          <!-- 新建态：勾选项在角色创建成功的那一刻一次性绑上 -->
+          <div
+            v-if="!isEditMode"
+            class="wb-pick-list"
+            role="group"
+            :aria-label="t('charEdit.wbPickAria')"
+          >
+            <label v-for="lb in allWorldBooks" :key="lb.id" class="wb-pick-item">
+              <input v-model="pendingWorldBookIds" type="checkbox" :value="lb.id" />
+              <Icon name="book-open" :size="14" aria-hidden="true" />
+              <span class="wb-bind-name">{{ lb.name }}</span>
+              <span class="wb-bind-meta">{{ t('charEdit.wbEntryCount', { count: lb.entries.length }) }}</span>
+            </label>
+            <p v-if="!allWorldBooks.length" class="wb-bind-empty">{{ t('charEdit.wbNoWorldBook') }}</p>
+          </div>
+          <template v-else>
           <!-- 已绑定的世界书列表 -->
           <div v-if="boundWorldBooks.length" class="wb-bind-list" role="list" :aria-label="t('charEdit.wbBoundAria')">
             <div
@@ -1240,6 +1218,7 @@ function handleExport() {
           <p v-else-if="boundWorldBooks.length" class="field-hint">
             {{ t('charEdit.wbAllBound') }}
           </p>
+          </template>
         </fieldset>
 
         <!-- L 层：角色关联（只读 core/relations.ts，编辑模式下才有确定的角色身份） -->
@@ -1280,10 +1259,6 @@ function handleExport() {
             <div class="meta-row">
               <dt>{{ t('charEdit.previewTemp') }}</dt>
               <dd>{{ previewCharacter.temperature.toFixed(2) }}</dd>
-            </div>
-            <div class="meta-row">
-              <dt>{{ t('charEdit.previewMaxTokens') }}</dt>
-              <dd>{{ previewCharacter.maxTokens ?? t('charEdit.maxTokensUnset') }}</dd>
             </div>
             <div class="meta-row">
               <dt>{{ t('charEdit.previewDepth') }}</dt>
@@ -2174,6 +2149,31 @@ function handleExport() {
   flex-direction: column;
   gap: 8px;
   margin: 12px 0;
+}
+
+/* 新建态的世界书勾选清单（创建成功后一次性绑定） */
+.wb-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.wb-pick-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.wb-pick-item input {
+  /* 勾选框本身要够大才好点（手指端） */
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .wb-bind-item {

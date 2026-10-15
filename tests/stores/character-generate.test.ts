@@ -36,6 +36,9 @@ vi.mock('@/stores/settings', () => ({
       apiKey: 'test-key',
       model: 'gpt-4o',
     },
+    // 输出预算由这两项推导（模型最大上下文 / 为回复预留）
+    maxContextTokens: 8192,
+    reservedTokens: 1024,
   }),
 }));
 
@@ -128,7 +131,7 @@ describe('角色随机生成 store action (F01.7)', () => {
     expect(store.isGeneratingCharacter).toBe(false);
   });
 
-  it('API 调用使用正确的参数（温度 1.0、maxTokens 1500）', async () => {
+  it('API 调用使用正确的参数（温度 1.0；输出预算由上下文推导，不再写死 1500）', async () => {
     mockChat.mockResolvedValue(makeValidResponse());
     const store = useCharacterStore();
 
@@ -137,7 +140,9 @@ describe('角色随机生成 store action (F01.7)', () => {
     expect(mockChat).toHaveBeenCalledTimes(1);
     const request = mockChat.mock.calls[0]![0];
     expect(request.temperature).toBe(1.0);
-    expect(request.maxTokens).toBe(1500);
+    // 旧实现写死 1500；现在 = 8192 − 1024 − 输入，必然高于它
+    expect(request.maxTokens).toBeGreaterThan(1500);
+    expect(request.maxTokens).toBeLessThanOrEqual(8192 - 1024);
     expect(request.model).toBe('gpt-4o');
     expect(request.messages).toHaveLength(2);
   });
@@ -182,44 +187,19 @@ describe('角色随机生成 store action (F01.7)', () => {
   });
 
   /**
-   * T-16：新建角色不得写死 maxTokens
+   * 防漂移：角色不再是"输出上限"的载体
    *
-   * 角色级一旦携带显式值，就会无条件覆盖 Profile 级配置（历史死代码）。
-   * `createCharacter` 与 `generateRandomCharacter` 是两条**独立**的新建路径，
-   * 必须同时满足，缺一条就等于死代码在该路径上没修掉。
+   * 口径（2026-10-14 用户定）：模型只配一个最大上下文，输出预算自动推导；
+   * 角色级/Profile 级的输出上限旋钮都已移除。这条拦住"下一个人把写死的数字加回来"。
    */
-  it('T-16：generateRandomCharacter 生成的角色 maxTokens 未设置（回落 Profile 级）', async () => {
-    mockChat.mockResolvedValue(makeValidResponse());
-    const store = useCharacterStore();
-
-    const id = await store.generateRandomCharacter('fantasy');
-    const generated = store.characters.find((c) => c.id === id);
-
-    expect(generated).toBeDefined();
-    expect(generated!.maxTokens).toBeUndefined();
-    expect(Object.prototype.hasOwnProperty.call(generated!, 'maxTokens')).toBe(false);
-  });
-
-  it('T-16：createCharacter 新建的角色 maxTokens 同样未设置（两条路径一致）', () => {
-    const store = useCharacterStore();
-
-    const id = store.createCharacter();
-    const created = store.characters.find((c) => c.id === id);
-
-    expect(created).toBeDefined();
-    expect(created!.maxTokens).toBeUndefined();
-  });
-
-  it('T-16 防漂移：character store 内不再有任何角色级 maxTokens 硬编码', () => {
+  it('防漂移：character store 里不得再出现写死的输出上限（只允许用推导出来的预算）', () => {
     const ROOT = resolve(__dirname, '../..');
     const src = readFileSync(resolve(ROOT, 'src/stores/character.ts'), 'utf8');
 
-    // 历史魔法数字不得复活
-    expect(src).not.toContain('maxTokens: 4096');
-    // 全文件只剩 1 处 maxTokens —— 生成角色时的**API 调用参数**（1500），不是角色字段
-    const hits = [...src.matchAll(/maxTokens:/g)];
-    expect(hits.length).toBe(1);
-    expect(src).toContain('maxTokens: 1500');
+    // 不许写死数字（maxTokens: 1500 / 4096 / 2048 …）
+    expect(src).not.toMatch(/maxTokens:\s*\d+/);
+    // 只能用 token-budget 推导出来的预算
+    expect(src).toContain('maxTokens: prepared.maxTokens');
   });
 
   it('生成成功后设置 lastInfo', async () => {

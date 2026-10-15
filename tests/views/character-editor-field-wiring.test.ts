@@ -38,13 +38,47 @@ beforeEach(() => {
   document.body.innerHTML = '';
 });
 
+describe('新建角色时的世界书绑定区（OPT_PLAN 专项 B 第二条）', () => {
+  async function mountCreateFull() {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/character', name: 'character-list', component: { template: '<div />' } },
+        { path: '/character/:id/edit', name: 'character-edit', component: { template: '<div />' } },
+        { path: '/chat', name: 'chat', component: { template: '<div />' } },
+        { path: '/worldbook', name: 'worldbook', component: { template: '<div />' } },
+      ],
+    });
+    await router.push('/character/new');
+    await router.isReady();
+    const wrapper = mount(CharacterEditorView, {
+      global: { plugins: [router], stubs: { Modal: true, Toast: true } },
+      attachTo: document.body,
+    });
+    // 新建默认走"快速建档"，完整表单（含世界书区）要切一下 tab 才出现
+    await wrapper.find('[data-rel-jump="char-create-full"]').trigger('click');
+    await wrapper.vm.$nextTick();
+    return wrapper;
+  }
+
+  it('完整创建表单里有"世界书绑定"这一节，且给的是勾选清单而不是编辑态的绑定下拉', async () => {
+    const wrapper = await mountCreateFull();
+    const titles = wrapper.findAll('.section-title').map((n) => n.text());
+    expect(titles).toContain(t('charEdit.wbTitle'));
+    // 旧写法整块是 v-if="isEditMode" ⇒ 新建时这一节根本不存在
+    expect(wrapper.find('.wb-pick-list').exists()).toBe(true);
+    expect(wrapper.find('.wb-add-bind').exists()).toBe(false);
+  });
+});
+
 describe('角色编辑器字段接线', () => {
   it('每条字段说明都被某个控件的 aria-describedby 指到', async () => {
     const wrapper = await mountEditor();
     const hints = wrapper.findAll('.form-field-hint');
 
-    // 默认编辑态下这批块里的说明条数（M6-f 把温度/最大 Tokens/作者深度也接了进来）
-    expect(hints.length).toBeGreaterThanOrEqual(8);
+    // 默认编辑态下这批块里的说明条数（M6-f 把温度/作者深度接了进来；
+    // 2026-10-14 撤掉"最大 Tokens"字段后由 8 降到 7）
+    expect(hints.length).toBeGreaterThanOrEqual(7);
     const described = new Set(
       wrapper
         .findAll('[aria-describedby]')

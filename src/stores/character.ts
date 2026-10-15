@@ -16,6 +16,8 @@ import {
   validateCharacterCard,
 } from '../core/character-card';
 import { useSettingsStore } from './settings';
+import { saveBlob } from '@/utils/save-blob';
+import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
 import { isCompact } from '@/core/viewport';
 import { createApiClient } from '../api';
 import {
@@ -513,23 +515,18 @@ export const useCharacterStore = defineStore('character', () => {
   }
 
   /**
-   * 触发浏览器下载 V2 卡 JSON
+   * 导出 V2 卡 JSON 给用户存盘
+   *
+   * @returns true 表示真的存下了；false = 找不到 / 用户在系统保存面板取消（都不得报"已导出"）
    */
-  function downloadV2(id: string): boolean {
+  async function downloadV2(id: string): Promise<boolean> {
     const json = exportV2(id);
     if (json === null) return false;
 
     const char = characters.value.find((c) => c.id === id);
     const safeName = (char?.name ?? 'character').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${safeName}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const outcome = await saveBlob(`${safeName}.json`, () => new Blob([json], { type: 'application/json' }));
+    if (outcome === 'cancelled') return false;
     lastInfo.value = t('char.exported2', { name: safeName });
     return true;
   }
@@ -571,20 +568,26 @@ export const useCharacterStore = defineStore('character', () => {
       return null;
     }
 
-    // 2. 创建 API client + 构建 Prompt
+    // 2. 创建 API client
     const apiClient = createApiClient(profile);
     const seed = generateSeed();
-    const messages = buildGenerationMessages(templateId, seed, sourceContext);
 
+    // 先立"生成中"标志，再做异步准备 —— 否则连点两次会在准备期间双双通过防重入检查
     isGeneratingCharacter.value = true;
 
     try {
-      // 3. 调用 API（非流式，温度 1.0 增加创意）
+      // 3. 构建 Prompt（输出预算由模型上下文推导，源素材超预算自动截断）并调用 API
+      const prepared = await prepareGenerationPrompt(
+        (src) => buildGenerationMessages(templateId, seed, src),
+        sourceContext,
+        resolveContextWindow(profile, settingsStore.maxContextTokens),
+        settingsStore.reservedTokens
+      );
       const raw = await apiClient.chat({
-        messages,
+        messages: prepared.messages,
         model: profile.model,
         temperature: 1.0,
-        maxTokens: 1500,
+        maxTokens: prepared.maxTokens,
       });
 
       // 4. 解析返回

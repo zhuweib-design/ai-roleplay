@@ -222,7 +222,7 @@ test.describe('随机事件注入回显（E11）', () => {
 
     // ── 第一轮：生成事件（本轮提示词里还没有它，所以本轮**不该**有回显）──
     await send(page, '今晚酒馆开门吗');
-    const first = page.locator('.msg-bubble.msg-assistant').last();
+    const first = page.locator('.msg-turn').last();
     await expect(first).toContainText('你好，旅人！', { timeout: 15_000 });
     await expect(first.locator('.event-trace-toggle')).toHaveCount(0);
 
@@ -235,7 +235,7 @@ test.describe('随机事件注入回显（E11）', () => {
     // ── 第二轮：事件被注入，回显出现 ──
     await goRail(page, '对话');
     await send(page, '再给我一杯');
-    const second = page.locator('.msg-bubble.msg-assistant').last();
+    const second = page.locator('.msg-turn').last();
     await expect(second).toContainText('你好，旅人！', { timeout: 15_000 });
 
     const toggle = second.locator('.event-trace-toggle');
@@ -292,7 +292,7 @@ test.describe('随机事件注入回显（E11）', () => {
       .toBe(true);
 
     await page.reload();
-    const restored = page.locator('.msg-bubble.msg-assistant').last();
+    const restored = page.locator('.msg-turn').last();
     await expect(restored).toContainText('你好，旅人！', { timeout: 15_000 });
     const persisted = restored.locator('.event-trace-toggle');
     await expect(persisted).toBeVisible();

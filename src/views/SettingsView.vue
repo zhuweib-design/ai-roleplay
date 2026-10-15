@@ -10,8 +10,9 @@ import { showToast } from '@/utils/toast-service';
 import { t } from '@/i18n';;
 import { useSettingsStore } from '@/stores/settings';
 
+/** 与模型面板「最大上下文」同一组常用档位（K=1024；1M = 1048576） */
 const CONTEXT_PRESETS: readonly number[] = [
-  4096, 8192, 16384, 32768, 65536, 131072, 262144,
+  32768, 65536, 131072, 278528, 409600, 614400, 1048576,
 ] as const;
 
 interface SettingsCategory {
@@ -67,9 +68,13 @@ const contextBudget = computed(() => settings.availableContextTokens);
 
 const contextLengthError = ref<string | null>(null);
 
+/** 按 1024 进制显示（32768 → 32K、1048576 → 1M），与档位值本身的进制一致 */
 function formatTokenCount(n: number): string {
-  if (n < 1000) return String(n);
-  const k = n / 1000;
+  if (n >= 1024 * 1024) {
+    const m = n / (1024 * 1024);
+    return `${Number.isInteger(m) ? m : m.toFixed(1)}M`;
+  }
+  const k = n / 1024;
   return `${Number.isInteger(k) ? k : k.toFixed(1)}K`;
 }
 

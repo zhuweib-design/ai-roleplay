@@ -58,11 +58,18 @@
 
   .msg-bubble { max-width: min(88%, 40em) !important; }
 
-  .chat-footer { padding: 8px 12px 12px; }
-  .chat-composer { padding: 10px 10px 8px; border-radius: var(--radius-lg); }
-  .chat-input { font-size: 16px; min-height: 48px; max-height: 160px; }
+  /* 输入条：横向留白收紧 + 触屏安全区；高度上下限只在 layout.css 的 .chat-input 里写一次 */
+  .chat-footer {
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  .chat-composer { border-radius: var(--radius-lg); }
+  /* 16px 是 iOS 聚焦不放大页面的下限（I-7 守卫拦），不可降 */
+  .chat-input { font-size: 16px; min-height: 38px; }
   .composer-btn { width: 30px; height: 30px; }
-  .send-btn-primary { width: 30px; height: 30px; }
+  /* 发送键是这一屏最高频的点击目标，触屏下给到 36（行高 38 之内，不额外撑高输入条） */
+  .send-btn-primary { width: 36px; height: 36px; }
   .model-badge { display: none !important; }
   .chat-token { display: none; }
 

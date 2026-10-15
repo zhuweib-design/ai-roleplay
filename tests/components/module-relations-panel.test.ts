@@ -46,7 +46,6 @@ function seedCharacter(): void {
     authorNote: '',
     authorDepth: 4,
     temperature: 0.7,
-    maxTokens: 2048,
     worldEntries: [],
   } as never);
 }

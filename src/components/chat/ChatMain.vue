@@ -10,11 +10,14 @@ import ChatModeSwitch from '@/components/chat/ChatModeSwitch.vue';
 import { uiMsgsToChatMsgs } from '@/services/type-adapters';
 import { getWorldUserDisplayName } from '@/stores/chat-context';
 import { resolveLatestStatus } from '@core/status-parser';
+import { stripNarrationMarkers } from '@core/narration';
 import { downloadChatMarkdown } from '@/services/backup-service';
 import type { Chat } from '@/storage/types';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import MessageBubble from './MessageBubble.vue';
+import MessageActionSheet from './MessageActionSheet.vue';
+import { assistantMsgActions } from './message-actions';
 import StatusHud from './StatusHud.vue';
 import Toast from '@/components/common/Toast.vue';
 import Modal from '@/components/common/Modal.vue';
@@ -40,7 +43,8 @@ const settings = useSettingsStore();
 // F16.4 故事时间（用于顶栏显示）
 const storyStore = useStoryStore();
 // I-1：aria-expanded 随视口反映正确的面板状态（桌面 panelExpanded / 移动平板 contextDrawerOpen）
-const { isCompact } = useViewport();
+// isCoarsePointer：手指端（软键盘没有 Shift 键），Enter 让位给换行、发送靠按钮
+const { isCompact, isCoarsePointer } = useViewport();
 
 // I-14：承接 ChatView 传入的 inert，仅作用于聊天内容区与输入区，
 // 顶栏的 panel-toggle-btn 保持可交互（打开上下文面板后仍能二次点击关闭）
@@ -477,13 +481,17 @@ watch(
 );
 
 // ── 输入区 ──
+/**
+ * 高度自适应：JS 只负责把 height 交回内容高度，上下限全部由 CSS 的
+ * min-height / max-height 夹取（layout.css 的 .chat-input）。
+ * 旧实现在这里另写死 56/200，与 ≤640 档 CSS 的 48/160 是两套数、互相压制，
+ * 表现是"手机上永远长不过 160，但 JS 一直以为自己给到了 200"。
+ */
 function adjustHeight() {
   const el = textarea.value;
   if (!el) return;
   el.style.height = 'auto';
-  const minH = 56;
-  const maxH = 200;
-  el.style.height = `${Math.max(minH, Math.min(el.scrollHeight, maxH))}px`;
+  el.style.height = `${Math.ceil(el.scrollHeight)}px`;
 }
 
 function handleSend() {
@@ -503,12 +511,14 @@ function handleSend() {
 }
 
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    // I-6：IME 组词中（中文拼音/日文假名/韩文）按回车不发送；组词完成后再按回车正常发送
-    if (e.isComposing || e.keyCode === 229) return;
-    e.preventDefault();
-    handleSend();
-  }
+  if (e.key !== 'Enter' || e.shiftKey) return;
+  // 手指端：软键盘的 Enter 用于换行，发送靠输入区右侧那颗按钮（它已在右、且常驻可见）。
+  // 桌面端维持既有约定：Enter 发送、Shift+Enter 换行。
+  if (isCoarsePointer.value) return;
+  // I-6：IME 组词中（中文拼音/日文假名/韩文）按回车不发送；组词完成后再按回车正常发送
+  if (e.isComposing || e.keyCode === 229) return;
+  e.preventDefault();
+  handleSend();
 }
 
 function handleStop() {
@@ -571,7 +581,7 @@ function handleMessageAction(msgId: string, action: string) {
       // F12.2 TTS 朗读
       const msg = char.value.messages.find((m) => m.id === msgId);
       if (msg) {
-        speakMessage(msg.content);
+        speakMessage(stripNarrationMarkers(msg.content));
       }
       break;
     }
@@ -584,6 +594,28 @@ function handleMessageAction(msgId: string, action: string) {
       break;
     }
   }
+}
+
+// ── 长按动作条：触屏没有 hover，操作入口改成长按唤起 ──
+const actionSheetMsgId = ref<string | null>(null);
+const sheetActions = assistantMsgActions();
+
+function handleMessageLongPress(msgId: string) {
+  actionSheetMsgId.value = msgId;
+}
+
+function closeActionSheet() {
+  const id = actionSheetMsgId.value;
+  actionSheetMsgId.value = null;
+  if (!id) return;
+  // 关闭后把焦点交还这条消息，键盘用户不必从列表头再 Tab 一遍
+  document.querySelector<HTMLElement>(`.msg-wrap[data-message-id="${CSS.escape(id)}"]`)?.focus();
+}
+
+function handleSheetAction(key: string) {
+  const id = actionSheetMsgId.value;
+  closeActionSheet();
+  if (id) handleMessageAction(id, key);
 }
 
 // ── P1-3：消息编辑 Modal（替代原生 prompt） ──
@@ -667,7 +699,7 @@ async function translateMessage(msg: { id: string; content: string }) {
     return;
   }
   try {
-    const result = await translateText(msg.content, config);
+    const result = await translateText(stripNarrationMarkers(msg.content), config);
     // 将翻译结果存到 messageTranslation 映射
     messageTranslations.value[msg.id] = result.translatedText;
     toastMessage.value = t('chat.translateDone');
@@ -939,6 +971,7 @@ function startWithExample(text: string) {
           v-memo="[msg.content, msg.thinking, msg.reasoningTokens, msg.status, msg.generating, msg.narration, msg.narrationAfter, msg.promptTrace, msg.eventTrace, highlightedMessageId === msg.id]"
           :msg="msg"
           @action="handleMessageAction"
+          @longpress="handleMessageLongPress"
           :ref="(el) => cacheMsgHeight(el, msg.id)"
         />
         <!-- P2-11 底部占位(已回收的更晚消息高度) -->
@@ -1025,13 +1058,13 @@ function startWithExample(text: string) {
           id="chat-input"
           ref="textarea"
           class="chat-input"
-          :placeholder="t('chat.inputPlaceholder')"
+          :placeholder="t(isCoarsePointer ? 'chat.inputPlaceholderTouch' : 'chat.inputPlaceholder')"
           rows="1"
           aria-describedby="chat-input-hint"
           @input="adjustHeight"
           @keydown="handleKeydown"
         />
-        <span id="chat-input-hint" class="sr-only">{{ t('chat.inputHint') }}</span>
+        <span id="chat-input-hint" class="sr-only">{{ t(isCoarsePointer ? 'chat.inputHintTouch' : 'chat.inputHint') }}</span>
         <div class="composer-toolbar">
           <button
             type="button"
@@ -1044,6 +1077,14 @@ function startWithExample(text: string) {
         </div>
       </div>
     </footer>
+
+    <!-- 长按消息唤起的动作条（触屏没有 hover，这是那排小按钮的替代入口；内部 Teleport 到 body） -->
+    <MessageActionSheet
+      :open="actionSheetMsgId !== null"
+      :actions="sheetActions"
+      @action="handleSheetAction"
+      @close="closeActionSheet"
+    />
 
     <!-- F12.2/F12.3 Toast 反馈 -->
     <Toast

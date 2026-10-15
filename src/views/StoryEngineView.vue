@@ -500,12 +500,13 @@ function closeImportModal() {
   importModalOpen.value = false;
 }
 
-function handleImport() {
+async function handleImport() {
   if (!importTargetStoryId.value) return;
   const storyId = importTargetStoryId.value;
 
   if (importCategory.value === 'scripts') {
-    store.exportScripts(storyId);
+    await store.exportScripts(storyId);
+    // 用户在系统保存面板里取消 ⇒ lastInfo 不会被写，这里也不会弹"已导出"
     if (store.lastInfo) showToast('success', store.lastInfo);
     closeImportModal();
     return;

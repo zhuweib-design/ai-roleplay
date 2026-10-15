@@ -28,6 +28,13 @@ export default [
       //  dist-lib-eval* / coverage-ci 等逐条规则一并收敛为本条，见 MIGRATION_LOG.md）
       'artifacts/**',
       'src-tauri/target/**',
+      // 与上一条同族：安卓壳的原生产物，两处都是生成物且已被 android/.gitignore 忽略
+      // （CI 看不到，本地出过一次 APK / cap sync 之后 `eslint .` 会多出九千余条）：
+      //   android/**\/build/            gradle 中间产物（含 Capacitor 的 native-bridge.js）
+      //   android/app/src/main/assets/  `cap sync` 拷进去的前端压缩包与 vendor 产物
+      // 手写的那一个 MainActivity.java 不是 JS，不受影响，故不整体放过 android/。
+      'android/**/build/**',
+      'android/app/src/main/assets/**',
       '.workbuddy/**',
       '.workbuddy-ai/**',
       'out/**',

@@ -28,6 +28,7 @@ import { buildGroupHistory, buildGroupSystemPrompt } from '@/services/group-chat
 import { recordGroupObservation } from '@/services/group-chat-runtime';
 import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';
+import { parseNarrationSegments } from '@/core/narration';
 import Icon from '@/components/common/Icon.vue';
 import ChatModeSwitch from '@/components/chat/ChatModeSwitch.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
@@ -460,6 +461,12 @@ async function handleStImport(e: Event) {
 }
 
 // ── 成员管理 ──
+function handleExportGroupSt() {
+  const groupId = currentGroup.value?.id;
+  if (!groupId) return;
+  void groupStore.downloadGroupSt(groupId);
+}
+
 function openAddMemberModal() {
   if (!currentGroup.value) return;
   if (currentGroup.value.members.length >= 8) {
@@ -742,8 +749,10 @@ async function generateGroupReply(
     const manager = new ChatManager({
       apiClient: createApiClient(profile),
       model: profile.model,
-      maxTokens: profile.maxTokens,
       systemPrompt: buildGroupSystemPrompt(group, speaker),
+      // 旁白人称：群聊已接同一套分段渲染（见 segmentsOf 与 .msg-psy），所以这里照常注入；
+      // 规则文本由 buildPrompt 追加，不在 buildGroupSystemPrompt 里另写一份
+      narrationPerspective: settingsStore.narrationPerspective,
     });
     activeGroupManager = manager;
     const reply = await manager.sendMessage({
@@ -878,6 +887,14 @@ function characterToCard(c: UICharacter): import('@core/character-card').Charact
 
 function memberInitial(name: string): string {
   return name.charAt(0) || '?';
+}
+
+/** 群聊与单聊共用同一套分段解析，避免两处各写一份、行为慢慢分叉 */
+function segmentsOf(content: string) {
+  const parsed = parseNarrationSegments(content);
+  return parsed.some((s) => s.kind === 'speech')
+    ? parsed
+    : [{ kind: 'speech' as const, text: content }];
 }
 
 function messageTime(ts: string): string {
@@ -1085,7 +1102,7 @@ function isSystem(msg: { role: string }): boolean {
                   class="action-btn"
                   :aria-label="t('group.exportStAria')"
                   v-tip="t('group.exportStTitle')"
-                  @click="groupStore.downloadGroupSt(currentGroup.id)"
+                  @click="handleExportGroupSt"
                 >
                   <Icon name="download" :size="14" />
                   <span>{{ t('group.exportSt') }}</span>
@@ -1297,7 +1314,10 @@ type="button"
                   } as UICharacter"
                   :size="32"
                 />
-                <div class="msg-bubble">
+                <!-- 一条回复可能拆成「对白 — 心理 — 对白」：心理段要落在气泡外面，
+                     所以气泡从"整条消息的外壳"降级为"每段对白一个气泡"，
+                     外壳换成 .msg-body（纵向），发言人名/思考/时间挂在外壳上。 -->
+                <div class="msg-body">
                   <div v-if="msg.role === 'assistant'" class="msg-sender">
                     {{ msg.characterName }}
                   </div>
@@ -1306,7 +1326,12 @@ type="button"
                     :thinking="msg.thinking"
                     :message-id="msg.id"
                   />
-                  <div class="msg-content">{{ msg.content }}</div>
+                  <template v-for="(seg, si) in segmentsOf(msg.content)" :key="si">
+                    <div v-if="seg.kind === 'speech'" class="msg-bubble">
+                      <div class="msg-content">{{ seg.text }}</div>
+                    </div>
+                    <p v-else class="msg-psy">{{ seg.text }}</p>
+                  </template>
                   <div class="msg-time">{{ messageTime(msg.timestamp) }}</div>
                 </div>
               </template>
@@ -2367,6 +2392,20 @@ type="button"
   flex-direction: row-reverse;
 }
 
+/* 一条消息的外壳：发言人名、思维链、若干气泡与心理段、时间，纵向排 */
+.msg-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  max-width: 70%;
+}
+
+.msg-user .msg-body {
+  align-items: flex-end;
+}
+
 .msg-user .msg-bubble {
   background: var(--primary);
   color: var(--on-primary);
@@ -2391,10 +2430,23 @@ type="button"
 }
 
 .msg-bubble {
-  max-width: 70%;
+  /* 宽度上限移到 .msg-body 上，气泡自己只吃满外壳（否则多个气泡各按 70% 算会叠出两层留白） */
+  max-width: 100%;
   padding: 8px 12px;
   border-radius: var(--radius-md);
   font-size: 14px;
+  word-wrap: break-word;
+}
+
+/* 心理段：与单聊同一套规格（无底色、左竖线、字号与颜色各降一档） */
+.msg-psy {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in srgb, var(--secondary) 45%, var(--border));
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+  color: var(--muted-foreground);
+  white-space: pre-wrap;
   word-wrap: break-word;
 }
 

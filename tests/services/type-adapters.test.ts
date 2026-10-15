@@ -33,7 +33,6 @@ function makeUIChar(overrides: Partial<UICharacter> = {}): UICharacter {
     authorNote: '保持温柔语调',
     authorDepth: 4,
     temperature: 0.8,
-    maxTokens: 2048,
     worldEntries: [],
     tokenBudget: { character: 100, worldInfo: 50, chatHistory: 200, remaining: 7842 },
     ...overrides,
@@ -227,12 +226,11 @@ describe('type-adapters — cardToUiChar', () => {
     expect(cardToUiChar(makeCard({ name: '' })).initial).toBe('?');
   });
 
-  it('应使用 overrides 中的 model/temperature/maxTokens/worldEntries/tokenBudget/conversations/messages', () => {
+  it('应使用 overrides 中的 model/temperature/worldEntries/tokenBudget/conversations/messages', () => {
     const card = makeCard();
     const overrides: Partial<UICharacter> = {
       model: 'claude-3-5-sonnet',
       temperature: 1.2,
-      maxTokens: 8192,
       conversations: [{ id: 'c1', title: '对话1', updatedAt: '2026-07-10T00:00:00Z' }],
       messages: [makeUIMsg()],
       worldEntries: [{ id: 'w1', name: '世界1', enabled: true }],
@@ -243,7 +241,6 @@ describe('type-adapters — cardToUiChar', () => {
 
     expect(ui.model).toBe('claude-3-5-sonnet');
     expect(ui.temperature).toBe(1.2);
-    expect(ui.maxTokens).toBe(8192);
     expect(ui.conversations).toHaveLength(1);
     expect(ui.messages).toHaveLength(1);
     expect(ui.worldEntries).toHaveLength(1);
@@ -255,8 +252,6 @@ describe('type-adapters — cardToUiChar', () => {
 
     expect(ui.model).toBe('gpt-4o');
     expect(ui.temperature).toBe(1.0);
-    // T-16：maxTokens 不再硬兜底 4096（硬兜底会让 Profile 级配置永不生效）
-    expect(ui.maxTokens).toBeUndefined();
     expect(ui.conversations).toEqual([]);
     expect(ui.messages).toEqual([]);
     expect(ui.worldEntries).toEqual([]);
@@ -300,7 +295,6 @@ describe('type-adapters — 角色卡 round-trip', () => {
     // 候选3：此前丢失的生成/外观/关联字段现在无损
     expect(roundTrip.model).toBe(original.model);
     expect(roundTrip.temperature).toBe(original.temperature);
-    expect(roundTrip.maxTokens).toBe(original.maxTokens);
     expect(roundTrip.avatarType).toBe(original.avatarType);
     expect(roundTrip.storyId).toBe('story-9');
     expect(roundTrip.boundWorldBookIds).toEqual(['wb-1', 'wb-2']);
@@ -382,7 +376,6 @@ describe('type-adapters — 角色卡 round-trip', () => {
     const original = makeUIChar({
       model: 'deepseek-v3',
       temperature: 1.4,
-      maxTokens: 6144,
       avatarType: 'gradient',
       gradientFrom: '#111111',
       gradientTo: '#222222',
@@ -396,7 +389,6 @@ describe('type-adapters — 角色卡 round-trip', () => {
     expect(card.ext).toEqual({
       model: 'deepseek-v3',
       temperature: 1.4,
-      maxTokens: 6144,
       avatarType: 'gradient',
       gradientFrom: '#111111',
       gradientTo: '#222222',
@@ -409,7 +401,6 @@ describe('type-adapters — 角色卡 round-trip', () => {
     const roundTrip = cardToUiChar(card);
     expect(roundTrip.model).toBe('deepseek-v3');
     expect(roundTrip.temperature).toBe(1.4);
-    expect(roundTrip.maxTokens).toBe(6144);
     expect(roundTrip.avatarType).toBe('gradient');
     expect(roundTrip.gradientFrom).toBe('#111111');
     expect(roundTrip.gradientTo).toBe('#222222');
@@ -423,7 +414,6 @@ describe('type-adapters — 角色卡 round-trip', () => {
       avatar: '',
       model: 'legacy-model',
       temperature: 0.3,
-      maxTokens: 1024,
       avatarType: 'gradient',
       gradientFrom: '#333333',
       storyId: 'story-old',
@@ -434,7 +424,6 @@ describe('type-adapters — 角色卡 round-trip', () => {
 
     expect(ui.model).toBe('legacy-model');
     expect(ui.temperature).toBe(0.3);
-    expect(ui.maxTokens).toBe(1024);
     expect(ui.avatarType).toBe('gradient');
     expect(ui.gradientFrom).toBe('#333333');
     expect(ui.storyId).toBe('story-old');
@@ -703,8 +692,6 @@ describe('type-adapters — P0 新字段 round-trip', () => {
     expect(ui.sampling).toBeNull();
     // 既有字段不受影响
     expect(ui.temperature).toBe(1.0);
-    // T-16：旧卡（无 ext）读出来是"未设置"，从而回落 Profile 级
-    expect(ui.maxTokens).toBeUndefined();
   });
 
   it('ext.sampling 含非法值时逐字段丢弃', () => {
@@ -724,50 +711,6 @@ describe('type-adapters — P0 新字段 round-trip', () => {
     });
 
     expect(cardToUiChar(card).reasoningEffort).toBeNull();
-  });
-});
-
-// ── T-16：maxTokens 改为可选（修掉 profile.maxTokens 死代码） ──
-
-describe('type-adapters — T-16 maxTokens 可选语义', () => {
-  it('未设置时不写 ext.maxTokens（undefined = 回落 Profile 级）', () => {
-    const card = uiCharToCard(makeUIChar({ maxTokens: undefined }));
-    expect(card.ext?.maxTokens).toBeUndefined();
-    expect(Object.prototype.hasOwnProperty.call(card.ext ?? {}, 'maxTokens')).toBe(false);
-  });
-
-  it('已设置时写入 ext.maxTokens 并往返无损', () => {
-    const card = uiCharToCard(makeUIChar({ maxTokens: 6144 }));
-    expect(card.ext?.maxTokens).toBe(6144);
-    expect(cardToUiChar(card).maxTokens).toBe(6144);
-  });
-
-  it('非法值（NaN / 0 / 负数 / 字符串）按未设置处理', () => {
-    expect(uiCharToCard(makeUIChar({ maxTokens: Number.NaN })).ext?.maxTokens).toBeUndefined();
-    expect(uiCharToCard(makeUIChar({ maxTokens: 0 })).ext?.maxTokens).toBeUndefined();
-    expect(cardToUiChar(makeCard({ ext: { maxTokens: 0 } })).maxTokens).toBeUndefined();
-    expect(cardToUiChar(makeCard({ ext: { maxTokens: -1 } })).maxTokens).toBeUndefined();
-    const dirty = makeCard({
-      ext: { maxTokens: '4096' } as unknown as CharacterCard['ext'],
-    });
-    expect(cardToUiChar(dirty).maxTokens).toBeUndefined();
-  });
-
-  it('ext 优先于顶层 legacy 回退，两者都没有时为 undefined（不再兜底 4096）', () => {
-    const withExt = makeCard({
-      maxTokens: 1024,
-      ext: { maxTokens: 2048 },
-    } as unknown as Partial<CharacterCard>);
-    expect(cardToUiChar(withExt).maxTokens).toBe(2048);
-
-    const legacyOnly = makeCard({ maxTokens: 1024 } as unknown as Partial<CharacterCard>);
-    expect(cardToUiChar(legacyOnly).maxTokens).toBe(1024);
-
-    expect(cardToUiChar(makeCard()).maxTokens).toBeUndefined();
-  });
-
-  it('overrides.maxTokens 仍能兜底（显式传入时保留）', () => {
-    expect(cardToUiChar(makeCard(), { maxTokens: 8192 }).maxTokens).toBe(8192);
   });
 });
 

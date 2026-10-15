@@ -156,14 +156,12 @@ function toggleFavorite(id: string, e: Event) {
   characterStore.toggleFavorite(id);
 }
 
-function exportCharacter(id: string, e: Event) {
+async function exportCharacter(id: string, e: Event) {
   e.stopPropagation();
   busyCharacterId.value = id;
   try {
-    const ok = characterStore.downloadV2(id);
-    if (!ok) {
-      // 错误已通过 lastError 显示
-    }
+    // false = 找不到（lastError 显示）/ 用户取消保存面板，两种情况都不报成功
+    await characterStore.downloadV2(id);
   } finally {
     busyCharacterId.value = null;
   }

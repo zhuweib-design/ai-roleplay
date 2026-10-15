@@ -29,6 +29,7 @@ import { loadOptimizationConfig, saveOptimizationConfig } from '@/core/optimizat
 import { persistState, requestPersistentStorage } from '@/core/storage-persistence';;
 import { ref, computed, useTemplateRef } from 'vue';;;;
 import { showToast } from '@/utils/toast-service';
+import { saveBlob } from '@/utils/save-blob';
 import { t } from '@/i18n';;
 import { useCharacterStore } from '@/stores/character';
 import { useEventsStore } from '@/stores/events';
@@ -149,18 +150,14 @@ function handleCreateProfile() {
   showToast('success', t('settingsView.profileSwitched', { name }));
 }
 
-function handleExportAuditLog() {
+async function handleExportAuditLog() {
   try {
     const json = auditLogger.exportJson();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const outcome = await saveBlob(`audit-log-${new Date().toISOString().slice(0, 10)}.json`, () =>
+      new Blob([json], { type: 'application/json' })
+    );
+    // 用户在系统保存面板里取消：不能说"审核日志已导出"
+    if (outcome === 'cancelled') return;
     showToast('success', t('settingsView.auditExported'));
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
@@ -262,9 +259,11 @@ async function handleExportChatMarkdown() {
   }
 }
 
-function handleExportQuickReplies() {
+async function handleExportQuickReplies() {
   try {
-    settings.exportQuickRepliesSt();
+    const outcome = await settings.exportQuickRepliesSt();
+    // 用户在系统保存面板里取消：不能说"快捷回复已导出"
+    if (outcome === 'cancelled') return;
     showToast('success', t('settingsView.qrExported'));
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));

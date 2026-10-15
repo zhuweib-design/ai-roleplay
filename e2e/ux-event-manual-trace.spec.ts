@@ -147,13 +147,13 @@ test.describe('世界书手工配置的事件被注入（E11 第二条路径）'
 
     // 负向对照：不含关键词的这一轮不该有回显
     await send(page, '今晚酒馆开门吗');
-    const miss = page.locator('.msg-bubble.msg-assistant').last();
+    const miss = page.locator('.msg-turn').last();
     await expect(miss).toContainText('桥那边过不去啦', { timeout: 15_000 });
     await expect(miss.locator('.event-trace-toggle')).toHaveCount(0);
 
     // 命中关键词：同一轮触发并同一轮注入
     await send(page, `我听说那支${KEYWORD}迟到了`);
-    const hit = page.locator('.msg-bubble.msg-assistant').last();
+    const hit = page.locator('.msg-turn').last();
     await expect(hit).toContainText('桥那边过不去啦', { timeout: 15_000 });
     const toggle = hit.locator('.event-trace-toggle');
     await expect(toggle).toBeVisible();
