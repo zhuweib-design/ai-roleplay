@@ -598,7 +598,7 @@ function handleMessageAction(msgId: string, action: string) {
 
 // ── 长按动作条：触屏没有 hover，操作入口改成长按唤起 ──
 const actionSheetMsgId = ref<string | null>(null);
-const sheetActions = assistantMsgActions();
+const sheetActions = computed(() => assistantMsgActions());
 
 function handleMessageLongPress(msgId: string) {
   actionSheetMsgId.value = msgId;

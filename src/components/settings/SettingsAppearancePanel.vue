@@ -279,10 +279,11 @@ function handleThemeKeydown(e: KeyboardEvent, currentIndex: number): void {
   }
 }
 
-const localeOptions: { value: Locale; label: string }[] = [
+/** computed 而不是普通 const：否则语言选项自己的标签就是快照的（见 locale-reactivity 测试） */
+const localeOptions = computed<{ value: Locale; label: string }[]>(() => [
   { value: 'zh', label: t('settings.languageZh') },
   { value: 'en', label: t('settings.languageEn') },
-];
+]);
 
 function openBgPicker(mode: 'camera' | 'album') {
   bgCapture.value = mode === 'camera' ? 'environment' : undefined;

@@ -62,12 +62,15 @@ const props = withDefaults(
     orientation?: 'horizontal' | 'vertical';
   }>(),
   {
-    label: t('filterTabs.label'),
-    allLabel: t('filterTabs.all'),
+    // 故意不给 t() 结果当默认值：withDefaults 的对象在模块加载时求值一次，
+    // 那串文案会被永久冻结在当前语言上。缺省行为改由下面的 computed 承担。
     allValue: '',
     orientation: 'horizontal',
   }
 );
+
+/** 未显式传 label 时的 aria 标签（跟随语言切换） */
+const groupLabel = computed(() => props.label ?? t('filterTabs.label'));
 
 const emit = defineEmits<{
   'update:modelValue': [value: string];
@@ -78,10 +81,11 @@ const emit = defineEmits<{
 // 所有 Tab（含"全部"前缀项，若启用）
 const allTabs = computed<FilterTab[]>(() => {
   const list: FilterTab[] = [];
-  if (props.allLabel) {
+  const allLabel = props.allLabel ?? t('filterTabs.all');
+  if (allLabel) {
     list.push({
       value: props.allValue,
-      label: props.allLabel,
+      label: allLabel,
       count: props.allCount,
     });
   }
@@ -139,7 +143,7 @@ function onKeydown(e: KeyboardEvent): void {
       ref="tablistRef"
       class="tablist"
       role="tablist"
-      :aria-label="label"
+      :aria-label="groupLabel"
       :aria-orientation="orientation"
       @keydown="onKeydown"
     >

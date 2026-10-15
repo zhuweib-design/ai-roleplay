@@ -52,7 +52,8 @@ const emit = defineEmits<{
   longpress: [msgId: string];
 }>();
 
-const assistantActions = assistantMsgActions();
+/** computed 而不是普通 const：否则动作清单的标签会快照在 setup 那一刻，切语言不动 */
+const assistantActions = computed(() => assistantMsgActions());
 
 /**
  * 一次回复的分段：对白在气泡里，心理（`⟦…⟧`）落在气泡外。

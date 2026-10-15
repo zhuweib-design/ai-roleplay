@@ -16,7 +16,12 @@ import router from './router';
 import { vRange } from './core/range-fill';
 import { vTip } from './core/tip';
 import { installPresetInputBehavior } from './core/preset-input';
+import { purgeStaleServiceWorker } from './core/native-sw-cleanup';
 import App from './App.vue';
+
+// 原生壳：老版本 APK 留下的 Service Worker 会拿旧包，先一次性清掉再挂载
+// （新构建已不再注册 SW，所以注销后不会长回来；详见该文件的注释）
+if (__NATIVE_SHELL__) void purgeStaleServiceWorker();
 
 const app = createApp(App);
 app.use(createPinia());

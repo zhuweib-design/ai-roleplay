@@ -8,18 +8,26 @@
  * 设计: docs/mobile-ui-design.md §13.1
  */
 import { useRoute } from 'vue-router';
+import { computed } from 'vue';
 import Icon from '@/components/common/Icon.vue';
 import { mobileTabEntries } from '@/core/nav-model';
 import { t } from '@/i18n';
 
 const route = useRoute();
 
-const tabs = mobileTabEntries().map((entry) => ({
-  name: entry.routeName,
-  icon: entry.icon,
-  label: t(entry.mobileLabelKey ?? entry.labelKey),
-  desc: t(entry.descKey),
-}));
+/**
+ * 必须是 computed 而不是普通 const：普通 const 在 setup 那一刻就把当前语言的
+ * 字符串快照住了，之后切语言导航这一排还是旧文案（2026-10-15 真机复现：
+ * 底部导航中文、设置页英文）。
+ */
+const tabs = computed(() =>
+  mobileTabEntries().map((entry) => ({
+    name: entry.routeName,
+    icon: entry.icon,
+    label: t(entry.mobileLabelKey ?? entry.labelKey),
+    desc: t(entry.descKey),
+  }))
+);
 </script>
 
 <template>

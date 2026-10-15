@@ -351,14 +351,16 @@ async function testConnection(): Promise<void> {
   }
 }
 
-// provider 选项
-const providerOptions: Array<{ value: 'openai' | 'anthropic' | 'custom' | 'deepseek' | 'local'; label: string; defaultBaseUrl: string }> = [
+// provider 选项（computed：普通 const 会把标签快照在 setup 那一刻，切语言不动）
+const providerOptions = computed<
+  Array<{ value: 'openai' | 'anthropic' | 'custom' | 'deepseek' | 'local'; label: string; defaultBaseUrl: string }>
+>(() => [
   { value: 'openai', label: t('modelPanel.providerOpenai'), defaultBaseUrl: 'https://api.openai.com' },
   { value: 'deepseek', label: t('modelPanel.providerDeepseek'), defaultBaseUrl: 'https://api.deepseek.com' },
   { value: 'anthropic', label: t('modelPanel.providerAnthropic'), defaultBaseUrl: 'https://api.anthropic.com' },
   { value: 'custom', label: t('modelPanel.providerCustom'), defaultBaseUrl: '' },
   { value: 'local', label: t('modelPanel.providerLocal'), defaultBaseUrl: '' },
-];
+]);
 
 function resetForm() {
   form.value = {
@@ -413,7 +415,7 @@ function openEditModal(profile: ApiProfile) {
 
 function onProviderChange() {
   // 切换 provider 时自动填充默认 baseUrl
-  const opt = providerOptions.find((o) => o.value === form.value.provider);
+  const opt = providerOptions.value.find((o) => o.value === form.value.provider);
   if (opt && !form.value.baseUrl.trim()) {
     form.value.baseUrl = opt.defaultBaseUrl;
   }

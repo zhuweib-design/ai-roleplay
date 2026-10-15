@@ -38,9 +38,9 @@ function env() {
   return e;
 }
 
-function run(cmd, cwd) {
+function run(cmd, cwd, extraEnv) {
   console.log(`\n$ ${cmd}${cwd ? `  (cwd=${path.relative(ROOT, cwd) || '.'})` : ''}`);
-  execSync(cmd, { stdio: 'inherit', cwd: cwd ?? ROOT, env: env() });
+  execSync(cmd, { stdio: 'inherit', cwd: cwd ?? ROOT, env: { ...env(), ...extraEnv } });
 }
 
 function requireToolchain() {
@@ -132,7 +132,8 @@ function ensureAndroidProject() {
 
 function main() {
   requireToolchain();
-  if (!skipBuild) run('npm run build');
+  // NATIVE_SHELL=1：关掉 PWA 的 Service Worker（原生壳里 SW 只会让覆盖安装后仍拿旧包）
+  if (!skipBuild) run('npm run build', ROOT, { NATIVE_SHELL: '1' });
   ensureAndroidProject();
   patchLocalProperties();
   patchWrapperDistribution();
