@@ -12,11 +12,13 @@
 ✅ 性能报告: docs/dev/perf-report.md
 ✅ 分析工具: scripts/perf-analysis.mjs
 
-当前指标（2026-10-03 于 `b0adc0f` 复测；原记录为 2026-09-28 基线）:
-├─ 构建大小: 56 MB（含 vendored ort wasm 26.8 MB，非首屏传输量）
-├─ 源码行数: 94,383 行（src/ 下 .ts + .vue）
-├─ Store 数量: 21 个 (最大 1434 行, chat-generation)
+当前指标（2026-10-16 于 v1.1.0 发布提交复测；上一轮记录为 2026-10-03 于 `b0adc0f`，最初基线为 2026-09-28）:
+├─ 构建大小: 58.2 MB（含 vendored ort wasm 26.8 MB，非首屏传输量；2026-10-03 记录为 56 MB）
+├─ 源码行数: 102,737 行（src/ 下 .ts + .vue）
+├─ Store 数量: 20 个 (最大 1620 行, settings)
 └─ 超大文件: 7 个 (>2000 行)；排除 i18n 语言包数据后为 5 个代码文件
+     （SettingsModelPanel 2544 / CharacterEditorView 2319 / GroupChatView 2797 /
+       StoryEngineView 3325 / WorldBookView 2975）
 ```
 
 ---

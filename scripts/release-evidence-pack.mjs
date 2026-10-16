@@ -250,7 +250,11 @@ function buildQualityManifest(results) {
   };
 }
 
-const KNOWN_ISSUES = `# 已知问题（1.0.0）
+/**
+ * 已知问题清单会写进证据包，必须跟着当前版本走——1.0.0 的包曾因标题硬编码，
+ * 让 v1.1.0 的证据包里出现"已知问题（1.0.0）"，读起来像复制粘贴的历史结果。
+ */
+const KNOWN_ISSUES = `# 已知问题（${pkg.version}）
 
 本文件记录发布时**仍未闭环**的项，避免"全部通过"的错觉掩盖真实缺口。
 
@@ -267,6 +271,13 @@ const KNOWN_ISSUES = `# 已知问题（1.0.0）
 
 执行方式见 \`docs/dev/runtime-database-migration-runbook.md\` §5 与
 \`docs/dev/data-backup-restore.md\` §4A.4。
+
+## E2E 取证走 CI，不在本机重跑
+
+- **e2e-desktop / e2e-mobile**：默认记 \`skipped\`（本脚本需 \`--full\` 才跑，全量串行
+  约 40 分钟且吃内存）。端到端的真实结论以 GitHub Actions 为准——\`.github/workflows/ci.yml\`
+  在每次 push / PR 到 master 上跑全量用例并按 \`e2e/shard-groups.mjs\` 分 4 组并行。
+  发布记录里写清对应 commit 与 run id，不用本机的部分结果冒充全量。
 
 ## 计划符合度未闭环项
 

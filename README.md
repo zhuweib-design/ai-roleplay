@@ -6,7 +6,7 @@
 
 **基于 SillyTavern 架构的 AI 角色扮演聊天应用：多模型对话 · 角色卡 · 世界书 · 群聊 · 故事引擎 · 社区市场 · 自定义主题 · 自定义向量模型 RAG · Virtual Character OS Runtime**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v1.0.0)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v1.1.0)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6.svg)]()
 [![Tauri 2](https://img.shields.io/badge/Tauri-2.0-24c8db.svg)]()
@@ -48,6 +48,7 @@
 | 特性 | 解决的问题 |
 | --- | --- |
 | **多模型对话** | OpenAI / Anthropic 等多 profile，流式生成、重新生成、翻译、TTS、自动摘要 |
+| **心理活动（旁白）** | 模型写在 `⟦ … ⟧` 里的内心戏渲染在气泡**外面**，与台词分排；可设用户自称"我"或"你"；复制 / 朗读 / 翻译 / 导出自动去标记 |
 | **自定义向量模型 + RAG** | 上传 ZIP 或登记本地目录添加自定义向量模型，驱动「动态记忆 / 静态世界设定」语义检索 |
 | **自定义主题** | 上传背景图自动提取主色调（k-means 聚类）并匹配组件配色，含深/浅主题与"暗夜剧场"字体 |
 | **世界书 / Lorebook** | 关键词门控激活，设定随语境自动注入 |
@@ -57,6 +58,7 @@
 | **社区市场** | 基于 GitHub 索引的模板 / 角色卡 / 世界书下载，含哈希校验与离线回退 |
 | **扩展系统** | 沙箱执行、按需权限（默认拒绝），社区扩展默认不自动执行 |
 | **桌面强化** | 系统托盘、全局快捷键（`Ctrl+Alt+Space`）、拖拽导入、断网提示 |
+| **手机端与安卓壳** | 底部导航、输入条自动增高与键盘避让、长按唤起消息动作条、窄屏标题不再竖排挤压；`node scripts/android-apk.mjs` 一条脚本出 debug APK（安装包不进 git，改走 GitHub Releases） |
 
 ## 🖼️ 预览
 
@@ -85,14 +87,23 @@ npm run build
 **Web 端（改动前端资源时必跑）**
 
 ```bash
-npm run lint               # ESLint（0 error / 0 warning）
-npm run i18n:check:strict  # i18n 严格扫描（无硬编码中文）
-npm run check:css-conventions  # CSS 约定守卫（5 项合一：断点单一来源 / 动态视口 / 触屏 hover / !important 棘轮 / 可编辑控件字号 I-7）
-npm run a11y:contrast      # 无障碍对比度（≥ AA 4.5:1）
-npm run test:coverage      # Vitest + 覆盖率（statements 78 / branches 73 / functions 78 / lines 78）
-npm run build              # vue-tsc 类型检查 + vite 生产构建
-npm run check:csp          # Web 端 CSP 契约守卫（CSP 未被移除/削弱 + 无第三方字体 CDN 引用 + 字体镜像完整，须在 build 之后跑）
+npm run lint                  # ESLint（0 error；既有 warning 不新增）
+npm run runtime:db:schema:check  # Runtime Schema 漂移检查（migrations/ 与代码是否一致）
+npm run snapshot:migration:check  # 快照迁移计划检查
+npm run i18n:check:strict     # i18n 严格扫描（无硬编码中文，中英键数对齐）
+npm run eval:manifest         # eval manifest 自检（strict）
+npm run check:css-conventions # CSS 约定守卫（5 项合一：断点单一来源 / 动态视口 / 触屏 hover / !important 棘轮 / 可编辑控件字号 I-7）
+npm run check:save-blob       # 存盘方式守卫（导出统一走 saveBlob 单入口，基线 0）
+npm run check:no-artifact     # 产物入库守卫（安装包 / 大二进制不许进 git）
+npm run check:token-baseline  # Token 死引用棘轮
+npm run a11y:contrast         # 无障碍对比度（语义配对 ≥ AA 4.5:1；存量基线零余量棘轮）
+npm run test:coverage         # Vitest + 覆盖率（statements 78 / branches 73 / functions 78 / lines 78）
+npm run build                 # vue-tsc 类型检查 + vite 生产构建
+npm run check:csp             # Web 端 CSP 契约守卫（须在 build 之后跑）
+npm run check:ort             # ORT 首屏隔离守卫（须在 build 之后跑）
 ```
+
+> 2026-10-16 的教训：一台 `.load-earlier-btn:hover` 的违规之所以能进了 master，是因为本机只跑了熟悉的那几条。**本机核对必须照 `ci.yml` 的整条 step 清单走**，不要凭记忆挑子集；E2E 的结论以 CI 的 4 组并行为准（本机全量串行约 15 分钟，且吃内存）。
 
 **桌面端（仅改动 `src-tauri/` 时跑）**
 
@@ -100,7 +111,7 @@ npm run check:csp          # Web 端 CSP 契约守卫（CSP 未被移除/削弱 
 npm run tauri:build        # 桌面端编译验证（需 Rust 工具链，耗时较长）
 ```
 
-> CI（`.github/workflows/ci.yml`）的 `quality-gates` 按序执行：lint → Runtime Schema 漂移检查 → i18n strict → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7，五项合一）→ 对比度审计 → 覆盖率 → 构建 → CSP 守卫。另有独立 job：Runtime PostgreSQL 集成（postgres:16 service，真实事务/并发/回滚）、Playwright E2E（桌面功能 + 移动端布局 + 移动端核心功能三 project）和 Tauri 无打包编译检查。GitHub Release 只保留自动生成的源码归档。
+> CI（`.github/workflows/ci.yml`）共三个 job。`quality-gates`（ubuntu-latest，带 postgres:16 service）按序执行：依赖审计（high 及以上）→ lint → Runtime Schema 漂移检查 → 快照迁移计划检查 → i18n strict → eval manifest 自检 → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7）→ 存盘方式守卫（含自检）→ 产物入库守卫（安装包与大二进制不许进 git，含自检）→ Token 死引用棘轮（含自检）→ 对比度审计（含自检）→ 测试与覆盖率门禁（78/73/78/78，同一步承载真实 PostgreSQL 集成用例，不再单设重复 job）→ 构建 → CSP 守卫 → ORT 首屏守卫。`e2e` 按 `e2e/shard-groups.mjs`（由单 worker 实测时长生成，并有"每个 spec 恰好属于一组"的对账守卫）分成 4 组并行，chromium 覆盖桌面与 Pixel 5 视口、webkit 覆盖 Safari 近似内核。`tauri-build` 验证桌面 release 二进制可编译（`--no-bundle`，不生成也不上传安装包）。GitHub Release 只保留自动生成的源码归档。
 
 **Runtime 改动（`src/runtime/`、`migrations/` 时追加；Schema 漂移检查已并入 CI `quality-gates`）**
 
@@ -274,6 +285,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 - [x] **0.2.0** — 自定义向量模型 + RAG、自定义主题、社区市场、系统托盘/快捷键（已发布）
 - [x] **Virtual Character OS Runtime** — 批量多角色、多角色群聊、PostgreSQL 事务持久化、版本 CAS 与 Replay 审计（已落地）
 - [x] **v1.0.0** — 首个稳定版本（已完成）
+- [x] **v1.1.0** — 手机端可用化、心理活动叙事、注入可见化、Token 预算推导、安卓出包与工程护栏（已完成，无数据迁移）
 - [x] **RAG 增强** — 停用词过滤、已安装模型自动择优与 recall@3 基准（已完成）
 - [x] **无障碍** — 自定义主题运行时对比度预检（已完成）
 
@@ -295,7 +307,8 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 - **Web 端（静态托管）**：完整流程见 [`docs/dev/web-deployment-sop.md`](docs/dev/web-deployment-sop.md) —— 含部署前验证清单、6 项硬性要求（HTTPS / `frame-ancestors` 响应头 / **`.wasm` MIME** / SPA 回退排除 / 缓存策略 / 剔除 source map）、Nginx / Caddy / Vercel / Netlify / 对象存储+CDN 的具体配置、12 项部署后验证清单与常见坑。
   - 部署前必须跑：`npm run build && npm run check:csp`，并在 `vite preview` 下跑 `npm run csp:audit`（逐路由 CSP 违规 + 负向对照 + **WASM/blob Worker 能力探针**）。
 - **桌面端（Tauri）**：GitHub 发布不上传安装包；本地桌面构建使用 `npm run tauri:build`，GitHub Release 只保留源码归档。
-  - **版本发布说明**：最新见 [`docs/dev/release-notes-1.0.0.md`](docs/dev/release-notes-1.0.0.md)（稳定版边界与验证结果），上一版见 [`docs/dev/release-notes-0.9.0.md`](docs/dev/release-notes-0.9.0.md)；数据库迁移演练见 [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md)。
+- **安卓端（Capacitor 壳）**：`node scripts/android-apk.mjs` 一条脚本出 debug APK（需本机 JDK 21 与 Android SDK，`android/local.properties` 写 `sdk.dir`）。安装包由 `.gitignore` 与"产物入库"守卫双重挡在仓库外，分发走 GitHub Releases。原生壳构建期会关闭 Service Worker（否则覆盖安装不生效），真机调试用 Chrome 133 的 WebView + CDP。
+  - **版本发布说明**：最新见 [`docs/dev/release-notes-1.1.0.md`](docs/dev/release-notes-1.1.0.md)（这一版的能力清单、数据兼容与验证结果），逐项门禁读数见 [`docs/dev/release-evidence-1.1.0.md`](docs/dev/release-evidence-1.1.0.md)；上一版见 [`docs/dev/release-notes-1.0.0.md`](docs/dev/release-notes-1.0.0.md)（稳定版边界与验证结果），再上一版见 [`docs/dev/release-notes-0.9.0.md`](docs/dev/release-notes-0.9.0.md)；数据库迁移演练见 [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md)。
 
 ### 隐私与安全
 
