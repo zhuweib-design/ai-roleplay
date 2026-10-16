@@ -39,7 +39,7 @@
 | 关于页版本号断言 | 单测 3 条 + 真实浏览器 1 条，两条链都做过头故障注入实测：把组件回退成 `ref('')` 时，单测红在 `expected '…版本：—…' to contain '版本：1.1.0'`，e2e 红在同一条 `toContainText(APP_VERSION)` |
 | `docs` 源码登记守卫 | 3 条全绿；把登记前缀改成不存在的目录后，"未登记源码"与"登记项必须还指得到源码"两条同时红（实测过） |
 | CI（PR #7，run #122，提交 `db25809`） | 6 个 job 全 success：Quality Gates（含 `Lint (eslint .)` 与覆盖率 82.64 / 76.49 / 84.22 / 84.75，213 文件通过 / 1 跳过）、E2E 四组 53 + 73 + 50 + 66 = **242 项全通过**、Tauri `--no-bundle` |
-| CI 的 E2E 里有 1 条 flaky | group 3/4 报 `1 flaky`：`e2e/ux-modal-describedby-version.spec.ts` 的 `switchBranch()` 里"切换到此分支"按钮点击在 60 秒超时后重试通过（`locator.click: Test timeout of 60000ms exceeded`，该文件 131/135 行）。四次 run 对着看：`#117`（`2324ffe`）与 `#120`（`f47b95f`）这条 0 flaky、50 项直接全过；`#122`（`db25809`）与 `#123`（`7c4e6bf`）各出现 1 次 flaky（49 通过 + 1 重试通过）。**两组读数之间我没有改过这条用例，也没改它所在分组的文件清单**（本轮新增的那条 e2e 落在 group 1：52 → 53），所以既不能判定为本轮引入，也不能排除；单独记在下面"已知未闭环"，不用"job 绿"混过去 |
+| CI 的 E2E 里有 1 条 flaky | group 3/4 报 `1 flaky`：`e2e/ux-modal-describedby-version.spec.ts` 的 `switchBranch()` 里"切换到此分支"按钮点击在 60 秒超时后重试通过（`locator.click: Test timeout of 60000ms exceeded`，该文件 131/135 行）。run 对着看：本轮之前的 `#117`（`2324ffe`）与 `#120`（`f47b95f`）这条 0 flaky、50 项直接全过；本轮的 `#122`（`db25809`）、`#123`（`7c4e6bf`）与合并 README 之后的 `#128`（`4914206`）**三次各出现 1 次** flaky（49 通过 + 1 重试通过）。也就是说这条在当前代码上是可复现的（3/3），不是偶发一次。**两组读数之间我没有改过这条用例，也没改它所在分组的文件清单**（本轮新增的那条 e2e 落在 group 1：52 → 53），所以既不能判定为本轮引入，也不能排除；单独记在下面"已知未闭环"，不用"job 绿"混过去 |
 | 安卓真机（本机模拟器 ns36，headless 起、验完关机归还；WebView Chrome 133 / Android 16） | 新包 `installer/AI酒馆-1.1.1-debug.apk` 26.1 MB，`aapt dump badging`：`versionCode='3' versionName='1.1.1'`；解包核对入口哈希 `assets/public/assets/index-DmEoYUGZ.js` 与本机 `dist` 同一份；覆盖安装后运行页读到 **"版本：1.1.1"**、`<html lang>` 为 `zh-CN`、Service Worker 注册数 0、CacheStorage 0、IndexedDB 旧数据仍在（characters 4 / settings 1） |
 
 ### 本次新抓到的失败与处置
@@ -84,8 +84,9 @@
 - `worldEntries` 的死路径为兼容旧备份/导入暂未清理。
 - `PROJECT_INDEX.md` 里 `src/` 下仍有约 70 个文件的用途是"待确认"，需要一次专门的人工核对。
 - 有一条 e2e 用例在 CI 上 flaky：`e2e/ux-modal-describedby-version.spec.ts` 的 `switchBranch()`，
-  症状是"切换到此分支"按钮点击 60 秒超时、重试才过。本轮两次 run（#122 / #123）各复现 1 次，
-  本轮之前的两次（#117 / #120）为 0 次；两组读数之间我没有改过这条用例，也没有改它所在分组的
-  文件清单（本轮新增的那条 e2e 落在 group 1），所以既不能判定为本轮引入，也不能排除。
+  症状是"切换到此分支"按钮点击 60 秒超时、重试才过。本轮之后的 #122 / #123 / #128 三次
+  各复现 1 次（可复现，不是偶发），本轮之前的 #117 / #120 两次为 0 次；两组读数之间我没有改过
+  这条用例，也没有改它所在分组的文件清单（本轮新增的那条 e2e 落在 group 1），所以既不能判定为
+  本轮引入，也不能排除。
   它被 `retries: 2` 兜住所以 job 仍绿，但"绿"不等于"稳"——收口方式按 15.15 那张网的办法走：
   先量它在单 worker 下的真实耗时，再把等待点改成读存储/读状态，而不是加大超时。
