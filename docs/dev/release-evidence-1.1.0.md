@@ -141,8 +141,24 @@ npx eslint . -f json -o /tmp/eslint.json
 门禁判定），因为只留 4000 字符输出尾巴时，证据里全是某条单测打进 stderr 的堆栈，
 读不出"到底跑过了多少项"。
 
-## 7. 判定
+## 7. 判定与收口
 
 1.1.0 的内容侧证据齐了：本机 15 项里 9 项通过、1 项红的成因已定位到工作区卫生而非代码、
 5 项如实标 skipped 并给了补齐路径；CI 在同一提交上 Quality Gates、E2E 四组 241 项、
-Tauri 构建全部 success。**可以合并。**
+Tauri 构建全部 success。
+
+合并动作的实际读数（2026-10-16 17:45 前后）：
+
+| 项 | 值 |
+| --- | --- |
+| PR #6 | `f47b95f` 合入 `master`，merge_method=merge，合并提交 `25da9abcce1ae185d2e2a2d8b91cd8a370b0894d`（138 个提交，未 squash——`CHANGELOG` 与本文多处按 SHA 引用分支上的提交，压扁会让这些引用失去落点） |
+| 合并前的门禁 | run #120（id 38880787126）在 `f47b95f` 上 6 个 job 全 success，`mergeable_state` 由 `unstable` 转 `clean` |
+| 合并后的 master | run #121（id 38882628184）在 `25da9ab` 上 Quality Gates / E2E 四组 / Tauri **全部 success** |
+| 标签 | 附注标签 `v1.1.0` 指向 `25da9ab`（`refs/tags/v1.1.0` = a478f0d），徽章链接 `releases/tag/v1.1.0` 实测 200 |
+| 分支 | `feat/ux-ia-guided-flow` 保留未删（本仓库会话常并行，删分支会影响另一会话的工作树） |
+
+没有做的两件事：GitHub 上**没有** Release 对象（只有一个裸标签，`releases?per_page` 列出的最新正式
+Release 仍是 v0.3.1），因此也不存在"安装包挂在 Release 上"——按既定策略安装包不进 git，
+要挂 APK 需要在网页里建 Release 并上传，这一步留给用户点；`android` 侧当前 `installer/` 里的
+调试包仍是 `versionName "1.0"` / `versionCode 1` 那次构建的产物，**不含 1.1.0 的版本号**，
+要发安卓包需要重跑一次 `node scripts/android-apk.mjs`。
