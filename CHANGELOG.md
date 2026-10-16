@@ -558,6 +558,32 @@
 - 重新生成 `docs/dev/PROJECT_INDEX.md`（收录 `chat-*` 子 store、`toast-service`、`vendor-ort` 等），并更新 `QUICK_START.md` 的基线指标至 `b0adc0f`。
 - 实机报告追加 B20：驱动上下文面板的角色级参数 —— 作者笔记落库为 `characterNote.text`（UI 侧字段名是 `authorNote`，跨刷新实测可找回，命名不一致是易误报点）、温度写入 `characters.ext.temperature` 且可复位、状态指令分段控件写 `ext.statusInstruction` 并在选"继承全局"时干净移除该键；创作模式与 Top P / 频率惩罚的逐项验证记为 L-14，真机上 D-11 的影响面记为 L-15。B21 验完五处列表筛选与搜索：角色搜索 5→1→5、标签筛选、数据银行不匹配词确实清空列表、记录页关键词与开始日期联动计数并有标准空态、市场排序与分类均生效，过滤逻辑全部正确；唯一新观察 O-24 —— 数据银行无结果时不给任何空态提示（同项目记录页已有"无匹配记录 + 清除筛选"的成熟做法，属可直接对齐的一致性问题）。
 
+### 新增（专项 C：手机端聊天页从"能打开"到"能用"，2026-10-14 至 10-16）
+- 输入条改造：发送键右置、静止态只有一行高（实测整条 73px，改造前 90px）、打字自动增高、超过 6 行在输入区内部滚动而不是把页面顶长；触屏上回车是换行、发送靠右按钮，桌面仍是 Enter 发送 / Shift+Enter 换行。断言在 `e2e/mobile/chat-touch-composer.spec.ts`（393px 视口，与真机同一形状）。
+- 消息操作改长按唤起：长按 AI 消息约半秒从底部弹出动作条，6 项动作 + 1 项取消（`.sheet-item` 断言共 7 项）；长按期间手指移动判为滚动而不弹条；桌面的悬停与键盘聚焦入口照旧，关闭后焦点交还那条消息。
+- 键盘避让两处一起改：`android/app/src/main/AndroidManifest.xml` 加 `windowSoftInputMode="adjustResize"`，`index.html` 的 viewport 加 `interactive-widget=resizes-content`；另加 `src/core/keyboard-inset.ts` 写 `--keyboard-inset` 兜底，覆盖"键盘只缩视觉视口"的引擎——Android 形状下差值恒为 0（不会重复抬升），iOS 形状下算出 312px，两条负向对照都在 `tests/core/keyboard-inset.test.ts`（8 例）。iOS 侧仍属"只有单测、无设备可跑"。
+
+### 修复（专项 C 附带：三处让手机"点了没反应"的存量缺陷）
+- `.overlay-mask` 关掉后的 250ms 里仍带 `pointer-events`，吃掉点击与长按——改为默认 `none`、`.active` 才 `auto`。这条最初表现为"e2e 触摸用例随机红"，真机 CDP 复现后确认是产品缺陷而不是测试不稳。
+- 主 Tab 页底部重复预留的 56px 收掉（原来 `has-mobile-nav` 又叠了一层 padding，约占屏高 10%）。
+- 窄屏"竖排挤压"三处一并修（群聊页头、世界书页头、社区市场页头、设置数据面板按钮），并新增按几何判定的常驻网 `e2e/mobile/narrow-squeeze.spec.ts`（390/412 两档 × 2 路由分块 = 4 条）与 `e2e/mobile/group-header-narrow.spec.ts`（页头标题 ≤28px、按钮 ≥56px）。扫描器本身踩了三个坑（盒模型要求、只读直接文本节点、按 border-box 数行高），都写进了那条 spec 的注释。
+
+### 新增（专项 B：心理活动（旁白））
+- `src/core/narration.ts` 是唯一的解析口径：`parseNarrationSegments` / `stripNarrationMarkers` / `buildNarrationRules(perspective, name)`。`⟦ … ⟧` **原样存在消息 `content` 里**，由渲染层拆成气泡外的段落（13px、次级色、左侧竖线），所以旧数据没有标记也照常渲染，而任何只读 `content` 的旁路（复制、朗读、翻译、导出、备份）必须走 `stripNarrationMarkers`。
+- 设置里可选心理活动中用户自称"我"还是"你"，选择进提示词并影响生成；群聊接同一套分段（真机量过几何，与单聊口径一致）；编辑消息弹窗保留可编辑原文 + 下方分段预览 + 一句"这两个符号是什么"的解释，不再露裸标记。
+- 群聊**故意**不注入叙事规则，这条决定与理由记在 `docs/design/OPT_PLAN_2026-10-15_移动端与五项体验重构.md` 第 15 节。
+
+### 新增（专项 E：安卓出包与分发）
+- Capacitor 8 壳 + `scripts/android-apk.mjs` 一条命令出 debug APK（`vite build` → `cap sync` → `gradlew assembleDebug` → 复制进 `installer/`）；构建期在原生壳关闭 Service Worker，这是"覆盖安装不生效"的根因。
+- `.gitignore` 本身入库（此前自我忽略，规则只存在于本机），新增门禁 `check:no-artifact` 与它的自检（`scripts/no-artifact-in-git-guard.mjs`：按扩展名与 1 MiB 阈值扫 git 索引），安装包改走 GitHub Releases。
+- 设备直连 CORS 实测 7 通 / 3 拦 / 2 不可达（anthropic 与 groq 是 403 客户端拒绝，不是缺头），因此**仍不开** CapacitorHttp。安卓上的导出按钮仍是死按钮：WebView 的 `showSaveFilePicker()` 是 14ms 就抛 AbortError 的桩，修它要写原生插件；9 处导出已统一收进 `saveBlob()` 单入口（基线 0），就是为了改的时候只改一处。
+
+### 变更（工程护栏：让"绿"这件事可以复现）
+- 全量 e2e 从"同一套代码 4 worker 随机红 1–3 条"改成 **241 条全绿**：把一条用例循环整个维度空间的两条重规格按维度切小（对比度按 9 款皮肤、移动字号按 5 条路由分块），等待预算按单跑耗时的实测倍数抬高；CI 分片改为按 `e2e/shard-groups.mjs`（由单 worker 实测时长生成）分 4 组，并加"每个 spec 恰好属于一组"的对账守卫 `tests/tooling/e2e-shard-groups.test.ts`。
+- 首帧语言不再闪：同步镜像 `localStorage['aijiuguan.locale']`（优先级 镜像 > `detectLocale()` > zh），`<html lang>` 在模块初始化时写入；改 `localeRef` 初值当场红 280 条单测，根因是测试环境隐式沿用 jsdom 的 `en-US`，按 e2e 早已钉死 `locale: 'zh-CN'` 的先例给单测环境补显式声明（`tests/setup-locale.ts`）。
+- range 滑块的 `color` 原本从未被 CSS 设过，取 UA 默认 `FieldText` 且随操作系统解析（Windows 给 `rgb(16,16,16)`、CI 的 Linux chromium 给暖灰），改为 `color: inherit` 后中性网基线重生成并逐处对账：变化 36 处 = 2 选择器 × 2 属性 × 9 款主题。
+- 对比度扫描的存量基线锁在 67 处（零余量棘轮），`a11y:contrast:self-test` 与 `check:no-artifact:self-test` 都在 CI 里单独跑，用来证明门禁不是空跑。
+
 ## [1.0.0] - 2026-09-27
 
 ### 稳定版边界
