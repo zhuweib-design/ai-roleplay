@@ -17,6 +17,7 @@ import { vRange } from './core/range-fill';
 import { vTip } from './core/tip';
 import { installPresetInputBehavior } from './core/preset-input';
 import { purgeStaleServiceWorker } from './core/native-sw-cleanup';
+import { startKeyboardInset } from './core/keyboard-inset';
 import App from './App.vue';
 
 // 原生壳：老版本 APK 留下的 Service Worker 会拿旧包，先一次性清掉再挂载
@@ -33,3 +34,6 @@ app.directive('tip', vTip);
 // 全局行为：有预设值的输入框聚焦清空、未改动失焦回填（见 src/core/preset-input.ts）
 installPresetInputBehavior();
 app.mount('#app');
+// 键盘只缩视觉视口的引擎（iOS Safari 一类）靠这里把 --keyboard-inset 写出来；
+// Android 上布局视口已经缩过，差值恒为 0，不会重复抬升（见该模块注释）
+startKeyboardInset();
