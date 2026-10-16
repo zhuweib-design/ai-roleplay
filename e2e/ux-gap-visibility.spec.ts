@@ -1,8 +1,9 @@
 /**
  * M3 前置：四条"看得见/跳得过"缺口的浏览器级证据
- * （设计文档 §1.4 的 E03 / E19 / E22 / E23）
+ * （设计文档 §1.4 的 E03 / E19 / E22 / E23），外加 1.1.0 发布时抓到的第五处——
+ * 设置→关于的版本号那一行恒显示占位破折号。
  *
- * 这四条都是"界面说的和实际做的不一致"或"事实无处可查"，
+ * 这几条都是"界面说的和实际做的不一致"或"事实无处可查"，
  * 单测能守逻辑，但只有真实浏览器能证明用户看到的那句话是真的。
  *
  * 本文件**不纳入 webkit project**：E22 用例会写设置（图像 Provider 配置落盘），
@@ -11,6 +12,14 @@
  * e2e/ux-interaction-feedback.spec.ts 顶部记的那次排查）。msedge 各 context 独立，不受影响。
  */
 import { test, expect, type Page } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// 版本号的真值就取仓库里的 package.json：界面显示与它不一致，这条用例必须红。
+// 与 e2e/ux-duplicate-a11y-names.spec.ts 同一取文件方式（process.cwd() 是仓库根）。
+const APP_VERSION = (
+  JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8')) as { version: string }
+).version;
 
 async function dismissWelcomeModal(page: Page): Promise<void> {
   await page.keyboard.press('Escape');
@@ -283,5 +292,21 @@ test.describe('E19 已跟踪可查', () => {
 
     await mark.click();
     await expect(page).toHaveURL(/\/character-version\?char=e2e-gap-char&from=\/character/);
+  });
+});
+
+test.describe('关于页的版本号（1.1.0 发布时抓到：三个平台都显示破折号）', () => {
+  test('关于页显示的就是 package.json 里的版本号', async ({ page }) => {
+    // 现场：`appVersion` 声明后从未赋值，模板 `appVersion || '—'` 兜底，
+    // 于是桌面 / 网页 / 安卓的"设置→关于"都显示"版本：—"，而发布说明写着"运行时读到的版本"。
+    // 修法是编译期 define 注入 __APP_VERSION__；本用例断言的是**界面上的字符串**，
+    // 所以配置被删、常量被改空、模板回退这三种情况都会在这里红，而不是等到人来肉眼核对。
+    await page.goto('/settings?cat=about');
+    await dismissWelcomeModal(page);
+
+    const versionLine = page.locator('.data-mgmt-hint').filter({ hasText: '版本' }).first();
+    await expect(versionLine).toBeVisible();
+    await expect(versionLine).toContainText(APP_VERSION);
+    await expect(versionLine).not.toContainText('—');
   });
 });

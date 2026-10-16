@@ -5,7 +5,15 @@ import globals from 'globals';
 
 // eslint-plugin-vue v10 起 flat 配置不再自带浏览器全局声明，
 // 需要在这里显式给出（否则 window/document 等全部 no-undef）。
-const browserGlobals = { ...globals.browser, Worker: 'readonly' };
+// 末尾两个是 vite.config.ts 的 define 注入常量：.ts 文件因为 typescript-eslint
+// 关掉了 no-undef 所以直接引用不报错，但 .vue 的 script 块仍会查（2026-10-16 实测
+// `__APP_VERSION__ is not defined`），所以两处都得声明。
+const browserGlobals = {
+  ...globals.browser,
+  Worker: 'readonly',
+  __NATIVE_SHELL__: 'readonly',
+  __APP_VERSION__: 'readonly',
+};
 
 // ESLint 9 flat config — T-14 质量防线「代码质量/风格」层
 // 错误类(阻断): 未用变量(忽略下划线占位); type-aware 规则(no-floating-promises/await-thenable)已提升 error 强化 CI 防线
@@ -44,6 +52,12 @@ export default [
       // 不该进产品门禁。配套断言见 `tests/tooling/lint-scope.test.ts`：
       // docs/ 下一旦出现**被 git 跟踪的** js/mjs/ts，那条断言就红，逼一次"这是不是产品代码"的判断。
       'docs/**',
+      // 与上一条同族，但挡在仓库根：一次性探针脚本（`tmp-*.mjs`）。
+      // 2026-10-16 的现场：一次"导入设计资源"的提交顺手把 13 个探针带进版本控制，
+      // 其中 4 个共 6 条 error，于是本机 `npm run lint` 红、CI 在干净检出上绿——
+      // 两边看到的文件不一样。它们已被 .gitignore 挡在仓库外（`/tmp-*.mjs`），
+      // 但会话里还会继续产生，所以 lint 也请出去，让本机这条与 CI 同口径。
+      'tmp-*.mjs',
     ],
   },
   js.configs.recommended,

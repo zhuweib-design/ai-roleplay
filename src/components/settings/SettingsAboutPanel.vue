@@ -5,7 +5,7 @@ import { ref } from 'vue';;;;;;
 import { t } from '@/i18n';;
 
 
-const appVersion = ref('');
+const appVersion = __APP_VERSION__;
 // D-B：/profile 的"本地用户"内容并入这里，登录面板的展开状态随之搬过来
 const showLoginPanel = ref(false);
 </script>

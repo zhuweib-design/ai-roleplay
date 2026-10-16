@@ -1,9 +1,19 @@
 import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
+import { readFileSync } from 'node:fs';
 import path from 'path';
+
+// 与 vite.config.ts 同一来源：单测挂载 SettingsAboutPanel 时要拿到真实版本号，
+// 少了这条 define，组件里的 `__APP_VERSION__` 在测试环境就是未定义标识符。
+const APP_VERSION = (
+  JSON.parse(readFileSync(path.resolve(import.meta.dirname, 'package.json'), 'utf8')) as { version: string }
+).version;
 
 export default defineConfig({
   plugins: [vue()],
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   resolve: {
     alias: {
       '@core': path.resolve(import.meta.dirname, 'src/core'),
