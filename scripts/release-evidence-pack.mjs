@@ -73,6 +73,24 @@ function runNpmScript(name) {
   };
 }
 
+/**
+ * 从命令输出里抽"结论行"（测试条数、覆盖率、门禁判定）。
+ * 只留 outputTail 时，4000 字符的尾巴经常全是某条单测打进 stderr 的堆栈，
+ * 读证据的人拿不到"跑过了多少项"——1.1.0 第一次生成时就是这样，只能重跑一遍数。
+ */
+const ANSI_RE = new RegExp(String.fromCharCode(27) + '\\[[0-9;]*m', 'g');
+const SUMMARY_RE =
+  /Test Files|Tests |Duration |Snapshots|coverage|% |阈值|门禁通过|门禁失败|exit|全部通过|扫描|基线/u;
+
+function extractSummary(output) {
+  const plain = String(output ?? '').replace(ANSI_RE, '');
+  const hits = plain
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 3 && line.length < 200 && SUMMARY_RE.test(line));
+  return [...new Set(hits)].slice(-12);
+}
+
 /** 判定式：把命令结果转成 gate 结果对象。 */
 function makeResult({ id, plan, kind, result, artifacts = {} }) {
   const passed = result.exitCode === 0;
@@ -87,6 +105,7 @@ function makeResult({ id, plan, kind, result, artifacts = {} }) {
     generatedAt: new Date().toISOString(),
     kind,
     outputTail: result.output.slice(-TAIL_CHARS),
+    summaryLines: extractSummary(result.output),
     ...artifacts,
   };
 }
@@ -240,6 +259,7 @@ function buildQualityManifest(results) {
       planFile: r.planFile,
       commit: r.commit,
       ...(r.status === 'skipped' ? { reason: r.reason } : { exitCode: r.exitCode, durationMs: r.durationMs }),
+      ...(r.summaryLines?.length ? { summaryLines: r.summaryLines } : {}),
     }])),
     summary: {
       total: results.length,

@@ -70,15 +70,14 @@ Token 与预算：
 
 | 项目 | 结果 |
 | --- | --- |
-| Vitest 全量 | 4043 项通过 / 0 失败（211 文件通过、2 跳过） |
-| 覆盖率门禁 `test:coverage` | 通过，语句覆盖率 81.23% |
-| Playwright 全量（单 worker） | 241 项通过 / 0 失败，15.0 分钟 |
-| Playwright 全量（本地 4 worker） | 237 项通过 / 0 失败 |
-| CI（PR #6，提交 `6dd1eb9`） | Quality Gates 29 步全成功、Tauri 构建成功、E2E 四组全成功 |
-| 类型检查 / ESLint | `vue-tsc --noEmit` 干净；0 错误 / 8 条既有告警 |
+| Vitest 全量（本机，提交 `2324ffe`） | 4043 项通过 / 3 跳过 / 0 失败（211 文件通过、2 跳过），59.1 秒 |
+| 覆盖率门禁（CI 同提交，需真实 PG 服务） | 通过：statements 82.64 / branches 76.49 / functions 84.22 / lines 84.75（阈值 78/73/78/78）；CI 侧 4039 通过 / 7 跳过、212 文件通过 / 1 跳过 |
+| CI（PR #6，run #117，提交 `2324ffe`） | Quality Gates 全步成功、Tauri 构建成功、E2E 四组 52/73/50/66 = **241 项全绿，无重试、无跳过** |
+| Playwright 全量（本机单 worker） | 241 项 / 0 失败，累计 882.5 秒（约 14.7 分钟）——读数取自 `e2e/shard-groups.mjs` 记录的测量运行（提交 `b6f5f72`，2026-10-16 14:37） |
+| 类型检查 / ESLint | `vue-tsc --noEmit` 干净 17.3 秒；**入库文件 0 error / 8 条既有 warning**（本机整条 `eslint .` 另有 6 条 error，全部落在另一会话留下的 4 个未跟踪探针脚本里，见发布证据记录） |
 | 静态门禁 | 断点、视口、hover、!important、i7 字号、CSS 约定、存盘方式、Token 棘轮、产物入库、CSP、ORT 全部 exit=0 |
-| 对比度 | 语义配对全达标，扫描存量 67 处 = 基线（零余量棘轮） |
-| 国际化 | `i18n:check:strict` 通过，218 个文件无硬编码中文残留；中英键数对齐 |
+| 对比度 | 语义配对全达标；实际扫描 506 处 `color×background` 配对，存量 67 处 = 基线（零余量棘轮），分布在 13 个文件 |
+| 国际化 | `i18n:check:strict` 通过：src 全部 219 个文件无硬编码中文 UI 文案残留。中英键集合完全一致、两侧均无空文案由单测断言（`tests/i18n.test.ts`），已计入上面那 4043 项 |
 | 安卓真机（模拟器，WebView Chrome 133 / Android 16） | 净装后 Service Worker 注册数 0、CacheStorage 0、入口哈希与包一致；首帧语言两向都不闪；关抽屉 120ms 后长按弹出 7 项动作条；群聊与单聊分段口径一致 |
 
 ## 已知边界与未覆盖项
