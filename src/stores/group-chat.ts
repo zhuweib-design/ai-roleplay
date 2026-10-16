@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { StorageAdapter } from '@/storage/storage-adapter';
 import type { CharacterCard } from '@/core/character-card';
+import { mergeKeptLocal } from '@/core/store-merge';
 import {
   type GroupChat,
   type GroupChatMessage,
@@ -16,6 +17,8 @@ import {
 // F10.3 随机 NPC 生成（v1.1 新增）
 import { createApiClient } from '@/api';
 import { useSettingsStore } from './settings';
+import { saveBlob } from '@/utils/save-blob';
+import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
 import { exportGroupChatToStJson, importGroupChatFromSt } from '@/core/st-compat';
 import type { CharacterTemplateId } from '@core/character-generator';
 import {
@@ -50,6 +53,11 @@ export const useGroupChatStore = defineStore('groupChat', () => {
 
   // 注入的存储适配器
   let storageAdapter: StorageAdapter | null = null;
+
+  // 群列表的加载闸门（深链 `?group=` 要用，见 src/composables/useDeepLinkId.ts）：
+  // loaded = "读库已经跑完一次"，loadInFlight 保证并发调用只起一次读。
+  const loaded = ref(false);
+  let loadInFlight: Promise<void> | null = null;
 
   // 最近一次错误/提示
   const lastError = ref<string | null>(null);
@@ -115,13 +123,35 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     if (!storageAdapter) return;
     try {
       const list = await storageAdapter.loadGroupChats();
-      groups.value = list;
+      // 首帧窗口内新建的群聊要留住，理由同世界书（见 core/store-merge）
+      groups.value = mergeKeptLocal(list, groups.value);
       if (list.length > 0 && !currentGroupId.value) {
         currentGroupId.value = list[0]!.id;
       }
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityGroup'), error: err instanceof Error ? err.message : String(err) });
+    } finally {
+      loaded.value = true;
     }
+  }
+
+  /**
+   * 等群列表读完（还没开始就自己开始），并保证只读一遍。
+   *
+   * `/group?group=<id>` 要在读库完成之后才认得出那个 id；没闸门时深链会静默不命中
+   * （M12-a 在版本页上踩过的同一件事）。App.vue 的启动加载也走这里，两处不再各起一次读。
+   */
+  async function ensureLoaded(): Promise<void> {
+    if (loaded.value) return;
+    if (loadInFlight) return loadInFlight;
+    loadInFlight = (async () => {
+      try {
+        await loadFromStorage();
+      } finally {
+        loadInFlight = null;
+      }
+    })();
+    return loadInFlight;
   }
 
   async function persistGroup(id: string): Promise<void> {
@@ -157,21 +187,20 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     return exportGroupChatToStJson(g);
   }
 
-  /** 触发下载 ST 格式群聊 JSON */
-  function downloadGroupSt(groupId: string): boolean {
+  /**
+   * 导出 ST 格式群聊 JSON 给用户存盘
+   *
+   * @returns true 表示真的存下了；false = 找不到 / 用户在系统保存面板取消（都不得报"已导出"）
+   */
+  async function downloadGroupSt(groupId: string): Promise<boolean> {
     const json = exportGroupToStJson(groupId);
     if (json === null) return false;
     const g = groups.value.find((x) => x.id === groupId);
     const safeName = (g?.name ?? 'group').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = t('group.stExportName', { name: safeName });
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const outcome = await saveBlob(t('group.stExportName', { name: safeName }), () =>
+      new Blob([json], { type: 'application/json' })
+    );
+    if (outcome === 'cancelled') return false;
     lastInfo.value = t('group.exportedSt', { name: g?.name ?? '' });
     return true;
   }
@@ -922,17 +951,23 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     }
 
     const apiClient = createApiClient(profile);
-    const messages = buildNpcGenerationMessages(params);
 
+    // 先立"生成中"标志，再做异步准备（防重入不能等异步准备）
     isGeneratingNpc.value = true;
 
     try {
-      // 调用 API（非流式，温度 1.0 增加创意，Token 限制 1000）
+      // 调用 API（非流式，温度 1.0 增加创意；输出预算由模型上下文推导）
+      const prepared = await prepareGenerationPrompt(
+        () => buildNpcGenerationMessages(params),
+        undefined,
+        resolveContextWindow(profile, settingsStore.maxContextTokens),
+        settingsStore.reservedTokens
+      );
       const raw = await apiClient.chat({
-        messages,
+        messages: prepared.messages,
         model: profile.model,
         temperature: 1.0,
-        maxTokens: 1000,
+        maxTokens: prepared.maxTokens,
       });
 
       // 解析返回
@@ -1001,6 +1036,8 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     // 依赖注入
     setStorageAdapter,
     loadFromStorage,
+    ensureLoaded,
+    loaded,
     persistGroup,
     deleteFromStorage,
     // 群聊动作

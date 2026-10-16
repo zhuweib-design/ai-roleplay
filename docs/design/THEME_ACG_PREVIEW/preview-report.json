@@ -1,0 +1,1132 @@
+[
+  {
+    "skin": "f",
+    "skinName": "赛璐璐",
+    "source": "docs\\design\\ai-chat-ui-redesign\\css\\theme-f.css",
+    "tokensInSkin": 142,
+    "injected": 47,
+    "notProvidedBySkin": [],
+    "routes": [
+      {
+        "route": "/chat",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/f-chat.png",
+        "probe": {
+          "inlineBackground": "#FFF6EC",
+          "resolvedBackground": "#FFF6EC",
+          "bodyColor": "rgb(255, 246, 236)",
+          "foreground": "#2A2438",
+          "surfaces": {
+            "body": "rgb(255, 246, 236) / rgb(42, 36, 56)",
+            ".app-shell": "rgb(255, 246, 236) / rgb(42, 36, 56)",
+            ".nav-rail": "rgb(255, 251, 245) / rgb(42, 36, 56)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(42, 36, 56)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.nav-label",
+            "sample": "对话",
+            "color": "rgb(255, 246, 236)",
+            "onBackground": "rgb(226, 96, 58)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.29
+          }
+        ],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/character",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/f-characters.png",
+        "probe": {
+          "inlineBackground": "#FFF6EC",
+          "resolvedBackground": "#FFF6EC",
+          "bodyColor": "rgb(255, 246, 236)",
+          "foreground": "#2A2438",
+          "surfaces": {
+            "body": "rgb(255, 246, 236) / rgb(42, 36, 56)",
+            ".app-shell": "rgb(255, 246, 236) / rgb(42, 36, 56)",
+            ".nav-rail": "rgb(255, 251, 245) / rgb(42, 36, 56)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(42, 36, 56)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.nav-label",
+            "sample": "角色",
+            "color": "rgb(255, 246, 236)",
+            "onBackground": "rgb(226, 96, 58)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.29
+          },
+          {
+            "tag": "span.btn-label",
+            "sample": "随机生成",
+            "color": "rgb(226, 96, 58)",
+            "onBackground": "rgb(255, 255, 255)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.52
+          },
+          {
+            "tag": "span.tab-label",
+            "sample": "全部",
+            "color": "rgb(255, 255, 255)",
+            "onBackground": "rgb(226, 96, 58)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.52
+          },
+          {
+            "tag": "span.tab-count",
+            "sample": "4",
+            "color": "rgb(255, 255, 255)",
+            "onBackground": "rgb(226, 96, 58)",
+            "size": "11px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.52
+          }
+        ],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/settings?cat=appearance",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/f-settings-appearance.png",
+        "probe": {
+          "inlineBackground": "#FFF6EC",
+          "resolvedBackground": "#FFF6EC",
+          "bodyColor": "rgb(255, 246, 236)",
+          "foreground": "#2A2438",
+          "surfaces": {
+            "body": "rgb(255, 246, 236) / rgb(42, 36, 56)",
+            ".app-shell": "rgb(255, 246, 236) / rgb(42, 36, 56)",
+            ".nav-rail": "rgb(255, 251, 245) / rgb(42, 36, 56)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(42, 36, 56)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.nav-label",
+            "sample": "设置",
+            "color": "rgb(255, 246, 236)",
+            "onBackground": "rgb(226, 96, 58)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.29
+          }
+        ],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/worldbook",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/f-worldbook.png",
+        "probe": {
+          "inlineBackground": "#FFF6EC",
+          "resolvedBackground": "#FFF6EC",
+          "bodyColor": "rgb(255, 246, 236)",
+          "foreground": "#2A2438",
+          "surfaces": {
+            "body": "rgb(255, 246, 236) / rgb(42, 36, 56)",
+            ".app-shell": "rgb(255, 246, 236) / rgb(42, 36, 56)",
+            ".nav-rail": "rgb(255, 251, 245) / rgb(42, 36, 56)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(42, 36, 56)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.nav-label",
+            "sample": "世界书",
+            "color": "rgb(255, 246, 236)",
+            "onBackground": "rgb(226, 96, 58)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.29
+          },
+          {
+            "tag": "button.empty-action",
+            "sample": "创建第一个世界书",
+            "color": "rgb(255, 246, 236)",
+            "onBackground": "rgb(226, 96, 58)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.29
+          },
+          {
+            "tag": "button.wb-open-flow",
+            "sample": "按最小生效三步走（建书 → 加常驻条",
+            "color": "rgb(226, 96, 58)",
+            "onBackground": "rgb(255, 246, 236)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.29
+          },
+          {
+            "tag": "span.btn-label",
+            "sample": "AI 生成",
+            "color": "rgb(255, 255, 255)",
+            "onBackground": "rgb(184, 116, 0)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.79
+          }
+        ],
+        "gradientSkipped": []
+      }
+    ],
+    "totalFailures": 10
+  },
+  {
+    "skin": "g",
+    "skinName": "魔法少女",
+    "source": "docs\\design\\ai-chat-ui-redesign\\css\\theme-g.css",
+    "tokensInSkin": 142,
+    "injected": 47,
+    "notProvidedBySkin": [],
+    "routes": [
+      {
+        "route": "/chat",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/g-chat.png",
+        "probe": {
+          "inlineBackground": "#FDF2FF",
+          "resolvedBackground": "#FDF2FF",
+          "bodyColor": "rgb(253, 242, 255)",
+          "foreground": "#4A2B5C",
+          "surfaces": {
+            "body": "rgb(253, 242, 255) / rgb(74, 43, 92)",
+            ".app-shell": "rgb(253, 242, 255) / rgb(74, 43, 92)",
+            ".nav-rail": "rgb(255, 250, 255) / rgb(74, 43, 92)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(74, 43, 92)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/character",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/g-characters.png",
+        "probe": {
+          "inlineBackground": "#FDF2FF",
+          "resolvedBackground": "#FDF2FF",
+          "bodyColor": "rgb(253, 242, 255)",
+          "foreground": "#4A2B5C",
+          "surfaces": {
+            "body": "rgb(253, 242, 255) / rgb(74, 43, 92)",
+            ".app-shell": "rgb(253, 242, 255) / rgb(74, 43, 92)",
+            ".nav-rail": "rgb(255, 250, 255) / rgb(74, 43, 92)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(74, 43, 92)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.btn-label",
+            "sample": "新建",
+            "color": "rgb(255, 255, 255)",
+            "onBackground": "rgb(224, 51, 138)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 4.19
+          }
+        ],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/settings?cat=appearance",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/g-settings-appearance.png",
+        "probe": {
+          "inlineBackground": "#FDF2FF",
+          "resolvedBackground": "#FDF2FF",
+          "bodyColor": "rgb(253, 242, 255)",
+          "foreground": "#4A2B5C",
+          "surfaces": {
+            "body": "rgb(253, 242, 255) / rgb(74, 43, 92)",
+            ".app-shell": "rgb(253, 242, 255) / rgb(74, 43, 92)",
+            ".nav-rail": "rgb(255, 250, 255) / rgb(74, 43, 92)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(74, 43, 92)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/worldbook",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/g-worldbook.png",
+        "probe": {
+          "inlineBackground": "#FDF2FF",
+          "resolvedBackground": "#FDF2FF",
+          "bodyColor": "rgb(253, 242, 255)",
+          "foreground": "#4A2B5C",
+          "surfaces": {
+            "body": "rgb(253, 242, 255) / rgb(74, 43, 92)",
+            ".app-shell": "rgb(253, 242, 255) / rgb(74, 43, 92)",
+            ".nav-rail": "rgb(255, 250, 255) / rgb(74, 43, 92)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(74, 43, 92)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.btn-label",
+            "sample": "AI 生成",
+            "color": "rgb(255, 255, 255)",
+            "onBackground": "rgb(199, 122, 18)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.38
+          },
+          {
+            "tag": "span.btn-label",
+            "sample": "新建",
+            "color": "rgb(255, 255, 255)",
+            "onBackground": "rgb(224, 51, 138)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 4.19
+          },
+          {
+            "tag": "button.primary-btn",
+            "sample": "创建新世界书",
+            "color": "rgb(255, 255, 255)",
+            "onBackground": "rgb(224, 51, 138)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 4.19
+          }
+        ],
+        "gradientSkipped": []
+      }
+    ],
+    "totalFailures": 4
+  },
+  {
+    "skin": "h",
+    "skinName": "霓虹东京",
+    "source": "docs\\design\\ai-chat-ui-redesign\\css\\theme-h.css",
+    "tokensInSkin": 142,
+    "injected": 47,
+    "notProvidedBySkin": [],
+    "routes": [
+      {
+        "route": "/chat",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/h-chat.png",
+        "probe": {
+          "inlineBackground": "#0A0A1F",
+          "resolvedBackground": "#0A0A1F",
+          "bodyColor": "rgb(10, 10, 31)",
+          "foreground": "#EDE9FF",
+          "surfaces": {
+            "body": "rgb(10, 10, 31) / rgb(237, 233, 255)",
+            ".app-shell": "rgb(10, 10, 31) / rgb(237, 233, 255)",
+            ".nav-rail": "rgb(16, 16, 43) / rgb(237, 233, 255)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(237, 233, 255)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/character",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/h-characters.png",
+        "probe": {
+          "inlineBackground": "#0A0A1F",
+          "resolvedBackground": "#0A0A1F",
+          "bodyColor": "rgb(10, 10, 31)",
+          "foreground": "#EDE9FF",
+          "surfaces": {
+            "body": "rgb(10, 10, 31) / rgb(237, 233, 255)",
+            ".app-shell": "rgb(10, 10, 31) / rgb(237, 233, 255)",
+            ".nav-rail": "rgb(16, 16, 43) / rgb(237, 233, 255)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(237, 233, 255)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/settings?cat=appearance",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/h-settings-appearance.png",
+        "probe": {
+          "inlineBackground": "#0A0A1F",
+          "resolvedBackground": "#0A0A1F",
+          "bodyColor": "rgb(10, 10, 31)",
+          "foreground": "#EDE9FF",
+          "surfaces": {
+            "body": "rgb(10, 10, 31) / rgb(237, 233, 255)",
+            ".app-shell": "rgb(10, 10, 31) / rgb(237, 233, 255)",
+            ".nav-rail": "rgb(16, 16, 43) / rgb(237, 233, 255)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(237, 233, 255)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/worldbook",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/h-worldbook.png",
+        "probe": {
+          "inlineBackground": "#0A0A1F",
+          "resolvedBackground": "#0A0A1F",
+          "bodyColor": "rgb(10, 10, 31)",
+          "foreground": "#EDE9FF",
+          "surfaces": {
+            "body": "rgb(10, 10, 31) / rgb(237, 233, 255)",
+            ".app-shell": "rgb(10, 10, 31) / rgb(237, 233, 255)",
+            ".nav-rail": "rgb(16, 16, 43) / rgb(237, 233, 255)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(237, 233, 255)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      }
+    ],
+    "totalFailures": 0
+  },
+  {
+    "skin": "i",
+    "skinName": "机甲机库",
+    "source": "docs\\design\\ai-chat-ui-redesign\\css\\theme-i.css",
+    "tokensInSkin": 142,
+    "injected": 47,
+    "notProvidedBySkin": [],
+    "routes": [
+      {
+        "route": "/chat",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/i-chat.png",
+        "probe": {
+          "inlineBackground": "#15181C",
+          "resolvedBackground": "#15181C",
+          "bodyColor": "rgb(21, 24, 28)",
+          "foreground": "#DCE2E8",
+          "surfaces": {
+            "body": "rgb(21, 24, 28) / rgb(220, 226, 232)",
+            ".app-shell": "rgb(21, 24, 28) / rgb(220, 226, 232)",
+            ".nav-rail": "rgb(29, 34, 40) / rgb(220, 226, 232)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(220, 226, 232)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/character",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/i-characters.png",
+        "probe": {
+          "inlineBackground": "#15181C",
+          "resolvedBackground": "#15181C",
+          "bodyColor": "rgb(21, 24, 28)",
+          "foreground": "#DCE2E8",
+          "surfaces": {
+            "body": "rgb(21, 24, 28) / rgb(220, 226, 232)",
+            ".app-shell": "rgb(21, 24, 28) / rgb(220, 226, 232)",
+            ".nav-rail": "rgb(29, 34, 40) / rgb(220, 226, 232)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(220, 226, 232)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/settings?cat=appearance",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/i-settings-appearance.png",
+        "probe": {
+          "inlineBackground": "#15181C",
+          "resolvedBackground": "#15181C",
+          "bodyColor": "rgb(21, 24, 28)",
+          "foreground": "#DCE2E8",
+          "surfaces": {
+            "body": "rgb(21, 24, 28) / rgb(220, 226, 232)",
+            ".app-shell": "rgb(21, 24, 28) / rgb(220, 226, 232)",
+            ".nav-rail": "rgb(29, 34, 40) / rgb(220, 226, 232)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(220, 226, 232)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/worldbook",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/i-worldbook.png",
+        "probe": {
+          "inlineBackground": "#15181C",
+          "resolvedBackground": "#15181C",
+          "bodyColor": "rgb(21, 24, 28)",
+          "foreground": "#DCE2E8",
+          "surfaces": {
+            "body": "rgb(21, 24, 28) / rgb(220, 226, 232)",
+            ".app-shell": "rgb(21, 24, 28) / rgb(220, 226, 232)",
+            ".nav-rail": "rgb(29, 34, 40) / rgb(220, 226, 232)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(220, 226, 232)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      }
+    ],
+    "totalFailures": 0
+  },
+  {
+    "skin": "j",
+    "skinName": "大正浪漫",
+    "source": "docs\\design\\ai-chat-ui-redesign\\css\\theme-j.css",
+    "tokensInSkin": 149,
+    "injected": 47,
+    "notProvidedBySkin": [],
+    "routes": [
+      {
+        "route": "/chat",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/j-chat.png",
+        "probe": {
+          "inlineBackground": "#F5EDE0",
+          "resolvedBackground": "#F5EDE0",
+          "bodyColor": "rgb(245, 237, 224)",
+          "foreground": "#2E2620",
+          "surfaces": {
+            "body": "rgb(245, 237, 224) / rgb(46, 38, 32)",
+            ".app-shell": "rgb(245, 237, 224) / rgb(46, 38, 32)",
+            ".nav-rail": "rgb(251, 246, 236) / rgb(46, 38, 32)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(46, 38, 32)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/character",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/j-characters.png",
+        "probe": {
+          "inlineBackground": "#F5EDE0",
+          "resolvedBackground": "#F5EDE0",
+          "bodyColor": "rgb(245, 237, 224)",
+          "foreground": "#2E2620",
+          "surfaces": {
+            "body": "rgb(245, 237, 224) / rgb(46, 38, 32)",
+            ".app-shell": "rgb(245, 237, 224) / rgb(46, 38, 32)",
+            ".nav-rail": "rgb(251, 246, 236) / rgb(46, 38, 32)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(46, 38, 32)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/settings?cat=appearance",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/j-settings-appearance.png",
+        "probe": {
+          "inlineBackground": "#F5EDE0",
+          "resolvedBackground": "#F5EDE0",
+          "bodyColor": "rgb(245, 237, 224)",
+          "foreground": "#2E2620",
+          "surfaces": {
+            "body": "rgb(245, 237, 224) / rgb(46, 38, 32)",
+            ".app-shell": "rgb(245, 237, 224) / rgb(46, 38, 32)",
+            ".nav-rail": "rgb(251, 246, 236) / rgb(46, 38, 32)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(46, 38, 32)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/worldbook",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/j-worldbook.png",
+        "probe": {
+          "inlineBackground": "#F5EDE0",
+          "resolvedBackground": "#F5EDE0",
+          "bodyColor": "rgb(245, 237, 224)",
+          "foreground": "#2E2620",
+          "surfaces": {
+            "body": "rgb(245, 237, 224) / rgb(46, 38, 32)",
+            ".app-shell": "rgb(245, 237, 224) / rgb(46, 38, 32)",
+            ".nav-rail": "rgb(251, 246, 236) / rgb(46, 38, 32)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(46, 38, 32)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.btn-label",
+            "sample": "AI 生成",
+            "color": "rgb(245, 237, 224)",
+            "onBackground": "rgb(168, 112, 28)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.61
+          }
+        ],
+        "gradientSkipped": []
+      }
+    ],
+    "totalFailures": 1
+  },
+  {
+    "skin": "k",
+    "skinName": "水彩治愈",
+    "source": "docs\\design\\ai-chat-ui-redesign\\css\\theme-k.css",
+    "tokensInSkin": 142,
+    "injected": 47,
+    "notProvidedBySkin": [],
+    "routes": [
+      {
+        "route": "/chat",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/k-chat.png",
+        "probe": {
+          "inlineBackground": "#FAF7F0",
+          "resolvedBackground": "#FAF7F0",
+          "bodyColor": "rgb(250, 247, 240)",
+          "foreground": "#4A4A44",
+          "surfaces": {
+            "body": "rgb(250, 247, 240) / rgb(74, 74, 68)",
+            ".app-shell": "rgb(250, 247, 240) / rgb(74, 74, 68)",
+            ".nav-rail": "rgb(253, 251, 246) / rgb(74, 74, 68)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(74, 74, 68)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.nav-label",
+            "sample": "对话",
+            "color": "rgb(250, 247, 240)",
+            "onBackground": "rgb(201, 123, 74)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.06
+          }
+        ],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/character",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/k-characters.png",
+        "probe": {
+          "inlineBackground": "#FAF7F0",
+          "resolvedBackground": "#FAF7F0",
+          "bodyColor": "rgb(250, 247, 240)",
+          "foreground": "#4A4A44",
+          "surfaces": {
+            "body": "rgb(250, 247, 240) / rgb(74, 74, 68)",
+            ".app-shell": "rgb(250, 247, 240) / rgb(74, 74, 68)",
+            ".nav-rail": "rgb(253, 251, 246) / rgb(74, 74, 68)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(74, 74, 68)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.nav-label",
+            "sample": "角色",
+            "color": "rgb(250, 247, 240)",
+            "onBackground": "rgb(201, 123, 74)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.06
+          },
+          {
+            "tag": "span.tab-label",
+            "sample": "全部",
+            "color": "rgb(250, 247, 240)",
+            "onBackground": "rgb(201, 123, 74)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.06
+          },
+          {
+            "tag": "span.tab-count",
+            "sample": "4",
+            "color": "rgb(250, 247, 240)",
+            "onBackground": "rgb(201, 123, 74)",
+            "size": "11px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.06
+          },
+          {
+            "tag": "span.btn-label",
+            "sample": "随机生成",
+            "color": "rgb(201, 123, 74)",
+            "onBackground": "rgb(255, 255, 255)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.27
+          },
+          {
+            "tag": "span.-",
+            "sample": "编辑",
+            "color": "rgb(110, 110, 102)",
+            "onBackground": "rgb(242, 237, 226)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 4.4
+          }
+        ],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/settings?cat=appearance",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/k-settings-appearance.png",
+        "probe": {
+          "inlineBackground": "#FAF7F0",
+          "resolvedBackground": "#FAF7F0",
+          "bodyColor": "rgb(250, 247, 240)",
+          "foreground": "#4A4A44",
+          "surfaces": {
+            "body": "rgb(250, 247, 240) / rgb(74, 74, 68)",
+            ".app-shell": "rgb(250, 247, 240) / rgb(74, 74, 68)",
+            ".nav-rail": "rgb(253, 251, 246) / rgb(74, 74, 68)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(74, 74, 68)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.nav-label",
+            "sample": "设置",
+            "color": "rgb(250, 247, 240)",
+            "onBackground": "rgb(201, 123, 74)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.06
+          },
+          {
+            "tag": "span.fontsize-value",
+            "sample": "English",
+            "color": "rgb(110, 110, 102)",
+            "onBackground": "rgb(242, 237, 226)",
+            "size": "11px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 4.4
+          },
+          {
+            "tag": "span.theme-desc",
+            "sample": "浅色背景，强光环境友好",
+            "color": "rgb(110, 110, 102)",
+            "onBackground": "rgb(242, 237, 226)",
+            "size": "11px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 4.4
+          },
+          {
+            "tag": "span.fontsize-sample",
+            "sample": "角色对话正文示例",
+            "color": "rgb(110, 110, 102)",
+            "onBackground": "rgb(242, 237, 226)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 4.4
+          },
+          {
+            "tag": "p.preview-label",
+            "sample": "实时预览（当前 14px）",
+            "color": "rgb(110, 110, 102)",
+            "onBackground": "rgb(242, 237, 226)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 4.4
+          }
+        ],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/worldbook",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/k-worldbook.png",
+        "probe": {
+          "inlineBackground": "#FAF7F0",
+          "resolvedBackground": "#FAF7F0",
+          "bodyColor": "rgb(250, 247, 240)",
+          "foreground": "#4A4A44",
+          "surfaces": {
+            "body": "rgb(250, 247, 240) / rgb(74, 74, 68)",
+            ".app-shell": "rgb(250, 247, 240) / rgb(74, 74, 68)",
+            ".nav-rail": "rgb(253, 251, 246) / rgb(74, 74, 68)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(74, 74, 68)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.nav-label",
+            "sample": "世界书",
+            "color": "rgb(250, 247, 240)",
+            "onBackground": "rgb(201, 123, 74)",
+            "size": "12px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.06
+          },
+          {
+            "tag": "button.empty-action",
+            "sample": "创建第一个世界书",
+            "color": "rgb(250, 247, 240)",
+            "onBackground": "rgb(201, 123, 74)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.06
+          },
+          {
+            "tag": "button.wb-open-flow",
+            "sample": "按最小生效三步走（建书 → 加常驻条",
+            "color": "rgb(201, 123, 74)",
+            "onBackground": "rgb(250, 247, 240)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.06
+          },
+          {
+            "tag": "span.btn-label",
+            "sample": "AI 生成",
+            "color": "rgb(250, 247, 240)",
+            "onBackground": "rgb(176, 122, 42)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.47
+          }
+        ],
+        "gradientSkipped": []
+      }
+    ],
+    "totalFailures": 15
+  },
+  {
+    "skin": "l",
+    "skinName": "蒸汽波",
+    "source": "docs\\design\\ai-chat-ui-redesign\\css\\theme-l.css",
+    "tokensInSkin": 142,
+    "injected": 47,
+    "notProvidedBySkin": [],
+    "routes": [
+      {
+        "route": "/chat",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/l-chat.png",
+        "probe": {
+          "inlineBackground": "#1A0B2E",
+          "resolvedBackground": "#1A0B2E",
+          "bodyColor": "rgb(26, 11, 46)",
+          "foreground": "#F0E6FF",
+          "surfaces": {
+            "body": "rgb(26, 11, 46) / rgb(240, 230, 255)",
+            ".app-shell": "rgb(26, 11, 46) / rgb(240, 230, 255)",
+            ".nav-rail": "rgb(36, 16, 64) / rgb(240, 230, 255)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(240, 230, 255)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/character",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/l-characters.png",
+        "probe": {
+          "inlineBackground": "#1A0B2E",
+          "resolvedBackground": "#1A0B2E",
+          "bodyColor": "rgb(26, 11, 46)",
+          "foreground": "#F0E6FF",
+          "surfaces": {
+            "body": "rgb(26, 11, 46) / rgb(240, 230, 255)",
+            ".app-shell": "rgb(26, 11, 46) / rgb(240, 230, 255)",
+            ".nav-rail": "rgb(36, 16, 64) / rgb(240, 230, 255)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(240, 230, 255)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/settings?cat=appearance",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/l-settings-appearance.png",
+        "probe": {
+          "inlineBackground": "#1A0B2E",
+          "resolvedBackground": "#1A0B2E",
+          "bodyColor": "rgb(26, 11, 46)",
+          "foreground": "#F0E6FF",
+          "surfaces": {
+            "body": "rgb(26, 11, 46) / rgb(240, 230, 255)",
+            ".app-shell": "rgb(26, 11, 46) / rgb(240, 230, 255)",
+            ".nav-rail": "rgb(36, 16, 64) / rgb(240, 230, 255)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(240, 230, 255)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/worldbook",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/l-worldbook.png",
+        "probe": {
+          "inlineBackground": "#1A0B2E",
+          "resolvedBackground": "#1A0B2E",
+          "bodyColor": "rgb(26, 11, 46)",
+          "foreground": "#F0E6FF",
+          "surfaces": {
+            "body": "rgb(26, 11, 46) / rgb(240, 230, 255)",
+            ".app-shell": "rgb(26, 11, 46) / rgb(240, 230, 255)",
+            ".nav-rail": "rgb(36, 16, 64) / rgb(240, 230, 255)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(240, 230, 255)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      }
+    ],
+    "totalFailures": 0
+  },
+  {
+    "skin": "m",
+    "skinName": "学园制服",
+    "source": "docs\\design\\ai-chat-ui-redesign\\css\\theme-m.css",
+    "tokensInSkin": 149,
+    "injected": 47,
+    "notProvidedBySkin": [],
+    "routes": [
+      {
+        "route": "/chat",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/m-chat.png",
+        "probe": {
+          "inlineBackground": "#F4F6F9",
+          "resolvedBackground": "#F4F6F9",
+          "bodyColor": "rgb(244, 246, 249)",
+          "foreground": "#232B38",
+          "surfaces": {
+            "body": "rgb(244, 246, 249) / rgb(35, 43, 56)",
+            ".app-shell": "rgb(244, 246, 249) / rgb(35, 43, 56)",
+            ".nav-rail": "rgb(250, 251, 253) / rgb(35, 43, 56)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(35, 43, 56)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/character",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/m-characters.png",
+        "probe": {
+          "inlineBackground": "#F4F6F9",
+          "resolvedBackground": "#F4F6F9",
+          "bodyColor": "rgb(244, 246, 249)",
+          "foreground": "#232B38",
+          "surfaces": {
+            "body": "rgb(244, 246, 249) / rgb(35, 43, 56)",
+            ".app-shell": "rgb(244, 246, 249) / rgb(35, 43, 56)",
+            ".nav-rail": "rgb(250, 251, 253) / rgb(35, 43, 56)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(35, 43, 56)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": [
+          [
+            "span.avatar",
+            2
+          ]
+        ]
+      },
+      {
+        "route": "/settings?cat=appearance",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/m-settings-appearance.png",
+        "probe": {
+          "inlineBackground": "#F4F6F9",
+          "resolvedBackground": "#F4F6F9",
+          "bodyColor": "rgb(244, 246, 249)",
+          "foreground": "#232B38",
+          "surfaces": {
+            "body": "rgb(244, 246, 249) / rgb(35, 43, 56)",
+            ".app-shell": "rgb(244, 246, 249) / rgb(35, 43, 56)",
+            ".nav-rail": "rgb(250, 251, 253) / rgb(35, 43, 56)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(35, 43, 56)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/worldbook",
+        "screenshot": "docs/design/THEME_ACG_PREVIEW/m-worldbook.png",
+        "probe": {
+          "inlineBackground": "#F4F6F9",
+          "resolvedBackground": "#F4F6F9",
+          "bodyColor": "rgb(244, 246, 249)",
+          "foreground": "#232B38",
+          "surfaces": {
+            "body": "rgb(244, 246, 249) / rgb(35, 43, 56)",
+            ".app-shell": "rgb(244, 246, 249) / rgb(35, 43, 56)",
+            ".nav-rail": "rgb(250, 251, 253) / rgb(35, 43, 56)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(35, 43, 56)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [
+          {
+            "tag": "span.btn-label",
+            "sample": "AI 生成",
+            "color": "rgb(244, 246, 249)",
+            "onBackground": "rgb(168, 114, 28)",
+            "size": "13px",
+            "large": false,
+            "need": 4.5,
+            "ratio": 3.81
+          }
+        ],
+        "gradientSkipped": []
+      }
+    ],
+    "totalFailures": 1
+  }
+]

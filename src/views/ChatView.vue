@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useRouter } from 'vue-router';
 import { useCharacterStore } from '@/stores/character';
 import { useViewport } from '@/core/viewport';
 import { useScrollLock } from '@/composables/useScrollLock';
@@ -7,8 +8,17 @@ import { t } from '@/i18n';
 import CharacterList from '@/components/layout/CharacterList.vue';
 import ChatMain from '@/components/chat/ChatMain.vue';
 import ContextPanel from '@/components/layout/ContextPanel.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
+import GuidedTasksCard from '@/components/common/GuidedTasksCard.vue';
 
+const router = useRouter();
 const characterStore = useCharacterStore();
+
+const hasCharacters = computed(() => characterStore.characters.length > 0);
+
+function createCharacter(): void {
+  void router.push({ name: 'character-new' });
+}
 
 // 任意抽屉打开时显示遮罩（移动端）
 const overlayActive = computed(
@@ -70,7 +80,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="chat-shell">
+  <!--
+    零角色分支：此前 /chat 无条件渲染三栏（ChatMain.vue:93 直接断言 currentCharacter 非空），
+    新用户第一次进来面对的是空壳。这里改为空态 + 任务中心。
+  -->
+  <div v-if="hasCharacters" class="chat-shell">
     <!-- 角色列表侧栏（移动端为左抽屉；右侧面板打开时 inert 防焦点逃逸） -->
     <CharacterList :inert="characterStore.contextDrawerOpen && isCompact ? true : undefined" />
 
@@ -92,6 +106,17 @@ onBeforeUnmount(() => {
       @keydown.space.prevent="handleOverlayClick"
     />
   </div>
+
+  <div v-else id="main-content" class="chat-coldstart" tabindex="-1">
+    <EmptyState
+      title-key="chat.emptyTitle"
+      desc-key="chat.emptyDesc"
+      icon="user"
+      action-key="chat.emptyAction"
+      @action="createCharacter"
+    />
+    <GuidedTasksCard />
+  </div>
 </template>
 
 <style scoped>
@@ -102,6 +127,16 @@ onBeforeUnmount(() => {
   min-width: 0;
   height: 100%;
   overflow: hidden;
+}
+
+.chat-coldstart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md, 16px);
+  flex: 1 1 0;
+  min-width: 0;
+  padding: var(--spacing-lg, 24px);
+  overflow-y: auto;
 }
 
 /* 桌面端：ContextPanel 在文档流中显示，无需遮罩 */

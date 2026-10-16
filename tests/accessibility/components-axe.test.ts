@@ -47,7 +47,6 @@ const gradientCharacter: UICharacter = {
   authorNote: '',
   authorDepth: 4,
   temperature: 1.0,
-  maxTokens: 4096,
   worldEntries: [],
   tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
 };
@@ -103,7 +102,10 @@ function withPlugins() {
 
 // ── 测试 ──
 
-describe('axe-core 基础组件无障碍审计', () => {
+// 每条审计都要跑一遍 axe 的无障碍树计算，CPU 密集：隔离跑最慢的一条约 1.0s，
+// 但全量 200 个文件并发时被压到 5.07s、撞破默认 5s 上限（实测红过一次）。
+// 与 snapshot-restore 那次不同，这次成本确实在用例自己身上，所以给余量而不是搬代码。
+describe('axe-core 基础组件无障碍审计', { timeout: 20_000 }, () => {
   it('Icon 图标组件应通过 axe 审计', async () => {
     const results = await mountAndAudit(Icon, {
       props: { name: 'house', size: 24 },

@@ -2,11 +2,15 @@
  * 全局测试环境 setup（Phase G4）
  *
  * 内容：
- * 1. fake-indexeddb：让依赖 IndexedDB 的 store 在 jsdom 下可运行
- * 2. File.text() polyfill：jsdom 部分版本缺失
- * 3. matchMedia / IntersectionObserver / ResizeObserver polyfill：Vue 组件挂载所需
- * 4. 加载全局 CSS：让 axe-core 可验证部分样式相关规则（如颜色对比度）
+ * 1. 声明测试环境的浏览器语言（`./setup-locale`，必须排第一，见该文件说明）
+ * 2. fake-indexeddb：让依赖 IndexedDB 的 store 在 jsdom 下可运行
+ * 3. File.text() polyfill：jsdom 部分版本缺失
+ * 4. matchMedia / IntersectionObserver / ResizeObserver polyfill：Vue 组件挂载所需
+ * 5. 加载全局 CSS：让 axe-core 可验证部分样式相关规则（如颜色对比度）
  */
+
+// 必须排在所有会 import 应用代码的语句之前：localeRef 的初值在这里被求值
+import './setup-locale';
 import 'fake-indexeddb/auto';
 
 // ── File.text() polyfill ──
@@ -83,6 +87,21 @@ if (typeof ResizeObserver === 'undefined') {
     value: ResizeObserverStub,
   });
 }
+
+// ── 全局指令注册 ──
+// 应用侧在 src/main.ts 里 app.directive(...) 注册的全局指令，组件测试用 mount() 时
+// 拿不到（Vue 只会报 "Failed to resolve directive" 然后静默跳过），
+// 于是 v-tip 挂的 aria-describedby、v-range 写的 --range-pct 在测试里全部消失。
+// 在这里统一注册，测试与运行时看到的是同一套指令。
+import { config } from '@vue/test-utils';
+import { vTip } from '../src/core/tip';
+import { vRange } from '../src/core/range-fill';
+
+config.global.directives = {
+  ...(config.global.directives ?? {}),
+  tip: vTip,
+  range: vRange,
+};
 
 // ── 加载全局样式（供 axe-core 颜色对比度等规则使用） ──
 import '../src/styles/tokens.css';

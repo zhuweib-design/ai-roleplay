@@ -15,7 +15,6 @@ import { ref, computed } from 'vue';
 import {
   ImageGenerationEngine,
   createDefaultParams,
-  createDefaultProviderConfig,
   listStylePresets,
   type ImageGenerationParams,
   type ImageProviderConfig,
@@ -32,6 +31,8 @@ import {
   clearAllImages,
   type ImageGalleryStats,
 } from '@/core/image-storage';
+import { isEncrypted } from '@core/api-key-crypto';
+import { useSettingsStore } from '@/stores/settings';
 
 // ── 单例引擎 ──
 
@@ -40,9 +41,15 @@ const engine = new ImageGenerationEngine();
 // ── Store ──
 
 export const useImageGenerationStore = defineStore('imageGeneration', () => {
+  const settingsStore = useSettingsStore();
   // 状态
   const params = ref<ImageGenerationParams>(createDefaultParams());
-  const providerConfig = ref<ImageProviderConfig>(createDefaultProviderConfig());
+  /**
+   * E22：Provider 配置的唯一事实源在 settings store —— 那里才有持久化白名单
+   * 与主密码加密分支。此前它是本 store 的私有 ref，不在任何持久化路径里，
+   * 刷新即丢（连 apiKey 一起丢），且与设置里的「图像/视频」分类互不读取。
+   */
+  const providerConfig = computed<ImageProviderConfig>(() => settingsStore.imageGenConfig);
   const isGenerating = ref(false);
   const generationProgress = ref<GenerationProgress | null>(null);
   const lastError = ref<string | null>(null);
@@ -73,9 +80,17 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
   /** 已注册 Provider 类型 */
   const providerTypes = computed<ProviderType[]>(() => engine.listProviderTypes());
 
-  /** 是否可以生成 */
+  /**
+   * 是否可以生成。
+   * E22 之后密钥会随设置持久化，因此多一条判断：设了主密码又没解锁时，内存里的是
+   * `enc:v1:...` 密文，直接拿去请求只会得到一个"看起来有值但必然失败"的调用，
+   * 所以锁定态按"未配置"处理（页头与配置段本来就显示"未配置"）。
+   */
   const canGenerate = computed(
-    () => providerConfig.value.apiKey.trim().length > 0 && params.value.prompt.trim().length > 0
+    () =>
+      providerConfig.value.apiKey.trim().length > 0 &&
+      !isEncrypted(providerConfig.value.apiKey) &&
+      params.value.prompt.trim().length > 0
   );
 
   // ── 动作 ──
@@ -85,9 +100,12 @@ export const useImageGenerationStore = defineStore('imageGeneration', () => {
     params.value = { ...params.value, ...partial };
   }
 
-  /** 更新 Provider 配置 */
+  /**
+   * 更新 Provider 配置：写进 settings 那份唯一事实源并落盘。
+   * 不能直接赋值给 providerConfig —— 它是 computed（只读镜像 settings.imageGenConfig）。
+   */
   function updateProviderConfig(partial: Partial<ImageProviderConfig>): void {
-    providerConfig.value = { ...providerConfig.value, ...partial };
+    settingsStore.setImageGenConfig(partial);
   }
 
   /** 设置风格 */

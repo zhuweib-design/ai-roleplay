@@ -51,7 +51,6 @@ function makeChar(overrides: Partial<UICharacter> = {}): UICharacter {
     authorNote: '',
     authorDepth: 4,
     temperature: 0.7,
-    maxTokens: 2048,
     worldEntries: [],
     tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
     ...overrides,
@@ -442,48 +441,17 @@ describe('ContextPanel — 降级与采样控件', () => {
     expect(updated?.sampling?.topP).toBeUndefined();
   });
 
-  // ── T-16：maxTokens 可选（修掉 profile.maxTokens 死代码） ──
+  // ── 输出上限不再是角色级旋钮（2026-10-14 口径：模型只配最大上下文，预算自动推导） ──
 
-  /** 定位"最大 Tokens"那一行（按滑块 aria-label 精确取，避免与其它 range 混淆） */
-  function findMaxTokensRow(wrapper: ReturnType<typeof mountPanel>) {
-    return wrapper
-      .findAll('.ctx-range-label')
-      .find((row) =>
-        row.findAll('input[type="range"]').some((i) => i.attributes('aria-label') === t('ctx.maxTokensAria'))
-      );
-  }
-
-  it('角色级未设置 maxTokens 时显示"未设置"，且不显示清除按钮', async () => {
-    const wrapper = mountPanel(makeProfile({ maxTokens: 1024 }), makeChar({ maxTokens: undefined }));
+  it('面板内不再出现任何"最大 Tokens"滑块（输出上限已从界面撤掉）', async () => {
+    const wrapper = mountPanel(makeProfile({}), makeChar({}));
     await nextTick();
 
-    const row = findMaxTokensRow(wrapper)!;
-    expect(row.text()).toContain(t('ctx.maxTokensUnset'));
-    expect(row.find('.ctx-reset-btn-maxtok').exists()).toBe(false);
-    // 滑块把手中立跟随生效值（Profile 级 1024），但文案仍标明"未设置"
-    expect(row.find('input[type="range"]').attributes('value')).toBe('1024');
-  });
-
-  it('点击清除按钮把角色级 maxTokens 置回未设置（而非置 0）', async () => {
-    const wrapper = mountPanel(makeProfile({ maxTokens: 1024 }), makeChar({ maxTokens: 2048 }));
-    await nextTick();
-
-    const row = findMaxTokensRow(wrapper)!;
-    expect(row.find('.ctx-reset-btn-maxtok').exists()).toBe(true);
-    await row.find('.ctx-reset-btn-maxtok').trigger('click');
-
-    const updated = useCharacterStore().characters.find((c) => c.id === 'c1');
-    expect(updated?.maxTokens).toBeUndefined();
-  });
-
-  it('拖动滑块写入角色级 maxTokens', async () => {
-    const wrapper = mountPanel(makeProfile({ maxTokens: 1024 }), makeChar({ maxTokens: undefined }));
-    await nextTick();
-
-    await findMaxTokensRow(wrapper)!.find('input[type="range"]').setValue('4096');
-
-    const updated = useCharacterStore().characters.find((c) => c.id === 'c1');
-    expect(updated?.maxTokens).toBe(4096);
+    const sliderLabels = wrapper
+      .findAll('input[type="range"]')
+      .map((i) => i.attributes('aria-label') ?? '');
+    expect(sliderLabels.some((l) => l.includes('maxTokens'))).toBe(false);
+    expect(wrapper.find('.ctx-reset-btn-maxtok').exists()).toBe(false);
   });
 
   it('思考强度选择写入角色级 reasoningEffort', async () => {

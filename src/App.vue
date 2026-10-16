@@ -20,7 +20,9 @@ import Toast from '@/components/common/Toast.vue';
 import { useActiveToast, dismissToast } from '@/utils/toast-service';
 import NavRail from '@/components/layout/NavRail.vue';
 import BottomNav from '@/components/mobile/BottomNav.vue';
-import { isMainTab } from '@/core/mobile-nav';
+import Icon from '@/components/common/Icon.vue';
+import { useReadinessJump } from '@/composables/useReadinessJump';
+import { isDetailRoute } from '@/core/mobile-nav';
 import MasterPasswordModal from '@/components/common/MasterPasswordModal.vue';
 import type { MasterPasswordMode } from '@/components/common/MasterPasswordModal.vue';
 import OnboardingModal from '@/components/common/OnboardingModal.vue';
@@ -36,13 +38,24 @@ const lorebookStore = useLorebookStore();
 const groupChatStore = useGroupChatStore();
 const dataBankStore = useDataBankStore();
 const storyStore = useStoryStore();
+const versionStore = useCharacterVersionStore();
 const communityMarketStore = useCommunityMarketStore();
 const characterVersionStore = useCharacterVersionStore();
 const randomEventsStore = useRandomEventsStore();
 
 // 移动端底部导航:仅主 Tab 页显示(二级详情页全屏)
 const route = useRoute();
-const showBottomNav = computed(() => isMainTab(route.name as string | undefined));
+// 底栏显隐改由"是否二级沉浸页"决定（isDetailRoute 此前零消费者，实际门禁一直是 isMainTab，
+// 导致 /group 既不是主 Tab 又被当成沉浸页处理——进入后底部导航消失，成为单向门）。
+// 现在的口径：移动端 + 非沉浸页 => 显示底栏；沉浸页仍是角色编辑/新建两页。
+const showBottomNav = computed(
+  () => isMobile.value && !isDetailRoute(route.name as string | undefined)
+);
+
+// L 层深链的回程。`?from=` 契约此前只有设置页兑现（它自己有一枚位置更贴合的面板头按钮），
+// 世界书 / 数据银行 / 版本 / 群聊这些目标把用户带过去后给不出回头路。
+const { fromPath, backFromQuery } = useReadinessJump();
+const showSourceReturn = computed(() => !!fromPath.value && route.name !== 'settings');
 
 // 全局 Toast 队列（S1）：所有面板经 toast-service 触发，容器只在 App.vue 挂载一次
 const activeToast = useActiveToast();
@@ -264,14 +277,16 @@ onMounted(async () => {
     // 各 store 的 loadFromStorage 之间无跨 store 依赖（函数体内无 useXxxStore 引用，已核实），
     // 由串行 await 改为并行，把 5 段等待压缩为 1 段（取最慢项）。
     await Promise.all([
-      characterStore.loadFromStorage().catch((err) => {
+      // 角色库走 ensureLoaded 而不是 loadFromStorage：深链进来的视图可能比这里更早挂载，
+      // 两边共用同一个 in-flight promise 才只会读一遍库。
+      characterStore.ensureLoaded().catch((err) => {
         logger.error('Storage', '从存储加载角色失败', err);
       }),
       // W3 新增：加载世界书与群聊
-      lorebookStore.loadFromStorage().catch((err) => {
+      lorebookStore.ensureLoaded().catch((err) => {
         logger.error('Storage', '从存储加载世界书失败', err);
       }),
-      groupChatStore.loadFromStorage().catch((err) => {
+      groupChatStore.ensureLoaded().catch((err) => {
         logger.error('Storage', '从存储加载群聊失败', err);
       }),
       // 迭代26 新增：加载数据银行文档 (F09)
@@ -279,10 +294,22 @@ onMounted(async () => {
         logger.error('Storage', '从存储加载数据银行文档失败', err);
       }),
       // 迭代31 新增：加载故事引擎数据 (F16)
-      storyStore.loadFromStorage().catch((err) => {
+      // 同角色库：走 ensureLoaded，让深链视图与启动加载共用同一次读库
+      storyStore.ensureLoaded().catch((err) => {
         logger.error('Storage', '从存储加载故事失败', err);
       }),
+      // E19：版本快照此前只在「版本管理」页挂载时加载 ⇒ 离开那一页就没有任何地方
+      // 知道"哪些角色已被跟踪"，角色卡上的标记也就无从判断。启动即加载一次。
+      versionStore.loadFromDisk().catch((err) => {
+        logger.error('Storage', '加载角色版本快照失败', err);
+      }),
     ]);
+
+    // D-Q（UX_IA_GUIDED_FLOW_DESIGN_2026-10-07.md §3.7.2）：启动时把最近一段会话接回聊天区。
+    // 会话索引原本只在 CharacterList 挂载时加载，而那次挂载早于这里注入适配器，
+    // 只有"角色数量恰好变化"才会被 watch 二次触发——不能把用户的历史建立在这个巧合上。
+    await chatStore.loadAllSessions(characterStore.characters.map((c) => c.id));
+    await chatStore.restoreLatestSession(characterStore.currentCharacter ?? null);
   } catch (err) {
     logger.error('Storage', '存储适配器初始化失败', err);
   }
@@ -322,8 +349,11 @@ watch(activeProfile, (profile) => {
 </script>
 
 <template>
-  <!-- Skip link：键盘用户可跳过导航直达主内容（WCAG 2.4.1） -->
-  <a href="#main-content" class="skip-link">{{ t('app.skipToContent') }}</a>
+  <!-- Skip link：键盘用户可跳过导航直达主内容（WCAG 2.4.1）。
+       目标锚点在应用层的 <main id="app-main"> 上，而不是各视图里的 #main-content——
+       实测 21 条路由里有 8 条（数据银行/故事/随机事件/市场/本地模型/图像/版本管理/更多）
+       根本没提供那个 id，跳转链接点了等于没点。挂在应用层则每条路由都在，且不会重复。 -->
+  <a href="#app-main" class="skip-link">{{ t('app.skipToContent') }}</a>
   <div class="app-shell">
     <!-- 候选5：桌面版未实现功能提示（role=alert 供读屏即时播报） -->
     <div v-if="platformNotice" role="alert" class="platform-notice">
@@ -347,11 +377,24 @@ watch(activeProfile, (profile) => {
     <NavRail v-if="!isMobile" class="nav-rail-desktop" />
     <!-- 主内容区：由各视图自行渲染（含三栏布局等） -->
     <!-- 移动端主 Tab 页加 has-mobile-nav,内容底部留白避开底部导航 -->
-    <main class="app-main" :class="{ 'has-mobile-nav': showBottomNav }">
+    <main id="app-main" class="app-main" tabindex="-1" :class="{ 'has-mobile-nav': showBottomNav }">
       <router-view />
     </main>
     <!-- 移动端底部导航（≤640px 显示,主 Tab 页；断点口径以 src/core/viewport.ts 为唯一来源） -->
     <BottomNav v-if="showBottomNav" class="app-bottom-nav" />
+
+    <!-- L 层深链的统一回头路：带 ?from= 进来就能一键回去（设置页用自己的那枚） -->
+    <button
+      v-if="showSourceReturn"
+      type="button"
+      class="source-return"
+      data-rel-jump="source-return"
+      :aria-label="t('settings.backFrom')"
+      @click="backFromQuery"
+    >
+      <Icon name="arrow-left" :size="14" aria-hidden="true" />
+      <span>{{ t('settings.backFrom') }}</span>
+    </button>
 
     <!-- 全局 Toast 显示容器（第三轮优化项 8 S1：队列逐条显示，见 src/utils/toast-service.ts） -->
     <Toast

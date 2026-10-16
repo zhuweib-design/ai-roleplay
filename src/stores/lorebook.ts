@@ -15,7 +15,9 @@ import {
   MAX_LOREBOOK_ENTRIES,
 } from '@/core/lorebook';
 import { createApiClient } from '../api';
+import { mergeKeptLocal } from '@/core/store-merge';
 import { useSettingsStore } from './settings';
+import { saveBlob } from '@/utils/save-blob';
 import {
   type WorldTemplateId,
   type GeneratedRegion,
@@ -26,7 +28,42 @@ import {
   buildWorldExtendMessages,
   parseGeneratedWorld,
   parseExtendedRegions,
+  describeWorldParseFailure,
 } from '@core/world-generator';
+import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
+
+/**
+ * 世界创建解析失败时，按"哪一步失败 + 证据"给出可定位的提示。
+ *
+ * 旧写法是统一一句"无法解析 AI 返回的世界数据"，用户拿不到任何可行动信息；
+ * 而这句话背后至少有五种成因（空返回 / 不是 JSON / 被输出上限截断 / 顶层字段不对 /
+ * 大区缺 title），处理方式各不相同，所以把分类和证据一起报出来。
+ */
+function describeWorldParseError(raw: string): string {
+  const f = describeWorldParseFailure(raw);
+  const params = {
+    chars: f.chars,
+    preview: f.preview,
+    keys: f.keys.join('、'),
+    count: f.regionCount,
+  };
+  switch (f.kind) {
+    case 'empty':
+      return t('lb.genParseEmpty');
+    case 'not-json':
+      return t('lb.genParseNotJson', params);
+    case 'broken-json':
+      return t('lb.genParseBroken', params);
+    case 'no-world':
+      return t('lb.genParseNoWorld', { keys: params.keys, preview: params.preview, chars: params.chars });
+    case 'no-regions':
+      return t('lb.genParseNoRegions', { keys: params.keys, preview: params.preview, chars: params.chars });
+    case 'region-shape':
+      return t('lb.genParseRegionShape', { count: params.count, keys: params.keys });
+    default:
+      return t('lb.genParseFailed');
+  }
+}
 
 /**
  * F06.6 树状层级节点（v1.1）
@@ -63,6 +100,11 @@ export const useLorebookStore = defineStore('lorebook', () => {
 
   // 注入的存储适配器
   let storageAdapter: StorageAdapter | null = null;
+
+  // 世界书列表的加载闸门（深链 `?book=` 要用，见 src/composables/useDeepLinkId.ts）：
+  // loaded = "读库已经跑完一次"，loadInFlight 保证并发调用只起一次读。
+  const loaded = ref(false);
+  let loadInFlight: Promise<void> | null = null;
 
   // 最近一次错误/提示
   const lastError = ref<string | null>(null);
@@ -117,13 +159,36 @@ export const useLorebookStore = defineStore('lorebook', () => {
     if (!storageAdapter) return;
     try {
       const list = await storageAdapter.loadLorebooks();
-      lorebooks.value = list;
+      // 首帧窗口内用户新建的书要留住（存档里已有、内存里刚建，整数组替换会把它变没）
+      lorebooks.value = mergeKeptLocal(list, lorebooks.value);
       if (list.length > 0 && !currentLorebookId.value) {
         currentLorebookId.value = list[0]!.id;
       }
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityWorldbook'), error: err instanceof Error ? err.message : String(err) });
+    } finally {
+      loaded.value = true;
     }
+  }
+
+  /**
+   * 等世界书列表读完（还没开始就自己开始），并保证只读一遍。
+   *
+   * `/worldbook?book=<id>` 要在读库完成之后才认得出那本；没闸门时表现是
+   * "链接打开的是默认那本书"而不是报错——M12-a 在角色版本页上踩过同一形状。
+   * App.vue 的启动加载也走这里，两处不再各起一次全表读。
+   */
+  async function ensureLoaded(): Promise<void> {
+    if (loaded.value) return;
+    if (loadInFlight) return loadInFlight;
+    loadInFlight = (async () => {
+      try {
+        await loadFromStorage();
+      } finally {
+        loadInFlight = null;
+      }
+    })();
+    return loadInFlight;
   }
 
   async function persistLorebook(id: string): Promise<void> {
@@ -207,7 +272,7 @@ export const useLorebookStore = defineStore('lorebook', () => {
    */
   function updateLorebook(
     id: string,
-    patch: Partial<Pick<Lorebook, 'name' | 'description' | 'scope'>>
+    patch: Partial<Pick<Lorebook, 'name' | 'description' | 'scope' | 'characterId'>>
   ): boolean {
     const lb = lorebooks.value.find((l) => l.id === id);
     if (!lb) return false;
@@ -898,20 +963,18 @@ export const useLorebookStore = defineStore('lorebook', () => {
     }
   }
 
-  function downloadLorebook(id: string): boolean {
+  /**
+   * 导出世界书 JSON 给用户存盘
+   *
+   * @returns true 表示真的存下了；false = 找不到 / 用户在系统保存面板取消（都不得报"已导出"）
+   */
+  async function downloadLorebook(id: string): Promise<boolean> {
     const json = exportLorebook(id);
     if (json === null) return false;
     const lb = lorebooks.value.find((l) => l.id === id);
     const safeName = (lb?.name ?? 'lorebook').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${safeName}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const outcome = await saveBlob(`${safeName}.json`, () => new Blob([json], { type: 'application/json' }));
+    if (outcome === 'cancelled') return false;
     lastInfo.value = t('lb.exported2', { name: safeName });
     return true;
   }
@@ -1059,7 +1122,9 @@ export const useLorebookStore = defineStore('lorebook', () => {
   async function generateRandomWorldbook(
     templateId: WorldTemplateId,
     scope: Lorebook['scope'] = 'global',
-    sourceContext?: string
+    sourceContext?: string,
+    /** scope='character' 时要归属的角色；给了就写进记录，不再被抹成 undefined */
+    characterId?: string
   ): Promise<string | null> {
     lastError.value = null;
     lastInfo.value = null;
@@ -1077,27 +1142,33 @@ export const useLorebookStore = defineStore('lorebook', () => {
       return null;
     }
 
-    // 2. 构建 Prompt
+    // 2. 构建 Prompt：输出预算由"模型最大上下文"自动推导，源素材超预算时自动截断
     const seed = generateWorldSeed();
-    const messages = buildWorldGenerationMessages(templateId, seed, sourceContext);
     const meta = getWorldTemplateMeta(templateId);
 
+    // 先立"生成中"标志，再做异步准备（防重入不能等异步准备）
     isGeneratingWorld.value = true;
 
     try {
-      // 3. 调用 API（非流式，温度 1.0 增加创意，预留 2000 Token 输出）
+      // 3. 调用 API（非流式，温度 1.0 增加创意；输出预算 = 上下文 − 输入 − 预留）
+      const prepared = await prepareGenerationPrompt(
+        (src) => buildWorldGenerationMessages(templateId, seed, src),
+        sourceContext,
+        resolveContextWindow(profile, settingsStore.maxContextTokens),
+        settingsStore.reservedTokens
+      );
       const apiClient = createApiClient(profile);
       const raw = await apiClient.chat({
-        messages,
+        messages: prepared.messages,
         model: profile.model,
         temperature: 1.0,
-        maxTokens: 2000,
+        maxTokens: prepared.maxTokens,
       });
 
-      // 4. 解析
+      // 4. 解析（失败时把证据说清楚：空返回 / 不是 JSON / 被截断 / 字段名不对）
       const generated = parseGeneratedWorld(raw);
       if (!generated) {
-        lastError.value = t('lb.genParseFailed');
+        lastError.value = describeWorldParseError(raw);
         return null;
       }
 
@@ -1111,8 +1182,9 @@ export const useLorebookStore = defineStore('lorebook', () => {
         description: t('lb.aiGeneratedDesc', { label: meta?.label ?? 'AI', time: new Date().toLocaleString('zh-CN') }),
         entries,
         scope,
-        // 默认全局，调用方可指定其他 scope 后再 updateLorebook 调整绑定
-        ...(scope === 'character' ? { characterId: undefined } : {}),
+        // 归属角色：以前这里无条件写 `characterId: undefined`，而 updateLorebook 又不
+        // 允许改 characterId —— 于是"调用方之后再调整绑定"这条注释指的路根本不存在。
+        ...(characterId ? { characterId } : {}),
         worldDescription: {
           name: generated.world.name,
           type: generated.world.type,
@@ -1181,24 +1253,26 @@ export const useLorebookStore = defineStore('lorebook', () => {
       return 0;
     }
 
-    // 2. 构建 Prompt
     const seed = generateWorldSeed();
-    const messages = buildWorldExtendMessages(
-      lb.entries,
-      lb.worldDescription ?? null,
-      seed
-    );
 
+    // 先立"生成中"标志，再做异步准备（防重入不能等异步准备）
     isGeneratingWorld.value = true;
 
     try {
+      // 2. 构建 Prompt：已有条目摘要超预算时按"保尾"截断（结构说明在尾部）
+      const prepared = await prepareGenerationPrompt(
+        () => buildWorldExtendMessages(lb.entries, lb.worldDescription ?? null, seed),
+        undefined,
+        resolveContextWindow(profile, settingsStore.maxContextTokens),
+        settingsStore.reservedTokens
+      );
       // 3. 调用 API
       const apiClient = createApiClient(profile);
       const raw = await apiClient.chat({
-        messages,
+        messages: prepared.messages,
         model: profile.model,
         temperature: 1.0,
-        maxTokens: 1500,
+        maxTokens: prepared.maxTokens,
       });
 
       // 4. 解析
@@ -1257,6 +1331,8 @@ export const useLorebookStore = defineStore('lorebook', () => {
     // 依赖注入
     setStorageAdapter,
     loadFromStorage,
+    ensureLoaded,
+    loaded,
     persistLorebook,
     deleteFromStorage,
     // Lorebook 动作

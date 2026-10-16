@@ -12,7 +12,7 @@
   z-index: 9999;
   padding: 8px 14px;
   background: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
   border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 600;
@@ -152,8 +152,55 @@
   .app-main {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  /* 主 Tab 页有底部导航,内容底部额外留白避开底部导航条（高度取自 --mobile-nav-h，S-2） */
+  /* 主 Tab 页：底部导航是 `.app-shell` 里 `main` 的后继兄弟（`App.vue:383`，在流内占自己的 52px），
+     所以这里**不需要**再预留一次高度。2026-10-16 真机量过：键盘弹起时
+     `.chat-footer` 底边 422、`.bottom-nav` 顶边 478，中间那 56px 全是这条 padding 撑出来的空带
+     （等于每个手机 Tab 页白丢约 10% 高度）。安全区由导航自己垫（`BottomNav.vue:59`），
+     这里再垫一次就是双份。 */
   .app-main.has-mobile-nav {
-    padding-bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0;
   }
+}
+
+/* L 层深链的回头路：任何带 ?from= 落地的页面都给一枚（设置页用自己的那颗）。
+   浮在右下角，移动端抬高以避开底部导航。 */
+.source-return {
+  position: fixed;
+  right: 14px;
+  bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 14px);
+  z-index: var(--z-bottom-nav, 40);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--secondary);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--secondary-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@media (min-width: 641px) {
+  .source-return {
+    bottom: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .source-return {
+    font-size: 16px;
+  }
+}
+
+@media (hover: hover) {
+  .source-return:hover {
+    background: var(--secondary);
+    color: var(--on-secondary);
+  }
+}
+
+.source-return:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
 }

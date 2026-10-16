@@ -3,6 +3,10 @@ import tseslint from 'typescript-eslint';
 import pluginVue from 'eslint-plugin-vue';
 import globals from 'globals';
 
+// eslint-plugin-vue v10 起 flat 配置不再自带浏览器全局声明，
+// 需要在这里显式给出（否则 window/document 等全部 no-undef）。
+const browserGlobals = { ...globals.browser, Worker: 'readonly' };
+
 // ESLint 9 flat config — T-14 质量防线「代码质量/风格」层
 // 错误类(阻断): 未用变量(忽略下划线占位); type-aware 规则(no-floating-promises/await-thenable)已提升 error 强化 CI 防线
 // 风格类(仅 warn, 不阻断): 引号 / 分号 / 组件命名 等
@@ -24,9 +28,22 @@ export default [
       //  dist-lib-eval* / coverage-ci 等逐条规则一并收敛为本条，见 MIGRATION_LOG.md）
       'artifacts/**',
       'src-tauri/target/**',
+      // 与上一条同族：安卓壳的原生产物，两处都是生成物且已被 android/.gitignore 忽略
+      // （CI 看不到，本地出过一次 APK / cap sync 之后 `eslint .` 会多出九千余条）：
+      //   android/**\/build/            gradle 中间产物（含 Capacitor 的 native-bridge.js）
+      //   android/app/src/main/assets/  `cap sync` 拷进去的前端压缩包与 vendor 产物
+      // 手写的那一个 MainActivity.java 不是 JS，不受影响，故不整体放过 android/。
+      'android/**/build/**',
+      'android/app/src/main/assets/**',
       '.workbuddy/**',
       '.workbuddy-ai/**',
       'out/**',
+      // 设计交付物与静态原型不算产品源码。2026-10-11 的现场事实：并行会话在
+      // `docs/design/ai-chat-ui-redesign/` 下放了一整套原型自带 js（9 个脚本），
+      // `eslint .` 立刻多出 23 条 no-undef/未用变量——那些是浏览器里跑的演示代码，
+      // 不该进产品门禁。配套断言见 `tests/tooling/lint-scope.test.ts`：
+      // docs/ 下一旦出现**被 git 跟踪的** js/mjs/ts，那条断言就红，逼一次"这是不是产品代码"的判断。
+      'docs/**',
     ],
   },
   js.configs.recommended,
@@ -37,6 +54,7 @@ export default [
     // extraFileExtensions 让 TS 项目服务能解析 .vue 单文件组件
     files: ['**/*.vue'],
     languageOptions: {
+      globals: browserGlobals,
       parserOptions: {
         parser: tseslint.parser,
         projectService: true,
@@ -58,9 +76,10 @@ export default [
     },
   },
   {
-    // Node 构建脚本：注入 node 全局，避免 no-undef 误报
+    // Node 构建脚本：注入 node 全局，避免 no-undef 误报；
+    // 部分 .mjs 探针会在浏览器页面上取值，顺带给浏览器全局
     files: ['**/*.mjs'],
-    languageOptions: { globals: { ...globals.node } },
+    languageOptions: { globals: { ...globals.node, ...browserGlobals } },
   },
   {
     // 类型声明文件：vue shim 标准写法允许空对象类型

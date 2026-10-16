@@ -402,12 +402,17 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     }
   }
 
-  /** 从远程市场下载并导入为本地角色卡（带流式进度） */
-  async function installRemoteItem(itemId: string): Promise<boolean> {
+  /**
+   * 从远程市场下载并导入为本地角色卡（带流式进度）
+   *
+   * 返回**新角色的 id**（E20：装完必须能一跳看到结果），失败返回 null。
+   * 此前返回 boolean，界面拿不到落点，只能弹一句"已安装"，用户不知道去了哪。
+   */
+  async function installRemoteItem(itemId: string): Promise<string | null> {
     const item = remoteItems.value.find((i) => i.id === itemId);
     if (!item) {
       lastError.value = t('market.remoteItemMissing');
-      return false;
+      return null;
     }
     const prog = downloadProgress.value[itemId] ?? { received: 0, total: -1, status: 'downloading' };
     downloadProgress.value[itemId] = { ...prog, status: 'downloading' };
@@ -418,17 +423,17 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
       if (!downloaded) {
         downloadProgress.value[itemId] = { ...prog, received: 0, total: -1, status: 'failed' };
         lastError.value = t('market.remoteVerifyFailed');
-        return false;
+        return null;
       }
       downloadProgress.value[itemId] = { received: downloaded.item.size, total: downloaded.item.size, status: 'installing' };
-      await importRemoteAsCharacter(downloaded);
+      const installedId = await importRemoteAsCharacter(downloaded);
       downloadProgress.value[itemId] = { received: 0, total: 0, status: 'done' };
       lastInfo.value = t('market.remoteInstalled', { name: item.name });
-      return true;
+      return installedId;
     } catch (err) {
       downloadProgress.value[itemId] = { ...prog, received: 0, total: -1, status: 'failed' };
       lastError.value = err instanceof Error ? err.message : String(err);
-      return false;
+      return null;
     }
   }
 

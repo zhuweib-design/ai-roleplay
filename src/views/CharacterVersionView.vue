@@ -18,11 +18,13 @@
  * - Modal 焦点陷阱（通过 Modal 组件）
  * - Toast role=alert 反馈
  */
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useDeepLinkId } from '@/composables/useDeepLinkId';
 import { useCharacterVersionStore } from '@/stores/character-version';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Toast from '@/components/common/Toast.vue';
 import Modal from '@/components/common/Modal.vue';
 import {
@@ -38,14 +40,30 @@ const store = useCharacterVersionStore();
 const characterStore = useCharacterStore();
 
 // ── 启动加载持久化 ──
-onMounted(() => {
-  if (!store.loaded) {
-    void store.loadFromDisk();
-  }
-  // 自动选中第一个角色
-  if (!store.currentCharacterId && characterStore.characters.length > 0) {
-    handleSelectCharacter(characterStore.characters[0]!.id);
-  }
+// E19：角色卡的"已跟踪"标记带 ?char= 进来，直接定位到那个角色。取 id、等两道闸门、
+// 等待期间 URL 变化作废，收进 useDeepLinkId（M14-a）。
+// 必须等角色库读完再决定"这条 URL 对应哪个角色"：`characters` 的初值是 mock 种子，
+// 读库没完成时 URL 里那个 id 在内存里根本不存在，于是落到"自动选中第一条"
+// = 种子角色。webkit 实测就是这样：整条版本历史的快照全是种子角色的描述，
+// 用户以为在给刚建的角色提交版本。
+const ensureVersionData = async (): Promise<void> => {
+  if (!store.loaded) await store.loadFromDisk();
+  await characterStore.ensureLoaded();
+};
+useDeepLinkId({
+  key: 'char',
+  // 这里自己传 load 是登记过的例外：版本页要**等两个**库（版本仓库 + 角色库），
+  // 登记表只能给一个键对应一个库。其余视图都让登记表决定等谁。
+  load: ensureVersionData,
+  onResolved: (id) => handleSelectCharacter(id),
+  onMissing: async () => {
+    await ensureVersionData();
+    // 自动选中第一个角色
+    if (!store.currentCharacterId && characterStore.characters.length > 0) {
+      handleSelectCharacter(characterStore.characters[0]!.id);
+    }
+  },
+  reactive: false,
 });
 
 // ── Tab ──
@@ -422,6 +440,8 @@ function goBack(): void {
           v-if="store.currentCharacterId"
           type="button"
           class="header-btn primary"
+          :disabled="!currentCharacter"
+          :aria-disabled="!currentCharacter"
           @click="openCommitModal"
         >
           <Icon name="save" :size="14" aria-hidden="true" />
@@ -530,11 +550,12 @@ type="button"
             </div>
           </li>
         </ol>
-        <div v-else class="empty-state">
-          <Icon name="file" :size="48" aria-hidden="true" />
-          <p>{{ t('cv.noHistory') }}</p>
-          <p class="empty-hint">{{ t('cv.noHistoryHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="cv.noHistory"
+          desc-key="cv.noHistoryHint"
+          icon="file"
+        />
       </section>
 
       <!-- ── 2. 分支 ── -->
@@ -608,11 +629,12 @@ type="button"
             </dl>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="git-branch" :size="48" aria-hidden="true" />
-          <p>{{ t('cv.noBranches') }}</p>
-          <p class="empty-hint">{{ t('cv.noBranchesHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="cv.noBranches"
+          desc-key="cv.noBranchesHint"
+          icon="git-branch"
+        />
       </section>
 
       <!-- ── 3. 差异对比 ── -->
@@ -680,11 +702,12 @@ type="button"
             </li>
           </ul>
         </div>
-        <div v-else class="empty-state">
-          <Icon name="git-branch" :size="48" aria-hidden="true" />
-          <p>{{ t('cv.diffEmpty') }}</p>
-          <p class="empty-hint">{{ t('cv.diffEmptyHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="cv.diffEmpty"
+          desc-key="cv.diffEmptyHint"
+          icon="git-branch"
+        />
       </section>
 
       <!-- ── 4. 合并 ── -->
@@ -849,9 +872,10 @@ type="button"
     <Modal
       :model-value="commitModalOpen"
       :title="t('cv.commitTitle')"
+      described-by="cv-commit-desc"
       @update:model-value="commitModalOpen = $event"
     >
-      <p class="modal-hint">
+      <p id="cv-commit-desc" class="modal-hint">
         {{ t('cv.commitHint', { name: currentCharacter?.name ?? '' }) }}
       </p>
       <div class="form-group">
@@ -962,9 +986,10 @@ type="button"
       :model-value="conflictModalOpen"
       :title="t('cv.conflictTitle')"
       :dismissible="false"
+      described-by="cv-conflict-desc"
       @update:model-value="conflictModalOpen = $event"
     >
-      <p class="modal-hint">
+      <p id="cv-conflict-desc" class="modal-hint">
         {{ t('cv.conflictHint') }}
       </p>
       <ul v-if="store.pendingConflicts" class="conflict-list" role="list">
@@ -1354,25 +1379,8 @@ type="button"
 }
 
 /* Empty state */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: var(--muted-foreground);
-  text-align: center;
-  gap: 8px;
-}
 
-.empty-state p {
-  margin: 0;
-}
 
-.empty-hint {
-  font-size: 12px;
-  opacity: 0.8;
-}
 
 /* Commit list */
 .commit-list {

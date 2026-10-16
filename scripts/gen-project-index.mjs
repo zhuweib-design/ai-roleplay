@@ -62,6 +62,9 @@ const EXCLUDE_FILE_RES = [
   /\.(db|sqlite|sqlite3|mdb|accdb|db-journal)$/i,
   /\.(onnx|bin|pdb|rmeta|rlib|exe|dll|lib|so|dylib|a|o|obj)$/i,
   /\.(sample|rev|pack|idx)$/i,
+  // 一次性探针脚本（tmp-*.mjs）：会话里查完就作废，写进索引只会让下次生成时
+  // 出现一堆"待确认用途"的行，把真正的新模块淹掉。
+  /^tmp-.*\.mjs$/i,
 ];
 
 /** 同质化资源目录：整体聚合为一行，避免索引被图片刷屏 */
@@ -71,6 +74,11 @@ const AGGREGATE_DIRS = {
   'docs/assets/screenshots': 'UI 冒烟截图（按路由与主题命名，由 scripts/ui-shot.mjs 生成）',
   'public/fonts':
     '本地镜像字体分片（Playfair Display 拉丁 + Noto Serif SC 中文，105 个 unicode-range 分片；由 scripts/vendor-fonts.mjs 生成，不参与 PWA 预缓存）',
+  // 设计侧的静态原型与截图批次：文件多而同质，逐条列出会把索引撑成流水账
+  'docs/design/ai-chat-ui-redesign':
+    'AI 对话界面重设计静态原型（10 套风格 HTML + 组件/样式/预览分片，独立于构建产物，未入库）',
+  'docs/design/THEME_BRUTAL_SHOTS':
+    '主题"残酷测试"截图（角色列表 / 对话 / 外观设置 / 世界书，人工看配色是否破相）',
 };
 
 /** 人工核对过的用途说明（优先级最高，避免用文件名臆测） */
@@ -84,7 +92,7 @@ const CURATED = {
   'tsconfig.json': 'TypeScript 编译选项与路径映射',
   'eslint.config.js': 'ESLint 扁平配置（Vue + TS）',
   'reasonix.toml': 'Reasonix 工具工作区配置',
-  '.gitignore': 'Git 忽略规则（本地保留，不提交）',
+  '.gitignore': 'Git 忽略规则（2026-10-16 起入库；此前自我忽略，导致 installer/ 等规则只存在于本机）',
   '.gitattributes': 'Git 属性（换行符与 LFS 规则，本地保留）',
   '.i18nignore': 'i18n 扫描忽略清单',
   'README.md': '项目主说明（中文）',
@@ -160,6 +168,21 @@ const CURATED = {
   'src/core/document-chunker.ts': '文档分块器',
   'src/core/world-setting-chunker.ts': '世界设定分块器',
   'src/core/stopword-filter.ts': '停用词过滤（RAG 增强）',
+  // 1.1.0 批次：以下七条按 2026-10-16 一手实现/实测写，不是命名推断
+  'src/core/narration.ts':
+    '心理活动分段解析：parseNarrationSegments / stripNarrationMarkers / buildNarrationRules（⟦…⟧ 存在消息原文里，渲染层拆成气泡外段落）',
+  'src/core/keyboard-inset.ts':
+    '键盘避让兜底：监听 visualViewport，把"键盘吃掉的高度"写成 --keyboard-inset，覆盖只缩视觉视口的引擎',
+  'src/utils/save-blob.ts':
+    '存盘唯一入口（原生 WebView 里 blob + a[download] 静默失效，由 check:save-blob 守卫盯住，基线 0）',
+  'scripts/no-artifact-in-git-guard.mjs':
+    '门禁：安装包与大二进制不许进 git（按扩展名与 1 MiB 阈值扫 git 索引，附 --self-test）',
+  'scripts/android-apk.mjs':
+    '安卓出包：vite build → cap sync → gradlew assembleDebug → 复制进 installer/（需本机 JDK 21 与 Android SDK）',
+  'docs/dev/release-notes-1.1.0.md':
+    '1.1.0 发布说明：版本定位、用户可见变化、数据兼容、实测读数表与未覆盖项',
+  'docs/dev/release-evidence-1.1.0.md':
+    '1.1.0 逐项门禁读数（证据包 + 本机与 CI 实测，标明哪些是本地跑的、哪些以 CI 为准）',
   'src/core/vector-model-manager.ts': '向量模型管理器',
   'src/core/vector-model-install.ts': '向量模型安装流程',
   'src/core/vector-model-source.ts': '向量模型来源映射',
@@ -267,7 +290,6 @@ const CURATED = {
   'src/views/ImageGeneratorView.vue': '页面：图像生成',
   'src/views/LocalModelView.vue': '页面：本地模型管理',
   'src/views/SettingsView.vue': '页面：设置中心（含数据管理与安全）',
-  'src/views/ProfileView.vue': '页面：用户档案',
 
   'src/components/chat/ChatMain.vue': '组件：对话主区域',
   'src/components/chat/RuntimeStatePanel.vue': '组件：Runtime 最小状态查看与回放自检（单聊与群聊共用）',
@@ -318,6 +340,8 @@ const CURATED = {
   'scripts/important-guard.mjs': '门禁：!important 棘轮守卫（基线锁定，只许降不许升）',
   'scripts/css-conventions-guard.mjs': '门禁：CSS 约定守卫单一入口（编排断点 / 视口 / hover / !important / 控件字号五项子检查）',
   'scripts/i7-control-font-size-guard.mjs': '门禁：移动断点内可编辑控件字号 ≥16px 兜底（I-7，防 iOS 聚焦放大页面）',
+  'scripts/skin-preview.mjs': '工具：把原型配色注入真实产品页面，出截图并逐元素实测 WCAG 对比度（换肤评审用）',
+  'scripts/token-guard.mjs': '门禁：token 死引用按文件棘轮（--strict 卡新增裸引用未定义变量）+ 合成夹具自测（--self-test），无参数时输出 A/B/C/D 四类体检',
   'scripts/check-contrast.mjs': '门禁：5 套主题关键色对对比度 ≥ AA',
   'scripts/contrast-audit.mjs': '审计：对比度全量扫描报告',
   'scripts/i18n-scan.mjs': '门禁：硬编码中文 UI 文案扫描（strict 模式）',

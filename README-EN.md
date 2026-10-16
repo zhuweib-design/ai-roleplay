@@ -6,7 +6,7 @@
 
 **An AI role-playing chat app built on the SillyTavern architecture: multi-model chat · character cards · world books · group chat · story engine · community market · custom themes · custom vector-model RAG · Virtual Character OS Runtime**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v1.0.0)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v1.1.0)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6.svg)]()
 [![Tauri 2](https://img.shields.io/badge/Tauri-2.0-24c8db.svg)]()
@@ -47,6 +47,7 @@ Built for role-playing and narrative creation, **AI 酒馆** focuses on more tha
 | Feature | What it solves |
 | --- | --- |
 | **Multi-model chat** | Multiple profiles (OpenAI / Anthropic …) with streaming, regenerate, translation, TTS, summarization |
+| **Inner monologue (narration)** | `⟦ … ⟧` written by the model renders **outside** the bubble, typeset apart from speech; configurable first-person for the user; copy / TTS / translate / export strip the markers |
 | **Custom vector model + RAG** | Add vector models via ZIP or local folder to drive dynamic-memory / static-world semantic retrieval |
 | **Custom themes** | Background-image color extraction (k-means) auto-matches component palettes, incl. light/dark & "theatre" font |
 | **Worldbook / Lorebook** | Keyword-gated activation, settings auto-injected into context |
@@ -56,6 +57,7 @@ Built for role-playing and narrative creation, **AI 酒馆** focuses on more tha
 | **Community market** | GitHub-indexed templates / cards / lorebooks with hash check & offline fallback |
 | **Extension system** | Sandboxed execution, permission-gated (deny by default), not auto-run |
 | **Desktop enhancements** | System tray, global shortcut (`Ctrl+Alt+Space`), drag-drop import, offline banner |
+| **Mobile and Android shell** | Bottom navigation, composer that grows with input and avoids the soft keyboard, long-press message action bar, narrow-screen labels no longer squeezed one glyph per line; `node scripts/android-apk.mjs` builds a debug APK (installers stay out of git, distributed via GitHub Releases) |
 
 ## 🖼️ Preview
 
@@ -79,19 +81,28 @@ npm run build
 
 ### Local quality gates
 
-Commands mirror CI; run them locally before committing:
+The gate list has a single source of truth: the `quality-gates` job in `.github/workflows/ci.yml`. Walk the whole list locally, in that order:
 
 ```bash
-npm run lint          # ESLint (0 errors / 0 warnings)
-npm run typecheck     # vue-tsc --noEmit
-npm run test          # Vitest unit tests
-npm run test:coverage # Coverage (statements ≥78 / branches ≥73)
-npm run i18n:check:strict # i18n strict scan
-npm run a11y:contrast # Accessibility contrast (≥ AA 4.5:1)
-npm run tauri:build   # Desktop build check
+npm run lint                  # ESLint (no new errors; existing warnings stay)
+npm run runtime:db:schema:check  # Runtime schema drift (migrations vs code)
+npm run snapshot:migration:check # Snapshot migration plan
+npm run i18n:check:strict     # i18n strict scan (no hardcoded Chinese; zh/en key parity)
+npm run eval:manifest        # Eval manifest self-check (strict)
+npm run check:css-conventions # CSS guard: breakpoints / viewport / hover / !important ratchet / I-7 font size
+npm run check:save-blob       # Exports go through the single saveBlob entry point (baseline 0)
+npm run check:no-artifact     # Installers and large binaries must not enter git
+npm run check:token-baseline  # Token dead-reference ratchet
+npm run a11y:contrast         # Contrast audit (semantic pairs >= AA 4.5:1; legacy baseline is a zero-headroom ratchet)
+npm run test:coverage         # Vitest + coverage (statements 78 / branches 73 / functions 78 / lines 78)
+npm run build                 # vue-tsc + vite production build
+npm run check:csp             # CSP contract guard (must run after build)
+npm run check:ort             # ORT first-screen isolation guard (must run after build)
 ```
 
-> CI (`.github/workflows/ci.yml`) runs lint → runtime schema drift → i18n → coverage/build → contrast, plus an isolated Runtime PostgreSQL job (postgres:16 service) → Playwright e2e (desktop, mobile layout, mobile core journeys) → Tauri no-bundle build; GitHub Releases keep only the automatically generated source archives.
+> A 2026-10-16 lesson: a `.load-earlier-btn:hover` violation reached `master` because local verification only ran the familiar subset. Walk the full `ci.yml` step list; treat CI's 4 parallel E2E groups as the E2E verdict (the local full serial run takes ~15 minutes and is memory-hungry).
+
+> CI (`.github/workflows/ci.yml`) has three jobs. `quality-gates` (ubuntu-latest, with a postgres:16 service) runs, in order: dependency audit (high and above) → lint → runtime schema drift → snapshot migration plan → i18n strict → eval manifest self-check → CSS conventions guard (breakpoints / viewport / hover / `!important` ratchet / editable control font size I-7) → save-blob guard (+ self-test) → no-artifact-in-git guard (+ self-test) → token dead-reference ratchet (+ self-test) → contrast audit (+ self-test) → test and coverage gate (78/73/78/78; the same step carries the real PostgreSQL integration cases, so no duplicate job) → build → CSP guard → ORT first-screen guard. `e2e` runs Playwright in 4 weight-balanced groups derived from measured single-worker durations (`e2e/shard-groups.mjs`, guarded by a "every spec belongs to exactly one group" census test), chromium for desktop and the Pixel 5 viewport, webkit as the Safari-class engine. `tauri-build` checks that the desktop release binary compiles (`--no-bundle`; no installer is built or uploaded). GitHub Releases keep only the automatically generated source archives.
 
 **Runtime changes (`src/runtime/`, `migrations/`) add:**
 
@@ -194,6 +205,7 @@ tests/               Unit / a11y / E2E
 - [x] **0.2.0** — custom vector model + RAG, custom themes, market, tray/shortcut (released)
 - [x] **Virtual Character OS Runtime** — batch characters, multi-character group chat, PostgreSQL transactions, version CAS and replay audit (landed)
 - [x] **1.0.0** — first stable release (complete)
+- [x] **1.1.0** — usable on phones, inner-monologue narration, injection visibility, derived token budgets, Android packaging and engineering guardrails (complete, no data migration)
 - [x] **RAG** — stopword filtering, installed-model selection and recall@3 benchmark (complete)
 - [x] **A11y** — runtime contrast pre-check for custom themes (complete)
 
@@ -211,6 +223,7 @@ This project is open-sourced under the **Apache License 2.0**. See [LICENSE](LIC
 
 ### Release notes
 
+- **1.1.0**: see [`docs/dev/release-notes-1.1.0.md`](docs/dev/release-notes-1.1.0.md) for this release's user-visible changes, data compatibility and verification readings, and [`docs/dev/release-evidence-1.1.0.md`](docs/dev/release-evidence-1.1.0.md) for the per-gate evidence.
 - **1.0.0**: see [`docs/dev/release-notes-1.0.0.md`](docs/dev/release-notes-1.0.0.md) for the stable release boundary and verification results. Previous: [`docs/dev/release-notes-0.9.0.md`](docs/dev/release-notes-0.9.0.md).
 - **0.4.0**: see [`docs/dev/release-notes-0.4.0.md`](docs/dev/release-notes-0.4.0.md) for new capabilities, data compatibility and validation results.
 - **0.3.1**: see [`docs/dev/release-notes-0.3.1.md`](docs/dev/release-notes-0.3.1.md) for new capabilities, upgrade steps and known limitations.

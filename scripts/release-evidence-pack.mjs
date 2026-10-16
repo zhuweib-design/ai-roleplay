@@ -73,6 +73,24 @@ function runNpmScript(name) {
   };
 }
 
+/**
+ * 从命令输出里抽"结论行"（测试条数、覆盖率、门禁判定）。
+ * 只留 outputTail 时，4000 字符的尾巴经常全是某条单测打进 stderr 的堆栈，
+ * 读证据的人拿不到"跑过了多少项"——1.1.0 第一次生成时就是这样，只能重跑一遍数。
+ */
+const ANSI_RE = new RegExp(String.fromCharCode(27) + '\\[[0-9;]*m', 'g');
+const SUMMARY_RE =
+  /Test Files|Tests |Duration |Snapshots|coverage|% |阈值|门禁通过|门禁失败|exit|全部通过|扫描|基线/u;
+
+function extractSummary(output) {
+  const plain = String(output ?? '').replace(ANSI_RE, '');
+  const hits = plain
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 3 && line.length < 200 && SUMMARY_RE.test(line));
+  return [...new Set(hits)].slice(-12);
+}
+
 /** 判定式：把命令结果转成 gate 结果对象。 */
 function makeResult({ id, plan, kind, result, artifacts = {} }) {
   const passed = result.exitCode === 0;
@@ -87,6 +105,7 @@ function makeResult({ id, plan, kind, result, artifacts = {} }) {
     generatedAt: new Date().toISOString(),
     kind,
     outputTail: result.output.slice(-TAIL_CHARS),
+    summaryLines: extractSummary(result.output),
     ...artifacts,
   };
 }
@@ -240,6 +259,7 @@ function buildQualityManifest(results) {
       planFile: r.planFile,
       commit: r.commit,
       ...(r.status === 'skipped' ? { reason: r.reason } : { exitCode: r.exitCode, durationMs: r.durationMs }),
+      ...(r.summaryLines?.length ? { summaryLines: r.summaryLines } : {}),
     }])),
     summary: {
       total: results.length,
@@ -250,7 +270,11 @@ function buildQualityManifest(results) {
   };
 }
 
-const KNOWN_ISSUES = `# 已知问题（1.0.0）
+/**
+ * 已知问题清单会写进证据包，必须跟着当前版本走——1.0.0 的包曾因标题硬编码，
+ * 让 v1.1.0 的证据包里出现"已知问题（1.0.0）"，读起来像复制粘贴的历史结果。
+ */
+const KNOWN_ISSUES = `# 已知问题（${pkg.version}）
 
 本文件记录发布时**仍未闭环**的项，避免"全部通过"的错觉掩盖真实缺口。
 
@@ -267,6 +291,13 @@ const KNOWN_ISSUES = `# 已知问题（1.0.0）
 
 执行方式见 \`docs/dev/runtime-database-migration-runbook.md\` §5 与
 \`docs/dev/data-backup-restore.md\` §4A.4。
+
+## E2E 取证走 CI，不在本机重跑
+
+- **e2e-desktop / e2e-mobile**：默认记 \`skipped\`（本脚本需 \`--full\` 才跑，全量串行
+  约 40 分钟且吃内存）。端到端的真实结论以 GitHub Actions 为准——\`.github/workflows/ci.yml\`
+  在每次 push / PR 到 master 上跑全量用例并按 \`e2e/shard-groups.mjs\` 分 4 组并行。
+  发布记录里写清对应 commit 与 run id，不用本机的部分结果冒充全量。
 
 ## 计划符合度未闭环项
 

@@ -3,13 +3,16 @@ import Icon from '@/components/common/Icon.vue';
 import SettingsModelPanel from '@/components/settings/SettingsModelPanel.vue';
 import VectorModelPanel from '@/components/settings/VectorModelPanel.vue';
 import type { IconName } from '@/components/common/icons';
-import { ref, computed, nextTick } from 'vue';;;;
+import { ref, computed, nextTick, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import { showToast } from '@/utils/toast-service';
 import { t } from '@/i18n';;
 import { useSettingsStore } from '@/stores/settings';
 
+/** 与模型面板「最大上下文」同一组常用档位（K=1024；1M = 1048576） */
 const CONTEXT_PRESETS: readonly number[] = [
-  4096, 8192, 16384, 32768, 65536, 131072, 262144,
+  32768, 65536, 131072, 278528, 409600, 614400, 1048576,
 ] as const;
 
 interface SettingsCategory {
@@ -19,9 +22,30 @@ interface SettingsCategory {
   icon: IconName;
 }
 
-type SettingsCategoryId = 'appearance' | 'model' | 'extension' | 'data' | 'security' | 'about';
+type SettingsCategoryId = 'appearance' | 'model' | 'retrieval' | 'extension' | 'data' | 'security' | 'about';
 
 const activeCategory = ref<SettingsCategoryId>('appearance');
+
+// L 层深链：其他页面用 /settings?cat=<id>&from=<原页面> 跳进来时，
+// 必须落在用户被指引的那一类（此前恒落"外观"，导致"去设置"按钮把用户送到无关页）。
+const route = useRoute();
+const { fromPath, backFromQuery } = useReadinessJump();
+const CATEGORY_IDS: readonly string[] = ['appearance', 'model', 'retrieval', 'extension', 'data', 'security', 'about'];
+
+function applyCategoryFromQuery(): void {
+  const raw = route.query.cat;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value === 'string' && CATEGORY_IDS.includes(value)) {
+    activeCategory.value = value as SettingsCategoryId;
+  }
+}
+
+// 深链优先：?cat=<id> 决定落地分类。
+// 曾经试过"无 Profile 时自动落在「模型」"的智能默认，但它与既有一致性契约冲突：
+// 主题相关用例（theme-visual / contrast-axe / chat-flow 等 13 条）进入设置页就直接点
+// `.theme-card`，默认分类一变它们就全断；而"把用户带到阻塞点"这件事已由就绪条与
+// 首启欢迎窗的显式跳转承担，不需要靠改变落地页来赌。故保持确定性默认「外观」。
+watch(() => route.query.cat, applyCategoryFromQuery, { immediate: true });
 
 const activeCategoryDesc = computed(
   () => settingsCategories.value.find((c) => c.id === activeCategory.value)?.description ?? ''
@@ -44,9 +68,13 @@ const contextBudget = computed(() => settings.availableContextTokens);
 
 const contextLengthError = ref<string | null>(null);
 
+/** 按 1024 进制显示（32768 → 32K、1048576 → 1M），与档位值本身的进制一致 */
 function formatTokenCount(n: number): string {
-  if (n < 1000) return String(n);
-  const k = n / 1000;
+  if (n >= 1024 * 1024) {
+    const m = n / (1024 * 1024);
+    return `${Number.isInteger(m) ? m : m.toFixed(1)}M`;
+  }
+  const k = n / 1024;
   return `${Number.isInteger(k) ? k : k.toFixed(1)}K`;
 }
 
@@ -107,6 +135,7 @@ const settings = useSettingsStore();
 const settingsCategories = computed<SettingsCategory[]>(() => [
   { id: 'appearance', label: t('settingsView.categoryAppearance'), description: t('settingsView.categoryAppearanceDesc'), icon: 'palette' },
   { id: 'model', label: t('settingsView.categoryModel'), description: t('settingsView.categoryModelDesc'), icon: 'cpu' },
+  { id: 'retrieval', label: t('settingsView.categoryRetrieval'), description: t('settingsView.categoryRetrievalDesc'), icon: 'search' },
   { id: 'extension', label: t('settingsView.categoryExtension'), description: t('settingsView.categoryExtensionDesc'), icon: 'puzzle' },
   { id: 'data', label: t('settingsView.categoryData'), description: t('settingsView.categoryDataDesc'), icon: 'database' },
   { id: 'security', label: t('settingsView.categorySecurity'), description: t('settingsView.categorySecurityDesc'), icon: 'lock-keyhole' },
@@ -155,6 +184,17 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
         <span>{{ t('settings.title') }}</span>
       </h1>
       <p class="settings-subtitle">{{ activeCategoryDesc }}</p>
+      <!-- 深链进来时给一条回头路（浏览器的返回键同样可用） -->
+      <button
+        v-if="fromPath"
+        type="button"
+        class="settings-back-from"
+        data-rel-jump="settings-return"
+        @click="backFromQuery"
+      >
+        <Icon name="arrow-left" :size="14" aria-hidden="true" />
+        <span>{{ t('settings.backFrom') }}</span>
+      </button>
     </header>
 
     <!-- 外观：语言 / 主题 / 字号 / 界面自定义 -->
@@ -226,6 +266,14 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
         </div>
       </section>
 
+      <!--
+        向量检索从「模型」类里独立成「检索」类（§3.6.1）：
+        原来一类聚合 模型面板 + 上下文长度段 + 向量面板 ≈60 个控件面 / 6 段，
+        而它服务的任务（让文档能被检索到）与"接入一个模型"并不是同一件事。
+      -->
+    </div>
+
+    <div v-show="activeCategory === 'retrieval'">
       <VectorModelPanel />
     </div>
 
@@ -238,7 +286,6 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
     <SettingsAboutPanel v-show="activeCategory === 'about'" />
     </div>
   </main>
-
 </template>
 
 <style scoped>
@@ -462,7 +509,7 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
 
 .active-badge {
   background: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
   font-size: 10px;
   padding: 2px 6px;
   border-radius: var(--radius-pill);
@@ -475,7 +522,7 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
   margin-left: 6px;
   font-size: 10px;
   font-weight: 600;
-  color: var(--on-accent);
+  color: var(--on-secondary);
   background: var(--secondary);
   border-radius: var(--radius-pill);
   text-transform: uppercase;
@@ -683,5 +730,30 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
   .profile-input {
     font-size: 16px;
   }
+}
+.settings-back-from {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .settings-back-from:hover {
+    color: var(--foreground);
+    border-color: var(--secondary);
+  }
+}
+
+.settings-back-from:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
 }
 </style>

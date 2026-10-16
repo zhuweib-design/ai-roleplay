@@ -477,7 +477,7 @@ describe('ChatManager', () => {
   });
 
   describe('overrides 覆盖配置', () => {
-    it('应支持单次调用覆盖 model/temperature/maxTokens', async () => {
+    it('应支持单次调用覆盖 model/temperature；maxTokens 恒为由上下文推导的值', async () => {
       const requests: ChatRequest[] = [];
       const apiClient: ApiClient = {
         provider: 'capture',
@@ -493,19 +493,20 @@ describe('ChatManager', () => {
         apiClient,
         model: 'gpt-4o',
         temperature: 0.7,
-        maxTokens: 1024,
       });
 
       await manager.sendMessage({
         card: makeCard(),
         history: [],
         userMessage: 'hi',
-        overrides: { model: 'claude-3-5', temperature: 1.2, maxTokens: 2048 },
+        overrides: { model: 'claude-3-5', temperature: 1.2 },
       });
 
       expect(requests[0]!.model).toBe('claude-3-5');
       expect(requests[0]!.temperature).toBe(1.2);
-      expect(requests[0]!.maxTokens).toBe(2048);
+      // 输出预算不再是可覆盖的旋钮：= 上下文 − 预留 − 输入（默认 8192 − 1024 为上界）
+      expect(requests[0]!.maxTokens).toBeGreaterThan(0);
+      expect(requests[0]!.maxTokens).toBeLessThanOrEqual(8192 - 1024);
     });
   });
 
@@ -1762,5 +1763,75 @@ describe('ChatManager — Runtime 接入', () => {
 
     expect(result).toBe('回复内容');
     expect(requests[0]!.messages[0]!.content).not.toContain('[Virtual Character Runtime State]');
+  });
+});
+
+/**
+ * 推理模型吃光输出预算 —— 流式路径（实测依据见 tests/api/openai-client.test.ts 同名用例）
+ *
+ * 流式这里**不**自动重发（重发会把已经显示过的思考再走一遍），但绝不能留一个
+ * 空气泡给用户：必须走 onError 给出指向真实控件的说明。
+ */
+describe('ChatManager — 流式：思考有内容而正文为空', () => {
+  it('onError 收到指向「最大上下文」的说明，且不调用 onDone', async () => {
+    const apiClient: ApiClient = {
+      provider: 'reasoning-only',
+      async chat(): Promise<string> {
+        return '';
+      },
+      async *chatStream(): ChatStream {
+        yield { type: 'delta', thinkingDelta: '想了很久，一个字正文都没写' };
+        yield { type: 'done', fullContent: '', finishReason: 'length' };
+      },
+    };
+    const manager = new ChatManager({ apiClient, model: 'm' });
+    const errors: string[] = [];
+    let doneCalls = 0;
+
+    const result = await manager.sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      {
+        onError: (e) => errors.push(e.message),
+        onDone: () => {
+          doneCalls += 1;
+        },
+      }
+    );
+
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('最大上下文');
+    expect(doneCalls).toBe(0);
+    expect(result).toBe('');
+  });
+
+  it('负向对照：有正文时正常 onDone，不报错', async () => {
+    const apiClient: ApiClient = {
+      provider: 'normal',
+      async chat(): Promise<string> {
+        return '';
+      },
+      async *chatStream(): ChatStream {
+        yield { type: 'delta', thinkingDelta: '想了一下' };
+        yield { type: 'delta', delta: '这是正文' };
+        yield { type: 'done', fullContent: '想了一下这是正文', finishReason: 'stop' };
+      },
+    };
+    const manager = new ChatManager({ apiClient, model: 'm' });
+    const errors: string[] = [];
+    let done = '';
+
+    const result = await manager.sendMessage(
+      { card: makeCard(), history: [], userMessage: 'hi' },
+      {
+        onError: (e) => errors.push(e.message),
+        onDone: (full) => {
+          done = full;
+        },
+      }
+    );
+
+    expect(errors).toEqual([]);
+    expect(done).toContain('这是正文');
+    expect(result).toContain('这是正文');
   });
 });

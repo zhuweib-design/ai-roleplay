@@ -16,7 +16,10 @@
  * - 键盘可访问（Tab 导航、Enter 发送、Esc 关闭弹窗）
  */
 import { ref, computed, watch, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useReadinessJump } from '@/composables/useReadinessJump';
+import { useDeepLinkId } from '@/composables/useDeepLinkId';
+import { useSectionMemory } from '@/composables/useSectionMemory';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useChatStore } from '@/stores/chat';
 import { createApiClient } from '@/api';
@@ -25,9 +28,14 @@ import { buildGroupHistory, buildGroupSystemPrompt } from '@/services/group-chat
 import { recordGroupObservation } from '@/services/group-chat-runtime';
 import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';
+import { parseNarrationSegments } from '@/core/narration';
 import Icon from '@/components/common/Icon.vue';
+import ChatModeSwitch from '@/components/chat/ChatModeSwitch.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
+import Collapse from '@/components/common/Collapse.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
+import ContextReadinessBar from '@/components/layout/ContextReadinessBar.vue';
 import Toast from '@/components/common/Toast.vue';
 import ThinkingBlock from '@/components/chat/ThinkingBlock.vue';
 import StatusHud from '@/components/chat/StatusHud.vue';
@@ -58,6 +66,14 @@ const chatStore = useChatStore();
 const characterStore = useCharacterStore();
 const settingsStore = useSettingsStore();
 const router = useRouter();
+const route = useRoute();
+
+// E17：成员此前在界面上只是一个名字（看得见进不去）。点成员名直接到该角色的编辑页，
+// 并带上来源，配合全局"返回来源页"让用户不会回不到群聊。
+const { pushWithReturn } = useReadinessJump();
+function editMember(characterId: string): void {
+  pushWithReturn({ name: 'character-edit', params: { id: characterId } });
+}
 
 /** 返回对话页 */
 function goBack() {
@@ -70,6 +86,13 @@ function goBack() {
 
 // 群聊 Runtime 状态查看：当前选中的成员
 const runtimeInspectMemberId = ref<string | null>(null);
+/**
+ * M7-d/M8-b：排障段的开合跨会话记住（默认收起）。
+ * key 带群 id——"这个群我要盯着 Runtime、那个群不用看"是两回事。
+ */
+const runtimeInspectOpen = useSectionMemory(
+  () => `group.runtimeInspect:${currentGroup.value?.id ?? ''}`
+);
 
 // ── UI 状态 ──
 const createModalOpen = ref(false);
@@ -299,7 +322,32 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 function selectGroup(id: string) {
   groupStore.selectGroup(id);
   void syncRemoteTurnsForGroup(id);
+  // 地址栏跟着当前群走（M15-d）：刷新或分享后仍落回这个群，深链的另一半。
+  // 用 replace 是为了不让"连着点三个群"堆出三条历史记录。
+  if (route.query.group !== id) {
+    void router.replace({ query: { ...route.query, group: id } });
+  }
 }
+
+/**
+ * 深链 `/group?group=<id>`（M15-d）。
+ *
+ * 这是 M15-a 把守卫升级成"按键核对"之后**新接的第一条**深链：目的之一是让
+ * "下一个加深链的人"这条路径真跑一遍——群列表在读库完成前没有这个 id，
+ * 所以必须走 useDeepLinkId 的闸门，而不是在 setup 里直查 `groups`。
+ * 找不到就明确提示（不悄悄换群，理由同 M12-a 那次"写到别的角色身上"）。
+ */
+useDeepLinkId({
+  key: 'group',
+  // 闸门由登记表给：视图只说键名，不自己挑要等哪个库（M16-b 关掉"键对、库错"这条路）
+  onResolved: (id) => {
+    if (!groupStore.groups.some((g) => g.id === id)) {
+      showToast('error', t('group.notFound'));
+      return;
+    }
+    if (id !== groupStore.currentGroupId) selectGroup(id);
+  },
+});
 
 /**
  * 拉取服务端公共回合并合并到本地历史（跨设备历史同步）。
@@ -413,6 +461,12 @@ async function handleStImport(e: Event) {
 }
 
 // ── 成员管理 ──
+function handleExportGroupSt() {
+  const groupId = currentGroup.value?.id;
+  if (!groupId) return;
+  void groupStore.downloadGroupSt(groupId);
+}
+
 function openAddMemberModal() {
   if (!currentGroup.value) return;
   if (currentGroup.value.members.length >= 8) {
@@ -695,8 +749,10 @@ async function generateGroupReply(
     const manager = new ChatManager({
       apiClient: createApiClient(profile),
       model: profile.model,
-      maxTokens: profile.maxTokens,
       systemPrompt: buildGroupSystemPrompt(group, speaker),
+      // 旁白人称：群聊已接同一套分段渲染（见 segmentsOf 与 .msg-psy），所以这里照常注入；
+      // 规则文本由 buildPrompt 追加，不在 buildGroupSystemPrompt 里另写一份
+      narrationPerspective: settingsStore.narrationPerspective,
     });
     activeGroupManager = manager;
     const reply = await manager.sendMessage({
@@ -833,6 +889,14 @@ function memberInitial(name: string): string {
   return name.charAt(0) || '?';
 }
 
+/** 群聊与单聊共用同一套分段解析，避免两处各写一份、行为慢慢分叉 */
+function segmentsOf(content: string) {
+  const parsed = parseNarrationSegments(content);
+  return parsed.some((s) => s.kind === 'speech')
+    ? parsed
+    : [{ kind: 'speech' as const, text: content }];
+}
+
 function messageTime(ts: string): string {
   try {
     const d = new Date(ts);
@@ -867,6 +931,8 @@ function isSystem(msg: { role: string }): boolean {
         </button>
         <h1>{{ t('group.title') }}</h1>
         <span class="header-count">{{ t('group.count', { count: groupStore.groups.length }) }}</span>
+        <!-- 群聊不占移动端底栏 tab（见 core/mobile-nav.ts），这一行就是它在页内的位置指示 -->
+        <ChatModeSwitch class="group-mode-switch-slot" />
       </div>
 
       <div class="header-actions">
@@ -881,6 +947,13 @@ function isSystem(msg: { role: string }): boolean {
         </button>
       </div>
     </header>
+
+    <!--
+      群聊与单聊的能力集不同：不加载世界书、不做文档检索、角色级模型参数不生效。
+      与其让用户假设一致，不如在页头把差异说出来（E18/E08 的"显式声明不存在"）。
+    -->
+    <ContextReadinessBar />
+    <p class="group-capability-note" role="note">{{ t('group.capabilityNote') }}</p>
 
     <!-- 主体：左群聊列表 + 右群聊消息区 -->
     <div class="group-body">
@@ -938,19 +1011,14 @@ function isSystem(msg: { role: string }): boolean {
               </div>
             </button>
           </li>
-          <li v-if="filteredGroups.length === 0" class="empty-state">
-            <Icon name="users" :size="32" />
-            <p v-if="groupStore.groups.length === 0">{{ t('group.noGroups') }}</p>
-            <p v-else>{{ t('group.noMatch') }}</p>
-            <button
-              v-if="groupStore.groups.length === 0"
-              type="button"
-              class="link-btn"
-              @click="openCreateModal"
-            >
-              {{ t('group.createFirst') }}
-            </button>
-          </li>
+          <EmptyState
+            v-if="filteredGroups.length === 0"
+            as="li"
+            :title-key="groupStore.groups.length === 0 ? 'group.noGroups' : 'group.noMatch'"
+            icon="users"
+            :action-key="groupStore.groups.length === 0 ? 'group.createFirst' : undefined"
+            @action="openCreateModal"
+          />
         </ul>
       </aside>
 
@@ -1033,13 +1101,13 @@ function isSystem(msg: { role: string }): boolean {
                   type="button"
                   class="action-btn"
                   :aria-label="t('group.exportStAria')"
-                  :title="t('group.exportStTitle')"
-                  @click="groupStore.downloadGroupSt(currentGroup.id)"
+                  v-tip="t('group.exportStTitle')"
+                  @click="handleExportGroupSt"
                 >
                   <Icon name="download" :size="14" />
                   <span>{{ t('group.exportSt') }}</span>
                 </button>
-                <label class="action-btn" :title="t('group.importStTitle')">
+                <label class="action-btn" v-tip="t('group.importStTitle')">
                   <Icon name="upload" :size="14" />
                   <span>{{ t('group.importSt') }}</span>
                   <input
@@ -1052,26 +1120,38 @@ function isSystem(msg: { role: string }): boolean {
               </div>
             </div>
 
-            <!-- Virtual Character OS：成员级 Runtime 最小状态查看与回放自检 -->
-            <div v-if="currentMembers.length > 0" class="group-runtime-inspect">
-              <label class="group-runtime-label" for="group-runtime-member">{{ t('runtime.title') }}</label>
-              <select
-                id="group-runtime-member"
-                class="group-runtime-select"
-                :value="runtimeInspectMember?.characterId ?? ''"
-                @change="runtimeInspectMemberId = ($event.target as HTMLSelectElement).value"
-              >
-                <option v-for="member in currentMembers" :key="member.characterId" :value="member.characterId">
-                  {{ member.name }}
-                </option>
-              </select>
-              <RuntimeStatePanel
-                v-if="runtimeInspectCharacter"
-                :key="runtimeInspectCharacter.id"
-                :character="runtimeInspectCharacter"
-                :label="runtimeInspectMember?.name"
-              />
-            </div>
+            <!-- Virtual Character OS：成员级 Runtime 最小状态查看与回放自检。
+                 整段是排障面（实测 94px，占页头 234px 的四成），默认收进高级段 -->
+            <Collapse
+              v-if="currentMembers.length > 0"
+              v-model:open="runtimeInspectOpen"
+              title-key="group.runtimeInspectTitle"
+              hint-key="group.runtimeInspectHint"
+              icon="cpu"
+              :level="3"
+              :advanced="true"
+              plain
+            >
+              <div class="group-runtime-inspect">
+                <label class="group-runtime-label" for="group-runtime-member">{{ t('runtime.title') }}</label>
+                <select
+                  id="group-runtime-member"
+                  class="group-runtime-select"
+                  :value="runtimeInspectMember?.characterId ?? ''"
+                  @change="runtimeInspectMemberId = ($event.target as HTMLSelectElement).value"
+                >
+                  <option v-for="member in currentMembers" :key="member.characterId" :value="member.characterId">
+                    {{ member.name }}
+                  </option>
+                </select>
+                <RuntimeStatePanel
+                  v-if="runtimeInspectCharacter"
+                  :key="runtimeInspectCharacter.id"
+                  :character="runtimeInspectCharacter"
+                  :label="runtimeInspectMember?.name"
+                />
+              </div>
+            </Collapse>
 
             <!-- 群组定义 CAS 冲突：显式提示，不静默覆盖远端 -->
             <div v-if="currentGroupConflict" class="conflict-banner" role="alert">
@@ -1100,7 +1180,7 @@ function isSystem(msg: { role: string }): boolean {
                 :key="member.characterId"
                 class="member-chip"
                 role="listitem"
-                :title="t('group.memberTitle', { name: member.name, talk: member.talkativeness ?? 50 })"
+                v-tip="t('group.memberTitle', { name: member.name, talk: member.talkativeness ?? 50 })"
               >
                 <Avatar
                   :character="{
@@ -1112,7 +1192,15 @@ function isSystem(msg: { role: string }): boolean {
                   } as UICharacter"
                   :size="24"
                 />
-                <span class="member-name">{{ member.name }}</span>
+                <button
+                  type="button"
+                  class="member-name"
+                  data-rel-jump="rel-group-member"
+                  :aria-label="t('group.editMember', { name: member.name })"
+                  @click="editMember(member.characterId)"
+                >
+{{ member.name }}
+</button>
                 <button
 type="button"
                   v-if="currentMembers.length > 2"
@@ -1226,7 +1314,10 @@ type="button"
                   } as UICharacter"
                   :size="32"
                 />
-                <div class="msg-bubble">
+                <!-- 一条回复可能拆成「对白 — 心理 — 对白」：心理段要落在气泡外面，
+                     所以气泡从"整条消息的外壳"降级为"每段对白一个气泡"，
+                     外壳换成 .msg-body（纵向），发言人名/思考/时间挂在外壳上。 -->
+                <div class="msg-body">
                   <div v-if="msg.role === 'assistant'" class="msg-sender">
                     {{ msg.characterName }}
                   </div>
@@ -1235,7 +1326,12 @@ type="button"
                     :thinking="msg.thinking"
                     :message-id="msg.id"
                   />
-                  <div class="msg-content">{{ msg.content }}</div>
+                  <template v-for="(seg, si) in segmentsOf(msg.content)" :key="si">
+                    <div v-if="seg.kind === 'speech'" class="msg-bubble">
+                      <div class="msg-content">{{ seg.text }}</div>
+                    </div>
+                    <p v-else class="msg-psy">{{ seg.text }}</p>
+                  </template>
                   <div class="msg-time">{{ messageTime(msg.timestamp) }}</div>
                 </div>
               </template>
@@ -1424,9 +1520,10 @@ type="button"
     <Modal
       v-model="addMemberModalOpen"
       :title="t('group.addMemberTitle')"
+      described-by="add-member-hint"
     >
       <div class="add-member-form">
-        <p class="form-hint">{{ t('group.addMemberHint') }}</p>
+        <p id="add-member-hint" class="form-hint">{{ t('group.addMemberHint') }}</p>
         <ul class="char-pick-list tk-scroll" role="group" :aria-label="t('group.charPickAria')">
           <li v-for="c in addMemberAvailable" :key="c.id">
             <button
@@ -1476,8 +1573,9 @@ type="button"
     <Modal
       v-model="deleteModalOpen"
       :title="t('group.deleteTitle')"
+      described-by="group-delete-desc"
     >
-      <p>{{ t('group.deleteConfirm') }}</p>
+      <p id="group-delete-desc">{{ t('group.deleteConfirm') }}</p>
       <template #footer>
         <button
           type="button"
@@ -1500,9 +1598,10 @@ type="button"
     <Modal
       v-model="npcModalOpen"
       :title="t('group.npcTitle')"
+      described-by="npc-hint"
     >
       <div class="npc-generate-form">
-        <p class="form-hint">
+        <p id="npc-hint" class="form-hint">
           {{ t('group.npcHint') }}
         </p>
 
@@ -1597,6 +1696,26 @@ type="button"
 .header-count {
   font-size: 12px;
   color: var(--muted-foreground);
+}
+
+@media (max-width: 640px) {
+  /*
+    页头多了"单聊 ⇄ 群聊"这一段之后，390px 宽度放不下原来那一排：
+    计数与返回按钮的文字先让位（返回按钮的 aria-label 仍在，读屏与截图都拿得到名字），
+    主操作"新建群聊"的文字保留——它是这页唯一的入口，不能只剩一个加号。
+  */
+  .header-title {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .header-count {
+    display: none;
+  }
+
+  .header-btn.back .btn-label {
+    display: none;
+  }
 }
 
 .header-actions {
@@ -1699,24 +1818,12 @@ type="button"
   padding: 4px 0;
 }
 
-.empty-state {
-  padding: 32px 12px;
-  text-align: center;
-  color: var(--muted-foreground);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
 
-.empty-state p {
-  margin: 0;
-}
 
 .link-btn {
   background: none;
   border: none;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
   text-decoration: underline;
@@ -1844,17 +1951,24 @@ type="button"
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* 窄屏实测（2026-10-16 模拟器 412px）：不换行 + 标题没有 min-width:0 时，
+     flex 会把标题和 6 个按钮一起压到"内容最小宽"以下 ⇒ 标题变成一列一个字。
+     允许换行 + 放开收缩下限，窄屏下按钮整排另起一行，标题保持一行。 */
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
 .group-title-row h2 {
   margin: 0;
+  min-width: 0;
   font-size: 16px;
   font-weight: 600;
 }
 
 .group-header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -1878,7 +1992,7 @@ type="button"
 }
 
 .action-btn.delete {
-  color: var(--error);
+  color: var(--error-fg);
   border-color: var(--error);
 }
 
@@ -2166,6 +2280,30 @@ type="button"
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* E17：名字现在是可点的跳转，去掉按钮默认外观，只保留可点语义 */
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .member-name {
+    font-size: 16px;
+  }
+}
+
+@media (hover: hover) {
+  .member-name:hover {
+    text-decoration: underline;
+  }
+}
+
+.member-name:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
 }
 
 .member-remove {
@@ -2261,6 +2399,20 @@ type="button"
   flex-direction: row-reverse;
 }
 
+/* 一条消息的外壳：发言人名、思维链、若干气泡与心理段、时间，纵向排 */
+.msg-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  max-width: 70%;
+}
+
+.msg-user .msg-body {
+  align-items: flex-end;
+}
+
 .msg-user .msg-bubble {
   background: var(--primary);
   color: var(--on-primary);
@@ -2285,16 +2437,29 @@ type="button"
 }
 
 .msg-bubble {
-  max-width: 70%;
+  /* 宽度上限移到 .msg-body 上，气泡自己只吃满外壳（否则多个气泡各按 70% 算会叠出两层留白） */
+  max-width: 100%;
   padding: 8px 12px;
   border-radius: var(--radius-md);
   font-size: 14px;
   word-wrap: break-word;
 }
 
+/* 心理段：与单聊同一套规格（无底色、左竖线、字号与颜色各降一档） */
+.msg-psy {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in srgb, var(--secondary) 45%, var(--border));
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+  color: var(--muted-foreground);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 .msg-sender {
   font-size: 11px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   margin-bottom: 2px;
   font-weight: 500;
 }
@@ -2558,7 +2723,7 @@ type="button"
 }
 
 .check-icon {
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .empty-add {
@@ -2620,5 +2785,13 @@ type="button"
   .form-textarea {
     font-size: 16px;
   }
+}
+.group-capability-note {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
 }
 </style>

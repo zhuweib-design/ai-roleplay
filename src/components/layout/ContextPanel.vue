@@ -17,6 +17,8 @@ import {
 import type { ReasoningEffort } from '@/api/types';
 import { REASONING_EFFORTS, type SamplingOverrides } from '@/types';
 import { PRESET_IDS, type PresetId, presetLabel } from '@core/creation-preset';
+import { collectLorebooksForCharacter } from '@/stores/chat-context';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import { t } from '@/i18n';
 import type { ApiProfile } from '@/types';
 import {
@@ -49,21 +51,34 @@ const modelLabel = computed(() =>
   effectiveProfile.value ? effectiveProfile.value.model : t('chat.modelNotConfigured')
 );
 
-// 角色页绑定的世界书（需求7：唯一数据源 boundWorldBookIds）
-const boundLorebooks = computed(() => {
-  const bound = char.value.boundWorldBookIds ?? [];
-  return lorebookStore.lorebooks.filter((lb) => bound.includes(lb.id));
-});
+/**
+ * 生效世界书：与发送链路**共用同一个判定源** `collectLorebooksForCharacter`。
+ * 此前面板自己按 `boundWorldBookIds` 过滤，而 `stores/chat-context.ts:63` 会把
+ * `scope === 'global'` 的书**无条件**纳入 ⇒ 面板少报了实际一直在注入的书，
+ * 用户看到"没有世界书"其实正文里全是（设计文档 §1.4 E03）。
+ */
+const effectiveLorebooks = computed(() =>
+  char.value ? collectLorebooksForCharacter(char.value.id) : []
+);
+const boundLorebooks = computed(() => effectiveLorebooks.value.filter((lb) => lb.scope !== 'global'));
+const globalLorebooks = computed(() => effectiveLorebooks.value.filter((lb) => lb.scope === 'global'));
 
-// 当前角色关联世界书中的用户资料，全球世界书作为兜底。
+// 当前角色关联世界书中的用户资料；全局书也在候选里（它就是会被注入的那批）
 const worldUserProfile = computed(() => {
-  const candidates = [
-    ...boundLorebooks.value,
-    ...lorebookStore.lorebooks.filter((lb) => lb.scope === 'global'),
-  ];
+  const candidates = [...boundLorebooks.value, ...globalLorebooks.value];
   return candidates.find((lb) => lb.userProfile)?.userProfile ?? null;
 });
 const worldUserProfileName = computed(() => worldUserProfile.value?.name?.trim() || t('ctx.worldUserProfileUnset'));
+
+const { pushWithReturn } = useReadinessJump();
+
+/** 面板里列出的每本书都可点进世界书页并选中它（E03：可见且可一跳） */
+function openLorebook(id: string): void {
+  lorebookStore.selectLorebook(id);
+  // M17-b：把"要点开哪一本"写进 URL。原来只跳 /worldbook，落地页选中谁取决于
+  // store 里已经是什么——面板高亮的那本和页面打开的那本可能是两本，且刷新即丢。
+  pushWithReturn({ name: 'worldbook', query: { book: id } });
+}
 
 /**
  * Token 预算总量：取全局设置的上下文窗口上限（**响应式**，配置改动即时反映）。
@@ -80,90 +95,21 @@ const TOTAL_BUDGET = computed(() => {
   return Number.isFinite(max) && max > 0 ? max : 1;
 });
 
-const usedTokens = computed(
-  () =>
-    char.value.tokenBudget.character +
-    char.value.tokenBudget.worldInfo +
-    char.value.tokenBudget.chatHistory
-);
+// E24：用量与上限改用真实数据。
+// 原实现读 char.tokenBudget 的三段拆分（character/worldInfo/chatHistory），但该字段只有初始化写点、
+// 从不重算 ⇒ 进度条恒为 0、"剩余"恒等于初始值，界面在说谎（决策 D-H）。
+const usedTokens = computed(() => chatStore.totalTokenUsage);
 
 const usedPercent = computed(() =>
   Math.min(100, Math.round((usedTokens.value / TOTAL_BUDGET.value) * 100))
 );
 
-// 各分项占比（用于堆叠条）
-const segments = computed(() => {
-  const total = Math.max(1, usedTokens.value);
-  return [
-    {
-      key: 'character',
-      label: t('ctx.character'),
-      value: char.value.tokenBudget.character,
-      percent: (char.value.tokenBudget.character / total) * 100,
-      color: 'var(--tk-cyan-500)',
-    },
-    {
-      key: 'world',
-      label: t('ctx.world'),
-      value: char.value.tokenBudget.worldInfo,
-      percent: (char.value.tokenBudget.worldInfo / total) * 100,
-      color: 'var(--tk-red-500)',
-    },
-    {
-      key: 'history',
-      label: t('ctx.history'),
-      value: char.value.tokenBudget.chatHistory,
-      percent: (char.value.tokenBudget.chatHistory / total) * 100,
-      color: 'var(--tk-yellow-500)',
-    },
-  ];
-});
+const remainingTokens = computed(() => Math.max(0, TOTAL_BUDGET.value - usedTokens.value));
 
 // 生成参数本地编辑 → 写回 store
 function onTemperature(e: Event) {
   const v = Number((e.target as HTMLInputElement).value);
   characterStore.updateCharacter(char.value.id, { temperature: v });
-}
-
-/**
- * T-16：角色级 maxTokens —— 可选字段
- *
- * 语义与 P0-3 采样参数完全一致：`undefined` / `null` = 未设置 = 回落
- * Profile 级 → 不传（供应商默认）。绝不用 0 表示未设置。
- */
-
-/** 角色级是否显式设置了 maxTokens */
-const isMaxTokensSet = computed(
-  () =>
-    typeof char.value.maxTokens === 'number' &&
-    Number.isFinite(char.value.maxTokens) &&
-    char.value.maxTokens > 0
-);
-
-/**
- * 实际生效值（角色级 ?? Profile 级 ?? 不传）
- * 用于滑块位置与数值展示；三者都没有时返回 null（UI 显示"未设置"）
- */
-const resolvedMaxTokens = computed<number | null>(() => {
-  const charV = char.value.maxTokens;
-  if (typeof charV === 'number' && Number.isFinite(charV) && charV > 0) return charV;
-  const profileV = effectiveProfile.value?.maxTokens;
-  if (typeof profileV === 'number' && Number.isFinite(profileV) && profileV > 0) return profileV;
-  return null;
-});
-
-/** 滑块位置（都未设置时用 4096 中立值，仅作把手位置，不代表已设置） */
-const sliderMaxTokens = computed<number>(() => resolvedMaxTokens.value ?? 4096);
-
-function onMaxTokens(e: Event) {
-  const v = Number((e.target as HTMLInputElement).value);
-  if (!Number.isFinite(v)) return;
-  characterStore.updateCharacter(char.value.id, { maxTokens: v });
-}
-
-/** 清空角色级覆盖（写 undefined = 回落 Profile 级） */
-function resetMaxTokens(): void {
-  characterStore.updateCharacter(char.value.id, { maxTokens: undefined });
 }
 
 function onAuthorNote(e: Event) {
@@ -505,51 +451,48 @@ function onCtxTouchEnd(e: TouchEvent) {
           <span class="ctx-section-value">{{ usedTokens }} / {{ TOTAL_BUDGET }}</span>
         </header>
         <div
-class="token-bar" role="progressbar"
-          :aria-valuenow="usedTokens" :aria-valuemin="0" :aria-valuemax="TOTAL_BUDGET"
+          class="token-bar"
+          role="progressbar"
+          :aria-valuenow="usedTokens"
+          :aria-valuemin="0"
+          :aria-valuemax="TOTAL_BUDGET"
           :aria-label="t('ctx.tokenUsed', { percent: usedPercent })"
->
-          <div class="token-bar-fill" :style="{ width: `${usedPercent}%` }">
-            <div
-              v-for="seg in segments"
-              :key="seg.key"
-              class="token-segment"
-              :style="{
-                width: `${seg.percent}%`,
-                backgroundColor: seg.color,
-              }"
-              :title="`${seg.label}: ${seg.value}`"
-            />
-          </div>
+        >
+          <div class="token-bar-fill" :style="{ width: `${usedPercent}%` }" />
         </div>
         <ul class="token-legend" :aria-label="t('ctx.tokenLegend')">
-          <li v-for="seg in segments" :key="seg.key">
-            <span class="legend-dot" :style="{ backgroundColor: seg.color }" aria-hidden="true" />
-            <span class="legend-label">{{ seg.label }}</span>
-            <span class="legend-value">{{ seg.value }}</span>
-          </li>
-          <li>
-            <span class="legend-dot legend-remaining" aria-hidden="true" />
-            <span class="legend-label">{{ t('ctx.remaining') }}</span>
-            <span class="legend-value">{{ char.tokenBudget.remaining }}</span>
-          </li>
           <li class="legend-usage">
             <span class="legend-dot legend-usage-dot" aria-hidden="true" />
             <span class="legend-label">{{ t('ctx.totalUsage') }}</span>
             <span class="legend-value">{{ chatStore.totalTokenUsage }} Tokens</span>
           </li>
+          <li>
+            <span class="legend-dot legend-remaining" aria-hidden="true" />
+            <span class="legend-label">{{ t('ctx.remaining') }}</span>
+            <span class="legend-value">{{ remainingTokens }}</span>
+          </li>
         </ul>
+        <p class="ctx-char-desc">{{ t('ctx.tokenHint') }}</p>
       </section>
 
-      <!-- 世界书 -->
+      <!-- 世界书：列的是"真正会注入的那批"，全局书单独标注（E03） -->
       <section class="ctx-section" aria-labelledby="ctx-world-title">
         <header class="ctx-section-header">
           <span id="ctx-world-title" class="ctx-section-title">{{ t('ctx.worldTitle') }}</span>
-          <span class="ctx-section-value">{{ t('ctx.worldCount', { count: boundLorebooks.length }) }}</span>
+          <span class="ctx-section-value">{{ t('ctx.worldCount', { count: effectiveLorebooks.length }) }}</span>
         </header>
-        <ul v-if="boundLorebooks.length" class="world-list">
-          <li v-for="lb in boundLorebooks" :key="lb.id" class="world-lorebook">
-            <span class="world-entry-name">{{ lb.name }}</span>
+        <ul v-if="effectiveLorebooks.length" class="world-list">
+          <li v-for="lb in effectiveLorebooks" :key="lb.id" class="world-lorebook">
+            <button
+              type="button"
+              class="world-row-btn"
+              :data-rel-jump="lb.scope === 'global' ? 'ctx-world-global' : 'ctx-world-bound'"
+              :aria-label="t('ctx.worldRowAria', { name: lb.name })"
+              @click="openLorebook(lb.id)"
+            >
+              <span class="world-entry-name">{{ lb.name }}</span>
+              <span v-if="lb.scope === 'global'" class="world-global-tag">{{ t('ctx.worldGlobalTag') }}</span>
+            </button>
             <span class="world-entry-count">
               {{ t('ctx.worldEnabled', { count: lb.entries.filter((e) => e.enabled).length }) }}
             </span>
@@ -575,6 +518,7 @@ class="token-bar" role="progressbar"
         <label class="ctx-range-label">
           <span>{{ t('ctx.insertDepth') }}</span>
           <input
+            v-range
             type="range"
             class="tk-range"
             min="0"
@@ -604,6 +548,7 @@ class="token-bar" role="progressbar"
         <label class="ctx-range-label">
           <span>{{ t('ctx.temperature') }}</span>
           <input
+            v-range
             type="range"
             class="tk-range"
             min="0"
@@ -615,32 +560,7 @@ class="token-bar" role="progressbar"
           />
           <span class="ctx-range-value" aria-hidden="true">{{ char.temperature.toFixed(2) }}</span>
         </label>
-        <label class="ctx-range-label">
-          <span>{{ t('ctx.maxTokens') }}</span>
-          <input
-            type="range"
-            class="tk-range"
-            min="256"
-            max="8192"
-            step="256"
-            :value="sliderMaxTokens"
-            :aria-label="t('ctx.maxTokensAria')"
-            @input="onMaxTokens"
-          />
-          <span class="ctx-range-value" aria-hidden="true">
-            {{ isMaxTokensSet ? resolvedMaxTokens : t('ctx.maxTokensUnset') }}
-          </span>
-          <button
-            v-if="isMaxTokensSet"
-            type="button"
-            class="ctx-reset-btn ctx-reset-btn-maxtok"
-            :aria-label="t('ctx.maxTokensReset')"
-            @click="resetMaxTokens"
-          >
-            <Icon name="close" :size="12" />
-          </button>
-        </label>
-        <p v-if="!isMaxTokensSet" class="ctx-param-hint">{{ t('ctx.maxTokensUnsetHint') }}</p>
+        <!-- 输出上限不再是旋钮：由"模型最大上下文 − 预留 − 输入实测"自动推导，见 core/token-budget.ts -->
 
         <!-- P0-2 思考强度：capability = none 时整个隐藏（不为统一而暴露无效开关） -->
         <div v-if="reasoningCapability !== 'none'" class="ctx-param-row">
@@ -684,6 +604,7 @@ class="token-bar" role="progressbar"
         <label v-if="supportsTopP" class="ctx-range-label">
           <span>{{ t('ctx.topP') }}</span>
           <input
+            v-range
             type="range"
             class="tk-range"
             min="0"
@@ -710,6 +631,7 @@ class="token-bar" role="progressbar"
         <label v-if="supportsFrequencyPenalty" class="ctx-range-label">
           <span>{{ t('ctx.frequencyPenalty') }}</span>
           <input
+            v-range
             type="range"
             class="tk-range"
             min="-2"
@@ -1063,6 +985,31 @@ class="token-bar" role="progressbar"
   white-space: nowrap;
 }
 
+/* 行本身可点（E03 的"可一跳"）：按钮铺满左侧弹性区，计数仍在行右端 */
+.world-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.world-global-tag {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
 .world-entry-count {
   flex-shrink: 0;
   font-size: 12px;
@@ -1161,6 +1108,13 @@ class="token-bar" role="progressbar"
 .ctx-preset-select {
   width: 100%;
   font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  /* 控件字号兜底：<16px 的 select 在 iOS 聚焦时会放大整页 */
+  .ctx-preset-select {
+    font-size: 16px;
+  }
 }
 
 .ctx-reset-btn {

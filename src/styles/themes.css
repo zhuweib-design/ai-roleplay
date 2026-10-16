@@ -40,6 +40,10 @@
   --success-fg: #065F46;
 
   --destructive: #DC2626;
+  /* --error 在这套里既当"删除类按钮的填充"（配 --on-accent 白字）又曾被当文字色用。
+     文字那一档 2026-10-13 起全部改走 --error-fg（9 处），于是这里可以按"填充 + 白字"来定值：
+     原来继承 :root 的 #E5484D 白字只有 3.91，压一档到 #D34247 得到 4.53。 */
+  --error: #D34247;
   --error-bg: #FEE2E2;
   --error-fg: #991B1B;
 
@@ -48,7 +52,7 @@
      - accent-orange #B45309 on #FFFFFF ≈ 4.6:1 ✓ / #FFFFFF on #B45309 ≈ 4.6:1 ✓ */
   --accent-blue: #2563EB;
   --accent-orange: #B45309;
-  --warning-fg: #B45309;
+  --warning-fg: #9D4808;
   --warning-bg: rgba(180, 83, 9, 0.12);
   --warning-border: rgba(180, 83, 9, 0.30);
   --danger-bg: rgba(220, 38, 38, 0.10);
@@ -212,4 +216,308 @@
   /* 标题衬线化：所有 font-family: var(--font-display) 的元素自动切换。
      Playfair Display 用于拉丁字形，Noto Serif SC 覆盖中文，离线回退系统衬线 */
   --font-display: "Playfair Display", "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+}
+
+/* ─── 新终端（原型 C 款 Neo Terminal）───
+   纯黑底 + 荧光青/信号绿 + 等宽字形 + 直角 + 辉光代替阴影。
+   落地依据：docs/design/THEME_5_GENERIC_PREVIEW/通用五款对照.md —— 这一款在真实产品页面
+   四条路由上实测**零处**文本对比度不达标（它是五款里唯一"亮主色配深字"的）。
+
+   必须用 `html[data-theme=…]` 而不是 `[data-theme=…]`：本文件在 main.ts 里排在
+   tokens-structure.css 之前，而两者的选择器特指度相同（都是 0,1,0），
+   所以圆角/字号这类**结构层**变量若写普通属性选择器会被后引入的 `:root` 盖掉。
+   实测：`[data-theme='dark']{--radius-md:3px}` 算出来仍是 8px，加 `html` 前缀才得 3px。
+   颜色类变量不受此影响（tokens.css 排在本文件之前）。 */
+html[data-theme='terminal'] {
+  /* Surface · 近黑冷调，层级靠 1px 荧光青细线而非亮度差 */
+  --background: #05070A;
+  --card: #070B10;
+  --card-elevated: #0D141C;
+  --video-bg: #03050A;
+
+  /* Content · 青白正文 */
+  --foreground: #D6F5EC;
+  --muted-foreground: #7FA79E;
+  --on-accent: #03130F;
+  /* 这套主色是荧光青，白字只有 1.2 级，压在它上面的文字必须深墨 */
+  --on-primary: #03130F;
+
+  /* Border · 荧光青半透明细线（≥3:1 vs card，非文本 UI 对比） */
+  --border: rgba(56, 242, 200, 0.4);
+
+  --primary: #38F2C8;
+  --primary-fg: #5CF7D5;
+  --secondary: #7CFF6B;
+  --ring: #38F2C8;
+
+  --success: #7CFF6B;
+  --success-bg: rgba(124, 255, 107, 0.12);
+  --success-fg: #7CFF6B;
+
+  --destructive: #FF5C6C;
+  --error: #FF5C6C;
+  --error-bg: rgba(255, 92, 108, 0.14);
+  --error-fg: #FF5C6C;
+
+  --warning-fg: #FFB020;
+  --warning-bg: rgba(255, 176, 32, 0.14);
+  --warning-border: rgba(255, 176, 32, 0.36);
+  --danger-fg: #FF5C6C;
+  --danger-bg: rgba(255, 92, 108, 0.14);
+  --danger-border: rgba(255, 92, 108, 0.36);
+
+  --accent-blue: #4DD8FF;
+  --accent-orange: #FFB020;
+
+  /* 标签色：近黑底上全部提亮到 on card ≥4.5:1 */
+  --tag-blue: #4DD8FF;
+  --tag-green: #7CFF6B;
+  --tag-purple: #38F2C8;
+  --tag-gray: #7FA79E;
+
+  /* 徽章：沿用"边框当填充"会得到 2.5 级，这里换成荧光青的淡填充 + 青白文字（实测 13.6:1） */
+  --badge-bg: rgba(56, 242, 200, 0.12);
+  --badge-fg: #D6F5EC;
+
+  /* 遮罩：这套的辉光语言要求遮罩更实，否则扫描线纹理会透过弹窗 */
+  --scrim-modal: rgba(0, 0, 0, 0.72);
+  --scrim-mask: rgba(0, 0, 0, 0.72);
+
+  /* 形状语言：直角 + 1px 细线，阴影换成同色辉光 */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 3px;
+  --radius-shell: 4px;
+  --shadow-card: 0 0 8px rgba(56, 242, 200, 0.12);
+  --shadow-elevated: 0 0 16px rgba(56, 242, 200, 0.14);
+  --shadow-popup: 0 0 28px rgba(56, 242, 200, 0.16);
+
+  /* 通篇等宽：这套的识别度一半来自字形（tnum 让数字对齐） */
+  --font-display: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas, "Microsoft YaHei", monospace;
+  --font-sans: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas, "Microsoft YaHei", monospace;
+}
+
+/* ─── 极光夜曲（原型 A 款 Aurora Nocturne）───
+   靛黑夜色 + 极光紫主色 + 青绿辅色 + 玻璃模糊。
+   落地条件（见 docs/design/THEME_5_GENERIC_PREVIEW/通用五款对照.md）：真实页面上 3 处
+   不达标全部是"白字压在极光紫上"（3.33），所以主按钮/填充态的文字色取该套的深墨
+   `#0A0B14`（压在 #8B7CF6 上实测 5.89），不用原型给的 accent-contrast 纯白。 */
+html[data-theme='aurora'] {
+  --background: #0A0B14;
+  --card: #12141F;
+  --card-elevated: #1D2133;
+  --video-bg: #0C0E18;
+
+  --foreground: #ECEEF7;
+  --muted-foreground: #A7AEC6;
+  /* 该套辅色 #4FD1C5 是亮青，白字压上去只有 1.87 ⇒ 填充态文字一律用深墨
+     （与 C 新终端同一处置：亮主色必须配深字） */
+  --on-accent: #0A0B14;
+  --on-primary: #0A0B14;
+
+  --border: rgba(255, 255, 255, 0.18);
+
+  --primary: #8B7CF6;
+  --primary-fg: #9E92F8;
+  --secondary: #4FD1C5;
+  --ring: #A99BFF;
+
+  --success: #4ADE80;
+  --success-bg: rgba(74, 222, 128, 0.16);
+  --success-fg: #4ADE80;
+
+  --destructive: #F87171;
+  --error: #F87171;
+  --error-bg: rgba(248, 113, 113, 0.16);
+  --error-fg: #F87171;
+
+  --warning-fg: #FBBF24;
+  --warning-bg: rgba(251, 191, 36, 0.16);
+  --warning-border: rgba(251, 191, 36, 0.36);
+  --danger-fg: #F87171;
+  --danger-bg: rgba(248, 113, 113, 0.16);
+  --danger-border: rgba(248, 113, 113, 0.36);
+
+  --accent-blue: #60A5FA;
+  --accent-orange: #FBBF24;
+
+  --tag-blue: #60A5FA;
+  --tag-green: #4ADE80;
+  --tag-purple: #9E92F8;
+  --tag-gray: #A7AEC6;
+
+  --badge-bg: rgba(139, 124, 246, 0.16);
+  --badge-fg: #ECEEF7;
+
+  --scrim-modal: rgba(5, 6, 12, 0.66);
+  --scrim-mask: rgba(5, 6, 12, 0.66);
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-shell: 28px;
+
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-popup: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+/* ─── 墨纸（原型 B 款 Ink Paper）───
+   纸白底 + 朱砂红主色 + 衬线标题，无模糊、小圆角，走"印刷页"的读感。
+   第一次落地时因真实 DOM 扫描带进 34 处低对比配对而撤出（M23-d）；那 34 处里 33 处
+   是"徽章拿边框色当填充"这一类，已在 M23-e 全局收口（扫描 122 → 89），故重做验证。
+   语义配对的达标线：填充态文字一律用该套 accent-contrast 纯白（纸白 #FAF8F3 压 warning
+   只有 4.41，纯白 4.68）。 */
+html[data-theme='ink'] {
+  --background: #F4F1EA;
+  --card: #FAF8F3;
+  --card-elevated: #FFFFFF;
+  --video-bg: #F0ECE3;
+
+  --foreground: #1C1A17;
+  --muted-foreground: #57534B;
+  --on-accent: #FFFFFF;
+  --on-primary: #FFFFFF;
+
+  --border: rgba(28, 26, 23, 0.32);
+
+  --primary: #B23A2F;
+  --primary-fg: #96291F;
+  --secondary: #3F6B5C;
+  --ring: #B23A2F;
+
+  --success: #2A5F3F;
+  --success-bg: rgba(42, 96, 64, 0.12);
+  --success-fg: #2A5F3F;
+
+  --destructive: #9E2A21;
+  --error: #9E2A21;
+  --error-bg: rgba(163, 43, 34, 0.12);
+  --error-fg: #9E2A21;
+
+  --warning-fg: #7A540D;
+  --warning-bg: rgba(143, 99, 15, 0.14);
+  --warning-border: rgba(143, 99, 15, 0.36);
+  --danger-fg: #9E2A21;
+  --danger-bg: rgba(163, 43, 34, 0.12);
+  --danger-border: rgba(163, 43, 34, 0.36);
+
+  --accent-blue: #2C5784;
+  --accent-orange: #7A540D;
+
+  --tag-blue: #2C5784;
+  --tag-green: #2A5F3F;
+  --tag-purple: #7C3A5F;
+  --tag-gray: #57534B;
+
+  --badge-bg: rgba(178, 58, 47, 0.1);
+  --badge-fg: #1C1A17;
+
+  --scrim-modal: rgba(28, 26, 23, 0.42);
+  --scrim-mask: rgba(28, 26, 23, 0.42);
+
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-shell: 10px;
+
+  --shadow-card: 0 1px 2px rgba(28, 26, 23, 0.07);
+  --shadow-elevated: 0 2px 6px rgba(28, 26, 23, 0.08);
+  --shadow-popup: 0 6px 18px rgba(28, 26, 23, 0.1);
+
+  --font-display: "Playfair Display", "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   E 新粗野（Neo-Brutal）—— 原型 docs/design/ai-chat-ui-redesign/css/theme-e.css
+   米纸底 + 纯黑 2px 硬边框 + 零圆角 + 实心偏移投影；主色电光蓝、辅色亮粉。
+   形状语言（radius 全 0、描边 2/3px）走 `html[data-theme=…]` 前缀，理由见 terminal 块注释：
+   tokens-structure.css 在 themes.css 之后引入，同特指度时后引入者赢。
+
+   与原型取值不同的三处，都是为了"真实页面上读得清"而改，不是抄错：
+   ① --on-accent 用该套自己的纯黑而不是原型的白 —— 亮粉 #FF5C8A 上白字只有 2.94，
+      黑字 7.1；这条配对由 .nav-item.active 等 22 处共用（M23-f 把两个槽并成一个）。
+   ② --secondary-text 单独指到深粉 —— 亮粉按设计只做色块与边框，不做 13px 文字，
+      但产品有 4 处把辅色当文字色用（"随机生成"、世界书三步走入口）。
+   ③ --accent-orange / --warning-fg 从 #C77700 压到 #8A5200 —— 它们同时被当文字色用，
+      静态门禁的语义配对里就有"警示文本 accent-orange/背景"这一项。
+   ═══════════════════════════════════════════════════════════════════════ */
+html[data-theme='brutal'] {
+  --background: #EFE9DC;
+  --card: #FBF7EF;
+  --card-elevated: #FFFFFF;
+  --video-bg: #E8E1D2;
+
+  --foreground: #111111;
+  --muted-foreground: #3D3A33;
+  --on-media: #111111;
+  /* 亮粉填充上要黑字（白字实测 2.94），暗红/电光蓝填充上要白字 —— 两个槽分开才立得住 */
+  --on-accent: #FFFFFF;
+  --on-secondary: #111111;
+  --on-primary: #FFFFFF;
+  /* 这套的边框与正文同为纯黑：ghost 按钮 hover 用边框色当填充，沿用兜底会得到 1.00 的隐形字 */
+  --on-border-fill: #FBF7EF;
+
+  --border: #111111;
+
+  --primary: #2B5BFF;
+  --primary-fg: #1E4AE8;
+  --secondary: #FF5C8A;
+  --secondary-text: #A8134A;
+  --ring: #111111;
+
+  --success: #175A33;
+  --success-bg: #D6F2E1;
+  --success-fg: #175A33;
+
+  /* 红要同时当"20% 染层上的文字"用：#C42B22 差 1.2 档、#A81F17 仍差 0.16（实测
+     .header-tag.unavailable 得到 4.34），压到 #96190F 才在染层上到 4.7。 */
+  --destructive: #96190F;
+  --error: #96190F;
+  --error-bg: #FFDCDC;
+  --error-fg: #96190F;
+  --danger-fg: #96190F;
+  --danger-bg: #FFDCDC;
+  --danger-border: #96190F;
+
+  --warning-fg: #8A5200;
+  --warning-bg: #FFEBCC;
+  --warning-border: #8A5200;
+  --accent-blue: #1E4AE8;
+  --accent-orange: #8A5200;
+
+  --tag-blue: #1E4AE8;
+  --tag-green: #1E6B3F;
+  --tag-purple: #A8134A;
+  --tag-gray: #3D3A33;
+
+  --badge-bg: rgba(17, 17, 17, 0.1);
+  --badge-fg: #111111;
+
+  --scrim-modal: rgba(17, 17, 17, 0.55);
+  --scrim-mask: rgba(17, 17, 17, 0.55);
+
+  --shadow-card: 3px 3px 0 #111111;
+  --shadow-elevated: 4px 4px 0 #111111;
+  --shadow-popup: 6px 6px 0 #111111;
+
+  --font-display: "Archivo", "Inter", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-sans: "Archivo", "Inter", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-shell: 0px;
+  --size-border-thin: 2px;
+  --size-border-thick: 3px;
 }

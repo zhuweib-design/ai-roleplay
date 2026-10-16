@@ -5,14 +5,19 @@ import { useCharacterStore } from '@/stores/character';
 import { useChatStore } from '@/stores/chat';
 import { useSettingsStore } from '@/stores/settings';
 import { useStoryStore } from '@/stores/story';
+import { useReadinessJump } from '@/composables/useReadinessJump';
+import ChatModeSwitch from '@/components/chat/ChatModeSwitch.vue';
 import { uiMsgsToChatMsgs } from '@/services/type-adapters';
 import { getWorldUserDisplayName } from '@/stores/chat-context';
 import { resolveLatestStatus } from '@core/status-parser';
+import { stripNarrationMarkers, parseNarrationSegments } from '@core/narration';
 import { downloadChatMarkdown } from '@/services/backup-service';
 import type { Chat } from '@/storage/types';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import MessageBubble from './MessageBubble.vue';
+import MessageActionSheet from './MessageActionSheet.vue';
+import { assistantMsgActions } from './message-actions';
 import StatusHud from './StatusHud.vue';
 import Toast from '@/components/common/Toast.vue';
 import Modal from '@/components/common/Modal.vue';
@@ -24,6 +29,7 @@ import { translateText, TranslationError } from '@services/translator';
 import { t } from '@/i18n';
 import { showToast } from '@/utils/toast-service';
 import { useViewport } from '@/core/viewport';
+import ContextReadinessBar from '@/components/layout/ContextReadinessBar.vue';
 import {
   getMessageWindow,
   searchMessages,
@@ -37,7 +43,8 @@ const settings = useSettingsStore();
 // F16.4 故事时间（用于顶栏显示）
 const storyStore = useStoryStore();
 // I-1：aria-expanded 随视口反映正确的面板状态（桌面 panelExpanded / 移动平板 contextDrawerOpen）
-const { isCompact } = useViewport();
+// isCoarsePointer：手指端（软键盘没有 Shift 键），Enter 让位给换行、发送靠按钮
+const { isCompact, isCoarsePointer } = useViewport();
 
 // I-14：承接 ChatView 传入的 inert，仅作用于聊天内容区与输入区，
 // 顶栏的 panel-toggle-btn 保持可交互（打开上下文面板后仍能二次点击关闭）
@@ -431,6 +438,15 @@ const storyTimeText = computed(() => {
   return storyStore.getFormattedStoryTime(storyId);
 });
 
+// E15：故事时间原来只是"显示"，从这里跳不到故事本体。带 ?story= 过去，
+// 故事引擎会据此选中那一条；回程由 App 的全局"返回来源页"承接（from 自动写入）。
+const { pushWithReturn } = useReadinessJump();
+function goToStory(): void {
+  const storyId = char.value.storyId;
+  if (!storyId) return;
+  pushWithReturn({ name: 'story', query: { story: storyId } });
+}
+
 // ── 自动滚动到底部 ──
 watch(
   () => char.value.messages.length,
@@ -465,13 +481,17 @@ watch(
 );
 
 // ── 输入区 ──
+/**
+ * 高度自适应：JS 只负责把 height 交回内容高度，上下限全部由 CSS 的
+ * min-height / max-height 夹取（layout.css 的 .chat-input）。
+ * 旧实现在这里另写死 56/200，与 ≤640 档 CSS 的 48/160 是两套数、互相压制，
+ * 表现是"手机上永远长不过 160，但 JS 一直以为自己给到了 200"。
+ */
 function adjustHeight() {
   const el = textarea.value;
   if (!el) return;
   el.style.height = 'auto';
-  const minH = 56;
-  const maxH = 200;
-  el.style.height = `${Math.max(minH, Math.min(el.scrollHeight, maxH))}px`;
+  el.style.height = `${Math.ceil(el.scrollHeight)}px`;
 }
 
 function handleSend() {
@@ -491,12 +511,14 @@ function handleSend() {
 }
 
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    // I-6：IME 组词中（中文拼音/日文假名/韩文）按回车不发送；组词完成后再按回车正常发送
-    if (e.isComposing || e.keyCode === 229) return;
-    e.preventDefault();
-    handleSend();
-  }
+  if (e.key !== 'Enter' || e.shiftKey) return;
+  // 手指端：软键盘的 Enter 用于换行，发送靠输入区右侧那颗按钮（它已在右、且常驻可见）。
+  // 桌面端维持既有约定：Enter 发送、Shift+Enter 换行。
+  if (isCoarsePointer.value) return;
+  // I-6：IME 组词中（中文拼音/日文假名/韩文）按回车不发送；组词完成后再按回车正常发送
+  if (e.isComposing || e.keyCode === 229) return;
+  e.preventDefault();
+  handleSend();
 }
 
 function handleStop() {
@@ -504,7 +526,7 @@ function handleStop() {
 }
 
 // 导出当前对话为 Markdown 文件（第5条）
-function handleExportChat() {
+async function handleExportChat() {
   const msgs = char.value.messages;
   if (msgs.length === 0) {
     toastMessage.value = t('chat.emptyChat');
@@ -520,7 +542,9 @@ function handleExportChat() {
     createdAt: new Date(msgs[0]!.timestamp).toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  downloadChatMarkdown(chat, char.value.name, getWorldUserDisplayName(char.value.id));
+  const outcome = await downloadChatMarkdown(chat, char.value.name, getWorldUserDisplayName(char.value.id));
+  // 用户在系统保存面板里取消 ⇒ 不报"已导出"
+  if (outcome === 'cancelled') return;
   toastMessage.value = t('chat.exportedMarkdown');
   toastType.value = 'success';
   toastOpen.value = true;
@@ -557,7 +581,7 @@ function handleMessageAction(msgId: string, action: string) {
       // F12.2 TTS 朗读
       const msg = char.value.messages.find((m) => m.id === msgId);
       if (msg) {
-        speakMessage(msg.content);
+        speakMessage(stripNarrationMarkers(msg.content));
       }
       break;
     }
@@ -570,6 +594,28 @@ function handleMessageAction(msgId: string, action: string) {
       break;
     }
   }
+}
+
+// ── 长按动作条：触屏没有 hover，操作入口改成长按唤起 ──
+const actionSheetMsgId = ref<string | null>(null);
+const sheetActions = computed(() => assistantMsgActions());
+
+function handleMessageLongPress(msgId: string) {
+  actionSheetMsgId.value = msgId;
+}
+
+function closeActionSheet() {
+  const id = actionSheetMsgId.value;
+  actionSheetMsgId.value = null;
+  if (!id) return;
+  // 关闭后把焦点交还这条消息，键盘用户不必从列表头再 Tab 一遍
+  document.querySelector<HTMLElement>(`.msg-wrap[data-message-id="${CSS.escape(id)}"]`)?.focus();
+}
+
+function handleSheetAction(key: string) {
+  const id = actionSheetMsgId.value;
+  closeActionSheet();
+  if (id) handleMessageAction(id, key);
 }
 
 // ── P1-3：消息编辑 Modal（替代原生 prompt） ──
@@ -590,6 +636,13 @@ function confirmDeleteMessage(): void {
 }
 const editTarget = ref<import('@/types').UIMessage | null>(null);
 const editDraft = ref('');
+
+/**
+ * 编辑框下方的预览：走与气泡**同一个**分段函数，所以"编辑时看到的就是发出去后会长成的样子"。
+ * 文本框里仍是带 ⟦ ⟧ 的原文（那是存储格式，删了就没法再区分哪句是心理活动），
+ * 但用户不必靠猜——预览已经把两段拆开排好了，旁边一句话说明标记是什么。
+ */
+const editSegments = computed(() => parseNarrationSegments(editDraft.value));
 
 function confirmEditMessage() {
   const msg = editTarget.value;
@@ -653,7 +706,7 @@ async function translateMessage(msg: { id: string; content: string }) {
     return;
   }
   try {
-    const result = await translateText(msg.content, config);
+    const result = await translateText(stripNarrationMarkers(msg.content), config);
     // 将翻译结果存到 messageTranslation 映射
     messageTranslations.value[msg.id] = result.translatedText;
     toastMessage.value = t('chat.translateDone');
@@ -746,42 +799,52 @@ function startWithExample(text: string) {
         <span class="model-badge" :class="{ 'not-configured': !settings.activeProfile }">{{ settings.activeProfile?.model ?? t('chat.modelNotConfigured') }}</span>
       </div>
 
-      <div class="chat-token" aria-hidden="true">
+      <!-- 单聊 ⇄ 群聊：两条通道是同一次对话的两种形态，切换要在这里看得见 -->
+      <ChatModeSwitch class="chat-mode-switch-slot" />
+
+      <!--
+        原来整块 aria-hidden="true"：读屏完全拿不到 token 用量与缓存命中率。
+        去掉后，两个指标 span 补 tabindex="0"，键盘 Tab 到就能听到 v-tip 的描述
+        （不可聚焦的元素挂 aria-describedby 等于没挂）。
+      -->
+      <div class="chat-token">
         {{ t('chat.tokenUsed', { count: (chatStore.totalTokenUsage / 1000).toFixed(1) }) }}
         <span
           v-if="chatStore.prefixCacheHitRate !== null"
           class="cache-rate"
-          :title="t('chat.cacheHitTitle', { hit: chatStore.cacheUsage.hitTokens, miss: chatStore.cacheUsage.missTokens, reported: chatStore.cacheUsage.reported })"
+          tabindex="0"
+          v-tip="t('chat.cacheHitTitle', { hit: chatStore.cacheUsage.hitTokens, miss: chatStore.cacheUsage.missTokens, reported: chatStore.cacheUsage.reported })"
         >
           · {{ t('chat.cacheHit', { percent: (chatStore.prefixCacheHitRate * 100).toFixed(0) }) }}
         </span>
         <span
           v-else-if="chatStore.prefixStableRate !== null"
           class="cache-rate local"
-          :title="t('chat.prefixStableTitle', { stable: chatStore.prefixStability.stable, total: chatStore.prefixStability.total, last: chatStore.ttftStats.lastMs, avg: chatStore.ttftStats.avgMs })"
+          tabindex="0"
+          v-tip="t('chat.prefixStableTitle', { stable: chatStore.prefixStability.stable, total: chatStore.prefixStability.total, last: chatStore.ttftStats.lastMs, avg: chatStore.ttftStats.avgMs })"
         >
           · {{ t('chat.prefixStable', { percent: (chatStore.prefixStableRate * 100).toFixed(0) }) }}
         </span>
       </div>
 
-      <!-- F16.4 故事时间显示（仅当角色关联故事时显示） -->
-      <div
+      <!-- F16.4 故事时间显示（仅当角色关联故事时显示）；E15：整块可点，一跳回到故事本体 -->
+      <button
         v-if="storyTimeText"
+        type="button"
         class="chat-story-time"
-        :title="t('chat.storyTimeTitle')"
-        role="status"
-        aria-live="polite"
+        v-tip="t('chat.storyTimeTitle')"
+        @click="goToStory"
       >
-        <Icon name="calendar-check" :size="14" />
+        <Icon name="calendar-check" :size="14" aria-hidden="true" />
         <span>{{ storyTimeText }}</span>
-      </div>
+      </button>
 
       <div class="chat-actions">
         <button
           type="button"
           class="hover-surface panel-toggle-btn"
           :aria-label="t('chat.searchMessages')"
-          :title="t('chat.searchMessagesTitle')"
+          v-tip="t('chat.searchMessagesTitle')"
           :aria-expanded="searchOpen"
           @click="toggleSearch"
         >
@@ -791,7 +854,7 @@ function startWithExample(text: string) {
           type="button"
           class="hover-surface panel-toggle-btn"
           :aria-label="t('chat.exportChat')"
-          :title="t('chat.exportChatTitle')"
+          v-tip="t('chat.exportChatTitle')"
           @click="handleExportChat"
         >
           <Icon name="download" :size="20" />
@@ -807,6 +870,9 @@ function startWithExample(text: string) {
         </button>
       </div>
     </header>
+
+    <!-- L 层：依赖就绪状态一眼可见，未就绪时给出原因与一步跳转（取代失败后才提示） -->
+    <ContextReadinessBar />
 
     <!-- 0.5.0：全文搜索栏在顶栏下方展开，结果跨越完整历史消息。 -->
     <div v-if="searchOpen" class="chat-search-bar" role="search">
@@ -831,14 +897,14 @@ function startWithExample(text: string) {
           {{ t('chat.searchNoResults') }}
         </template>
       </span>
-      <span v-if="activeSearchResult" class="chat-search-snippet" :title="activeSearchResult.snippet">
+      <span v-if="activeSearchResult" class="chat-search-snippet" v-tip="activeSearchResult.snippet">
         {{ activeSearchResult.snippet }}
       </span>
       <button
         type="button"
         class="chat-search-btn"
         :aria-label="t('chat.searchPrevious')"
-        :title="t('chat.searchPrevious')"
+        v-tip="t('chat.searchPrevious')"
         :disabled="searchResults.length === 0"
         @click="navigateSearch(-1)"
       >
@@ -848,7 +914,7 @@ function startWithExample(text: string) {
         type="button"
         class="chat-search-btn"
         :aria-label="t('chat.searchNext')"
-        :title="t('chat.searchNext')"
+        v-tip="t('chat.searchNext')"
         :disabled="searchResults.length === 0"
         @click="navigateSearch(1)"
       >
@@ -858,7 +924,7 @@ function startWithExample(text: string) {
         type="button"
         class="chat-search-btn"
         :aria-label="t('chat.closeSearch')"
-        :title="t('chat.closeSearch')"
+        v-tip="t('chat.closeSearch')"
         @click="closeSearch"
       >
         <Icon name="close" :size="16" />
@@ -909,9 +975,10 @@ function startWithExample(text: string) {
           :key="msg.id"
           :data-message-id="msg.id"
           :class="{ 'message-search-active': highlightedMessageId === msg.id }"
-          v-memo="[msg.content, msg.thinking, msg.reasoningTokens, msg.status, msg.generating, msg.narration, msg.narrationAfter, highlightedMessageId === msg.id]"
+          v-memo="[msg.content, msg.thinking, msg.reasoningTokens, msg.status, msg.generating, msg.narration, msg.narrationAfter, msg.promptTrace, msg.eventTrace, highlightedMessageId === msg.id]"
           :msg="msg"
           @action="handleMessageAction"
+          @longpress="handleMessageLongPress"
           :ref="(el) => cacheMsgHeight(el, msg.id)"
         />
         <!-- P2-11 底部占位(已回收的更晚消息高度) -->
@@ -984,7 +1051,7 @@ function startWithExample(text: string) {
               type="button"
               class="qr-btn"
               :disabled="chatStore.isGenerating"
-              :title="btn.script"
+              v-tip="btn.script"
               @click="handleQuickReply(btn)"
             >
               {{ btn.label }}
@@ -998,13 +1065,13 @@ function startWithExample(text: string) {
           id="chat-input"
           ref="textarea"
           class="chat-input"
-          :placeholder="t('chat.inputPlaceholder')"
+          :placeholder="t(isCoarsePointer ? 'chat.inputPlaceholderTouch' : 'chat.inputPlaceholder')"
           rows="1"
           aria-describedby="chat-input-hint"
           @input="adjustHeight"
           @keydown="handleKeydown"
         />
-        <span id="chat-input-hint" class="sr-only">{{ t('chat.inputHint') }}</span>
+        <span id="chat-input-hint" class="sr-only">{{ t(isCoarsePointer ? 'chat.inputHintTouch' : 'chat.inputHint') }}</span>
         <div class="composer-toolbar">
           <button
             type="button"
@@ -1017,6 +1084,14 @@ function startWithExample(text: string) {
         </div>
       </div>
     </footer>
+
+    <!-- 长按消息唤起的动作条（触屏没有 hover，这是那排小按钮的替代入口；内部 Teleport 到 body） -->
+    <MessageActionSheet
+      :open="actionSheetMsgId !== null"
+      :actions="sheetActions"
+      @action="handleSheetAction"
+      @close="closeActionSheet"
+    />
 
     <!-- F12.2/F12.3 Toast 反馈 -->
     <Toast
@@ -1035,8 +1110,12 @@ function startWithExample(text: string) {
     />
 
     <!-- P1-3：消息编辑 Modal（替代原生 prompt） -->
-    <Modal v-model="deleteConfirmModalOpen" :title="t('bubble.deleteConfirmTitle')">
-      <p class="delete-confirm-body">{{ t('bubble.deleteConfirmBody') }}</p>
+    <Modal
+      v-model="deleteConfirmModalOpen"
+      :title="t('bubble.deleteConfirmTitle')"
+      described-by="msg-delete-desc"
+    >
+      <p id="msg-delete-desc" class="delete-confirm-body">{{ t('bubble.deleteConfirmBody') }}</p>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="deleteConfirmModalOpen = false">
           {{ t('common.cancel') }}
@@ -1055,6 +1134,14 @@ function startWithExample(text: string) {
           :aria-label="t('chat.editMessage')"
           spellcheck="false"
         ></textarea>
+        <p class="edit-message-hint">{{ t('chat.editNarrationHint') }}</p>
+        <p class="edit-preview-label">{{ t('chat.editPreviewLabel') }}</p>
+        <div class="edit-message-preview">
+          <template v-for="(seg, i) in editSegments" :key="i">
+            <p v-if="seg.kind === 'psy'" class="edit-preview-psy">{{ seg.text }}</p>
+            <p v-else class="edit-preview-say">{{ seg.text }}</p>
+          </template>
+        </div>
       </div>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="editModalOpen = false">
@@ -1093,6 +1180,46 @@ function startWithExample(text: string) {
 .edit-message-input:focus-visible {
   border-color: var(--secondary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--secondary) 20%, transparent);
+}
+
+/* 编辑弹窗里的标记说明 + 分段预览（与气泡同一套分段函数，样式也同一套口径） */
+.edit-message-hint,
+.edit-preview-label {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.edit-preview-label {
+  margin-top: 12px;
+}
+
+.edit-message-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--video-bg);
+}
+
+.edit-preview-psy {
+  margin: 0;
+  padding-left: 8px;
+  border-left: 2px solid color-mix(in srgb, var(--secondary) 45%, var(--border));
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+
+.edit-preview-say {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--foreground);
 }
 
 .modal-cancel,
@@ -1207,7 +1334,7 @@ function startWithExample(text: string) {
 .chat-name {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 16px;
+  font-size: var(--font-size-lg);
   color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
@@ -1219,8 +1346,8 @@ function startWithExample(text: string) {
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--secondary) 12%, transparent);
   /* 文字向 foreground 提亮，保证 on 彩色浅底 ≥4.5:1（theatre 粉色系 12% 底 4.38:1 → 提亮后达标） */
-  color: color-mix(in srgb, var(--secondary) 78%, var(--foreground));
-  font-size: 11px;
+  color: var(--secondary-text);
+  font-size: var(--font-size-2xs);
   font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
@@ -1233,7 +1360,7 @@ function startWithExample(text: string) {
 
 /* 前缀缓存命中率徽标 */
 .cache-rate {
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   color: var(--green, #9ece6a);
   cursor: help;
 }
@@ -1419,12 +1546,14 @@ function startWithExample(text: string) {
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
+  border: none;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
   color: var(--accent-blue);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 /* P1-9 窗口化：加载更早消息按钮 */

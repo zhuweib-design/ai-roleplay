@@ -18,6 +18,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useLocalModelStore } from '@/stores/local-model';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Toast from '@/components/common/Toast.vue';
 import {
   runAllBenchmarks,
@@ -356,10 +357,7 @@ onMounted(async () => {
             </div>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="cpu" :size="48" aria-hidden="true" />
-          <p>{{ t('lm.noModels') }}</p>
-        </div>
+        <EmptyState v-else title-key="lm.noModels" icon="cpu" />
       </section>
 
       <!-- 性能指标 -->
@@ -406,9 +404,7 @@ onMounted(async () => {
             <span class="metrics-tokens">{{ m.outputTokens }} tokens</span>
           </li>
         </ul>
-        <div v-else class="empty-state small">
-          <p>{{ t('lm.noMetrics') }}</p>
-        </div>
+        <EmptyState v-else title-key="lm.noMetrics" compact :heading-level="3" />
       </section>
 
       <!-- T-10: 性能基准 -->
@@ -458,9 +454,7 @@ onMounted(async () => {
             <span class="benchmark-detail">{{ r.detail }}</span>
           </li>
         </ul>
-        <div v-else class="empty-state small">
-          <p>{{ t('lm.benchmarkNoRun') }}</p>
-        </div>
+        <EmptyState v-else title-key="lm.benchmarkNoRun" compact :heading-level="3" />
 
         <!-- 历史 -->
         <template v-if="benchmarkHistory.length > 0">
@@ -1157,24 +1151,8 @@ onMounted(async () => {
 }
 
 /* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  color: var(--muted-foreground);
-  gap: 8px;
-}
 
-.empty-state.small {
-  padding: 20px;
-}
 
-.empty-state p {
-  margin: 0;
-  font-size: 13px;
-}
 
 /* 响应式 */
 @media (max-width: 640px) {

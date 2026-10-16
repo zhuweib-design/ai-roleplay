@@ -4,7 +4,7 @@
  *
  * 功能：
  * - 路由参数 :id 存在时为编辑模式（加载现有角色），否则为新建模式
- * - 表单字段：名称、头像（gradient/image URL）、描述、标签、模型、温度、maxTokens、作者笔记、作者深度
+ * - 表单字段：名称、头像（gradient/image URL）、描述、标签、模型、温度、作者笔记、作者深度
  * - 实时预览：右侧显示 Avatar + 名称 + 描述
  * - 表单验证：名称必填
  * - 操作：保存 / 取消 / 删除（编辑模式，带确认 Modal） / 导出 V2（编辑模式）
@@ -15,8 +15,9 @@
  * - 错误提示使用 aria-invalid + aria-describedby
  * - 保存按钮在表单未通过验证时禁用并提示原因
  */
-import { ref, computed, watch, onMounted, nextTick, useTemplateRef } from 'vue';
+import { ref, computed, watch, nextTick, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
+import { useDeepLinkId } from '@/composables/useDeepLinkId';
 import { useCharacterStore } from '@/stores/character';
 import { useLorebookStore } from '@/stores/lorebook';
 import { useSettingsStore } from '@/stores/settings';
@@ -24,6 +25,10 @@ import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
+import QuickCharacterForm from '@/components/character/QuickCharacterForm.vue';
+import Collapse from '@/components/common/Collapse.vue';
+import FormField from '@/components/common/FormField.vue';
+import ModuleRelationsPanel from '@/components/layout/ModuleRelationsPanel.vue';
 import type { UICharacter } from '@/types';
 import type { CharacterAttributes, CharacterAttribute } from '@/core/character-card';
 import { t } from '@/i18n';
@@ -56,6 +61,16 @@ const unboundWorldBooks = computed(() => {
 
 /** 绑定选择框的当前值 */
 const selectedBindId = ref('');
+
+/**
+ * 新建态的待绑定清单：以前整个"世界书绑定"区在 `v-if="isEditMode"` 里，
+ * 而新建角色恰恰是最需要选世界的时刻 —— 于是新角色一律零绑定地出生，
+ * 用户要退出去编辑页再绑一次。这里改成创建成功后一次性绑上。
+ */
+const pendingWorldBookIds = ref<string[]>([]);
+
+/** 新建态勾选清单（全部世界书） */
+const allWorldBooks = computed(() => lorebookStore.lorebooks);
 
 /** 绑定选中的世界书到当前角色 */
 function bindSelectedWorldBook(): void {
@@ -94,8 +109,6 @@ interface FormState {
   model: string;
   profileId: string | null;
   temperature: number;
-  /** T-16：null = 未设置（回落 Profile 级 → 供应商默认），绝不用 0 表示 */
-  maxTokens: number | null;
   authorNote: string;
   authorDepth: number;
   favorite: boolean;
@@ -122,7 +135,6 @@ const emptyForm = (): FormState => ({
   model: 'GPT-4o',
   profileId: null,
   temperature: 1.0,
-  maxTokens: null,
   authorNote: '',
   authorDepth: 4,
   favorite: false,
@@ -137,6 +149,13 @@ const emptyForm = (): FormState => ({
 
 const form = ref<FormState>(emptyForm());
 const isEditMode = computed(() => !!props.id);
+
+/**
+ * 新建时的两档：快速档（名字 + 设定 + 选书）与完整表单。
+ * 默认快速档——新建角色最常卡住的不是字段不够，而是"这么多格子该填哪几个"。
+ * 编辑已有角色时不提供快速档：那时所有字段都可能有值，藏起来等于丢数据。
+ */
+const createMode = ref<'quick' | 'full'>('quick');
 const loadedCharacter = ref<UICharacter | null>(null);
 const isDirty = ref(false);
 
@@ -159,13 +178,6 @@ const errors = computed<Record<string, string>>(() => {
   }
   if (form.value.temperature < 0 || form.value.temperature > 2) {
     e.temperature = t('charEdit.tempRange');
-  }
-  // T-16：留空（null）= 未设置，合法；仅填写时才校验范围
-  if (
-    form.value.maxTokens !== null &&
-    (form.value.maxTokens < 1 || form.value.maxTokens > 32768)
-  ) {
-    e.maxTokens = t('charEdit.maxTokensRange');
   }
   if (form.value.authorDepth < 0 || form.value.authorDepth > 50) {
     e.authorDepth = t('charEdit.depthRange');
@@ -230,10 +242,6 @@ function loadCharacter(c: UICharacter) {
     model: c.model,
     profileId: c.profileId ?? null,
     temperature: c.temperature,
-    maxTokens:
-      typeof c.maxTokens === 'number' && Number.isFinite(c.maxTokens) && c.maxTokens > 0
-        ? c.maxTokens
-        : null,
     authorNote: c.authorNote,
     authorDepth: c.authorDepth,
     favorite: c.favorite,
@@ -250,22 +258,35 @@ function loadCharacter(c: UICharacter) {
   isDirty.value = false;
 }
 
-onMounted(() => {
-  if (props.id) {
-    const found = characterStore.characters.find((c) => c.id === props.id);
-    if (!found) {
-      // 角色不存在，返回列表
-      showToast('error', t('charEdit.notFound'));
-      setTimeout(() => void router.replace({ name: 'character-list' }), 800);
-      return;
-    }
-    loadCharacter(found);
-  } else {
-    // 新建模式：空表单
-    form.value = emptyForm();
-    isDirty.value = false;
-  }
-});
+// 同步快速路径：角色已在内存里就直接填表——改成一律异步会让表单先渲染一帧"新建态"
+// （渐变头像段闪一下），那个回归由 tests/views/character-editor-field-wiring.test.ts 抓着。
+// 找不到不等于角色不存在：深链进来时角色库可能还没从存档读完（`characters` 初值
+// 只有 mock 种子）。等读完再判一次交给 useDeepLinkId；仍然找不到才是真的不存在。
+const presetCharacter = props.id
+  ? characterStore.characters.find((c) => c.id === props.id)
+  : undefined;
+if (presetCharacter) {
+  loadCharacter(presetCharacter);
+} else if (props.id) {
+  useDeepLinkId({
+    key: 'id',
+    // 闸门由登记表给（`id` 归属角色库）
+    onResolved: (id) => {
+      const later = characterStore.characters.find((c) => c.id === id);
+      if (!later) {
+        showToast('error', t('charEdit.notFound'));
+        setTimeout(() => void router.replace({ name: 'character-list' }), 800);
+        return;
+      }
+      loadCharacter(later);
+    },
+    reactive: false,
+  });
+} else {
+  // 新建模式：空表单
+  form.value = emptyForm();
+  isDirty.value = false;
+}
 
 // 标记表单被修改
 watch(
@@ -296,7 +317,6 @@ const previewCharacter = computed<UICharacter>(() => ({
   authorNote: form.value.authorNote,
   authorDepth: form.value.authorDepth,
   temperature: form.value.temperature,
-  maxTokens: form.value.maxTokens ?? undefined,
   worldEntries: [],
   tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
   // F01.6 角色属性预览
@@ -444,21 +464,6 @@ function removeStat(index: number): void {
   form.value.stats.splice(index, 1);
 }
 
-/**
- * T-16：maxTokens 输入（空串 = 清空 = 未设置，回落 Profile 级）
- *
- * 不用 `v-model.number`：空输入会被解析为 NaN，无法区分"未设置"与"填错了"。
- */
-function onMaxTokensInput(e: Event): void {
-  const raw = (e.target as HTMLInputElement).value.trim();
-  if (raw === '') {
-    form.value.maxTokens = null;
-    return;
-  }
-  const v = Number(raw);
-  form.value.maxTokens = Number.isFinite(v) ? v : null;
-}
-
 function buildPatch(): Partial<UICharacter> {
   const attributes = buildAttributes();
   return {
@@ -475,8 +480,6 @@ function buildPatch(): Partial<UICharacter> {
     model: form.value.model,
     profileId: form.value.profileId,
     temperature: form.value.temperature,
-    // T-16：null = 未设置 → undefined（回落 Profile 级），与 personality/scenario 同款
-    maxTokens: form.value.maxTokens ?? undefined,
     authorNote: form.value.authorNote,
     authorDepth: form.value.authorDepth,
     favorite: form.value.favorite,
@@ -502,7 +505,13 @@ function handleSave() {
     // 新建：先 createCharacter 再 updateCharacter
     const newId = characterStore.createCharacter();
     characterStore.updateCharacter(newId, buildPatch());
-    showToast('success', t('charEdit.created'));
+    const bound = pendingWorldBookIds.value.filter((id) =>
+      characterStore.bindWorldBook(newId, id)
+    ).length;
+    showToast(
+      'success',
+      bound > 0 ? t('charEdit.createdWithWorlds', { count: bound }) : t('charEdit.created')
+    );
     setTimeout(() => void router.replace({ name: 'character-list' }), 600);
   }
 }
@@ -526,7 +535,7 @@ function confirmLeaveEditor() {
 // ── 导出 V2 ──
 function handleExport() {
   if (!props.id) return;
-  characterStore.downloadV2(props.id);
+  void characterStore.downloadV2(props.id);
 }
 </script>
 
@@ -578,6 +587,7 @@ function handleExport() {
           {{ t('charEdit.cancel') }}
         </button>
         <button
+          v-if="isEditMode || createMode === 'full'"
           type="button"
           class="header-btn save"
           :disabled="!canSave"
@@ -591,8 +601,43 @@ function handleExport() {
       </div>
     </header>
 
-    <!-- 主体：表单 + 预览 -->
-    <div class="editor-body tk-scroll">
+    <!-- 新建先走快速档；完整表单随时可切，编辑已有角色时不出现这个开关 -->
+    <div
+      v-if="!isEditMode"
+      class="create-mode-switch"
+      role="group"
+      :aria-label="t('quick.charModeAria')"
+    >
+      <button
+        type="button"
+        class="create-mode-btn"
+        :class="{ active: createMode === 'quick' }"
+        :aria-pressed="createMode === 'quick'"
+        data-rel-jump="char-create-quick"
+        @click="createMode = 'quick'"
+      >
+        {{ t('quick.charModeQuick') }}
+      </button>
+      <button
+        type="button"
+        class="create-mode-btn"
+        :class="{ active: createMode === 'full' }"
+        :aria-pressed="createMode === 'full'"
+        data-rel-jump="char-create-full"
+        @click="createMode = 'full'"
+      >
+        {{ t('quick.charModeFull') }}
+      </button>
+    </div>
+
+    <QuickCharacterForm v-if="!isEditMode && createMode === 'quick'" class="create-quick" />
+
+    <!--
+      用 v-if 而不是 v-show：两档同时留在 DOM 里会让"名称"这类标签在一页上出现两次
+      （实测 getByLabel 直接 strict-mode 冲突），更糟的是隐藏表单里的输入框仍可被 Tab 进入。
+      代价是在新建态来回切档会丢掉未保存的填写——那时还没有任何持久化数据，可接受。
+    -->
+    <div v-if="isEditMode || createMode === 'full'" class="editor-body tk-scroll">
       <form
         class="editor-form"
         novalidate
@@ -602,75 +647,82 @@ function handleExport() {
         <fieldset class="form-section">
           <legend class="section-title">{{ t('charEdit.basicTitle') }}</legend>
 
-          <div class="field">
-            <label for="f-name" class="field-label">
-              {{ t('charEdit.nameLabel') }} <span class="required" aria-hidden="true">*</span>
-            </label>
-            <input
-              id="f-name"
-              v-model="form.name"
-              type="text"
-              class="field-input"
-              :class="{ 'has-error': errors.name }"
-              :aria-invalid="!!errors.name"
-              :aria-describedby="errors.name ? 'err-name' : undefined"
-              maxlength="64"
-              required
-              autocomplete="off"
-            />
-            <p v-if="errors.name" id="err-name" class="field-error" role="alert">
-              <Icon name="alert-triangle" :size="12" />
-              <span>{{ errors.name }}</span>
-            </p>
-          </div>
+          <FormField label-key="charEdit.nameLabel" html-for="f-name" :error-text="errors.name" required>
+            <template #default="{ describedBy, invalid }">
+              <input
+                id="f-name"
+                v-model="form.name"
+                type="text"
+                class="field-input"
+                :class="{ 'has-error': invalid }"
+                :aria-invalid="invalid"
+                :aria-describedby="describedBy"
+                maxlength="64"
+                required
+                autocomplete="off"
+              />
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-tags" class="field-label">{{ t('charEdit.tagsLabel') }}</label>
-            <input
-              id="f-tags"
-              v-model="form.tagsText"
-              type="text"
-              class="field-input"
-              :placeholder="t('charEdit.tagsPlaceholder')"
-              autocomplete="off"
-            />
-            <p class="field-hint">{{ t('charEdit.tagsHint') }}</p>
-          </div>
+          <FormField label-key="charEdit.tagsLabel" html-for="f-tags" hint-key="charEdit.tagsHint">
+            <template #default="{ describedBy }">
+              <input
+                id="f-tags"
+                v-model="form.tagsText"
+                type="text"
+                class="field-input"
+                :placeholder="t('charEdit.tagsPlaceholder')"
+                :aria-describedby="describedBy"
+                autocomplete="off"
+              />
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-desc" class="field-label">{{ t('charEdit.descLabel') }}</label>
-            <textarea
-              id="f-desc"
-              v-model="form.description"
-              class="field-input field-textarea"
-              rows="5"
-              :placeholder="t('charEdit.descPlaceholder')"
-            ></textarea>
-          </div>
+          <FormField label-key="charEdit.descLabel" html-for="f-desc">
+            <template #default>
+              <textarea
+                id="f-desc"
+                v-model="form.description"
+                class="field-input field-textarea"
+                rows="5"
+                :placeholder="t('charEdit.descPlaceholder')"
+              ></textarea>
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-personality" class="field-label">{{ t('charEdit.personalityLabel') }}</label>
-            <textarea
-              id="f-personality"
-              v-model="form.personality"
-              class="field-input field-textarea"
-              rows="4"
-              :placeholder="t('charEdit.personalityPlaceholder')"
-            ></textarea>
-            <p class="field-hint">{{ t('charEdit.personalityHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.personalityLabel"
+            html-for="f-personality"
+            hint-key="charEdit.personalityHint"
+          >
+            <template #default="{ describedBy }">
+              <textarea
+                id="f-personality"
+                v-model="form.personality"
+                class="field-input field-textarea"
+                rows="4"
+                :placeholder="t('charEdit.personalityPlaceholder')"
+                :aria-describedby="describedBy"
+              ></textarea>
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-scenario" class="field-label">{{ t('charEdit.scenarioLabel') }}</label>
-            <textarea
-              id="f-scenario"
-              v-model="form.scenario"
-              class="field-input field-textarea"
-              rows="4"
-              :placeholder="t('charEdit.scenarioPlaceholder')"
-            ></textarea>
-            <p class="field-hint">{{ t('charEdit.scenarioHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.scenarioLabel"
+            html-for="f-scenario"
+            hint-key="charEdit.scenarioHint"
+          >
+            <template #default="{ describedBy }">
+              <textarea
+                id="f-scenario"
+                v-model="form.scenario"
+                class="field-input field-textarea"
+                rows="4"
+                :placeholder="t('charEdit.scenarioPlaceholder')"
+                :aria-describedby="describedBy"
+              ></textarea>
+            </template>
+          </FormField>
 
           <div class="field field-inline">
             <label class="field-checkbox">
@@ -712,8 +764,8 @@ function handleExport() {
 
           <!-- 渐变色配置 -->
           <div v-if="form.avatarType === 'gradient'" class="field">
-            <label class="field-label">{{ t('charEdit.gradientPresets') }}</label>
-            <div class="preset-row">
+            <p id="f-gradient-presets-label" class="field-label">{{ t('charEdit.gradientPresets') }}</p>
+            <div class="preset-row" role="group" aria-labelledby="f-gradient-presets-label">
               <button
                 v-for="p in colorPresets"
                 :key="p.label"
@@ -766,78 +818,85 @@ function handleExport() {
           </div>
 
           <!-- 图片头像配置 -->
-          <div v-else class="field">
-            <label for="f-avatar-url" class="field-label">{{ t('charEdit.avatarUrl') }}</label>
-            <input
-              id="f-avatar-url"
-              v-model="form.avatar"
-              type="text"
-              class="field-input"
-              :class="{ 'has-error': errors.avatar }"
-              :aria-invalid="!!errors.avatar"
-              :aria-describedby="errors.avatar ? 'err-avatar' : undefined"
-              :placeholder="t('charEdit.avatarUrlPlaceholder')"
-              autocomplete="off"
-            />
-            <p v-if="errors.avatar" id="err-avatar" class="field-error" role="alert">
-              <Icon name="alert-triangle" :size="12" />
-              <span>{{ errors.avatar }}</span>
-            </p>
-
-            <div class="upload-row">
-              <button
-                type="button"
-                class="upload-btn"
-                @click="openAvatarPicker('camera')"
-              >
-                <span>{{ t('picker.camera') }}</span>
-              </button>
-              <button
-                type="button"
-                class="upload-btn"
-                @click="openAvatarPicker('album')"
-              >
-                <Icon name="image" :size="14" />
-                <span>{{ t('picker.album') }}</span>
-              </button>
+          <FormField
+            v-else
+            label-key="charEdit.avatarUrl"
+            html-for="f-avatar-url"
+            :error-text="errors.avatar"
+          >
+            <template #default="{ describedBy, invalid }">
               <input
-                ref="avatarInput"
-                type="file"
-                accept="image/*"
-                :capture="avatarCapture"
-                class="hidden-file-input"
-                aria-hidden="true"
-                tabindex="-1"
-                @change="handleAvatarSelected"
+                id="f-avatar-url"
+                v-model="form.avatar"
+                type="text"
+                class="field-input"
+                :class="{ 'has-error': invalid }"
+                :aria-invalid="invalid"
+                :aria-describedby="describedBy"
+                :placeholder="t('charEdit.avatarUrlPlaceholder')"
+                autocomplete="off"
               />
-              <span class="upload-hint">{{ t('charEdit.uploadHint') }}</span>
-            </div>
-          </div>
+              <div class="upload-row">
+                <button
+                  type="button"
+                  class="upload-btn"
+                  @click="openAvatarPicker('camera')"
+                >
+                  <span>{{ t('picker.camera') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="upload-btn"
+                  @click="openAvatarPicker('album')"
+                >
+                  <Icon name="image" :size="14" />
+                  <span>{{ t('picker.album') }}</span>
+                </button>
+                <input
+                  ref="avatarInput"
+                  type="file"
+                  accept="image/*"
+                  :capture="avatarCapture"
+                  class="hidden-file-input"
+                  aria-hidden="true"
+                  tabindex="-1"
+                  @change="handleAvatarSelected"
+                />
+                <span class="upload-hint">{{ t('charEdit.uploadHint') }}</span>
+              </div>
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-initial" class="field-label">{{ t('charEdit.initialLabel') }}</label>
-            <input
-              id="f-initial"
-              v-model="form.initial"
-              type="text"
-              class="field-input field-initial"
-              maxlength="2"
-              :placeholder="t('charEdit.initialPlaceholder')"
-              autocomplete="off"
-            />
-          </div>
+          <FormField label-key="charEdit.initialLabel" html-for="f-initial">
+            <template #default>
+              <input
+                id="f-initial"
+                v-model="form.initial"
+                type="text"
+                class="field-input field-initial"
+                maxlength="2"
+                :placeholder="t('charEdit.initialPlaceholder')"
+                autocomplete="off"
+              />
+            </template>
+          </FormField>
         </fieldset>
 
         <!-- 模型设置 -->
         <fieldset class="form-section">
           <legend class="section-title">{{ t('charEdit.modelTitle') }}</legend>
 
-          <div class="field">
-            <label for="f-profile" class="field-label">{{ t('charEdit.profileBindLabel') }}</label>
+          <FormField
+            label-key="charEdit.profileBindLabel"
+            html-for="f-profile"
+            hint-key="charEdit.profileBindHint"
+          >
+            <template #default="{ describedBy }">
             <select
               id="f-profile"
               class="field-input"
               :value="form.profileId ?? ''"
+              :aria-describedby="describedBy"
               @change="form.profileId = ($event.target as HTMLSelectElement).value || null"
             >
               <option value="">
@@ -851,53 +910,35 @@ function handleExport() {
                 {{ p.name }} · {{ p.model }}
               </option>
             </select>
-            <p class="field-hint">{{ t('charEdit.profileBindHint') }}</p>
-          </div>
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-temp" class="field-label">
-              {{ t('charEdit.temperatureLabel') }} <span class="value-badge">{{ form.temperature.toFixed(2) }}</span>
-            </label>
-            <input
-              id="f-temp"
-              v-model.number="form.temperature"
-              type="range"
-              min="0"
-              max="2"
-              step="0.05"
-              class="field-range"
-              :aria-invalid="!!errors.temperature"
-              :aria-describedby="errors.temperature ? 'err-temp' : undefined"
-            />
-            <p v-if="errors.temperature" id="err-temp" class="field-error" role="alert">
-              <Icon name="alert-triangle" :size="12" />
-              <span>{{ errors.temperature }}</span>
-            </p>
-            <p v-else class="field-hint">{{ t('charEdit.temperatureHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.temperatureLabel"
+            html-for="f-temp"
+            hint-key="charEdit.temperatureHint"
+            :error-text="errors.temperature"
+          >
+            <template #label-extra>
+              <span class="value-badge" :class="{ err: errors.temperature }">{{ form.temperature.toFixed(2) }}</span>
+            </template>
+            <template #default="{ describedBy, invalid }">
+              <input
+                id="f-temp"
+                v-model.number="form.temperature"
+                v-range
+                type="range"
+                min="0"
+                max="2"
+                step="0.05"
+                class="tk-range"
+                :aria-invalid="invalid"
+                :aria-describedby="describedBy"
+              />
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-maxtok" class="field-label">{{ t('charEdit.maxTokensLabel') }}</label>
-            <input
-              id="f-maxtok"
-              :value="form.maxTokens ?? ''"
-              type="number"
-              min="1"
-              max="32768"
-              step="1"
-              class="field-input"
-              :class="{ 'has-error': errors.maxTokens }"
-              :placeholder="t('charEdit.maxTokensPlaceholder')"
-              :aria-invalid="!!errors.maxTokens"
-              :aria-describedby="errors.maxTokens ? 'err-maxtok' : undefined"
-              @input="onMaxTokensInput"
-            />
-            <p v-if="errors.maxTokens" id="err-maxtok" class="field-error" role="alert">
-              <Icon name="alert-triangle" :size="12" />
-              <span>{{ errors.maxTokens }}</span>
-            </p>
-            <p v-else class="field-hint">{{ t('charEdit.maxTokensHint') }}</p>
-          </div>
+          <!-- 输出上限不再是角色级旋钮：由"模型最大上下文 − 预留 − 输入"自动推导 -->
         </fieldset>
 
         <!-- F01.6 角色属性 -->
@@ -918,73 +959,78 @@ function handleExport() {
             <span v-if="form.attrEnabled" class="attr-badge">{{ t('charEdit.attrEnabled') }}</span>
           </legend>
 
-          <div v-if="form.attrEnabled">
-            <button
-              type="button"
-              class="collapse-toggle"
-              :aria-expanded="form.attributesOpen"
-              @click="form.attributesOpen = !form.attributesOpen"
-            >
-              <Icon
-                :name="form.attributesOpen ? 'chevron-down' : 'chevron-right'"
-                :size="14"
-              />
-              <span>{{ form.attributesOpen ? t('charEdit.collapseAttrs') : t('charEdit.expandAttrs') }}</span>
-            </button>
-
-            <div v-show="form.attributesOpen" class="attr-content">
-              <div class="field">
-                <label for="f-profession" class="field-label">{{ t('charEdit.professionLabel') }}</label>
-                <input
-                  id="f-profession"
-                  v-model="form.profession"
-                  type="text"
-                  class="field-input"
-                  :placeholder="t('charEdit.professionPlaceholder')"
-                  maxlength="30"
-                  autocomplete="off"
-                />
-              </div>
+          <!--
+            这段折叠原来是本文件自己写的一套（aria-expanded 按钮 + v-show 面板），
+            与设置页的 Collapse 长得不一样、也没有 aria-controls。并入统一原语后，
+            "打开属性开关 / 加一条属性 / 切换角色"这三处从外部改展开态的地方
+            才真的有地方可写（v-model:open）。
+          -->
+          <Collapse
+            v-if="form.attrEnabled"
+            v-model:open="form.attributesOpen"
+            title-key="charEdit.attrDetails"
+            :level="3"
+            plain
+          >
+              <FormField label-key="charEdit.professionLabel" html-for="f-profession">
+                <template #default>
+                  <input
+                    id="f-profession"
+                    v-model="form.profession"
+                    type="text"
+                    class="field-input"
+                    :placeholder="t('charEdit.professionPlaceholder')"
+                    maxlength="30"
+                    autocomplete="off"
+                  />
+                </template>
+              </FormField>
 
               <div class="attr-row">
-                <div class="field">
-                  <label for="f-level" class="field-label">
-                    {{ t('charEdit.levelLabel') }}
-                    <span v-if="errors.level" class="value-badge err" role="alert">{{ errors.level }}</span>
-                  </label>
-                  <input
-                    id="f-level"
-                    v-model.number="form.level"
-                    type="number"
-                    min="0"
-                    max="9999"
-                    step="1"
-                    class="field-input"
-                    :class="{ 'has-error': errors.level }"
-                    :aria-invalid="!!errors.level"
-                  />
-                </div>
-                <div class="field">
-                  <label for="f-exp" class="field-label">
-                    {{ t('charEdit.expLabel') }}
-                    <span v-if="errors.experience" class="value-badge err" role="alert">{{ errors.experience }}</span>
-                  </label>
-                  <input
-                    id="f-exp"
-                    v-model.number="form.experience"
-                    type="number"
-                    min="0"
-                    step="1"
-                    class="field-input"
-                    :class="{ 'has-error': errors.experience }"
-                    :aria-invalid="!!errors.experience"
-                  />
-                </div>
+                <FormField
+                  label-key="charEdit.levelLabel"
+                  html-for="f-level"
+                  :error-text="errors.level"
+                >
+                  <template #default="{ describedBy, invalid }">
+                    <input
+                      id="f-level"
+                      v-model.number="form.level"
+                      type="number"
+                      min="0"
+                      max="9999"
+                      step="1"
+                      class="field-input"
+                      :class="{ 'has-error': invalid }"
+                      :aria-invalid="invalid"
+                      :aria-describedby="describedBy"
+                    />
+                  </template>
+                </FormField>
+                <FormField
+                  label-key="charEdit.expLabel"
+                  html-for="f-exp"
+                  :error-text="errors.experience"
+                >
+                  <template #default="{ describedBy, invalid }">
+                    <input
+                      id="f-exp"
+                      v-model.number="form.experience"
+                      type="number"
+                      min="0"
+                      step="1"
+                      class="field-input"
+                      :class="{ 'has-error': invalid }"
+                      :aria-invalid="invalid"
+                      :aria-describedby="describedBy"
+                    />
+                  </template>
+                </FormField>
               </div>
 
-              <div class="field">
+              <div class="field" role="group" aria-labelledby="f-stats-label">
                 <div class="stats-header">
-                  <label class="field-label">{{ t('charEdit.statsLabel') }}</label>
+                  <p id="f-stats-label" class="field-label">{{ t('charEdit.statsLabel') }}</p>
                   <button
                     type="button"
                     class="add-stat-btn"
@@ -1041,8 +1087,7 @@ function handleExport() {
                 </div>
                 <p v-else class="field-hint">{{ t('charEdit.statEmptyHint') }}</p>
               </div>
-            </div>
-          </div>
+          </Collapse>
           <p v-else class="field-hint">{{ t('charEdit.attrOffHint') }}</p>
         </fieldset>
 
@@ -1050,48 +1095,72 @@ function handleExport() {
         <fieldset class="form-section">
           <legend class="section-title">{{ t('charEdit.advancedTitle') }}</legend>
 
-          <div class="field">
-            <label for="f-author-note" class="field-label">{{ t('charEdit.authorNoteLabel') }}</label>
-            <textarea
-              id="f-author-note"
-              v-model="form.authorNote"
-              class="field-input field-textarea"
-              rows="4"
-              :placeholder="t('charEdit.authorNotePlaceholder')"
-            ></textarea>
-            <p class="field-hint">{{ t('charEdit.authorNoteHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.authorNoteLabel"
+            html-for="f-author-note"
+            hint-key="charEdit.authorNoteHint"
+          >
+            <template #default="{ describedBy }">
+              <textarea
+                id="f-author-note"
+                v-model="form.authorNote"
+                class="field-input field-textarea"
+                rows="4"
+                :placeholder="t('charEdit.authorNotePlaceholder')"
+                :aria-describedby="describedBy"
+              ></textarea>
+            </template>
+          </FormField>
 
-          <div class="field">
-            <label for="f-depth" class="field-label">
-              {{ t('charEdit.authorDepthLabel') }} <span class="value-badge">{{ form.authorDepth }}</span>
-            </label>
-            <input
-              id="f-depth"
-              v-model.number="form.authorDepth"
-              type="range"
-              min="0"
-              max="50"
-              step="1"
-              class="field-range"
-              :aria-invalid="!!errors.authorDepth"
-              :aria-describedby="errors.authorDepth ? 'err-depth' : undefined"
-            />
-            <p v-if="errors.authorDepth" id="err-depth" class="field-error" role="alert">
-              <Icon name="alert-triangle" :size="12" />
-              <span>{{ errors.authorDepth }}</span>
-            </p>
-            <p v-else class="field-hint">{{ t('charEdit.authorDepthHint') }}</p>
-          </div>
+          <FormField
+            label-key="charEdit.authorDepthLabel"
+            html-for="f-depth"
+            hint-key="charEdit.authorDepthHint"
+            :error-text="errors.authorDepth"
+          >
+            <template #label-extra>
+              <span class="value-badge">{{ form.authorDepth }}</span>
+            </template>
+            <template #default="{ describedBy, invalid }">
+              <input
+                id="f-depth"
+                v-model.number="form.authorDepth"
+                v-range
+                type="range"
+                min="0"
+                max="50"
+                step="1"
+                class="tk-range"
+                :aria-invalid="invalid"
+                :aria-describedby="describedBy"
+              />
+            </template>
+          </FormField>
         </fieldset>
 
         <!-- 需求7：世界书绑定（仅编辑模式） -->
-        <fieldset v-if="isEditMode" class="form-section">
+        <fieldset class="form-section">
           <legend class="section-title">{{ t('charEdit.wbTitle') }}</legend>
           <p class="field-hint">
-            {{ t('charEdit.wbHint') }}
+            {{ isEditMode ? t('charEdit.wbHint') : t('charEdit.wbCreateHint') }}
           </p>
 
+          <!-- 新建态：勾选项在角色创建成功的那一刻一次性绑上 -->
+          <div
+            v-if="!isEditMode"
+            class="wb-pick-list"
+            role="group"
+            :aria-label="t('charEdit.wbPickAria')"
+          >
+            <label v-for="lb in allWorldBooks" :key="lb.id" class="wb-pick-item">
+              <input v-model="pendingWorldBookIds" type="checkbox" :value="lb.id" />
+              <Icon name="book-open" :size="14" aria-hidden="true" />
+              <span class="wb-bind-name">{{ lb.name }}</span>
+              <span class="wb-bind-meta">{{ t('charEdit.wbEntryCount', { count: lb.entries.length }) }}</span>
+            </label>
+            <p v-if="!allWorldBooks.length" class="wb-bind-empty">{{ t('charEdit.wbNoWorldBook') }}</p>
+          </div>
+          <template v-else>
           <!-- 已绑定的世界书列表 -->
           <div v-if="boundWorldBooks.length" class="wb-bind-list" role="list" :aria-label="t('charEdit.wbBoundAria')">
             <div
@@ -1149,7 +1218,11 @@ function handleExport() {
           <p v-else-if="boundWorldBooks.length" class="field-hint">
             {{ t('charEdit.wbAllBound') }}
           </p>
+          </template>
         </fieldset>
+
+        <!-- L 层：角色关联（只读 core/relations.ts，编辑模式下才有确定的角色身份） -->
+        <ModuleRelationsPanel v-if="isEditMode && props.id" :character-id="props.id" />
 
         <!-- 表单底部按钮（移动端使用） -->
         <div class="form-footer">
@@ -1188,10 +1261,6 @@ function handleExport() {
               <dd>{{ previewCharacter.temperature.toFixed(2) }}</dd>
             </div>
             <div class="meta-row">
-              <dt>{{ t('charEdit.previewMaxTokens') }}</dt>
-              <dd>{{ previewCharacter.maxTokens ?? t('charEdit.maxTokensUnset') }}</dd>
-            </div>
-            <div class="meta-row">
               <dt>{{ t('charEdit.previewDepth') }}</dt>
               <dd>{{ previewCharacter.authorDepth }}</dd>
             </div>
@@ -1209,11 +1278,12 @@ function handleExport() {
       v-model="deleteModalOpen"
       :title="t('charEdit.deleteTitle')"
       :aria-label="t('charEdit.deleteAria2')"
+      described-by="char-delete-desc char-delete-warning"
     >
-      <p v-if="loadedCharacter">
+      <p id="char-delete-desc" v-if="loadedCharacter">
         {{ t('charEdit.deleteConfirm', { name: loadedCharacter.name }) }}
       </p>
-      <p class="delete-warning">
+      <p id="char-delete-warning" class="delete-warning">
         {{ t('charEdit.deleteWarning') }}
       </p>
       <template #footer>
@@ -1235,8 +1305,12 @@ function handleExport() {
     </Modal>
 
     <!-- P1-3：取消编辑时未保存确认（替代原生 confirm） -->
-    <Modal v-model="unsavedConfirmOpen" :title="t('charEdit.unsavedTitle')">
-      <p>{{ t('charEdit.unsaved') }}</p>
+    <Modal
+      v-model="unsavedConfirmOpen"
+      :title="t('charEdit.unsavedTitle')"
+      described-by="char-unsaved-desc"
+    >
+      <p id="char-unsaved-desc">{{ t('charEdit.unsaved') }}</p>
       <template #footer>
         <button
           type="button"
@@ -1279,6 +1353,32 @@ function handleExport() {
   flex-wrap: wrap;
 }
 
+.create-mode-switch {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px 0;
+}
+
+.create-mode-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.create-mode-btn.active {
+  border-color: var(--secondary);
+  color: var(--secondary-text);
+}
+
+.create-quick {
+  margin: 12px 20px;
+  max-width: 560px;
+}
+
 .editor-title {
   font-family: var(--font-display);
   font-size: 22px;
@@ -1312,7 +1412,7 @@ function handleExport() {
 @media (hover: hover) and (pointer: fine) {
   .header-btn:hover {
     border-color: var(--secondary);
-    color: var(--secondary);
+    color: var(--secondary-text);
   }
 }
 
@@ -1393,10 +1493,12 @@ function handleExport() {
   gap: 6px;
 }
 
+/* 与 FormField 的标签/说明同刻度：本页仍有 8 个字段块没接原语（温度、作者深度
+   这类标签里带实时数值，原语还没有标签后缀插槽），先让两套排版看不出层级差 */
 .field-label {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  font-weight: 500;
+  font-size: 13px;
+  color: var(--foreground);
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1413,7 +1515,7 @@ function handleExport() {
   border-radius: var(--radius-pill);
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .field-input {
@@ -1452,11 +1554,6 @@ function handleExport() {
   max-width: 80px;
 }
 
-.field-range {
-  width: 100%;
-  accent-color: var(--secondary);
-}
-
 .field-error {
   display: flex;
   align-items: center;
@@ -1467,7 +1564,7 @@ function handleExport() {
 }
 
 .field-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted-foreground);
   margin: 0;
 }
@@ -1515,7 +1612,7 @@ function handleExport() {
 
 .type-btn.active {
   background: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
 }
 
 .type-btn:focus-visible {
@@ -1592,7 +1689,7 @@ function handleExport() {
 @media (hover: hover) and (pointer: fine) {
   .upload-btn:hover {
     border-color: var(--secondary);
-    color: var(--secondary);
+    color: var(--secondary-text);
   }
 }
 
@@ -1715,7 +1812,7 @@ function handleExport() {
 
 .preview-tags {
   font-size: 12px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   margin: 0;
 }
 
@@ -1808,7 +1905,7 @@ function handleExport() {
 
 .attr-badge {
   font-size: 10px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   background: color-mix(in srgb, var(--secondary) 12%, transparent);
   padding: 1px 6px;
   border-radius: var(--radius-pill);
@@ -1866,38 +1963,6 @@ function handleExport() {
   outline-offset: 2px;
 }
 
-.collapse-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: var(--muted-foreground);
-  font-size: 12px;
-  cursor: pointer;
-  padding: 4px 0;
-  transition: color .15s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .collapse-toggle:hover {
-    color: var(--secondary);
-  }
-}
-
-.collapse-toggle:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.attr-content {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-top: 4px;
-}
-
 .attr-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1929,7 +1994,7 @@ function handleExport() {
 @media (hover: hover) and (pointer: fine) {
   .add-stat-btn:hover {
     border-color: var(--secondary);
-    color: var(--secondary);
+    color: var(--secondary-text);
   }
 }
 
@@ -2025,6 +2090,12 @@ function handleExport() {
     position: static;
     order: -1;
     max-height: none;
+    /* 必须同时取消滚动容器：`.editor-preview` 带着 overflow-y:auto 时，
+       它在网格里的**块方向贡献会塌成标题那一行（实测 34px）**——滚动容器没有
+       块方向的 max-content 高度。行轨 34px、盒子却照旧画 407px，于是下面的表单
+       压在预览卡上（1000px 实测 fieldset.y=134 而 preview 占到 483）。
+       改成 visible 后行轨 = 407.219px，重叠消失；只写 height:auto 无效。 */
+    overflow: visible;
   }
 }
 
@@ -2078,6 +2149,31 @@ function handleExport() {
   flex-direction: column;
   gap: 8px;
   margin: 12px 0;
+}
+
+/* 新建态的世界书勾选清单（创建成功后一次性绑定） */
+.wb-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.wb-pick-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.wb-pick-item input {
+  /* 勾选框本身要够大才好点（手指端） */
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .wb-bind-item {

@@ -11,6 +11,17 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 const isTauriEnv = process.env.TAURI_ENV !== undefined;
 const isTauriDev = process.env.TAURI_ENV === 'dev';
 
+/**
+ * 原生壳（Capacitor 安卓包）构建标记：由 scripts/android-apk.mjs 在跑 vite 时设置。
+ *
+ * 为什么原生壳必须关掉 Service Worker：APK 覆盖安装后，WebView 里那个
+ * workbox precache 还在拿旧包，用户看到的仍是旧界面（2026-10-15 真机实测：
+ * 页面加载 index-BqRCuyp6.js 而新 APK 里是 index-OB1SZaI5.js）。
+ * 资源本来就随 APK 一起分发、由安装版本管控，SW 在这一端只有这个副作用。
+ * 与 Tauri 同源，所以走同一个 disable 开关。
+ */
+const isNativeShellEnv = isTauriEnv || process.env.NATIVE_SHELL !== undefined;
+
 // ── 本地模型代理（第10条：本地/内网 API 被 CORS 拦截）──
 // 开发模式下，OpenAIClient 会将跨域本地/内网地址改写为 /llm-proxy/{encodeURIComponent(url)}，
 // 本中间件解码目标地址并代理转发（SSE 流式透传），从而绕过浏览器 CORS 限制。
@@ -186,9 +197,9 @@ export default defineConfig({
     localProxyPlugin(),
     // Web 端 CSP（仅生产构建 + 非 Tauri，见上方 webCspPlugin 注释）
     webCspPlugin(),
-    // PWA(手机端可安装):仅纯 Web 构建启用;Tauri(file://)禁用 SW
+    // PWA(手机端可安装):仅纯 Web 构建启用;Tauri(file://)与 Capacitor 原生壳都禁用 SW
     VitePWA({
-      disable: isTauriEnv,
+      disable: isNativeShellEnv,
       registerType: 'autoUpdate',
       includeAssets: ['pwa-icon.svg', 'apple-touch-icon.png'],
       manifest: {
@@ -220,6 +231,10 @@ export default defineConfig({
       },
     }),
   ],
+  // 编译期常量：让运行时能知道"这份包是不是原生壳构建"，不用去猜 UA
+  define: {
+    __NATIVE_SHELL__: JSON.stringify(isNativeShellEnv),
+  },
   resolve: {
     alias: [
       // 数组形式（@rollup/plugin-alias 标准）：精确字符串匹配

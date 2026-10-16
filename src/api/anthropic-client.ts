@@ -8,6 +8,7 @@ import {
   toAnthropicTools,
 } from './anthropic-protocol';
 import { toDevProxyUrl } from './openai-protocol';
+import { isHostReachable } from './cors-probe';
 import {
   toAnthropicBudget,
   resolveAnthropicThinkingMode,
@@ -21,7 +22,9 @@ import { t } from '@/i18n';
  * 认证:x-api-key 头 + anthropic-version 头(非 Bearer)
  * 流式:SSE,事件含 message_start / content_block_delta / message_delta / message_stop
  *
- * 浏览器直连(Anthropic 官方 API 支持 CORS),Web 与 Tauri 环境通用。
+ * 浏览器直连需要额外带 `anthropic-dangerous-direct-browser-access: true`：
+ * 2026-10-14 用真实浏览器 A/B 过 —— 不带这个头时官方端点不返回 CORS 头、请求被静默拦掉
+ * （服务器是通的），带上就放行到 HTTP 401。Web 与 Tauri/WebView 的 fetch 同一条约束。
  * 本地/内网兼容端点(如代理)在 Vite dev 下走 /llm-proxy 绕过 CORS。
  */
 export class AnthropicClient implements ApiClient {
@@ -47,6 +50,10 @@ export class AnthropicClient implements ApiClient {
       'Content-Type': 'application/json',
       'x-api-key': this.config.apiKey,
       'anthropic-version': AnthropicClient.API_VERSION,
+      // 官方要求：不带这个头，api.anthropic.com 不返回 Access-Control-Allow-Origin，
+      // 浏览器（含 Tauri/WebView 的 fetch）会被静默拦成 "Failed to fetch"。
+      // 2026-10-14 在真实 Edge 里用这套头做过 A/B：不带 ⇒ 被 CORS 拦，带上 ⇒ 401（到达服务器）。
+      'anthropic-dangerous-direct-browser-access': 'true',
       ...(stream ? { Accept: 'text/event-stream' } : {}),
     };
   }
@@ -177,7 +184,7 @@ export class AnthropicClient implements ApiClient {
         yield { type: 'error', error: t('api.stopped') };
         return;
       }
-      throw this.classifyFetchError(err);
+      throw await this.classifyFetchError(err);
     }
 
     if (!res.ok) {
@@ -325,6 +332,8 @@ export class AnthropicClient implements ApiClient {
       headers: {
         'x-api-key': this.config.apiKey,
         'anthropic-version': AnthropicClient.API_VERSION,
+        // 与 buildHeaders 同一个理由：不带就不给 CORS 头
+        'anthropic-dangerous-direct-browser-access': 'true',
       },
     });
     if (!res.ok) throw await this.toApiError(res);
@@ -356,11 +365,11 @@ export class AnthropicClient implements ApiClient {
       if (err instanceof Error && err.name === 'AbortError') {
         throw new ApiError(t('api.stopped'), undefined, this.provider, 'aborted');
       }
-      throw this.classifyFetchError(err);
+      throw await this.classifyFetchError(err);
     }
   }
 
-  private classifyFetchError(err: unknown): ApiError {
+  private async classifyFetchError(err: unknown): Promise<ApiError> {
     const rawMsg = err instanceof Error ? err.message : String(err);
     const lower = rawMsg.toLowerCase();
 
@@ -376,6 +385,15 @@ export class AnthropicClient implements ApiClient {
       err instanceof TypeError &&
       /failed to fetch|network request failed|load failed/i.test(rawMsg)
     ) {
+      // 与 OpenAI 客户端同一判据：能连上这家 ⇒ 是跨域被拦，连不上 ⇒ 才是网络/地址问题
+      if (await isHostReachable(this.config.baseUrl)) {
+        return new ApiError(
+          t('api.corsBlocked', { msg: rawMsg }),
+          undefined,
+          this.provider,
+          'cors'
+        );
+      }
       return new ApiError(
         t('api.networkFailed', { msg: rawMsg }),
         undefined,

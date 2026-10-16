@@ -16,7 +16,10 @@ import { useCharacterStore } from '@/stores/character';
 import { useChatStore } from '@/stores/chat';
 import { getActiveProfileId } from '@/storage/storage-factory';
 import { useSettingsStore } from '@/stores/settings';
+import { useCharacterVersionStore } from '@/stores/character-version';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
@@ -32,6 +35,8 @@ const router = useRouter();
 const characterStore = useCharacterStore();
 const chatStore = useChatStore();
 const settingsStore = useSettingsStore();
+const versionStore = useCharacterVersionStore();
+const { pushWithReturn } = useReadinessJump();
 
 // 删除确认对话框
 const deleteTarget = ref<UICharacter | null>(null);
@@ -124,6 +129,15 @@ function goToEditor(id?: string) {
   }
 }
 
+/**
+ * E19：角色卡上的"已跟踪"标记点进该角色的版本历史。
+ * 版本仓库是选中角色时懒创建的，所以"有没有标记"就是"是否已被跟踪"的唯一真相；
+ * 此前面界面上没有任何地方能看出这件事。
+ */
+function openVersions(id: string): void {
+  pushWithReturn({ name: 'character-version', query: { char: id } });
+}
+
 function startNewCharacter() {
   goToEditor();
 }
@@ -142,14 +156,12 @@ function toggleFavorite(id: string, e: Event) {
   characterStore.toggleFavorite(id);
 }
 
-function exportCharacter(id: string, e: Event) {
+async function exportCharacter(id: string, e: Event) {
   e.stopPropagation();
   busyCharacterId.value = id;
   try {
-    const ok = characterStore.downloadV2(id);
-    if (!ok) {
-      // 错误已通过 lastError 显示
-    }
+    // false = 找不到（lastError 显示）/ 用户取消保存面板，两种情况都不报成功
+    await characterStore.downloadV2(id);
   } finally {
     busyCharacterId.value = null;
   }
@@ -493,6 +505,18 @@ function tagsPreview(tags: string[]): string {
             <Icon name="gear" :size="12" />
             <span>{{ settingsStore.activeProfile?.model ?? char.model }}</span>
           </span>
+          <button
+            v-if="versionStore.hasRepository(char.id)"
+            type="button"
+            class="meta-item meta-tracked"
+            data-rel-jump="char-tracked"
+            :aria-label="t('characters.trackedAria', { name: char.name })"
+            v-tip="t('characters.trackedHint')"
+            @click.stop="openVersions(char.id)"
+          >
+            <Icon name="git-branch" :size="12" aria-hidden="true" />
+            <span>{{ t('characters.trackedTag') }}</span>
+          </button>
         </div>
 
         <div class="card-actions">
@@ -537,13 +561,12 @@ function tagsPreview(tags: string[]): string {
       </article>
 
       <!-- 空状态 -->
-      <div v-if="characterList.length === 0" class="empty-state">
-        <Icon name="user" :size="48" />
-        <p class="empty-title">{{ characterStore.searchQuery ? t('characters.emptySearch') : t('characters.emptyNoChar') }}</p>
-        <p class="empty-hint">
-          {{ characterStore.searchQuery ? t('characters.emptySearchHint') : t('characters.emptyNoCharHint') }}
-        </p>
-      </div>
+      <EmptyState
+        v-if="characterList.length === 0"
+        :title-key="characterStore.searchQuery ? 'characters.emptySearch' : 'characters.emptyNoChar'"
+        :desc-key="characterStore.searchQuery ? 'characters.emptySearchHint' : 'characters.emptyNoCharHint'"
+        icon="user"
+      />
 
       <!-- 拖拽提示 -->
       <div v-if="isDragging" class="drag-overlay" aria-hidden="true">
@@ -557,11 +580,12 @@ function tagsPreview(tags: string[]): string {
       v-model="deleteModalOpen"
       :title="t('characters.deleteTitle')"
       :aria-label="t('characters.deleteModalAria')"
+      described-by="char-list-delete-desc char-list-delete-warning"
     >
-      <p v-if="deleteTarget">
+      <p id="char-list-delete-desc" v-if="deleteTarget">
         {{ t('characters.deleteConfirm', { name: deleteTarget.name }) }}
       </p>
-      <p class="delete-warning">
+      <p id="char-list-delete-warning" class="delete-warning">
         {{ t('characters.deleteWarning') }}
       </p>
       <template #footer>
@@ -594,9 +618,10 @@ function tagsPreview(tags: string[]): string {
       v-model="generateModalOpen"
       :title="t('characters.generateModalTitle')"
       :aria-label="t('characters.generateModalAria')"
+      described-by="char-generate-desc"
     >
       <div class="generate-content">
-        <p class="generate-hint">
+        <p id="char-generate-desc" class="generate-hint">
           {{ t('characters.generateHint') }}
           <span class="generate-cost">{{ t('characters.generateCost') }}</span>
         </p>
@@ -753,7 +778,7 @@ function tagsPreview(tags: string[]): string {
 @media (hover: hover) and (pointer: fine) {
   .header-btn:hover {
     border-color: var(--secondary);
-    color: var(--secondary);
+    color: var(--secondary-text);
   }
 }
 
@@ -933,6 +958,19 @@ function tagsPreview(tags: string[]): string {
   border-top: 1px solid var(--border);
 }
 
+/* "已跟踪"是可点的（跳该角色版本历史），但视觉仍是元信息行的一员，不做成按钮块 */
+.meta-tracked {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .meta-item {
   display: inline-flex;
   align-items: center;
@@ -986,30 +1024,8 @@ function tagsPreview(tags: string[]): string {
   cursor: not-allowed;
 }
 
-.empty-state {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 16px;
-  gap: 12px;
-  color: var(--muted-foreground);
-}
 
-.empty-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--foreground);
-  margin: 0;
-}
 
-.empty-hint {
-  font-size: 13px;
-  margin: 0;
-  text-align: center;
-  max-width: 320px;
-}
 
 .drag-overlay {
   position: absolute;
@@ -1022,7 +1038,7 @@ function tagsPreview(tags: string[]): string {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 16px;
   pointer-events: none;
   z-index: 5;
@@ -1074,13 +1090,13 @@ function tagsPreview(tags: string[]): string {
 .generate-btn {
   background: var(--card-elevated);
   border-color: var(--secondary);
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .generate-btn:hover:not(:disabled) {
     background: var(--secondary);
-    color: var(--on-accent);
+    color: var(--on-secondary);
   }
 }
 
@@ -1106,7 +1122,7 @@ function tagsPreview(tags: string[]): string {
   display: block;
   margin-top: 4px;
   font-size: 11px;
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 .template-grid {
@@ -1169,7 +1185,7 @@ function tagsPreview(tags: string[]): string {
   justify-content: center;
   gap: 10px;
   padding: 16px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   background: color-mix(in srgb, var(--secondary) 8%, transparent);
   border-radius: var(--radius-md);
@@ -1187,7 +1203,7 @@ function tagsPreview(tags: string[]): string {
 .modal-generate {
   background: var(--secondary);
   border-color: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
 }
 
 @media (hover: hover) and (pointer: fine) {

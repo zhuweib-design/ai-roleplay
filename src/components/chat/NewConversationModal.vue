@@ -22,11 +22,12 @@ import Modal from '@/components/common/Modal.vue';
 import Icon from '@/components/common/Icon.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Toast from '@/components/common/Toast.vue';
+import StepFlow, { type StepFlowItem } from '@/components/common/StepFlow.vue';
 import type { UICharacter } from '@/types';
 import type { CharacterCard } from '@core/character-card';
 import type { GroupChatMode } from '@core/group-chat';
 import { MIN_GROUP_MEMBERS, MAX_GROUP_MEMBERS } from '@core/group-chat';
-import { t } from '@/i18n';
+import { t, type MessageKey } from '@/i18n';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -132,6 +133,22 @@ function goToStep2() {
 
 /** 返回第一步 */
 function backToStep1() {
+  step.value = 1;
+}
+
+/** 向导步骤清单（交给 StepFlow；标签文案键即原来那颗标签的两条文案） */
+const STEP_ARIA: MessageKey = 'newConv.stepAria';
+const wizardSteps: StepFlowItem[] = [
+  { id: 'type', labelKey: 'newConv.stepType' },
+  { id: 'char', labelKey: 'newConv.stepSelectChar' },
+];
+
+/** 键盘 ←/→ 换步：前进仍要过 canNext，与"下一步"按钮同一道闸 */
+function onStepChange(next: number): void {
+  if (next > step.value) {
+    goToStep2();
+    return;
+  }
   step.value = 1;
 }
 
@@ -255,13 +272,13 @@ watch(
     @update:model-value="(v) => emit('update:modelValue', v)"
   >
     <div class="new-conv-modal">
-      <!-- 步骤指示器 -->
-      <div class="step-indicator" role="navigation" :aria-label="t('newConv.stepAria')">
-        <span class="step-dot" :class="{ active: step >= 1 }" :aria-current="step === 1 ? 'step' : undefined">1</span>
-        <span class="step-line" :class="{ active: step >= 2 }"></span>
-        <span class="step-dot" :class="{ active: step >= 2 }" :aria-current="step === 2 ? 'step' : undefined">2</span>
-        <span class="step-label">{{ step === 1 ? t('newConv.stepType') : t('newConv.stepSelectChar') }}</span>
-      </div>
+      <!-- 步骤指示器（G 层原语；← / → 可切换，前进仍受 canNext 约束） -->
+      <StepFlow
+        :items="wizardSteps"
+        :current="step"
+        :label-key="STEP_ARIA"
+        @change="onStepChange"
+      />
 
       <!-- 第一步：选择对话类型 -->
       <div v-if="step === 1" class="step-content">
@@ -431,51 +448,7 @@ watch(
   min-height: 320px;
 }
 
-/* 步骤指示器 */
-.step-indicator {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-bottom: 4px;
-}
-
-.step-dot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--card-elevated);
-  border: 1px solid var(--border);
-  color: var(--muted-foreground);
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-mono);
-}
-
-.step-dot.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--on-primary);
-}
-
-.step-line {
-  width: 32px;
-  height: 2px;
-  background: var(--border);
-  transition: background 0.2s ease;
-}
-
-.step-line.active {
-  background: var(--primary);
-}
-
-.step-label {
-  font-size: 13px;
-  color: var(--muted-foreground);
-  margin-left: 4px;
-}
+/* 步骤指示器的样式已随 StepFlow 原语迁出 */
 
 /* 步骤内容 */
 .step-content {
@@ -627,7 +600,7 @@ watch(
 /* 选中信息 */
 .selection-info {
   font-size: 12px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   padding: 4px 0;
 }
 

@@ -10,8 +10,11 @@ import type {
 import { ApiError } from '@api/types';
 import { withStreamRetry, DEFAULT_RETRY_POLICY, type RetryPolicy } from '@api/llm-retry';
 import { buildPrompt, type PromptContexts, type PromptSettings } from '@core/prompt-builder';
+import { computeOutputBudget } from '@core/token-budget';
+import { toPromptTraceItems, type PromptTraceItem } from '@core/lorebook-scanner';
 import type { CharacterCard, ChatMessage } from '@core/character-card';
 import { ThinkingSplitter, parseThinkingComplete } from '@core/thinking-parser';
+import type { NarrationPerspective } from '@core/narration';
 import {
   createStatusSplitter,
   parseStatusComplete,
@@ -60,8 +63,6 @@ export interface ChatManagerConfig {
   reservedTokens?: number;
   /** 默认采样温度 */
   temperature?: number;
-  /** 默认单次回复最大 Tokens */
-  maxTokens?: number;
   /** P0-3：核采样阈值 0-1；undefined = 不传（供应商默认） */
   topP?: number;
   /** P0-3：存在惩罚 -2~2；undefined = 不传 */
@@ -76,6 +77,11 @@ export interface ChatManagerConfig {
    * **只在内存组装时生效，不修改任何持久化数据。**
    */
   includeThinkingInHistory?: boolean;
+  /**
+   * 心理活动（旁白段）的人称视角：'me' = 旁白里用户是「我」，'you' = 「你」。
+   * undefined = 不注入叙事规则（老的调用方与测试走这条）。
+   */
+  narrationPerspective?: NarrationPerspective;
   /** T-02：可用工具定义列表（模型可在回复中发起工具调用） */
   tools?: ToolDefinition[];
   /** T-02：工具执行器（执行模型发起的工具调用，返回结果文本） */
@@ -141,7 +147,6 @@ export interface SendMessageParams {
       | 'model'
       | 'userName'
       | 'temperature'
-      | 'maxTokens'
       | 'topP'
       | 'presencePenalty'
       | 'frequencyPenalty'
@@ -177,7 +182,13 @@ export interface ChatManagerCallbacks {
   /** 发生错误（含用户中止） */
   onError?: (error: Error) => void;
   /** prompt 构建完成后触发，可用于 UI 显示 Token 计数与裁剪状态 */
-  onPromptBuilt?: (info: { tokenCount: number; trimmed: boolean; messageCount: number }) => void;
+  onPromptBuilt?: (info: {
+    tokenCount: number;
+    trimmed: boolean;
+    messageCount: number;
+    /** 本轮真正注入的世界书条目（裁剪视图，不含正文） */
+    activated: PromptTraceItem[];
+  }) => void;
   /** E-01：本轮生成完成后情绪状态更新回调（成功时触发，供 UI 展示） */
   onEmotionUpdated?: (label: string, sessionId: string) => void;
   /**
@@ -243,6 +254,8 @@ export class ChatManager {
       userName: merged.userName ?? 'User',
       // P0-1：默认剥离历史思考（省 token）；显式开启时才回包
       includeThinkingInHistory: merged.includeThinkingInHistory === true,
+      // 旁白人称：原样透传，undefined 时 prompt-builder 不注入叙事格式段
+      narrationPerspective: merged.narrationPerspective,
     };
 
     // P1：状态块指令注入（解析/渲染永远开启，只有"要求模型产出"需要授权 —— §1.4）
@@ -280,6 +293,7 @@ export class ChatManager {
       tokenCount: built.tokenCount,
       trimmed: built.trimmed,
       messageCount: built.messages.length,
+      activated: toPromptTraceItems(built.activatedEntries),
     });
 
     // E-01/E-02 二期: L0 上下文结构 + L2 输出纪律挂载(默认关闭;fail-open 不影响主链路)
@@ -341,7 +355,13 @@ export class ChatManager {
       model: merged.model,
     };
     if (merged.temperature !== undefined) request.temperature = merged.temperature;
-    if (merged.maxTokens !== undefined) request.maxTokens = merged.maxTokens;
+    // 输出预算 = 上下文 − 预留 − 输入实测：不写死上限，也不溢出。
+    // 历史已在 prompt-builder 里按同一预算裁剪过，这里量的是裁剪后的真实输入。
+    request.maxTokens = await computeOutputBudget(
+      built.messages,
+      merged.maxContextTokens ?? 8192,
+      merged.reservedTokens ?? 1024
+    );
     // P0-3：采样参数（undefined 不写 → client 不传 → 供应商默认）
     if (merged.topP !== undefined) request.topP = merged.topP;
     if (merged.presencePenalty !== undefined) request.presencePenalty = merged.presencePenalty;
@@ -521,6 +541,16 @@ export class ChatManager {
             // E-01: 情绪状态更新(规则标注;fail-open;仅在 L0 启用且有 deps 时)
             void this.updateEmotion(fullContent, callbacks);
             if (params.persistRuntime !== false) this.recordRuntimeTurn(params.userMessage, fullContent, params.runtimeTurnId, runtime);
+            // 推理模型把输出预算吃光：思考有内容、正文一个字都没有。
+            // 这里不自动重发（流式重发会把已经显示过的思考再走一遍），但绝不能
+            // 留一个空气泡给用户 —— 给一句指向真实控件的说明。
+            // 实测依据见 openai-client.ts 的同名兜底注释。
+            if (!fullContent.trim() && thinkingBuf.trim()) {
+              const starved = new Error(t('api.reasoningStarved'));
+              callbacks?.onError?.(starved);
+              return fullContent;
+            }
+
             callbacks?.onDone?.(fullContent, ev.finishReason);
             return fullContent;
           } else if (ev.type === 'error') {

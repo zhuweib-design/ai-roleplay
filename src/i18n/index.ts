@@ -23,15 +23,61 @@ export type MessageKey = keyof typeof zh;
 
 const messages: Record<Locale, Record<string, string>> = { zh, en };
 
-/** 当前语言（响应式，切换后所有 t() 调用自动更新） */
-export const localeRef = ref<Locale>('zh');
+/**
+ * 语言偏好的同步镜像（localStorage 里的一个字符串）
+ *
+ * 存在的唯一理由：设置的真值在 IndexedDB，读它必须等异步；首帧因此没有语言可问。
+ * 这里让首帧能同步问到一个值，避免"先渲染一屏错语言、异步加载完再翻回去"。
+ *
+ * - 只在「用户显式选择」和「加载到持久化语言」时写入，**不由探测写入**：
+ *   探测值每次启动都会重算，钉进镜像会让浏览器语言变更后仍然错。
+ * - 真值始终是持久化的 AppSettings.locale；镜像只是缓存，每次加载都会被它刷新。
+ */
+const LOCALE_MIRROR_KEY = 'aijiuguan.locale';
 
-/** 切换语言 */
-export function setLocale(locale: Locale): void {
-  localeRef.value = locale;
+/** 读镜像；没有、非法、或存储不可用（隐私模式）都返回 null */
+function readLocaleMirror(): Locale | null {
+  try {
+    const v = localStorage.getItem(LOCALE_MIRROR_KEY);
+    return v === 'zh' || v === 'en' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 写镜像（由 settings store 调用；失败不影响功能，下次探测兜底） */
+export function writeLocaleMirror(locale: Locale): void {
+  try {
+    localStorage.setItem(LOCALE_MIRROR_KEY, locale);
+  } catch {
+    /* 存储不可用：镜像本就只是加速首帧，缺了它退化成原来的异步路径 */
+  }
+}
+
+/** 把当前语言写进 `<html lang>`（屏幕阅读器与翻译提示都读它） */
+function applyHtmlLang(locale: Locale): void {
   if (typeof document !== 'undefined') {
     document.documentElement.setAttribute('lang', locale === 'zh' ? 'zh-CN' : 'en');
   }
+}
+
+/**
+ * 当前语言（响应式，切换后所有 t() 调用自动更新）
+ *
+ * 初值同步求得：用户选过的语言（镜像）优先，其次浏览器语言，最后中文。
+ * 三个来源都不需要等 IndexedDB，所以首帧就是终帧
+ * （异步加载只会用真值再覆盖一次，见 settings store 的 loadFromStorage）。
+ */
+export const localeRef = ref<Locale>(readLocaleMirror() ?? detectLocale());
+
+// index.html 里那句静态 `<html lang="zh-CN">` 得在这里改掉：加载路径发现"语言已经
+// 是探测值"就不会再调 setLocale，不补这一下，英文首访的文档语言会永久停在 zh-CN。
+applyHtmlLang(localeRef.value);
+
+/** 切换语言（不写镜像：写它的是"用户显式选择"与"读到持久化值"两处，探测不算） */
+export function setLocale(locale: Locale): void {
+  localeRef.value = locale;
+  applyHtmlLang(locale);
 }
 
 /**

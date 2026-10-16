@@ -28,6 +28,7 @@ test('两个角色群聊使用真实模型、独立 Runtime Context 与 Event', 
   for (const name of names) {
     await page.goto('/character');
     await page.getByRole('button', { name: '新建角色' }).click();
+    await page.getByRole('button', { name: '完整表单' }).click(); // 新建角色默认落在快速档；这些用例走完整表单，先切档再填字段
     await page.getByLabel('名称').fill(name);
     await page.locator('#f-desc').fill(`${name}的私有设定`);
     await page.locator('.header-btn.save').click();
@@ -120,6 +121,7 @@ test('群聊生成中可中止，且中止后不提交公共回合与旁听事�
   for (const name of names) {
     await page.goto('/character');
     await page.getByRole('button', { name: '新建角色' }).click();
+    await page.getByRole('button', { name: '完整表单' }).click(); // 新建角色默认落在快速档；这些用例走完整表单，先切档再填字段
     await page.getByLabel('名称').fill(name);
     await page.locator('#f-desc').fill(`${name}的私有设定`);
     await page.locator('.header-btn.save').click();

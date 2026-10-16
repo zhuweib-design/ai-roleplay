@@ -20,7 +20,10 @@ import { useRouter } from 'vue-router';
 import { useDataBankStore } from '@/stores/data-bank';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Modal from '@/components/common/Modal.vue';
+import PrereqNotice from '@/components/common/PrereqNotice.vue';
+import { useDataBankPrereqs } from '@/core/readiness';
 import Toast from '@/components/common/Toast.vue';
 import type { DataBankScope } from '@/core/data-bank';
 import { MAX_FILE_SIZE } from '@/core/data-bank';
@@ -46,7 +49,6 @@ const toastMessage = ref('');
 const documents = computed(() => store.filteredDocuments);
 const globalDocuments = computed(() => documents.value.filter((d) => d.scope === 'global'));
 const characterDocuments = computed(() => documents.value.filter((d) => d.scope === 'character'));
-const chatDocuments = computed(() => documents.value.filter((d) => d.scope === 'chat'));
 const totalChunks = computed(() =>
   store.documents.reduce((sum, d) => sum + d.chunks.length, 0)
 );
@@ -164,6 +166,7 @@ function getCharacterName(id?: string): string {
   const char = characterStore.characters.find((c) => c.id === id);
   return char?.name ?? id;
 }
+const prereqRows = useDataBankPrereqs();
 </script>
 
 <template>
@@ -197,6 +200,9 @@ function getCharacterName(id?: string): string {
       </div>
     </header>
 
+    <!-- L 层：把"上传成功却没被检索"的两条隐藏前提显式化（E05/E06） -->
+    <PrereqNotice :rows="prereqRows" />
+
     <!-- 搜索框 -->
     <div class="search-bar">
       <span class="search-icon" aria-hidden="true"><Icon name="search" :size="16" /></span>
@@ -213,15 +219,14 @@ function getCharacterName(id?: string): string {
     <!-- 文档列表 -->
     <main class="doc-main" :aria-label="t('databank.listAria')">
       <!-- 空状态 -->
-      <div v-if="store.documents.length === 0" class="empty-state">
-        <Icon name="file" :size="48" class="empty-icon" />
-        <p class="empty-text">{{ t('databank.emptyText') }}</p>
-        <p class="empty-hint">{{ t('databank.emptyHint') }}</p>
-        <button type="button" class="header-btn upload-btn" @click="openUploadModal">
-          <Icon name="upload" :size="16" />
-          <span class="btn-label">{{ t('databank.uploadFirst') }}</span>
-        </button>
-      </div>
+      <EmptyState
+        v-if="store.documents.length === 0"
+        title-key="databank.emptyText"
+        desc-key="databank.emptyHint"
+        action-key="databank.uploadFirst"
+        icon="file"
+        @action="openUploadModal"
+      />
 
       <!-- 全局文档 -->
       <section v-if="globalDocuments.length > 0" class="doc-section" :aria-label="t('databank.globalSection')">
@@ -333,60 +338,6 @@ function getCharacterName(id?: string): string {
         </div>
       </section>
 
-      <!-- 聊天级文档 -->
-      <section v-if="chatDocuments.length > 0" class="doc-section" :aria-label="t('databank.chatSection')">
-        <h2 class="section-title">
-          <Icon name="chat-circle" :size="18" />
-          {{ t('databank.chatSection') }}
-          <span class="section-count">{{ chatDocuments.length }}</span>
-        </h2>
-        <div class="doc-grid">
-          <article
-            v-for="doc in chatDocuments"
-            :key="doc.id"
-            class="doc-card"
-          >
-            <div class="card-header" @click="toggleExpand(doc.id)">
-              <Icon name="file" :size="20" class="doc-icon" />
-              <div class="card-info">
-                <h3 class="doc-name">{{ doc.name }}</h3>
-                <span class="doc-meta">{{ formatFileSize(doc.fileSize) }} · {{ t('databank.chunksCount', { count: doc.chunks.length }) }}</span>
-              </div>
-              <button
-                type="button"
-                class="card-expand"
-                :aria-label="expandedDocId === doc.id ? t('databank.collapseChunks') : t('databank.expandChunks')"
-                :aria-expanded="expandedDocId === doc.id"
-                @click="toggleExpand(doc.id)"
-              >
-                <Icon :name="expandedDocId === doc.id ? 'chevron-up' : 'chevron-down'" :size="16" />
-              </button>
-            </div>
-            <div v-if="expandedDocId === doc.id" class="card-chunks">
-              <div
-                v-for="chunk in doc.chunks"
-                :key="chunk.id"
-                class="chunk-item"
-              >
-                <span class="chunk-index">#{{ chunk.index + 1 }}</span>
-                <span class="chunk-content">{{ chunk.content }}</span>
-                <span class="chunk-tokens">{{ chunk.tokenCount }} tok</span>
-              </div>
-            </div>
-            <div class="card-actions">
-              <button
-                type="button"
-                class="card-btn delete-btn"
-                :aria-label="t('databank.deleteAria')"
-                @click="confirmDelete(doc.id)"
-              >
-                <Icon name="trash-2" :size="14" />
-                <span>{{ t('databank.delete') }}</span>
-              </button>
-            </div>
-          </article>
-        </div>
-      </section>
 
       <!-- O-24（REAL_DEVICE_TEST_2026-10-03）：筛选无结果时的空态（对齐记录页做法） -->
       <div v-if="documents.length === 0" class="search-empty" role="status">
@@ -497,8 +448,9 @@ function getCharacterName(id?: string): string {
       v-model="deleteModalOpen"
       :title="t('databank.deleteTitle')"
       :aria-label="t('databank.deleteAria2')"
+      described-by="db-delete-desc"
     >
-      <p class="delete-hint">{{ t('databank.deleteHint') }}</p>
+      <p id="db-delete-desc" class="delete-hint">{{ t('databank.deleteHint') }}</p>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="deleteModalOpen = false">
           {{ t('databank.cancel') }}
@@ -629,36 +581,6 @@ function getCharacterName(id?: string): string {
   flex: 1;
   overflow-y: auto;
   padding: 16px 20px;
-}
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 60px 20px;
-  text-align: center;
-}
-
-.empty-icon {
-  color: var(--muted-foreground);
-  opacity: 0.5;
-}
-
-.empty-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--foreground);
-  margin: 0;
-}
-
-.empty-hint {
-  font-size: 13px;
-  color: var(--muted-foreground);
-  margin: 0 0 8px 0;
-  max-width: 400px;
 }
 
 /* 文档分组 */
@@ -834,7 +756,7 @@ function getCharacterName(id?: string): string {
 @media (hover: hover) and (pointer: fine) {
   .delete-btn:hover {
     background: color-mix(in srgb, var(--error) 10%, transparent);
-    color: var(--error);
+    color: var(--error-fg);
   }
 }
 
@@ -1062,7 +984,9 @@ function getCharacterName(id?: string): string {
   cursor: pointer;
 }
 
-.search-empty-clear:hover {
-  border-color: var(--secondary);
+@media (hover: hover) and (pointer: fine) {
+  .search-empty-clear:hover {
+    border-color: var(--secondary);
+  }
 }
 </style>

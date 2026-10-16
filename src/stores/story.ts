@@ -2,6 +2,8 @@ import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { StorageAdapter } from '@/storage/storage-adapter';
+import { getStorageAdapter } from '@/storage/storage-factory';
+import { mergeKeptLocal } from '@/core/store-merge';
 import {
   type AnalysisDepth,
   type AnalysisProgress,
@@ -46,6 +48,7 @@ import {
   mergeResults,
   createAnalysisResult,
 } from '@core/story-analyzer';
+import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
 import { createApiClient } from '../api';
 import { useSettingsStore } from './settings';
 import { useCharacterStore } from './character';
@@ -107,6 +110,14 @@ export const useStoryStore = defineStore('story', () => {
   // 注入的存储适配器
   let storageAdapter: StorageAdapter | null = null;
 
+  /**
+   * 故事列表是否已从存档读完。深链（`?story=<id>`）据此决定何时解析 id——
+   * 读库没完成时 `stories` 还是空的/旧的，直接判会"静默不选中"（M12-a 的角色版本
+   * 更糟，会悄悄写到另一条记录上，见 stores/character.ts 的同名闸门）。
+   */
+  const libraryLoaded = ref(false);
+  let loadInFlight: Promise<void> | null = null;
+
   // ── 计算属性 ──
 
   const currentStory = computed(
@@ -149,13 +160,46 @@ export const useStoryStore = defineStore('story', () => {
     if (!storageAdapter) return;
     try {
       const list = await storageAdapter.loadStories();
-      stories.value = list;
+      // 首帧窗口内新建的故事线要留住，理由同世界书（见 core/store-merge）
+      stories.value = mergeKeptLocal(list, stories.value);
       if (list.length > 0 && !currentStoryId.value) {
         currentStoryId.value = list[0]!.id;
       }
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityStory'), error: err instanceof Error ? err.message : String(err) });
     }
+  }
+
+  /** 视图可能比 App.vue 的注入更早挂载，所以自己把适配器准备好 */
+  async function ensureStorageAdapter(): Promise<StorageAdapter | null> {
+    if (storageAdapter) return storageAdapter;
+    try {
+      const adapter = getStorageAdapter();
+      await adapter.init();
+      storageAdapter = adapter;
+      return adapter;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * 等故事列表读完（没开始就自己开始，并发只读一遍）。
+   * 与 `stores/character.ts` 的同名方法是同一个契约，深链视图必须先等它再按 id 找数据。
+   */
+  async function ensureLoaded(): Promise<void> {
+    if (libraryLoaded.value) return;
+    if (loadInFlight) return loadInFlight;
+    loadInFlight = (async () => {
+      try {
+        await ensureStorageAdapter();
+        await loadFromStorage();
+      } finally {
+        libraryLoaded.value = true;
+        loadInFlight = null;
+      }
+    })();
+    return loadInFlight;
   }
 
   async function persistStory(id: string): Promise<void> {
@@ -367,21 +411,28 @@ export const useStoryStore = defineStore('story', () => {
           ? buildPreviousContext(prevResult)
           : undefined;
 
-        const messages = buildAnalysisMessages(
-          chunks[i]!,
-          story.depth,
-          i,
-          chunks.length,
-          previousContext,
-          story.templateId
+        // 分块文本超预算时自动截断（保头），输出预算由模型上下文推导
+        const prepared = await prepareGenerationPrompt(
+          (src) =>
+            buildAnalysisMessages(
+              src ?? chunks[i]!,
+              story.depth,
+              i,
+              chunks.length,
+              previousContext,
+              story.templateId
+            ),
+          chunks[i],
+          resolveContextWindow(profile, settingsStore.maxContextTokens),
+          settingsStore.reservedTokens
         );
 
         try {
           const raw = await apiClient.chat({
-            messages,
+            messages: prepared.messages,
             model: profile.model,
             temperature: 0.3,
-            maxTokens: 2000,
+            maxTokens: prepared.maxTokens,
             signal,
           });
 
@@ -429,18 +480,24 @@ export const useStoryStore = defineStore('story', () => {
         };
 
         try {
-          const scriptMessages = buildScriptGenerationMessages(
-            merged.characters,
-            merged.scenes,
-            merged.events,
-            merged.worldInfo,
-            story.templateId
+          const prepared = await prepareGenerationPrompt(
+            () =>
+              buildScriptGenerationMessages(
+                merged.characters,
+                merged.scenes,
+                merged.events,
+                merged.worldInfo,
+                story.templateId
+              ),
+            undefined,
+            resolveContextWindow(profile, settingsStore.maxContextTokens),
+            settingsStore.reservedTokens
           );
           const scriptRaw = await apiClient.chat({
-            messages: scriptMessages,
+            messages: prepared.messages,
             model: profile.model,
             temperature: 0.5,
-            maxTokens: 2000,
+            maxTokens: prepared.maxTokens,
             signal,
           });
           scripts = parseScriptResult(scriptRaw);
@@ -685,16 +742,19 @@ export const useStoryStore = defineStore('story', () => {
   }
 
   /**
-   * 导出故事脚本为 JSON 文件下载
+   * 导出故事脚本为 JSON 文件存盘
+   *
+   * 用户在系统保存面板取消时不写 lastInfo（调用方不得报"已导出"）
    */
-  function exportScripts(storyId: string): void {
+  async function exportScripts(storyId: string): Promise<void> {
     const story = stories.value.find((s) => s.id === storyId);
     if (!story || story.scripts.length === 0) {
       lastError.value = t('story.noScripts');
       return;
     }
     const filename = `${story.sourceFileName.replace(/\.[^.]+$/, '')}-scripts.json`;
-    downloadScripts(story.scripts, filename);
+    const outcome = await downloadScripts(story.scripts, filename);
+    if (outcome === 'cancelled') return;
     lastInfo.value = t('story.scriptsExported', { count: story.scripts.length });
   }
 
@@ -1111,8 +1171,11 @@ export const useStoryStore = defineStore('story', () => {
     statusCounts,
     // 依赖注入
     setStorageAdapter,
+    /** 深链视图据此决定何时解析 URL 里的故事 id */
+    libraryLoaded,
     // 持久化
     loadFromStorage,
+    ensureLoaded,
     persistStory,
     deleteFromStorage,
     // 故事操作

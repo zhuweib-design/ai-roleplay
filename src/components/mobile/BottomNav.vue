@@ -1,28 +1,33 @@
 <script setup lang="ts">
 /**
  * 移动端底部导航(可安装 PWA 的触控导航)
- * - 5 个主 Tab:会话/角色/市场/世界书/设置
+ * - 入口与顺序来自 nav-model（mobileTab），不再本地硬编码
  * - 桌面(≥641px)隐藏,由 App.vue 响应式控制显隐（断点口径：≤640 移动 / 641–1024 平板 / ≥1025 桌面，
  *   唯一来源为 src/core/viewport.ts）
  * - 当前 Tab 高亮;底部安全区垫高(避开 iOS Home 条)
  * 设计: docs/mobile-ui-design.md §13.1
  */
 import { useRoute } from 'vue-router';
+import { computed } from 'vue';
 import Icon from '@/components/common/Icon.vue';
-import { MAIN_TABS } from '@/core/mobile-nav';
+import { mobileTabEntries } from '@/core/nav-model';
 import { t } from '@/i18n';
 
 const route = useRoute();
 
-const tabs: Array<{ name: (typeof MAIN_TABS)[number]; icon: string; label: string }> = [
-  { name: 'chat', icon: 'chat-circle', label: t('mobile.tabChat') },
-  { name: 'character-list', icon: 'users', label: t('mobile.tabChar') },
-  { name: 'community-market', icon: 'store', label: t('mobile.tabMarket') },
-  { name: 'worldbook', icon: 'book-open', label: t('mobile.tabWorldbook') },
-  // D-11：移动端二级入口聚合页（数据银行/记录/故事引擎等）
-  { name: 'more', icon: 'menu', label: t('mobile.tabMore') },
-  { name: 'settings', icon: 'gear', label: t('mobile.tabSettings') },
-];
+/**
+ * 必须是 computed 而不是普通 const：普通 const 在 setup 那一刻就把当前语言的
+ * 字符串快照住了，之后切语言导航这一排还是旧文案（2026-10-15 真机复现：
+ * 底部导航中文、设置页英文）。
+ */
+const tabs = computed(() =>
+  mobileTabEntries().map((entry) => ({
+    name: entry.routeName,
+    icon: entry.icon,
+    label: t(entry.mobileLabelKey ?? entry.labelKey),
+    desc: t(entry.descKey),
+  }))
+);
 </script>
 
 <template>
@@ -34,8 +39,9 @@ const tabs: Array<{ name: (typeof MAIN_TABS)[number]; icon: string; label: strin
       class="bottom-nav-item"
       :class="{ active: route.name === tab.name }"
       :aria-current="route.name === tab.name ? 'page' : undefined"
+      v-tip="tab.desc"
     >
-      <Icon :name="tab.icon as never" :size="22" />
+      <Icon :name="tab.icon" :size="22" />
       <span class="bottom-nav-label">{{ tab.label }}</span>
     </router-link>
   </nav>
@@ -66,7 +72,7 @@ const tabs: Array<{ name: (typeof MAIN_TABS)[number]; icon: string; label: strin
   transition: color 0.12s ease;
 }
 .bottom-nav-item.active {
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 .bottom-nav-label {
   font-size: 10px;

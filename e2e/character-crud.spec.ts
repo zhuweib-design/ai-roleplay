@@ -10,6 +10,7 @@ test('角色完整生命周期：新建→保存→列表→编辑→删除', as
   // 1. 从列表进入新建
   await page.goto('/character');
   await page.getByRole('button', { name: '新建角色' }).click();
+  await page.getByRole('button', { name: '完整表单' }).click(); // 新建角色默认落在快速档；这些用例走完整表单，先切档再填字段
   await expect(page).toHaveURL(/\/character\/new/);
 
   // 2. 填写表单并保存

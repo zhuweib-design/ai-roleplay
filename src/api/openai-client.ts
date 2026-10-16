@@ -2,6 +2,7 @@ import type { ApiClient } from './api-client';
 import type { ChatRequest, ChatStream, ApiErrorKind } from './types';
 import { ApiError } from './types';
 import { buildChatCompletionsUrl, buildModelsUrl, toOpenAIMessage, toDevProxyUrl } from './openai-protocol';
+import { isHostReachable } from './cors-probe';
 import { t } from '@/i18n';
 
 /**
@@ -48,7 +49,7 @@ export class OpenAIClient implements ApiClient {
    */
   async chat(request: ChatRequest): Promise<string> {
     const body = this.buildBody(request, false);
-    const res = await this.fetchWithDiagnostics(this.endpoint, {
+    let res = await this.fetchWithDiagnostics(this.endpoint, {
       method: 'POST',
       headers: this.buildHeaders(false),
       body: JSON.stringify(body),
@@ -56,11 +57,16 @@ export class OpenAIClient implements ApiClient {
     });
 
     if (!res.ok) {
-      throw await this.toApiError(res);
+      // 输出预算由上下文推导，可能超过某家模型自己的输出上限 ⇒ 去掉 max_tokens 重发一次
+      const retried = await this.retryWithoutMaxTokens(res, body, request, false);
+      if (!retried) throw await this.toApiError(res);
+      res = retried;
+      if (!res.ok) throw await this.toApiError(res);
     }
 
     const data = await res.json();
-    const message = data?.choices?.[0]?.message;
+    const choice = data?.choices?.[0];
+    const message = choice?.message;
     const content = message?.content;
     if (typeof content !== 'string' && !message?.tool_calls) {
       throw new ApiError(
@@ -70,6 +76,33 @@ export class OpenAIClient implements ApiClient {
         'unknown'
       );
     }
+
+    /**
+     * 推理模型把输出预算吃光：思考有内容、正文一个字都没有。
+     *
+     * 实测（2026-10-15，hy4-preview-f 走中转）：单次回复的思考约 1.8–2.2 万字符
+     * （completion_tokens 5.9k–7.0k），正文只有 60–130 字；给 8192 输出预算时
+     * 8 次里 5 次是"正文为空 + finish_reason=length"，而去掉 max_tokens 后 6/6 正常。
+     * 输出预算现在由"最大上下文"推导，用户手上没有"输出上限"这个旋钮可以调，
+     * 所以这里按同一手法摘掉 max_tokens 重发一次，而不是把空结果交给上层。
+     */
+    const reasoning = message?.reasoning_content ?? message?.reasoning;
+    if (!content && !message?.tool_calls && typeof reasoning === 'string' && reasoning.trim()) {
+      const again = await this.postWithoutMaxTokens(body, request, false);
+      if (again?.ok) {
+        const d2 = await again.json().catch(() => null);
+        const c2 = d2?.choices?.[0]?.message?.content;
+        if (typeof c2 === 'string' && c2.trim()) return c2;
+      }
+      // 摘掉预算仍然空 ⇒ 说清是谁占满了，并指向界面上真存在的控件
+      throw new ApiError(
+        t('api.reasoningStarved'),
+        again?.status ?? res.status,
+        this.provider,
+        'server'
+      );
+    }
+
     // T-02：工具调用响应可能无文本内容（content 为 null），返回空串；
     // 工具调用的完整处理走 chatStream（done 事件携带 toolCalls）
     return typeof content === 'string' ? content : '';
@@ -95,11 +128,15 @@ export class OpenAIClient implements ApiClient {
         yield { type: 'error', error: t('api.stopped') };
         return;
       }
-      throw this.classifyFetchError(err);
+      throw await this.classifyFetchError(err);
     }
 
     if (!res.ok) {
-      throw await this.toApiError(res);
+      // 同 chat()：max_tokens 被供应商拒绝 ⇒ 去掉它重发一次（流式用同一套判定）
+      const retried = await this.retryWithoutMaxTokens(res, body, request, true);
+      if (!retried) throw await this.toApiError(res);
+      res = retried;
+      if (!res.ok) throw await this.toApiError(res);
     }
 
     if (!res.body) {
@@ -277,6 +314,50 @@ export class OpenAIClient implements ApiClient {
    * 带错误诊断的 fetch 封装
    * 用于非流式请求（chat / ping），将网络层错误转为分类的 ApiError
    */
+  /**
+   * 供应商拒绝过大的 max_tokens 时（它自己的输出上限可能小于模型上下文），
+   * 去掉该字段重发一次，让供应商用自己的默认值 —— 这是"只配最大上下文"的兜底。
+   *
+   * @returns 重发的响应；null = 不是这一类错误，调用方按原错误处理
+   */
+  private async retryWithoutMaxTokens(
+    res: Response,
+    body: Record<string, unknown>,
+    request: ChatRequest,
+    stream: boolean
+  ): Promise<Response | null> {
+    if (res.status !== 400) return null;
+    // 先 clone 再看正文：原响应后面还要交给 toApiError 读一次
+    const detail = await res
+      .clone()
+      .text()
+      .catch(() => '');
+    if (!/max_tokens|max_completion_tokens/i.test(detail)) return null;
+    return this.postWithoutMaxTokens(body, request, stream);
+  }
+
+  /**
+   * 把 max_tokens 摘掉重发一次（供应商/推理模型用自己的默认输出长度）。
+   *
+   * @returns 新响应；本来就没带 max_tokens 时返回 null
+   */
+  private async postWithoutMaxTokens(
+    body: Record<string, unknown>,
+    request: ChatRequest,
+    stream: boolean
+  ): Promise<Response | null> {
+    if (body.max_tokens === undefined) return null;
+    const retryBody = { ...body };
+    delete retryBody.max_tokens;
+    const init: RequestInit = {
+      method: 'POST',
+      headers: this.buildHeaders(stream),
+      body: JSON.stringify(retryBody),
+      signal: request.signal,
+    };
+    return stream ? fetch(this.endpoint, init) : this.fetchWithDiagnostics(this.endpoint, init);
+  }
+
   private async fetchWithDiagnostics(
     input: string,
     init: RequestInit
@@ -288,7 +369,7 @@ export class OpenAIClient implements ApiClient {
       if (err instanceof Error && err.name === 'AbortError') {
         throw new ApiError(t('api.stopped'), undefined, this.provider, 'aborted');
       }
-      throw this.classifyFetchError(err);
+      throw await this.classifyFetchError(err);
     }
   }
 
@@ -300,8 +381,11 @@ export class OpenAIClient implements ApiClient {
    * 2. CORS 预检失败（OPTIONS 请求被拒）
    * 3. HTTPS 证书无效（混合内容拦截等）
    * 4. URL 格式错误（如缺少协议头）
+   *
+   * 1 与 2 在 `TypeError` 层面无法分辨（浏览器刻意如此），所以走 `isHostReachable` 那次
+   * 只测连通性的探测把它们分开：能连上 ⇒ `cors`，连不上 ⇒ `network`。见 `cors-probe.ts`。
    */
-  private classifyFetchError(err: unknown): ApiError {
+  private async classifyFetchError(err: unknown): Promise<ApiError> {
     const rawMsg = err instanceof Error ? err.message : String(err);
     const lower = rawMsg.toLowerCase();
 
@@ -320,8 +404,15 @@ export class OpenAIClient implements ApiClient {
       err instanceof TypeError &&
       /failed to fetch|network request failed|load failed/i.test(rawMsg)
     ) {
-      // 进一步细分：若 baseUrl 是跨域且未配置 CORS，多半是 CORS 问题
-      // 但 TypeError 信息无法直接区分，这里按"网络或 CORS"统一返回 network kind
+      // 这两种在界面上必须分开说：一个是"地址/网络不对"，一个是"地址对但这家不接受浏览器直连"
+      if (await isHostReachable(this.config.baseUrl)) {
+        return new ApiError(
+          t('api.corsBlocked', { msg: rawMsg }),
+          undefined,
+          this.provider,
+          'cors'
+        );
+      }
       return new ApiError(
         t('api.networkFailed', { msg: rawMsg }),
         undefined,

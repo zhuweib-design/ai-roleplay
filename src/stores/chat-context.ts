@@ -37,6 +37,14 @@ export interface ChatSessionContext extends PromptContexts {
   userName: string;
   /** 当前角色关联世界书中的用户资料。 */
   worldUserProfile: WorldUserProfile | null;
+  /**
+   * E11：本轮**实际进了提示词**的事件（`eventsContext` 的结构化同一体）。
+   *
+   * 两个注入构建器都只收 `state === 'active'` 的事件，所以这里取同一判据；
+   * 且必须在 `eventsContext` 算完之后取——`scanAndApplyTriggers` 会就地改状态。
+   * 界面上的"本轮注入了哪条事件"读它，不做事后回查（事件表不落盘，回查必然说谎）。
+   */
+  activatedEvents?: StoryEvent[];
 }
 
 /**
@@ -193,6 +201,8 @@ export function buildChatSessionContext(
     worldUserProfile,
     ragContext: ragContext || undefined,
     eventsContext: eventsContext || undefined,
+    // 在两个注入构建器之后取：scanAndApplyTriggers 会就地改事件状态
+    activatedEvents: relevantEvents.filter((e) => e.state === 'active'),
     protagonistContext: protagonistContext || undefined,
     storyTimeContext: storyTimeContext || undefined,
   };

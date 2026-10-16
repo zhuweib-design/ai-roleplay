@@ -1,0 +1,133 @@
+[
+  {
+    "skin": "base",
+    "skinName": "产品现状（默认深色）",
+    "source": "(产品现状，不注入)",
+    "tokensInSkin": 0,
+    "injected": 0,
+    "notProvidedBySkin": [
+      "--background",
+      "--card",
+      "--card-elevated",
+      "--video-bg",
+      "--foreground",
+      "--muted-foreground",
+      "--on-media",
+      "--on-accent",
+      "--on-primary",
+      "--border",
+      "--primary",
+      "--primary-fg",
+      "--secondary",
+      "--ring",
+      "--success",
+      "--success-bg",
+      "--success-fg",
+      "--destructive",
+      "--error",
+      "--error-bg",
+      "--error-fg",
+      "--danger-fg",
+      "--danger-bg",
+      "--danger-border",
+      "--warning-fg",
+      "--warning-bg",
+      "--warning-border",
+      "--accent-blue",
+      "--accent-orange",
+      "--tag-blue",
+      "--tag-green",
+      "--tag-purple",
+      "--tag-gray",
+      "--font-display",
+      "--font-sans",
+      "--font-mono",
+      "--shadow-card",
+      "--shadow-elevated",
+      "--shadow-popup"
+    ],
+    "routes": [
+      {
+        "route": "/chat",
+        "screenshot": "docs/design/THEME_BASE_PREVIEW/base-chat.png",
+        "probe": {
+          "inlineBackground": "",
+          "resolvedBackground": "#0B0B10",
+          "bodyColor": "rgb(11, 11, 16)",
+          "foreground": "#F5F5F7",
+          "surfaces": {
+            "body": "rgb(11, 11, 16) / rgb(245, 245, 247)",
+            ".app-shell": "rgb(11, 11, 16) / rgb(245, 245, 247)",
+            ".nav-rail": "rgb(26, 28, 43) / rgb(245, 245, 247)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(245, 245, 247)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/character",
+        "screenshot": "docs/design/THEME_BASE_PREVIEW/base-characters.png",
+        "probe": {
+          "inlineBackground": "",
+          "resolvedBackground": "#0B0B10",
+          "bodyColor": "rgb(11, 11, 16)",
+          "foreground": "#F5F5F7",
+          "surfaces": {
+            "body": "rgb(11, 11, 16) / rgb(245, 245, 247)",
+            ".app-shell": "rgb(11, 11, 16) / rgb(245, 245, 247)",
+            ".nav-rail": "rgb(26, 28, 43) / rgb(245, 245, 247)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(245, 245, 247)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/settings?cat=appearance",
+        "screenshot": "docs/design/THEME_BASE_PREVIEW/base-settings-appearance.png",
+        "probe": {
+          "inlineBackground": "",
+          "resolvedBackground": "#0B0B10",
+          "bodyColor": "rgb(11, 11, 16)",
+          "foreground": "#F5F5F7",
+          "surfaces": {
+            "body": "rgb(11, 11, 16) / rgb(245, 245, 247)",
+            ".app-shell": "rgb(11, 11, 16) / rgb(245, 245, 247)",
+            ".nav-rail": "rgb(26, 28, 43) / rgb(245, 245, 247)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(245, 245, 247)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      },
+      {
+        "route": "/worldbook",
+        "screenshot": "docs/design/THEME_BASE_PREVIEW/base-worldbook.png",
+        "probe": {
+          "inlineBackground": "",
+          "resolvedBackground": "#0B0B10",
+          "bodyColor": "rgb(11, 11, 16)",
+          "foreground": "#F5F5F7",
+          "surfaces": {
+            "body": "rgb(11, 11, 16) / rgb(245, 245, 247)",
+            ".app-shell": "rgb(11, 11, 16) / rgb(245, 245, 247)",
+            ".nav-rail": "rgb(26, 28, 43) / rgb(245, 245, 247)",
+            ".app-main": "rgba(0, 0, 0, 0) / rgb(245, 245, 247)",
+            ".modal-overlay": null,
+            ".modal-card": null
+          }
+        },
+        "failures": [],
+        "gradientSkipped": []
+      }
+    ],
+    "totalFailures": 0
+  }
+]

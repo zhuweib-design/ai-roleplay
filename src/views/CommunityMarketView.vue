@@ -20,9 +20,12 @@
  */
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useCommunityMarketStore } from '@/stores/community-market';
+import { MARKET_INDEX_URL } from '@/core/market-index';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Toast from '@/components/common/Toast.vue';
 import Modal from '@/components/common/Modal.vue';
 import FilterTabs, { type FilterTab } from '@/components/common/FilterTabs.vue';
@@ -32,12 +35,13 @@ import { t } from '@/i18n';
 const router = useRouter();
 const store = useCommunityMarketStore();
 const characterStore = useCharacterStore();
+const { pushWithReturn } = useReadinessJump();
 
 // §14.4 更新检查：有可用更新的已装远程条目
 const updates = computed(() => store.getUpdatableInstalls());
 
 function handleUpdateInstall(itemId: string) {
-  void store.installRemoteItem(itemId);
+  void handleRemoteInstall(itemId);
 }
 
 // ── 启动 ──
@@ -165,8 +169,23 @@ function handleLoadRemote(): void {
   void store.loadRemoteIndex();
 }
 
+/**
+ * E20：安装完成后必须看得见落点。此前只有一句 toast（`lastInfo`），
+ * 用户不知道角色去了哪、也没有入口；现在把新角色 id 接住，就地给一条可点结果。
+ */
+const lastInstalled = ref<{ id: string; name: string } | null>(null);
+
 async function handleRemoteInstall(itemId: string): Promise<void> {
-  await store.installRemoteItem(itemId);
+  const installedId = await store.installRemoteItem(itemId);
+  if (!installedId) return;
+  const name = characterStore.characters.find((c) => c.id === installedId)?.name ?? installedId;
+  lastInstalled.value = { id: installedId, name };
+}
+
+function jumpInstalled(to: 'edit' | 'list'): void {
+  const id = lastInstalled.value?.id;
+  if (!id) return;
+  pushWithReturn(to === 'edit' ? { name: 'character-edit', params: { id } } : { name: 'character-list' });
 }
 
 function remotePercent(itemId: string): number {
@@ -377,11 +396,20 @@ function ratingStars(rating: number): string {
       </button>
       <h1 class="page-title">
         {{ t('market.title') }}
-        <span
-          class="beta-badge"
-          :title="t('market.betaTitle')"
-        >{{ t('market.beta') }}</span>
+        <!--
+          这条披露原来只在 title 里：触屏点不到、键盘聚焦也不显示，而它是本页最重要的免责。
+          改成页头下面一行可见文字，不再依赖悬停。
+        -->
+        <span class="beta-badge">{{ t('market.beta') }}</span>
       </h1>
+      <p class="beta-disclosure">{{ t('market.betaTitle') }}</p>
+      <!--
+        E21：索引地址只有构建期一个来源，界面上必须说清楚——否则提交信息里的
+        "市场 URL 可配"会被理解成"这里能改"。连同当前值一起显示，claim 可核对。
+      -->
+      <p class="beta-disclosure">
+        {{ t('market.sourceNote') }}<code class="market-source-url">{{ MARKET_INDEX_URL }}</code>
+      </p>
       <div class="header-right">
         <template v-if="store.isLoggedIn">
           <span class="user-info">
@@ -484,6 +512,22 @@ type="button"
             </li>
           </ul>
           <p v-else-if="!store.remoteLoading" class="remote-hint">{{ t('market.remoteHint') }}</p>
+          <!-- E20：安装结果就地可见，且给两条去路（看这个角色 / 看整个角色列表） -->
+          <div v-if="lastInstalled" class="installed-result" role="status">
+            <Icon name="check" :size="14" aria-hidden="true" />
+            <span class="installed-result-text">{{ t('market.installedToLib', { name: lastInstalled.name }) }}</span>
+            <button type="button" class="installed-go" data-rel-jump="rel-market-edit" @click="jumpInstalled('edit')">
+              {{ t('market.installedGoEdit') }}
+            </button>
+            <button
+              type="button"
+              class="installed-go ghost"
+              data-rel-jump="rel-market-chars"
+              @click="jumpInstalled('list')"
+            >
+              {{ t('market.installedGoList') }}
+            </button>
+          </div>
         </div>
 
         <div class="toolbar">
@@ -536,10 +580,11 @@ type="button"
           </button>
         </div>
 
-        <div v-if="store.filteredCards.length === 0" class="empty-state">
-          <Icon name="search" :size="48" />
-          <p>{{ t('market.emptySearch') }}</p>
-        </div>
+        <EmptyState
+          v-if="store.filteredCards.length === 0"
+          title-key="market.emptySearch"
+          icon="search"
+        />
         <div v-else class="card-grid">
           <article
             v-for="card in store.filteredCards"
@@ -569,15 +614,17 @@ type="button"
 
       <!-- Tab 2: 推荐 -->
       <section v-if="activeTab === 'recommendations'" role="tabpanel" class="tab-panel">
-        <div v-if="!store.isLoggedIn" class="empty-state">
-          <Icon name="info" :size="48" />
-          <p>{{ t('market.recommendLogin') }}</p>
-          <button type="button" class="btn btn-primary" @click="openLoginModal">{{ t('market.login') }}</button>
-        </div>
-        <div v-else-if="recommendations.length === 0" class="empty-state">
-          <Icon name="star" :size="48" />
-          <p>{{ t('market.recommendEmpty') }}</p>
-        </div>
+        <EmptyState
+          v-if="!store.isLoggedIn"
+          title-key="market.recommendLogin"
+          action-key="market.login"
+          @action="openLoginModal"
+        />
+        <EmptyState
+          v-else-if="recommendations.length === 0"
+          title-key="market.recommendEmpty"
+          icon="star"
+        />
         <div v-else class="card-grid">
           <article
             v-for="item in recommendations"
@@ -605,10 +652,11 @@ type="button"
 
       <!-- Tab 3: 收藏 -->
       <section v-if="activeTab === 'favorites'" role="tabpanel" class="tab-panel">
-        <div v-if="favoriteCards.length === 0" class="empty-state">
-          <Icon name="heart" :size="48" />
-          <p>{{ t('market.favoriteEmpty') }}</p>
-        </div>
+        <EmptyState
+          v-if="favoriteCards.length === 0"
+          title-key="market.favoriteEmpty"
+          icon="heart"
+        />
         <div v-else class="card-grid">
           <article
             v-for="card in favoriteCards"
@@ -635,20 +683,22 @@ type="button"
 
       <!-- Tab 4: 我的发布 -->
       <section v-if="activeTab === 'published'" role="tabpanel" class="tab-panel">
-        <div v-if="!store.isLoggedIn" class="empty-state">
-          <Icon name="info" :size="48" />
-          <p>{{ t('market.publishLogin') }}</p>
-          <button type="button" class="btn btn-primary" @click="openLoginModal">{{ t('market.login') }}</button>
-        </div>
+        <EmptyState
+          v-if="!store.isLoggedIn"
+          title-key="market.publishLogin"
+          action-key="market.login"
+          @action="openLoginModal"
+        />
         <template v-else>
           <button type="button" class="btn btn-primary" @click="openPublishModal">
             <Icon name="plus" :size="16" />
             {{ t('market.publishBtn') }}
           </button>
-          <div v-if="myPublishedCards.length === 0" class="empty-state">
-            <Icon name="upload" :size="48" />
-            <p>{{ t('market.publishedEmpty') }}</p>
-          </div>
+          <EmptyState
+            v-if="myPublishedCards.length === 0"
+            title-key="market.publishedEmpty"
+            icon="upload"
+          />
           <div v-else class="card-grid">
             <article
               v-for="card in myPublishedCards"
@@ -947,6 +997,10 @@ type="button"
 .page-header {
   display: flex;
   align-items: center;
+  /* 下面那两句说明写的是 flex:1 1 100%（本意独占一行），但这个容器一直没开 wrap，
+     于是"标题 + 两句说明 + 右侧登录"全挤在同一行里按比例缩——真机量到「登录」按钮
+     被压成 42×48（两个字竖排两行）。开 wrap 才是这段样式原本想表达的样子。 */
+  flex-wrap: wrap;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border);
@@ -961,6 +1015,22 @@ type="button"
 }
 
 /* T-14: 市场 Beta 徽标 */
+.beta-disclosure {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+/* E21：地址本身是数据，用等宽并允许断行，避免撑破页头 */
+.market-source-url {
+  margin-inline-start: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  word-break: break-all;
+}
+
 .beta-badge {
   display: inline-block;
   margin-left: 8px;
@@ -1080,7 +1150,7 @@ type="button"
   border: 1px solid var(--secondary);
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 0.8rem;
   cursor: pointer;
 }
@@ -1099,6 +1169,51 @@ type="button"
   font-weight: 600;
   color: var(--foreground);
 }
+/* E20：安装结果条 */
+.installed-result {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--card-elevated);
+  color: var(--foreground);
+  font-size: 0.8rem;
+}
+.installed-result-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.installed-go {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--secondary);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--secondary-text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.installed-go.ghost {
+  border-color: var(--border);
+  color: var(--muted-foreground);
+}
+@media (hover: hover) {
+  .installed-go:hover {
+    background: var(--secondary);
+    color: var(--on-secondary);
+  }
+  .installed-go.ghost:hover {
+    background: var(--border);
+    color: var(--on-border-fill);
+  }
+}
+.installed-go:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
+}
 .remote-refresh,
 .remote-install {
   padding: 0.35rem 0.75rem;
@@ -1115,7 +1230,7 @@ type="button"
   cursor: default;
 }
 .remote-error {
-  color: var(--error);
+  color: var(--error-fg);
   font-size: 0.8rem;
   margin: 0.25rem 0;
 }
@@ -1396,17 +1511,6 @@ type="button"
 .card-author {
   font-size: 0.75rem;
   color: var(--muted-foreground);
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 3rem 1rem;
-  color: var(--muted-foreground);
-  text-align: center;
 }
 
 .empty-mini {

@@ -21,6 +21,7 @@
  */
 import { ref, computed, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
+import { useDeepLinkId } from '@/composables/useDeepLinkId';
 import { useStoryStore } from '@/stores/story';
 import { useSettingsStore } from '@/stores/settings';
 import { useLorebookStore } from '@/stores/lorebook';
@@ -29,6 +30,7 @@ import { CHARACTER_TEMPLATES, type CharacterTemplateId } from '@core/character-g
 import { buildSourceContext } from '@core/story-analyzer';
 import { STORY_TEMPLATES, type StoryTemplateId } from '@core/story-templates';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import FilterTabs, { type FilterTab } from '@/components/common/FilterTabs.vue';
@@ -60,6 +62,26 @@ const store = useStoryStore();
 const settingsStore = useSettingsStore();
 const lorebookStore = useLorebookStore();
 const characterStore = useCharacterStore();
+
+/**
+ * E15：聊天页的故事时间现在可点进来，带 `?story=<id>` 时直接选中那一条。
+ * 只认 stories 里真实存在的 id——手打的、或故事已删除留下的过期链接，
+ * 都不该把界面停在一个空选中态上。
+ *
+ * 取 id、等读库、等待期间 URL 变化作废，全部收进 useDeepLinkId（M14-a）。
+ */
+useDeepLinkId({
+  key: 'story',
+  // 闸门由登记表给（src/core/deep-link-keys.ts）：视图只说键名，不自己挑库
+  onResolved: (id) => {
+    if (store.stories.some((s) => s.id === id)) {
+      store.selectStory(id);
+      return;
+    }
+    // 读完仍然没有 ⇒ 链接过期或手打错，说给用户听（原来同样静默）
+    showToast('error', t('story.notFound2'));
+  },
+});
 
 // ── T-08: 一键生成设定（世界书 + 主角角色卡）──
 const quickGenTemplate = ref<CharacterTemplateId>('fantasy');
@@ -478,12 +500,13 @@ function closeImportModal() {
   importModalOpen.value = false;
 }
 
-function handleImport() {
+async function handleImport() {
   if (!importTargetStoryId.value) return;
   const storyId = importTargetStoryId.value;
 
   if (importCategory.value === 'scripts') {
-    store.exportScripts(storyId);
+    await store.exportScripts(storyId);
+    // 用户在系统保存面板里取消 ⇒ lastInfo 不会被写，这里也不会弹"已导出"
     if (store.lastInfo) showToast('success', store.lastInfo);
     closeImportModal();
     return;
@@ -772,28 +795,6 @@ function getProtagonistRoleLabel(role: ProtagonistRole): string {
 
 // ── 需求8：故事与世界书关联 UI ──
 
-/** 获取故事关联的世界书名称（用于显示） */
-function getBoundWorldBookName(storyId: string): string {
-  const story = store.stories.find((s) => s.id === storyId);
-  if (!story?.boundWorldBookId) return '';
-  const lb = lorebookStore.lorebooks.find((l) => l.id === story.boundWorldBookId);
-  return lb?.name ?? '';
-}
-
-/** 切换故事关联的世界书 */
-function handleBindWorldBook(storyId: string, worldBookId: string): void {
-  const ok = store.setStoryWorldBookBinding(storyId, worldBookId || null);
-  if (ok) {
-    if (worldBookId) {
-      const lbName = lorebookStore.lorebooks.find((l) => l.id === worldBookId)?.name ?? worldBookId;
-      showToast('success', t('story.boundWorldbookOk', { name: lbName }));
-    } else {
-      showToast('info', t('story.unboundWorldbook'));
-    }
-  } else if (store.lastError) {
-    showToast('error', store.lastError);
-  }
-}
 
 /** 主角来源标签 */
 function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
@@ -850,7 +851,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
             :aria-checked="quickGenTemplate === tpl.id"
             class="template-pill"
             :class="{ active: quickGenTemplate === tpl.id }"
-            :title="tpl.description"
+            v-tip="tpl.description"
             @click="quickGenTemplate = tpl.id"
           >
             {{ tpl.label }}
@@ -948,19 +949,14 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
     <!-- 故事列表 -->
     <main class="story-main" :aria-label="t('story.listAria')">
       <!-- 空状态 -->
-      <div v-if="store.stories.length === 0" class="empty-state">
-        <Icon name="book-open" :size="48" class="empty-icon" />
-        <p class="empty-text">{{ t('story.emptyText') }}</p>
-        <p class="empty-hint">{{ t('story.emptyHint') }}</p>
-        <button
-          type="button"
-          class="header-btn upload-btn"
-          @click="openUploadModal"
-        >
-          <Icon name="upload" :size="16" />
-          <span class="btn-label">{{ t('story.uploadFirst') }}</span>
-        </button>
-      </div>
+      <EmptyState
+        v-if="store.stories.length === 0"
+        title-key="story.emptyText"
+        desc-key="story.emptyHint"
+        action-key="story.uploadFirst"
+        icon="book-open"
+        @action="openUploadModal"
+      />
 
       <!-- 故事卡片 -->
       <section v-else class="story-grid" :aria-label="t('story.cardsAria')">
@@ -968,7 +964,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
           v-for="story in stories"
           :key="story.id"
           class="story-card"
-          :class="getStatusClass(story.status)"
+          :class="[getStatusClass(story.status), { 'is-expanded': expandedStoryId === story.id }]"
         >
           <div class="card-header" @click="toggleExpand(story.id)">
             <Icon name="book-open" :size="20" class="card-icon" />
@@ -1125,37 +1121,6 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
               </div>
             </section>
 
-            <!-- 需求8：关联世界书 -->
-            <section v-if="story.status === 'completed'" class="detail-section worldbook-bind-section">
-              <h4 class="detail-title">
-                <Icon name="book-open" :size="14" />
-                {{ t('story.bindWorldbook') }}
-              </h4>
-              <div class="form-row">
-                <label :for="`bindWorldBook-${story.id}`" class="form-label">{{ t('story.bindLabel') }}</label>
-                <select
-                  :id="`bindWorldBook-${story.id}`"
-                  class="form-select"
-                  :value="story.boundWorldBookId ?? ''"
-                  @change="handleBindWorldBook(story.id, ($event.target as HTMLSelectElement).value)"
-                >
-                  <option value="">{{ t('story.bindNone') }}</option>
-                  <option
-                    v-for="lb in availableLorebooks"
-                    :key="lb.id"
-                    :value="lb.id"
-                  >
-                    {{ t('story.bindEntryCount', { name: lb.name, count: lb.entries.length }) }}
-                  </option>
-                </select>
-                <p class="form-hint">
-                  {{ t('story.bindHint') }}
-                </p>
-                <p v-if="story.boundWorldBookId" class="form-hint success-hint">
-                  {{ t('story.bindCurrent', { name: getBoundWorldBookName(story.id) }) }}
-                </p>
-              </div>
-            </section>
 
             <StoryTimeConfigPanel :story="story" />
 
@@ -1383,8 +1348,9 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
       v-model="deleteModalOpen"
       :title="t('story.deleteTitle')"
       :aria-label="t('story.deleteAria2')"
+      described-by="story-delete-desc"
     >
-      <p class="confirm-text">
+      <p id="story-delete-desc" class="confirm-text">
         {{ t('story.deleteConfirm') }}
       </p>
       <div class="confirm-actions">
@@ -1884,7 +1850,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   .cancel-btn:hover {
     background: var(--error-bg, rgba(220, 38, 38, 0.1));
     border-color: var(--error);
-    color: var(--error);
+    color: var(--error-fg);
   }
 }
 
@@ -1925,33 +1891,9 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 }
 
 /* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  text-align: center;
-  color: var(--on-surface-variant);
-}
 
-.empty-icon {
-  color: var(--on-surface-variant);
-  opacity: 0.4;
-  margin-bottom: 16px;
-}
 
-.empty-text {
-  font-size: 15px;
-  font-weight: 500;
-  margin: 0 0 4px;
-}
 
-.empty-hint {
-  font-size: 13px;
-  margin: 0 0 20px;
-  max-width: 480px;
-}
 
 /* 故事卡片 */
 .story-grid {
@@ -1976,6 +1918,24 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 
 .story-card.status-failed {
   border-color: var(--error);
+}
+
+/* 展开的那张卡占满整行。
+ * 1440 视口实测：`.story-grid` 是 `auto-fill minmax(360px,1fr)`，只有一份故事时
+ * 它就是一条 400px 宽的窄列，七段详情竖着堆到 1276px 高，右边一千像素全空——
+ * 读一条故事要滚三屏，而页面看起来是坏的。 */
+.story-card.is-expanded {
+  grid-column: 1 / -1;
+}
+
+/* 展开后详情段两列排布（同一批段落是并列关系，不是先后关系），高度约减半 */
+@media (min-width: 1025px) {
+  .story-card.is-expanded .card-detail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 28px;
+    align-items: start;
+  }
 }
 
 .card-header {
@@ -2022,24 +1982,29 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   font-weight: 500;
 }
 
-.status-pending {
+/* 状态色口径：只作用于徽标与边框。
+ * 这四条原本是不带元素限定的 `.status-xxx`，而卡片根元素也吃同一个类
+ * （`:class="getStatusClass(...)"`），于是 `color` 一路继承下去——
+ * 一份"已完成"的故事整张卡变成绿色，标题、人名、场景名全染上状态色。
+ * 状态是这张卡的**元信息**，不是它的主题色，所以限定到徽标上。 */
+.status-badge.status-pending {
   background: rgba(245, 158, 11, 0.15);
   color: var(--accent-orange);
 }
 
-.status-analyzing {
+.status-badge.status-analyzing {
   background: rgba(59, 130, 246, 0.15);
   color: var(--tag-blue);
 }
 
-.status-completed {
+.status-badge.status-completed {
   background: rgba(34, 197, 94, 0.15);
   color: var(--tag-green);
 }
 
-.status-failed {
+.status-badge.status-failed {
   background: rgba(220, 38, 38, 0.15);
-  color: var(--error);
+  color: var(--error-fg);
 }
 
 .card-expand {
@@ -2343,7 +2308,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
   .delete-btn:hover:not(:disabled) {
     background: var(--error-bg, rgba(220, 38, 38, 0.1));
     border-color: var(--error);
-    color: var(--error);
+    color: var(--error-fg);
   }
 }
 
@@ -2854,7 +2819,7 @@ function getProtagonistSourceLabel(source: 'existing' | 'custom'): string {
 }
 
 .card-btn.import-btn {
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 @media (hover: hover) and (pointer: fine) {

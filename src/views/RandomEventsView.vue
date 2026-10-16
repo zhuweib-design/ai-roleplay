@@ -20,8 +20,10 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRandomEventsStore } from '@/stores/random-events';
-import { useLorebookStore } from '@/stores/lorebook';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
+import PrereqNotice from '@/components/common/PrereqNotice.vue';
+import { useRandomEventPrereqs } from '@/core/readiness';
 import Toast from '@/components/common/Toast.vue';
 import TemplateEditorModal from '@/components/random-events/TemplateEditorModal.vue';
 import SceneConfigModal from '@/components/random-events/SceneConfigModal.vue';
@@ -35,7 +37,7 @@ import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useRandomEventsStore();
-const lorebookStore = useLorebookStore();
+const prereqRows = useRandomEventPrereqs();
 
 // ── Tab ──
 type TabKey = 'templates' | 'scenes' | 'generator' | 'results';
@@ -164,7 +166,6 @@ const generatorForm = ref({
   maxPerTurn: store.generatorConfig.maxPerTurn,
   globalCooldownMs: store.generatorConfig.globalCooldownMs,
   feedbackAdjustStep: store.generatorConfig.feedbackAdjustStep,
-  boundWorldBookId: store.generatorConfig.boundWorldBookId ?? '',
 });
 
 function saveGeneratorConfig(): void {
@@ -174,18 +175,11 @@ function saveGeneratorConfig(): void {
     maxPerTurn: generatorForm.value.maxPerTurn,
     globalCooldownMs: generatorForm.value.globalCooldownMs,
     feedbackAdjustStep: generatorForm.value.feedbackAdjustStep,
-    boundWorldBookId: generatorForm.value.boundWorldBookId || null,
   });
   showToast('success', t('re.configSaved'));
   flushStoreMessages();
 }
 
-/** 需求8：获取关联世界书名称 */
-function getBoundWorldBookName(): string {
-  const id = generatorForm.value.boundWorldBookId;
-  if (!id) return '';
-  return lorebookStore.lorebooks.find((l) => l.id === id)?.name ?? '';
-}
 
 function toggleGenerator(): void {
   store.toggleGenerator();
@@ -284,6 +278,9 @@ function formatCooldown(ms: number): string {
       </div>
     </header>
 
+    <!-- E10：场景名与角色名是字符串耦合，改名即断链——这条前提此前只写在代码注释里 -->
+    <PrereqNotice :rows="prereqRows" />
+
     <nav class="tabs" role="tablist" :aria-label="t('re.tabsAria')">
       <button
         v-for="tab in TABS"
@@ -353,11 +350,12 @@ function formatCooldown(ms: number): string {
             </dl>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="star" :size="48" aria-hidden="true" />
-          <p>{{ t('re.noTemplates') }}</p>
-          <p class="empty-hint">{{ t('re.noTemplatesHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="re.noTemplates"
+          desc-key="re.noTemplatesHint"
+          icon="star"
+        />
       </section>
 
       <!-- ── 场景配置 ── -->
@@ -404,11 +402,12 @@ function formatCooldown(ms: number): string {
             </dl>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="map-pin" :size="48" aria-hidden="true" />
-          <p>{{ t('re.noScenes') }}</p>
-          <p class="empty-hint">{{ t('re.noScenesHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="re.noScenes"
+          desc-key="re.noScenesHint"
+          icon="map-pin"
+        />
       </section>
 
       <!-- ── 生成器配置 ── -->
@@ -485,34 +484,7 @@ function formatCooldown(ms: number): string {
               />
               <small class="form-hint">{{ t('re.feedbackStepHint') }}</small>
             </div>
-
-            <!-- 需求8：关联世界书 -->
-            <div class="form-row">
-              <label for="gen-worldbook">
-                <Icon name="book-open" :size="14" aria-hidden="true" />
-                {{ t('re.bindWorldBook') }}
-              </label>
-              <select
-                id="gen-worldbook"
-                v-model="generatorForm.boundWorldBookId"
-              >
-                <option value="">{{ t('re.noBind') }}</option>
-                <option
-                  v-for="lb in lorebookStore.lorebooks"
-                  :key="lb.id"
-                  :value="lb.id"
-                >
-                  {{ t('re.bindEntryCount', { name: lb.name, count: lb.entries.length }) }}
-                </option>
-              </select>
-              <small class="form-hint">
-                {{ t('re.bindHint') }}
-              </small>
-              <small v-if="generatorForm.boundWorldBookId" class="form-hint success-hint">
-                {{ t('re.boundHint', { name: getBoundWorldBookName() }) }}
-              </small>
-            </div>
-          </div>
+</div>
 
           <div class="form-actions">
             <button type="button" class="btn primary" @click="saveGeneratorConfig">
@@ -632,11 +604,12 @@ function formatCooldown(ms: number): string {
             </div>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="star" :size="48" aria-hidden="true" />
-          <p>{{ t('re.noResults') }}</p>
-          <p class="empty-hint">{{ t('re.noResultsHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="re.noResults"
+          desc-key="re.noResultsHint"
+          icon="star"
+        />
       </section>
     </main>
 
@@ -1029,28 +1002,8 @@ function formatCooldown(ms: number): string {
 }
 
 /* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: var(--muted-foreground);
-  text-align: center;
-}
 
-.empty-state p {
-  margin: 8px 0 0 0;
-  font-size: 14px;
-}
 
-.empty-hint {
-  font-size: 12px !important;
-  /* --muted-foreground 本身即 AA 达标的次要文本 token（门禁 muted/背景、muted/卡片 均覆盖）。
-     原叠加 opacity: 0.7 会在半透明混合后把对比度压到 3.11/4.30/4.05（light/oled/theatre），
-     故移除额外透明度 —— 提示文字是信息性文本，非装饰，必须 ≥4.5:1。 */
-  color: var(--muted-foreground);
-}
 
 /* 生成器配置表单 */
 .form-section {

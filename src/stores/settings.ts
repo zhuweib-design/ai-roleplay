@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed, toRaw } from 'vue';
 import type {
   ApiProfile,
+  AppSettings,
   ThemeName,
   ChatBackground,
   BubbleStyle,
@@ -11,9 +12,15 @@ import type {
   ThinkingConfig,
   SamplingOverrides,
 } from '@/types';
+import { normalizeThemeName } from '@/types';
+import { saveBlob, type SaveOutcome } from '@/utils/save-blob';
 import type { StatusHudConfig } from '@core/status-schema';
 import { DEFAULT_STATUS_HUD_CONFIG, normalizeStatusHudConfig } from '@core/status-schema';
 import { normalizePresetId, type PresetId } from '@core/creation-preset';
+import {
+  normalizeNarrationPerspective,
+  type NarrationPerspective,
+} from '@core/narration';
 import {
   DEFAULT_THINKING_CONFIG,
   DEFAULT_MAX_CONTEXT_TOKENS,
@@ -33,6 +40,10 @@ import {
   type SummarizationConfig,
 } from '@core/summarizer';
 import {
+  createDefaultProviderConfig,
+  type ImageProviderConfig,
+} from '@core/image-generation';
+import {
   encryptApiKey,
   decryptApiKey,
   isEncrypted,
@@ -41,7 +52,13 @@ import {
 } from '@core/api-key-crypto';
 import { setRemoteApiKeyState } from '@core/remote-api-key-state';
 import { exportQuickRepliesToStJson, importQuickRepliesFromSt } from '@core/st-compat';
-import { setLocale as setI18nLocale, t as i18nT, detectLocale, type Locale } from '@/i18n';
+import {
+  setLocale as setI18nLocale,
+  getLocale,
+  writeLocaleMirror,
+  t as i18nT,
+  type Locale,
+} from '@/i18n';
 
 /**
  * Settings Store (Phase F)
@@ -61,7 +78,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const theme = ref<ThemeName>('dark');
   const fontSize = ref<number>(14);
   /** T-13：界面语言（与 i18n 模块 localeRef 同步，持久化到 AppSettings.locale） */
-  const locale = ref<Locale>('zh');
+  // 初值向 i18n 要（它同步读过镜像/浏览器语言），否则 store 里的 'zh' 会与已渲染的语言不一致
+  const locale = ref<Locale>(getLocale());
   const apiProfiles = ref<ApiProfile[]>([]);
   const activeApiProfileId = ref<string | null>(null);
 
@@ -98,6 +116,14 @@ export const useSettingsStore = defineStore('settings', () => {
     ...DEFAULT_SUMMARIZATION_CONFIG,
   });
 
+  /**
+   * E22：图像生成的 Provider 配置。
+   *
+   * 唯一事实源放在这里（而不是图像页 store 的内存 ref），因为只有本 store 有
+   * 持久化白名单与主密码加密分支；图像 store 改为读写这一份。
+   */
+  const imageGenConfig = ref<ImageProviderConfig>({ ...createDefaultProviderConfig() });
+
   // F11.3 Quick Reply 按钮列表（默认空）
   const quickReplies = ref<QuickReplyButton[]>([]);
 
@@ -123,12 +149,26 @@ export const useSettingsStore = defineStore('settings', () => {
   const creationPreset = ref<PresetId>('balanced');
 
   /**
+   * 心理活动（旁白段）里指代用户的代词：'me' = 「我」，'you' = 「你」。
+   *
+   * 这是**注入给模型的叙事规则**的一部分，不改写历史消息：切换后新的一条回复
+   * 用新视角，之前生成的仍是旧视角（否则用户会看到自己的旧对话被人动过）。
+   */
+  const narrationPerspective = ref<NarrationPerspective>('me');
+
+  /**
    * P1 角色状态栏全局偏好
    *
    * 语义沿用 §1.4「嗅探免费、注入授权」：`enabled`（是否要求模型产出状态块）默认
    * **false** —— 不默认改变模型行为；解析与渲染永远开启（模型自己输出了就白捡）。
    */
   const statusHudConfig = ref<StatusHudConfig>({ ...DEFAULT_STATUS_HUD_CONFIG });
+
+  /**
+   * 可折叠段的开合记忆（M7-d）：段标识 → 是否展开。
+   * 只存"用户明确点过"的段；没点过的段由调用方给推导默认（如"没填的自动展开"）。
+   */
+  const uiSectionOpen = ref<Record<string, boolean>>({});
 
   /**
    * 上下文窗口 Token 上限（全局）
@@ -324,6 +364,20 @@ export const useSettingsStore = defineStore('settings', () => {
         lastError.value = i18nT('masterPwd.translationKeyDecryptFailed');
       }
     }
+    // E22：图像 Provider 的密钥与上面两处同进同出（漏了它就会出现"能生成图但密钥是密文"）
+    if (
+      imageGenConfig.value.apiKey &&
+      isEncrypted(imageGenConfig.value.apiKey)
+    ) {
+      try {
+        imageGenConfig.value.apiKey = await decryptApiKey(
+          imageGenConfig.value.apiKey,
+          masterPassword.value
+        );
+      } catch {
+        lastError.value = i18nT('masterPwd.imageGenKeyDecryptFailed');
+      }
+    }
   }
 
   // ── P1-4：远程向量网关 apiKey 纳入主密码加密体系 ──
@@ -448,6 +502,9 @@ export const useSettingsStore = defineStore('settings', () => {
    * 切换主题，并立即应用到 <html data-theme>
    */
   function setTheme(t: ThemeName) {
+    // 归一在唯一的 DOM 写入点做：未知值（旧存档、手改数据、被删掉的主题 id）落回默认皮肤，
+    // 而不是写进 data-theme 后靠 CSS 找不到选择器"看起来像回落"（那样还会被回写盘固化）
+    t = normalizeThemeName(t);
     theme.value = t;
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', t);
@@ -478,6 +535,8 @@ export const useSettingsStore = defineStore('settings', () => {
   function setLocale(l: Locale) {
     locale.value = l;
     setI18nLocale(l);
+    // 用户显式选择才写镜像：i18n 用它决定下一帧首屏语言（探测值不写，见 i18n/index.ts）
+    writeLocaleMirror(l);
     void persistSettings();
   }
 
@@ -651,6 +710,18 @@ export const useSettingsStore = defineStore('settings', () => {
     void persistSettings();
   }
 
+  /**
+   * E22：图像生成 Provider 的唯一写入口（图像页 store 走这里）。
+   * 与 setTranslationConfig 同口径：改内存 + 立即排队落盘。
+   */
+  function setImageGenConfig(config: Partial<ImageProviderConfig>): void {
+    imageGenConfig.value = {
+      ...imageGenConfig.value,
+      ...config,
+    };
+    void persistSettings();
+  }
+
   /** 设置自动摘要配置（F12.4） */
   function setSummarizationConfig(config: Partial<SummarizationConfig>): void {
     summarizationConfig.value = {
@@ -695,19 +766,14 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // ── T-07: SillyTavern Quick Reply 格式互导 ──
 
-  /** 导出全部 Quick Reply 为 ST JSON 并触发下载 */
-  function exportQuickRepliesSt(): boolean {
+  /**
+   * 导出全部 Quick Reply 为 ST JSON 给用户存盘
+   *
+   * 返回 'cancelled' 时调用方不得报"已导出"（用户在系统保存面板里取消了）
+   */
+  function exportQuickRepliesSt(): Promise<SaveOutcome> {
     const json = exportQuickRepliesToStJson(quickReplies.value);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `quick-replies-ST.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    return true;
+    return saveBlob(`quick-replies-ST.json`, () => new Blob([json], { type: 'application/json' }));
   }
 
   /** 从 ST Quick Reply JSON 导入（追加到现有列表，label 冲突自动去重） */
@@ -797,7 +863,6 @@ export const useSettingsStore = defineStore('settings', () => {
       model: 'gpt-4o',
       category: 'chat',
       isPrimary: false,
-      maxTokens: 4096,
     };
   }
 
@@ -817,34 +882,126 @@ export const useSettingsStore = defineStore('settings', () => {
    * AC20 安全：apiKey 字段以加密形式加载到内存。
    * 解密需在 unlock() 成功后通过 decryptAllApiKeys() 触发。
    */
+  /**
+   * 首帧加载窗口内"以用户为准"的字段（M9-b）。
+   *
+   * 两条限制，各有原因：
+   * - 不含集合类字段（`apiProfiles` / `quickReplies` / `uiSectionOpen` …）：它们在窗口里的值
+   *   是从"还没读到存档"的内存算出来的，回写等于用"默认值 + 一次点击"换掉存档里的整批记录，
+   *   比"把用户那次改动盖回"更糟。这些仍以存档为准。
+   * - 不含 `locale`：初值是同步求出的（镜像 > 浏览器语言），读到存档里的显式选择时它还会
+   *   再变一次；这个"加载中途变了"不是用户改动，混进窗口会被当成用户改动而保留。
+   */
+  const USER_WINS_KEYS = [
+    'theme',
+    'fontSize',
+    'customCss',
+    'creationPreset',
+    'narrationPerspective',
+    'maxContextTokens',
+    'reservedTokens',
+  ] as const;
+
+  /** 上述字段的当前值（同步读，用于比对"用户在窗口里改了哪几项"） */
+  function scalarView(): Partial<AppSettings> {
+    return {
+      theme: theme.value,
+      fontSize: fontSize.value,
+      customCss: customCss.value,
+      creationPreset: creationPreset.value,
+      narrationPerspective: narrationPerspective.value,
+      maxContextTokens: maxContextTokens.value,
+      reservedTokens: reservedTokens.value,
+    };
+  }
+
+  /**
+   * 加载自己触发的写入：既不排"等加载"的队（否则首启自锁），也不参与
+   * "用户在窗口里改了什么"的取样——它带的就是存档值，取样它会让每次启动都多跑一遍回写。
+   */
+  function loadOwnWrite(fn: () => void): void {
+    insideLoadOwnWrite = true;
+    try {
+      fn();
+    } finally {
+      insideLoadOwnWrite = false;
+    }
+  }
+
+  /** 加载开始时内存里的那份（= 默认值）；窗口内用户那次写入想落的值 */
+  let scalarsAtLoadStart: Partial<AppSettings> | null = null;
+  let scalarsWantedDuringLoad: Partial<AppSettings> | null = null;
+
   async function loadFromStorage(): Promise<void> {
+    // 登记"存档正在读"。App.vue 是在 onMounted 里才 await 这里的，也就是说界面已经挂好、
+    // 按钮已经能点而数据还没回来——这期间发起的写入必须排队到加载落地之后，
+    // 否则写下去的是内存里的默认值（apiProfiles 空），会把用户已有的配置抹掉。
+    if (!loadInFlight) {
+      scalarsAtLoadStart = { ...scalarView() };
+      loadInFlight = (async () => {
+        await applyStoredSettings();
+        // 存档落地后，把用户在窗口里改过的那几项**再应用一次**——否则他刚点的开关/主题
+        // 会被随后到达的存档静默抹掉（M9-a 登记的边界 ①）
+        const keep = keepUserChangesDuringLoad();
+        if (keep) {
+          // 这次回写发生在加载自己的流程里，不能再排"等加载"的队，否则等的是它自己
+          bypassLoadGate = true;
+          try {
+            await applyStoredSettings(keep);
+          } finally {
+            bypassLoadGate = false;
+          }
+        }
+      })().finally(() => {
+        loadInFlight = null;
+        scalarsAtLoadStart = null;
+        scalarsWantedDuringLoad = null;
+      });
+    }
+    return loadInFlight;
+  }
+
+  /** 用户在加载窗口里改过、且属于"以用户为准"清单的那几项 */
+  function keepUserChangesDuringLoad(): Partial<AppSettings> | null {
+    if (!scalarsWantedDuringLoad || !scalarsAtLoadStart) return null;
+    const keep: Partial<AppSettings> = {};
+    for (const key of USER_WINS_KEYS) {
+      if (scalarsWantedDuringLoad[key] !== scalarsAtLoadStart[key]) {
+        Object.assign(keep, { [key]: scalarsWantedDuringLoad[key] });
+      }
+    }
+    return Object.keys(keep).length ? keep : null;
+  }
+
+  async function applyStoredSettings(source?: Partial<AppSettings>): Promise<void> {
     if (!storageAdapter) return;
     try {
-      const saved = await storageAdapter.loadSettings();
+      // 传 source = 回写用户改动，不再读存档、不再探测浏览器语言、也不再写首启默认值
+      const isPatch = source !== undefined;
+      const saved: Partial<AppSettings> = source ?? (await storageAdapter.loadSettings());
       // 空对象视为首次启动
       const hasSavedData =
-        saved &&
-        (saved.theme !== undefined ||
-          saved.fontSize !== undefined ||
-          (Array.isArray(saved.apiProfiles) && saved.apiProfiles.length > 0) ||
-          saved.activeApiProfileId !== undefined ||
-          // MODEL-03：仅设置了创作模式也应视为已有数据（否则该字段永远读不回来）
-          saved.creationPreset !== undefined);
-      // P2-3：首访按浏览器语言兜底。此处先探测，若下方存在持久化语言则会被覆盖，
-      // 因此「用户显式选择」始终优先，浏览器语言只作未选择时的默认值。
-      const detected = detectLocale();
-      if (detected !== locale.value) {
-        locale.value = detected;
-        setI18nLocale(detected);
-      }
-
+        isPatch ||
+        (!!saved &&
+          (saved.theme !== undefined ||
+            saved.fontSize !== undefined ||
+            (Array.isArray(saved.apiProfiles) && saved.apiProfiles.length > 0) ||
+            saved.activeApiProfileId !== undefined ||
+            // MODEL-03：仅设置了创作模式也应视为已有数据（否则该字段永远读不回来）
+            saved.creationPreset !== undefined));
+      // P2-3：首访按浏览器语言兜底 —— 这件事已由 i18n 在模块求值时同步做完
+      // （`locale` 的初值就是 getLocale()：用户选过的镜像 > 浏览器语言 > zh）。
+      // 这里不再重探一次：探测比镜像晚、又不知道镜像的存在，重探会把用户显式选过的
+      // 语言盖回浏览器语言。持久化值仍在下方 hasSavedData 分支里覆盖，优先级不变。
       if (hasSavedData) {
-        if (saved.theme) setTheme(saved.theme);
-        if (typeof saved.fontSize === 'number') setFontSize(saved.fontSize);
+        if (saved.theme) loadOwnWrite(() => setTheme(normalizeThemeName(saved.theme)));
+        if (typeof saved.fontSize === 'number') loadOwnWrite(() => setFontSize(saved.fontSize as number));
         // T-13 加载语言（默认 zh）
         if (saved.locale === 'zh' || saved.locale === 'en') {
           locale.value = saved.locale;
           setI18nLocale(saved.locale);
+          // 刷新同步镜像：下次冷启动的首帧就直接是这个值，不再闪
+          writeLocaleMirror(saved.locale);
         }
         if (Array.isArray(saved.apiProfiles)) apiProfiles.value = saved.apiProfiles;
         if (typeof saved.activeApiProfileId !== 'undefined') {
@@ -886,6 +1043,10 @@ export const useSettingsStore = defineStore('settings', () => {
             ...saved.summarizationConfig,
           };
         }
+        // E22 加载图像生成 Provider（旧数据缺字段时保留默认；脏字段逐项回落默认）
+        if (saved.imageGenConfig && typeof saved.imageGenConfig === 'object') {
+          imageGenConfig.value = normalizeImageGenConfig(saved.imageGenConfig);
+        }
         // F11.3 加载 Quick Reply 按钮列表
         if (Array.isArray(saved.quickReplies)) {
           quickReplies.value = saved.quickReplies;
@@ -912,9 +1073,21 @@ export const useSettingsStore = defineStore('settings', () => {
         if (saved.creationPreset !== undefined) {
           creationPreset.value = normalizePresetId(saved.creationPreset);
         }
+        // 旁白人称（旧数据缺字段时保留默认 'me'；脏值回落默认）
+        if (saved.narrationPerspective !== undefined) {
+          narrationPerspective.value = normalizeNarrationPerspective(saved.narrationPerspective);
+        }
         // P1 加载状态栏偏好（向后兼容：无字段时保留默认值；脏字段回落默认）
         if (saved.statusHudConfig && typeof saved.statusHudConfig === 'object') {
           statusHudConfig.value = normalizeStatusHudConfig(saved.statusHudConfig);
+        }
+        // M7-d 加载折叠段开合记忆（只收 boolean，脏键值直接丢）
+        if (saved.uiSectionOpen && typeof saved.uiSectionOpen === 'object') {
+          const clean: Record<string, boolean> = {};
+          for (const [k, v] of Object.entries(saved.uiSectionOpen as Record<string, unknown>)) {
+            if (typeof v === 'boolean') clean[k] = v;
+          }
+          uiSectionOpen.value = clean;
         }
         // 加载上下文长度配置（向后兼容：旧数据缺字段时保留默认 8192 / 1024）
         if (typeof saved.maxContextTokens === 'number' && Number.isFinite(saved.maxContextTokens)) {
@@ -934,13 +1107,23 @@ export const useSettingsStore = defineStore('settings', () => {
         }
         // P1-4：按主密码状态初始化远程向量密钥的内存态
         // （已设主密码 -> locked，待 unlock 后解密；未设 -> plain，沿用明文）
-        syncRemoteApiKeyState();
+        // 回写用户改动时不再跑：它属于"刚读到存档"的一次性状态推导，重复执行会把
+        // 解密失败一类的错误信息覆盖掉（master-password 那组用例守着）。
+        if (!isPatch) {
+          syncRemoteApiKeyState();
+        }
         // 末尾重断言 data-theme：customTheme 注入后再次同步 DOM 与 store，
         // 避免异步启动时序导致 data-theme 回退为默认（刷新后自定义主题失效）
-        setTheme(theme.value);
+        loadOwnWrite(() => setTheme(theme.value));
       } else {
-        // 首次启动：写入默认设置
-        await persistSettings();
+        // 首次启动：写入默认设置。这条写来自加载自己，若也去排"等加载落地"的队，
+        // 就变成等它自己完成 ⇒ 启动即卡死（全量 e2e 表现为大面积超时）。
+        bypassLoadGate = true;
+        try {
+          await persistSettings();
+        } finally {
+          bypassLoadGate = false;
+        }
       }
     } catch (err) {
       lastError.value = i18nT('settings.loadFailed', {
@@ -960,7 +1143,7 @@ export const useSettingsStore = defineStore('settings', () => {
    * 注意：Vue 的 reactive Proxy 无法被 IndexedDB 结构化克隆，
    * 需要通过 toRaw() 转换为普通对象再传递给存储适配器
    */
-  async function persistSettings(): Promise<void> {
+  async function writeSettingsSnapshot(): Promise<void> {
     if (!storageAdapter) return;
     try {
       // AC20 透明加密：若已设置主密码，加密 apiKey 字段后再保存
@@ -992,6 +1175,14 @@ export const useSettingsStore = defineStore('settings', () => {
             }
           : toRaw(translationConfig.value);
 
+      const imageGenToSave =
+        pw && imageGenConfig.value.apiKey && !isEncrypted(imageGenConfig.value.apiKey)
+          ? {
+              ...toRaw(imageGenConfig.value),
+              apiKey: await encryptApiKey(imageGenConfig.value.apiKey, pw),
+            }
+          : toRaw(imageGenConfig.value);
+
       await storageAdapter.saveSettings({
         theme: theme.value,
         fontSize: fontSize.value,
@@ -1015,6 +1206,8 @@ export const useSettingsStore = defineStore('settings', () => {
         ttsConfig: toRaw(ttsConfig.value),
         translationConfig: translationToSave,
         summarizationConfig: toRaw(summarizationConfig.value),
+        // E22 图像生成 Provider（apiKey 按主密码状态加密）
+        imageGenConfig: imageGenToSave,
         // F11.3 Quick Reply 按钮列表
         quickReplies: toRaw(quickReplies.value).map((b) => toRaw(b)),
         // AC20 主密码验证器
@@ -1025,8 +1218,12 @@ export const useSettingsStore = defineStore('settings', () => {
         samplingDefaults: samplingDefaults.value ? { ...toRaw(samplingDefaults.value) } : null,
         // MODEL-03 创作模式
         creationPreset: creationPreset.value,
+        // 旁白人称
+        narrationPerspective: narrationPerspective.value,
         // P1 状态栏偏好
         statusHudConfig: { ...toRaw(statusHudConfig.value) },
+        // M7-d 折叠段开合记忆
+        uiSectionOpen: { ...toRaw(uiSectionOpen.value) },
         // 上下文长度配置
         maxContextTokens: maxContextTokens.value,
         reservedTokens: reservedTokens.value,
@@ -1036,6 +1233,55 @@ export const useSettingsStore = defineStore('settings', () => {
         error: err instanceof Error ? err.message : String(err),
       });
     }
+  }
+
+  /**
+   * 串行化设置写入（M2-b8 排查 §七 #20 时定位到的真因）
+   *
+   * 原来每次调用各自异步跑完：连着点"创建配置"再点"激活"会并发两次写，
+   * 先发起的那次带的快照更旧，却可能**后**完成，于是把新状态覆盖掉 ——
+   * 刷新后表现为"明明配过，芯片却说还没有可用的模型配置"。
+   *
+   * 排队规则：空闲时**同步发起**（保持既有"调用即写入"语义，含 `tests/stores/quick-reply.test.ts`
+   * 里的同步断言），有写在飞时排到它完成之后再发起 ⇒ 写入顺序 = 状态顺序，不可能倒置。
+   * 调用点的 `void persistSettings()` 一行都不用改。
+   */
+  let persistInFlight: Promise<void> | null = null;
+  const persistWaiters: Array<() => void> = [];
+  /** 首帧存档加载的在飞 promise（见 `loadFromStorage`） */
+  let loadInFlight: Promise<void> | null = null;
+  /** 加载流程自己发起、且被它 await 的那次写入（首启默认快照）不能再等加载，否则自己等自己 */
+  let bypassLoadGate = false;
+  /**
+   * 加载往内存灌存档值时顺带触发的写入：照旧排队（半加载状态落盘会把还没赋值的
+   * apiProfiles 写成空），只是不参与"用户在窗口里改了什么"的取样。
+   */
+  let insideLoadOwnWrite = false;
+
+  function persistSettings(): Promise<void> {
+    // 加载在飞时先等它落地再走正常写入：挡住"用默认值盖掉存档"这一类丢数据。
+    // 同时记下**第一次**被挡住时的值——加载落地后靠它把用户那几项改动重新应用回去。
+    // 只记第一次是有意的：能进这条分支的写，要么是用户在存档到达前点的（要保护），
+    // 要么是加载自己往内存里灌存档值时触发的（与默认值的差异回写一遍是无操作）。
+    if (loadInFlight && !bypassLoadGate) {
+      if (!insideLoadOwnWrite) scalarsWantedDuringLoad ??= scalarView();
+      return loadInFlight.then(() => persistSettings());
+    }
+    if (persistInFlight) {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      persistWaiters.push(release);
+      return gate.then(() => persistSettings());
+    }
+    const run = writeSettingsSnapshot().catch(() => undefined);
+    persistInFlight = run;
+    void run.then(() => {
+      persistInFlight = null;
+      persistWaiters.shift()?.();
+    });
+    return run;
   }
 
   /**
@@ -1078,12 +1324,44 @@ export const useSettingsStore = defineStore('settings', () => {
     creationPreset.value = normalizePresetId(value);
   }
 
+  /** 切换旁白人称；非法值由 normalizeNarrationPerspective 归一，避免脏数据进持久化 */
+  function setNarrationPerspective(value: unknown): void {
+    narrationPerspective.value = normalizeNarrationPerspective(value);
+  }
+
   /**
    * P1：更新状态栏全局偏好（局部 patch，未给字段保持原值）
    * 调用方负责在需要落盘时调用 persistSettings()
    */
   function setStatusHudConfig(patch: Partial<StatusHudConfig>): void {
     statusHudConfig.value = normalizeStatusHudConfig({ ...statusHudConfig.value, ...patch });
+  }
+
+  /**
+   * M7-d：记住某个可折叠段的开合。
+   *
+   * 自己排队落盘（与其余 `void persistSettings()` 同一条串行队列，M2-b8 之后
+   * 并发写不会倒置）。点一次折叠/展开就是一次写，不排队会丢最后一下。
+   */
+  function setUiSectionOpen(key: string, open: boolean): void {
+    if (uiSectionOpen.value[key] === open) return;
+    uiSectionOpen.value = { ...uiSectionOpen.value, [key]: open };
+    void persistSettings();
+  }
+
+  /**
+   * M8-b：清掉所有开合记忆，让各段回到自己的推导默认。
+   *
+   * 为什么需要：一次误点会让某段永远停在用户随手留下的状态，尤其是
+   * "还没填就自动展开"这条规则——记忆优先之后它就不再生效了。
+   * @returns 清掉的条数（调用方用它决定要不要提示）
+   */
+  function resetUiSectionOpen(): number {
+    const count = Object.keys(uiSectionOpen.value).length;
+    if (count === 0) return 0;
+    uiSectionOpen.value = {};
+    void persistSettings();
+    return count;
   }
 
   // ── 上下文长度配置 ──
@@ -1139,6 +1417,7 @@ export const useSettingsStore = defineStore('settings', () => {
     // F12.2/F12.3/F12.4 配置
     ttsConfig,
     translationConfig,
+    imageGenConfig,
     summarizationConfig,
     // F11.3 Quick Reply
     quickReplies,
@@ -1147,7 +1426,12 @@ export const useSettingsStore = defineStore('settings', () => {
     samplingDefaults,
     // MODEL-03 创作模式
     creationPreset,
+    // 旁白人称（我 / 你）
+    narrationPerspective,
+    setNarrationPerspective,
     statusHudConfig,
+    // M7-d 折叠段开合记忆
+    uiSectionOpen,
     // 上下文长度配置
     maxContextTokens,
     reservedTokens,
@@ -1188,6 +1472,7 @@ export const useSettingsStore = defineStore('settings', () => {
     // F12.2/F12.3/F12.4 配置
     setTtsConfig,
     setTranslationConfig,
+    setImageGenConfig,
     setSummarizationConfig,
     // F11.3 Quick Reply CRUD
     addQuickReply,
@@ -1201,6 +1486,8 @@ export const useSettingsStore = defineStore('settings', () => {
     setSamplingDefaults,
     setCreationPreset,
     setStatusHudConfig,
+    setUiSectionOpen,
+    resetUiSectionOpen,
     // 上下文长度配置
     setMaxContextTokens,
     setReservedTokens,
@@ -1297,6 +1584,24 @@ function normalizeSamplingDefaults(raw: unknown): SamplingOverrides | null {
     }
   }
   return Object.keys(out).length > 0 ? out : null;
+}
+
+/**
+ * E22：归一化图像生成 Provider 配置。
+ * 逐字段校验，脏值回落默认（不能让一个坏 endpoint 字段把整份设置读崩）；
+ * apiKey 原样保留——设了主密码时它是密文，解密在 unlock 的 decryptAllApiKeys 里做。
+ */
+function normalizeImageGenConfig(raw: unknown): ImageProviderConfig {
+  const base = createDefaultProviderConfig();
+  if (!raw || typeof raw !== 'object') return base;
+  const src = raw as Record<string, unknown>;
+  return {
+    type: src.type === 'custom' ? 'custom' : base.type,
+    endpoint: typeof src.endpoint === 'string' ? src.endpoint : base.endpoint,
+    apiKey: typeof src.apiKey === 'string' ? src.apiKey : base.apiKey,
+    model: typeof src.model === 'string' ? src.model : base.model,
+    enabled: typeof src.enabled === 'boolean' ? src.enabled : base.enabled,
+  };
 }
 
 /** 计算 hex 色的相对亮度（0-1），供旧数据缺 avgLuminance 时近似 */

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
+import Collapse from '@/components/common/Collapse.vue';
+import { useSectionMemory } from '@/composables/useSectionMemory';
 import MasterPasswordModal from '@/components/common/MasterPasswordModal.vue';
 import Modal from '@/components/common/Modal.vue';
 import type { ConflictStrategy } from '@/core/backup';
@@ -27,6 +29,7 @@ import { loadOptimizationConfig, saveOptimizationConfig } from '@/core/optimizat
 import { persistState, requestPersistentStorage } from '@/core/storage-persistence';;
 import { ref, computed, useTemplateRef } from 'vue';;;;
 import { showToast } from '@/utils/toast-service';
+import { saveBlob } from '@/utils/save-blob';
 import { t } from '@/i18n';;
 import { useCharacterStore } from '@/stores/character';
 import { useEventsStore } from '@/stores/events';
@@ -34,6 +37,8 @@ import { useRandomEventsStore } from '@/stores/random-events';
 import { useStoryStore } from '@/stores/story';
 
 const settings = useSettingsStore();
+/** M7-d：运维与兼容四段属高级段，默认收起；点过的开合跨会话记住 */
+const advancedOpsOpen = useSectionMemory('settings.advancedOps');
 const randomEventsStore = useRandomEventsStore();
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -145,18 +150,14 @@ function handleCreateProfile() {
   showToast('success', t('settingsView.profileSwitched', { name }));
 }
 
-function handleExportAuditLog() {
+async function handleExportAuditLog() {
   try {
     const json = auditLogger.exportJson();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const outcome = await saveBlob(`audit-log-${new Date().toISOString().slice(0, 10)}.json`, () =>
+      new Blob([json], { type: 'application/json' })
+    );
+    // 用户在系统保存面板里取消：不能说"审核日志已导出"
+    if (outcome === 'cancelled') return;
     showToast('success', t('settingsView.auditExported'));
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
@@ -174,7 +175,11 @@ async function handleExportBackup() {
     });
     // 已解锁主密码 → 加密备份文件；未设置 → 明文备份
     const password = settings.isUnlocked ? settings.getSessionMasterPassword() : undefined;
-    await downloadBackupFile(data, password);
+    const outcome = await downloadBackupFile(data, password);
+    if (outcome === 'cancelled') {
+      // 用户在系统保存面板里取消了：不能说"备份已导出"
+      return;
+    }
     showToast(
       'success',
       t('settingsView.exportBackup', {
@@ -205,9 +210,10 @@ function handleExportCharacterPng() {
   try {
     // 将 UICharacter 转换为 CharacterCard（复用 type-adapters）
     void import('@/services/type-adapters')
-      .then(({ uiCharToCard }) => {
+      .then(async ({ uiCharToCard }) => {
         const card = uiCharToCard(char);
-        downloadCharacterPng(card);
+        const outcome = await downloadCharacterPng(card);
+        if (outcome === 'cancelled') return;
         showToast('success', t('settingsView.pngExported', { name: char.name }));
       })
       .catch((err) => {
@@ -243,7 +249,8 @@ async function handleExportChatMarkdown() {
     // 取最新的对话
     const latestChat = chats[0]!;
     // 导出名称跟随该角色关联的世界资料，不再读取全局“当前身份”。
-    downloadChatMarkdown(latestChat, char.name, getWorldUserDisplayName(char.id));
+    const mdOutcome = await downloadChatMarkdown(latestChat, char.name, getWorldUserDisplayName(char.id));
+    if (mdOutcome === 'cancelled') return;
     showToast('success', t('settingsView.mdExported', { name: char.name }));
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
@@ -252,9 +259,11 @@ async function handleExportChatMarkdown() {
   }
 }
 
-function handleExportQuickReplies() {
+async function handleExportQuickReplies() {
   try {
-    settings.exportQuickRepliesSt();
+    const outcome = await settings.exportQuickRepliesSt();
+    // 用户在系统保存面板里取消：不能说"快捷回复已导出"
+    if (outcome === 'cancelled') return;
     showToast('success', t('settingsView.qrExported'));
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
@@ -381,41 +390,6 @@ function triggerBackupImport() {
         <p class="section-hint">{{ t('settingsView.dataMgmtDesc') }}</p>
       </header>
 
-      <!-- T-07: SillyTavern Quick Reply 互导 -->
-      <div class="data-mgmt-row">
-        <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">{{ t('settingsView.qrSection') }}</h3>
-          <p class="data-mgmt-hint">
-            {{ t('settingsView.qrSectionDesc') }}
-          </p>
-          <div class="data-mgmt-actions">
-            <button
-              type="button"
-              class="data-mgmt-btn"
-              @click="handleExportQuickReplies"
-            >
-              <Icon name="download" :size="14" />
-              <span>{{ t('settingsView.qrExport') }}</span>
-            </button>
-            <button
-              type="button"
-              class="data-mgmt-btn"
-              @click="handleImportQuickReplies"
-            >
-              <Icon name="upload" :size="14" />
-              <span>{{ t('settingsView.qrImport') }}</span>
-            </button>
-            <input
-              ref="quickReplyFileInput"
-              type="file"
-              accept=".json,application/json"
-              class="sr-only"
-              @change="handleQuickReplyFileSelected"
-            />
-          </div>
-        </div>
-      </div>
-
       <!-- T-12: 资料档案(Profile) -->
       <div class="data-mgmt-row">
         <div class="data-mgmt-block">
@@ -445,7 +419,6 @@ function triggerBackupImport() {
                 type="button"
                 class="data-mgmt-btn"
                 :disabled="!storageMultiProfile"
-                :title="storageMultiProfile ? '' : t('settingsView.profileSingleNotice')"
                 @click="handleCreateProfile"
               >
                 <Icon name="plus" :size="14" />
@@ -461,113 +434,6 @@ function triggerBackupImport() {
             >
               <Icon name="arrow-left" :size="14" />
               <span>{{ t('settingsView.profileResetAction') }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- P1-10: Web / PWA 数据持久性（IndexedDB 驱逐风险） -->
-      <div class="data-mgmt-row">
-        <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">{{ t('settingsView.persistSection') }}</h3>
-          <p class="data-mgmt-hint">{{ t('settingsView.persistDesc') }}</p>
-          <p class="data-mgmt-hint persist-state" role="status">
-            {{ t('settingsView.persistStateLabel') }}<strong>{{ persistLabel }}</strong>
-          </p>
-          <p class="data-mgmt-hint">{{ persistHint }}</p>
-          <div class="data-mgmt-actions">
-            <button
-              type="button"
-              class="data-mgmt-btn"
-              :disabled="persistBusy || persistState === 'unsupported'"
-              @click="handleRequestPersist"
-            >
-              <Icon name="refresh-cw" :size="14" />
-              <span>{{ t('settingsView.persistRetry') }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- E-04 二期: 嵌入优化开关 -->
-      <div class="data-mgmt-row">
-        <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">{{ t('settingsView.optSection') }}</h3>
-          <p class="data-mgmt-hint">
-            {{ t('settingsView.optSectionDesc') }}
-            <strong>{{ t('settingsView.optDefaultOff') }}</strong>{{ t('settingsView.optSectionDesc2') }}
-          </p>
-          <div class="opt-switches">
-            <label class="form-row">
-              <input
-                type="checkbox"
-                :checked="optimizationConfig.enabled"
-                @change="toggleOptimization('enabled', ($event.target as HTMLInputElement).checked)"
-              />
-              <span>{{ t('settingsView.optMasterSwitch') }}</span>
-            </label>
-            <label class="form-row">
-              <input
-                type="checkbox"
-                :checked="optimizationConfig.l0Enabled"
-                :disabled="!optimizationConfig.enabled"
-                @change="toggleOptimization('l0Enabled', ($event.target as HTMLInputElement).checked)"
-              />
-              <span>{{ t('settingsView.optL0') }}</span>
-            </label>
-            <label class="form-row">
-              <input
-                type="checkbox"
-                :checked="optimizationConfig.l2Enabled"
-                :disabled="!optimizationConfig.enabled"
-                @change="toggleOptimization('l2Enabled', ($event.target as HTMLInputElement).checked)"
-              />
-              <span>{{ t('settingsView.optL2') }}</span>
-            </label>
-            <label class="form-row">
-              <input
-                type="checkbox"
-                :checked="optimizationConfig.l1Enabled"
-                :disabled="!optimizationConfig.enabled"
-                @change="toggleOptimization('l1Enabled', ($event.target as HTMLInputElement).checked)"
-              />
-              <span>{{ t('settingsView.optL1') }}</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- T-06: 数据操作审计日志 -->
-      <div class="data-mgmt-row">
-        <div class="data-mgmt-block">
-          <h3 class="data-mgmt-subtitle">{{ t('settingsView.auditSection') }}</h3>
-          <p class="data-mgmt-hint">
-            {{ t('settingsView.auditSectionDesc') }}
-          </p>
-          <div class="data-mgmt-actions">
-            <button
-              type="button"
-              class="data-mgmt-btn"
-              @click="auditModalOpen = true"
-            >
-              <Icon name="clock" :size="14" />
-              <span>{{ t('settingsView.auditView') }}</span>
-            </button>
-            <button
-              type="button"
-              class="data-mgmt-btn"
-              @click="handleExportAuditLog"
-            >
-              <Icon name="download" :size="14" />
-              <span>{{ t('settingsView.auditExport') }}</span>
-            </button>
-            <button
-              type="button"
-              class="data-mgmt-btn"
-              @click="handleClearAuditLog"
-            >
-              <Icon name="trash-2" :size="14" />
-              <span>{{ t('settingsView.auditClear') }}</span>
             </button>
           </div>
         </div>
@@ -719,6 +585,157 @@ function triggerBackupImport() {
           </div>
         </div>
       </div>
+
+      <!-- M4-b2：四段运维项归入高级段，默认收起；备份/导出这些日常动作不再被挡在下面 -->
+      <Collapse
+        v-model:open="advancedOpsOpen"
+        title-key="settingsView.advancedOpsSection"
+        hint-key="settingsView.advancedOpsHint"
+        icon="database"
+        advanced
+      >
+      <!-- T-07: SillyTavern Quick Reply 互导 -->
+      <div class="data-mgmt-row">
+        <div class="data-mgmt-block">
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.qrSection') }}</h3>
+          <p class="data-mgmt-hint">
+            {{ t('settingsView.qrSectionDesc') }}
+          </p>
+          <div class="data-mgmt-actions">
+            <button
+              type="button"
+              class="data-mgmt-btn"
+              @click="handleExportQuickReplies"
+            >
+              <Icon name="download" :size="14" />
+              <span>{{ t('settingsView.qrExport') }}</span>
+            </button>
+            <button
+              type="button"
+              class="data-mgmt-btn"
+              @click="handleImportQuickReplies"
+            >
+              <Icon name="upload" :size="14" />
+              <span>{{ t('settingsView.qrImport') }}</span>
+            </button>
+            <input
+              ref="quickReplyFileInput"
+              type="file"
+              accept=".json,application/json"
+              class="sr-only"
+              @change="handleQuickReplyFileSelected"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- P1-10: Web / PWA 数据持久性（IndexedDB 驱逐风险） -->
+      <div class="data-mgmt-row">
+        <div class="data-mgmt-block">
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.persistSection') }}</h3>
+          <p class="data-mgmt-hint">{{ t('settingsView.persistDesc') }}</p>
+          <p class="data-mgmt-hint persist-state" role="status">
+            {{ t('settingsView.persistStateLabel') }}<strong>{{ persistLabel }}</strong>
+          </p>
+          <p class="data-mgmt-hint">{{ persistHint }}</p>
+          <div class="data-mgmt-actions">
+            <button
+              type="button"
+              class="data-mgmt-btn"
+              :disabled="persistBusy || persistState === 'unsupported'"
+              @click="handleRequestPersist"
+            >
+              <Icon name="refresh-cw" :size="14" />
+              <span>{{ t('settingsView.persistRetry') }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- E-04 二期: 嵌入优化开关 -->
+      <div class="data-mgmt-row">
+        <div class="data-mgmt-block">
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.optSection') }}</h3>
+          <p class="data-mgmt-hint">
+            {{ t('settingsView.optSectionDesc') }}
+            <strong>{{ t('settingsView.optDefaultOff') }}</strong>{{ t('settingsView.optSectionDesc2') }}
+          </p>
+          <div class="opt-switches">
+            <label class="form-row">
+              <input
+                type="checkbox"
+                :checked="optimizationConfig.enabled"
+                @change="toggleOptimization('enabled', ($event.target as HTMLInputElement).checked)"
+              />
+              <span>{{ t('settingsView.optMasterSwitch') }}</span>
+            </label>
+            <label class="form-row">
+              <input
+                type="checkbox"
+                :checked="optimizationConfig.l0Enabled"
+                :disabled="!optimizationConfig.enabled"
+                @change="toggleOptimization('l0Enabled', ($event.target as HTMLInputElement).checked)"
+              />
+              <span>{{ t('settingsView.optL0') }}</span>
+            </label>
+            <label class="form-row">
+              <input
+                type="checkbox"
+                :checked="optimizationConfig.l2Enabled"
+                :disabled="!optimizationConfig.enabled"
+                @change="toggleOptimization('l2Enabled', ($event.target as HTMLInputElement).checked)"
+              />
+              <span>{{ t('settingsView.optL2') }}</span>
+            </label>
+            <label class="form-row">
+              <input
+                type="checkbox"
+                :checked="optimizationConfig.l1Enabled"
+                :disabled="!optimizationConfig.enabled"
+                @change="toggleOptimization('l1Enabled', ($event.target as HTMLInputElement).checked)"
+              />
+              <span>{{ t('settingsView.optL1') }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- T-06: 数据操作审计日志 -->
+      <div class="data-mgmt-row">
+        <div class="data-mgmt-block">
+          <h3 class="data-mgmt-subtitle">{{ t('settingsView.auditSection') }}</h3>
+          <p class="data-mgmt-hint">
+            {{ t('settingsView.auditSectionDesc') }}
+          </p>
+          <div class="data-mgmt-actions">
+            <button
+              type="button"
+              class="data-mgmt-btn"
+              @click="auditModalOpen = true"
+            >
+              <Icon name="clock" :size="14" />
+              <span>{{ t('settingsView.auditView') }}</span>
+            </button>
+            <button
+              type="button"
+              class="data-mgmt-btn"
+              @click="handleExportAuditLog"
+            >
+              <Icon name="download" :size="14" />
+              <span>{{ t('settingsView.auditExport') }}</span>
+            </button>
+            <button
+              type="button"
+              class="data-mgmt-btn"
+              @click="handleClearAuditLog"
+            >
+              <Icon name="trash-2" :size="14" />
+              <span>{{ t('settingsView.auditClear') }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      </Collapse>
     </section>
 
     <!-- 导入结果 Modal -->
@@ -832,8 +849,12 @@ function triggerBackupImport() {
     </Modal>
 
     <!-- P1-3：清空审计日志确认（替代原生 confirm） -->
-    <Modal v-model="auditClearConfirmOpen" :title="t('settingsView.auditClearConfirmTitle')">
-      <p>{{ t('settingsView.auditClearConfirm') }}</p>
+    <Modal
+      v-model="auditClearConfirmOpen"
+      :title="t('settingsView.auditClearConfirmTitle')"
+      described-by="audit-clear-desc"
+    >
+      <p id="audit-clear-desc">{{ t('settingsView.auditClearConfirm') }}</p>
       <template #footer>
         <button
           type="button"
@@ -1046,6 +1067,8 @@ function triggerBackupImport() {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--foreground);
@@ -1265,6 +1288,9 @@ function triggerBackupImport() {
 .profile-create {
   display: flex;
   align-items: center;
+  /* 390px 实测：输入框与"创建并切换"按钮同行时被一起压缩，按钮被压成 22×85（五个字竖排五行）。
+     允许换行 + 按钮不收缩、文字不折行。 */
+  flex-wrap: wrap;
   gap: 8px;
 }
 

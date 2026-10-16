@@ -1,10 +1,11 @@
 import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { UICharacter, NavKey } from '@/types';
+import type { UICharacter } from '@/types';
 import { mockCharacters } from '../data/mock-data';
 import type { StorageAdapter } from '../storage/storage-adapter';
 import { getStorageAdapter } from '../storage/storage-factory';
+import { mergeKeptLocal } from '@/core/store-merge';
 import {
   uiCharToCard,
   cardToUiChar,
@@ -15,6 +16,8 @@ import {
   validateCharacterCard,
 } from '../core/character-card';
 import { useSettingsStore } from './settings';
+import { saveBlob } from '@/utils/save-blob';
+import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
 import { isCompact } from '@/core/viewport';
 import { createApiClient } from '../api';
 import {
@@ -40,6 +43,8 @@ import {
 export const useCharacterStore = defineStore('character', () => {
   // ── 状态 ──
   const characters = ref<UICharacter[]>(structuredClone(mockCharacters));
+  /** 初始 mock 种子的 id：加载合并时不能把它们当成"用户在窗口内新建的角色" */
+  const seedCharacterIds = new Set(structuredClone(mockCharacters).map((c) => c.id));
   const currentCharacterId = ref('seraphina');
   const searchQuery = ref('');
   /** 需求1：当前过滤标签（空字符串表示不按标签过滤） */
@@ -53,10 +58,18 @@ export const useCharacterStore = defineStore('character', () => {
   const panelExpanded = ref(true);
   const contextDrawerOpen = ref(false);
   const characterDrawerOpen = ref(false);
-  const currentNav = ref<NavKey>('chat');
 
   // 注入的存储适配器（运行时由 App.vue 设置）
   let storageAdapter: StorageAdapter | null = null;
+
+  /**
+   * 角色库是否已从存档读完。
+   * `characters` 的初值是 mock 种子（第一条就是 `seraphina`），读库完成前
+   * 任何"按 id 找角色"都会落空——深链进来的视图必须先等这个标志。
+   */
+  const libraryLoaded = ref(false);
+  /** 正在进行的那次加载（并发调用共用同一个 promise，避免读两遍库） */
+  let loadInFlight: Promise<void> | null = null;
 
   // 最近一次错误（用于 UI 提示）
   const lastError = ref<string | null>(null);
@@ -157,12 +170,14 @@ export const useCharacterStore = defineStore('character', () => {
         // 用存储中的角色覆盖 mock
         // P2-11 Phase1: 保留角色卡 messages(loadChatHistory 未接线, 已持久化会话历史
         // 刷新后无法进 UI; 恢复行为符合产品预期, 也是超长对话压测的前置)
-        characters.value = cards.map((c) => {
+        const loadedCards = cards.map((c) => {
           const ui = cardToUiChar(c);
           const raw = (c as unknown as { messages?: unknown[] }).messages;
           if (Array.isArray(raw)) ui.messages = raw as UICharacter['messages'];
           return ui;
         });
+        // 首帧窗口内用户新建的角色要留住（存档那次读没带上它）；种子 mock 不算新建
+        characters.value = mergeKeptLocal(loadedCards, characters.value, seedCharacterIds);
         if (characters.value.length > 0 && !characters.value.find((c) => c.id === currentCharacterId.value)) {
           currentCharacterId.value = characters.value[0]!.id;
         }
@@ -173,6 +188,29 @@ export const useCharacterStore = defineStore('character', () => {
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityChar'), error: err instanceof Error ? err.message : String(err) });
     }
+  }
+
+  /**
+   * 等角色库读完（还没开始就自己开始），并保证只读一遍。
+   *
+   * 版本页与编辑页都从 URL 拿角色 id，而读库没完成时那个 id 在内存里根本不存在：
+   * 版本页会退到"自动选中第一条"= 种子角色，于是提交打在**另一条角色**上
+   * （Safari/webkit 实测：整条版本历史的快照都是种子角色的描述）。
+   * App.vue 的启动加载也走这里，避免两处各起一次读库。
+   */
+  async function ensureLoaded(): Promise<void> {
+    if (libraryLoaded.value) return;
+    if (loadInFlight) return loadInFlight;
+    loadInFlight = (async () => {
+      try {
+        await ensureStorageAdapter();
+        await loadFromStorage();
+      } finally {
+        libraryLoaded.value = true;
+        loadInFlight = null;
+      }
+    })();
+    return loadInFlight;
   }
 
   /**
@@ -243,9 +281,6 @@ export const useCharacterStore = defineStore('character', () => {
     contextDrawerOpen.value = false;
   }
 
-  function setNav(key: NavKey) {
-    currentNav.value = key;
-  }
 
   /**
    * 新建角色（内存 + 持久化）
@@ -480,23 +515,18 @@ export const useCharacterStore = defineStore('character', () => {
   }
 
   /**
-   * 触发浏览器下载 V2 卡 JSON
+   * 导出 V2 卡 JSON 给用户存盘
+   *
+   * @returns true 表示真的存下了；false = 找不到 / 用户在系统保存面板取消（都不得报"已导出"）
    */
-  function downloadV2(id: string): boolean {
+  async function downloadV2(id: string): Promise<boolean> {
     const json = exportV2(id);
     if (json === null) return false;
 
     const char = characters.value.find((c) => c.id === id);
     const safeName = (char?.name ?? 'character').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${safeName}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const outcome = await saveBlob(`${safeName}.json`, () => new Blob([json], { type: 'application/json' }));
+    if (outcome === 'cancelled') return false;
     lastInfo.value = t('char.exported2', { name: safeName });
     return true;
   }
@@ -538,20 +568,26 @@ export const useCharacterStore = defineStore('character', () => {
       return null;
     }
 
-    // 2. 创建 API client + 构建 Prompt
+    // 2. 创建 API client
     const apiClient = createApiClient(profile);
     const seed = generateSeed();
-    const messages = buildGenerationMessages(templateId, seed, sourceContext);
 
+    // 先立"生成中"标志，再做异步准备 —— 否则连点两次会在准备期间双双通过防重入检查
     isGeneratingCharacter.value = true;
 
     try {
-      // 3. 调用 API（非流式，温度 1.0 增加创意）
+      // 3. 构建 Prompt（输出预算由模型上下文推导，源素材超预算自动截断）并调用 API
+      const prepared = await prepareGenerationPrompt(
+        (src) => buildGenerationMessages(templateId, seed, src),
+        sourceContext,
+        resolveContextWindow(profile, settingsStore.maxContextTokens),
+        settingsStore.reservedTokens
+      );
       const raw = await apiClient.chat({
-        messages,
+        messages: prepared.messages,
         model: profile.model,
         temperature: 1.0,
-        maxTokens: 1500,
+        maxTokens: prepared.maxTokens,
       });
 
       // 4. 解析返回
@@ -626,10 +662,11 @@ export const useCharacterStore = defineStore('character', () => {
     panelExpanded,
     contextDrawerOpen,
     characterDrawerOpen,
-    currentNav,
     lastError,
     lastInfo,
     isGeneratingCharacter,
+    /** 角色库是否已从存档读完（深链视图据此决定何时解析角色 id） */
+    libraryLoaded,
     // 计算属性
     currentCharacter,
     filteredCharacters,
@@ -640,6 +677,7 @@ export const useCharacterStore = defineStore('character', () => {
     // 依赖注入
     setStorageAdapter,
     loadFromStorage,
+    ensureLoaded,
     persistCharacter,
     deleteFromStorage,
     // 动作
@@ -652,7 +690,6 @@ export const useCharacterStore = defineStore('character', () => {
     togglePanel,
     toggleCharacterList,
     closeAllDrawers,
-    setNav,
     createCharacter,
     updateCharacter,
     deleteCharacter,

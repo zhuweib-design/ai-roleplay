@@ -20,7 +20,9 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGroupChatStore } from '@/stores/group-chat';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
@@ -30,6 +32,8 @@ import { t } from '@/i18n';
 
 const groupStore = useGroupChatStore();
 const router = useRouter();
+// 「前往群聊」用带返回路径的跳转契约（from 白名单见 composables/useReadinessJump.ts）
+const { pushWithReturn } = useReadinessJump();
 
 /** 返回对话页 */
 function goBack() {
@@ -154,10 +158,14 @@ function viewGroup(g: GroupChat) {
 
 function goToGroupChat() {
   if (!viewingGroup.value) return;
+  const id = viewingGroup.value.id;
   viewModalOpen.value = false;
-  void router.push({ name: 'group' });
-  // 选中该群聊
-  groupStore.selectGroup(viewingGroup.value.id);
+  // 原来这里是"push 到 /group，然后命令式 selectGroup"——目标只活在内存里：
+  // 刷新、分享、或群列表读得比导航慢时都会落回别的群。M15-d 改由 URL 携带目标，
+  // 群聊页用 useDeepLinkId 等读完再认（见 GroupChatView 的同名键接线）。
+  // M16-a 再补上回路：走 pushWithReturn 的 `from` 契约，落地页自动出现"返回来源页"，
+  // 不必靠浏览器后退。
+  pushWithReturn({ name: 'group', query: { group: id } });
 }
 </script>
 
@@ -309,19 +317,14 @@ function goToGroupChat() {
       </ul>
 
       <!-- 空状态 -->
-      <div v-else class="empty-state">
-        <Icon name="bookmark-simple" :size="48" />
-        <p v-if="groupStore.groups.length === 0">{{ t('archives.emptyNoData') }}</p>
-        <p v-else>{{ t('archives.emptyNoMatch') }}</p>
-        <button
-type="button"
-          v-if="groupStore.groups.length > 0"
-          class="link-btn"
-          @click="clearFilters"
-        >
-          {{ t('archives.clearLink') }}
-        </button>
-      </div>
+      <!-- 两种空态共用一个组件：有数据但被筛空时才给"清除筛选"这个去路 -->
+      <EmptyState
+        v-else
+        :title-key="groupStore.groups.length === 0 ? 'archives.emptyNoData' : 'archives.emptyNoMatch'"
+        icon="bookmark-simple"
+        :action-key="groupStore.groups.length > 0 ? 'archives.clearLink' : undefined"
+        @action="clearFilters"
+      />
     </main>
 
     <!-- 查看对话 Modal -->
@@ -671,20 +674,7 @@ type="button"
 }
 
 /* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 60px 20px;
-  color: var(--muted-foreground);
-  text-align: center;
-}
 
-.empty-state p {
-  margin: 0;
-  font-size: 14px;
-}
 
 .link-btn {
   background: none;

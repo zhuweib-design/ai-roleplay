@@ -144,6 +144,19 @@ export interface StoryEvent {
   lastTriggeredAt?: string | null;
 }
 
+/**
+ * 事件的可编辑字段集合（`updateEvent` 的入参）。
+ *
+ * 抽出来是因为编辑面（世界书事件面板）要按同一形状攒 patch：写两遍迟早漂移，
+ * 漂移的后果是"面板能改的"和"store 肯存的"悄悄对不上。
+ */
+export type StoryEventPatch = Partial<
+  Pick<
+    StoryEvent,
+    'name' | 'description' | 'sceneEntryId' | 'sceneName' | 'trigger' | 'completion' | 'probability' | 'repeatable'
+  >
+>;
+
 // ── 常量 ──
 
 /** 单个场景或小区域最多绑定的事件数 */
@@ -199,55 +212,70 @@ export function createDefaultEvent(
 // ── 校验 ──
 
 /**
- * 校验事件配置
+ * 校验事件配置（两类错误合并，保持既有调用方语义）
  * @returns 错误消息数组，空数组表示通过
  */
 export function validateEvent(event: Partial<StoryEvent>): string[] {
+  return [...validateEventValues(event), ...validateEventCompleteness(event)];
+}
+
+/**
+ * 取值错误：字段本身填得不合法（超长、概率越界、正则非法）。
+ *
+ * 这类**该拦住写入**——写进去就是一个永远不可能成立的配置。
+ */
+export function validateEventValues(event: Partial<StoryEvent>): string[] {
   const errors: string[] = [];
 
-  if (!event.name || event.name.trim() === '') {
-    errors.push(t('eventTypes.nameRequired'));
-  } else if (event.name.length > 50) {
+  if (event.name && event.name.length > 50) {
     errors.push(t('eventTypes.nameTooLong'));
   }
-
-  if (!event.description || event.description.trim() === '') {
-    errors.push(t('eventTypes.descRequired'));
-  } else if (event.description.length > 2000) {
+  if (event.description && event.description.length > 2000) {
     errors.push(t('eventTypes.descTooLong'));
   }
-
   if (event.probability !== undefined) {
     if (typeof event.probability !== 'number' || event.probability < 0 || event.probability > 100) {
       errors.push(t('eventTypes.probabilityRange'));
     }
   }
-
-  // 触发条件校验
-  if (event.trigger) {
-    const trig = event.trigger;
-    if (trig.type === 'keyword') {
-      if (!Array.isArray(trig.keywords) || trig.keywords.length === 0) {
-        errors.push(t('eventTypes.keywordRequired'));
-      }
-      // 校验正则表达式有效性
-      if (trig.useRegex && Array.isArray(trig.keywords)) {
-        for (const kw of trig.keywords) {
-          try {
-            new RegExp(kw);
-          } catch {
-            errors.push(t('eventTypes.invalidRegex', { kw }));
-            break;
-          }
-        }
-      }
-    } else if (trig.type === 'dependency') {
-      if (!Array.isArray(trig.requiredEvents) || trig.requiredEvents.length === 0) {
-        errors.push(t('eventTypes.prereqRequired'));
+  if (event.trigger?.type === 'keyword' && event.trigger.useRegex && Array.isArray(event.trigger.keywords)) {
+    for (const kw of event.trigger.keywords) {
+      try {
+        new RegExp(kw);
+      } catch {
+        errors.push(t('eventTypes.invalidRegex', { kw }));
+        break;
       }
     }
   }
+  return errors;
+}
 
+/**
+ * 完整性错误：还没填够，不能拿去用（触发、注入提示词）。
+ *
+ * 这类**不该拦编辑**。此前 `updateEvent` 拿合并后的整条事件跑 `validateEvent`，
+ * 而新建事件的名称/描述/关键词三样全空，于是任何单字段更新都被另外两样的
+ * "不能为空"顶回——世界书的事件面板因此一条事件都配不出来（设计文档 §七 #21）。
+ * 拦的位置改到 `triggerEvent`：字段编辑照常存，真要激活时才说缺什么。
+ */
+export function validateEventCompleteness(event: Partial<StoryEvent>): string[] {
+  const errors: string[] = [];
+
+  if (!event.name || event.name.trim() === '') {
+    errors.push(t('eventTypes.nameRequired'));
+  }
+  if (!event.description || event.description.trim() === '') {
+    errors.push(t('eventTypes.descRequired'));
+  }
+  if (event.trigger) {
+    const trig = event.trigger;
+    if (trig.type === 'keyword' && (!Array.isArray(trig.keywords) || trig.keywords.length === 0)) {
+      errors.push(t('eventTypes.keywordRequired'));
+    } else if (trig.type === 'dependency' && (!Array.isArray(trig.requiredEvents) || trig.requiredEvents.length === 0)) {
+      errors.push(t('eventTypes.prereqRequired'));
+    }
+  }
   return errors;
 }
 

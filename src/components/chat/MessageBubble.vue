@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import type { UIMessage } from '@/types';
 import Icon from '@/components/common/Icon.vue';
-import type { IconName } from '@/components/common/icons';
+import { assistantMsgActions } from './message-actions';
+import { parseNarrationSegments } from '@/core/narration';
 import ThinkingBlock from './ThinkingBlock.vue';
 import StatusHud from './StatusHud.vue';
+import PromptTraceSummary from './PromptTraceSummary.vue';
+import EventTraceSummary from './EventTraceSummary.vue';
 import { useSettingsStore } from '@/stores/settings';
-import { computed, getCurrentInstance } from 'vue';
+import { computed, getCurrentInstance, onBeforeUnmount } from 'vue';
 import { t } from '@/i18n';
 
-defineProps<{
+const props = defineProps<{
   msg: UIMessage;
 }>();
 
@@ -46,24 +49,77 @@ const showInlineStatus = computed(
 
 const emit = defineEmits<{
   action: [msgId: string, action: string];
+  longpress: [msgId: string];
 }>();
 
-interface MsgAction {
-  key: string;
-  icon: IconName;
-  label: string;
-  danger?: boolean;
+/** computed 而不是普通 const：否则动作清单的标签会快照在 setup 那一刻，切语言不动 */
+const assistantActions = computed(() => assistantMsgActions());
+
+/**
+ * 一次回复的分段：对白在气泡里，心理（`⟦…⟧`）落在气泡外。
+ * 模型没写标记时这里就是一段 speech，渲染结果与改造前完全一致。
+ *
+ * 保底补一个空对白段：整条只有旁白（模型没写任何话）时，思维链和操作条这些
+ * "挂在气泡上沿"的附属物需要有个锚点，否则它们会漂到分组上盖住第一行内容。
+ */
+const segments = computed(() => {
+  const parsed = parseNarrationSegments(props.msg.content);
+  return parsed.some((s) => s.kind === 'speech')
+    ? parsed
+    : [{ kind: 'speech' as const, text: '' }, ...parsed];
+});
+
+/** 思维链与操作条锚在**第一个**气泡上沿（与拆分前的几何完全一致） */
+const firstSpeechIndex = computed(() =>
+  segments.value.findIndex((s) => s.kind === 'speech')
+);
+
+/**
+ * 长按唤起动作条（触屏无 hover，操作入口不能常驻在气泡头顶）。
+ *
+ * 用 Pointer Events 而不是 Touch Events：浏览器一旦把手势判成滚动，会直接发
+ * pointercancel，比我们自己逐帧数位移可靠；而 touchmove 的 `touches` 列表在
+ * 部分派发路径下是空的（e2e 里实测到"移动了却不取消"），pointermove 没这个坑。
+ * 位移阈值仍保留，作为 pointercancel 不来时的兜底。
+ *
+ * 只认 touch：桌面有 hover 工具条，不该因为按住鼠标 0.5 秒弹一个底部面板。
+ * 另外只有 AI 消息有动作可给（用户气泡至今没有任何操作入口，见 OPT_PLAN §5.5）。
+ */
+const LONG_PRESS_MS = 500;
+const MOVE_TOLERANCE_PX = 10;
+let pressTimer: ReturnType<typeof setTimeout> | null = null;
+let pressX = 0;
+let pressY = 0;
+
+function cancelLongPress() {
+  if (pressTimer !== null) {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+  }
 }
 
-const assistantActions: MsgAction[] = [
-  { key: 'edit', icon: 'pencil', label: t('bubble.edit') },
-  { key: 'copy', icon: 'copy', label: t('bubble.copy') },
-  { key: 'speak', icon: 'volume-2', label: t('bubble.speak') },
-  { key: 'translate', icon: 'globe', label: t('bubble.translate') },
-  { key: 'regenerate', icon: 'refresh-cw', label: t('bubble.regenerate') },
-  // 注：原「分支」操作为未实现占位（点击弹出"演示"），已移除入口
-  { key: 'delete', icon: 'trash-2', label: t('bubble.delete'), danger: true },
-];
+function onWrapPointerDown(e: PointerEvent) {
+  cancelLongPress();
+  if (e.pointerType !== 'touch' || props.msg.role !== 'assistant') return;
+  pressX = e.clientX;
+  pressY = e.clientY;
+  pressTimer = setTimeout(() => {
+    pressTimer = null;
+    emit('longpress', props.msg.id);
+  }, LONG_PRESS_MS);
+}
+
+function onWrapPointerMove(e: PointerEvent) {
+  if (pressTimer === null || e.pointerType !== 'touch') return;
+  if (
+    Math.abs(e.clientX - pressX) > MOVE_TOLERANCE_PX ||
+    Math.abs(e.clientY - pressY) > MOVE_TOLERANCE_PX
+  ) {
+    cancelLongPress();
+  }
+}
+
+onBeforeUnmount(cancelLongPress);
 </script>
 
 <template>
@@ -72,6 +128,12 @@ const assistantActions: MsgAction[] = [
     :class="msg.role === 'user' ? 'msg-wrap-user' : 'msg-wrap-assistant'"
     role="article"
     :aria-label="msg.role === 'user' ? t('bubble.userMsg') : t('bubble.assistantMsg')"
+    tabindex="-1"
+    :aria-haspopup="msg.role === 'assistant' ? 'menu' : undefined"
+    @pointerdown="onWrapPointerDown"
+    @pointermove="onWrapPointerMove"
+    @pointerup="cancelLongPress"
+    @pointercancel="cancelLongPress"
   >
     <!-- 用户消息 -->
     <div v-if="msg.role === 'user'" class="msg-bubble msg-user">
@@ -79,19 +141,48 @@ const assistantActions: MsgAction[] = [
       <p class="msg-text">{{ msg.content }}</p>
     </div>
 
-    <!-- AI 消息 -->
-    <div v-else class="msg-bubble msg-assistant">
-      <!-- P0-1：思维链折叠块（正文之上；空白思考不渲染） -->
-      <ThinkingBlock
-        :thinking="msg.thinking"
-        :message-id="msg.id"
-        :generating="msg.generating === true"
-        :default-collapsed="defaultCollapsed"
-        :reasoning-tokens="msg.reasoningTokens"
-      />
-      <em v-if="msg.narration" class="msg-narration">{{ msg.narration }}</em>
-      <p class="msg-text" :style="msg.narration ? 'margin-top: 6px' : ''">{{ msg.content }}</p>
-      <em v-if="msg.narrationAfter" class="msg-narration-after">{{ msg.narrationAfter }}</em>
+    <!-- AI 消息：一次回复可能是「对白 — 心理 — 对白」，心理段必须落在气泡外面，
+         所以这里是一个纵向分组，里面按分段各开各的气泡，而不是一个气泡装下全部。 -->
+    <div v-else class="msg-turn">
+      <!-- 旧旁白字段（当前只有 mock 数据写它）与新解析出的分段共用一种样式 -->
+      <p v-if="msg.narration" class="msg-psy">{{ msg.narration }}</p>
+      <template v-for="(seg, i) in segments" :key="i">
+        <div v-if="seg.kind === 'speech'" class="msg-bubble msg-assistant">
+          <!-- P0-1：思维链折叠块 —— 留在**第一个**气泡里（与拆分前同一位置）。
+               挪到分组层会让它顶到气泡上沿，正好被悬浮的操作条压住，点击被拦。 -->
+          <ThinkingBlock
+            v-if="i === firstSpeechIndex"
+            :thinking="msg.thinking"
+            :message-id="msg.id"
+            :generating="msg.generating === true"
+            :default-collapsed="defaultCollapsed"
+            :reasoning-tokens="msg.reasoningTokens"
+          />
+          <p class="msg-text">{{ seg.text }}</p>
+
+          <!-- 消息操作栏：同样锚在第一个气泡的上沿（hover / 键盘聚焦时显现） -->
+          <div
+            v-if="i === firstSpeechIndex"
+            class="msg-toolbar"
+            role="toolbar"
+            :aria-label="t('bubble.toolbarAria', { actions: assistantActions.map((a) => a.label).join('、') })"
+          >
+            <button
+              v-for="a in assistantActions"
+              :key="a.key"
+              type="button"
+              class="msg-toolbar-btn"
+              :class="{ danger: a.danger }"
+              :aria-label="a.label"
+              @click="emit('action', msg.id, a.key)"
+            >
+              <Icon :name="a.icon" :size="14" />
+            </button>
+          </div>
+        </div>
+        <p v-else class="msg-psy">{{ seg.text }}</p>
+      </template>
+      <p v-if="msg.narrationAfter" class="msg-psy">{{ msg.narrationAfter }}</p>
 
       <!-- P1：消息级状态（本轮结束时的状态；仅在 msg.status 存在时渲染）
            小屏折叠开启：消息列表里每轮都可能出现一条，不折叠会把列表撑爆 -->
@@ -114,20 +205,10 @@ const assistantActions: MsgAction[] = [
         <span class="gen-text">{{ t('bubble.generatingText') }}</span>
       </div>
 
-      <!-- 消息操作栏（hover 或聚焦时显示，保证键盘可达） -->
-      <div class="msg-toolbar" role="toolbar" :aria-label="t('bubble.toolbarAria', { actions: assistantActions.map((a) => a.label).join('、') })">
-        <button
-          v-for="a in assistantActions"
-          :key="a.key"
-          type="button"
-          class="msg-toolbar-btn"
-          :class="{ danger: a.danger }"
-          :aria-label="a.label"
-          @click="emit('action', msg.id, a.key)"
-        >
-          <Icon :name="a.icon" :size="14" />
-        </button>
-      </div>
+      <!-- L 层：本轮注入了哪几条设定（可跳回来源世界书）；无注入痕迹时不渲染 -->
+      <PromptTraceSummary :items="msg.promptTrace" />
+      <!-- E11：本轮带入了哪几条随机事件（可跳随机事件页）；无事件时不渲染 -->
+      <EventTraceSummary :items="msg.eventTrace" />
     </div>
   </div>
 </template>
@@ -142,12 +223,50 @@ const assistantActions: MsgAction[] = [
   align-self: flex-start;
 }
 
+/* 一次 AI 回复的纵向分组：思维链 → 对白/心理交替 → 状态 → 操作条 → 注入痕迹 */
+.msg-turn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1-5);
+}
+
+/* 心理段：无底色、无气泡内边距，左竖线与气泡那条 2px 辅色边同一 x。
+   区分度来自"没有底色 + 字号降一档 + 颜色降一档"，不靠斜体（中文斜体读起来像译制片）。
+   对比度实测：muted-foreground 压在页面底上 light 5.96:1 / dark 9.28:1，均过 AA。 */
+.msg-psy {
+  margin: 0;
+  max-width: min(70%, 40em);
+  padding-left: var(--space-2-5);
+  border-left: 2px solid color-mix(in srgb, var(--secondary) 45%, var(--border));
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+  color: var(--muted-foreground);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* 窄屏下与气泡同宽（responsive.css 给 .msg-bubble 的是同一组数）；
+   640 / 380 都在规范断点集内（breakpoint-guard 允许集） */
+@media (max-width: 640px) {
+  .msg-psy {
+    max-width: min(88%, 40em);
+  }
+}
+
+@media (max-width: 380px) {
+  .msg-psy {
+    max-width: min(92%, 40em);
+  }
+}
+
 .msg-bubble {
   max-width: min(70%, 40em);
   width: fit-content;
   border-radius: var(--radius-md);
-  padding: 12px var(--spacing-md);
-  font-size: 14px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-md);
   line-height: 1.7;
   word-wrap: break-word;
   white-space: pre-wrap;
@@ -187,8 +306,8 @@ const assistantActions: MsgAction[] = [
 .gen-dot {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 10px;
+  gap: var(--space-1-5);
+  margin-top: var(--space-2-5);
 }
 
 .gen-dot .dot {
@@ -200,8 +319,8 @@ const assistantActions: MsgAction[] = [
 }
 
 .gen-text {
-  color: var(--secondary);
-  font-size: 12px;
+  color: var(--secondary-text);
+  font-size: var(--font-size-xs);
 }
 
 .msg-toolbar {
@@ -216,6 +335,9 @@ const assistantActions: MsgAction[] = [
   background: var(--card-elevated);
   border: 1px solid var(--border);
   opacity: 0;
+  /* 只靠 opacity:0 隐藏时这排按钮依然可被点中——气泡上方 top:-13px 那条看不见的带子
+     会吃掉本该落在消息上的点击。改成"隐藏即不可点，显现才恢复命中"。 */
+  pointer-events: none;
   transition: opacity 0.15s ease;
 }
 
@@ -223,18 +345,23 @@ const assistantActions: MsgAction[] = [
 @media (hover: hover) and (pointer: fine) {
   .msg-wrap:hover .msg-toolbar {
     opacity: 1;
+    pointer-events: auto;
   }
 }
 
 /* 键盘聚焦分支不加 hover 守卫：触屏外接键盘时同样需要可见 */
 .msg-wrap:focus-within .msg-toolbar {
   opacity: 1;
+  pointer-events: auto;
 }
 
-/* 触屏设备无 hover：操作栏常显，保证编辑/复制等操作可达（WCAG + 移动端体验） */
+/* 触屏：操作入口改成长按唤起的动作条（MessageActionSheet），不再常显在气泡头顶。
+   同时禁掉气泡文本的长按选词——Android 的系统选词菜单会和我们抢这一次长按；
+   取全文仍走动作条里的「复制」。代价：手机上不能只选其中几个字。 */
 @media (hover: none) {
-  .msg-toolbar {
-    opacity: 1;
+  .msg-bubble {
+    -webkit-user-select: none;
+    user-select: none;
   }
 }
 

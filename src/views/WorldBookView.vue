@@ -16,9 +16,15 @@
  * - 键盘可访问（Enter/Space 触发主操作）
  */
 import { ref, computed, watch, useTemplateRef, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useReadinessJump } from '@/composables/useReadinessJump';
+import { useDeepLinkId } from '@/composables/useDeepLinkId';
+import { useSectionMemory } from '@/composables/useSectionMemory';
 import { useLorebookStore } from '@/stores/lorebook';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
+import Collapse from '@/components/common/Collapse.vue';
+import QuickLorebookFlow from '@/components/worldbook/QuickLorebookFlow.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
@@ -43,9 +49,28 @@ import { useCharacterStore } from '@/stores/character';
 import { t } from '@/i18n';
 
 const store = useLorebookStore();
+
+/**
+ * "最小生效三步"的开合：由空态里那颗按钮展开，走完三步由用户点"完成"收起。
+ * 放在宿主而不是组件里，是因为收起之后这块区域就该让位给正常编辑器。
+ * 曾经做成"一本书都没有时自动展开"，实测否掉：那等于把编辑器从用户手里抢走，
+ * 已有的"新建世界书 → 重命名 → 加条目"路径整个被挡住（e2e/ 里就有一条这么红的）。
+ */
+const quickFlowOpen = ref(false);
 const settingsStore = useSettingsStore();
 const characterStore = useCharacterStore();
 const router = useRouter();
+const route = useRoute();
+const { pushWithReturn } = useReadinessJump();
+
+/** 反向关系跳转：世界书 → 角色编辑（带来源，便于返回） */
+function openBoundCharacter(id: string): void {
+  pushWithReturn({ name: 'character-edit', params: { id } });
+}
+
+function openCharacterList(): void {
+  pushWithReturn({ name: 'character-list' });
+}
 
 // ── 需求7：世界书 → 角色 反向关系展示 ──
 
@@ -326,7 +351,30 @@ function createLorebook() {
 
 function selectLorebook(id: string) {
   store.selectLorebook(id);
+  // 地址栏跟着当前书走（M17-b）：刷新/分享后仍在这本世界上，深链的另一半。
+  // 用 replace 是为了不让"连着点三本书"堆出三条历史记录；保留原 query 免得抹掉 from。
+  if (route.query.book !== id) {
+    void router.replace({ query: { ...route.query, book: id } });
+  }
 }
+
+/**
+ * 深链 `/worldbook?book=<id>`（M17-b，第二条按 URL 寻址的新深链）。
+ *
+ * 闸门由登记表给（src/core/deep-link-keys.ts 的 `book` → 世界书库）：视图只说键名。
+ * 读完了仍没有这本书时必须说出来 —— 世界书页在读库完成后会默认选中第一本，
+ * 不说就是"打开的是另一本书"，正是 M12-a 那类静默换目标的形状。
+ */
+useDeepLinkId({
+  key: 'book',
+  onResolved: (id) => {
+    if (!store.lorebooks.some((lb) => lb.id === id)) {
+      showToast('error', t('wb.notFound'));
+      return;
+    }
+    if (id !== store.currentLorebookId) selectLorebook(id);
+  },
+});
 
 function deleteLorebook(id: string) {
   deleteTargetId.value = id;
@@ -342,7 +390,7 @@ function confirmDelete() {
 }
 
 function exportLorebook(id: string) {
-  store.downloadLorebook(id);
+  void store.downloadLorebook(id);
 }
 
 // ── 迭代27 · F06.8: 世界观 AI 生成 ──
@@ -367,10 +415,25 @@ function selectTemplate(id: WorldTemplateId) {
   selectedTemplateId.value = id;
 }
 
+/**
+ * 生成的这本世界归谁：'' = 全局（所有角色都注入），否则归属该角色并自动绑到他身上。
+ * 以前这里没有选择，生成的永远是全局书 —— 用户在某个角色的语境里点"生成世界观"，
+ * 结果造出来的东西对所有角色生效，这正是"绑定感缺失"的来源。
+ */
+const generateOwnerId = ref('');
+
 /** 执行 AI 生成新世界 */
 async function confirmGenerate() {
-  const lbId = await store.generateRandomWorldbook(selectedTemplateId.value);
+  const ownerId = generateOwnerId.value;
+  const lbId = await store.generateRandomWorldbook(
+    selectedTemplateId.value,
+    ownerId ? 'character' : 'global',
+    undefined,
+    ownerId || undefined
+  );
   if (lbId) {
+    // 角色侧的 boundWorldBookIds 才是生效判定的正向数据源，光写书上的 characterId 不够
+    if (ownerId) characterStore.bindWorldBook(ownerId, lbId);
     generateModalOpen.value = false;
     showToast('success', store.lastInfo ?? t('wb.generated'));
   } else {
@@ -419,6 +482,17 @@ function onNameInput(e: Event) {
 // ── F06.7 整体世界描述 ──
 const worldDescDraft = ref<WorldDescription | null>(null);
 const worldUserProfileDraft = ref<WorldUserProfile | null>(null);
+
+// M8-b：这两段描述的是"这一本书"，key 必须带上书 id——否则在 A 书点开的状态会
+// 跟着到 B 书，而"还没填就自动展开"这条规则也会被上一本书的随手一点顶掉。
+const worldDescOpen = useSectionMemory(
+  () => `wb.worldDesc:${currentLorebook.value?.id ?? ''}`,
+  () => !worldDescDraft.value
+);
+const userProfileOpen = useSectionMemory(
+  () => `wb.userProfile:${currentLorebook.value?.id ?? ''}`,
+  () => !worldUserProfileDraft.value
+);
 
 const worldTypeOptions: { value: WorldType; label: string }[] = [
   { value: 'fantasy', label: t('wb.worldTypeFantasy') },
@@ -771,24 +845,8 @@ function onGroupInput(e: Event) {
   onEntryField('group', (e.target as HTMLInputElement).value);
 }
 
-// ── F17.3 随机事件开关 ──
 
-function onRandomEventEnabledChange(e: Event) {
-  const enabled = (e.target as HTMLInputElement).checked;
-  onEntryField('randomEventEnabled', enabled);
-  // 首次开启时初始化默认概率
-  if (enabled) {
-    const d = draft();
-    if (d && (d.randomEventProbability === undefined || d.randomEventProbability === null)) {
-      onEntryField('randomEventProbability', 10);
-    }
-  }
-}
 
-function onRandomEventProbabilityInput(e: Event) {
-  const value = parseInt((e.target as HTMLInputElement).value, 10);
-  if (!isNaN(value)) onEntryField('randomEventProbability', value);
-}
 
 function keysPreview(keys: string[]): string {
   if (keys.length === 0) return t('wb.noKeywords');
@@ -906,26 +964,58 @@ function strategyLabel(s: LorebookStrategy): string {
               <span class="item-meta">{{ t('wb.entryCount', { count: lb.entries.length }) }}</span>
             </button>
           </li>
-          <li v-if="store.filteredLorebooks.length === 0" class="empty-state">
-            <p>{{ t('wb.emptyList') }}</p>
-            <button type="button" class="link-btn" @click="createLorebook">
-              {{ t('wb.createFirst') }}
-            </button>
-          </li>
+          <!-- 列表内的一项，必须是 li（用默认 section 会生成 ul > section 的非法结构） -->
+          <EmptyState
+            v-if="store.filteredLorebooks.length === 0"
+            as="li"
+            compact
+            title-key="wb.emptyList"
+            action-key="wb.createFirst"
+            @action="createLorebook"
+          />
         </ul>
       </aside>
 
       <!-- 右侧 Lorebook 编辑器 -->
       <main class="lorebook-editor-panel" id="main-content" tabindex="-1">
-        <div v-if="!currentLorebook" class="empty-editor">
+        <!--
+          三步流程**不能**挂在 !currentLorebook 分支里：createLorebook 会把新书设成当前选中，
+          于是第一步一完成宿主就消失，用户做到一半被踢回编辑器（浏览器实测踩过这个）。
+          流程打开时编辑器整体不渲染：两者同时留在页面上会互相压住操作
+          （移动视口实测：流程卡片盖住编辑器的"新增条目"按钮，点不到）。
+          三步走完点"完成"收起，编辑器带着刚建好的书回来。
+        -->
+        <QuickLorebookFlow
+          v-if="quickFlowOpen"
+          class="wb-quick-flow"
+          @finished="quickFlowOpen = false"
+        />
+
+        <div v-if="!currentLorebook && !quickFlowOpen" class="empty-editor">
           <Icon name="compass" :size="48" />
-          <p>{{ t('wb.emptyEditor') }}</p>
+          <!--
+            一句话要对两种情况负责：左侧有书但没选中的，才谈得上"选择左侧的世界书"；
+            一本书都没有时那句是指令不了的指令，用户照着做只会对着空列表发呆。
+          -->
+          <p>{{ store.lorebooks.length === 0 ? t('wb.emptyNoBooks') : t('wb.emptyEditor') }}</p>
           <button type="button" class="primary-btn" @click="createLorebook">
             {{ t('wb.createNew') }}
           </button>
+          <!-- 最短生效路径要能被看见，但不替用户决定：默认仍进编辑器 -->
+          <button type="button" class="wb-open-flow" data-rel-jump="quick-wb-open" @click="quickFlowOpen = true">
+            {{ t('quick.wbOpenFlow') }}
+          </button>
         </div>
 
-        <div v-else class="editor-content">
+        <div v-else-if="currentLorebook && !quickFlowOpen" class="editor-content">
+          <!--
+            三步走原先只挂在"一本书都没有"的空态里：选中一本书之后就再也打不开，
+            可"再按最短路径建一本能生效的"恰恰是在已有书的人身上最常发生的事。
+          -->
+          <button type="button" class="wb-open-flow wb-open-flow-inline" data-rel-jump="quick-wb-open" @click="quickFlowOpen = true">
+            {{ t('quick.wbOpenFlow') }}
+          </button>
+
           <!-- Lorebook 元信息 -->
           <section class="lorebook-meta" :aria-label="t('wb.metaAria')">
             <div class="meta-row">
@@ -1002,28 +1092,51 @@ function strategyLabel(s: LorebookStrategy): string {
                 class="bound-char-item"
                 role="listitem"
               >
-                <Avatar :character="char" :size="28" />
-                <span class="bound-char-name">{{ char.name }}</span>
+                <!-- L 层：反向关系此前只是"看得见"，现在一次点击就到得了编辑页 -->
+                <button
+                  type="button"
+                  class="bound-char-link"
+                  :data-rel-jump="`wb-bound-${char.id}`"
+                  :aria-label="t('wb.boundCharsGo', { name: char.name })"
+                  @click="openBoundCharacter(char.id)"
+                >
+                  <Avatar :character="char" :size="28" />
+                  <span class="bound-char-name">{{ char.name }}</span>
+                </button>
                 <span
                   v-if="char.tags.length"
                   class="bound-char-tags"
                 >{{ char.tags.slice(0, 2).join(' · ') }}</span>
               </li>
             </ul>
-            <p v-else class="bound-chars-empty">
-              {{ t('wb.boundCharsEmpty') }}
-            </p>
+            <div v-else class="bound-chars-empty-row">
+              <p class="bound-chars-empty">
+                {{ t('wb.boundCharsEmpty') }}
+              </p>
+              <button
+                type="button"
+                class="bound-chars-go"
+                data-rel-jump="wb-bound-empty"
+                @click="openCharacterList"
+              >
+                {{ t('wb.boundCharsGoList') }}
+              </button>
+            </div>
           </section>
 
           <!-- F06.7 整体世界描述 -->
-          <section class="world-desc-section" :aria-label="t('wb.worldDescAria')">
-            <header class="world-desc-header">
-              <h2>
-                <Icon name="globe" :size="14" />
-                <span>{{ t('wb.worldDescTitle') }}</span>
-              </h2>
+          <!-- 一次性配置：用户点过就听他的；没点过时"没填的那段自动展开"（M7-d 接上记忆） -->
+          <Collapse
+            v-model:open="worldDescOpen"
+            class="world-desc-section"
+            title-key="wb.worldDescTitle"
+            hint-key="wb.worldDescCollapseHint"
+            icon="globe"
+            :level="2"
+          >
+            <template #title-extra>
               <span class="world-desc-tag">{{ t('wb.worldDescTag') }}</span>
-            </header>
+            </template>
 
             <div v-if="!worldDescDraft" class="world-desc-empty">
               <p>{{ t('wb.worldDescEmpty') }}</p>
@@ -1116,17 +1229,20 @@ function strategyLabel(s: LorebookStrategy): string {
                 </button>
               </div>
             </div>
-          </section>
+          </Collapse>
 
           <!-- 世界内用户资料：与真实账户分离，每本世界书独立保存 -->
-          <section class="world-user-profile-section" :aria-label="t('wb.worldUserProfileAria')">
-            <header class="world-desc-header">
-              <h2>
-                <Icon name="user" :size="14" />
-                <span>{{ t('wb.worldUserProfileTitle') }}</span>
-              </h2>
+          <Collapse
+            v-model:open="userProfileOpen"
+            class="world-user-profile-section"
+            title-key="wb.worldUserProfileTitle"
+            hint-key="wb.worldUserProfileCollapseHint"
+            icon="user"
+            :level="2"
+          >
+            <template #title-extra>
               <span class="world-desc-tag">{{ t('wb.worldUserProfileTag') }}</span>
-            </header>
+            </template>
 
             <div v-if="!worldUserProfileDraft" class="world-desc-empty">
               <p>{{ t('wb.worldUserProfileEmpty') }}</p>
@@ -1184,7 +1300,7 @@ function strategyLabel(s: LorebookStrategy): string {
                 </button>
               </div>
             </div>
-          </section>
+          </Collapse>
 
       <WorldBookEventsPanel />
 
@@ -1199,7 +1315,7 @@ function strategyLabel(s: LorebookStrategy): string {
                     type="button"
                     class="tree-action-btn"
                     :aria-label="t('wb.expandAll')"
-                    :title="t('wb.expandAll')"
+                    v-tip="t('wb.expandAll')"
                     @click="expandAll"
                   >
                     <Icon name="chevron-down" :size="14" />
@@ -1208,7 +1324,7 @@ function strategyLabel(s: LorebookStrategy): string {
                     type="button"
                     class="tree-action-btn"
                     :aria-label="t('wb.collapseAll')"
-                    :title="t('wb.collapseAll')"
+                    v-tip="t('wb.collapseAll')"
                     @click="collapseAll"
                   >
                     <Icon name="chevron-up" :size="14" />
@@ -1283,7 +1399,7 @@ function strategyLabel(s: LorebookStrategy): string {
                     <span
                       class="level-badge"
                       :style="{ color: levelColor(getEntryLevel(entry.id)) }"
-                      :title="t('wb.levelTitle', { level: levelLabel(getEntryLevel(entry.id)) })"
+                      :aria-label="t('wb.levelTitle', { level: levelLabel(getEntryLevel(entry.id)) })"
                     >
                       {{ levelLabel(getEntryLevel(entry.id)).charAt(0) }}
                     </span>
@@ -1340,7 +1456,7 @@ function strategyLabel(s: LorebookStrategy): string {
                       type="button"
                       class="action-btn"
                       :aria-label="t('wb.moveToTop')"
-                      :title="t('wb.moveToTopTitle')"
+                      v-tip="t('wb.moveToTopTitle')"
                       :disabled="getEntryLevel(currentEntry.id) === 0"
                       @click="moveToTopLevel(currentEntry.id)"
                     >
@@ -1351,7 +1467,7 @@ function strategyLabel(s: LorebookStrategy): string {
                       type="button"
                       class="action-btn"
                       :aria-label="t('wb.moveUp')"
-                      :title="t('wb.moveUp')"
+                      v-tip="t('wb.moveUp')"
                       @click="moveUpInLevel(currentEntry.id)"
                     >
                       <Icon name="arrow-up" :size="14" />
@@ -1360,7 +1476,7 @@ function strategyLabel(s: LorebookStrategy): string {
                       type="button"
                       class="action-btn"
                       :aria-label="t('wb.moveDown')"
-                      :title="t('wb.moveDown')"
+                      v-tip="t('wb.moveDown')"
                       @click="moveDownInLevel(currentEntry.id)"
                     >
                       <Icon name="arrow-down" :size="14" />
@@ -1554,48 +1670,7 @@ function strategyLabel(s: LorebookStrategy): string {
                       />
                     </div>
                   </div>
-
-                  <!-- F17.3 随机事件开关（仅 hierarchyLevel >= 1 时显示） -->
-                  <div
-                    v-if="currentEntry && (currentEntry.hierarchyLevel ?? 0) >= 1"
-                    class="form-row random-event-row"
-                  >
-                    <div class="form-cell">
-                      <label class="form-label" :for="`entry-rand-${currentEntry.id}`">
-                        {{ t('wb.randomEvent') }}
-                      </label>
-                      <label class="checkbox-label">
-                        <input
-                          :id="`entry-rand-${currentEntry.id}`"
-                          type="checkbox"
-                          :checked="currentEntry.randomEventEnabled ?? false"
-                          @change="onRandomEventEnabledChange"
-                        />
-                        <span>{{ t('wb.randomEventEnable') }}</span>
-                      </label>
-                      <span class="form-hint">
-                        {{ t('wb.randomEventHint') }}
-                      </span>
-                    </div>
-                    <div
-                      v-if="currentEntry.randomEventEnabled"
-                      class="form-cell"
-                    >
-                      <label class="form-label" :for="`entry-rand-prob-${currentEntry.id}`">
-                        {{ t('wb.randomEventProb', { percent: currentEntry.randomEventProbability ?? 10 }) }}
-                      </label>
-                      <input
-                        :id="`entry-rand-prob-${currentEntry.id}`"
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="5"
-                        :value="currentEntry.randomEventProbability ?? 10"
-                        @input="onRandomEventProbabilityInput"
-                      />
-                    </div>
-                  </div>
-                </div>
+</div>
               </form>
             </section>
           </div>
@@ -1607,8 +1682,9 @@ function strategyLabel(s: LorebookStrategy): string {
     <Modal
       v-model="deleteModalOpen"
       :title="t('wb.deleteTitle')"
+      described-by="wb-delete-desc"
     >
-      <p>{{ t('wb.deleteConfirmNamed', { name: deleteTargetLorebook?.name ?? t('story.unnamedLorebook'), count: deleteTargetLorebook?.entries.length ?? 0 }) }}</p>
+      <p id="wb-delete-desc">{{ t('wb.deleteConfirmNamed', { name: deleteTargetLorebook?.name ?? t('story.unnamedLorebook'), count: deleteTargetLorebook?.entries.length ?? 0 }) }}</p>
       <template #footer>
         <button
           type="button"
@@ -1631,9 +1707,10 @@ function strategyLabel(s: LorebookStrategy): string {
     <Modal
       v-model="generateModalOpen"
       :title="t('wb.generateTitle')"
+      described-by="wb-generate-desc"
     >
       <div class="generate-modal-body">
-        <p class="generate-hint">
+        <p id="wb-generate-desc" class="generate-hint">
           {{ t('wb.generateHint') }}
         </p>
 
@@ -1655,6 +1732,22 @@ function strategyLabel(s: LorebookStrategy): string {
             <span class="template-label">{{ tpl.label }}</span>
             <span class="template-desc">{{ tpl.description }}</span>
           </button>
+        </div>
+
+        <div class="gen-owner">
+          <label class="gen-owner-label" for="gen-owner-select">{{ t('wb.genOwnerLabel') }}</label>
+          <select
+            id="gen-owner-select"
+            v-model="generateOwnerId"
+            class="form-select"
+            :disabled="store.isGeneratingWorld"
+          >
+            <option value="">{{ t('wb.genOwnerGlobal') }}</option>
+            <option v-for="c in characterStore.characters" :key="c.id" :value="c.id">
+              {{ c.name }}
+            </option>
+          </select>
+          <p class="generate-hint">{{ t('wb.genOwnerHint') }}</p>
         </div>
 
         <div v-if="store.isGeneratingWorld" class="generating-state" role="status" aria-live="polite">
@@ -1708,6 +1801,10 @@ function strategyLabel(s: LorebookStrategy): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* 390px 实测：标题与右侧动作组同行时，标题被压到 20px 宽（"世界书"三个字竖排）。
+     允许换行 + 标题不折行，动作组放不下就整排落到第二行。 */
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 14px 20px;
   border-bottom: 1px solid var(--border);
   background: var(--card);
@@ -1717,6 +1814,7 @@ function strategyLabel(s: LorebookStrategy): string {
 .header-title {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 12px;
 }
 
@@ -1724,6 +1822,7 @@ function strategyLabel(s: LorebookStrategy): string {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
+  white-space: nowrap;
   color: var(--foreground);
 }
 
@@ -1735,6 +1834,9 @@ function strategyLabel(s: LorebookStrategy): string {
 .header-actions {
   display: flex;
   gap: 8px;
+  /* 390px 实测：标题与这排按钮同行时被按比例压缩，"AI 生成"被压成 25×51（三行竖排）。
+     动作组不该收缩，标题该让位。 */
+  flex-shrink: 0;
 }
 
 .header-btn {
@@ -1742,6 +1844,7 @@ function strategyLabel(s: LorebookStrategy): string {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
+  white-space: nowrap;
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--foreground);
@@ -1846,21 +1949,12 @@ function strategyLabel(s: LorebookStrategy): string {
   flex: 1;
 }
 
-.empty-state {
-  padding: 24px 12px;
-  text-align: center;
-  color: var(--muted-foreground);
-  font-size: 13px;
-}
 
-.empty-state p {
-  margin: 0 0 8px 0;
-}
 
 .link-btn {
   background: none;
   border: none;
-  color: var(--secondary);
+  color: var(--secondary-text);
   font-size: 13px;
   cursor: pointer;
   text-decoration: underline;
@@ -1941,6 +2035,30 @@ function strategyLabel(s: LorebookStrategy): string {
   min-height: 0;
   overflow: hidden;
   outline: none;
+}
+
+.wb-open-flow {
+  margin-top: 4px;
+  padding: 6px 12px;
+  border: 1px dashed var(--secondary);
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+  color: var(--secondary-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* 编辑器内的那份：靠左、给够点击高度，不与空态里的居中排版混用 */
+.wb-open-flow-inline {
+  align-self: flex-start;
+  margin-top: 0;
+  min-height: 32px;
+}
+
+.wb-quick-flow {
+  width: min(520px, 100%);
+  margin-top: 12px;
+  text-align: left;
 }
 
 .empty-editor {
@@ -2141,26 +2259,9 @@ function strategyLabel(s: LorebookStrategy): string {
   flex-shrink: 0;
 }
 
-.world-desc-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.world-desc-header h2 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--foreground);
-}
-
 .world-desc-tag {
   font-size: 10px;
-  color: var(--secondary);
+  color: var(--secondary-text);
   padding: 2px 6px;
   background: color-mix(in srgb, var(--secondary) 12%, transparent);
   border-radius: var(--radius-sm);
@@ -2181,7 +2282,7 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 .add-world-btn {
-  color: var(--secondary);
+  color: var(--secondary-text);
   border-color: var(--border);
 }
 
@@ -2239,7 +2340,7 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 .action-btn.delete {
-  color: var(--error);
+  color: var(--error-fg);
   border-color: var(--error);
 }
 
@@ -2479,7 +2580,7 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 .entry-toggle.active {
-  color: var(--secondary);
+  color: var(--secondary-text);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2583,7 +2684,7 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 .action-btn.duplicate {
-  color: var(--secondary);
+  color: var(--secondary-text);
   border-color: var(--border);
 }
 
@@ -2600,23 +2701,8 @@ function strategyLabel(s: LorebookStrategy): string {
 }
 
 /* F17.3 随机事件行 */
-.random-event-row {
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 12px;
-  background: var(--surface-3, var(--card-elevated));
-  border-radius: 6px;
-  border: 1px solid var(--border);
-}
 
-.random-event-row .form-cell {
-  flex: 1;
-}
 
-.random-event-row input[type='range'] {
-  width: 100%;
-}
 
 .form-row-3col,
 .form-row-4col {
@@ -2734,6 +2820,24 @@ function strategyLabel(s: LorebookStrategy): string {
   line-height: 1.5;
 }
 
+/* 生成 Modal 里的"这本世界归谁" */
+.gen-owner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.gen-owner-label {
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.gen-owner select {
+  width: 100%;
+}
+
 .template-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -2802,7 +2906,7 @@ function strategyLabel(s: LorebookStrategy): string {
   background: rgba(255, 82, 82, 0.1);
   border: 1px solid var(--error);
   border-radius: var(--radius-md);
-  color: var(--error);
+  color: var(--error-fg);
   font-size: 13px;
 }
 
@@ -2822,5 +2926,50 @@ function strategyLabel(s: LorebookStrategy): string {
   .form-textarea {
     font-size: 16px;
   }
+}
+.bound-char-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .bound-char-link:hover {
+    border-color: var(--secondary);
+  }
+}
+
+.bound-char-link:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
+}
+
+.bound-chars-empty-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bound-chars-go {
+  padding: 3px 10px;
+  border: 1px solid var(--secondary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--secondary-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.bound-chars-go:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 1px;
 }
 </style>

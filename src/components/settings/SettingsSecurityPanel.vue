@@ -239,7 +239,7 @@ function openMasterPasswordModal(mode: MasterPasswordMode): void {
 .action-btn.activate {
   background: var(--secondary);
   border-color: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -405,7 +405,7 @@ function openMasterPasswordModal(mode: MasterPasswordMode): void {
 }
 
 .security-status svg {
-  color: var(--secondary);
+  color: var(--secondary-text);
   flex-shrink: 0;
 }
 

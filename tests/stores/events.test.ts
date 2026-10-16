@@ -259,15 +259,51 @@ describe('events store (F17.1)', () => {
       expect(store.lastError).toBe('事件不存在');
     });
 
-    it('校验失败时返回 false', () => {
+    it('空名称能存进去（编辑不被完整性拦），但触发会被拒', () => {
+      // 契约变更（设计文档 §七 #21）：以前这里断言"updateEvent 返回 false"，
+      // 正是世界书事件面板一条事件都配不出来的根因——新建事件的名称/描述/关键词
+      // 三样全空，任何单字段更新都被另外两样的"不能为空"顶回。
+      // 现在拦的位置改到 triggerEvent：字段照常存，要拿去用了才说缺什么。
       const store = useEventsStore();
       const id = createValidEvent(store, 'lb-1', null, null, '合法名称');
-      // 尝试设为空名称
       const ok = store.updateEvent(id, { name: '' });
-      expect(ok).toBe(false);
+      expect(ok).toBe(true);
+      expect(store.getEvent(id)?.name).toBe('');
+      // 但这条事件已经不能激活了
+      store.setEventState(id, 'pending');
+      expect(store.triggerEvent(id)).toBe(false);
       expect(store.lastError).toContain('事件名称不能为空');
-      // 原名称保持不变
+      expect(store.getEvent(id)?.state).toBe('pending');
+    });
+
+    it('取值错误仍然拦住写入，且原值保持不变', () => {
+      const store = useEventsStore();
+      const id = createValidEvent(store, 'lb-1', null, null, '合法名称');
+      const ok = store.updateEvent(id, { name: '一'.repeat(51) });
+      expect(ok).toBe(false);
+      expect(store.lastError).toContain('事件名称不能超过 50 字符');
       expect(store.getEvent(id)?.name).toBe('合法名称');
+    });
+
+    it('逐字段输入一路存得进去（面板死路的直接反证）', () => {
+      // 面板的写法是每敲一个字段调一次 updateEvent；改前第一次调用就被顶回。
+      const store = useEventsStore();
+      const id = store.createEvent('lb-1', null, null)!;
+      expect(store.updateEvent(id, { name: '断桥拦路' }, { silent: true })).toBe(true);
+      expect(store.getEvent(id)?.name).toBe('断桥拦路');
+      expect(
+        store.updateEvent(id, { description: '商队必经的木桥断了' }, { silent: true })
+      ).toBe(true);
+      expect(
+        store.updateEvent(id, {
+          trigger: { type: 'keyword', keywords: ['商队'], useRegex: false, caseSensitive: false },
+        }, { silent: true })
+      ).toBe(true);
+      const evt = store.getEvent(id)!;
+      expect(evt.description).toBe('商队必经的木桥断了');
+      expect(evt.trigger.type === 'keyword' && evt.trigger.keywords).toEqual(['商队']);
+      // silent 的意义：编辑不产生成功提示，否则面板每敲一个字弹一条
+      expect(store.lastInfo).toBe('已创建新事件');
     });
 
     it('校验失败时事件不被修改', () => {
@@ -418,17 +454,28 @@ describe('events store (F17.1)', () => {
   describe('triggerEvent', () => {
     it('pending 状态可触发', () => {
       const store = useEventsStore();
-      const id = store.createEvent('lb-1');
-      const ok = store.triggerEvent(id!);
+      const id = createValidEvent(store);
+      const ok = store.triggerEvent(id);
       expect(ok).toBe(true);
-      expect(store.getEvent(id!)?.state).toBe('active');
+      expect(store.getEvent(id)?.state).toBe('active');
+    });
+
+    it('字段没填全的事件不能激活，且逐条说清缺什么', () => {
+      const store = useEventsStore();
+      const id = store.createEvent('lb-1')!;
+      const ok = store.triggerEvent(id);
+      expect(ok).toBe(false);
+      expect(store.lastError).toContain('事件名称不能为空');
+      expect(store.lastError).toContain('事件描述不能为空');
+      expect(store.lastError).toContain('关键词');
+      expect(store.getEvent(id)?.state).toBe('pending');
     });
 
     it('active 状态不可重复触发', () => {
       const store = useEventsStore();
-      const id = store.createEvent('lb-1');
-      store.triggerEvent(id!);
-      const ok = store.triggerEvent(id!);
+      const id = createValidEvent(store);
+      store.triggerEvent(id);
+      const ok = store.triggerEvent(id);
       expect(ok).toBe(false);
       expect(store.lastError).toContain('不可触发');
     });
@@ -472,11 +519,11 @@ describe('events store (F17.1)', () => {
   describe('completeEvent', () => {
     it('active 状态可完成', () => {
       const store = useEventsStore();
-      const id = store.createEvent('lb-1');
-      store.triggerEvent(id!);
-      const ok = store.completeEvent(id!);
+      const id = createValidEvent(store);
+      store.triggerEvent(id);
+      const ok = store.completeEvent(id);
       expect(ok).toBe(true);
-      expect(store.getEvent(id!)?.state).toBe('completed');
+      expect(store.getEvent(id)?.state).toBe('completed');
     });
 
     it('pending 状态不可完成', () => {

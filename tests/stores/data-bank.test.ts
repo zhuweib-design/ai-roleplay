@@ -129,7 +129,9 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
       expect(store.filteredDocuments).toHaveLength(0);
       expect(store.globalDocuments).toHaveLength(0);
       expect(store.characterDocuments).toHaveLength(0);
-      expect(store.chatDocuments).toHaveLength(0);
+      // 聊天级分组不再有专用 getter（M2-b 撤除：视图层无引用且检索管线硬编码 character 域），
+      // 但数据层仍支持 scope='chat'，故用等价的显式过滤继续覆盖这一形状
+      expect(store.documents.filter((d) => d.scope === 'chat')).toHaveLength(0);
     });
   });
 
@@ -549,7 +551,7 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
       expect(store.filteredDocuments).toHaveLength(2);
     });
 
-    it('globalDocuments / characterDocuments / chatDocuments 分组', () => {
+    it('globalDocuments / characterDocuments 分组，chat 域仍可在数据层表达', () => {
       const store = useDataBankStore();
       const g = makeDocument({ id: 'g', scope: 'global' });
       const c = makeDocument({ id: 'c', scope: 'character' });
@@ -558,7 +560,7 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
 
       expect(store.globalDocuments.map((d) => d.id)).toEqual(['g']);
       expect(store.characterDocuments.map((d) => d.id)).toEqual(['c']);
-      expect(store.chatDocuments.map((d) => d.id)).toEqual(['ch']);
+      expect(store.documents.filter((d) => d.scope === 'chat').map((d) => d.id)).toEqual(['ch']);
     });
 
     it('currentDocument 返回当前选中文档', () => {

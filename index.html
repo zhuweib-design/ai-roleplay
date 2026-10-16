@@ -2,7 +2,13 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover：不开它，全站 4 处 env(safe-area-inset-bottom) 在安卓/刘海屏上恒取 0px -->
+    <!-- interactive-widget=resizes-content：让软键盘收缩“布局视口”而不只是视觉视口，
+         这样底部输入条会跟着键盘抬起来。真机实测（2026-10-16，模拟器 WebView）：不加这一条
+         且 manifest 没有 windowSoftInputMode 时，键盘弹起后 innerHeight 与 visualViewport.height
+         都停在 842 不动，网页收不到任何信号，光监听 visualViewport 是空转。
+         不认识的浏览器会忽略这个指令（无害）。 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="description" content="AI 酒馆 — 角色扮演与多模型对话平台" />
     <!-- 深色主题浏览器 UI & 原色渲染（与 tokens.css 默认 --background 一致） -->
     <meta name="theme-color" content="#0B0B10" />

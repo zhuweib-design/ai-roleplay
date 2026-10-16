@@ -48,7 +48,9 @@ const settings = useSettingsStore();
         <label class="form-row">
           <span>{{ t('settingsView.ttsRate', { value: settings.ttsConfig.rate.toFixed(1) }) }}</span>
           <input
+            v-range
             type="range"
+            class="tk-range"
             min="0.5"
             max="2"
             step="0.1"
@@ -59,7 +61,9 @@ const settings = useSettingsStore();
         <label class="form-row">
           <span>{{ t('settingsView.ttsPitch', { value: settings.ttsConfig.pitch.toFixed(1) }) }}</span>
           <input
+            v-range
             type="range"
+            class="tk-range"
             min="0"
             max="2"
             step="0.1"
@@ -176,10 +180,10 @@ const settings = useSettingsStore();
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
+  gap: var(--gap-stack-lg);
+  padding: var(--space-5);
   background: var(--card);
-  border: 1px solid var(--border);
+  border: var(--size-border-thin) solid var(--border);
   border-radius: var(--radius-lg);
 }
 
@@ -187,16 +191,16 @@ const settings = useSettingsStore();
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--gap-inline-md);
   flex-wrap: wrap;
 }
 
 .section-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--gap-inline-sm);
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--foreground);
   margin: 0;
@@ -234,26 +238,27 @@ const settings = useSettingsStore();
 
 /* F12 扩展功能配置区块 */
 .extension-security-note {
-  margin: 0 0 12px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 12px;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: var(--size-border-thin) solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  /* 1.6 不在行高阶（1.2 / 1.35 / 1.5 / 1.7）上，留字面量并登记进尺度缺口 */
   line-height: 1.6;
   color: var(--text-secondary);
   background: var(--surface-secondary);
 }
 .extension-block {
-  padding: 16px;
-  margin-bottom: 12px;
-  border: 1px solid var(--border);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  border: var(--size-border-thin) solid var(--border);
   border-radius: var(--radius-md);
   background: var(--card-elevated);
 }
 
 .extension-title {
-  margin: 0 0 12px;
-  font-size: 14px;
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--foreground);
 }
@@ -261,9 +266,9 @@ const settings = useSettingsStore();
 .extension-block .form-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-  font-size: 13px;
+  gap: var(--gap-inline-md);
+  margin-bottom: var(--space-2-5);
+  font-size: var(--font-size-sm);
   color: var(--foreground);
 }
 
@@ -286,19 +291,19 @@ const settings = useSettingsStore();
 .extension-block .form-row select {
   flex: 1;
   max-width: 240px;
-  padding: 6px 10px;
-  font-size: 13px;
+  padding: var(--space-1-5) var(--space-2-5);
+  font-size: var(--font-size-sm);
   background: var(--background);
   color: var(--foreground);
-  border: 1px solid var(--border);
+  border: var(--size-border-thin) solid var(--border);
   border-radius: var(--radius-sm);
 }
 
 .extension-block .hint-text {
-  margin: 8px 0 0;
-  font-size: 12px;
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-xs);
   color: var(--muted-foreground);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 @media (max-width: 640px) {

@@ -10,7 +10,7 @@
  * 规则约束：
  * - 生成使用当前激活的 API 连接（依赖 F02）
  * - 生成 Prompt 包含世界类型约束和已有条目上下文（扩展模式）
- * - 单次生成消耗约 1000-2000 Token
+ * - 单次生成的输出量：世界创建约 1.8K-8.1K Token、扩展约 1K-4.3K Token（实测，见下面的输出预算）
  * - 边界处理：API 未连接时禁用；生成失败提示错误并允许重试
  */
 
@@ -20,6 +20,14 @@ import type {
   LorebookEntry,
 } from './lorebook';
 import { parseAiJson, parseAiJsonArray } from './json-utils';
+
+// ── 输出预算 ──
+//
+// 这里不再写死任何输出上限。2026-10-14 量过：按各 Prompt 自己写的字数区间造样例，
+// 世界创建要 1838（最小）/ 3895（中位）/ 8093（上限）token，扩展要 960 / 2357 / 4316 ——
+// 原先写死的 2000 / 1500 从"中位"起就把模型掐断在 JSON 中间，界面只能报"无法解析"。
+// 现在预算由 src/core/token-budget.ts 按"模型最大上下文 − 输入实测 − 预留"推导，
+// 输入装不下时自动压缩；本模块只负责解析与失败取证（describeWorldParseFailure）。
 // i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 
 // ── 模板定义 ──
@@ -398,6 +406,64 @@ export function parseGeneratedWorld(raw: string): GeneratedWorld | null {
     },
     regions,
   };
+}
+
+/** 世界创建解析失败的分类：让界面说清"到底哪一步失败"，不再统一报一句"无法解析" */
+export type WorldParseFailureKind =
+  | 'empty' // AI 返回了空内容（思考型模型有时只回思考过程）
+  | 'not-json' // 返回里连 { 都没有
+  | 'broken-json' // 有花括号但 JSON.parse 失败 —— 最常见是被输出上限截断在半路
+  | 'no-world' // JSON 能解析，但 world.name 缺失
+  | 'no-regions' // JSON 能解析，但 regions 不是非空数组
+  | 'region-shape'; // regions 有元素，但没有一个能取到 title
+
+export interface WorldParseFailure {
+  kind: WorldParseFailureKind;
+  /** 证据：AI 实际返回的字符数（0 = 空返回） */
+  chars: number;
+  /** 证据：返回内容的开头（折叠空白，最多 60 字） */
+  preview: string;
+  /** 证据：JSON 能解析时它的顶层字段名 */
+  keys: string[];
+  /** 证据：regions 数组的元素个数（能取到时） */
+  regionCount: number;
+}
+
+/**
+ * 分类"世界创建解析失败"的原因，供界面把证据说出来。
+ *
+ * 只该在 parseGeneratedWorld 返回 null 之后调用（它会重跑一遍解析）。
+ */
+export function describeWorldParseFailure(raw: string): WorldParseFailure {
+  const text = typeof raw === 'string' ? raw : '';
+  const base = {
+    chars: text.length,
+    preview: text.replace(/\s+/g, ' ').trim().slice(0, 60),
+    keys: [] as string[],
+    regionCount: 0,
+  };
+  if (text.trim() === '') return { ...base, kind: 'empty' };
+
+  const obj = parseAiJson<Record<string, unknown>>(text);
+  if (!obj) {
+    // 有花括号却解析不出来 ⇒ 多半被截断在半路；连 { 都没有 ⇒ 压根不是 JSON
+    const hasBrace = text.includes('{') || text.includes('[');
+    return { ...base, kind: hasBrace ? 'broken-json' : 'not-json' };
+  }
+
+  const withKeys = { ...base, keys: Object.keys(obj) };
+  const worldRaw = obj.world;
+  const worldName =
+    worldRaw && typeof worldRaw === 'object'
+      ? (worldRaw as Record<string, unknown>).name
+      : undefined;
+  if (typeof worldName !== 'string' || worldName.trim() === '') {
+    return { ...withKeys, kind: 'no-world' };
+  }
+
+  const regionsRaw = Array.isArray(obj.regions) ? obj.regions : [];
+  if (regionsRaw.length === 0) return { ...withKeys, kind: 'no-regions' };
+  return { ...withKeys, regionCount: regionsRaw.length, kind: 'region-shape' };
 }
 
 /**

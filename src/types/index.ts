@@ -8,6 +8,8 @@
 import type { CharacterAttributes } from '@core/character-card';
 import type { ReasoningEffort } from '@api/types';
 import type { CharacterStatus, StatusSchema, StatusHudConfig } from '@core/status-schema';
+import type { PromptTraceItem } from '@core/lorebook-scanner'
+import type { EventTraceItem } from '@core/event-trace';
 import { t } from '@/i18n';
 
 /**
@@ -27,8 +29,6 @@ export interface SamplingOverrides {
 
 /** P0-2：思考强度三档的展示顺序（UI 共用，避免各面板重复定义） */
 export const REASONING_EFFORTS: readonly ReasoningEffort[] = ['low', 'medium', 'high'] as const;
-
-export type NavKey ='chat' | 'character' | 'worldbook' | 'group' | 'databank' | 'archives' | 'settings' | 'story' | 'random-events' | 'local-model' | 'image-gen' | 'character-version' | 'community-market' | 'profile';
 
 /** UI 层消息类型（扩展核心 ChatMessage，增加展示状态字段） */
 export interface UIMessage {
@@ -60,6 +60,16 @@ export interface UIMessage {
   narrationAfter?: string;
   /** 是否正在生成中 */
   generating?: boolean;
+  /**
+   * L 层：本轮注入的世界书条目（裁剪视图，不含正文）。
+   * 有值即可展开查看"这条回复用到了哪几条设定"，并可跳回来源世界书。
+   */
+  promptTrace?: PromptTraceItem[];
+  /**
+   * E11：本轮注入的随机事件（裁剪视图：事件名 + 场景标签，**不含正文**）。
+   * 必须在组装提示词那一刻写——事件表只在内存里，刷新后当初那条就没了。
+   */
+  eventTrace?: EventTraceItem[];
   timestamp: number;
 }
 
@@ -110,15 +120,6 @@ export interface UICharacter {
   authorNote: string;
   authorDepth: number;
   temperature: number;
-  /**
-   * 需求3：单次回复最大 Tokens（角色级覆盖）
-   *
-   * **可选**（T-16 语义）：`undefined` / `null` = 未设置 = 向下回落
-   * —— 角色级 → Profile 级 → 不传（供应商默认）。
-   * 绝不用 0 或魔法数字表示"未设置"：历史上它是必填 number（默认 4096），
-   * 导致 Profile 级 `maxTokens` 被无条件覆盖而永不生效（死代码），本轮改为可选修掉。
-   */
-  maxTokens?: number;
   worldEntries: WorldEntry[];
   tokenBudget: TokenBudget;
   /** P0-2：角色级思考强度覆盖；undefined/null = 跟随 Profile */
@@ -159,10 +160,11 @@ export interface ApiProfile {
   /** 需求3：是否为该分类的主模型（每分类至多 1 个） */
   isPrimary?: boolean;
   /**
-   * 需求3：默认最大 Tokens（角色未单独设置 maxTokens 时使用）
-   * 未设置时回退到 ChatManager 默认值
+   * 模型的最大上下文（token）。这是模型设置里**唯一**需要填的量：
+   * 输出预算与输入压缩都由它推导（见 core/token-budget.ts），不再有人工输出上限。
+   * 未设置时回退全局 `settings.maxContextTokens`。
    */
-  maxTokens?: number;
+  contextWindow?: number;
   /**
    * P0-2：该模型是否支持推理强度
    * - 'auto'（默认）：按模型名启发式判定
@@ -226,8 +228,18 @@ export const MODEL_CATEGORIES: readonly ModelCategoryMeta[] = [
   { value: 'embedding', label: t('types.catEmbedding'), description: t('types.catEmbeddingDesc') },
 ] as const;
 
-/** 主题名：深色（默认）/ 亮色 / 午夜蓝 / OLED 黑 / 暗夜剧场 / 自定义（图片提取） */
-export type ThemeName = 'dark' | 'light' | 'midnight' | 'oled' | 'theatre' | 'custom';
+/** 主题名：深色（默认）/ 亮色 / 午夜蓝 / OLED 黑 / 暗夜剧场 / 新终端 / 极光夜曲 / 墨纸 / 新粗野 / 自定义（图片提取） */
+export type ThemeName =
+  | 'dark'
+  | 'light'
+  | 'midnight'
+  | 'oled'
+  | 'theatre'
+  | 'terminal'
+  | 'aurora'
+  | 'ink'
+  | 'brutal'
+  | 'custom';
 
 /** 字号档位：12 / 14 / 16 / 18 */
 export type FontSizePreset = 12 | 14 | 16 | 18;
@@ -253,7 +265,28 @@ export interface CustomTheme {
   tokens: Record<string, string>;
 }
 
-export const THEME_PRESETS: readonly ThemeName[] = ['dark', 'light', 'midnight', 'oled', 'theatre'] as const;
+/**
+ * 内置皮肤 id（不含 custom）。既是设置页卡片的顺序来源，也是读档白名单。
+ * 2026-10-12 起被真正引用：此前它是死常量，读档处用 `saved.theme as ThemeName` 裸强转，
+ * 未知值会原样写进 `data-theme` ⇒ CSS 找不到选择器就静默回落默认皮肤，随后又被回写盘。
+ */
+export const THEME_PRESETS: readonly ThemeName[] = [
+  'dark',
+  'light',
+  'midnight',
+  'oled',
+  'theatre',
+  'terminal',
+  'aurora',
+  'ink',
+  'brutal',
+] as const;
+
+/** 读档归一：不在白名单里的值（旧版本存档、手改数据）落回默认皮肤 */
+export function normalizeThemeName(value: unknown, fallback: ThemeName = 'dark'): ThemeName {
+  if (value === 'custom') return 'custom';
+  return (THEME_PRESETS as readonly string[]).includes(String(value)) ? (value as ThemeName) : fallback;
+}
 
 /**
  * 聊天背景配置 (F08.2)
@@ -302,6 +335,14 @@ export interface AppSettings {
   translationConfig: import('@services/translator').TranslationConfig;
   /** F12.4 新增：自动摘要配置（v1.1） */
   summarizationConfig: import('@core/summarizer').SummarizationConfig;
+  /**
+   * E22 新增：图像生成的 Provider 配置。
+   *
+   * 此前它只活在 `stores/image-generation.ts` 的内存 ref 里，不在持久化白名单内
+   * ⇒ 刷新即丢（连 apiKey 一起丢）。可选字段，兼容没有它的历史快照。
+   * apiKey 与 apiProfiles / translationConfig 同口径：设了主密码就密文落盘。
+   */
+  imageGenConfig?: import('@core/image-generation').ImageProviderConfig;
   /** F11.3 新增：Quick Reply 按钮列表（v1.1） */
   quickReplies: QuickReplyButton[];
   /**
@@ -321,6 +362,23 @@ export interface AppSettings {
   creationPreset?: import('@core/creation-preset').PresetId;
   /** P1：状态栏全局偏好（缺省 → DEFAULT_STATUS_HUD_CONFIG） */
   statusHudConfig?: StatusHudConfig;
+  /**
+   * 心理活动（旁白段）里指代用户的那个代词：'me' = 「我」，'you' = 「你」。
+   * 缺省 'me'，与需求原话「xxx 有点紧张的看着我」一致。
+   * 只影响注入给模型的叙事规则，不改写已经生成好的历史消息。
+   */
+  narrationPerspective?: import('@core/narration').NarrationPerspective;
+  /**
+   * 可折叠段的开合记忆（M7-d）：段标识 → 是否展开。
+   *
+   * 为什么值得占一个持久化位：排障段（成员 Runtime 检视、世界描述、用户资料、
+   * 设置页高级段）默认收起，但"我这次是特意展开的"这件事跨刷新会丢，
+   * 于是每次都要重新点一遍。记的是**用户明确点过的**开合，没点过的段
+   * 仍按各自的推导默认值（例如"还没填的段自动展开"）走。
+   *
+   * 可选字段，兼容没有它的历史快照（按 schema-contract 不需要升版本）。
+   */
+  uiSectionOpen?: Record<string, boolean>;
   /**
    * 上下文窗口 Token 上限（全局设置）。
    *

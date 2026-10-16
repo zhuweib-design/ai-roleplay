@@ -5,25 +5,27 @@
  * 无障碍特性：
  * - role="status"（信息）/ role="alert"（错误）
  * - aria-live="polite"（信息）/ aria-live="assertive"（错误）
- * - 自动消失（5s）+ 手动关闭
+ * - 按类型自动消失（信息/成功 3s、错误 5s）+ 手动关闭
+ * - 底部倒计时条把"它会自己关"显示出来（WCAG 2.2.1 Timing Adjustable）
+ * - 指针悬停、键盘焦点进入、页面隐藏时暂停计时，移开后继续剩余时间
  */
-import { watch, onBeforeUnmount } from 'vue';
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue';
 import { t } from '@/i18n';
+import { TOAST_DURATIONS, type ToastType } from '@/utils/toast-service';
 
 const props = withDefaults(
   defineProps<{
     /** 是否显示 */
     modelValue: boolean;
     /** 类型 */
-    type?: 'info' | 'success' | 'error';
+    type?: ToastType;
     /** 文本 */
     message?: string;
-    /** 自动消失毫秒（0 不消失） */
+    /** 自动消失毫秒；不传则按类型取 TOAST_DURATIONS，0 表示常驻 */
     duration?: number;
   }>(),
   {
     type: 'info',
-    duration: 5000,
   }
 );
 
@@ -31,49 +33,95 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean];
 }>();
 
-let timer: number | null = null;
+/** 生效时长：显式传入优先，否则按类型 */
+const autoCloseMs = computed(() => props.duration ?? TOAST_DURATIONS[props.type ?? 'info']);
+const countdownShown = computed(() => props.modelValue && autoCloseMs.value > 0);
+/** 剩余比例，驱动倒计时条宽度（scaleX，避免逐帧改 layout） */
+const ratio = ref(1);
 
-function startTimer() {
-  if (timer) clearTimeout(timer);
-  if (props.duration > 0 && props.modelValue) {
-    timer = window.setTimeout(() => {
-      emit('update:modelValue', false);
-    }, props.duration);
-  }
+let budgetMs = 0;
+let anchorMs = 0;
+let rafId = 0;
+/** 暂停原因集合：悬停/焦点/后台可能同时成立，全部解除才继续计时 */
+const holds = new Set<string>();
+
+function stopRaf(): void {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = 0;
 }
 
-function clearTimer() {
-  if (timer) {
-    clearTimeout(timer);
-    timer = null;
+function frame(now: number): void {
+  if (!props.modelValue) {
+    stopRaf();
+    return;
   }
+  const left = budgetMs - (now - anchorMs);
+  ratio.value = autoCloseMs.value > 0 ? Math.max(0, left / autoCloseMs.value) : 1;
+  if (left <= 0) {
+    stopRaf();
+    close();
+    return;
+  }
+  rafId = requestAnimationFrame(frame);
+}
+
+function begin(): void {
+  stopRaf();
+  holds.clear();
+  ratio.value = 1;
+  budgetMs = autoCloseMs.value;
+  if (!props.modelValue || budgetMs <= 0) return;
+  anchorMs = performance.now();
+  rafId = requestAnimationFrame(frame);
+}
+
+function hold(reason: string): void {
+  if (budgetMs <= 0) return;
+  holds.add(reason);
+  if (holds.size > 1) return;
+  budgetMs = Math.max(0, budgetMs - (performance.now() - anchorMs));
+  stopRaf();
+}
+
+function unhold(reason: string): void {
+  if (!holds.delete(reason)) return;
+  if (holds.size > 0 || budgetMs <= 0 || !props.modelValue) return;
+  anchorMs = performance.now();
+  rafId = requestAnimationFrame(frame);
+}
+
+function onVisibilityChange(): void {
+  if (document.hidden) hold('hidden');
+  else unhold('hidden');
 }
 
 function close() {
+  stopRaf();
   emit('update:modelValue', false);
 }
 
+// immediate：挂载时 modelValue 已经是 true 的用法也要计时（原实现只监听变化，
+// 这种挂载方式下永远不启动计时器，看着就是"提示不会自己关"）
 watch(
   () => props.modelValue,
   (visible) => {
-    if (visible) {
-      startTimer();
-    } else {
-      clearTimer();
-    }
-  }
+    if (visible) begin();
+    else stopRaf();
+  },
+  { immediate: true }
 );
 
+// 换文案视作一次新的提示，重新计时
 watch(
   () => props.message,
   () => {
-    if (props.modelValue) {
-      startTimer();
-    }
+    if (props.modelValue) begin();
   }
 );
 
-onBeforeUnmount(() => clearTimer());
+onMounted(() => document.addEventListener('visibilitychange', onVisibilityChange));
+onUnmounted(() => document.removeEventListener('visibilitychange', onVisibilityChange));
+onBeforeUnmount(() => stopRaf());
 </script>
 
 <template>
@@ -83,6 +131,10 @@ onBeforeUnmount(() => clearTimer());
         v-if="modelValue && message"
         class="toast"
         :class="`toast-${type}`"
+        @mouseenter="hold('pointer')"
+        @mouseleave="unhold('pointer')"
+        @focusin="hold('focus')"
+        @focusout="unhold('focus')"
       >
         <span class="toast-icon" aria-hidden="true">
           <svg v-if="type === 'error'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -116,6 +168,14 @@ onBeforeUnmount(() => clearTimer());
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
+        <!-- 倒计时条：纯装饰性状态显示，读屏不播 -->
+        <span
+          v-if="countdownShown"
+          class="toast-countdown"
+          data-toast-countdown
+          :style="{ transform: `scaleX(${ratio.toFixed(4)})` }"
+          aria-hidden="true"
+        />
       </div>
     </Transition>
   </Teleport>
@@ -139,6 +199,19 @@ onBeforeUnmount(() => clearTimer());
   font-size: 14px;
   max-width: 380px;
   min-width: 280px;
+  overflow: hidden;
+}
+
+/* 倒计时条：随剩余时间收窄，让用户知道它会自己关；悬停时冻结 */
+.toast-countdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.55;
+  transform-origin: left center;
 }
 
 .toast-error {

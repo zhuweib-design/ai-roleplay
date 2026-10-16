@@ -30,9 +30,31 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isCI ? 1 : undefined,
+  /**
+   * 本地并发上限：4，不用 Playwright 默认的"核数 / 2"（这台 16 核机器上就是 8）。
+   *
+   * 默认并发下全量跑**随机红 1–3 条**，失败点每次不同（实测 `ux-event-trace`、
+   * `contrast-axe`、`group-chat-flow` 轮流中），而这三条单跑全绿——红相是负载不是回归。
+   * 机制：三条都是"多轮打桩 SSE + IndexedDB 造数"的长用例，30s 预算里光是 vite dev
+   * 的冷模块图 + 8 个浏览器就能吃掉一半以上，最后一轮回复的 15s 断言于是踩在总超时上。
+   * 同一台机器实测：8 workers → msedge 72/73、webkit 25–26/28；4 workers → 两条 project
+   * 全绿（msedge 73/73 用时 1.3m、webkit 28/28 用时 45–59s），比 8 workers 还快。
+   */
+  workers: isCI ? 1 : 4,
   reporter: isCI ? [['github', {}], ['html', { open: 'never' }]] : 'list',
-  timeout: 30_000,
+  /**
+   * 单条用例预算 60s（原 30s → 45s → 60s，两次都是因为套件变长而重标的）。
+   *
+   * 30s 对"多轮打桩 SSE + IndexedDB 造数"那几条是紧的：4 workers 全绿的一轮里最慢的
+   * `group-chat-flow` 用掉 18.8s，8 workers 的另一轮里 `ux-event-manual-trace` 跑到
+   * 25.0s 后撞在总超时上（红相是"最后一轮回复没出现"，不是断言不符）。
+   *
+   * M10 把用例从 139 条加到 191 条之后，45s 的余量只剩 1.1 倍：同一台机器上
+   * E11 那条**单跑只要 14.2s**，全量并发下却要 40.6s —— 慢是并发争抢，不是用例变胖。
+   * 60s = 实测并发最差值的 1.5 倍、单跑最差值的 4.2 倍。`contrast-axe` 自己
+   * `setTimeout(90_000)`，不受影响。
+   */
+  timeout: 60_000,
   use: {
     baseURL,
     trace: 'on-first-retry',
@@ -66,6 +88,35 @@ export default defineConfig({
         '**/character-crud.spec.ts',
         '**/backup-restore.spec.ts',
         '**/worldbook-flow.spec.ts',
+        // M2-b3：注入痕迹链路同时含 IndexedDB 造数与 SSE 流式，Safari 内核需另有一次实测
+        '**/ux-prompt-trace.spec.ts',
+        // M6-d：E11 与上面同一条链路形状（IndexedDB 造数 + 按请求分流的打桩 + 流式回复），
+        // 且多一处依赖 Safari 的写法：客户端跳转保内存态事件表 + IndexedDB 快照轮询
+        '**/ux-event-trace.spec.ts',
+        // M6-f：世界书事件面板逐字段编辑 + 同轮关键词触发注入，Safari 内核同样要实测一次
+        '**/ux-event-manual-trace.spec.ts',
+        // M7-c：断言的是"计算后的颜色归属"，而 scoped CSS 的选择器特异性正是
+        // 各内核差异最容易显形的地方，Safari 必须实测一次
+        '**/ux-status-color.spec.ts',
+        // M8-a：量的是"滚动容器在网格块方向塌成 34px 行轨"造成的重叠，
+        // 块方向 intrinsic sizing 各内核差异最大，Safari 必须实测一次
+        '**/ux-narrow-editor-preview.spec.ts',
+        // M2-b9：滑块渐变/按压着色都靠 color-mix 与新式渐变分段，Safari 内核必须实测一次
+        '**/ux-interaction-feedback.spec.ts',
+        // M8-c：用例按可访问名定位对话框（getByRole('dialog', { name })），而对话框的
+        // 可访问名由各内核自己算；同一个按钮在页面上还有另外两处同名「取消」，
+        // 名字算错就会点偏。Safari 必须实测一次
+        '**/ux-modal-describedby.spec.ts',
+        // M9-d：同一套断言铺到 10 个弹窗，其中群聊向导、设置页折叠段展开在 Safari 下最容易点偏
+        '**/ux-modal-describedby-more.spec.ts',
+        // M11-c：版本页两条要建分支、切分支、合并，Safari 下每步的按钮可达性都得实跑
+        '**/ux-modal-describedby-version.spec.ts',
+        // M10-a/M11-c：这几条靠写 IndexedDB 造数才看得到（含独立的图片库），Safari 的
+        // IDB 时序与 Chromium 不同，造数是否赶得上应用开库必须在内核上实测一次
+        '**/ux-modal-describedby-seeded.spec.ts',
+        // M10-b：审计的判定基础是"可见性 + 可访问名"，两者都靠几何与 accname 计算，
+        // 正是各内核差异最容易显形的地方；且负向对照要在两个内核上都证明它不是空转
+        '**/ux-duplicate-a11y-names.spec.ts',
       ],
       testIgnore: '**/mobile/**',
       use: { ...devices['Desktop Safari'] },

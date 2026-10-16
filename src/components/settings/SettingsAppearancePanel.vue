@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
+import Collapse from '@/components/common/Collapse.vue';
+import { useSectionMemory, useSectionMemoryCount } from '@/composables/useSectionMemory';
 import type { ChatBackground, BubbleStyle } from '@/types';
 import type { CustomTheme } from '@/types';
 import type { ThemeName } from '@/types';
@@ -11,6 +13,17 @@ import { showToast } from '@/utils/toast-service';
 import { t, type Locale } from '@/i18n';
 
 const settings = useSettingsStore();
+
+/** M7-d：界面自定义是高级段，默认收起；用户点过的开合跨会话记住 */
+const uiCustomOpen = useSectionMemory('settings.uiCustom');
+
+const sectionMemoryCount = useSectionMemoryCount();
+
+/** 清掉开合记忆。这条操作本身不该再被记忆管住，所以直接给结果提示。 */
+function resetSectionMemory(): void {
+  const cleared = settings.resetUiSectionOpen();
+  if (cleared > 0) showToast('success', t('settingsView.sectionMemoryResetDone', { count: cleared }));
+}
 
 interface FontSizeOption {
   value: number;
@@ -266,10 +279,11 @@ function handleThemeKeydown(e: KeyboardEvent, currentIndex: number): void {
   }
 }
 
-const localeOptions: { value: Locale; label: string }[] = [
+/** computed 而不是普通 const：否则语言选项自己的标签就是快照的（见 locale-reactivity 测试） */
+const localeOptions = computed<{ value: Locale; label: string }[]>(() => [
   { value: 'zh', label: t('settings.languageZh') },
   { value: 'en', label: t('settings.languageEn') },
-];
+]);
 
 function openBgPicker(mode: 'camera' | 'album') {
   bgCapture.value = mode === 'camera' ? 'environment' : undefined;
@@ -351,6 +365,30 @@ const themeOptions = computed<ThemeOption[]>(() => [
     label: t('settingsView.themeTheatre'),
     description: t('settingsView.themeTheatreDesc'),
     swatchClass: 'swatch-theatre',
+  },
+  {
+    value: 'terminal',
+    label: t('settingsView.themeTerminal'),
+    description: t('settingsView.themeTerminalDesc'),
+    swatchClass: 'swatch-terminal',
+  },
+  {
+    value: 'aurora',
+    label: t('settingsView.themeAurora'),
+    description: t('settingsView.themeAuroraDesc'),
+    swatchClass: 'swatch-aurora',
+  },
+  {
+    value: 'ink',
+    label: t('settingsView.themeInk'),
+    description: t('settingsView.themeInkDesc'),
+    swatchClass: 'swatch-ink',
+  },
+  {
+    value: 'brutal',
+    label: t('settingsView.themeBrutal'),
+    description: t('settingsView.themeBrutalDesc'),
+    swatchClass: 'swatch-brutal',
   },
   {
     value: 'custom',
@@ -474,7 +512,7 @@ const themeOptions = computed<ThemeOption[]>(() => [
               class="palette-swatch"
               role="listitem"
               :style="{ background: color }"
-              :title="`${color} · ${Math.round((settings.customTheme?.paletteRatios[idx] ?? 0) * 100)}%`"
+              v-tip="`${color} · ${Math.round((settings.customTheme?.paletteRatios[idx] ?? 0) * 100)}%`"
             >
               <span class="palette-hex">{{ color }}</span>
             </div>
@@ -535,15 +573,14 @@ const themeOptions = computed<ThemeOption[]>(() => [
       </div>
     </section>
 
-    <!-- F08 UI 自定义（聊天背景 + 气泡样式 + 自定义 CSS） -->
-    <section class="settings-section" aria-labelledby="ui-custom-section-title">
-      <header class="section-header">
-        <h2 id="ui-custom-section-title" class="section-title">
-          <Icon name="image" :size="16" />
-          <span>{{ t('settingsView.uiCustomSection') }}</span>
-        </h2>
-      </header>
-
+    <!-- F08 UI 自定义（聊天背景 + 气泡样式 + 自定义 CSS）：M4-b2 归入高级段，默认收起 -->
+    <Collapse
+      v-model:open="uiCustomOpen"
+      title-key="settingsView.uiCustomSection"
+      hint-key="settingsView.uiCustomHint"
+      icon="image"
+      advanced
+    >
       <!-- F08.2 聊天背景 -->
       <div class="ui-custom-block">
         <h3 class="ui-custom-subtitle">{{ t('settingsView.bgSubtitle') }}</h3>
@@ -620,6 +657,7 @@ URL
           <input
             id="bg-opacity"
             v-model.number="bgOpacity"
+            v-range
             type="range"
             min="0"
             max="1"
@@ -634,6 +672,7 @@ URL
           <input
             id="bg-blur"
             v-model.number="bgBlur"
+            v-range
             type="range"
             min="0"
             max="20"
@@ -665,6 +704,7 @@ URL
           <input
             id="bubble-radius"
             v-model.number="bubbleRadius"
+            v-range
             type="range"
             min="0"
             max="24"
@@ -679,6 +719,7 @@ URL
           <input
             id="bubble-opacity"
             v-model.number="bubbleOpacity"
+            v-range
             type="range"
             min="0.3"
             max="1"
@@ -732,7 +773,27 @@ URL
           <button type="button" class="data-mgmt-btn" @click="resetCustomCss">{{ t('settingsView.resetCss') }}</button>
         </div>
       </div>
-    </section>
+      <!-- M8-b：开合记忆的出口。没有它，一次误点会让某段永远停在随手留下的状态，
+           连"还没填就自动展开"这类规则都被顶掉，用户无从退回。 -->
+      <div class="ui-custom-block">
+        <h3 class="ui-custom-subtitle">{{ t('settingsView.sectionMemoryTitle') }}</h3>
+        <p class="ui-custom-hint">
+          {{ sectionMemoryCount === 0
+            ? t('settingsView.sectionMemoryEmpty')
+            : t('settingsView.sectionMemoryHint', { count: sectionMemoryCount }) }}
+        </p>
+        <div class="ui-custom-actions">
+          <button
+            type="button"
+            class="data-mgmt-btn"
+            :disabled="sectionMemoryCount === 0"
+            @click="resetSectionMemory"
+          >
+            {{ t('settingsView.sectionMemoryReset') }}
+          </button>
+        </div>
+      </div>
+    </Collapse>
 </div>
 </template>
 
@@ -892,6 +953,51 @@ URL
   flex-shrink: 0;
 }
 
+/* 每张卡片的预览色。这组规则原先只在 SettingsModelPanel.vue 里定义，
+   而卡片渲染在本组件 ⇒ scoped 样式跨不过去，六张卡的色块实测是透明的
+   （`getComputedStyle('.theme-swatch').backgroundImage === 'none'`）。搬进来才生效。 */
+.swatch-dark {
+  background: linear-gradient(135deg, #0b0b10, #161823);
+}
+
+.swatch-light {
+  background: linear-gradient(135deg, #f7f8fa, #ffffff);
+}
+
+.swatch-midnight {
+  background: linear-gradient(135deg, #0a0e27, #1a2048);
+}
+
+.swatch-oled {
+  background: linear-gradient(135deg, #000000, #141414);
+}
+
+.swatch-theatre {
+  background: linear-gradient(135deg, #0c0a09, #201a12);
+}
+
+.swatch-terminal {
+  background: linear-gradient(135deg, #05070a, #38f2c8);
+}
+
+.swatch-aurora {
+  background: linear-gradient(135deg, #0a0b14, #8b7cf6);
+}
+
+.swatch-ink {
+  background: linear-gradient(135deg, #f4f1ea, #b23a2f);
+}
+
+/* 新粗野：硬切三段（米纸 / 亮粉 / 电光蓝），不用柔化渐变——这套的形状语言就是直角硬边 */
+.swatch-brutal {
+  background: linear-gradient(135deg, #efe9dc 0 50%, #ff5c8a 50% 75%, #2b5bff 75% 100%);
+  border: 2px solid #111111;
+}
+
+.swatch-custom {
+  background: repeating-conic-gradient(#4b5563 0% 25%, #9ca3af 0% 50%) 50% / 8px 8px;
+}
+
 /* F08.4 自定义主题编辑器 */
 .custom-theme-editor {
   display: flex;
@@ -974,7 +1080,7 @@ URL
 }
 
 .theme-check {
-  color: var(--secondary);
+  color: var(--secondary-text);
   flex-shrink: 0;
 }
 
@@ -1109,7 +1215,7 @@ URL
 
 .active-badge {
   background: var(--secondary);
-  color: var(--on-accent);
+  color: var(--on-secondary);
   font-size: 10px;
   padding: 2px 6px;
   border-radius: var(--radius-pill);
@@ -1117,8 +1223,8 @@ URL
 }
 
 .provider-badge {
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: var(--badge-bg);
+  color: var(--badge-fg);
   font-size: 10px;
   padding: 2px 6px;
   border-radius: var(--radius-pill);
@@ -1292,7 +1398,7 @@ select.field-input {
   margin-left: 6px;
   font-size: 10px;
   font-weight: 600;
-  color: var(--on-accent);
+  color: var(--on-secondary);
   background: var(--secondary);
   border-radius: var(--radius-pill);
   text-transform: uppercase;
@@ -1427,12 +1533,12 @@ select.field-input {
 }
 
 .form-range {
+  --range-rail: var(--video-bg);
+  --range-h: 6px;
   width: 100%;
-  height: 6px;
+  height: 18px;
   -webkit-appearance: none;
   appearance: none;
-  background: var(--video-bg);
-  border-radius: 3px;
   outline: none;
   cursor: pointer;
 }
@@ -1442,7 +1548,7 @@ select.field-input {
   appearance: none;
   width: 18px;
   height: 18px;
-  background: var(--primary);
+  background: var(--range-fill, var(--secondary));
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--card);
@@ -1452,7 +1558,7 @@ select.field-input {
 .form-range::-moz-range-thumb {
   width: 18px;
   height: 18px;
-  background: var(--primary);
+  background: var(--range-fill, var(--secondary));
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--card);
@@ -1670,8 +1776,8 @@ select.field-input {
   font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-pill);
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: var(--badge-bg);
+  color: var(--badge-fg);
 }
 
 .status-badge {
@@ -1681,8 +1787,8 @@ select.field-input {
   font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-pill);
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: var(--badge-bg);
+  color: var(--badge-fg);
 }
 
 .status-badge[data-status='loaded'] {

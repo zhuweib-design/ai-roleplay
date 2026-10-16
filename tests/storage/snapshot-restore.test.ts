@@ -19,6 +19,10 @@ import type { StorageAdapter } from '@storage/storage-adapter';
 import { wrapSnapshot } from '@storage/snapshot-migration';
 import { useCharacterVersionStore } from '@/stores/character-version';
 import { useCharacterStore } from '@/stores/character';
+// 群聊 store 静态导入：原来写在用例体内 `await import('@/stores/chat')`，
+// 整个模块的 transform 成本被算进这一条用例的计时（隔离 1.8s，全量并发下 5.07s
+// 撞破 5s 默认超时）。同目录其他用例本来就是静态导入，成本挪到文件加载阶段。
+import { useChatStore } from '@/stores/chat';
 
 const PENDING_KEY = 'runtime:pending-group-turns:v1';
 const VERSIONS_KEY = 'ai-roleplay:character-versions';
@@ -65,7 +69,6 @@ describe('迁移后恢复验证：旧快照经迁移可被真实加载端消费'
       },
     ]);
 
-    const { useChatStore } = await import('@/stores/chat');
     const store = useChatStore();
     store.setStorageAdapter(adapter);
     await store.loadRuntimePendingGroupTurns();

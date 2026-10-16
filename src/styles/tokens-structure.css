@@ -1,0 +1,157 @@
+/* =============================================================
+ * 结构层 Token（L1）—— 与主题无关，不随 data-theme 变化
+ *
+ * 来源：docs/design/ai-chat-ui-redesign/css/tokens.base.css 的命名体系（M18 试点引入）。
+ * 分三层的原因：L1 结构（本文件，只有尺度没有颜色）/ L2 语义色（tokens.css、themes.css，
+ * 随主题变）/ L3 组件（各 .vue 的 scoped 样式，只许引用上两层）。
+ *
+ * 试点期的取值规则（重要）：
+ * - 产品已有等价尺度的点，**保持产品现值**（例如 --radius-md 用 8px 而不是原型的 10px），
+ *   这样"改名"与"换肤"两件事被拆开：本文件现在不改变任何像素，视觉差异全部记在
+ *   docs/design/TOKEN_PILOT_2026-10-11.md 的待裁决表里，由设计决定何时切过去。
+ * - 产品没有的尺度（动效、字号阶、焦点环、截断行数等）先按原型值落地，因为不落地就没法试点。
+ * - 层级（z-index）**不采用**原型那套：产品的分层是按 nav-rail/bottom-nav/overlay-mask/
+ *   drawer/notice 这些实际层来的，且 e2e/mobile/mobile-layout.spec.ts 钉住了 70>60>40 的
+ *   相对关系；原型没有移动端底栏与抽屉层。硬套会同时制造两个事实源，故沿用 tokens.css 里现有的 --z-*。
+ * ============================================================= */
+
+:root {
+  /* ── 间距尺度：4px 基准（产品现有 4/8/16/24/32/48 全部落在这条尺上） ── */
+  --space-0: 0px;
+  --space-px: 1px;
+  --space-1: 4px;
+  /* 半档（M18 裁决 3）：产品实测有 62% 的"尺度外"字面量只落在 6px 与 10px 两个值上
+     （6px 292 处、10px 195 处，见 docs/design/TOKEN_PILOT_2026-10-11.md 第 3 节）。
+     补两档而不是把它们就近归档：归档等于 487 个元素的尺寸被悄悄改掉。
+     命名：`--space-N-M` 读作"N 又 M/10 档 × 4px"，即 1.5 档 = 6px、2.5 档 = 10px。 */
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+  --space-11: 80px;
+
+  /* 语义化的间距用法：横排间隙 / 竖排堆叠间隙 / 容器内边距 */
+  --gap-inline-xs: var(--space-1);
+  --gap-inline-sm: var(--space-2);
+  --gap-inline-md: var(--space-3);
+  --gap-inline-lg: var(--space-4);
+  --gap-stack-xs: var(--space-1);
+  --gap-stack-sm: var(--space-2);
+  --gap-stack-md: var(--space-3);
+  --gap-stack-lg: var(--space-4);
+  --gap-stack-xl: var(--space-6);
+  --gap-section: var(--space-7);
+  --padding-control-sm: var(--space-2);
+  --padding-control-md: var(--space-3);
+  --padding-control-lg: var(--space-4);
+  --padding-panel: var(--space-4);
+  --padding-panel-lg: var(--space-5);
+
+  /* ── 字号阶（产品现在只有文档型区间串，如 --body-size: 14-15，无法被 CSS 使用） ── */
+  --font-size-2xs: 11px;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 26px;
+  --font-size-3xl: 34px;
+  --font-size-display: 44px;
+
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-normal: 0em;
+  --letter-spacing-wide: 0.02em;
+  --letter-spacing-caps: 0.08em;
+
+  /* ── 圆角：名字沿用原型，值保持产品现状（原型目标值另见试点文档的待裁决表） ── */
+  --radius-none: 0px;
+  --radius-xs: 2px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 28px;
+  --radius-shell: 32px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* ── 控件 / 头像 / 图标的尺寸尺度（--touch-min 44px 与产品现有值一致） ── */
+  --size-control-xs: 24px;
+  --size-control-sm: 28px;
+  --size-control-md: 36px;
+  --size-control-lg: 44px;
+  --size-control-touch: var(--touch-min, 44px);
+
+  --size-avatar-xs: 20px;
+  --size-avatar-sm: 28px;
+  --size-avatar-md: 40px;
+  --size-avatar-lg: 56px;
+  --size-avatar-xl: 88px;
+
+  --size-icon-xs: 12px;
+  --size-icon-sm: 14px;
+  --size-icon-md: 16px;
+  --size-icon-lg: 20px;
+  --size-icon-xl: 28px;
+  --size-icon-hero: 64px;
+  --icon-stroke-w: 1.75;
+
+  --size-border-thin: 1px;
+  --size-border-thick: 2px;
+  --size-divider: 1px;
+
+  /* ── 动效（产品此前没有任何动效 token） ── */
+  --duration-motion-off: 0.01ms;
+  --duration-instant: 80ms;
+  --duration-fast: 140ms;
+  --duration-normal: 220ms;
+  --duration-slow: 360ms;
+  --duration-slower: 600ms;
+  --duration-ambient: 12s;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0, 1);
+  --ease-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-linear: linear;
+
+  --transition-colors: color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+  --transition-surface: background-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard);
+  --transition-transform: transform var(--duration-fast) var(--ease-standard);
+  --transition-shadow: box-shadow var(--duration-normal) var(--ease-standard);
+  --transition-opacity: opacity var(--duration-fast) var(--ease-standard);
+  --transition-all: all var(--duration-normal) var(--ease-standard);
+
+  --motion-press-scale: 0.97;
+  --motion-hover-lift: -1px;
+
+  /* ── 焦点环与可访问性相关（产品此前散落在各组件里写死） ── */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --opacity-disabled: 0.45;
+
+  /* ── 多行截断（浏览器端 -webkit-line-clamp 的行数） ── */
+  --truncate-lines-1: 1;
+  --truncate-lines-2: 2;
+  --truncate-lines-3: 3;
+}

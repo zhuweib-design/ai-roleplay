@@ -17,7 +17,11 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useImageGenerationStore } from '@/stores/image-generation';
+import { useSettingsStore } from '@/stores/settings';
+import { useReadinessJump } from '@/composables/useReadinessJump';
+import { isEncrypted } from '@core/api-key-crypto';
 import Icon from '@/components/common/Icon.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import { SIZE_DIMENSIONS } from '@/core/image-generation';
@@ -26,6 +30,8 @@ import { t } from '@/i18n';
 
 const router = useRouter();
 const store = useImageGenerationStore();
+const settingsStore = useSettingsStore();
+const { pushWithReturn } = useReadinessJump();
 
 // ── Tab ──
 type TabKey = 'generate' | 'gallery' | 'settings';
@@ -105,9 +111,36 @@ function goBack() {
   }
 }
 
-/** P2-6 UI 修复: 未配置时引导用户前往设置添加模型 */
+/**
+ * P2-6 UI 修复 + E22：未配置时引导去「模型」类（此前无 `?cat=`，
+ * 一律落在「外观」，而图像 Profile 在「模型」类里）。
+ */
 function goToSettings(): void {
-  void router.push({ name: 'settings' });
+  pushWithReturn({ name: 'settings', query: { cat: 'model' } });
+}
+
+/** 设置侧「图像/视频」分类的主要 Profile（与设置页同一判定源 getPrimaryModel） */
+const imageVideoPrimary = computed(() => settingsStore.getPrimaryModel('image-video'));
+
+/**
+ * 一键把设置侧的 Profile 填进本页配置。
+ * 主密码未解锁时 Profile 的 apiKey 仍是密文，直接抄过来会得到一个"看起来有值其实不能用"的密钥，
+ * 因此这种情况只填端点与模型，并说明原因。
+ */
+function useImageVideoProfile(): void {
+  const p = imageVideoPrimary.value;
+  if (!p) return;
+  const patch: Partial<typeof store.providerConfig> = {
+    endpoint: p.baseUrl,
+    model: p.model,
+    enabled: true,
+  };
+  if (p.apiKey && !isEncrypted(p.apiKey)) {
+    patch.apiKey = p.apiKey;
+  } else {
+    showToast(t('imgGen.profileKeyLocked'), 'info');
+  }
+  store.updateProviderConfig(patch);
 }
 
 async function handleGenerate() {
@@ -200,6 +233,8 @@ onMounted(async () => {
           {{ store.providerConfig.enabled ? t('imgGen.configured') : t('imgGen.notConfigured') }}
         </span>
       </div>
+      <!-- E23：产物只进画廊，不会进对话——这条边界原先无处可查，用户生成完回聊天页找 -->
+      <p class="header-note">{{ t('imgGen.galleryOnly') }}</p>
     </header>
 
     <nav class="tabs" role="tablist" :aria-label="t('imgGen.tabsAria')">
@@ -275,7 +310,7 @@ onMounted(async () => {
                   :aria-checked="store.params.style === preset.id"
                   class="style-chip"
                   :class="{ active: store.params.style === preset.id }"
-                  :title="preset.description"
+                  v-tip="preset.description"
                   @click="store.setStyle(preset.id as StylePresetId)"
                 >
                   {{ preset.name }}
@@ -472,11 +507,12 @@ onMounted(async () => {
             </div>
           </li>
         </ul>
-        <div v-else class="empty-state">
-          <Icon name="image" :size="48" aria-hidden="true" />
-          <p>{{ t('imgGen.emptyGallery') }}</p>
-          <p class="empty-hint">{{ t('imgGen.emptyGalleryHint') }}</p>
-        </div>
+        <EmptyState
+          v-else
+          title-key="imgGen.emptyGallery"
+          desc-key="imgGen.emptyGalleryHint"
+          icon="image"
+        />
       </section>
 
       <!-- 设置 -->
@@ -488,12 +524,37 @@ onMounted(async () => {
         class="panel"
       >
         <div class="settings-form">
+          <!-- E22：两处配置的关系首次说明清楚，并给一个"从模型接入填入"的去路 -->
+          <div class="provider-source">
+            <p class="provider-source-text">{{ t('imgGen.configPersistedNote') }}</p>
+            <div class="provider-source-actions">
+              <button
+                v-if="imageVideoPrimary"
+                type="button"
+                class="config-warning-btn"
+                data-rel-jump="imggen-use-model-profile"
+                @click="useImageVideoProfile"
+              >
+                {{ t('imgGen.fillFromProfile', { name: imageVideoPrimary.name }) }}
+              </button>
+              <button
+                type="button"
+                class="config-warning-btn"
+                data-rel-jump="imggen-go-settings"
+                @click="goToSettings"
+              >
+                {{ t('imgGen.goToModelSettings') }}
+              </button>
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="provider-type" class="form-label">{{ t('imgGen.providerType') }}</label>
             <select
               id="provider-type"
-              v-model="store.providerConfig.type"
+              :value="store.providerConfig.type"
               class="form-select"
+              @change="store.updateProviderConfig({ type: ($event.target as HTMLSelectElement).value as ProviderType })"
             >
               <option v-for="opt in providerTypeOptions" :key="opt.value" :value="opt.value">
                 {{ opt.label }}
@@ -506,9 +567,10 @@ onMounted(async () => {
             <input
               id="endpoint"
               type="url"
-              v-model="store.providerConfig.endpoint"
+              :value="store.providerConfig.endpoint"
               class="form-input"
               placeholder="https://api.openai.com/v1"
+              @input="store.updateProviderConfig({ endpoint: ($event.target as HTMLInputElement).value })"
             />
           </div>
 
@@ -517,9 +579,11 @@ onMounted(async () => {
             <input
               id="api-key"
               type="password"
-              v-model="store.providerConfig.apiKey"
+              :value="store.providerConfig.apiKey"
               class="form-input"
               placeholder="sk-..."
+              autocomplete="off"
+              @input="store.updateProviderConfig({ apiKey: ($event.target as HTMLInputElement).value })"
             />
           </div>
 
@@ -528,16 +592,18 @@ onMounted(async () => {
             <input
               id="model"
               type="text"
-              v-model="store.providerConfig.model"
+              :value="store.providerConfig.model"
               class="form-input"
               placeholder="dall-e-3"
+              @input="store.updateProviderConfig({ model: ($event.target as HTMLInputElement).value })"
             />
           </div>
 
           <label class="setting-row">
             <input
               type="checkbox"
-              v-model="store.providerConfig.enabled"
+              :checked="store.providerConfig.enabled"
+              @change="store.updateProviderConfig({ enabled: ($event.target as HTMLInputElement).checked })"
             />
             <span>{{ t('imgGen.enableProvider') }}</span>
           </label>
@@ -579,8 +645,13 @@ onMounted(async () => {
     </Modal>
 
     <!-- P2-8 删除单图确认 -->
-    <Modal v-model="deleteModalOpen" :title="t('imgGen.deleteConfirmTitle')" :aria-label="t('imgGen.deleteConfirmTitle')">
-      <p>{{ t('imgGen.deleteConfirm') }}</p>
+    <Modal
+      v-model="deleteModalOpen"
+      :title="t('imgGen.deleteConfirmTitle')"
+      :aria-label="t('imgGen.deleteConfirmTitle')"
+      described-by="img-delete-desc"
+    >
+      <p id="img-delete-desc">{{ t('imgGen.deleteConfirm') }}</p>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="deleteTargetId = null">
           {{ t('common.cancel') }}
@@ -592,8 +663,13 @@ onMounted(async () => {
     </Modal>
 
     <!-- P2-8 清空画廊确认 -->
-    <Modal v-model="clearAllOpen" :title="t('imgGen.clearConfirmTitle')" :aria-label="t('imgGen.clearConfirmTitle')">
-      <p>{{ t('imgGen.clearConfirm') }}</p>
+    <Modal
+      v-model="clearAllOpen"
+      :title="t('imgGen.clearConfirmTitle')"
+      :aria-label="t('imgGen.clearConfirmTitle')"
+      described-by="img-clear-desc"
+    >
+      <p id="img-clear-desc">{{ t('imgGen.clearConfirm') }}</p>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="clearAllOpen = false">
           {{ t('common.cancel') }}
@@ -623,11 +699,19 @@ onMounted(async () => {
 
 .page-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
   gap: 12px;
+}
+
+.header-note {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
 }
 
 .header-title {
@@ -1038,6 +1122,31 @@ onMounted(async () => {
 }
 
 /* 设置表单 */
+.provider-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  margin-bottom: 16px;
+}
+
+.provider-source-text {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.provider-source-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .settings-form {
   display: flex;
   flex-direction: column;
@@ -1095,24 +1204,8 @@ onMounted(async () => {
 }
 
 /* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  color: var(--muted-foreground);
-  gap: 8px;
-}
 
-.empty-state p {
-  margin: 0;
-  font-size: 13px;
-}
 
-.empty-hint {
-  font-size: 12px !important;
-}
 
 /* 响应式 */
 @media (max-width: 640px) {

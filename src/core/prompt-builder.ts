@@ -2,6 +2,7 @@ import type { CharacterCard, ChatMessage } from './character-card';
 import type { Lorebook, WorldUserProfile } from './lorebook';
 import { replaceMacros } from './macro';
 import { countMessageTokens } from './token-counter';
+import { buildNarrationRules, type NarrationPerspective } from './narration';
 // i18n-ignore-start  // 模型面提示词 / mock / 种子目录，非 UI 文案（待翻译）
 import {
   scanLorebooks,
@@ -22,6 +23,12 @@ export interface PromptSettings {
    * - true：把 thinking 以 `<think>…</think>` 前缀回包进 content（**仅内存组装，不落盘**）。
    */
   includeThinkingInHistory?: boolean;
+  /**
+   * 心理活动（旁白段）的人称视角。缺省视为 'me'。
+   * 给了角色名时会在系统段末尾追加「叙事格式」规则，模型于是用
+   * `⟦…⟧` 夹出心理段；渲染层见 `src/core/narration.ts`。
+   */
+  narrationPerspective?: NarrationPerspective;
 }
 
 export interface BuiltMessage {
@@ -203,8 +210,16 @@ export async function buildPrompt(
     }
   }
 
+  // 「叙事格式」（心理活动）规则追加在系统段**末尾**：靠近上下文末尾的指令影响最大，
+  // 与既有的 `LorebookEntry.insertionOrder`「数字越大越靠末尾、影响越大」同向。
+  // 未提供该设置 ⇒ 不注入（应用主链路总会带上；老的调用方与测试保持原样）。
+  const narrationText =
+    settings.narrationPerspective === undefined
+      ? ''
+      : '\n\n' + buildNarrationRules(settings.narrationPerspective, card.name);
+
   const systemContent = replaceMacros(
-    `${settings.systemPrompt}\n\n${worldDescText}${worldUserProfileText}${beforeText}${charDef}${attributesText}${afterText}${eventsContext ? '\n\n' + eventsContext : ''}${protagonistContext ? '\n\n' + protagonistContext : ''}${storyTimeContext ? '\n\n' + storyTimeContext : ''}${statusContext ? '\n\n' + statusContext : ''}${runtimeContext ? '\n\n' + runtimeContext : ''}`,
+    `${settings.systemPrompt}\n\n${worldDescText}${worldUserProfileText}${beforeText}${charDef}${attributesText}${afterText}${eventsContext ? '\n\n' + eventsContext : ''}${protagonistContext ? '\n\n' + protagonistContext : ''}${storyTimeContext ? '\n\n' + storyTimeContext : ''}${statusContext ? '\n\n' + statusContext : ''}${runtimeContext ? '\n\n' + runtimeContext : ''}${narrationText}`,
     macroCtx
   );
 

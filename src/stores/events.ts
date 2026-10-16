@@ -15,8 +15,10 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import {
   type StoryEvent,
+  type StoryEventPatch,
   type EventState,
-  validateEvent,
+  validateEventValues,
+  validateEventCompleteness,
   createDefaultEvent,
   MAX_EVENTS_PER_SCENE,
   isTriggerable,
@@ -97,13 +99,18 @@ export const useEventsStore = defineStore('events', () => {
 
   /**
    * 更新事件
+   *
+   * 只拦**取值错误**（超长、概率越界、正则非法）；"还没填够"不是写入失败的理由，
+   * 那是 `triggerEvent` 的事。原因见 `validateEventCompleteness` 的注释：
+   * 拿合并后的整条事件跑完整性校验，等于让新建事件一个字段都存不进去。
+   *
+   * @param options.silent 逐字段输入用：不写 `lastInfo`。面板监听 `lastInfo` 弹提示，
+   *   不静默的话敲一个字弹一条"已更新"。
    */
   function updateEvent(
     id: string,
-    patch: Partial<Pick<StoryEvent,
-      | 'name' | 'description' | 'sceneEntryId' | 'sceneName'
-      | 'trigger' | 'completion' | 'probability' | 'repeatable'
-    >>
+    patch: StoryEventPatch,
+    options?: { silent?: boolean }
   ): boolean {
     const idx = events.value.findIndex((e) => e.id === id);
     if (idx < 0) {
@@ -112,7 +119,7 @@ export const useEventsStore = defineStore('events', () => {
     }
 
     const merged = { ...events.value[idx]!, ...patch };
-    const errors = validateEvent(merged);
+    const errors = validateEventValues(merged);
     if (errors.length > 0) {
       lastError.value = errors.join('；');
       return false;
@@ -120,7 +127,7 @@ export const useEventsStore = defineStore('events', () => {
 
     merged.updatedAt = new Date().toISOString();
     events.value[idx] = merged;
-    lastInfo.value = t('ev.updated2', { name: merged.name });
+    if (!options?.silent) lastInfo.value = t('ev.updated2', { name: merged.name });
     return true;
   }
 
@@ -178,6 +185,11 @@ export const useEventsStore = defineStore('events', () => {
 
   /**
    * 手动触发事件（/event trigger 命令）
+   *
+   * 完整性在这里拦，不在 `updateEvent` 拦：字段编辑要能一路存进去，
+   * 而"要拿去用了"才需要一条不缺字段的事件。自动触发路径（`chat-context` 的
+   * `scanAndApplyTriggers`）走的也是这个函数，所以配不全的事件既不会激活、
+   * 也不会被注入提示词。
    */
   function triggerEvent(id: string): boolean {
     const evt = events.value.find((e) => e.id === id);
@@ -187,6 +199,11 @@ export const useEventsStore = defineStore('events', () => {
     }
     if (!isTriggerable(evt)) {
       lastError.value = t('ev.cannotTrigger', { name: evt.name, state: evt.state });
+      return false;
+    }
+    const missing = validateEventCompleteness(evt);
+    if (missing.length > 0) {
+      lastError.value = missing.join('；');
       return false;
     }
     return setEventState(id, 'active');

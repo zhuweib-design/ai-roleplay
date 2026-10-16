@@ -29,14 +29,17 @@ function deltaChunk(content: string, finishReason: string | null = null): string
 
 function mockResponse(body: ReadableStream<Uint8Array> | string, status = 200): Response {
   const isStream = typeof body !== 'string';
-  return {
+  const self = {
     ok: status >= 200 && status < 300,
     status,
     statusText: status === 200 ? 'OK' : 'Error',
     body: isStream ? (body as ReadableStream<Uint8Array>) : null,
     json: async () => JSON.parse(body as string),
     text: async () => (body as string) ?? '',
-  } as Response;
+    // 客户端在"max_tokens 被拒"的判定里会 clone 一次看正文（原响应还要再读一次）
+    clone: () => mockResponse(body, status),
+  };
+  return self as unknown as Response;
 }
 
 async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
@@ -925,5 +928,131 @@ describe('OpenAIClient — P0-1 字段型思考解析', () => {
     const usage = events.find((e) => e.type === 'done')?.usage;
     expect(usage?.reasoningTokens).toBeUndefined();
     expect(usage?.completionTokens).toBe(2);
+  });
+});
+
+describe('OpenAIClient — max_tokens 被供应商拒绝时自动降级', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('400 且明确提到 max_tokens ⇒ 去掉该字段重发一次并成功', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        mockResponse(
+          JSON.stringify({ error: { message: 'max_tokens is too large: max_tokens must be <= 8192' } }),
+          400
+        )
+      )
+      .mockResolvedValueOnce(
+        mockResponse(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), 200)
+      );
+
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    const out = await client.chat({ messages: [], model: 'm', maxTokens: 60000 });
+
+    expect(out).toBe('ok');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const first = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    const second = JSON.parse((fetchMock.mock.calls[1]![1] as RequestInit).body as string);
+    expect(first.max_tokens).toBe(60000);
+    expect(second.max_tokens).toBeUndefined();
+  });
+
+  it('负向对照：400 与 max_tokens 无关（如密钥错）⇒ 不重发，只请求一次', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(mockResponse(JSON.stringify({ error: { message: 'Invalid API key' } }), 400));
+
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    await expect(client.chat({ messages: [], model: 'm', maxTokens: 4096 })).rejects.toBeInstanceOf(ApiError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('负向对照：请求里本来就没有 max_tokens ⇒ 不重发', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(mockResponse(JSON.stringify({ error: { message: 'max_tokens is too large' } }), 400));
+
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    await expect(client.chat({ messages: [], model: 'm' })).rejects.toBeInstanceOf(ApiError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * 推理模型把输出预算吃光（2026-10-15 实测 hy4-preview-f）：
+ * 思考约 1.8–2.2 万字符、正文 0 字，给 8192 预算时 8 次里 5 次如此；
+ * 摘掉 max_tokens 后 6/6 正常。所以这里摘掉重发一次，仍然空才报错。
+ */
+describe('OpenAIClient — 推理吃光输出预算时兜底', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const starved = (reasoning: string) =>
+    mockResponse(
+      JSON.stringify({
+        choices: [{ message: { content: '', reasoning_content: reasoning }, finish_reason: 'length' }],
+      }),
+      200
+    );
+
+  it('正文空 + 有思考 ⇒ 摘掉 max_tokens 重发一次，拿到正文', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(starved('想了很多……'))
+      .mockResolvedValueOnce(
+        mockResponse(JSON.stringify({ choices: [{ message: { content: '正文来了' } }] }), 200)
+      );
+
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    const out = await client.chat({ messages: [], model: 'm', maxTokens: 8192 });
+
+    expect(out).toBe('正文来了');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const first = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    const second = JSON.parse((fetchMock.mock.calls[1]![1] as RequestInit).body as string);
+    expect(first.max_tokens).toBe(8192);
+    expect(second.max_tokens).toBeUndefined();
+  });
+
+  it('负向对照：正文非空 ⇒ 一次都不许多发', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        mockResponse(
+          JSON.stringify({
+            choices: [{ message: { content: '正常正文', reasoning_content: '也想了一些' } }],
+          }),
+          200
+        )
+      );
+
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    expect(await client.chat({ messages: [], model: 'm', maxTokens: 8192 })).toBe('正常正文');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('负向对照：正文空但**没有**思考 ⇒ 不是这一类，不重发也不报错', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        mockResponse(JSON.stringify({ choices: [{ message: { content: '' }, finish_reason: 'stop' }] }), 200)
+      );
+
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    expect(await client.chat({ messages: [], model: 'm', maxTokens: 8192 })).toBe('');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('摘掉预算仍然空 ⇒ 抛错，且文案指向界面上真存在的控件', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(starved('还是只想不写'));
+
+    const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+    await expect(client.chat({ messages: [], model: 'm', maxTokens: 8192 })).rejects.toThrow(
+      /最大上下文/
+    );
   });
 });

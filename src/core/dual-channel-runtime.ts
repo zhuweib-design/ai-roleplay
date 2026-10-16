@@ -9,6 +9,7 @@
  * - 静态层:世界设定,关键词门控(lorebook 扫描命中才查,防噪音)
  * - 预算:动态 ≤3 段、静态 ≤3 块
  */
+import { ref } from 'vue';
 import {
   VectorStore,
   type EmbeddingProvider,
@@ -42,6 +43,15 @@ export async function createOnnxEmbeddingProvider(
 
 
 const ENABLE_KEY = 'aijiuguan.vectorRagEnabled';
+
+/**
+ * 向量通道开关的响应式镜像。
+ *
+ * localStorage 本身不触发 Vue 依赖更新，而 `isVectorRagEnabled()` 只在挂载时读一次
+ * （VectorModelPanel.vue:276 的 ENABLED 也仅镜像一次）——界面若直接读函数会显示陈旧状态。
+ * 就绪条/前置横幅依赖本 ref，写入点只有 setVectorRagEnabled()。
+ */
+export const vectorRagEnabled = ref(isVectorRagEnabled());
 const DYN_MODEL_KEY = 'aijiuguan.ragDynamicModel';
 const STA_MODEL_KEY = 'aijiuguan.ragStaticModel';
 
@@ -60,6 +70,7 @@ export function setVectorRagEnabled(on: boolean): void {
   } catch {
     /* 环境无 localStorage:静默 */
   }
+  vectorRagEnabled.value = on;
 }
 
 /** RAG 动态层模型选择(持久化;'auto' 或 模型 id,支持自定义) */
