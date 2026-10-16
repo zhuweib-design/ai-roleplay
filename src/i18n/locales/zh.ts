@@ -410,6 +410,8 @@ export default {
   'chat.emptyChat': '暂无对话内容',
   'chat.exportedMarkdown': '已导出对话 Markdown',
   'chat.editMessage': '编辑消息',
+  'chat.editNarrationHint': '文本里的「⟦ … ⟧」之间是心理活动，显示在气泡外面；标记之外的部分就是气泡正文。',
+  'chat.editPreviewLabel': '下方是这条消息实际会显示的样子',
   'chat.ttsUnsupported': '当前浏览器不支持语音朗读',
   'chat.ttsDisabled': '朗读功能未启用，请在设置页配置',
   'chat.ttsStopped': '已停止朗读',

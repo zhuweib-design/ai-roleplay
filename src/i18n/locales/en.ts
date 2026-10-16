@@ -410,6 +410,9 @@ const en: Record<MessageKey, string> = {
   'chat.emptyChat': 'No messages yet',
   'chat.exportedMarkdown': 'Chat exported as Markdown',
   'chat.editMessage': 'Edit message',
+  'chat.editNarrationHint':
+    'Text between the “⟦ … ⟧” marks is the inner monologue, shown outside the bubble; everything else is the bubble body.',
+  'chat.editPreviewLabel': 'Below is how this message actually appears',
   'chat.ttsUnsupported': 'Speech synthesis is not supported in this browser',
   'chat.ttsDisabled': 'Text-to-speech is disabled — enable it in Settings first',
   'chat.ttsStopped': 'Reading stopped',

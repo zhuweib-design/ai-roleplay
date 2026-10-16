@@ -364,3 +364,122 @@ describe('E：Enter 按指针形态分流', () => {
     expect(wrapper.find('#chat-input').attributes('placeholder')).toBe(t('chat.inputPlaceholder'));
   });
 });
+
+/**
+ * 消息编辑弹窗的分段预览（专项 C 的最后一处）
+ *
+ * 存储格式是 `content` 里原样留着 ⟦ ⟧，渲染层才拆分。编辑框如果直接绑原文，用户就会
+ * 看到两个来源不明的符号（这是第 15 节列的已知遗留）。这里钉四件事：
+ * 预览确实按同一套分段拆、无标记时不虚构分段、预览里不出现标记本身、保存写回的仍是原文。
+ */
+describe('编辑弹窗：分段预览不露原始标记', () => {
+  let pinia: Pinia;
+
+  function makeCharacter(id: string): UICharacter {
+    return {
+      id,
+      name: '编辑预览测试角色',
+      description: '',
+      personality: '',
+      scenario: '',
+      firstMessage: '',
+      alternateGreetings: [],
+      exampleMessages: '',
+      characterNote: null,
+      talkativeness: 50,
+      tags: [],
+      favorite: false,
+      version: '1.0',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      messages: [],
+      model: 'gpt-4o',
+      temperature: 1,
+    } as unknown as UICharacter;
+  }
+
+  beforeEach(() => {
+    pinia = createPinia();
+    setActivePinia(pinia);
+    const charStore = useCharacterStore();
+    charStore.characters.push(makeCharacter('c-edit'));
+    charStore.selectCharacter('c-edit');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  async function openEditor(draft: string) {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: { template: '<div />' } }],
+    });
+    const wrapper = mount(ChatMain, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          // Modal 的内容在 <Teleport to="body"> 里，不摊平就查不到（VTU 的 teleport 桩把内容就地渲染）
+          teleport: true,
+          MessageBubble: { template: '<div class="msg-stub" />' },
+          Icon: true,
+          Avatar: true,
+          Toast: true,
+          ApiErrorModal: true,
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as { editModalOpen: boolean; editDraft: string; editTarget: UIMessage | null };
+    vm.editTarget = msg({ id: 'm-edit', content: '旧的、还没改过的原文' });
+    vm.editDraft = draft;
+    vm.editModalOpen = true;
+    await wrapper.vm.$nextTick();
+    await flushPromises();
+    return wrapper;
+  }
+
+  it('带标记的草稿：预览拆成"气泡外一句 + 正文一句"', async () => {
+    const wrapper = await openEditor('⟦她指尖一凉，面上不能露⟧夜风有点凉，进来坐。');
+
+    expect(wrapper.findAll('.edit-preview-psy').map((n) => n.text())).toEqual(['她指尖一凉，面上不能露']);
+    expect(wrapper.findAll('.edit-preview-say').map((n) => n.text())).toEqual(['夜风有点凉，进来坐。']);
+  });
+
+  // 单独成条：合在上一条里会被前面的断言短路，"标记漏进预览"这种缺陷就没人红
+  it('负向对照：预览里不出现 ⟦ ⟧ 这两个标记字符', async () => {
+    const wrapper = await openEditor('⟦她指尖一凉⟧夜风有点凉。');
+    const previewText = wrapper.find('.edit-message-preview').text();
+    expect(previewText).not.toContain('⟦');
+    expect(previewText).not.toContain('⟧');
+  });
+
+  it('负向对照：没有标记的草稿只出一段正文，不会凭空多一句心理活动', async () => {
+    const wrapper = await openEditor('今天下雪了。');
+    expect(wrapper.findAll('.edit-preview-psy')).toHaveLength(0);
+    expect(wrapper.findAll('.edit-preview-say').map((n) => n.text())).toEqual(['今天下雪了。']);
+  });
+
+  it('文本框里仍是原文（标记可编辑），并有一句说明它是什么', async () => {
+    const draft = '⟦先忍住⟧别出声。';
+    const wrapper = await openEditor(draft);
+    expect(wrapper.find<HTMLTextAreaElement>('.edit-message-input').element.value).toBe(draft);
+    expect(wrapper.find('.edit-message-hint').text()).toContain(t('chat.editNarrationHint'));
+  });
+
+  it('保存写回的是带标记的原文，预览不参与存储（否则心理活动会丢）', async () => {
+    const draft = '⟦先忍住⟧别出声。';
+    const wrapper = await openEditor(draft);
+    const editSpy = vi.spyOn(useChatStore(), 'editMessage').mockImplementation(() => undefined);
+    const persistSpy = vi.spyOn(useChatStore(), 'persistAfterEdit').mockResolvedValue(undefined);
+
+    const vm = wrapper.vm as unknown as { confirmEditMessage: () => void };
+    vm.confirmEditMessage();
+    await flushPromises();
+
+    expect(editSpy).toHaveBeenCalledTimes(1);
+    expect(editSpy.mock.calls[0]![1]).toBe(draft);
+    expect(persistSpy).toHaveBeenCalledTimes(1);
+  });
+});

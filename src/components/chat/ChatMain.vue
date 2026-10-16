@@ -10,7 +10,7 @@ import ChatModeSwitch from '@/components/chat/ChatModeSwitch.vue';
 import { uiMsgsToChatMsgs } from '@/services/type-adapters';
 import { getWorldUserDisplayName } from '@/stores/chat-context';
 import { resolveLatestStatus } from '@core/status-parser';
-import { stripNarrationMarkers } from '@core/narration';
+import { stripNarrationMarkers, parseNarrationSegments } from '@core/narration';
 import { downloadChatMarkdown } from '@/services/backup-service';
 import type { Chat } from '@/storage/types';
 import Icon from '@/components/common/Icon.vue';
@@ -637,6 +637,13 @@ function confirmDeleteMessage(): void {
 const editTarget = ref<import('@/types').UIMessage | null>(null);
 const editDraft = ref('');
 
+/**
+ * 编辑框下方的预览：走与气泡**同一个**分段函数，所以"编辑时看到的就是发出去后会长成的样子"。
+ * 文本框里仍是带 ⟦ ⟧ 的原文（那是存储格式，删了就没法再区分哪句是心理活动），
+ * 但用户不必靠猜——预览已经把两段拆开排好了，旁边一句话说明标记是什么。
+ */
+const editSegments = computed(() => parseNarrationSegments(editDraft.value));
+
 function confirmEditMessage() {
   const msg = editTarget.value;
   if (!msg) return;
@@ -1127,6 +1134,14 @@ function startWithExample(text: string) {
           :aria-label="t('chat.editMessage')"
           spellcheck="false"
         ></textarea>
+        <p class="edit-message-hint">{{ t('chat.editNarrationHint') }}</p>
+        <p class="edit-preview-label">{{ t('chat.editPreviewLabel') }}</p>
+        <div class="edit-message-preview">
+          <template v-for="(seg, i) in editSegments" :key="i">
+            <p v-if="seg.kind === 'psy'" class="edit-preview-psy">{{ seg.text }}</p>
+            <p v-else class="edit-preview-say">{{ seg.text }}</p>
+          </template>
+        </div>
       </div>
       <template #footer>
         <button type="button" class="modal-btn modal-cancel" @click="editModalOpen = false">
@@ -1165,6 +1180,46 @@ function startWithExample(text: string) {
 .edit-message-input:focus-visible {
   border-color: var(--secondary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--secondary) 20%, transparent);
+}
+
+/* 编辑弹窗里的标记说明 + 分段预览（与气泡同一套分段函数，样式也同一套口径） */
+.edit-message-hint,
+.edit-preview-label {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.edit-preview-label {
+  margin-top: 12px;
+}
+
+.edit-message-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--video-bg);
+}
+
+.edit-preview-psy {
+  margin: 0;
+  padding-left: 8px;
+  border-left: 2px solid color-mix(in srgb, var(--secondary) 45%, var(--border));
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+
+.edit-preview-say {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--foreground);
 }
 
 .modal-cancel,
