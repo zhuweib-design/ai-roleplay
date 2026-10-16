@@ -101,3 +101,9 @@ docs/design/THEME_BASE_PREVIEW/*.png
 # 出包脚本 scripts/android-apk.mjs 每次都把产物落到这里；要分发走 GitHub Releases 手工拖拽，
 # 不进 git 历史（进了就永久占体积，删掉记录也不能瘦下来）。决策见指导文档 §15.7。
 installer/
+
+# 会话里的一次性探针脚本（仓库根的 tmp-*.mjs）。它们查完就作废，还带没清理的临时变量，
+# 一旦进了版本控制就把 `eslint .` 弄红——CI 在干净检出上跑的是同一条命令，会一起红。
+# 2026-10-16 现场：一次"导入设计资源"的提交顺手把 13 个 tmp-*.mjs 带进仓库，其中 4 个共 6 条 error。
+# 规则只挡仓库根，scripts/ 下真正的工具照常入库。
+/tmp-*.mjs
