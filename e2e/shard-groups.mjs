@@ -1,8 +1,8 @@
 /**
  * e2e 分片组（由 scripts/e2e-shard-groups.mjs 生成，请勿手改）
  *
- * 生成依据：e2e-1w-2026-10-15.log 的**单 worker**实测时长（212 条用例 / 781s）。
- * 按下面这份权重贪心均衡（LPT）后四组极差约 1.004x。
+ * 生成依据：e2e-1w-2026-10-16.log 的**单 worker**实测时长（237 条用例 / 718s）。
+ * 按下面这份权重贪心均衡（LPT）后四组极差约 1.005x。
  * 为什么不用 --shard：Playwright 只按用例条数切、不看时长，实测极差到过 3.31x。
  *
  * 重新测量：
@@ -14,106 +14,108 @@
  */
 
 /** 跑数时间（ISO）。守卫用它判权重是否过期，CI 里也读得到 */
-export const MEASURED_AT = '2026-10-15T00:28:09.427Z';
+export const MEASURED_AT = '2026-10-16T03:49:20.877Z';
 /** 生成时所处的 commit（溯源用，不参与判定） */
-export const SOURCE_COMMIT = 'f43ef0364684508982aae70b1f92a0bfbb3533c6';
+export const SOURCE_COMMIT = '20756bc2ab8feeea03a7f7c661e4a50390deb8e7';
 /** 跑数里的用例条数与总时长（秒） */
-export const MEASURED_CASES = 212;
-export const MEASURED_TOTAL_SEC = 781.0;
+export const MEASURED_CASES = 237;
+export const MEASURED_TOTAL_SEC = 718.0;
 /** 每个 spec 的实测权重（秒，跨 project 相加） */
 export const SPEC_WEIGHTS = {
-  'e2e/backup-restore.spec.ts': 26.0,
-  'e2e/character-batch-import.spec.ts': 11.9,
-  'e2e/character-crud.spec.ts': 13.1,
-  'e2e/chat-flow.spec.ts': 16.6,
-  'e2e/chat-search.spec.ts': 2.0,
-  'e2e/contrast-axe.spec.ts': 86.3,
-  'e2e/custom-theme-contrast.spec.ts': 1.3,
-  'e2e/databank-flow.spec.ts': 1.8,
+  'e2e/backup-restore.spec.ts': 21.6,
+  'e2e/character-batch-import.spec.ts': 10.9,
+  'e2e/character-crud.spec.ts': 13.2,
+  'e2e/chat-flow.spec.ts': 14.9,
+  'e2e/chat-search.spec.ts': 1.4,
+  'e2e/contrast-axe.spec.ts': 88.7,
+  'e2e/custom-theme-contrast.spec.ts': 1.2,
+  'e2e/databank-flow.spec.ts': 2.3,
   'e2e/group-chat-flow.spec.ts': 43.1,
-  'e2e/i18n-locale.spec.ts': 0.8,
-  'e2e/long-history-scroll.spec.ts': 4.9,
-  'e2e/mobile-control-font-size.spec.ts': 14.9,
-  'e2e/mobile/chat-touch-composer.spec.ts': 7.4,
+  'e2e/i18n-locale.spec.ts': 0.9,
+  'e2e/long-history-scroll.spec.ts': 4.7,
+  'e2e/mobile-control-font-size.spec.ts': 16.3,
+  'e2e/mobile/chat-touch-composer.spec.ts': 8.6,
+  'e2e/mobile/group-header-narrow.spec.ts': 2.0,
   'e2e/mobile/mobile-layout.spec.ts': 4.8,
-  'e2e/mobile/mobile-nav-groups.spec.ts': 1.6,
-  'e2e/model-install-web.spec.ts': 1.9,
-  'e2e/theme-flow.spec.ts': 1.8,
-  'e2e/theme-visual.spec.ts': 22.3,
-  'e2e/token-neutrality.spec.ts': 94.4,
+  'e2e/mobile/mobile-nav-groups.spec.ts': 1.8,
+  'e2e/model-install-web.spec.ts': 1.8,
+  'e2e/theme-flow.spec.ts': 1.6,
+  'e2e/theme-visual.spec.ts': 19.1,
+  'e2e/token-neutrality.spec.ts': 69.2,
   'e2e/ux-deep-link-book.spec.ts': 3.4,
-  'e2e/ux-deep-link-group.spec.ts': 4.6,
-  'e2e/ux-duplicate-a11y-names.spec.ts': 145.8,
-  'e2e/ux-event-manual-trace.spec.ts': 10.4,
-  'e2e/ux-event-trace.spec.ts': 14.7,
+  'e2e/ux-deep-link-group.spec.ts': 4.5,
+  'e2e/ux-duplicate-a11y-names.spec.ts': 139.1,
+  'e2e/ux-event-manual-trace.spec.ts': 9.8,
+  'e2e/ux-event-trace.spec.ts': 13.8,
   'e2e/ux-gap-visibility.spec.ts': 8.3,
-  'e2e/ux-guided-tasks.spec.ts': 7.0,
-  'e2e/ux-interaction-feedback.spec.ts': 43.5,
-  'e2e/ux-modal-describedby-more.spec.ts': 61.0,
-  'e2e/ux-modal-describedby-seeded.spec.ts': 25.8,
-  'e2e/ux-modal-describedby-version.spec.ts': 27.5,
-  'e2e/ux-modal-describedby.spec.ts': 19.7,
-  'e2e/ux-narrow-editor-preview.spec.ts': 10.2,
-  'e2e/ux-nav-model.spec.ts': 6.6,
-  'e2e/ux-prompt-trace.spec.ts': 11.9,
-  'e2e/ux-quick-forms.spec.ts': 6.4,
-  'e2e/ux-readiness.spec.ts': 4.6,
-  'e2e/ux-relations-panel.spec.ts': 4.2,
-  'e2e/ux-status-color.spec.ts': 5.1,
+  'e2e/ux-guided-tasks.spec.ts': 6.3,
+  'e2e/ux-interaction-feedback.spec.ts': 36.3,
+  'e2e/ux-modal-describedby-more.spec.ts': 56.8,
+  'e2e/ux-modal-describedby-seeded.spec.ts': 23.7,
+  'e2e/ux-modal-describedby-version.spec.ts': 23.5,
+  'e2e/ux-modal-describedby.spec.ts': 17.2,
+  'e2e/ux-narrow-editor-preview.spec.ts': 9.8,
+  'e2e/ux-nav-model.spec.ts': 6.0,
+  'e2e/ux-prompt-trace.spec.ts': 9.2,
+  'e2e/ux-quick-forms.spec.ts': 5.9,
+  'e2e/ux-readiness.spec.ts': 4.5,
+  'e2e/ux-relations-panel.spec.ts': 4.0,
+  'e2e/ux-status-color.spec.ts': 4.4,
   'e2e/worldbook-flow.spec.ts': 3.4,
 };
 
 export const E2E_GROUPS = [
-  // 第 1 组：实测 195s
+  // 第 1 组：实测 180s
   [
-    'e2e/character-batch-import.spec.ts',
-    'e2e/chat-flow.spec.ts',
-    'e2e/mobile/mobile-layout.spec.ts',
-    'e2e/ux-duplicate-a11y-names.spec.ts',
-    'e2e/ux-gap-visibility.spec.ts',
-    'e2e/ux-relations-panel.spec.ts',
-    'e2e/worldbook-flow.spec.ts',
-  ],
-  // 第 2 组：实测 195s
-  [
-    'e2e/mobile-control-font-size.spec.ts',
-    'e2e/mobile/chat-touch-composer.spec.ts',
-    'e2e/mobile/mobile-nav-groups.spec.ts',
-    'e2e/model-install-web.spec.ts',
-    'e2e/token-neutrality.spec.ts',
-    'e2e/ux-modal-describedby-seeded.spec.ts',
-    'e2e/ux-modal-describedby-version.spec.ts',
-    'e2e/ux-prompt-trace.spec.ts',
-    'e2e/ux-readiness.spec.ts',
-    'e2e/ux-status-color.spec.ts',
-  ],
-  // 第 3 组：实测 195s
-  [
-    'e2e/character-crud.spec.ts',
-    'e2e/contrast-axe.spec.ts',
-    'e2e/databank-flow.spec.ts',
-    'e2e/group-chat-flow.spec.ts',
-    'e2e/theme-flow.spec.ts',
-    'e2e/theme-visual.spec.ts',
-    'e2e/ux-deep-link-book.spec.ts',
-    'e2e/ux-event-manual-trace.spec.ts',
-    'e2e/ux-nav-model.spec.ts',
-    'e2e/ux-quick-forms.spec.ts',
-  ],
-  // 第 4 组：实测 196s
-  [
-    'e2e/backup-restore.spec.ts',
-    'e2e/chat-search.spec.ts',
     'e2e/custom-theme-contrast.spec.ts',
-    'e2e/i18n-locale.spec.ts',
-    'e2e/long-history-scroll.spec.ts',
-    'e2e/ux-deep-link-group.spec.ts',
+    'e2e/mobile/mobile-nav-groups.spec.ts',
+    'e2e/ux-duplicate-a11y-names.spec.ts',
+    'e2e/ux-event-manual-trace.spec.ts',
     'e2e/ux-event-trace.spec.ts',
     'e2e/ux-guided-tasks.spec.ts',
-    'e2e/ux-interaction-feedback.spec.ts',
-    'e2e/ux-modal-describedby-more.spec.ts',
-    'e2e/ux-modal-describedby.spec.ts',
+    'e2e/ux-readiness.spec.ts',
+    'e2e/worldbook-flow.spec.ts',
+  ],
+  // 第 2 组：实测 179s
+  [
+    'e2e/chat-flow.spec.ts',
+    'e2e/chat-search.spec.ts',
+    'e2e/contrast-axe.spec.ts',
+    'e2e/databank-flow.spec.ts',
+    'e2e/mobile/group-header-narrow.spec.ts',
+    'e2e/mobile/mobile-layout.spec.ts',
+    'e2e/theme-visual.spec.ts',
+    'e2e/ux-gap-visibility.spec.ts',
+    'e2e/ux-modal-describedby-seeded.spec.ts',
     'e2e/ux-narrow-editor-preview.spec.ts',
+    'e2e/ux-status-color.spec.ts',
+  ],
+  // 第 3 组：实测 179s
+  [
+    'e2e/backup-restore.spec.ts',
+    'e2e/character-batch-import.spec.ts',
+    'e2e/mobile-control-font-size.spec.ts',
+    'e2e/mobile/chat-touch-composer.spec.ts',
+    'e2e/theme-flow.spec.ts',
+    'e2e/token-neutrality.spec.ts',
+    'e2e/ux-deep-link-group.spec.ts',
+    'e2e/ux-interaction-feedback.spec.ts',
+    'e2e/ux-nav-model.spec.ts',
+    'e2e/ux-relations-panel.spec.ts',
+  ],
+  // 第 4 组：实测 180s
+  [
+    'e2e/character-crud.spec.ts',
+    'e2e/group-chat-flow.spec.ts',
+    'e2e/i18n-locale.spec.ts',
+    'e2e/long-history-scroll.spec.ts',
+    'e2e/model-install-web.spec.ts',
+    'e2e/ux-deep-link-book.spec.ts',
+    'e2e/ux-modal-describedby-more.spec.ts',
+    'e2e/ux-modal-describedby-version.spec.ts',
+    'e2e/ux-modal-describedby.spec.ts',
+    'e2e/ux-prompt-trace.spec.ts',
+    'e2e/ux-quick-forms.spec.ts',
   ],
 ];
 

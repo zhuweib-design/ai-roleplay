@@ -1951,17 +1951,24 @@ type="button"
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* 窄屏实测（2026-10-16 模拟器 412px）：不换行 + 标题没有 min-width:0 时，
+     flex 会把标题和 6 个按钮一起压到"内容最小宽"以下 ⇒ 标题变成一列一个字。
+     允许换行 + 放开收缩下限，窄屏下按钮整排另起一行，标题保持一行。 */
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
 .group-title-row h2 {
   margin: 0;
+  min-width: 0;
   font-size: 16px;
   font-weight: 600;
 }
 
 .group-header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
