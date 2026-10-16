@@ -1,0 +1,401 @@
+<div class="stage-shell">
+  <div class="stage" id="stage">
+    <div class="app">
+
+      <!-- 环境装饰层：极光 / 扫描线 / 雾面，随主题变化 -->
+      <div class="app__backdrop" aria-hidden="true"></div>
+
+      <!-- 窄屏抽屉遮罩：点击关闭上下文侧栏 -->
+      <div class="app__scrim" data-close-context></div>
+
+      <!-- ============================================================
+           区域 A：一级导航栏
+           ============================================================ -->
+      <aside class="rail" aria-label="主导航">
+        <div class="rail__header">
+          <span class="section-label">会话</span>
+        </div>
+
+        <nav class="rail__nav" aria-label="功能导航">
+          <button type="button" class="nav-item is-selected" aria-current="page">
+            <span class="nav-item__indicator" aria-hidden="true"></span>
+            <i class="nav-item__icon" data-icon="message-circle"></i>
+            <span class="nav-item__label">对话</span>
+          </button>
+          <button type="button" class="nav-item">
+            <i class="nav-item__icon" data-icon="users"></i>
+            <span class="nav-item__label">群聊</span>
+          </button>
+
+          <div class="nav-group">
+            <div class="nav-group__title">创作</div>
+            <button type="button" class="nav-item">
+              <i class="nav-item__icon" data-icon="user"></i>
+              <span class="nav-item__label">角色</span>
+            </button>
+            <button type="button" class="nav-item">
+              <i class="nav-item__icon" data-icon="book"></i>
+              <span class="nav-item__label">世界书</span>
+            </button>
+            <button type="button" class="nav-item">
+              <i class="nav-item__icon" data-icon="database"></i>
+              <span class="nav-item__label">数据银行</span>
+            </button>
+            <button type="button" class="nav-item">
+              <i class="nav-item__icon" data-icon="wand"></i>
+              <span class="nav-item__label">故事引擎</span>
+            </button>
+            <button type="button" class="nav-item">
+              <i class="nav-item__icon" data-icon="dice"></i>
+              <span class="nav-item__label">随机事件</span>
+            </button>
+            <button type="button" class="nav-item">
+              <i class="nav-item__icon" data-icon="store"></i>
+              <span class="nav-item__label">社区市场</span>
+            </button>
+          </div>
+
+          <div class="nav-group">
+            <div class="nav-group__title">能力</div>
+            <button type="button" class="nav-item">
+              <i class="nav-item__icon" data-icon="cpu"></i>
+              <span class="nav-item__label">本地模型</span>
+            </button>
+            <button type="button" class="nav-item">
+              <i class="nav-item__icon" data-icon="image"></i>
+              <span class="nav-item__label">图像生成</span>
+            </button>
+          </div>
+
+          <div class="nav-group">
+            <div class="nav-group__title">历史</div>
+            <button type="button" class="nav-item">
+              <i class="nav-item__icon" data-icon="file-text"></i>
+              <span class="nav-item__label">记录</span>
+            </button>
+            <button type="button" class="nav-item">
+              <i class="nav-item__icon" data-icon="git-branch"></i>
+              <span class="nav-item__label">版本管理</span>
+            </button>
+          </div>
+        </nav>
+
+        <div class="rail__footer">
+          <button type="button" class="nav-item">
+            <i class="nav-item__icon" data-icon="compass"></i>
+            <span class="nav-item__label">引导</span>
+          </button>
+          <button type="button" class="nav-item">
+            <i class="nav-item__icon" data-icon="more-horizontal"></i>
+            <span class="nav-item__label">更多</span>
+          </button>
+          <button type="button" class="nav-item">
+            <i class="nav-item__icon" data-icon="settings"></i>
+            <span class="nav-item__label">设置</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ============================================================
+           区域 B：角色列表栏
+           ============================================================ -->
+      <aside class="list-pane" aria-label="角色列表">
+        <div class="list-pane__search">
+          <div class="search-field">
+            <i class="search-field__icon" data-icon="search"></i>
+            <label class="visually-hidden" for="char-search">搜索角色</label>
+            <input class="search-field__input" id="char-search" type="search" placeholder="搜索角色...">
+            <button type="button" class="search-field__clear" aria-label="清空搜索">
+              <i class="icon-btn__glyph" data-icon="x"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="list-pane__body">
+          <div class="nav-group">
+            <div class="nav-group__title">收藏</div>
+
+            <button type="button" class="entity-item">
+              <span class="avatar avatar--md avatar--tone-3">
+                <span class="avatar__fallback">K</span>
+              </span>
+              <span class="entity-item__text">
+                <span class="entity-item__name">Kael</span>
+                <span class="entity-item__meta">刚刚</span>
+              </span>
+            </button>
+
+            <button type="button" class="entity-item is-selected" aria-selected="true">
+              <span class="avatar avatar--md avatar--tone-1">
+                <span class="avatar__fallback">S</span>
+              </span>
+              <span class="entity-item__text">
+                <span class="entity-item__name">Seraphina</span>
+                <span class="entity-item__meta">刚刚</span>
+              </span>
+            </button>
+
+            <button type="button" class="btn btn--dashed btn--sm btn--block">
+              <i class="btn__icon" data-icon="plus"></i>
+              为此角色新建会话
+            </button>
+          </div>
+
+          <div class="nav-group">
+            <div class="nav-group__title">全部角色</div>
+
+            <button type="button" class="entity-item">
+              <span class="avatar avatar--md avatar--tone-2">
+                <span class="avatar__fallback">L</span>
+              </span>
+              <span class="entity-item__text">
+                <span class="entity-item__name">Lyra</span>
+                <span class="entity-item__meta">刚刚</span>
+              </span>
+            </button>
+
+            <button type="button" class="entity-item">
+              <span class="avatar avatar--md avatar--tone-4">
+                <span class="avatar__fallback">M</span>
+              </span>
+              <span class="entity-item__text">
+                <span class="entity-item__name">Mira</span>
+                <span class="entity-item__meta">刚刚</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div class="list-pane__footer">
+          <button type="button" class="btn btn--primary btn--block">
+            <i class="btn__icon" data-icon="plus"></i>
+            新建对话
+          </button>
+        </div>
+      </aside>
+
+      <!-- ============================================================
+           区域 C：会话主区
+           ============================================================ -->
+      <main class="main" aria-label="会话主区">
+
+        <!-- C1 会话顶栏 -->
+        <header class="main__topbar">
+          <div class="main__topbar-start">
+            <button type="button" class="icon-btn main__list-toggle" data-toggle-view aria-label="打开角色列表">
+              <i class="icon-btn__glyph" data-icon="layers"></i>
+            </button>
+            <span class="avatar avatar--md avatar--tone-1">
+              <span class="avatar__fallback">S</span>
+            </span>
+            <span class="main__title">Seraphina</span>
+            <span class="badge badge--warning">未配置</span>
+          </div>
+
+          <div class="main__topbar-end">
+            <div class="segmented" role="tablist" aria-label="会话模式">
+              <button type="button" class="segmented__item" role="tab" aria-selected="true">对话</button>
+              <button type="button" class="segmented__item" role="tab" aria-selected="false">群聊</button>
+            </div>
+            <span class="badge badge--mono">已跑 18.4k</span>
+            <span class="divider divider--vertical" aria-hidden="true"></span>
+            <button type="button" class="icon-btn" data-priority="low" aria-label="搜索会话">
+              <i class="icon-btn__glyph" data-icon="search"></i>
+            </button>
+            <button type="button" class="icon-btn" data-priority="low" aria-label="导出会话">
+              <i class="icon-btn__glyph" data-icon="download"></i>
+            </button>
+            <button type="button" class="icon-btn" data-toggle-context aria-label="切换上下文面板" aria-pressed="true">
+              <i class="icon-btn__glyph" data-icon="panel-right"></i>
+            </button>
+          </div>
+        </header>
+
+        <!-- C2 待处理状态条 -->
+        <div class="main__statusbar">
+          <span class="notice-bar">
+            <i class="notice-bar__icon" data-icon="alert-circle"></i>
+            有 2 项需要先处理
+          </span>
+          <div class="main__statusbar-scroll">
+            <button type="button" class="chip chip--warning chip--interactive">
+              <i class="chip__icon" data-icon="cpu"></i>模型 需处理
+            </button>
+            <button type="button" class="chip chip--warning chip--interactive">
+              <i class="chip__icon" data-icon="book"></i>世界书 需处理
+            </button>
+            <button type="button" class="chip chip--muted chip--interactive">
+              <i class="chip__icon" data-icon="file-text"></i>文档检索 未启用
+            </button>
+            <button type="button" class="chip chip--muted chip--interactive">
+              <i class="chip__icon" data-icon="mic"></i>语音 未启用
+            </button>
+            <button type="button" class="chip chip--muted chip--interactive">
+              <i class="chip__icon" data-icon="sliders"></i>状态指令 未启用
+            </button>
+          </div>
+        </div>
+
+        <!-- C3 消息流 / 空态 -->
+        <div class="main__body main__body--empty">
+          <div class="main__body-inner">
+            <div class="empty-state">
+              <div class="empty-state__glyph" aria-hidden="true">
+                <i data-icon="moon"></i>
+              </div>
+              <h2 class="empty-state__title">开始与 Seraphina 的对话</h2>
+              <p class="empty-state__desc">在下方输入消息，或从下面的开场白里挑一个开始</p>
+              <div class="empty-state__starters-wrap">
+                <span class="section-label section-label--center">示例开场白</span>
+                <div class="empty-state__starters">
+                  <button type="button" class="starter">你好，能先介绍一下你自己吗？</button>
+                  <button type="button" class="starter">我们今天聊点什么好呢？</button>
+                  <button type="button" class="starter">给我讲一个有趣的故事吧</button>
+                  <button type="button" class="starter">如果可以许一个愿望，你希望是什么？</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- C4 底部输入区 -->
+        <div class="main__composer">
+          <div class="main__composer-inner">
+            <div class="composer-box">
+              <label class="visually-hidden" for="composer-input">消息输入框</label>
+              <textarea class="textarea textarea--composer" id="composer-input" rows="2"
+                placeholder="输入消息...（Shift+Enter 换行）"></textarea>
+              <div class="composer-box__actions">
+                <span class="composer-box__hint">
+                  <span class="kbd">Shift</span>
+                  <span>+</span>
+                  <span class="kbd">Enter</span>
+                  <span>换行</span>
+                </span>
+                <button type="button" class="icon-btn icon-btn--lg icon-btn--accent" aria-label="发送消息">
+                  <i class="icon-btn__glyph" data-icon="send"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ============================================================
+           区域 D：上下文侧栏
+           ============================================================ -->
+      <aside class="context-pane" aria-label="上下文">
+        <div class="context-pane__header">
+          <span class="pane-title">上下文</span>
+          <button type="button" class="icon-btn icon-btn--sm" data-close-context aria-label="关闭上下文面板">
+            <i class="icon-btn__glyph" data-icon="x"></i>
+          </button>
+        </div>
+
+        <div class="context-pane__body">
+
+          <!-- D1 角色信息卡 -->
+          <section class="card card--interactive" tabindex="0" aria-label="角色信息">
+            <div class="card__header">
+              <span class="avatar avatar--lg avatar--tone-1">
+                <span class="avatar__fallback">S</span>
+              </span>
+              <div class="stack grow">
+                <div class="row row--wrap">
+                  <span class="card__title">Seraphina</span>
+                  <span class="badge badge--warning">未配置</span>
+                </div>
+                <p class="card__body">守护翡翠森林的精灵法师，拥有治愈魔法和自然之力。</p>
+                <div class="row row--wrap">
+                  <span class="tag">奇幻</span>
+                  <span class="tag">温柔</span>
+                  <span class="tag">治疗系</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- D2 当前世界用户资料 -->
+          <section class="panel-section">
+            <div class="panel-section__header">
+              <h3 class="panel-section__title">当前世界用户资料</h3>
+              <span class="panel-section__value">未设置</span>
+            </div>
+            <p class="panel-section__hint">在当前世界的世界书中编辑用户资料</p>
+          </section>
+
+          <!-- D3 对话摘要 -->
+          <section class="panel-section">
+            <div class="panel-section__header">
+              <h3 class="panel-section__title">对话摘要</h3>
+              <span class="panel-section__value">未生成</span>
+            </div>
+            <p class="panel-section__hint">当前会话还没有可用摘要</p>
+          </section>
+
+          <!-- D4 Token 预算（有数据状态） -->
+          <section class="panel-section">
+            <div class="panel-section__header">
+              <h3 class="panel-section__title">Token 预算</h3>
+              <span class="panel-section__value">18,432 / 262,144</span>
+            </div>
+            <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="262144"
+              aria-valuenow="18432" aria-label="Token 使用量，已用 7%" style="--progress-value: 7.03%">
+              <div class="progress__fill"></div>
+            </div>
+            <div class="stack stack--xs">
+              <div class="stat-row">
+                <span class="stat-row__dot"></span>
+                <span class="stat-row__label">累计消耗</span>
+                <span class="stat-row__value">18,432 Tokens</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-row__dot stat-row__dot--accent-2"></span>
+                <span class="stat-row__label">剩余</span>
+                <span class="stat-row__value">243,712</span>
+              </div>
+            </div>
+            <p class="panel-section__hint">数值来自各轮请求的真实 prompt token 累计，上限可在「设置 → 模型」调整。</p>
+          </section>
+
+          <!-- D5 世界书 -->
+          <section class="panel-section">
+            <div class="panel-section__header">
+              <h3 class="panel-section__title">世界书</h3>
+              <span class="panel-section__value">0 本</span>
+            </div>
+            <p class="panel-section__hint">未绑定世界书，去角色编辑绑定</p>
+          </section>
+
+          <!-- D6 作者笔记 -->
+          <section class="panel-section">
+            <div class="panel-section__header">
+              <h3 class="panel-section__title">作者笔记</h3>
+              <span class="panel-section__value">深度 4</span>
+            </div>
+            <label class="visually-hidden" for="author-note">作者笔记内容</label>
+            <textarea class="textarea" id="author-note" rows="3">保持温柔治愈的语调</textarea>
+            <div class="slider">
+              <span class="slider__label">插入深度</span>
+              <input class="slider__input" type="range" min="0" max="10" value="4" aria-label="插入深度" style="--slider-fill: 40%">
+              <span class="slider__value">4</span>
+            </div>
+          </section>
+
+          <!-- D7 Runtime 状态 -->
+          <section class="panel-section">
+            <div class="panel-section__header">
+              <h3 class="panel-section__title">Runtime 状态</h3>
+              <button type="button" class="panel-section__toggle" aria-label="展开 Runtime 状态">
+                <i data-icon="chevron-down"></i>
+              </button>
+            </div>
+            <p class="panel-section__hint">原图未展示该分区内容，字段待确认，见设计文档「不确定项」。</p>
+          </section>
+
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</div>

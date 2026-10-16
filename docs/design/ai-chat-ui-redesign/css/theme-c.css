@@ -1,0 +1,196 @@
+/* =============================================================
+   theme-c.css —— 新终端（Neo Terminal）
+   硬核科技向。纯黑底、荧光青与信号绿、全等宽字形、1px 细线与扫描线纹理；
+   直角、无圆角、辉光代替阴影，服务于高密度信息与键盘流操作。
+
+   本文件是「新终端」风格唯一的视觉取值来源：
+     L2 语义 Token —— 颜色、字体、阴影、圆角、玻璃与动效质感
+     L3 组件 Token —— 组件级表现开关（形状、边框、阴影、指示器）
+
+   切换风格只需替换 <link> 的 theme 文件，DOM 结构保持不变。
+   组件层禁止硬编码，全部取值来自本文件与 tokens.base.css。
+   ============================================================= */
+
+[data-theme="c"] {
+
+  /* ---------- L2-1 背景与表面 ---------- */
+  --color-bg-app: #05070A;
+  --color-bg-canvas: #06090D;
+  --color-bg-rail: #04060A;
+  --color-bg-list: #060A0E;
+  --color-bg-panel: #070B10;
+  --color-bg-surface: #0A0F16;
+  --color-bg-surface-raised: #0D141C;
+  --color-bg-inset: #03050A;
+  --color-bg-hover: rgba(56, 242, 200, 0.07);
+  --color-bg-active: rgba(56, 242, 200, 0.13);
+  --color-bg-selected: rgba(56, 242, 200, 0.12);
+  --color-bg-selected-hover: rgba(56, 242, 200, 0.19);
+  --color-bg-glass: rgba(7, 11, 16, 0.86);
+  --color-bg-scrim: rgba(0, 0, 0, 0.72);
+
+  /* ---------- L2-2 文本 ---------- */
+  --color-text-primary: #D6F5EC;
+  --color-text-secondary: #7FA79E;
+  --color-text-tertiary: #4F6B67;
+  --color-text-disabled: #33443F;
+  --color-text-inverse: #05070A;
+  --color-text-on-accent: #03130F;
+  --color-text-link: #38F2C8;
+
+  /* ---------- L2-3 边框与分隔 ---------- */
+  --color-border-subtle: rgba(56, 242, 200, 0.10);
+  --color-border-default: rgba(56, 242, 200, 0.20);
+  --color-border-strong: rgba(56, 242, 200, 0.40);
+  --color-border-accent: rgba(56, 242, 200, 0.60);
+  --color-divider: rgba(56, 242, 200, 0.14);
+
+  /* ---------- L2-4 主色与强调 ---------- */
+  --color-accent: #38F2C8;
+  --color-accent-hover: #5CF7D5;
+  --color-accent-active: #1FD8AF;
+  --color-accent-soft: rgba(56, 242, 200, 0.12);
+  --color-accent-softer: rgba(56, 242, 200, 0.06);
+  --color-accent-contrast: #03130F;
+  --color-accent-2: #7CFF6B;
+  --color-accent-2-soft: rgba(124, 255, 107, 0.12);
+  --color-highlight: #FFB020;
+  --color-highlight-soft: rgba(255, 176, 32, 0.14);
+
+  /* ---------- L2-5 语义状态色 ---------- */
+  --color-success: #7CFF6B;
+  --color-success-soft: rgba(124, 255, 107, 0.12);
+  --color-success-contrast: #04170A;
+  --color-warning: #FFB020;
+  --color-warning-soft: rgba(255, 176, 32, 0.14);
+  --color-warning-contrast: #1A1000;
+  --color-danger: #FF5C6C;
+  --color-danger-soft: rgba(255, 92, 108, 0.14);
+  --color-danger-contrast: #1A0206;
+  --color-info: #4DD8FF;
+  --color-info-soft: rgba(77, 216, 255, 0.12);
+  --color-info-contrast: #001420;
+
+  /* ---------- L2-6 焦点与滚动条 ---------- */
+  --color-focus-ring: #38F2C8;
+  --color-scrollbar-track: transparent;
+  --color-scrollbar-thumb: rgba(56, 242, 200, 0.22);
+  --color-scrollbar-thumb-hover: rgba(56, 242, 200, 0.40);
+
+  /* ---------- L2-7 阴影与光效 ---------- */
+  --shadow-xs: 0 0 0 1px rgba(56, 242, 200, 0.10);
+  --shadow-sm: 0 0 8px rgba(56, 242, 200, 0.12);
+  --shadow-md: 0 0 16px rgba(56, 242, 200, 0.14);
+  --shadow-lg: 0 0 28px rgba(56, 242, 200, 0.16);
+  --shadow-xl: 0 0 48px rgba(56, 242, 200, 0.18);
+  --shadow-inset: inset 0 0 24px rgba(56, 242, 200, 0.05);
+  --shadow-glow: 0 0 12px rgba(56, 242, 200, 0.45), 0 0 0 1px rgba(56, 242, 200, 0.50);
+  --shadow-focus: 0 0 0 2px rgba(56, 242, 200, 0.45), 0 0 14px rgba(56, 242, 200, 0.35);
+
+  /* ---------- L2-8 字体 ---------- */
+  --font-family-sans: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas, "Microsoft YaHei", monospace;
+  --font-family-display: "JetBrains Mono", "Cascadia Mono", Consolas, "Microsoft YaHei", monospace;
+  --font-family-mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+  --font-feature-settings: "tnum", "zero", "ss02";
+
+  /* ---------- L2-9 圆角覆写（风格形状语言） ---------- */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 3px;
+  --radius-2xl: 4px;
+
+  /* ---------- L2-10 描边与玻璃 ---------- */
+  --size-border-thin: 1px;
+  --size-border-thick: 1px;
+  --effect-blur: 0px;
+  --effect-saturate: 1;
+
+  /* ---------- L2-11 环境装饰（背景层） ---------- */
+  --component-backdrop-image: repeating-linear-gradient(0deg, rgba(56, 242, 200, 0.045) 0px, rgba(56, 242, 200, 0.045) 1px, transparent 1px, transparent 3px);
+  --component-backdrop-size: auto;
+  --component-backdrop-repeat: repeat;
+  --component-backdrop-opacity: 1;
+
+  /* ---------- L3 组件级表现开关 ---------- */
+  --component-nav-item-radius: 0px;
+  --component-nav-indicator-w: 2px;
+  --component-nav-indicator-color: #38F2C8;
+  --component-nav-item-active-bg: rgba(56, 242, 200, 0.12);
+  --component-nav-item-active-color: #D6F5EC;
+
+  --component-panel-radius: 0px;
+  --component-panel-border-w: 1px;
+  --component-panel-border-color: rgba(56, 242, 200, 0.18);
+  --component-panel-shadow: none;
+
+  --component-card-radius: 2px;
+  --component-card-border-w: 1px;
+  --component-card-border-color: rgba(56, 242, 200, 0.22);
+  --component-card-bg: rgba(56, 242, 200, 0.03);
+  --component-card-shadow: none;
+  --component-card-shadow-hover: 0 0 16px rgba(56, 242, 200, 0.18);
+  --component-card-lift: 0px;
+
+  --component-button-radius: 2px;
+  --component-button-shadow: none;
+  --component-button-shadow-hover: 0 0 12px rgba(56, 242, 200, 0.35);
+  --component-button-primary-bg: #38F2C8;
+  --component-button-primary-bg-hover: #5CF7D5;
+  --component-button-primary-color: #03130F;
+
+  --component-icon-button-radius: 2px;
+  --component-icon-button-bg: transparent;
+  --component-icon-button-bg-hover: rgba(56, 242, 200, 0.12);
+
+  --component-list-item-radius: 0px;
+  --component-list-item-active-bg: rgba(56, 242, 200, 0.12);
+
+  --component-chip-radius: 0px;
+  --component-chip-border-w: 1px;
+  --component-chip-bg: rgba(56, 242, 200, 0.05);
+  --component-chip-bg-hover: rgba(56, 242, 200, 0.12);
+  --component-chip-color: #7FA79E;
+
+  --component-tag-radius: 0px;
+  --component-tag-border-w: 1px;
+  --component-tag-bg: rgba(56, 242, 200, 0.10);
+
+  --component-input-radius: 2px;
+  --component-input-border-w: 1px;
+  --component-input-bg: rgba(56, 242, 200, 0.04);
+  --component-input-bg-focus: rgba(56, 242, 200, 0.07);
+  --component-input-shadow-focus: 0 0 0 2px rgba(56, 242, 200, 0.30), 0 0 18px rgba(56, 242, 200, 0.20);
+  --component-input-min-h: 44px;
+
+  --component-avatar-radius: 2px;
+  --component-avatar-ring: 0 0 0 1px rgba(56, 242, 200, 0.30);
+  --component-avatar-shadow: 0 0 12px rgba(56, 242, 200, 0.20);
+
+  --component-badge-radius: 0px;
+  --component-badge-border-w: 1px;
+
+  --component-bubble-radius: 2px;
+  --component-bubble-shadow: none;
+
+  --component-hero-radius: 2px;
+  --component-hero-bg: rgba(56, 242, 200, 0.08);
+  --component-hero-shadow: 0 0 24px rgba(56, 242, 200, 0.25), inset 0 0 24px rgba(56, 242, 200, 0.08);
+  --component-hero-color: #38F2C8;
+
+  --component-progress-radius: 0px;
+  --component-progress-track: rgba(56, 242, 200, 0.12);
+  --component-progress-fill: #38F2C8;
+
+  --component-slider-track: rgba(56, 242, 200, 0.15);
+  --component-slider-fill: #38F2C8;
+  --component-slider-thumb-bg: #38F2C8;
+  --component-slider-thumb-ring: 0 0 0 4px rgba(56, 242, 200, 0.20);
+
+  --component-divider-style: dashed;
+  --component-title-letter-spacing: 0.10em;
+  --component-title-transform: uppercase;
+  --component-glass-blur: 0px;
+  --component-focus-offset: 1px;
+}

@@ -1,0 +1,272 @@
+<div class="doc-page">
+  <div class="doc-page__inner">
+    <header class="stack stack--md">
+      <h1 class="doc-title">组织组件</h1>
+      <p class="doc-subtitle">由分子组装而成的完整区域。四套风格共用同一份 DOM，仅替换主题 Token 文件。</p>
+      <!--THEME_SWITCHER-->
+      <div class="demo-row">
+        <a class="btn btn--sm" href="../index.html"><i class="btn__icon" data-icon="grid"></i>风格总览</a>
+        <a class="btn btn--sm" href="atoms.html"><i class="btn__icon" data-icon="box"></i>原子</a>
+        <a class="btn btn--sm" href="molecules.html"><i class="btn__icon" data-icon="layers"></i>分子</a>
+        <a class="btn btn--sm" href="organisms.html"><i class="btn__icon" data-icon="grid"></i>组织</a>
+      </div>
+    </header>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 A 一级导航栏 Rail</h2>
+        <p class="demo-section__desc">固定宽度 176px，纵向三段式：标题 / 可滚动导航 / 底部固定区。导航项选中态由左侧指示条与底色共同表达。</p>
+      </div>
+      <div class="organism-frame organism-frame--rail organism-frame--h-xl">
+        <aside class="rail" aria-label="主导航">
+          <div class="rail__header"><span class="section-label">会话</span></div>
+          <nav class="rail__nav" aria-label="功能导航">
+            <button type="button" class="nav-item is-selected" aria-current="page"><span class="nav-item__indicator" aria-hidden="true"></span><i class="nav-item__icon" data-icon="message-circle"></i><span class="nav-item__label">对话</span></button>
+            <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="users"></i><span class="nav-item__label">群聊</span></button>
+            <div class="nav-group">
+              <div class="nav-group__title">创作</div>
+              <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="user"></i><span class="nav-item__label">角色</span></button>
+              <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="book"></i><span class="nav-item__label">世界书</span></button>
+              <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="database"></i><span class="nav-item__label">数据银行</span></button>
+              <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="wand"></i><span class="nav-item__label">故事引擎</span></button>
+              <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="dice"></i><span class="nav-item__label">随机事件</span></button>
+              <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="store"></i><span class="nav-item__label">社区市场</span></button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-group__title">能力</div>
+              <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="cpu"></i><span class="nav-item__label">本地模型</span></button>
+              <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="image"></i><span class="nav-item__label">图像生成</span></button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-group__title">历史</div>
+              <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="file-text"></i><span class="nav-item__label">记录</span></button>
+              <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="git-branch"></i><span class="nav-item__label">版本管理</span></button>
+            </div>
+          </nav>
+          <div class="rail__footer">
+            <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="compass"></i><span class="nav-item__label">引导</span></button>
+            <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="more-horizontal"></i><span class="nav-item__label">更多</span></button>
+            <button type="button" class="nav-item"><i class="nav-item__icon" data-icon="settings"></i><span class="nav-item__label">设置</span></button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 B 角色列表栏 List Pane</h2>
+        <p class="demo-section__desc">固定宽度 275px。搜索区固定、列表区滚动、底部操作固定。</p>
+      </div>
+      <div class="organism-frame organism-frame--list organism-frame--h-xl">
+        <aside class="list-pane" aria-label="角色列表">
+          <div class="list-pane__search">
+            <div class="search-field">
+              <i class="search-field__icon" data-icon="search"></i>
+              <label class="visually-hidden" for="o-search">搜索角色</label>
+              <input class="search-field__input" id="o-search" type="search" placeholder="搜索角色...">
+              <button type="button" class="search-field__clear" aria-label="清空搜索"><i class="icon-btn__glyph" data-icon="x"></i></button>
+            </div>
+          </div>
+          <div class="list-pane__body">
+            <div class="nav-group">
+              <div class="nav-group__title">收藏</div>
+              <button type="button" class="entity-item"><span class="avatar avatar--md avatar--tone-3"><span class="avatar__fallback">K</span></span><span class="entity-item__text"><span class="entity-item__name">Kael</span><span class="entity-item__meta">刚刚</span></span></button>
+              <button type="button" class="entity-item is-selected" aria-selected="true"><span class="avatar avatar--md avatar--tone-1"><span class="avatar__fallback">S</span></span><span class="entity-item__text"><span class="entity-item__name">Seraphina</span><span class="entity-item__meta">刚刚</span></span></button>
+              <button type="button" class="btn btn--dashed btn--sm btn--block"><i class="btn__icon" data-icon="plus"></i>为此角色新建会话</button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-group__title">全部角色</div>
+              <button type="button" class="entity-item"><span class="avatar avatar--md avatar--tone-2"><span class="avatar__fallback">L</span></span><span class="entity-item__text"><span class="entity-item__name">Lyra</span><span class="entity-item__meta">刚刚</span></span></button>
+              <button type="button" class="entity-item"><span class="avatar avatar--md avatar--tone-4"><span class="avatar__fallback">M</span></span><span class="entity-item__text"><span class="entity-item__name">Mira</span><span class="entity-item__meta">刚刚</span></span></button>
+            </div>
+          </div>
+          <div class="list-pane__footer">
+            <button type="button" class="btn btn--primary btn--block"><i class="btn__icon" data-icon="plus"></i>新建对话</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 C1 会话顶栏 Topbar</h2>
+        <p class="demo-section__desc">高度 64px，左右两端对齐。左端为角色身份，右端为模式切换、用量徽章与图标操作组。</p>
+      </div>
+      <div class="organism-frame organism-frame--main organism-frame--h-auto">
+        <div class="main">
+          <header class="main__topbar">
+            <div class="main__topbar-start">
+              <span class="avatar avatar--md avatar--tone-1"><span class="avatar__fallback">S</span></span>
+              <span class="main__title">Seraphina</span>
+              <span class="badge badge--warning">未配置</span>
+            </div>
+            <div class="main__topbar-end">
+              <div class="segmented" role="tablist" aria-label="会话模式">
+                <button type="button" class="segmented__item" role="tab" aria-selected="true">对话</button>
+                <button type="button" class="segmented__item" role="tab" aria-selected="false">群聊</button>
+              </div>
+              <span class="badge badge--mono">已跑 0.0k</span>
+              <span class="divider divider--vertical" aria-hidden="true"></span>
+              <button type="button" class="icon-btn" aria-label="搜索会话"><i class="icon-btn__glyph" data-icon="search"></i></button>
+              <button type="button" class="icon-btn" aria-label="导出会话"><i class="icon-btn__glyph" data-icon="download"></i></button>
+              <button type="button" class="icon-btn" aria-label="切换上下文面板" aria-pressed="true"><i class="icon-btn__glyph" data-icon="panel-right"></i></button>
+            </div>
+          </header>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 C2 待处理状态条 Statusbar</h2>
+        <p class="demo-section__desc">最小高度 40px。左侧为汇总提示条，右侧胶囊横向可滚动，窄屏下不换行、不挤压。</p>
+      </div>
+      <div class="organism-frame organism-frame--main organism-frame--h-auto">
+        <div class="main">
+          <div class="main__statusbar">
+            <span class="notice-bar"><i class="notice-bar__icon" data-icon="alert-circle"></i>有 2 项需要先处理</span>
+            <div class="main__statusbar-scroll">
+              <button type="button" class="chip chip--warning chip--interactive"><i class="chip__icon" data-icon="cpu"></i>模型 需处理</button>
+              <button type="button" class="chip chip--warning chip--interactive"><i class="chip__icon" data-icon="book"></i>世界书 需处理</button>
+              <button type="button" class="chip chip--muted chip--interactive"><i class="chip__icon" data-icon="file-text"></i>文档检索 未启用</button>
+              <button type="button" class="chip chip--muted chip--interactive"><i class="chip__icon" data-icon="mic"></i>语音 未启用</button>
+              <button type="button" class="chip chip--muted chip--interactive"><i class="chip__icon" data-icon="sliders"></i>状态指令 未启用</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 C3 空态区 Empty State</h2>
+        <p class="demo-section__desc">无消息时的首屏。内容最大宽度 760px 并水平居中，在剩余高度内垂直居中。</p>
+      </div>
+      <div class="organism-frame organism-frame--main organism-frame--h-md">
+        <div class="main">
+          <div class="main__body main__body--empty">
+            <div class="main__body-inner">
+              <div class="empty-state">
+                <div class="empty-state__glyph" aria-hidden="true"><i data-icon="moon"></i></div>
+                <h2 class="empty-state__title">开始与 Seraphina 的对话</h2>
+                <p class="empty-state__desc">在下方输入消息，或从下面的开场白里挑一个开始</p>
+                <div class="empty-state__starters-wrap">
+                  <span class="section-label section-label--center">示例开场白</span>
+                  <div class="empty-state__starters">
+                    <button type="button" class="starter">你好，能先介绍一下你自己吗？</button>
+                    <button type="button" class="starter">我们今天聊点什么好呢？</button>
+                    <button type="button" class="starter">给我讲一个有趣的故事吧</button>
+                    <button type="button" class="starter">如果可以许一个愿望，你希望是什么？</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 C4 底部输入区 Composer</h2>
+        <p class="demo-section__desc">内容最大宽度 860px 居中。文本域与发送按钮包在同一容器内，聚焦态统一由外层控制。</p>
+      </div>
+      <div class="organism-frame organism-frame--main organism-frame--h-auto">
+        <div class="main">
+          <div class="main__composer">
+            <div class="main__composer-inner">
+              <div class="composer-box">
+                <label class="visually-hidden" for="o-composer">消息输入框</label>
+                <textarea class="textarea textarea--composer" id="o-composer" rows="2" placeholder="输入消息...（Shift+Enter 换行）"></textarea>
+                <div class="composer-box__actions">
+                  <span class="composer-box__hint"><span class="kbd">Shift</span><span>+</span><span class="kbd">Enter</span><span>换行</span></span>
+                  <button type="button" class="icon-btn icon-btn--lg icon-btn--accent" aria-label="发送消息"><i class="icon-btn__glyph" data-icon="send"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 D 上下文侧栏 Context Pane</h2>
+        <p class="demo-section__desc">固定宽度 352px。内部分区自上而下，每块之间用分隔线隔开，最后一块无分隔线。</p>
+      </div>
+      <div class="organism-frame organism-frame--context organism-frame--h-xl">
+        <aside class="context-pane" aria-label="上下文">
+          <div class="context-pane__header">
+            <span class="pane-title">上下文</span>
+            <button type="button" class="icon-btn icon-btn--sm" aria-label="关闭上下文面板"><i class="icon-btn__glyph" data-icon="x"></i></button>
+          </div>
+          <div class="context-pane__body">
+            <section class="card card--interactive" tabindex="0" aria-label="角色信息">
+              <div class="card__header">
+                <span class="avatar avatar--lg avatar--tone-1"><span class="avatar__fallback">S</span></span>
+                <div class="stack grow">
+                  <div class="row row--wrap">
+                    <span class="card__title">Seraphina</span>
+                    <span class="badge badge--warning">未配置</span>
+                  </div>
+                  <p class="card__body">守护翡翠森林的精灵法师，拥有治愈魔法和自然之力。</p>
+                  <div class="row row--wrap"><span class="tag">奇幻</span><span class="tag">温柔</span><span class="tag">治疗系</span></div>
+                </div>
+              </div>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">当前世界用户资料</h3><span class="panel-section__value">未设置</span></div>
+              <p class="panel-section__hint">在当前世界的世界书中编辑用户资料</p>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">对话摘要</h3><span class="panel-section__value">未生成</span></div>
+              <p class="panel-section__hint">当前会话还没有可用摘要</p>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">Token 预算</h3><span class="panel-section__value">0 / 262144</span></div>
+              <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="262144" aria-valuenow="0" aria-label="Token 使用量" style="--progress-value: 0%"><div class="progress__fill"></div></div>
+              <div class="stack stack--xs">
+                <div class="stat-row"><span class="stat-row__dot"></span><span class="stat-row__label">累计消耗</span><span class="stat-row__value">0 Tokens</span></div>
+                <div class="stat-row"><span class="stat-row__dot stat-row__dot--muted"></span><span class="stat-row__label">剩余</span><span class="stat-row__value">262144</span></div>
+              </div>
+              <p class="panel-section__hint">数值来自各轮请求的真实 prompt token 累计，上限可在「设置 → 模型」调整。</p>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">世界书</h3><span class="panel-section__value">0 本</span></div>
+              <p class="panel-section__hint">未绑定世界书，去角色编辑绑定</p>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">作者笔记</h3><span class="panel-section__value">深度 4</span></div>
+              <label class="visually-hidden" for="o-note">作者笔记内容</label>
+              <textarea class="textarea" id="o-note" rows="3">保持温柔治愈的语调</textarea>
+              <div class="slider">
+                <span class="slider__label">插入深度</span>
+                <input class="slider__input" type="range" min="0" max="10" value="4" aria-label="插入深度">
+                <span class="slider__value">4</span>
+              </div>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">Runtime 状态</h3><button type="button" class="panel-section__toggle" aria-label="展开 Runtime 状态"><i data-icon="chevron-down"></i></button></div>
+              <p class="panel-section__hint">原图未展示该分区内容，字段待确认，见设计文档「不确定项」。</p>
+            </section>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">完整应用</h2>
+        <p class="demo-section__desc">把四个区域按 176 / 275 / 自适应 / 352 的栅格拼合，即得到 1920 x 1080 的完整界面。点击下方链接查看四套风格的完整渲染。</p>
+      </div>
+      <div class="demo-note"><i data-icon="info" style="width: var(--size-icon-sm); height: var(--size-icon-sm); stroke-width: var(--icon-stroke-w)"></i><span>四套风格共用 partials/page-body.html 这一份 DOM，只有 theme-*.css 不同。因此组件与风格完全解耦。</span></div>
+      <div class="demo-row">
+        <a class="btn btn--primary" href="../style-a.html"><i class="btn__icon" data-icon="external-link"></i>极光夜曲</a>
+        <a class="btn" href="../style-b.html"><i class="btn__icon" data-icon="external-link"></i>墨纸</a>
+        <a class="btn" href="../style-c.html"><i class="btn__icon" data-icon="external-link"></i>新终端</a>
+        <a class="btn" href="../style-d.html"><i class="btn__icon" data-icon="external-link"></i>樱雾玻璃</a>
+      </div>
+    </section>
+
+  </div>
+</div>

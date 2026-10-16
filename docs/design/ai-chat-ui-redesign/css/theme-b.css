@@ -1,0 +1,196 @@
+/* =============================================================
+   theme-b.css —— 墨纸（Ink and Paper）
+   浅色阅读向。暖白纸面配墨黑文字、朱砂印章色点缀；直角与细实线为主，
+   取消模糊与光晕，动效克制到近乎瞬时，让长文本角色扮演回归「读书」的专注感。
+
+   本文件是「墨纸」风格唯一的视觉取值来源：
+     L2 语义 Token —— 颜色、字体、阴影、圆角、玻璃与动效质感
+     L3 组件 Token —— 组件级表现开关（形状、边框、阴影、指示器）
+
+   切换风格只需替换 <link> 的 theme 文件，DOM 结构保持不变。
+   组件层禁止硬编码，全部取值来自本文件与 tokens.base.css。
+   ============================================================= */
+
+[data-theme="b"] {
+
+  /* ---------- L2-1 背景与表面 ---------- */
+  --color-bg-app: #F4F1EA;
+  --color-bg-canvas: #FAF8F3;
+  --color-bg-rail: #EFEBE2;
+  --color-bg-list: #F4F1EA;
+  --color-bg-panel: #FAF8F3;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-surface-raised: #FFFFFF;
+  --color-bg-inset: #F0ECE3;
+  --color-bg-hover: rgba(28, 26, 23, 0.05);
+  --color-bg-active: rgba(28, 26, 23, 0.09);
+  --color-bg-selected: rgba(178, 58, 47, 0.10);
+  --color-bg-selected-hover: rgba(178, 58, 47, 0.16);
+  --color-bg-glass: rgba(250, 248, 243, 0.88);
+  --color-bg-scrim: rgba(28, 26, 23, 0.42);
+
+  /* ---------- L2-2 文本 ---------- */
+  --color-text-primary: #1C1A17;
+  --color-text-secondary: #57534B;
+  --color-text-tertiary: #8A8478;
+  --color-text-disabled: #B3ADA2;
+  --color-text-inverse: #FAF8F3;
+  --color-text-on-accent: #FFFFFF;
+  --color-text-link: #B23A2F;
+
+  /* ---------- L2-3 边框与分隔 ---------- */
+  --color-border-subtle: rgba(28, 26, 23, 0.08);
+  --color-border-default: rgba(28, 26, 23, 0.16);
+  --color-border-strong: rgba(28, 26, 23, 0.32);
+  --color-border-accent: rgba(178, 58, 47, 0.40);
+  --color-divider: rgba(28, 26, 23, 0.12);
+
+  /* ---------- L2-4 主色与强调 ---------- */
+  --color-accent: #B23A2F;
+  --color-accent-hover: #C64A3E;
+  --color-accent-active: #96291F;
+  --color-accent-soft: rgba(178, 58, 47, 0.10);
+  --color-accent-softer: rgba(178, 58, 47, 0.05);
+  --color-accent-contrast: #FFFFFF;
+  --color-accent-2: #3F6B5C;
+  --color-accent-2-soft: rgba(63, 107, 92, 0.12);
+  --color-highlight: #C08A2E;
+  --color-highlight-soft: rgba(192, 138, 46, 0.14);
+
+  /* ---------- L2-5 语义状态色 ---------- */
+  --color-success: #2F6B45;
+  --color-success-soft: rgba(47, 107, 69, 0.12);
+  --color-success-contrast: #FFFFFF;
+  --color-warning: #9A6B12;
+  --color-warning-soft: rgba(154, 107, 18, 0.14);
+  --color-warning-contrast: #FFFFFF;
+  --color-danger: #A32B22;
+  --color-danger-soft: rgba(163, 43, 34, 0.12);
+  --color-danger-contrast: #FFFFFF;
+  --color-info: #2F5D8C;
+  --color-info-soft: rgba(47, 93, 140, 0.12);
+  --color-info-contrast: #FFFFFF;
+
+  /* ---------- L2-6 焦点与滚动条 ---------- */
+  --color-focus-ring: #B23A2F;
+  --color-scrollbar-track: transparent;
+  --color-scrollbar-thumb: rgba(28, 26, 23, 0.20);
+  --color-scrollbar-thumb-hover: rgba(28, 26, 23, 0.34);
+
+  /* ---------- L2-7 阴影与光效 ---------- */
+  --shadow-xs: 0 1px 1px rgba(28, 26, 23, 0.05);
+  --shadow-sm: 0 1px 2px rgba(28, 26, 23, 0.07);
+  --shadow-md: 0 2px 6px rgba(28, 26, 23, 0.08);
+  --shadow-lg: 0 6px 18px rgba(28, 26, 23, 0.10);
+  --shadow-xl: 0 12px 36px rgba(28, 26, 23, 0.12);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.60);
+  --shadow-glow: 0 0 0 1px rgba(178, 58, 47, 0.30);
+  --shadow-focus: 0 0 0 3px rgba(178, 58, 47, 0.20);
+
+  /* ---------- L2-8 字体 ---------- */
+  --font-family-sans: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-family-display: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", Georgia, serif;
+  --font-family-mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+  --font-feature-settings: "tnum";
+
+  /* ---------- L2-9 圆角覆写（风格形状语言） ---------- */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
+
+  /* ---------- L2-10 描边与玻璃 ---------- */
+  --size-border-thin: 1px;
+  --size-border-thick: 2px;
+  --effect-blur: 0px;
+  --effect-saturate: 1;
+
+  /* ---------- L2-11 环境装饰（背景层） ---------- */
+  --component-backdrop-image: none;
+  --component-backdrop-size: cover;
+  --component-backdrop-repeat: no-repeat;
+  --component-backdrop-opacity: 0;
+
+  /* ---------- L3 组件级表现开关 ---------- */
+  --component-nav-item-radius: 4px;
+  --component-nav-indicator-w: 3px;
+  --component-nav-indicator-color: #B23A2F;
+  --component-nav-item-active-bg: rgba(178, 58, 47, 0.10);
+  --component-nav-item-active-color: #1C1A17;
+
+  --component-panel-radius: 0px;
+  --component-panel-border-w: 1px;
+  --component-panel-border-color: rgba(28, 26, 23, 0.12);
+  --component-panel-shadow: none;
+
+  --component-card-radius: 6px;
+  --component-card-border-w: 1px;
+  --component-card-border-color: rgba(28, 26, 23, 0.16);
+  --component-card-bg: #FFFFFF;
+  --component-card-shadow: 0 1px 2px rgba(28, 26, 23, 0.07);
+  --component-card-shadow-hover: 0 6px 18px rgba(28, 26, 23, 0.10);
+  --component-card-lift: 0px;
+
+  --component-button-radius: 4px;
+  --component-button-shadow: none;
+  --component-button-shadow-hover: 0 0 0 1px rgba(178, 58, 47, 0.30);
+  --component-button-primary-bg: #B23A2F;
+  --component-button-primary-bg-hover: #C64A3E;
+  --component-button-primary-color: #FFFFFF;
+
+  --component-icon-button-radius: 4px;
+  --component-icon-button-bg: transparent;
+  --component-icon-button-bg-hover: rgba(28, 26, 23, 0.07);
+
+  --component-list-item-radius: 4px;
+  --component-list-item-active-bg: rgba(178, 58, 47, 0.10);
+
+  --component-chip-radius: 4px;
+  --component-chip-border-w: 1px;
+  --component-chip-bg: #FFFFFF;
+  --component-chip-bg-hover: rgba(28, 26, 23, 0.05);
+  --component-chip-color: #57534B;
+
+  --component-tag-radius: 3px;
+  --component-tag-border-w: 1px;
+  --component-tag-bg: rgba(178, 58, 47, 0.08);
+
+  --component-input-radius: 6px;
+  --component-input-border-w: 1px;
+  --component-input-bg: #FFFFFF;
+  --component-input-bg-focus: #FFFFFF;
+  --component-input-shadow-focus: 0 0 0 3px rgba(178, 58, 47, 0.16);
+  --component-input-min-h: 44px;
+
+  --component-avatar-radius: 4px;
+  --component-avatar-ring: 0 0 0 1px rgba(28, 26, 23, 0.16);
+  --component-avatar-shadow: none;
+
+  --component-badge-radius: 3px;
+  --component-badge-border-w: 1px;
+
+  --component-bubble-radius: 6px;
+  --component-bubble-shadow: none;
+
+  --component-hero-radius: 6px;
+  --component-hero-bg: #FFFFFF;
+  --component-hero-shadow: 0 1px 2px rgba(28, 26, 23, 0.07);
+  --component-hero-color: #B23A2F;
+
+  --component-progress-radius: 0px;
+  --component-progress-track: rgba(28, 26, 23, 0.10);
+  --component-progress-fill: #B23A2F;
+
+  --component-slider-track: rgba(28, 26, 23, 0.12);
+  --component-slider-fill: #B23A2F;
+  --component-slider-thumb-bg: #B23A2F;
+  --component-slider-thumb-ring: 0 0 0 4px rgba(178, 58, 47, 0.16);
+
+  --component-divider-style: solid;
+  --component-title-letter-spacing: 0.01em;
+  --component-title-transform: none;
+  --component-glass-blur: 0px;
+  --component-focus-offset: 2px;
+}
