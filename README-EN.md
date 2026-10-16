@@ -194,19 +194,26 @@ tests/               Unit / a11y / E2E
 
 ## 🛣️ Roadmap
 
-- [x] **0.4.0** — local long-term memory persistence, incremental dual-channel vector RAG, conversation summaries and context status (complete)
-- [x] **0.5.0** — full-text search, historical message navigation, and virtualized-window integration for long chats (complete)
-- [x] **0.6.0** — deterministic appraisal, behavior planning, and configurable long-term state decay (complete)
-- [x] **0.7.0** — memory validity windows and auditable runtime context sources (complete)
-- [x] **0.8.0** — Runtime memory confirmation, rejection, disabling, and replayable review events (complete)
+Order rule: **newest version first**, same as `CHANGELOG.md`. When a release ships, add its line at the
+top of this list; capabilities that span versions go in the "Capability tracks" block below, never
+between version numbers.
+
+- [x] **1.1.1** — patch: the About page now shows the real version (build-time injection), one-off probe scripts moved out of the product gates (complete, no data migration)
+- [x] **1.1.0** — usable on phones, inner-monologue narration, injection visibility, derived token budgets, Android packaging and engineering guardrails (complete, no data migration)
+- [x] **1.0.0** — first stable release (complete)
 - [x] **0.9.0** — one local user account with world-specific roleplay profiles (complete)
+- [x] **0.8.0** — Runtime memory confirmation, rejection, disabling, and replayable review events (complete)
+- [x] **0.7.0** — memory validity windows and auditable runtime context sources (complete)
+- [x] **0.6.0** — deterministic appraisal, behavior planning, and configurable long-term state decay (complete)
+- [x] **0.5.0** — full-text search, historical message navigation, and virtualized-window integration for long chats (complete)
+- [x] **0.4.0** — local long-term memory persistence, incremental dual-channel vector RAG, conversation summaries and context status (complete)
 - [x] **0.3.1** — Runtime and group chat productionization: tenant/member authorization, server-side reliable outbox, group definition CAS conflict recovery, state inspector and replay self-check (released)
 - [x] **0.3.0** — Runtime and group chat MVP: cross-device group history, reliable outbox, conflict recovery, Runtime state inspector (released)
 - [x] **0.2.0** — custom vector model + RAG, custom themes, market, tray/shortcut (released)
+
+Capability tracks (they span versions and are not version numbers):
+
 - [x] **Virtual Character OS Runtime** — batch characters, multi-character group chat, PostgreSQL transactions, version CAS and replay audit (landed)
-- [x] **1.0.0** — first stable release (complete)
-- [x] **1.1.0** — usable on phones, inner-monologue narration, injection visibility, derived token budgets, Android packaging and engineering guardrails (complete, no data migration)
-- [x] **1.1.1** — patch: the About page now shows the real version (build-time injection), one-off probe scripts moved out of the product gates (complete, no data migration)
 - [x] **RAG** — stopword filtering, installed-model selection and recall@3 benchmark (complete)
 - [x] **A11y** — runtime contrast pre-check for custom themes (complete)
 
