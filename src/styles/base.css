@@ -199,6 +199,12 @@ textarea,
    var(--range-pct) 会在 :root 提前求值，着色永远停在 0%。 */
 input[type="range"] {
   cursor: pointer;
+  /* 不写这一句，range 的 color 就是 UA 默认值 FieldText，而 FieldText 随操作系统解析：
+     Windows（本机 msedge 与本机 chromium 都是）算出 rgb(16,16,16)，GitHub CI 的 Linux chromium
+     算出 rgb(157,150,142)。像素中性网把 color 与 border-*-color 都算进读数，于是同一条基线在
+     CI 上永远红（2026-10-16 PR #6 的 group 3/4 就是这么红的）。让它跟随所在容器的文字色，
+     四个"引擎 × 系统"组合才会一致。 */
+  color: inherit;
   background-color: transparent;
   background-repeat: no-repeat;
   background-position: center;

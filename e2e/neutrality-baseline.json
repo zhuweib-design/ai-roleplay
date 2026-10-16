@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-15",
+  "generatedAt": "2026-10-16",
   "viewport": {
     "width": 1280,
     "height": 720
@@ -209,7 +209,7 @@
           "flex-direction": "row"
         },
         ".tk-range": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(245, 245, 247)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -223,7 +223,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(245, 245, 247)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -247,7 +247,7 @@
           "flex-direction": "row"
         },
         ".extension-block .form-row input[type=\"range\"]": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(245, 245, 247)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -261,7 +261,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(245, 245, 247)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -477,7 +477,7 @@
           "flex-direction": "row"
         },
         ".tk-range": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(22, 24, 35)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -491,7 +491,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(22, 24, 35)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -515,7 +515,7 @@
           "flex-direction": "row"
         },
         ".extension-block .form-row input[type=\"range\"]": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(22, 24, 35)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -529,7 +529,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(22, 24, 35)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -745,7 +745,7 @@
           "flex-direction": "row"
         },
         ".tk-range": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(240, 244, 255)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -759,7 +759,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(240, 244, 255)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -783,7 +783,7 @@
           "flex-direction": "row"
         },
         ".extension-block .form-row input[type=\"range\"]": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(240, 244, 255)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -797,7 +797,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(240, 244, 255)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -1013,7 +1013,7 @@
           "flex-direction": "row"
         },
         ".tk-range": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(255, 255, 255)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -1027,7 +1027,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(255, 255, 255)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -1051,7 +1051,7 @@
           "flex-direction": "row"
         },
         ".extension-block .form-row input[type=\"range\"]": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(255, 255, 255)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -1065,7 +1065,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(255, 255, 255)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -1281,7 +1281,7 @@
           "flex-direction": "row"
         },
         ".tk-range": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(245, 239, 230)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -1295,7 +1295,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(245, 239, 230)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -1319,7 +1319,7 @@
           "flex-direction": "row"
         },
         ".extension-block .form-row input[type=\"range\"]": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(245, 239, 230)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -1333,7 +1333,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(245, 239, 230)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -1549,7 +1549,7 @@
           "flex-direction": "row"
         },
         ".tk-range": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(214, 245, 236)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -1563,7 +1563,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(214, 245, 236)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -1587,7 +1587,7 @@
           "flex-direction": "row"
         },
         ".extension-block .form-row input[type=\"range\"]": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(214, 245, 236)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -1601,7 +1601,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(214, 245, 236)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -1817,7 +1817,7 @@
           "flex-direction": "row"
         },
         ".tk-range": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(236, 238, 247)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -1831,7 +1831,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(236, 238, 247)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -1855,7 +1855,7 @@
           "flex-direction": "row"
         },
         ".extension-block .form-row input[type=\"range\"]": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(236, 238, 247)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -1869,7 +1869,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(236, 238, 247)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -2085,7 +2085,7 @@
           "flex-direction": "row"
         },
         ".tk-range": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(28, 26, 23)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -2099,7 +2099,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(28, 26, 23)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -2123,7 +2123,7 @@
           "flex-direction": "row"
         },
         ".extension-block .form-row input[type=\"range\"]": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(28, 26, 23)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -2137,7 +2137,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(28, 26, 23)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -2353,7 +2353,7 @@
           "flex-direction": "row"
         },
         ".tk-range": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(17, 17, 17)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -2367,7 +2367,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(17, 17, 17)",
           "display": "block",
           "flex-direction": "row"
         },
@@ -2391,7 +2391,7 @@
           "flex-direction": "row"
         },
         ".extension-block .form-row input[type=\"range\"]": {
-          "color": "rgb(16, 16, 16)",
+          "color": "rgb(17, 17, 17)",
           "background-color": "rgba(0, 0, 0, 0)",
           "font-size": "13.3333px",
           "font-weight": "400",
@@ -2405,7 +2405,7 @@
           "border-top-left-radius": "0px",
           "border-bottom-right-radius": "0px",
           "border-top-width": "0px",
-          "border-top-color": "rgb(16, 16, 16)",
+          "border-top-color": "rgb(17, 17, 17)",
           "display": "block",
           "flex-direction": "row"
         },
