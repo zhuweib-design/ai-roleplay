@@ -58,6 +58,25 @@
 - `e2e-desktop` / `e2e-mobile`：本机 `--write` 不带 `--full` 时不跑全量；
   端到端结论以 GitHub Actions 的 4 组分片为准（见 CHANGELOG 与 PR 的检查状态）。
 
+## 收口读数（合并、标签、Release 与安装包）
+
+| 项 | 值 |
+| --- | --- |
+| PR #7 | head `f8b7027` → 合并提交 `aef30ff`（merge commit，非 squash） |
+| 合并前门禁 | run #124（id 38894488649，提交 `f8b7027`）6 个 job 全 success |
+| 合并后 master | run #125（提交 `aef30ff`）success |
+| 标签 | 附注标签 `v1.1.1`，`refs/tags/v1.1.1^{}` = `aef30ff` |
+| Release 对象 | 新建两个：`v1.1.0`（id 414902351，无资产，只有自动生成的源码归档）与 `v1.1.1`（id 414902372） |
+| 安卓包 | `AI-roleplay-1.1.1-debug.apk` 挂在 v1.1.1 上，27,335,537 字节（26.1 MiB），sha256 `3f64b6b381de17ba1840ebdff2caf810abeaa3c69456b234769afc6f0f4834`；下载回来 `cmp` 与本机产物**逐字节一致** |
+| 签名的诚实说法 | 这是 **debug 签名**包（gradle 自动生成 debug keystore），用于自测与真机验证，不是正式发布签名；Release 正文里也这么写了 |
+
+出包与上传过程中撞到的两个坑，记下来免得下次重查：
+
+- `aapt dump badging` 打不开中文文件名的包（`Illegal byte sequence` ⇒ 报"找不到 AndroidManifest.xml"）。
+  先把包复制成 ASCII 名再读，就读到了 `versionCode='3' versionName='1.1.1'`。
+- Release 资产上传不能用 `upload_url` 原样拼参数：API 返回的是**未展开的 URI 模板**
+  `…/assets{?name,label}`，拼 `&name=` 会 400。要先把 `{…}` 去掉再带 `?name=`，改完即 201。
+
 ## 已知未闭环
 
 - iOS Safari 的键盘避让仍只有单测形状，无设备可跑（与 1.1.0 同）。

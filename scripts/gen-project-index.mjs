@@ -182,6 +182,8 @@ const CURATED = {
     '安卓出包：vite build → cap sync → gradlew assembleDebug → 复制进 installer/（需本机 JDK 21 与 Android SDK）',
   'docs/dev/release-notes-1.1.0.md':
     '1.1.0 发布说明：版本定位、用户可见变化、数据兼容、实测读数表与未覆盖项',
+  'docs/dev/release-notes-1.1.1.md':
+    '1.1.1 补丁版发布说明：为什么单开一版、关于页版本号的修法与牙口、本机/CI/真机读数、合并标签与安装包复核',
   'docs/dev/release-evidence-1.1.0.md':
     '1.1.0 逐项门禁读数（证据包 + 本机与 CI 实测，标明哪些是本地跑的、哪些以 CI 为准）',
   'src/core/vector-model-manager.ts': '向量模型管理器',

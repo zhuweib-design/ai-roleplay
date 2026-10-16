@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-10-16 18:56（本地时区）
+- **生成时间**：2026-10-16 19:53（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v1.1.1 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：1249 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：647 个
+- **收录文件**：1250 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：647 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -138,7 +138,7 @@ ai-roleplay/
 - `e2e/`  — 47 个文件
   - `mobile/`  — 5 个文件
 - `eval/`  — 1 个文件
-- `installer/`  — 1 个文件
+- `installer/`  — 2 个文件
 - `market/`  — 8 个文件
   - `cards/`  — 1 个文件
   - `items/`  — 6 个文件
@@ -762,8 +762,8 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
 | `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
-| `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已修改 |  |
-| `README.md` | md | 开发文档 | 项目主说明（中文） | 已修改 |  |
+| `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已跟踪 |  |
+| `README.md` | md | 开发文档 | 项目主说明（中文） | 已跟踪 |  |
 | `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已跟踪 |  |
 | `docs/dev/0.3.1-a-release-gates.md` | md | 开发文档 | 开发文档：0.3.1 A 阶段质量门禁与发布验收 | 已跟踪 |  |
 | `docs/dev/0.3.1-baseline.md` | md | 开发文档 | 开发文档：0.3.1 C-D-A 阶段基线与提交记录 | 已跟踪 |  |
@@ -778,7 +778,7 @@ ai-roleplay/
 | `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已跟踪 |  |
 | `docs/dev/PERF_OPTIMIZATION_2026-09-28.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/PLAN_AUDIT_2026-09-28.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/dev/PROJECT_INDEX.md` | md | 开发文档 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已修改 | 索引文件（不递归展开） |
+| `docs/dev/PROJECT_INDEX.md` | md | 开发文档 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已跟踪 | 索引文件（不递归展开） |
 | `docs/dev/QUICK_START.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/REAL_DEVICE_FIX_2026-10-03.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/REAL_DEVICE_TEST_2026-10-03.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
@@ -915,8 +915,8 @@ ai-roleplay/
 | `docs/dev/release-notes-0.8.0.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/release-notes-0.9.0.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/release-notes-1.0.0.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/dev/release-notes-1.1.0.md` | md | 开发文档 | 1.1.0 发布说明：版本定位、用户可见变化、数据兼容、实测读数表与未覆盖项 | 已修改 |  |
-| `docs/dev/release-notes-1.1.1.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/dev/release-notes-1.1.0.md` | md | 开发文档 | 1.1.0 发布说明：版本定位、用户可见变化、数据兼容、实测读数表与未覆盖项 | 已跟踪 |  |
+| `docs/dev/release-notes-1.1.1.md` | md | 开发文档 | 1.1.1 补丁版发布说明：为什么单开一版、关于页版本号的修法与牙口、本机/CI/真机读数、合并标签与安装包复核 | 已修改 |  |
 | `docs/dev/resource-security.md` | md | 开发文档 | 开发文档：外部资源许可证、来源、依赖与权限边界 | 已跟踪 |  |
 | `docs/dev/runtime-database-migration-runbook.md` | md | 开发文档 | 开发文档：Virtual Character OS 数据库迁移演练 Runbook（备份 / 锁等待 / 回滚 / 演练清单） | 已跟踪 |  |
 | `docs/dev/runtime-event-contract.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
@@ -955,7 +955,7 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `docs/design/AI酒馆项目嵌入优化方案开发文档.md` | md | 设计文档 | 设计文档：嵌入优化方案（L0/L1/L2 三层） | 已忽略 |  |
 | `docs/design/HANDOFF_2026-10-13_APK与两条未完工任务.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/design/OPT_PLAN_2026-10-15_移动端与五项体验重构.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/design/OPT_PLAN_2026-10-15_移动端与五项体验重构.md` | md | 设计文档 | 待确认 | 已修改 | 用途待确认 |
 | `docs/design/P2-9-csp-whitelist-report.md` | md | 设计文档 | 设计文档：P2-9 CSP / remote 白名单盘点与决策记录 | 已跟踪 |  |
 | `docs/design/PSY_NARRATION_STYLE_2026-10-15/index.html` | html | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/THEME_5_GENERIC_PREVIEW/a-characters.png` | png | 设计文档 | 待确认 | 已忽略 | 用途待确认 |
@@ -1139,7 +1139,7 @@ ai-roleplay/
 | `scripts/vendor-fonts.mjs` | mjs | 脚本 | 工具：把 Google Fonts 镜像到 public/fonts/，消除第三方字体请求（支持 --check 供校验） | 已跟踪 |  |
 | `scripts/vendor-ort.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 
-### 2.11 其他（368）
+### 2.11 其他（369）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -1161,78 +1161,78 @@ ai-roleplay/
 | `android/app/src/main/assets/public/ai-roleplay-dev-plan.html` | html | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/apple-touch-icon.png` | png | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/ArchivesView-DQEDWdBF.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/ArchivesView-bLWSv1ZF.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/ArchivesView-bLWSv1ZF.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/ArchivesView-Dj-sYpzg.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/ArchivesView-Dj-sYpzg.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/Avatar-CDmn-nJB.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/Avatar-CDmn-nJB.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/CharacterEditorView-CjL17cPy.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/CharacterEditorView-CjL17cPy.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/CharacterEditorView-DYRGy1wx.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/CharacterVersionView-6yEkf8yy.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/CharacterVersionView-6yEkf8yy.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/CharacterEditorView-DtAE7FQd.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/CharacterEditorView-DtAE7FQd.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/CharacterVersionView-Di9tT_wg.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/CharacterVersionView-DmHdaapr.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/CharacterVersionView-DmHdaapr.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/CharactersView-CJA-i3QP.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/CharactersView-Ch4tLfSR.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/CharactersView-Ch4tLfSR.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/ChatView-BtyNxkDb.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/ChatView-BtyNxkDb.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/CharactersView-DiVCTwvI.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/CharactersView-DiVCTwvI.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/ChatView-BFC5mLC3.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/ChatView-BFC5mLC3.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/ChatView-V4rxqupa.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/Collapse-CR60q1Qx.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/Collapse-CR60q1Qx.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/Collapse-Dhev9g7M.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/Collapse-xxEhs0Wf.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/Collapse-xxEhs0Wf.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/CommunityMarketView-81HU5dZp.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/CommunityMarketView-xlXPCgRz.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/CommunityMarketView-xlXPCgRz.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/CommunityMarketView-D40AbjqK.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/CommunityMarketView-D40AbjqK.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/DataBankView-DYBlKRby.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/DataBankView-DitJXvsK.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/DataBankView-DitJXvsK.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/EmptyState-BdPYenTQ.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/EmptyState-BdPYenTQ.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/DataBankView-x7RB1lDF.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/DataBankView-x7RB1lDF.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/EmptyState-B7B23tV1.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/EmptyState-B7B23tV1.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/EmptyState-iObS_XYy.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/FilterTabs-BbPgDOzW.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/FilterTabs-BbPgDOzW.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/FilterTabs-CoQ_3RxU.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/FormField-36RJJLI6.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/FormField-36RJJLI6.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/FilterTabs-DyX8ES3w.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/FilterTabs-DyX8ES3w.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/FormField-5lku3aTh.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/FormField-5lku3aTh.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/FormField-BmE8YnQy.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/GroupChatView-CBH4jEhY.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/GroupChatView-CBH4jEhY.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/GroupChatView-DEgKg9we.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/GuideView-C4wjDq3Z.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/GuideView-C4wjDq3Z.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/GroupChatView-DxoTU3JH.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/GroupChatView-DxoTU3JH.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/GuideView-Dy9m_2rQ.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/GuideView-Dy9m_2rQ.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/GuideView-DzuQXeRn.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/GuidedTasksCard-C2C-8q_N.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/GuidedTasksCard-C2C-8q_N.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/GuidedTasksCard-CsREoG54.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/GuidedTasksCard-Cz6PO_Vs.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/GuidedTasksCard-Cz6PO_Vs.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/ImageGeneratorView-BCEu42Iu.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/ImageGeneratorView-BCEu42Iu.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/ImageGeneratorView-BLZ7olzR.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/ImageGeneratorView-C1sXDgt1.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/ImageGeneratorView-C1sXDgt1.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/LocalModelView-C2zeqR8g.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/LocalModelView-COxfCcuN.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/LocalModelView-COxfCcuN.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/LocalModelView-jsAwvcOD.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/LocalModelView-jsAwvcOD.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/MoreView-Bq895ixm.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/MoreView-CKs9maHx.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/MoreView-CKs9maHx.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/PrereqNotice-8t6SwV9x.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/PrereqNotice-8t6SwV9x.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/MoreView-pe473B5p.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/MoreView-pe473B5p.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/PrereqNotice-6z8k7xZu.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/PrereqNotice-6z8k7xZu.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/PrereqNotice-DTyHmKc1.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/RandomEventsView-7QjXkZbT.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/RandomEventsView-CXF34OsJ.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/RandomEventsView-CXF34OsJ.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/RandomEventsView-q-XBUe5q.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/RandomEventsView-q-XBUe5q.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/RuntimeStatePanel-Bc2qPajA.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/RuntimeStatePanel-CgkSgKEV.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/RuntimeStatePanel-CgkSgKEV.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/SettingsView-BHvigxoB.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/SettingsView-BHvigxoB.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/SettingsView-Dg5JeFud.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/RuntimeStatePanel-BtdIkPXE.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/RuntimeStatePanel-BtdIkPXE.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/SettingsView-DZP6NO-n.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/SettingsView-DZP6NO-n.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/SettingsView-DrRLsr2E.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/StepFlow-0AN-BAXG.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/StepFlow-CC9j5fAu.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/StepFlow-CC9j5fAu.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/StoryEngineView-CnYhWY1f.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/StoryEngineView-CnYhWY1f.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/StepFlow-tedOrSHp.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/StepFlow-tedOrSHp.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/StoryEngineView-C0nWLyLg.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/StoryEngineView-C0nWLyLg.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/StoryEngineView-DfCfAydj.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/WorldBookView-DJl3j2Lh.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/WorldBookView-DJl3j2Lh.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/WorldBookView-ifnHEm8O.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/WorldBookView-ifnHEm8O.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/WorldBookView-qWgTeAlT.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/character-generator-AyJ95TzA.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/character-generator-AyJ95TzA.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
@@ -1268,9 +1268,9 @@ ai-roleplay/
 | `android/app/src/main/assets/public/assets/icons/dl_builtin_tik_tok/plus.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/icons/dl_builtin_tik_tok/share-fat.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/icons/dl_builtin_tik_tok/user.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/index-BSsvpeZi.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/index-zTnH9pi5.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/index-zTnH9pi5.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/index-CkxQ58Es.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/index-DmEoYUGZ.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/index-DmEoYUGZ.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/local-model-BUyudfhN.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/local-model-BUyudfhN.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/logger-ClF1aBez.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
@@ -1301,8 +1301,8 @@ ai-roleplay/
 | `android/app/src/main/assets/public/assets/token-counter-Cz2hHr-h.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/type-adapters-BnBjzHO6.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/type-adapters-BnBjzHO6.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/useDeepLinkId-BYHDZal_.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `android/app/src/main/assets/public/assets/useDeepLinkId-BYHDZal_.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/useDeepLinkId-grUUgew5.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `android/app/src/main/assets/public/assets/useDeepLinkId-grUUgew5.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/useSectionMemory-hKv0RiPP.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/useSectionMemory-hKv0RiPP.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `android/app/src/main/assets/public/assets/vector-model-install-Dd0GShzT.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
@@ -1493,6 +1493,7 @@ ai-roleplay/
 | `eval/setting-facts-dataset.v1.json` | json | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `icon-source.png` | png | 其他 | 应用图标设计源图（生成 PWA / Tauri 图标用） | 已跟踪 |  |
 | `installer/AI酒馆-1.0.0-debug.apk` | apk | 其他 | 待确认 | 已忽略 | 用途待确认 |
+| `installer/AI酒馆-1.1.1-debug.apk` | apk | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `market/cards/seraphina.json` | json | 其他 | 社区市场示例：角色卡数据 | 已跟踪 |  |
 | `market/index.json` | json | 其他 | 社区市场索引（角色卡 / 模板清单） | 已跟踪 |  |
 | `market/items/character-echo.json` | json | 其他 | 社区市场条目：角色 Echo | 已跟踪 |  |
@@ -1526,8 +1527,8 @@ ai-roleplay/
 | 截图 | 1 | docs/assets/screenshots/ 下 UI 冒烟截图 |
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 43 | scripts/ 门禁、审计与工具脚本 |
-| 其他 | 368 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **1249** | 与「收录文件」数一致 |
+| 其他 | 369 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
+| **合计** | **1250** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 
