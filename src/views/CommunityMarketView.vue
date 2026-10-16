@@ -997,6 +997,10 @@ type="button"
 .page-header {
   display: flex;
   align-items: center;
+  /* 下面那两句说明写的是 flex:1 1 100%（本意独占一行），但这个容器一直没开 wrap，
+     于是"标题 + 两句说明 + 右侧登录"全挤在同一行里按比例缩——真机量到「登录」按钮
+     被压成 42×48（两个字竖排两行）。开 wrap 才是这段样式原本想表达的样子。 */
+  flex-wrap: wrap;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border);

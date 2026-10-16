@@ -1801,6 +1801,10 @@ function strategyLabel(s: LorebookStrategy): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* 390px 实测：标题与右侧动作组同行时，标题被压到 20px 宽（"世界书"三个字竖排）。
+     允许换行 + 标题不折行，动作组放不下就整排落到第二行。 */
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 14px 20px;
   border-bottom: 1px solid var(--border);
   background: var(--card);
@@ -1810,6 +1814,7 @@ function strategyLabel(s: LorebookStrategy): string {
 .header-title {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 12px;
 }
 
@@ -1817,6 +1822,7 @@ function strategyLabel(s: LorebookStrategy): string {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
+  white-space: nowrap;
   color: var(--foreground);
 }
 
@@ -1828,6 +1834,9 @@ function strategyLabel(s: LorebookStrategy): string {
 .header-actions {
   display: flex;
   gap: 8px;
+  /* 390px 实测：标题与这排按钮同行时被按比例压缩，"AI 生成"被压成 25×51（三行竖排）。
+     动作组不该收缩，标题该让位。 */
+  flex-shrink: 0;
 }
 
 .header-btn {
@@ -1835,6 +1844,7 @@ function strategyLabel(s: LorebookStrategy): string {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
+  white-space: nowrap;
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--foreground);

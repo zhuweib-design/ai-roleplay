@@ -1067,6 +1067,8 @@ function triggerBackupImport() {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--foreground);
@@ -1286,6 +1288,9 @@ function triggerBackupImport() {
 .profile-create {
   display: flex;
   align-items: center;
+  /* 390px 实测：输入框与"创建并切换"按钮同行时被一起压缩，按钮被压成 22×85（五个字竖排五行）。
+     允许换行 + 按钮不收缩、文字不折行。 */
+  flex-wrap: wrap;
   gap: 8px;
 }
 
