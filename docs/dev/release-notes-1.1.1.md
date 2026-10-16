@@ -38,6 +38,9 @@
 | 证据包汇总 | 15 项：10 passed / **0 failed** / 5 skipped（skip 的都是外部依赖，见下） |
 | 关于页版本号断言 | 单测 3 条 + 真实浏览器 1 条，两条链都做过头故障注入实测：把组件回退成 `ref('')` 时，单测红在 `expected '…版本：—…' to contain '版本：1.1.0'`，e2e 红在同一条 `toContainText(APP_VERSION)` |
 | `docs` 源码登记守卫 | 3 条全绿；把登记前缀改成不存在的目录后，"未登记源码"与"登记项必须还指得到源码"两条同时红（实测过） |
+| CI（PR #7，run #122，提交 `db25809`） | 6 个 job 全 success：Quality Gates（含 `Lint (eslint .)` 与覆盖率 82.64 / 76.49 / 84.22 / 84.75，213 文件通过 / 1 跳过）、E2E 四组 53 + 73 + 50 + 66 = **242 项全通过**、Tauri `--no-bundle` |
+| CI 的 E2E 里有 1 条 flaky | group 3/4 报 `1 flaky`：`e2e/ux-modal-describedby-version.spec.ts` 的 `switchBranch()` 里"切换到此分支"按钮点击在 60 秒超时后重试通过（`locator.click: Test timeout of 60000ms exceeded`，该文件 131/135 行）。**这不是本轮引入的**（本轮只往 `ux-gap-visibility.spec.ts` 加了一条用例），但它说明那条用例的等待策略还有一条没收口——记在下面"已知未闭环"，不当"全绿"混过去 |
+| 安卓真机（本机模拟器 ns36，headless 起、验完关机归还；WebView Chrome 133 / Android 16） | 新包 `installer/AI酒馆-1.1.1-debug.apk` 26.1 MB，`aapt dump badging`：`versionCode='3' versionName='1.1.1'`；解包核对入口哈希 `assets/public/assets/index-DmEoYUGZ.js` 与本机 `dist` 同一份；覆盖安装后运行页读到 **"版本：1.1.1"**、`<html lang>` 为 `zh-CN`、Service Worker 注册数 0、CacheStorage 0、IndexedDB 旧数据仍在（characters 4 / settings 1） |
 
 ### 本次新抓到的失败与处置
 
@@ -61,3 +64,7 @@
 - 安卓导出按钮仍是死按钮，需要原生插件才能修（与 1.1.0 同）。
 - `worldEntries` 的死路径为兼容旧备份/导入暂未清理。
 - `PROJECT_INDEX.md` 里 `src/` 下仍有约 70 个文件的用途是"待确认"，需要一次专门的人工核对。
+- 有一条 e2e 用例在 CI 上是 flaky（本轮实测 1 次）：`e2e/ux-modal-describedby-version.spec.ts`
+  的 `switchBranch()`，症状是"切换到此分支"按钮点击 60 秒超时、重试才过。它被 `retries: 2` 兜住
+  所以 job 仍绿，但"绿"不等于"稳"——下一次收口应该按 15.15 那张网的办法处理：先量它在单 worker
+  下的真实耗时，再把等待点改成读存储/读状态，而不是加大超时。
