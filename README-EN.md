@@ -6,7 +6,7 @@
 
 **An AI role-playing chat app built on the SillyTavern architecture: multi-model chat · character cards · world books · group chat · story engine · community market · custom themes · custom vector-model RAG · Virtual Character OS Runtime**
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v1.1.0)
+[![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v1.1.1)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6.svg)]()
 [![Tauri 2](https://img.shields.io/badge/Tauri-2.0-24c8db.svg)]()
@@ -206,6 +206,7 @@ tests/               Unit / a11y / E2E
 - [x] **Virtual Character OS Runtime** — batch characters, multi-character group chat, PostgreSQL transactions, version CAS and replay audit (landed)
 - [x] **1.0.0** — first stable release (complete)
 - [x] **1.1.0** — usable on phones, inner-monologue narration, injection visibility, derived token budgets, Android packaging and engineering guardrails (complete, no data migration)
+- [x] **1.1.1** — patch: the About page now shows the real version (build-time injection), one-off probe scripts moved out of the product gates (complete, no data migration)
 - [x] **RAG** — stopword filtering, installed-model selection and recall@3 benchmark (complete)
 - [x] **A11y** — runtime contrast pre-check for custom themes (complete)
 
@@ -223,6 +224,7 @@ This project is open-sourced under the **Apache License 2.0**. See [LICENSE](LIC
 
 ### Release notes
 
+- **1.1.1**: see [`docs/dev/release-notes-1.1.1.md`](docs/dev/release-notes-1.1.1.md) - why a patch release was cut instead of folding the fix into the published `v1.1.0` tag, the verification readings and the items still open.
 - **1.1.0**: see [`docs/dev/release-notes-1.1.0.md`](docs/dev/release-notes-1.1.0.md) for this release's user-visible changes, data compatibility and verification readings, and [`docs/dev/release-evidence-1.1.0.md`](docs/dev/release-evidence-1.1.0.md) for the per-gate evidence.
 - **1.0.0**: see [`docs/dev/release-notes-1.0.0.md`](docs/dev/release-notes-1.0.0.md) for the stable release boundary and verification results. Previous: [`docs/dev/release-notes-0.9.0.md`](docs/dev/release-notes-0.9.0.md).
 - **0.4.0**: see [`docs/dev/release-notes-0.4.0.md`](docs/dev/release-notes-0.4.0.md) for new capabilities, data compatibility and validation results.

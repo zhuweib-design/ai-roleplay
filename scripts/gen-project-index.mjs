@@ -76,7 +76,8 @@ const AGGREGATE_DIRS = {
     '本地镜像字体分片（Playfair Display 拉丁 + Noto Serif SC 中文，105 个 unicode-range 分片；由 scripts/vendor-fonts.mjs 生成，不参与 PWA 预缓存）',
   // 设计侧的静态原型与截图批次：文件多而同质，逐条列出会把索引撑成流水账
   'docs/design/ai-chat-ui-redesign':
-    'AI 对话界面重设计静态原型（10 套风格 HTML + 组件/样式/预览分片，独立于构建产物，未入库）',
+    'AI 对话界面重设计静态原型（12 套主题 HTML + 演示 js + 页面生成工具）。2026-10-16 作为设计交付物入库，' +
+    '并在 tests/tooling/lint-scope.test.ts 里显式登记为"设计交付物、非产品代码"，因此不参与产品 lint',
   'docs/design/THEME_BRUTAL_SHOTS':
     '主题"残酷测试"截图（角色列表 / 对话 / 外观设置 / 世界书，人工看配色是否破相）',
 };
@@ -556,7 +557,7 @@ function walk(dir, relDir, acc) {
   return acc;
 }
 
-function gitInfo(files) {
+function gitInfo(files, allFiles) {
   const run = (args, input) =>
     spawnSync('git', ['-c', 'core.quotepath=false', ...args], {
       cwd: ROOT,
@@ -577,6 +578,16 @@ function gitInfo(files) {
     if (p) modified.add(`${code}\u0000${p}`);
   }
   const statusOf = (rel) => {
+    if (rel.endsWith('/')) {
+      // 聚合目录在 git 里不是一个对象，`tracked.has('某个目录/')` 永远为假，
+      // 于是整行会被判成"未跟踪"（2026-10-16 实测：ai-chat-ui-redesign 早已入库，
+      // 索引里却还标未跟踪）。目录行的状态只能按目录里真实被跟踪的文件来算。
+      const onDisk = allFiles.filter((f) => f.startsWith(rel)).length;
+      let inGit = 0;
+      for (const t of tracked) if (t.startsWith(rel)) inGit += 1;
+      if (!inGit) return '未跟踪';
+      return inGit >= onDisk ? '已跟踪' : '部分跟踪';
+    }
     if (tracked.has(rel)) {
       const hit = [...modified].find((k) => k.endsWith(`\u0000${rel}`));
       if (hit && hit.split('\u0000')[0] === 'M') return '已修改';
@@ -644,7 +655,7 @@ function main() {
   }
 
   const sorted = [...files].sort();
-  const gitOf = gitInfo(sorted);
+  const gitOf = gitInfo(sorted, allFiles);
 
   const byCat = new Map(CATEGORIES.map((c) => [c, []]));
   for (const rel of sorted) {

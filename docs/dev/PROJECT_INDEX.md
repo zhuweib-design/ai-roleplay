@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-10-16 16:57（本地时区）
+- **生成时间**：2026-10-16 18:56（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
-- **项目标识**：`ai-roleplay` v1.1.0 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
+- **项目标识**：`ai-roleplay` v1.1.1 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：1247 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：646 个
+- **收录文件**：1249 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：647 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -76,7 +76,7 @@ ai-roleplay/
         - `res/`  — 1 个文件
   - `gradle/`  — 2 个文件
     - `wrapper/`  — 2 个文件
-- `docs/`  — 505 个文件
+- `docs/`  — 506 个文件
   - `assets/`  — 132 个文件
     - `screenshots/`  — 132 个文件
       - `themes/`  — 106 个文件
@@ -99,7 +99,7 @@ ai-roleplay/
       - `partials/`  — 4 个文件
       - `preview/`  — 25 个文件
       - `tools/`  — 9 个文件
-  - `dev/`  — 159 个文件
+  - `dev/`  — 160 个文件
     - `evidence/`  — 105 个文件
       - `round-3/`  — 17 个文件
         - `opt-7-chat-split/`  — 5 个文件
@@ -190,10 +190,10 @@ ai-roleplay/
   - `src/`  — 12 个文件
     - `commands/`  — 6 个文件
     - `storage/`  — 1 个文件
-- `tests/`  — 217 个文件
+- `tests/`  — 218 个文件
   - `accessibility/`  — 7 个文件
   - `api/`  — 10 个文件
-  - `components/`  — 21 个文件
+  - `components/`  — 22 个文件
     - `settings/`  — 1 个文件
   - `composables/`  — 2 个文件
   - `core/`  — 88 个文件
@@ -480,7 +480,7 @@ ai-roleplay/
 | `src/views/WorldBookView.vue` | vue | 程序 | 页面：世界书管理 | 已跟踪 |  |
 | `src/vite-env.d.ts` | ts | 程序 | Vite 环境变量与静态资源类型声明 | 已跟踪 |  |
 
-### 2.2 测试（264）
+### 2.2 测试（265）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -565,6 +565,7 @@ ai-roleplay/
 | `tests/components/quick-character-form.test.ts` | ts | 测试 | 单元测试：quick-character-form 模块 | 已跟踪 |  |
 | `tests/components/quick-lorebook-flow.test.ts` | ts | 测试 | 单元测试：quick-lorebook-flow 模块 | 已跟踪 |  |
 | `tests/components/readiness-surfaces.test.ts` | ts | 测试 | 单元测试：readiness-surfaces 模块 | 已跟踪 |  |
+| `tests/components/settings-about-version.test.ts` | ts | 测试 | 单元测试：settings-about-version 模块 | 已跟踪 |  |
 | `tests/components/settings/settings-round3-gaps.test.ts` | ts | 测试 | 单元测试：settings-round3-gaps 模块 | 已跟踪 |  |
 | `tests/components/step-flow.test.ts` | ts | 测试 | 单元测试：step-flow 模块 | 已跟踪 |  |
 | `tests/components/toast-auto-close.test.ts` | ts | 测试 | 单元测试：toast-auto-close 模块 | 已跟踪 |  |
@@ -755,14 +756,14 @@ ai-roleplay/
 | --- | --- | --- | --- | --- | --- |
 | `public/sillytavern-vs-airoleplay.html` | html | 产品文档 | 静态页：SillyTavern vs ai-roleplay 系统化对比报告 | 已忽略 |  |
 
-### 2.4 开发文档（165）
+### 2.4 开发文档（166）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `CHANGELOG.md` | md | 开发文档 | 版本变更日志 | 已跟踪 |  |
 | `CONTRIBUTING.md` | md | 开发文档 | 贡献指南 | 已跟踪 |  |
-| `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已跟踪 |  |
-| `README.md` | md | 开发文档 | 项目主说明（中文） | 已跟踪 |  |
+| `README-EN.md` | md | 开发文档 | 项目说明（英文版） | 已修改 |  |
+| `README.md` | md | 开发文档 | 项目主说明（中文） | 已修改 |  |
 | `THIRD_PARTY_NOTICES.md` | md | 开发文档 | 第三方组件许可声明 | 已跟踪 |  |
 | `docs/dev/0.3.1-a-release-gates.md` | md | 开发文档 | 开发文档：0.3.1 A 阶段质量门禁与发布验收 | 已跟踪 |  |
 | `docs/dev/0.3.1-baseline.md` | md | 开发文档 | 开发文档：0.3.1 C-D-A 阶段基线与提交记录 | 已跟踪 |  |
@@ -777,7 +778,7 @@ ai-roleplay/
 | `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已跟踪 |  |
 | `docs/dev/PERF_OPTIMIZATION_2026-09-28.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/PLAN_AUDIT_2026-09-28.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/dev/PROJECT_INDEX.md` | md | 开发文档 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已跟踪 | 索引文件（不递归展开） |
+| `docs/dev/PROJECT_INDEX.md` | md | 开发文档 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已修改 | 索引文件（不递归展开） |
 | `docs/dev/QUICK_START.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/REAL_DEVICE_FIX_2026-10-03.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/REAL_DEVICE_TEST_2026-10-03.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
@@ -904,7 +905,7 @@ ai-roleplay/
 | `docs/dev/rag-enhancement-plan.md` | md | 开发文档 | 开发文档：RAG 增强实现计划 | 已跟踪 |  |
 | `docs/dev/release-evidence-0.9.0.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/release-evidence-1.0.0.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/dev/release-evidence-1.1.0.md` | md | 开发文档 | 1.1.0 逐项门禁读数（证据包 + 本机与 CI 实测，标明哪些是本地跑的、哪些以 CI 为准） | 已跟踪 |  |
+| `docs/dev/release-evidence-1.1.0.md` | md | 开发文档 | 1.1.0 逐项门禁读数（证据包 + 本机与 CI 实测，标明哪些是本地跑的、哪些以 CI 为准） | 已修改 |  |
 | `docs/dev/release-notes-0.3.0.md` | md | 开发文档 | 开发文档：0.3.0 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制） | 已跟踪 |  |
 | `docs/dev/release-notes-0.3.1.md` | md | 开发文档 | 开发文档：0.3.1 发布说明（新能力 / 验证结果 / 升级步骤 / 已知限制） | 已跟踪 |  |
 | `docs/dev/release-notes-0.4.0.md` | md | 开发文档 | 开发文档：0.4.0 发布说明（新能力 / 数据兼容 / 验证结果） | 已跟踪 |  |
@@ -914,7 +915,8 @@ ai-roleplay/
 | `docs/dev/release-notes-0.8.0.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/release-notes-0.9.0.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/release-notes-1.0.0.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/dev/release-notes-1.1.0.md` | md | 开发文档 | 1.1.0 发布说明：版本定位、用户可见变化、数据兼容、实测读数表与未覆盖项 | 已跟踪 |  |
+| `docs/dev/release-notes-1.1.0.md` | md | 开发文档 | 1.1.0 发布说明：版本定位、用户可见变化、数据兼容、实测读数表与未覆盖项 | 已修改 |  |
+| `docs/dev/release-notes-1.1.1.md` | md | 开发文档 | 待确认 | 未跟踪 | 用途待确认 |
 | `docs/dev/resource-security.md` | md | 开发文档 | 开发文档：外部资源许可证、来源、依赖与权限边界 | 已跟踪 |  |
 | `docs/dev/runtime-database-migration-runbook.md` | md | 开发文档 | 开发文档：Virtual Character OS 数据库迁移演练 Runbook（备份 / 锁等待 / 回滚 / 演练清单） | 已跟踪 |  |
 | `docs/dev/runtime-event-contract.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
@@ -1020,11 +1022,11 @@ ai-roleplay/
 | `docs/design/THEME_BASE_PREVIEW/base-settings-appearance.png` | png | 设计文档 | 待确认 | 已忽略 | 用途待确认 |
 | `docs/design/THEME_BASE_PREVIEW/base-worldbook.png` | png | 设计文档 | 待确认 | 已忽略 | 用途待确认 |
 | `docs/design/THEME_BASE_PREVIEW/preview-report.json` | json | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/design/THEME_BRUTAL_SHOTS/` | 目录聚合 | 设计文档 | 主题"残酷测试"截图（角色列表 / 对话 / 外观设置 / 世界书，人工看配色是否破相）（共 4 个文件） | 未跟踪 |  |
+| `docs/design/THEME_BRUTAL_SHOTS/` | 目录聚合 | 设计文档 | 主题"残酷测试"截图（角色列表 / 对话 / 外观设置 / 世界书，人工看配色是否破相）（共 4 个文件） | 已跟踪 |  |
 | `docs/design/TOKEN_PILOT_2026-10-11.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/design/UI_AUDIT_2026-10-16_双端UI与交互评审.md` | md | 设计文档 | 待确认 | 未跟踪 | 用途待确认 |
+| `docs/design/UI_AUDIT_2026-10-16_双端UI与交互评审.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/UX_IA_GUIDED_FLOW_DESIGN_2026-10-07.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/design/ai-chat-ui-redesign/` | 目录聚合 | 设计文档 | AI 对话界面重设计静态原型（10 套风格 HTML + 组件/样式/预览分片，独立于构建产物，未入库）（共 99 个文件） | 未跟踪 |  |
+| `docs/design/ai-chat-ui-redesign/` | 目录聚合 | 设计文档 | AI 对话界面重设计静态原型（12 套主题 HTML + 演示 js + 页面生成工具）。2026-10-16 作为设计交付物入库，并在 tests/tooling/lint-scope.test.ts 里显式登记为"设计交付物、非产品代码"，因此不参与产品 lint（共 99 个文件） | 已跟踪 |  |
 | `docs/design/character-status-hud-增量设计.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/design-system-specification.md` | md | 设计文档 | 设计文档：设计系统规范（令牌 / 组件 / 移动端） | 已跟踪 |  |
 | `docs/design/e00-decision.md` | md | 设计文档 | 设计文档：E-00 嵌入优化形态决策 | 已跟踪 |  |
@@ -1077,13 +1079,13 @@ ai-roleplay/
 | `.i18nignore` | i18nignore | 配置 | i18n 扫描忽略清单 | 已忽略 |  |
 | `eslint.config.js` | js | 配置 | ESLint 扁平配置（Vue + TS） | 已跟踪 |  |
 | `package-lock.json` | json | 配置 | npm 依赖锁定文件（自动生成） | 已跟踪 |  |
-| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v1.1.0） | 已跟踪 |  |
+| `package.json` | json | 配置 | npm 清单：依赖、脚本、项目元信息（ai-roleplay v1.1.1） | 已跟踪 |  |
 | `playwright.config.ts` | ts | 配置 | Playwright E2E 配置：testDir=e2e、本地 msedge / CI chromium | 已跟踪 |  |
 | `reasonix.toml` | toml | 配置 | Reasonix 工具工作区配置 | 已跟踪 |  |
 | `src-tauri/.gitignore` | gitignore | 配置 | 桌面端专属忽略规则 | 已跟踪 |  |
 | `src-tauri/Cargo.toml` | toml | 配置 | Rust 依赖与 crate 元信息 | 已跟踪 |  |
 | `src-tauri/capabilities/default.json` | json | 配置 | Tauri 2 权限能力声明 | 已跟踪 |  |
-| `src-tauri/icons/` | 目录聚合 | 配置 | Tauri 应用图标资源（桌面 / Android / iOS 多尺寸 PNG / ICO / ICNS）（共 49 个文件） | 未跟踪 |  |
+| `src-tauri/icons/` | 目录聚合 | 配置 | Tauri 应用图标资源（桌面 / Android / iOS 多尺寸 PNG / ICO / ICNS）（共 49 个文件） | 已跟踪 |  |
 | `src-tauri/tauri.conf.json` | json | 配置 | Tauri 应用配置（窗口 / 本地打包） | 已跟踪 |  |
 | `tsconfig.json` | json | 配置 | TypeScript 编译选项与路径映射 | 已跟踪 |  |
 | `vite.config.ts` | ts | 配置 | Vite 构建配置：别名、代码分包、PWA 插件 | 已跟踪 |  |
@@ -1113,7 +1115,7 @@ ai-roleplay/
 | `scripts/css-viewport-guard.mjs` | mjs | 脚本 | 门禁：CSS 视口单位使用校验 | 已跟踪 |  |
 | `scripts/e2e-shard-groups.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/eval-run.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
-| `scripts/gen-project-index.mjs` | mjs | 脚本 | 工具：生成本索引文件 | 已跟踪 |  |
+| `scripts/gen-project-index.mjs` | mjs | 脚本 | 工具：生成本索引文件 | 已修改 |  |
 | `scripts/generate-pwa-icons.mjs` | mjs | 脚本 | 工具：由 icon-source.png 生成 PWA 图标到 public/ | 已跟踪 |  |
 | `scripts/hover-guard.mjs` | mjs | 脚本 | 门禁：禁止未按 (hover: hover) 分流的 :hover，防触屏 tap 后 hover 粘滞 | 已跟踪 |  |
 | `scripts/i18n-scan.mjs` | mjs | 脚本 | 门禁：硬编码中文 UI 文案扫描（strict 模式） | 已跟踪 |  |
@@ -1503,8 +1505,8 @@ ai-roleplay/
 | `public/apple-touch-icon.png` | png | 其他 | iOS 主屏图标 | 已跟踪 |  |
 | `public/assets/hero-cyber-nexus.jpg` | jpg | 其他 | 首页主视觉图（赛博主题） | 已跟踪 |  |
 | `public/assets/hero-seraphina.jpg` | jpg | 其他 | 首页主视觉图（角色主题） | 已跟踪 |  |
-| `public/assets/icons/dl_builtin_tik_tok/` | 目录聚合 | 其他 | 内置线性图标集（SVG，11 个）（共 12 个文件） | 未跟踪 |  |
-| `public/fonts/` | 目录聚合 | 其他 | 本地镜像字体分片（Playfair Display 拉丁 + Noto Serif SC 中文，105 个 unicode-range 分片；由 scripts/vendor-fonts.mjs 生成，不参与 PWA 预缓存）（共 106 个文件） | 未跟踪 |  |
+| `public/assets/icons/dl_builtin_tik_tok/` | 目录聚合 | 其他 | 内置线性图标集（SVG，11 个）（共 12 个文件） | 已跟踪 |  |
+| `public/fonts/` | 目录聚合 | 其他 | 本地镜像字体分片（Playfair Display 拉丁 + Noto Serif SC 中文，105 个 unicode-range 分片；由 scripts/vendor-fonts.mjs 生成，不参与 PWA 预缓存）（共 106 个文件） | 已跟踪 |  |
 | `public/pwa-192x192.png` | png | 其他 | PWA 图标 192×192 | 已跟踪 |  |
 | `public/pwa-512x512.png` | png | 其他 | PWA 图标 512×512 | 已跟踪 |  |
 | `public/pwa-icon.svg` | svg | 其他 | PWA 图标（矢量） | 已跟踪 |  |
@@ -1515,9 +1517,9 @@ ai-roleplay/
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
 | 程序 | 267 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
-| 测试 | 264 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
+| 测试 | 265 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
-| 开发文档 | 165 | docs/dev/ 实现计划、Runbook、审计记录 |
+| 开发文档 | 166 | docs/dev/ 实现计划、Runbook、审计记录 |
 | 修复文档 | 17 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
 | 设计文档 | 86 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
 | AI记忆 | 18 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
@@ -1525,7 +1527,7 @@ ai-roleplay/
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 43 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 368 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **1247** | 与「收录文件」数一致 |
+| **合计** | **1249** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 
