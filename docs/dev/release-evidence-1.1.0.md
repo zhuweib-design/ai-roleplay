@@ -43,18 +43,19 @@
 | --- | --- | --- |
 | Quality Gates | success | 含 `Lint (eslint .)` → **success**（这条是第 3 节判断的依据）；`Contrast audit` 与 `Contrast guard self-test` success；`Test + coverage gate (78/73/78/78)` success |
 | 同上 · 测试汇总 | — | Tests 4039 passed / 7 skipped（4046），Test Files 212 passed / 1 skipped，Duration 131.47s |
-
-两侧跳过的集合**刚好互补**，这一点是核过的：本机跳过的是 PG 门控的 3 项
-（`tests/runtime/postgres-group.integration.test.ts` 2 项、`postgres-runtime.integration.test.ts` 1 项，
-因为本机没有 `RUNTIME_PG_TEST_URL`），而 `tests/core/onnx-real-model.test.ts` 的 7 项在本机是真跑的；
-CI 反过来——有 postgres:16 服务所以那 3 项跑了，但没有 ONNX 模型文件所以那 7 项跳过。
-并集 4046 项里，每一项都至少在一侧通过过。
 | 同上 · 覆盖率 | — | All files：statements **82.64** / branches 76.49 / functions 84.22 / lines 84.75，四项均高于阈值 78/73/78/78 |
 | E2E group 1/4 | success | Running 52 tests → **52 passed**（2.8m） |
 | E2E group 2/4 | success | Running 73 tests → **73 passed**（3.1m） |
 | E2E group 3/4 | success | Running 50 tests → **50 passed**（3.2m） |
 | E2E group 4/4 | success | Running 66 tests → **66 passed**（2.8m） |
 | Tauri Build (desktop binary) | success | `tauri build --no-bundle` 通过，不生成也不上传安装包 |
+
+两侧跳过的集合**刚好互补**，这一点是逐项核过的：本机跳过的是 PG 门控的 3 项
+（`tests/runtime/postgres-group.integration.test.ts` 2 项、`postgres-runtime.integration.test.ts` 1 项，
+因为本机没有 `RUNTIME_PG_TEST_URL`），而 `tests/core/onnx-real-model.test.ts` 的 7 项在本机是真跑的；
+CI 反过来——有 postgres:16 服务所以那 3 项跑了，但没有模型文件所以那 7 项跳过
+（该测试按 `MODEL_ROOT/<model>/model.onnx` 是否存在来门控）。
+并集 4046 项里，每一项都至少在一侧通过过。
 
 四组相加 **241 项 = 与 `e2e/shard-groups.mjs` 登记的用例数一致**，无重试、无跳过
 （四份 job 日志里 `retry` / `flaky` / `skipped` 命中数均为 0）。这 241 也是那条对账守卫
