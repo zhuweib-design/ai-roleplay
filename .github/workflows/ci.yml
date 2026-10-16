@@ -93,11 +93,21 @@ jobs:
 
       # 存盘方式守卫（2026-10-14 安卓模拟器实测立）：blob + `<a download>` 在 Capacitor 的
       # WebView 里静默无效（不报错、无下载记录、全盘搜不到文件），所以存盘必须走 utils/save-blob.ts。
-      # 存量 6 处按文件锁基线，只许降不许升；新增文件或加一处即红。
+      # 基线已清零（2026-10-15 实测：存量 0 处 / 基线 0 处，9 处导出全部改走 saveBlob），
+      # 所以这里加一处就红，不再是"只许降不许升"。
       - name: Save-blob guard (check:save-blob)
         run: npm run check:save-blob
       - name: Save-blob guard self-test
         run: npm run check:save-blob:self-test
+
+      # 产物入库守卫（2026-10-16 立）：出包脚本会把约 27MB 的 debug APK 放进仓库根 installer/，
+      # 而公开仓库的 git 历史收下大文件之后删掉记录也不会瘦。分发改走 GitHub Releases。
+      # .gitignore 挡"顺手 add"，这一条挡"已经 add 了"：按扩展名 + 1MB 体积上限扫已跟踪文件。
+      # 实测当前 1034 个跟踪文件无一命中（最大 418KB），所以门禁上线即是绿的。
+      - name: No-artifact-in-git guard (check:no-artifact)
+        run: npm run check:no-artifact
+      - name: No-artifact-in-git guard self-test
+        run: npm run check:no-artifact:self-test
 
       # Token 死引用棘轮（M18 试点 → M19 入门禁）：组件层裸引用一个没定义的 CSS 变量时，
       # 浏览器会把整条声明丢掉 —— 今天就是失效代码，不是风格问题。实测存量 74 处 / 4 文件

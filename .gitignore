@@ -1,0 +1,103 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-*/
+dist.bak/
+dist-electron/
+dist-i18n-check/
+dist-p13-check/
+dist-qa/
+dist-measure/
+dist-opt*/
+dist-lib-eval*/
+out/
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Test artifacts
+test-results/
+test-results.bak/
+test-results-*/
+e2e-results-*/
+playwright-report/
+coverage/
+coverage-ci/
+
+# 归档产物（2026-09-18 目录整理新增：历史构建/测试/覆盖率快照统一归入 artifacts/）
+# 见 MIGRATION_LOG.md；下列历史模式保留，兼容重新生成时的旧路径
+artifacts/
+
+# Local model / large data
+model/
+
+# Tauri updater signing keys (private key MUST NOT be committed)
+src-tauri/keys/*.key
+
+# Reasonix workspace state
+.reasonix/attachments/
+.reasonix/reports/
+.reasonix/tasks/
+.reasonix/desktop-topic-*.json
+.reasonix/*.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dev documentation screenshots (not needed to build/run)
+ui-shots/
+
+# AI 相关记录 / 开发文档（已移交，不再跟踪）
+.reasonix/
+# docs/ 自 2026-09-21 起重新纳入版本库（正文 .md 需可追溯）；
+# 但截图体积大且非构建所需，沿用上面 ui-shots/ 的既有做法继续忽略。
+docs/assets/screenshots/
+AI酒馆开发计划文档.md
+AI酒馆项目嵌入优化方案开发文档.md
+public/ai-roleplay-dev-plan.html
+public/sillytavern-vs-airoleplay.html
+
+# 临时测试图（仅本地验证用）
+test-gradient.jpg
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+.obsidian/
+*.base
+*.local
+
+# WorkBuddy workspace state (memory logs, local runtime)
+.workbuddy/
+.workbuddy-ai/
+
+# ═══ 部署无关 / 开发配置（不提交，仅本地保留）═══
+# 见项目规则：只提交部署运行必要文件
+.gitattributes
+.i18nignore
+# 签名公钥文件（公钥已内嵌于 src-tauri/tauri.conf.json，无需单独提交）
+src-tauri/keys/
+# .gitignore 现在入库（2026-10-16 用户点头改的既有约定）：
+# 它自我忽略时，"installer/ 不入库"这类保护只对本机生效，别的机器一条 git add -A 仍会把
+# 27MB 的 APK 推上历史。CI 那道 no-artifact 门禁是第二层，见 scripts/no-artifact-in-git-guard.mjs。
+
+# ORT vendor 外置（构建期由 scripts/vendor-ort.mjs 从 node_modules 生成，不入库）
+public/vendor/
+
+# 换肤对照的截图同 docs/assets/screenshots/：只作本地交付，一条命令可重生成（见该目录 通用五款对照.md）
+# 二次元八款与对照基线走同一条命令（scripts/skin-preview.mjs），口径一致：JSON 明细入库、截图不入库
+docs/design/THEME_5_GENERIC_PREVIEW/*.png
+docs/design/THEME_ACG_PREVIEW/*.png
+docs/design/THEME_BASE_PREVIEW/*.png
+
+# 安卓调试包（27MB/次，每重新出包就多一份，且仓库是公开的）
+# 出包脚本 scripts/android-apk.mjs 每次都把产物落到这里；要分发走 GitHub Releases 手工拖拽，
+# 不进 git 历史（进了就永久占体积，删掉记录也不能瘦下来）。决策见指导文档 §15.7。
+installer/
