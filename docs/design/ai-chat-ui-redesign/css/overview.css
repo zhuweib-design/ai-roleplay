@@ -1,0 +1,130 @@
+/* =============================================================
+   overview.css —— 风格总览页专用样式
+   仅用于 index.html，不属于产品界面。同样只引用 Token。
+   ============================================================= */
+
+.overview-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack-lg);
+}
+
+.overview-group__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack-xs);
+  padding-bottom: var(--gap-stack-md);
+  border-bottom: var(--size-divider) var(--component-divider-style) var(--color-divider);
+}
+
+.overview-group__title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--component-title-letter-spacing);
+  color: var(--color-text-primary);
+}
+
+.overview-group__desc {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-tertiary);
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--size-overview-card-min), 1fr));
+  gap: var(--gap-section);
+}
+
+.overview-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--component-card-border-w) solid var(--component-card-border-color);
+  border-radius: var(--component-card-radius);
+  background-color: var(--component-card-bg);
+  box-shadow: var(--component-card-shadow);
+  transition: var(--transition-surface);
+}
+
+.overview-card:hover {
+  box-shadow: var(--component-card-shadow-hover);
+  transform: translateY(var(--component-card-lift));
+}
+
+.overview-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack-md);
+  padding: var(--padding-panel);
+}
+
+.overview-preview {
+  display: grid;
+  grid-template-columns: var(--size-preview-rail-w) minmax(0, 1fr);
+  height: var(--size-preview-h);
+  background-color: var(--color-bg-app);
+  background-image: var(--component-backdrop-image);
+  overflow: hidden;
+  border-bottom: var(--size-divider) solid var(--color-divider);
+}
+
+.overview-preview__rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack-sm);
+  padding: var(--space-4) var(--space-3);
+  background-color: var(--color-bg-rail);
+  border-right: var(--size-divider) solid var(--color-divider);
+}
+
+.overview-preview__line {
+  height: var(--size-preview-line-h);
+  width: 100%;
+  border-radius: var(--component-chip-radius);
+  background-color: var(--color-bg-hover);
+}
+
+.overview-preview__line--accent {
+  background-color: var(--component-nav-item-active-bg);
+}
+
+.overview-preview__line--short {
+  width: 60%;
+}
+
+.overview-preview__main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--gap-stack-md);
+  padding: var(--padding-panel);
+}
+
+.overview-preview__title {
+  height: var(--size-preview-title-h);
+  width: var(--size-preview-title-w);
+  border-radius: var(--component-card-radius);
+  background-color: var(--color-text-secondary);
+  opacity: var(--opacity-hint);
+}
+
+.overview-preview__pill {
+  height: var(--size-preview-pill-h);
+  width: var(--size-preview-pill-w);
+  border-radius: var(--component-chip-radius);
+  background-color: var(--component-button-primary-bg);
+}
+
+.overview-preview__pill--ghost {
+  background-color: var(--color-bg-hover);
+  border: var(--size-border-thin) solid var(--color-border-default);
+}
+
+.overview-swatches {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--gap-stack-sm);
+}

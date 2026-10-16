@@ -1,0 +1,284 @@
+/* =============================================================
+   tokens.base.css —— 第 1 层：结构 Token（与视觉风格无关）
+   项目：AI 虚拟对话界面重构（1920x1080）
+
+   分层约定：
+     L1 结构 Token   本文件。间距、尺寸、字号、行高、字重、动效、层级。
+                     所有风格共用，不随主题变化。
+     L2 语义 Token   theme-*.css。颜色、阴影、字体族、圆角、玻璃效果。
+     L3 组件 Token   theme-*.css 末尾。组件级表现开关，由主题覆写。
+
+   约束：组件样式文件（layout.css / components.css）禁止出现任何
+        颜色、间距、字号字面量，只能引用 var()。
+   ============================================================= */
+
+:root {
+  /* ---------- 1. 设计基准画布 ---------- */
+  --size-app-w: 1920px;
+  --size-app-h: 1080px;
+
+  /* ---------- 2. 间距阶梯（4px 基准） ---------- */
+  --space-0: 0px;
+  --space-px: 1px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+  --space-11: 80px;
+
+  /* 语义化间距别名：把"用在哪"与"多大"解耦 */
+  --gap-inline-xs: var(--space-1);
+  --gap-inline-sm: var(--space-2);
+  --gap-inline-md: var(--space-3);
+  --gap-inline-lg: var(--space-4);
+  --gap-stack-xs: var(--space-1);
+  --gap-stack-sm: var(--space-2);
+  --gap-stack-md: var(--space-3);
+  --gap-stack-lg: var(--space-4);
+  --gap-stack-xl: var(--space-6);
+  --gap-section: var(--space-7);
+
+  --padding-control-sm: var(--space-2);
+  --padding-control-md: var(--space-3);
+  --padding-control-lg: var(--space-4);
+  --padding-panel: var(--space-4);
+  --padding-panel-lg: var(--space-5);
+
+  /* ---------- 3. 布局尺寸（1920x1080 基准实测） ---------- */
+  --size-rail-w: 176px;          /* 一级导航栏 */
+  --size-list-w: 275px;          /* 角色列表栏 */
+  --size-context-w: 352px;       /* 上下文侧栏 */
+  --size-main-min-w: 640px;
+
+  --size-topbar-h: 64px;         /* 会话顶栏 */
+  --size-statusbar-h: 40px;      /* 状态提示条 */
+  --size-composer-min-h: 116px;  /* 底部输入区 */
+  --size-panel-header-h: 56px;   /* 侧栏标题行 */
+
+  --size-nav-item-h: 36px;
+  --size-list-item-h: 56px;
+  --size-section-gap: var(--space-6);
+
+  --size-avatar-xs: 20px;
+  --size-avatar-sm: 28px;
+  --size-avatar-md: 40px;
+  --size-avatar-lg: 56px;
+  --size-avatar-xl: 88px;
+
+  --size-control-xs: 24px;
+  --size-control-sm: 28px;
+  --size-control-md: 36px;
+  --size-control-lg: 44px;
+  --size-control-touch: 44px;    /* 无障碍最小可点区域 */
+
+  --size-icon-xs: 12px;
+  --size-icon-sm: 14px;
+  --size-icon-md: 16px;
+  --size-icon-lg: 20px;
+  --size-icon-xl: 28px;
+  --size-icon-hero: 64px;
+
+  --size-border-thin: 1px;
+  --size-border-thick: 2px;
+  --size-divider: 1px;
+
+  --size-content-max-w: 760px;   /* 消息流/空态最大内容宽 */
+  --size-composer-max-w: 860px;
+  --size-context-inner-max-w: 320px;
+  --size-modal-max-w: 560px;
+  --size-menu-max-w: 280px;
+
+  --size-progress-h: 6px;
+  --size-slider-track-h: 4px;
+  --size-slider-thumb: 14px;
+  --size-badge-h: 18px;
+
+  /* ---------- 4. 字体阶梯 ---------- */
+  --font-size-2xs: 11px;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 26px;
+  --font-size-3xl: 34px;
+  --font-size-display: 44px;
+
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-normal: 0em;
+  --letter-spacing-wide: 0.02em;
+  --letter-spacing-caps: 0.08em;
+
+  /* ---------- 5. 圆角阶梯 ---------- */
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* ---------- 6. 动效 ---------- */
+  --duration-motion-off: 0.01ms;
+  --duration-instant: 80ms;
+  --duration-fast: 140ms;
+  --duration-normal: 220ms;
+  --duration-slow: 360ms;
+  --duration-slower: 600ms;
+  --duration-ambient: 12s;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0, 1);
+  --ease-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-linear: linear;
+
+  --transition-colors:
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    fill var(--duration-fast) var(--ease-standard),
+    stroke var(--duration-fast) var(--ease-standard);
+  --transition-surface:
+    background-color var(--duration-normal) var(--ease-standard),
+    border-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-standard);
+  --transition-transform: transform var(--duration-fast) var(--ease-standard);
+  --transition-shadow: box-shadow var(--duration-normal) var(--ease-standard);
+  --transition-opacity: opacity var(--duration-fast) var(--ease-standard);
+  --transition-all: all var(--duration-normal) var(--ease-standard);
+
+  --motion-press-scale: 0.97;
+  --motion-hover-lift: -1px;
+
+  /* ---------- 7. 层级 ---------- */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-sticky: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-popover: 400;
+  --z-tooltip: 500;
+  --z-toast: 600;
+
+  /* ---------- 8. 焦点与可访问性 ---------- */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-offset-inset: -2px;
+  --opacity-disabled: 0.42;
+  --opacity-muted: 0.72;
+  --opacity-scrim: 0.6;
+  --opacity-hover-layer: 0.08;
+  --opacity-active-layer: 0.14;
+
+  /* ---------- 9. 滚动条（结构尺寸部分） ---------- */
+  --scrollbar-width: thin;
+  --scrollbar-size: 10px;
+  --scrollbar-thumb-border: 2px;
+
+  /* ---------- 10. 文本截断 ---------- */
+  --truncate-lines-1: 1;
+  --truncate-lines-2: 2;
+  --truncate-lines-3: 3;
+
+  /* ---------- 11. 图标与描边 ---------- */
+  --icon-stroke-w: 1.6;
+  --icon-stroke-w-bold: 2;
+  --size-icon-button-glyph: var(--size-icon-md);
+
+  /* ---------- 12. 细节尺寸 ---------- */
+  --size-dot: 6px;
+  --size-dot-lg: 8px;
+  --size-marker-w: 3px;
+  --size-marker-h: 16px;
+  --size-textarea-min-h: 48px;
+  --size-textarea-max-h: 168px;
+  --size-tooltip-max-w: 240px;
+  --size-empty-icon: 64px;
+  --size-starter-min-h: 36px;
+  --size-rail-footer-gap: var(--space-2);
+  --size-panel-divider-inset: var(--space-4);
+  --size-slider-h: 24px;
+  --size-avatar-stack-overlap: -8px;
+  --size-count-pill-min-w: 20px;
+
+  /* ---------- 16. 导航栏专用语义 ----------
+     默认值继承全局语义色，因此既有主题无需改动即可工作。
+     深色导航栏的风格（如大正浪漫的墨绿、学园制服的藏青）覆写本节即可，
+     组件层只引用 --component-rail-*，不感知具体色值。 */
+  --component-rail-bg: var(--color-bg-rail);
+  --component-rail-border: var(--color-divider);
+  --component-rail-item-color: var(--color-text-secondary);
+  --component-rail-item-color-hover: var(--color-text-primary);
+  --component-rail-item-bg-hover: var(--color-bg-hover);
+  --component-rail-item-bg-active: var(--color-bg-active);
+  --component-rail-group-color: var(--color-text-tertiary);
+
+  /* ---------- 12c. 断点专用尺寸（供 responsive.css 引用） ----------
+     说明：媒体查询的断点阈值（如 max-width: 1439px）是 CSS 规范硬限制，
+     无法使用 var()，只能字面量书写，已在 tools/check-tokens.mjs 中豁免；
+     但断点内部覆写的所有尺寸都必须来自本节 Token。 */
+  --size-rail-w-md: 168px;
+  --size-list-w-md: 260px;
+  --size-list-w-s: 248px;
+  --size-list-w-xs: 240px;
+  --size-context-w-md: 320px;
+  --size-context-w-s: 288px;
+
+  /* ---------- 12b. 运行时可变 Token（由脚本或数据写入，此处为默认值） ---------- */
+  --stage-scale: 1;
+  --progress-value: 0%;
+  --slider-fill: 0%;
+
+  /* ---------- 13. 透明度细节 ---------- */
+  --opacity-hint: 0.55;
+  --opacity-ghost: 0.08;
+  --opacity-strong: 1;
+  --opacity-none: 0;
+
+  /* ---------- 14. 层级与定位偏移 ---------- */
+  --offset-tooltip-y: -6px;
+  --offset-lift-sm: -1px;
+  --offset-lift-md: -2px;
+  --offset-lift-lg: -3px;
+  --size-rail-collapsed-w: 64px;
+  --size-context-drawer-w: 320px;
+  --size-list-collapsed-w: 0px;
+
+  /* ---------- 15. 文档与总览页（非产品界面） ---------- */
+  --size-overview-card-min: 340px;
+  --size-preview-h: 176px;
+  --size-preview-rail-w: 44px;
+  --size-preview-line-h: 8px;
+  --size-preview-title-h: 16px;
+  --size-preview-title-w: 48%;
+  --size-preview-pill-h: 20px;
+  --size-preview-pill-w: 40%;
+  --size-demo-frame-h: 760px;
+  --size-demo-frame-md: 460px;
+  --size-demo-frame-sm: 320px;
+  --size-demo-col-sm: 96px;
+  --size-demo-col-md: 140px;
+  --size-demo-label-w: 160px;
+  --size-demo-label-w-lg: 190px;
+  --size-demo-value-w: 90px;
+}

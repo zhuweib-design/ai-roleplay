@@ -1,0 +1,327 @@
+<div class="doc-page">
+  <div class="doc-page__inner">
+    <header class="stack stack--md">
+      <h1 class="doc-title">原子组件</h1>
+      <p class="doc-subtitle">最小可复用单元。颜色、间距、圆角、阴影、字号全部由 Token 提供，组件层不含硬编码取值。</p>
+      <!--THEME_SWITCHER-->
+      <div class="demo-row">
+        <a class="btn btn--sm" href="../index.html"><i class="btn__icon" data-icon="grid"></i>风格总览</a>
+        <a class="btn btn--sm" href="atoms.html"><i class="btn__icon" data-icon="box"></i>原子</a>
+        <a class="btn btn--sm" href="molecules.html"><i class="btn__icon" data-icon="layers"></i>分子</a>
+        <a class="btn btn--sm" href="organisms.html"><i class="btn__icon" data-icon="grid"></i>组织</a>
+      </div>
+    </header>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">颜色 Token</h2>
+        <p class="demo-section__desc">共 26 个语义色。所有色值只在 theme-*.css 中定义，组件通过 var() 引用。</p>
+      </div>
+      <div class="token-grid">
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-bg-app)"></span><span>--color-bg-app<br>应用底色</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-bg-canvas)"></span><span>--color-bg-canvas<br>主区画布</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-bg-rail)"></span><span>--color-bg-rail<br>导航栏</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-bg-list)"></span><span>--color-bg-list<br>列表栏</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-bg-panel)"></span><span>--color-bg-panel<br>侧栏</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-bg-surface)"></span><span>--color-bg-surface<br>表面</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-bg-surface-raised)"></span><span>--color-bg-surface-raised<br>浮起表面</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-bg-inset)"></span><span>--color-bg-inset<br>内凹</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-text-primary)"></span><span>--color-text-primary<br>主文字</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-text-secondary)"></span><span>--color-text-secondary<br>次文字</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-text-tertiary)"></span><span>--color-text-tertiary<br>弱文字</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-text-disabled)"></span><span>--color-text-disabled<br>禁用文字</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-border-subtle)"></span><span>--color-border-subtle<br>弱边框</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-border-default)"></span><span>--color-border-default<br>默认边框</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-border-strong)"></span><span>--color-border-strong<br>强边框</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-divider)"></span><span>--color-divider<br>分隔线</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-accent)"></span><span>--color-accent<br>主色</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-accent-hover)"></span><span>--color-accent-hover<br>主色悬停</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-accent-active)"></span><span>--color-accent-active<br>主色按下</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-accent-soft)"></span><span>--color-accent-soft<br>主色弱底</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-accent-2)"></span><span>--color-accent-2<br>辅色</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-highlight)"></span><span>--color-highlight<br>点缀色</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-success)"></span><span>--color-success<br>成功</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-warning)"></span><span>--color-warning<br>警告</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-danger)"></span><span>--color-danger<br>危险</span></div>
+        <div class="swatch"><span class="swatch__chip" style="background-color: var(--color-info)"></span><span>--color-info<br>信息</span></div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">字体与字号阶梯</h2>
+        <p class="demo-section__desc">基准字号 14px，行高 1.5。中文优先使用系统中文字体，英文使用风格化字体栈。</p>
+      </div>
+      <div class="stack">
+        <div class="type-row"><span class="type-row__meta">--font-size-display / 44px</span><span class="type-display">开始与 Seraphina 的对话</span></div>
+        <div class="type-row"><span class="type-row__meta">--font-size-3xl / 34px</span><span class="type-3xl">标题层级三</span></div>
+        <div class="type-row"><span class="type-row__meta">--font-size-2xl / 26px</span><span class="type-2xl">标题层级二</span></div>
+        <div class="type-row"><span class="type-row__meta">--font-size-xl / 20px</span><span class="type-xl">标题层级一</span></div>
+        <div class="type-row"><span class="type-row__meta">--font-size-lg / 16px</span><span class="type-lg">角色名与区块标题</span></div>
+        <div class="type-row"><span class="type-row__meta">--font-size-md / 14px</span><span class="type-md">正文基准，用于消息气泡与描述</span></div>
+        <div class="type-row"><span class="type-row__meta">--font-size-sm / 13px</span><span class="type-sm">控件标签与列表主文字</span></div>
+        <div class="type-row"><span class="type-row__meta">--font-size-xs / 12px</span><span class="type-xs">辅助说明与徽章</span></div>
+        <div class="type-row"><span class="type-row__meta">--font-size-2xs / 11px</span><span class="type-2xs">最小可读字号，仅用于元信息</span></div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">间距阶梯</h2>
+        <p class="demo-section__desc">4px 基准的等比阶梯。组件不得直接使用像素值，只能引用 --space-* 或语义别名。</p>
+      </div>
+      <div class="stack">
+        <div class="space-row"><span>--space-1</span><span class="space-demo" style="gap: var(--space-1)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>4px</span></div>
+        <div class="space-row"><span>--space-2</span><span class="space-demo" style="gap: var(--space-2)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>8px</span></div>
+        <div class="space-row"><span>--space-3</span><span class="space-demo" style="gap: var(--space-3)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>12px</span></div>
+        <div class="space-row"><span>--space-4</span><span class="space-demo" style="gap: var(--space-4)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>16px</span></div>
+        <div class="space-row"><span>--space-5</span><span class="space-demo" style="gap: var(--space-5)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>20px</span></div>
+        <div class="space-row"><span>--space-6</span><span class="space-demo" style="gap: var(--space-6)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>24px</span></div>
+        <div class="space-row"><span>--space-7</span><span class="space-demo" style="gap: var(--space-7)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>32px</span></div>
+        <div class="space-row"><span>--space-8</span><span class="space-demo" style="gap: var(--space-8)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>40px</span></div>
+        <div class="space-row"><span>--space-9</span><span class="space-demo" style="gap: var(--space-9)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>48px</span></div>
+        <div class="space-row"><span>--space-10</span><span class="space-demo" style="gap: var(--space-10)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>64px</span></div>
+        <div class="space-row"><span>--space-11</span><span class="space-demo" style="gap: var(--space-11)"><span class="space-demo__box"></span><span class="space-demo__box"></span></span><span>80px</span></div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">圆角阶梯</h2>
+        <p class="demo-section__desc">圆角由风格决定：墨纸为 2-10px 直角系，樱雾玻璃为 8-36px 大圆角系。</p>
+      </div>
+      <div class="demo-row" style="gap: var(--space-6)">
+        <div class="stack stack--xs"><span class="radius-demo" style="border-radius: var(--radius-xs)"></span><span class="text-mono text-tertiary">--radius-xs</span></div>
+        <div class="stack stack--xs"><span class="radius-demo" style="border-radius: var(--radius-sm)"></span><span class="text-mono text-tertiary">--radius-sm</span></div>
+        <div class="stack stack--xs"><span class="radius-demo" style="border-radius: var(--radius-md)"></span><span class="text-mono text-tertiary">--radius-md</span></div>
+        <div class="stack stack--xs"><span class="radius-demo" style="border-radius: var(--radius-lg)"></span><span class="text-mono text-tertiary">--radius-lg</span></div>
+        <div class="stack stack--xs"><span class="radius-demo" style="border-radius: var(--radius-xl)"></span><span class="text-mono text-tertiary">--radius-xl</span></div>
+        <div class="stack stack--xs"><span class="radius-demo" style="border-radius: var(--radius-2xl)"></span><span class="text-mono text-tertiary">--radius-2xl</span></div>
+        <div class="stack stack--xs"><span class="radius-demo" style="border-radius: var(--radius-pill)"></span><span class="text-mono text-tertiary">--radius-pill</span></div>
+        <div class="stack stack--xs"><span class="radius-demo" style="border-radius: var(--radius-circle)"></span><span class="text-mono text-tertiary">--radius-circle</span></div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">阴影与光效</h2>
+        <p class="demo-section__desc">阴影承载层级。深色风格用扩散黑影加光晕，浅色风格用低透明彩色投影。</p>
+      </div>
+      <div class="token-grid">
+        <div class="shadow-demo shadow-demo--xs">--shadow-xs</div>
+        <div class="shadow-demo shadow-demo--sm">--shadow-sm</div>
+        <div class="shadow-demo shadow-demo--md">--shadow-md</div>
+        <div class="shadow-demo shadow-demo--lg">--shadow-lg</div>
+        <div class="shadow-demo shadow-demo--xl">--shadow-xl</div>
+        <div class="shadow-demo shadow-demo--glow">--shadow-glow</div>
+        <div class="shadow-demo shadow-demo--focus">--shadow-focus</div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">图标</h2>
+        <p class="demo-section__desc">24x24 线性 SVG，描边宽度由 --icon-stroke-w 控制，颜色继承 currentColor。不使用 emoji 或字体图标。</p>
+      </div>
+      <div class="icon-grid">
+<!--ICON_GRID-->
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">按钮</h2>
+        <p class="demo-section__desc">变体 primary / soft / ghost / danger / dashed，尺寸 sm / md / lg / block。悬停、聚焦、按下、禁用状态由伪类真实驱动。</p>
+      </div>
+      <div class="component-stage">
+        <button type="button" class="btn btn--primary"><i class="btn__icon" data-icon="send"></i>主按钮</button>
+        <button type="button" class="btn">次按钮</button>
+        <button type="button" class="btn btn--soft"><i class="btn__icon" data-icon="sparkles"></i>柔和</button>
+        <button type="button" class="btn btn--ghost">幽灵</button>
+        <button type="button" class="btn btn--danger"><i class="btn__icon" data-icon="trash"></i>危险</button>
+        <button type="button" class="btn btn--dashed"><i class="btn__icon" data-icon="plus"></i>虚线新增</button>
+      </div>
+      <div class="component-stage">
+        <button type="button" class="btn btn--sm">小号 sm</button>
+        <button type="button" class="btn">中号 md</button>
+        <button type="button" class="btn btn--lg">大号 lg</button>
+        <button type="button" class="btn is-loading">加载中</button>
+        <button type="button" class="btn" disabled>禁用 disabled</button>
+      </div>
+      <div class="component-stage component-stage--narrow">
+        <button type="button" class="btn btn--primary btn--block"><i class="btn__icon" data-icon="plus"></i>通栏按钮 block</button>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">图标按钮</h2>
+        <p class="demo-section__desc">正方形点击区，尺寸 sm 28 / md 36 / lg 44。44px 为无障碍最小可点尺寸。</p>
+      </div>
+      <div class="component-stage">
+        <button type="button" class="icon-btn icon-btn--sm" aria-label="搜索"><i class="icon-btn__glyph" data-icon="search"></i></button>
+        <button type="button" class="icon-btn" aria-label="下载"><i class="icon-btn__glyph" data-icon="download"></i></button>
+        <button type="button" class="icon-btn icon-btn--lg" aria-label="面板"><i class="icon-btn__glyph" data-icon="panel-right"></i></button>
+        <button type="button" class="icon-btn icon-btn--lg icon-btn--accent" aria-label="发送"><i class="icon-btn__glyph" data-icon="send"></i></button>
+        <button type="button" class="icon-btn" aria-pressed="true" aria-label="已选中"><i class="icon-btn__glyph" data-icon="eye"></i></button>
+        <button type="button" class="icon-btn" disabled aria-label="禁用"><i class="icon-btn__glyph" data-icon="lock"></i></button>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">徽章 Badge</h2>
+        <p class="demo-section__desc">用于状态标注，最小高度 18px，等宽数字使用 --font-family-mono。</p>
+      </div>
+      <div class="component-stage">
+        <span class="badge">默认</span>
+        <span class="badge badge--accent">强调</span>
+        <span class="badge badge--warning">未配置</span>
+        <span class="badge badge--success"><span class="badge__dot"></span>正常</span>
+        <span class="badge badge--danger">错误</span>
+        <span class="badge badge--info">信息</span>
+        <span class="badge badge--outline">描边</span>
+        <span class="badge badge--mono">已跑 0.0k</span>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">标签 Tag</h2>
+        <p class="demo-section__desc">角色属性标签，圆角与底色随风格变化。</p>
+      </div>
+      <div class="component-stage">
+        <span class="tag">奇幻</span>
+        <span class="tag">温柔</span>
+        <span class="tag">治疗系</span>
+        <span class="tag tag--neutral">中性</span>
+        <span class="tag tag--accent-2">辅助</span>
+        <span class="tag tag--highlight">点缀</span>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">状态胶囊 Chip</h2>
+        <p class="demo-section__desc">待处理状态条中的可点击胶囊，含警告与静默两种语义。</p>
+      </div>
+      <div class="component-stage">
+        <button type="button" class="chip chip--warning chip--interactive"><i class="chip__icon" data-icon="cpu"></i>模型 需处理</button>
+        <button type="button" class="chip chip--muted chip--interactive"><i class="chip__icon" data-icon="mic"></i>语音 未启用</button>
+        <button type="button" class="chip chip--success chip--interactive"><i class="chip__icon" data-icon="check"></i>已就绪</button>
+        <span class="chip">静态胶囊</span>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">头像 Avatar</h2>
+        <p class="demo-section__desc">五种尺寸，圆形或方形由风格决定。字母回退用于无立绘角色。</p>
+      </div>
+      <div class="component-stage">
+        <span class="avatar avatar--xs avatar--tone-1"><span class="avatar__fallback">S</span></span>
+        <span class="avatar avatar--sm avatar--tone-2"><span class="avatar__fallback">K</span></span>
+        <span class="avatar avatar--md avatar--tone-3"><span class="avatar__fallback">L</span></span>
+        <span class="avatar avatar--lg avatar--tone-4"><span class="avatar__fallback">M</span></span>
+        <span class="avatar avatar--xl avatar--tone-1"><span class="avatar__fallback">S</span></span>
+        <span class="avatar avatar--md avatar--tone-2"><span class="avatar__fallback">A</span><span class="avatar__status"></span></span>
+        <span class="avatar avatar--md avatar--tone-2"><span class="avatar__fallback">B</span><span class="avatar__status avatar__status--busy"></span></span>
+        <span class="avatar avatar--md avatar--tone-2"><span class="avatar__fallback">C</span><span class="avatar__status avatar__status--offline"></span></span>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">输入控件</h2>
+        <p class="demo-section__desc">文本框与多行文本域。聚焦时边框切换为主色并叠加焦点光晕。</p>
+      </div>
+      <div class="component-stage component-stage--narrow component-stage--column">
+        <div class="field">
+          <label class="field__label" for="demo-input">字段标签</label>
+          <input class="textarea" id="demo-input" style="min-height: var(--size-control-lg)" placeholder="占位提示文字">
+          <span class="field__hint">辅助说明文字</span>
+        </div>
+        <div class="field">
+          <label class="field__label" for="demo-area">多行文本域</label>
+          <textarea class="textarea" id="demo-area" rows="3">保持温柔治愈的语调</textarea>
+        </div>
+        <div class="field">
+          <label class="field__label" for="demo-invalid">校验失败</label>
+          <input class="textarea" id="demo-invalid" style="min-height: var(--size-control-lg)" value="非法内容" aria-invalid="true">
+          <span class="field__error">该字段格式不正确</span>
+        </div>
+        <div class="field">
+          <label class="field__label" for="demo-disabled">禁用状态</label>
+          <input class="textarea" id="demo-disabled" style="min-height: var(--size-control-lg)" value="不可编辑" disabled>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">进度条</h2>
+        <p class="demo-section__desc">用于 Token 预算。填充宽度通过 --progress-value 自定义属性注入，不在内联样式里写死数值。</p>
+      </div>
+      <div class="component-stage component-stage--panel component-stage--column">
+        <div class="progress" style="--progress-value: 0%"><div class="progress__fill"></div></div>
+        <div class="progress" style="--progress-value: 35%"><div class="progress__fill"></div></div>
+        <div class="progress" style="--progress-value: 78%"><div class="progress__fill"></div></div>
+        <div class="progress progress--indeterminate"><div class="progress__fill"></div></div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">滑块</h2>
+        <p class="demo-section__desc">用于作者笔记插入深度。原生 range 元素，轨道与滑块颜色取自 Token。</p>
+      </div>
+      <div class="component-stage component-stage--panel component-stage--column">
+        <div class="slider"><span class="slider__label">插入深度</span><input class="slider__input" type="range" min="0" max="10" value="4" aria-label="插入深度"><span class="slider__value">4</span></div>
+        <div class="slider"><span class="slider__label">禁用</span><input class="slider__input" type="range" min="0" max="10" value="7" disabled aria-label="禁用滑块"><span class="slider__value">7</span></div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">开关</h2>
+        <p class="demo-section__desc">布尔设置项，轨道与滑块由 input:checked 驱动。</p>
+      </div>
+      <div class="component-stage">
+        <label class="switch"><input type="checkbox" checked><span class="switch__track"><span class="switch__thumb"></span></span>已启用</label>
+        <label class="switch"><input type="checkbox"><span class="switch__track"><span class="switch__thumb"></span></span>未启用</label>
+        <label class="switch"><input type="checkbox" disabled><span class="switch__track"><span class="switch__thumb"></span></span>禁用</label>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">键位提示与工具提示</h2>
+        <p class="demo-section__desc">键位提示使用等宽字体；工具提示在悬停或聚焦时淡入。</p>
+      </div>
+      <div class="component-stage">
+        <span class="kbd">Shift</span>
+        <span class="kbd">Enter</span>
+        <span class="kbd">Esc</span>
+        <span class="tooltip-host">
+          <button type="button" class="icon-btn" aria-label="下载"><i class="icon-btn__glyph" data-icon="download"></i></button>
+          <span class="tooltip">导出当前会话为文本</span>
+        </span>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">骨架与分割线</h2>
+        <p class="demo-section__desc">加载占位与内容分隔。分割线样式由 --component-divider-style 决定（实线或虚线）。</p>
+      </div>
+      <div class="component-stage component-stage--panel component-stage--column">
+        <div class="skeleton" style="height: var(--space-6); width: 60%"></div>
+        <div class="skeleton" style="height: var(--space-4); width: 90%"></div>
+        <div class="skeleton" style="height: var(--space-4); width: 75%"></div>
+        <hr class="divider">
+        <hr class="divider divider--inset">
+      </div>
+    </section>
+
+  </div>
+</div>

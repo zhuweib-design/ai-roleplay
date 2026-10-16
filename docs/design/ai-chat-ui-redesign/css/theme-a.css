@@ -1,0 +1,196 @@
+/* =============================================================
+   theme-a.css —— 极光夜曲（Aurora Nocturne）
+   深色沉浸式。以靛黑夜色为底，极光紫为主色、青绿为辅色、玫红作点缀；
+   大面积玻璃拟态与柔和光晕，强调「深夜陪伴感」与角色卡的存在感。
+
+   本文件是「极光夜曲」风格唯一的视觉取值来源：
+     L2 语义 Token —— 颜色、字体、阴影、圆角、玻璃与动效质感
+     L3 组件 Token —— 组件级表现开关（形状、边框、阴影、指示器）
+
+   切换风格只需替换 <link> 的 theme 文件，DOM 结构保持不变。
+   组件层禁止硬编码，全部取值来自本文件与 tokens.base.css。
+   ============================================================= */
+
+[data-theme="a"] {
+
+  /* ---------- L2-1 背景与表面 ---------- */
+  --color-bg-app: #0A0B14;
+  --color-bg-canvas: #0B0D18;
+  --color-bg-rail: #0D0F1B;
+  --color-bg-list: #0F111E;
+  --color-bg-panel: #12141F;
+  --color-bg-surface: #171A28;
+  --color-bg-surface-raised: #1D2133;
+  --color-bg-inset: #0C0E18;
+  --color-bg-hover: rgba(255, 255, 255, 0.06);
+  --color-bg-active: rgba(255, 255, 255, 0.10);
+  --color-bg-selected: rgba(139, 124, 246, 0.16);
+  --color-bg-selected-hover: rgba(139, 124, 246, 0.24);
+  --color-bg-glass: rgba(23, 26, 40, 0.72);
+  --color-bg-scrim: rgba(5, 6, 12, 0.66);
+
+  /* ---------- L2-2 文本 ---------- */
+  --color-text-primary: #ECEEF7;
+  --color-text-secondary: #A7AEC6;
+  --color-text-tertiary: #737B96;
+  --color-text-disabled: #4C5268;
+  --color-text-inverse: #0A0B14;
+  --color-text-on-accent: #FFFFFF;
+  --color-text-link: #9E92F8;
+
+  /* ---------- L2-3 边框与分隔 ---------- */
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  --color-border-default: rgba(255, 255, 255, 0.10);
+  --color-border-strong: rgba(255, 255, 255, 0.18);
+  --color-border-accent: rgba(139, 124, 246, 0.45);
+  --color-divider: rgba(255, 255, 255, 0.07);
+
+  /* ---------- L2-4 主色与强调 ---------- */
+  --color-accent: #8B7CF6;
+  --color-accent-hover: #9E92F8;
+  --color-accent-active: #7867E8;
+  --color-accent-soft: rgba(139, 124, 246, 0.16);
+  --color-accent-softer: rgba(139, 124, 246, 0.08);
+  --color-accent-contrast: #FFFFFF;
+  --color-accent-2: #4FD1C5;
+  --color-accent-2-soft: rgba(79, 209, 197, 0.16);
+  --color-highlight: #F2568C;
+  --color-highlight-soft: rgba(242, 86, 140, 0.16);
+
+  /* ---------- L2-5 语义状态色 ---------- */
+  --color-success: #4ADE80;
+  --color-success-soft: rgba(74, 222, 128, 0.16);
+  --color-success-contrast: #052E16;
+  --color-warning: #FBBF24;
+  --color-warning-soft: rgba(251, 191, 36, 0.16);
+  --color-warning-contrast: #3B2503;
+  --color-danger: #F87171;
+  --color-danger-soft: rgba(248, 113, 113, 0.16);
+  --color-danger-contrast: #450A0A;
+  --color-info: #60A5FA;
+  --color-info-soft: rgba(96, 165, 250, 0.16);
+  --color-info-contrast: #0B1B3A;
+
+  /* ---------- L2-6 焦点与滚动条 ---------- */
+  --color-focus-ring: #A99BFF;
+  --color-scrollbar-track: transparent;
+  --color-scrollbar-thumb: rgba(255, 255, 255, 0.14);
+  --color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.26);
+
+  /* ---------- L2-7 阴影与光效 ---------- */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.50);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+  --shadow-xl: 0 32px 80px rgba(0, 0, 0, 0.60);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-glow: 0 0 0 1px rgba(139, 124, 246, 0.35), 0 8px 32px rgba(139, 124, 246, 0.28);
+  --shadow-focus: 0 0 0 3px rgba(139, 124, 246, 0.30);
+
+  /* ---------- L2-8 字体 ---------- */
+  --font-family-sans: "Inter", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-family-display: "Inter", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-family-mono: "JetBrains Mono", "Cascadia Mono", Consolas, "Microsoft YaHei", monospace;
+  --font-feature-settings: "cv11", "ss01", "tnum";
+
+  /* ---------- L2-9 圆角覆写（风格形状语言） ---------- */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+
+  /* ---------- L2-10 描边与玻璃 ---------- */
+  --size-border-thin: 1px;
+  --size-border-thick: 2px;
+  --effect-blur: 18px;
+  --effect-saturate: 1.4;
+
+  /* ---------- L2-11 环境装饰（背景层） ---------- */
+  --component-backdrop-image: radial-gradient(900px 620px at 18% -6%, rgba(139, 124, 246, 0.20), transparent 62%), radial-gradient(760px 520px at 92% 4%, rgba(79, 209, 197, 0.13), transparent 58%), radial-gradient(700px 600px at 60% 108%, rgba(242, 86, 140, 0.10), transparent 60%);
+  --component-backdrop-size: cover;
+  --component-backdrop-repeat: no-repeat;
+  --component-backdrop-opacity: 1;
+
+  /* ---------- L3 组件级表现开关 ---------- */
+  --component-nav-item-radius: 10px;
+  --component-nav-indicator-w: 3px;
+  --component-nav-indicator-color: #8B7CF6;
+  --component-nav-item-active-bg: rgba(139, 124, 246, 0.18);
+  --component-nav-item-active-color: #ECEEF7;
+
+  --component-panel-radius: 0px;
+  --component-panel-border-w: 1px;
+  --component-panel-border-color: rgba(255, 255, 255, 0.06);
+  --component-panel-shadow: none;
+
+  --component-card-radius: 14px;
+  --component-card-border-w: 1px;
+  --component-card-border-color: rgba(255, 255, 255, 0.08);
+  --component-card-bg: rgba(255, 255, 255, 0.03);
+  --component-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --component-card-shadow-hover: 0 10px 28px rgba(0, 0, 0, 0.48);
+  --component-card-lift: -2px;
+
+  --component-button-radius: 10px;
+  --component-button-shadow: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --component-button-shadow-hover: 0 0 0 1px rgba(139, 124, 246, 0.35), 0 8px 24px rgba(139, 124, 246, 0.26);
+  --component-button-primary-bg: #8B7CF6;
+  --component-button-primary-bg-hover: #9E92F8;
+  --component-button-primary-color: #FFFFFF;
+
+  --component-icon-button-radius: 10px;
+  --component-icon-button-bg: transparent;
+  --component-icon-button-bg-hover: rgba(255, 255, 255, 0.08);
+
+  --component-list-item-radius: 12px;
+  --component-list-item-active-bg: rgba(139, 124, 246, 0.16);
+
+  --component-chip-radius: 999px;
+  --component-chip-border-w: 1px;
+  --component-chip-bg: rgba(255, 255, 255, 0.04);
+  --component-chip-bg-hover: rgba(255, 255, 255, 0.09);
+  --component-chip-color: #A7AEC6;
+
+  --component-tag-radius: 999px;
+  --component-tag-border-w: 1px;
+  --component-tag-bg: rgba(139, 124, 246, 0.14);
+
+  --component-input-radius: 16px;
+  --component-input-border-w: 1px;
+  --component-input-bg: rgba(255, 255, 255, 0.04);
+  --component-input-bg-focus: rgba(255, 255, 255, 0.06);
+  --component-input-shadow-focus: 0 0 0 3px rgba(139, 124, 246, 0.22);
+  --component-input-min-h: 44px;
+
+  --component-avatar-radius: 50%;
+  --component-avatar-ring: 0 0 0 1px rgba(255, 255, 255, 0.10);
+  --component-avatar-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+
+  --component-badge-radius: 999px;
+  --component-badge-border-w: 1px;
+
+  --component-bubble-radius: 18px;
+  --component-bubble-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+
+  --component-hero-radius: 50%;
+  --component-hero-bg: linear-gradient(145deg, rgba(139, 124, 246, 0.28), rgba(79, 209, 197, 0.18));
+  --component-hero-shadow: 0 0 0 1px rgba(139, 124, 246, 0.30), 0 18px 48px rgba(139, 124, 246, 0.22);
+  --component-hero-color: #C9C2FF;
+
+  --component-progress-radius: 999px;
+  --component-progress-track: rgba(255, 255, 255, 0.08);
+  --component-progress-fill: #8B7CF6;
+
+  --component-slider-track: rgba(255, 255, 255, 0.10);
+  --component-slider-fill: #8B7CF6;
+  --component-slider-thumb-bg: #8B7CF6;
+  --component-slider-thumb-ring: 0 0 0 4px rgba(139, 124, 246, 0.22);
+
+  --component-divider-style: solid;
+  --component-title-letter-spacing: -0.01em;
+  --component-title-transform: none;
+  --component-glass-blur: 18px;
+  --component-focus-offset: 2px;
+}

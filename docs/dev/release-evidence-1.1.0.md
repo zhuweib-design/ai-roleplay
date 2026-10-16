@@ -82,8 +82,14 @@ warning 合计          : 8   （与既有告警基线一致，未新增）
 
 那 6 条是 `no-unused-vars` 与一条 `no-empty`，来自另一次会话留在仓库根的一次性 CDP 探针脚本，
 不属于 1.1.0 的内容，也不在版本控制里；CI 在干净检出上跑同一条命令得到 success（第 2 节）。
-处置：不替别的会话删文件，也不为了本机变绿去改 `eslint` 配置。等那几个 `tmp-*.mjs` 被它自己的
+处置（1.1.0 当时）：不替别的会话删文件，也不为了本机变绿去改 `eslint` 配置。等那几个 `tmp-*.mjs` 被它自己的
 会话清掉，本机 `eslint .` 自然回到 0 error。
+
+> 后续更正：这条判断在 1.1.1 被推翻了，理由是它没解决真正的问题——`eslint .` 扫的是**文件系统**，
+> 而 CI 扫的是**干净检出**，只要这类脚本还在磁盘上，本机与 CI 就会长期给出不同结论，而这种差值最耗排查时间。
+> 1.1.1 的做法是把一次性探针请出两处：`.gitignore` 加 `/tmp-*.mjs`，`eslint.config.js` 的 ignores 加同一条
+> （与 2026-10-11 把 `docs/**` 静态原型请出 lint 范围是同族先例）；文件仍留在磁盘上，谁在写会话不受影响。
+> 之后 `npm run lint` 本机 0 error / 8 既有 warning，与 CI 同口径。
 
 顺带一条与第 15.15 节同型的经验：**未跟踪文件会让本机门禁红，但不会让 CI 红**，
 所以"本机红"要先分诊是内容问题还是工作区卫生问题，判据就是上面那次对账。
@@ -100,7 +106,8 @@ warning 合计          : 8   （与既有告警基线一致，未新增）
 ## 5. 已知未闭环（发布时仍然存在，不是"已验证通过"）
 
 - 设置 → 关于那一行的"版本："仍是占位破折号：`SettingsAboutPanel.vue` 里 `appVersion` 声明后从未赋值，
-  所以界面上看不到 1.1.0。原因与修法记在 `docs/dev/release-notes-1.1.0.md` 的"版本定位"一节末。
+  所以界面上看不到 1.1.0。原因与修法记在 `docs/dev/release-notes-1.1.0.md` 的"版本定位"一节末；
+  已在 1.1.1 修掉（见 `docs/dev/release-notes-1.1.1.md`），`v1.1.0` 标签不动。
 - iOS Safari 的键盘兜底（`--keyboard-inset`）只有按真实数值形状写的单测（Android 形状差值恒为 0、
   iOS 形状 312px 两条负向对照），本机无 iOS 设备可跑。
 - 安卓上的导出按钮仍是死按钮：WebView 的 `showSaveFilePicker()` 是 14ms 就抛 AbortError 的桩，
@@ -141,8 +148,24 @@ npx eslint . -f json -o /tmp/eslint.json
 门禁判定），因为只留 4000 字符输出尾巴时，证据里全是某条单测打进 stderr 的堆栈，
 读不出"到底跑过了多少项"。
 
-## 7. 判定
+## 7. 判定与收口
 
 1.1.0 的内容侧证据齐了：本机 15 项里 9 项通过、1 项红的成因已定位到工作区卫生而非代码、
 5 项如实标 skipped 并给了补齐路径；CI 在同一提交上 Quality Gates、E2E 四组 241 项、
-Tauri 构建全部 success。**可以合并。**
+Tauri 构建全部 success。
+
+合并动作的实际读数（2026-10-16 17:45 前后）：
+
+| 项 | 值 |
+| --- | --- |
+| PR #6 | `f47b95f` 合入 `master`，merge_method=merge，合并提交 `25da9abcce1ae185d2e2a2d8b91cd8a370b0894d`（138 个提交，未 squash——`CHANGELOG` 与本文多处按 SHA 引用分支上的提交，压扁会让这些引用失去落点） |
+| 合并前的门禁 | run #120（id 38880787126）在 `f47b95f` 上 6 个 job 全 success，`mergeable_state` 由 `unstable` 转 `clean` |
+| 合并后的 master | run #121（id 38882628184）在 `25da9ab` 上 Quality Gates / E2E 四组 / Tauri **全部 success** |
+| 标签 | 附注标签 `v1.1.0` 指向 `25da9ab`（`refs/tags/v1.1.0` = a478f0d），徽章链接 `releases/tag/v1.1.0` 实测 200 |
+| 分支 | `feat/ux-ia-guided-flow` 保留未删（本仓库会话常并行，删分支会影响另一会话的工作树） |
+
+没有做的两件事：GitHub 上**没有** Release 对象（只有一个裸标签，`releases?per_page` 列出的最新正式
+Release 仍是 v0.3.1），因此也不存在"安装包挂在 Release 上"——按既定策略安装包不进 git，
+要挂 APK 需要在网页里建 Release 并上传，这一步留给用户点；`android` 侧当前 `installer/` 里的
+调试包仍是 `versionName "1.0"` / `versionCode 1` 那次构建的产物，**不含 1.1.0 的版本号**，
+要发安卓包需要重跑一次 `node scripts/android-apk.mjs`。

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="a">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>组织组件 —— AI 虚拟对话界面组件库</title>
+  <!-- 样式加载顺序：重置 -> 结构 Token -> 主题 Token -> 布局 -> 组件 -->
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/tokens.base.css">
+  <link rel="stylesheet" href="../css/theme-a.css">
+  <link rel="stylesheet" href="../css/theme-b.css">
+  <link rel="stylesheet" href="../css/theme-c.css">
+  <link rel="stylesheet" href="../css/theme-d.css">
+  <link rel="stylesheet" href="../css/theme-e.css">
+  <link rel="stylesheet" href="../css/theme-f.css">
+  <link rel="stylesheet" href="../css/theme-g.css">
+  <link rel="stylesheet" href="../css/theme-h.css">
+  <link rel="stylesheet" href="../css/theme-i.css">
+  <link rel="stylesheet" href="../css/theme-j.css">
+  <link rel="stylesheet" href="../css/theme-k.css">
+  <link rel="stylesheet" href="../css/theme-l.css">
+  <link rel="stylesheet" href="../css/theme-m.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/overview.css">
+  <link rel="stylesheet" href="../css/demo.css">
+</head>
+<body>
+<div class="doc-page">
+  <div class="doc-page__inner">
+    <header class="stack stack--md">
+      <h1 class="doc-title">组织组件</h1>
+      <p class="doc-subtitle">由分子组装而成的完整区域。四套风格共用同一份 DOM，仅替换主题 Token 文件。</p>
+      <div class="theme-switcher" role="group" aria-label="切换设计风格"><button type="button" class="theme-switcher__item" data-theme-switch="a" aria-pressed="false"><span class="theme-switcher__dot"></span>极光夜曲</button><button type="button" class="theme-switcher__item" data-theme-switch="b" aria-pressed="false"><span class="theme-switcher__dot"></span>墨纸</button><button type="button" class="theme-switcher__item" data-theme-switch="c" aria-pressed="false"><span class="theme-switcher__dot"></span>新终端</button><button type="button" class="theme-switcher__item" data-theme-switch="d" aria-pressed="false"><span class="theme-switcher__dot"></span>樱雾玻璃</button><button type="button" class="theme-switcher__item" data-theme-switch="e" aria-pressed="false"><span class="theme-switcher__dot"></span>新粗野</button><button type="button" class="theme-switcher__item" data-theme-switch="f" aria-pressed="false"><span class="theme-switcher__dot"></span>赛璐璐</button><button type="button" class="theme-switcher__item" data-theme-switch="g" aria-pressed="false"><span class="theme-switcher__dot"></span>魔法少女</button><button type="button" class="theme-switcher__item" data-theme-switch="h" aria-pressed="false"><span class="theme-switcher__dot"></span>霓虹东京</button><button type="button" class="theme-switcher__item" data-theme-switch="i" aria-pressed="false"><span class="theme-switcher__dot"></span>机甲机库</button><button type="button" class="theme-switcher__item" data-theme-switch="j" aria-pressed="false"><span class="theme-switcher__dot"></span>大正浪漫</button><button type="button" class="theme-switcher__item" data-theme-switch="k" aria-pressed="false"><span class="theme-switcher__dot"></span>水彩治愈</button><button type="button" class="theme-switcher__item" data-theme-switch="l" aria-pressed="false"><span class="theme-switcher__dot"></span>蒸汽波</button><button type="button" class="theme-switcher__item" data-theme-switch="m" aria-pressed="false"><span class="theme-switcher__dot"></span>学园制服</button></div>
+      <div class="demo-row">
+        <a class="btn btn--sm" href="../index.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>风格总览</a>
+        <a class="btn btn--sm" href="atoms.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>原子</a>
+        <a class="btn btn--sm" href="molecules.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 2 9 5-9 5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>分子</a>
+        <a class="btn btn--sm" href="organisms.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>组织</a>
+      </div>
+    </header>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 A 一级导航栏 Rail</h2>
+        <p class="demo-section__desc">固定宽度 176px，纵向三段式：标题 / 可滚动导航 / 底部固定区。导航项选中态由左侧指示条与底色共同表达。</p>
+      </div>
+      <div class="organism-frame organism-frame--rail organism-frame--h-xl">
+        <aside class="rail" aria-label="主导航">
+          <div class="rail__header"><span class="section-label">会话</span></div>
+          <nav class="rail__nav" aria-label="功能导航">
+            <button type="button" class="nav-item is-selected" aria-current="page"><span class="nav-item__indicator" aria-hidden="true"></span><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg><span class="nav-item__label">对话</span></button>
+            <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-item__label">群聊</span></button>
+            <div class="nav-group">
+              <div class="nav-group__title">创作</div>
+              <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-item__label">角色</span></button>
+              <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="nav-item__label">世界书</span></button>
+              <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg><span class="nav-item__label">数据银行</span></button>
+              <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="m17.8 11.8 1.2 1.2"/><path d="M15 9h.01"/><path d="m17.8 6.2 1.2-1.2"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg><span class="nav-item__label">故事引擎</span></button>
+              <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8h.01"/><path d="M16 8h.01"/><path d="M12 12h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg><span class="nav-item__label">随机事件</span></button>
+              <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 9h18l-1.5-5.5A1 1 0 0 0 18.5 3h-13a1 1 0 0 0-1 .5L3 9Z"/><path d="M3 9v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9"/><path d="M9 13h6"/></svg><span class="nav-item__label">社区市场</span></button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-group__title">能力</div>
+              <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2"/><path d="M15 2v2"/><path d="M9 20v2"/><path d="M15 20v2"/><path d="M2 9h2"/><path d="M2 15h2"/><path d="M20 9h2"/><path d="M20 15h2"/></svg><span class="nav-item__label">本地模型</span></button>
+              <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.5-4.5L6 21"/></svg><span class="nav-item__label">图像生成</span></button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-group__title">历史</div>
+              <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h8"/><path d="M8 17h5"/></svg><span class="nav-item__label">记录</span></button>
+              <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg><span class="nav-item__label">版本管理</span></button>
+            </div>
+          </nav>
+          <div class="rail__footer">
+            <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.1 6.3-6.3 2.1 2.1-6.3Z"/></svg><span class="nav-item__label">引导</span></button>
+            <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg><span class="nav-item__label">更多</span></button>
+            <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span class="nav-item__label">设置</span></button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 B 角色列表栏 List Pane</h2>
+        <p class="demo-section__desc">固定宽度 275px。搜索区固定、列表区滚动、底部操作固定。</p>
+      </div>
+      <div class="organism-frame organism-frame--list organism-frame--h-xl">
+        <aside class="list-pane" aria-label="角色列表">
+          <div class="list-pane__search">
+            <div class="search-field">
+              <svg class="search-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <label class="visually-hidden" for="o-search">搜索角色</label>
+              <input class="search-field__input" id="o-search" type="search" placeholder="搜索角色...">
+              <button type="button" class="search-field__clear" aria-label="清空搜索"><svg class="icon-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
+          </div>
+          <div class="list-pane__body">
+            <div class="nav-group">
+              <div class="nav-group__title">收藏</div>
+              <button type="button" class="entity-item"><span class="avatar avatar--md avatar--tone-3"><span class="avatar__fallback">K</span></span><span class="entity-item__text"><span class="entity-item__name">Kael</span><span class="entity-item__meta">刚刚</span></span></button>
+              <button type="button" class="entity-item is-selected" aria-selected="true"><span class="avatar avatar--md avatar--tone-1"><span class="avatar__fallback">S</span></span><span class="entity-item__text"><span class="entity-item__name">Seraphina</span><span class="entity-item__meta">刚刚</span></span></button>
+              <button type="button" class="btn btn--dashed btn--sm btn--block"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="M5 12h14"/></svg>为此角色新建会话</button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-group__title">全部角色</div>
+              <button type="button" class="entity-item"><span class="avatar avatar--md avatar--tone-2"><span class="avatar__fallback">L</span></span><span class="entity-item__text"><span class="entity-item__name">Lyra</span><span class="entity-item__meta">刚刚</span></span></button>
+              <button type="button" class="entity-item"><span class="avatar avatar--md avatar--tone-4"><span class="avatar__fallback">M</span></span><span class="entity-item__text"><span class="entity-item__name">Mira</span><span class="entity-item__meta">刚刚</span></span></button>
+            </div>
+          </div>
+          <div class="list-pane__footer">
+            <button type="button" class="btn btn--primary btn--block"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="M5 12h14"/></svg>新建对话</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 C1 会话顶栏 Topbar</h2>
+        <p class="demo-section__desc">高度 64px，左右两端对齐。左端为角色身份，右端为模式切换、用量徽章与图标操作组。</p>
+      </div>
+      <div class="organism-frame organism-frame--main organism-frame--h-auto">
+        <div class="main">
+          <header class="main__topbar">
+            <div class="main__topbar-start">
+              <span class="avatar avatar--md avatar--tone-1"><span class="avatar__fallback">S</span></span>
+              <span class="main__title">Seraphina</span>
+              <span class="badge badge--warning">未配置</span>
+            </div>
+            <div class="main__topbar-end">
+              <div class="segmented" role="tablist" aria-label="会话模式">
+                <button type="button" class="segmented__item" role="tab" aria-selected="true">对话</button>
+                <button type="button" class="segmented__item" role="tab" aria-selected="false">群聊</button>
+              </div>
+              <span class="badge badge--mono">已跑 0.0k</span>
+              <span class="divider divider--vertical" aria-hidden="true"></span>
+              <button type="button" class="icon-btn" aria-label="搜索会话"><svg class="icon-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+              <button type="button" class="icon-btn" aria-label="导出会话"><svg class="icon-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg></button>
+              <button type="button" class="icon-btn" aria-label="切换上下文面板" aria-pressed="true"><svg class="icon-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg></button>
+            </div>
+          </header>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 C2 待处理状态条 Statusbar</h2>
+        <p class="demo-section__desc">最小高度 40px。左侧为汇总提示条，右侧胶囊横向可滚动，窄屏下不换行、不挤压。</p>
+      </div>
+      <div class="organism-frame organism-frame--main organism-frame--h-auto">
+        <div class="main">
+          <div class="main__statusbar">
+            <span class="notice-bar"><svg class="notice-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>有 2 项需要先处理</span>
+            <div class="main__statusbar-scroll">
+              <button type="button" class="chip chip--warning chip--interactive"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2"/><path d="M15 2v2"/><path d="M9 20v2"/><path d="M15 20v2"/><path d="M2 9h2"/><path d="M2 15h2"/><path d="M20 9h2"/><path d="M20 15h2"/></svg>模型 需处理</button>
+              <button type="button" class="chip chip--warning chip--interactive"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>世界书 需处理</button>
+              <button type="button" class="chip chip--muted chip--interactive"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>文档检索 未启用</button>
+              <button type="button" class="chip chip--muted chip--interactive"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>语音 未启用</button>
+              <button type="button" class="chip chip--muted chip--interactive"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg>状态指令 未启用</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 C3 空态区 Empty State</h2>
+        <p class="demo-section__desc">无消息时的首屏。内容最大宽度 760px 并水平居中，在剩余高度内垂直居中。</p>
+      </div>
+      <div class="organism-frame organism-frame--main organism-frame--h-md">
+        <div class="main">
+          <div class="main__body main__body--empty">
+            <div class="main__body-inner">
+              <div class="empty-state">
+                <div class="empty-state__glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></div>
+                <h2 class="empty-state__title">开始与 Seraphina 的对话</h2>
+                <p class="empty-state__desc">在下方输入消息，或从下面的开场白里挑一个开始</p>
+                <div class="empty-state__starters-wrap">
+                  <span class="section-label section-label--center">示例开场白</span>
+                  <div class="empty-state__starters">
+                    <button type="button" class="starter">你好，能先介绍一下你自己吗？</button>
+                    <button type="button" class="starter">我们今天聊点什么好呢？</button>
+                    <button type="button" class="starter">给我讲一个有趣的故事吧</button>
+                    <button type="button" class="starter">如果可以许一个愿望，你希望是什么？</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 C4 底部输入区 Composer</h2>
+        <p class="demo-section__desc">内容最大宽度 860px 居中。文本域与发送按钮包在同一容器内，聚焦态统一由外层控制。</p>
+      </div>
+      <div class="organism-frame organism-frame--main organism-frame--h-auto">
+        <div class="main">
+          <div class="main__composer">
+            <div class="main__composer-inner">
+              <div class="composer-box">
+                <label class="visually-hidden" for="o-composer">消息输入框</label>
+                <textarea class="textarea textarea--composer" id="o-composer" rows="2" placeholder="输入消息...（Shift+Enter 换行）"></textarea>
+                <div class="composer-box__actions">
+                  <span class="composer-box__hint"><span class="kbd">Shift</span><span>+</span><span class="kbd">Enter</span><span>换行</span></span>
+                  <button type="button" class="icon-btn icon-btn--lg icon-btn--accent" aria-label="发送消息"><svg class="icon-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/></svg></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">区域 D 上下文侧栏 Context Pane</h2>
+        <p class="demo-section__desc">固定宽度 352px。内部分区自上而下，每块之间用分隔线隔开，最后一块无分隔线。</p>
+      </div>
+      <div class="organism-frame organism-frame--context organism-frame--h-xl">
+        <aside class="context-pane" aria-label="上下文">
+          <div class="context-pane__header">
+            <span class="pane-title">上下文</span>
+            <button type="button" class="icon-btn icon-btn--sm" aria-label="关闭上下文面板"><svg class="icon-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+          </div>
+          <div class="context-pane__body">
+            <section class="card card--interactive" tabindex="0" aria-label="角色信息">
+              <div class="card__header">
+                <span class="avatar avatar--lg avatar--tone-1"><span class="avatar__fallback">S</span></span>
+                <div class="stack grow">
+                  <div class="row row--wrap">
+                    <span class="card__title">Seraphina</span>
+                    <span class="badge badge--warning">未配置</span>
+                  </div>
+                  <p class="card__body">守护翡翠森林的精灵法师，拥有治愈魔法和自然之力。</p>
+                  <div class="row row--wrap"><span class="tag">奇幻</span><span class="tag">温柔</span><span class="tag">治疗系</span></div>
+                </div>
+              </div>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">当前世界用户资料</h3><span class="panel-section__value">未设置</span></div>
+              <p class="panel-section__hint">在当前世界的世界书中编辑用户资料</p>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">对话摘要</h3><span class="panel-section__value">未生成</span></div>
+              <p class="panel-section__hint">当前会话还没有可用摘要</p>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">Token 预算</h3><span class="panel-section__value">0 / 262144</span></div>
+              <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="262144" aria-valuenow="0" aria-label="Token 使用量" style="--progress-value: 0%"><div class="progress__fill"></div></div>
+              <div class="stack stack--xs">
+                <div class="stat-row"><span class="stat-row__dot"></span><span class="stat-row__label">累计消耗</span><span class="stat-row__value">0 Tokens</span></div>
+                <div class="stat-row"><span class="stat-row__dot stat-row__dot--muted"></span><span class="stat-row__label">剩余</span><span class="stat-row__value">262144</span></div>
+              </div>
+              <p class="panel-section__hint">数值来自各轮请求的真实 prompt token 累计，上限可在「设置 → 模型」调整。</p>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">世界书</h3><span class="panel-section__value">0 本</span></div>
+              <p class="panel-section__hint">未绑定世界书，去角色编辑绑定</p>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">作者笔记</h3><span class="panel-section__value">深度 4</span></div>
+              <label class="visually-hidden" for="o-note">作者笔记内容</label>
+              <textarea class="textarea" id="o-note" rows="3">保持温柔治愈的语调</textarea>
+              <div class="slider">
+                <span class="slider__label">插入深度</span>
+                <input class="slider__input" type="range" min="0" max="10" value="4" aria-label="插入深度">
+                <span class="slider__value">4</span>
+              </div>
+            </section>
+            <section class="panel-section">
+              <div class="panel-section__header"><h3 class="panel-section__title">Runtime 状态</h3><button type="button" class="panel-section__toggle" aria-label="展开 Runtime 状态"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></button></div>
+              <p class="panel-section__hint">原图未展示该分区内容，字段待确认，见设计文档「不确定项」。</p>
+            </section>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">完整应用</h2>
+        <p class="demo-section__desc">把四个区域按 176 / 275 / 自适应 / 352 的栅格拼合，即得到 1920 x 1080 的完整界面。点击下方链接查看四套风格的完整渲染。</p>
+      </div>
+      <div class="demo-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span>四套风格共用 partials/page-body.html 这一份 DOM，只有 theme-*.css 不同。因此组件与风格完全解耦。</span></div>
+      <div class="demo-row">
+        <a class="btn btn--primary" href="../style-a.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>极光夜曲</a>
+        <a class="btn" href="../style-b.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>墨纸</a>
+        <a class="btn" href="../style-c.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>新终端</a>
+        <a class="btn" href="../style-d.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>樱雾玻璃</a>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="../js/slider-fill.js"></script>
+<script src="../js/theme-switch.js"></script>
+</body>
+</html>

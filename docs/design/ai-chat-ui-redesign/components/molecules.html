@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="a">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>分子组件 —— AI 虚拟对话界面组件库</title>
+  <!-- 样式加载顺序：重置 -> 结构 Token -> 主题 Token -> 布局 -> 组件 -->
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/tokens.base.css">
+  <link rel="stylesheet" href="../css/theme-a.css">
+  <link rel="stylesheet" href="../css/theme-b.css">
+  <link rel="stylesheet" href="../css/theme-c.css">
+  <link rel="stylesheet" href="../css/theme-d.css">
+  <link rel="stylesheet" href="../css/theme-e.css">
+  <link rel="stylesheet" href="../css/theme-f.css">
+  <link rel="stylesheet" href="../css/theme-g.css">
+  <link rel="stylesheet" href="../css/theme-h.css">
+  <link rel="stylesheet" href="../css/theme-i.css">
+  <link rel="stylesheet" href="../css/theme-j.css">
+  <link rel="stylesheet" href="../css/theme-k.css">
+  <link rel="stylesheet" href="../css/theme-l.css">
+  <link rel="stylesheet" href="../css/theme-m.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/overview.css">
+  <link rel="stylesheet" href="../css/demo.css">
+</head>
+<body>
+<div class="doc-page">
+  <div class="doc-page__inner">
+    <header class="stack stack--md">
+      <h1 class="doc-title">分子组件</h1>
+      <p class="doc-subtitle">由原子组合而成、承担单一职责的功能单元。状态通过伪类真实驱动，不使用静态截图。</p>
+      <div class="theme-switcher" role="group" aria-label="切换设计风格"><button type="button" class="theme-switcher__item" data-theme-switch="a" aria-pressed="false"><span class="theme-switcher__dot"></span>极光夜曲</button><button type="button" class="theme-switcher__item" data-theme-switch="b" aria-pressed="false"><span class="theme-switcher__dot"></span>墨纸</button><button type="button" class="theme-switcher__item" data-theme-switch="c" aria-pressed="false"><span class="theme-switcher__dot"></span>新终端</button><button type="button" class="theme-switcher__item" data-theme-switch="d" aria-pressed="false"><span class="theme-switcher__dot"></span>樱雾玻璃</button><button type="button" class="theme-switcher__item" data-theme-switch="e" aria-pressed="false"><span class="theme-switcher__dot"></span>新粗野</button><button type="button" class="theme-switcher__item" data-theme-switch="f" aria-pressed="false"><span class="theme-switcher__dot"></span>赛璐璐</button><button type="button" class="theme-switcher__item" data-theme-switch="g" aria-pressed="false"><span class="theme-switcher__dot"></span>魔法少女</button><button type="button" class="theme-switcher__item" data-theme-switch="h" aria-pressed="false"><span class="theme-switcher__dot"></span>霓虹东京</button><button type="button" class="theme-switcher__item" data-theme-switch="i" aria-pressed="false"><span class="theme-switcher__dot"></span>机甲机库</button><button type="button" class="theme-switcher__item" data-theme-switch="j" aria-pressed="false"><span class="theme-switcher__dot"></span>大正浪漫</button><button type="button" class="theme-switcher__item" data-theme-switch="k" aria-pressed="false"><span class="theme-switcher__dot"></span>水彩治愈</button><button type="button" class="theme-switcher__item" data-theme-switch="l" aria-pressed="false"><span class="theme-switcher__dot"></span>蒸汽波</button><button type="button" class="theme-switcher__item" data-theme-switch="m" aria-pressed="false"><span class="theme-switcher__dot"></span>学园制服</button></div>
+      <div class="demo-row">
+        <a class="btn btn--sm" href="../index.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>风格总览</a>
+        <a class="btn btn--sm" href="atoms.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>原子</a>
+        <a class="btn btn--sm" href="molecules.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 2 9 5-9 5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>分子</a>
+        <a class="btn btn--sm" href="organisms.html"><svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>组织</a>
+      </div>
+    </header>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">导航项 Nav Item</h2>
+        <p class="demo-section__desc">一级导航的最小单元。选中态由 aria-current 或 is-selected 驱动，左侧指示条宽度由 --component-nav-indicator-w 决定，樱雾玻璃风格将其设为 0 即隐藏。</p>
+      </div>
+      <div class="component-stage component-stage--narrow component-stage--column">
+        <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg><span class="nav-item__label">默认状态</span></button>
+        <button type="button" class="nav-item is-selected" aria-current="page"><span class="nav-item__indicator" aria-hidden="true"></span><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg><span class="nav-item__label">选中状态</span></button>
+        <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-item__label">带计数</span><span class="nav-item__count">12</span></button>
+        <button type="button" class="nav-item" disabled><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span class="nav-item__label">禁用状态</span></button>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">导航分组 Nav Group</h2>
+        <p class="demo-section__desc">把导航项按业务域分组，组标题使用大写字母间距。</p>
+      </div>
+      <div class="component-stage component-stage--narrow component-stage--column">
+        <div class="nav-group">
+          <div class="nav-group__title">创作</div>
+          <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-item__label">角色</span></button>
+          <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="nav-item__label">世界书</span></button>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group__title">能力</div>
+          <button type="button" class="nav-item"><svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2"/><path d="M15 2v2"/><path d="M9 20v2"/><path d="M15 20v2"/><path d="M2 9h2"/><path d="M2 15h2"/><path d="M20 9h2"/><path d="M20 15h2"/></svg><span class="nav-item__label">本地模型</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">搜索框 Search Field</h2>
+        <p class="demo-section__desc">角色检索。外层容器使用 :focus-within 承载聚焦态，内部 input 自身不显示轮廓，避免双焦点环。</p>
+      </div>
+      <div class="component-stage component-stage--narrow component-stage--column">
+        <div class="search-field">
+          <svg class="search-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <label class="visually-hidden" for="m-search">搜索角色</label>
+          <input class="search-field__input" id="m-search" type="search" placeholder="搜索角色...">
+          <button type="button" class="search-field__clear" aria-label="清空搜索"><svg class="icon-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+        </div>
+        <div class="search-field">
+          <svg class="search-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input class="search-field__input" type="search" value="Seraphina">
+          <button type="button" class="search-field__clear" aria-label="清空搜索"><svg class="icon-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+        </div>
+        <div class="search-field">
+          <svg class="search-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input class="search-field__input" type="search" placeholder="禁用状态" disabled>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">角色列表项 Entity Item</h2>
+        <p class="demo-section__desc">头像加两行文本。选中态同时改变底色与边框色，保证在纯色风格下也能辨识。</p>
+      </div>
+      <div class="component-stage component-stage--narrow component-stage--column">
+        <button type="button" class="entity-item">
+          <span class="avatar avatar--md avatar--tone-3"><span class="avatar__fallback">K</span></span>
+          <span class="entity-item__text"><span class="entity-item__name">Kael</span><span class="entity-item__meta">刚刚</span></span>
+        </button>
+        <button type="button" class="entity-item is-selected" aria-selected="true">
+          <span class="avatar avatar--md avatar--tone-1"><span class="avatar__fallback">S</span></span>
+          <span class="entity-item__text"><span class="entity-item__name">Seraphina</span><span class="entity-item__meta">刚刚</span></span>
+        </button>
+        <button type="button" class="entity-item">
+          <span class="avatar avatar--md avatar--tone-2"><span class="avatar__fallback">L</span></span>
+          <span class="entity-item__text"><span class="entity-item__name">名字过长时会自动省略显示</span><span class="entity-item__meta">3 分钟前</span></span>
+        </button>
+        <button type="button" class="entity-item" disabled>
+          <span class="avatar avatar--md avatar--tone-4"><span class="avatar__fallback">M</span></span>
+          <span class="entity-item__text"><span class="entity-item__name">Mira</span><span class="entity-item__meta">禁用状态</span></span>
+        </button>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">分段切换 Segmented</h2>
+        <p class="demo-section__desc">对话与群聊的模式切换，选中项通过 aria-selected 标记。</p>
+      </div>
+      <div class="component-stage">
+        <div class="segmented" role="tablist" aria-label="会话模式">
+          <button type="button" class="segmented__item" role="tab" aria-selected="true">对话</button>
+          <button type="button" class="segmented__item" role="tab" aria-selected="false">群聊</button>
+        </div>
+        <div class="segmented" role="tablist" aria-label="第二组">
+          <button type="button" class="segmented__item" role="tab" aria-selected="false">全部</button>
+          <button type="button" class="segmented__item" role="tab" aria-selected="true">收藏</button>
+          <button type="button" class="segmented__item" role="tab" aria-selected="false">最近</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">面板分区 Panel Section</h2>
+        <p class="demo-section__desc">上下文侧栏的每一块。标题左对齐、当前值右对齐、说明文字弱化。</p>
+      </div>
+      <div class="component-stage component-stage--panel component-stage--column" style="background-color: var(--color-bg-panel)">
+        <section class="panel-section">
+          <div class="panel-section__header">
+            <h3 class="panel-section__title">当前世界用户资料</h3>
+            <span class="panel-section__value">未设置</span>
+          </div>
+          <p class="panel-section__hint">在当前世界的世界书中编辑用户资料</p>
+        </section>
+        <section class="panel-section">
+          <div class="panel-section__header">
+            <h3 class="panel-section__title">Token 预算</h3>
+            <span class="panel-section__value">0 / 262144</span>
+          </div>
+          <div class="progress" style="--progress-value: 12%"><div class="progress__fill"></div></div>
+          <div class="stack stack--xs">
+            <div class="stat-row"><span class="stat-row__dot"></span><span class="stat-row__label">累计消耗</span><span class="stat-row__value">0 Tokens</span></div>
+            <div class="stat-row"><span class="stat-row__dot stat-row__dot--muted"></span><span class="stat-row__label">剩余</span><span class="stat-row__value">262144</span></div>
+          </div>
+          <p class="panel-section__hint">数值来自各轮请求的真实 prompt token 累计</p>
+        </section>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">卡片 Card</h2>
+        <p class="demo-section__desc">角色信息卡。交互卡片在悬停时抬升并加深阴影，抬升距离由 --component-card-lift 决定，墨纸风格设为 0。</p>
+      </div>
+      <div class="component-stage component-stage--panel component-stage--column" style="background-color: var(--color-bg-panel)">
+        <section class="card card--interactive" tabindex="0">
+          <div class="card__header">
+            <span class="avatar avatar--lg avatar--tone-1"><span class="avatar__fallback">S</span></span>
+            <div class="stack grow">
+              <div class="row row--wrap">
+                <span class="card__title">Seraphina</span>
+                <span class="badge badge--warning">未配置</span>
+              </div>
+              <p class="card__body">守护翡翠森林的精灵法师，拥有治愈魔法和自然之力。</p>
+              <div class="row row--wrap">
+                <span class="tag">奇幻</span><span class="tag">温柔</span><span class="tag">治疗系</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card__header"><span class="card__title">静态卡片</span></div>
+          <p class="card__body">无交互行为的卡片不响应指针事件，避免给出错误的可点击暗示。</p>
+        </section>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">统计行 Stat Row</h2>
+        <p class="demo-section__desc">带语义色圆点的键值行，数值使用等宽数字对齐。</p>
+      </div>
+      <div class="component-stage component-stage--panel component-stage--column">
+        <div class="stat-row"><span class="stat-row__dot"></span><span class="stat-row__label">累计消耗</span><span class="stat-row__value">128 Tokens</span></div>
+        <div class="stat-row"><span class="stat-row__dot stat-row__dot--accent-2"></span><span class="stat-row__label">剩余</span><span class="stat-row__value">262016</span></div>
+        <div class="stat-row"><span class="stat-row__dot stat-row__dot--muted"></span><span class="stat-row__label">上次同步</span><span class="stat-row__value">刚刚</span></div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">开场白胶囊 Starter</h2>
+        <p class="demo-section__desc">空态中的示例提示。悬停时抬升 1px 并切换边框为主色。</p>
+      </div>
+      <div class="component-stage component-stage--column">
+        <div class="row row--wrap" style="justify-content: center">
+          <button type="button" class="starter">你好，能先介绍一下你自己吗？</button>
+          <button type="button" class="starter">我们今天聊点什么好呢？</button>
+          <button type="button" class="starter">给我讲一个有趣的故事吧</button>
+          <button type="button" class="starter" disabled>禁用状态</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">消息气泡 Message</h2>
+        <p class="demo-section__desc">助手与用户两种气泡，用户侧右对齐并使用主色弱底。输入中状态用三点动画。</p>
+      </div>
+      <div class="component-stage component-stage--column">
+        <div class="message">
+          <span class="avatar avatar--sm avatar--tone-1"><span class="avatar__fallback">S</span></span>
+          <div class="bubble">欢迎来到翡翠森林。这里的每一片叶子都记得你的名字。<div class="bubble__meta">Seraphina · 刚刚</div></div>
+        </div>
+        <div class="message message--user">
+          <span class="avatar avatar--sm avatar--tone-2"><span class="avatar__fallback">你</span></span>
+          <div class="bubble bubble--user">我想在这里住一段时间。<div class="bubble__meta">刚刚</div></div>
+        </div>
+        <div class="message">
+          <span class="avatar avatar--sm avatar--tone-1"><span class="avatar__fallback">S</span></span>
+          <div class="bubble"><span class="typing-dots"><span></span><span></span><span></span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">提示条 Notice Bar</h2>
+        <p class="demo-section__desc">会话顶部的待处理提醒，三种语义。</p>
+      </div>
+      <div class="component-stage">
+        <span class="notice-bar"><svg class="notice-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>有 2 项需要先处理</span>
+        <span class="notice-bar notice-bar--info"><svg class="notice-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>已切换到本地模型</span>
+        <span class="notice-bar notice-bar--danger"><svg class="notice-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>连接已断开</span>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <div class="demo-section__head">
+        <h2 class="demo-section__title">输入组合 Composer</h2>
+        <p class="demo-section__desc">文本域与发送按钮的组合容器，聚焦态由外层 :focus-within 统一控制。</p>
+      </div>
+      <div class="component-stage component-stage--column" style="max-width: var(--size-composer-max-w)">
+        <div class="composer-box">
+          <label class="visually-hidden" for="m-composer">消息输入框</label>
+          <textarea class="textarea textarea--composer" id="m-composer" rows="2" placeholder="输入消息...（Shift+Enter 换行）"></textarea>
+          <div class="composer-box__actions">
+            <span class="composer-box__hint"><span class="kbd">Shift</span><span>+</span><span class="kbd">Enter</span><span>换行</span></span>
+            <button type="button" class="icon-btn icon-btn--lg icon-btn--accent" aria-label="发送消息"><svg class="icon-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="../js/slider-fill.js"></script>
+<script src="../js/theme-switch.js"></script>
+</body>
+</html>

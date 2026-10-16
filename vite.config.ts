@@ -2,9 +2,22 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Plugin } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+
+/**
+ * 构建期版本号。设置→关于要显示它，而浏览器运行时拿不到 package.json，
+ * 所以和 `__NATIVE_SHELL__` 一样在编译期注入。
+ *
+ * 2026-10-16 的教训：那一行原本写的是 `appVersion || '—'` 而 `appVersion` 从未被赋值，
+ * 于是所有平台恒显示"版本：—"，文档还写着"读的是运行时值"。现在由
+ * `tests/components/settings-about-version.test.ts` 同时盯住渲染值与两个配置的 define。
+ */
+const APP_VERSION = (
+  JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')) as { version: string }
+).version;
 
 // Tauri 集成：检测 TAURI_ENV 环境变量决定开发服务器配置
 // npm run tauri:dev 会自动设置 TAURI_ENV=1
@@ -234,6 +247,7 @@ export default defineConfig({
   // 编译期常量：让运行时能知道"这份包是不是原生壳构建"，不用去猜 UA
   define: {
     __NATIVE_SHELL__: JSON.stringify(isNativeShellEnv),
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
   },
   resolve: {
     alias: [

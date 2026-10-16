@@ -6,7 +6,7 @@
 
 **基于 SillyTavern 架构的 AI 角色扮演聊天应用：多模型对话 · 角色卡 · 世界书 · 群聊 · 故事引擎 · 社区市场 · 自定义主题 · 自定义向量模型 RAG · Virtual Character OS Runtime**
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v1.1.0)
+[![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/zhuweib-design/ai-roleplay/releases/tag/v1.1.1)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6.svg)]()
 [![Tauri 2](https://img.shields.io/badge/Tauri-2.0-24c8db.svg)]()
@@ -286,6 +286,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 - [x] **Virtual Character OS Runtime** — 批量多角色、多角色群聊、PostgreSQL 事务持久化、版本 CAS 与 Replay 审计（已落地）
 - [x] **v1.0.0** — 首个稳定版本（已完成）
 - [x] **v1.1.0** — 手机端可用化、心理活动叙事、注入可见化、Token 预算推导、安卓出包与工程护栏（已完成，无数据迁移）
+- [x] **v1.1.1** — 补丁：设置 → 关于显示真实版本号（构建期注入），一次性探针脚本请出产品门禁（已完成，无数据迁移）
 - [x] **RAG 增强** — 停用词过滤、已安装模型自动择优与 recall@3 基准（已完成）
 - [x] **无障碍** — 自定义主题运行时对比度预检（已完成）
 
@@ -308,7 +309,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
   - 部署前必须跑：`npm run build && npm run check:csp`，并在 `vite preview` 下跑 `npm run csp:audit`（逐路由 CSP 违规 + 负向对照 + **WASM/blob Worker 能力探针**）。
 - **桌面端（Tauri）**：GitHub 发布不上传安装包；本地桌面构建使用 `npm run tauri:build`，GitHub Release 只保留源码归档。
 - **安卓端（Capacitor 壳）**：`node scripts/android-apk.mjs` 一条脚本出 debug APK（需本机 JDK 21 与 Android SDK，`android/local.properties` 写 `sdk.dir`）。安装包由 `.gitignore` 与"产物入库"守卫双重挡在仓库外，分发走 GitHub Releases。原生壳构建期会关闭 Service Worker（否则覆盖安装不生效），真机调试用 Chrome 133 的 WebView + CDP。
-  - **版本发布说明**：最新见 [`docs/dev/release-notes-1.1.0.md`](docs/dev/release-notes-1.1.0.md)（这一版的能力清单、数据兼容与验证结果），逐项门禁读数见 [`docs/dev/release-evidence-1.1.0.md`](docs/dev/release-evidence-1.1.0.md)；上一版见 [`docs/dev/release-notes-1.0.0.md`](docs/dev/release-notes-1.0.0.md)（稳定版边界与验证结果），再上一版见 [`docs/dev/release-notes-0.9.0.md`](docs/dev/release-notes-0.9.0.md)；数据库迁移演练见 [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md)。
+  - **版本发布说明**：最新见 [`docs/dev/release-notes-1.1.1.md`](docs/dev/release-notes-1.1.1.md)（补丁版：为什么单开一版、验证读数与仍未闭环的项）；1.1.0 的能力清单见 [`docs/dev/release-notes-1.1.0.md`](docs/dev/release-notes-1.1.0.md)，逐项门禁读数见 [`docs/dev/release-evidence-1.1.0.md`](docs/dev/release-evidence-1.1.0.md)；再上一版见 [`docs/dev/release-notes-1.0.0.md`](docs/dev/release-notes-1.0.0.md)（稳定版边界与验证结果）；数据库迁移演练见 [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md)。
 
 ### 隐私与安全
 

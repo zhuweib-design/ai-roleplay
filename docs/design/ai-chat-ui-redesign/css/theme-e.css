@@ -1,0 +1,196 @@
+/* =============================================================
+   theme-e.css —— 新粗野（Neo Brutal）
+   硬边框、硬阴影、零圆角、高饱和撞色。用 2px 墨黑描边与 4px 无模糊硬阴影
+   建立「印刷品」般的物理感；按下时元素位移、阴影收缩，模拟真实的按压反馈。
+
+   本文件是「新粗野」风格唯一的视觉取值来源：
+     L2 语义 Token —— 颜色、字体、阴影、圆角、玻璃与动效质感
+     L3 组件 Token —— 组件级表现开关（形状、边框、阴影、指示器）
+
+   切换风格只需替换 <link> 的 theme 文件，DOM 结构保持不变。
+   组件层禁止硬编码，全部取值来自本文件与 tokens.base.css。
+   ============================================================= */
+
+[data-theme="e"] {
+
+  /* ---------- L2-1 背景与表面 ---------- */
+  --color-bg-app: #EFE9DC;
+  --color-bg-canvas: #FBF7EF;
+  --color-bg-rail: #FFE94A;
+  --color-bg-list: #F5EFE3;
+  --color-bg-panel: #FBF7EF;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-surface-raised: #FFFFFF;
+  --color-bg-inset: #E8E1D2;
+  --color-bg-hover: rgba(17, 17, 17, 0.08);
+  --color-bg-active: rgba(17, 17, 17, 0.15);
+  --color-bg-selected: #2B5BFF;
+  --color-bg-selected-hover: #1E4AE8;
+  --color-bg-glass: #FFFFFF;
+  --color-bg-scrim: rgba(17, 17, 17, 0.55);
+
+  /* ---------- L2-2 文本 ---------- */
+  --color-text-primary: #111111;
+  --color-text-secondary: #3D3A33;
+  --color-text-tertiary: #6E6A5F;
+  --color-text-disabled: #A8A296;
+  --color-text-inverse: #FFFFFF;
+  --color-text-on-accent: #FFFFFF;
+  --color-text-link: #2B5BFF;
+
+  /* ---------- L2-3 边框与分隔 ---------- */
+  --color-border-subtle: #111111;
+  --color-border-default: #111111;
+  --color-border-strong: #111111;
+  --color-border-accent: #111111;
+  --color-divider: #111111;
+
+  /* ---------- L2-4 主色与强调 ---------- */
+  --color-accent: #2B5BFF;
+  --color-accent-hover: #1E4AE8;
+  --color-accent-active: #1740CC;
+  --color-accent-soft: #D9E2FF;
+  --color-accent-softer: #EDF1FF;
+  --color-accent-contrast: #FFFFFF;
+  --color-accent-2: #FF5C8A;
+  --color-accent-2-soft: #FFE0E9;
+  --color-highlight: #FFD400;
+  --color-highlight-soft: #FFF4BF;
+
+  /* ---------- L2-5 语义状态色 ---------- */
+  --color-success: #1E8E4E;
+  --color-success-soft: #D6F2E1;
+  --color-success-contrast: #FFFFFF;
+  --color-warning: #C77700;
+  --color-warning-soft: #FFEBCC;
+  --color-warning-contrast: #111111;
+  --color-danger: #D62828;
+  --color-danger-soft: #FFDCDC;
+  --color-danger-contrast: #FFFFFF;
+  --color-info: #2B5BFF;
+  --color-info-soft: #D9E2FF;
+  --color-info-contrast: #FFFFFF;
+
+  /* ---------- L2-6 焦点与滚动条 ---------- */
+  --color-focus-ring: #2B5BFF;
+  --color-scrollbar-track: transparent;
+  --color-scrollbar-thumb: #111111;
+  --color-scrollbar-thumb-hover: #2B5BFF;
+
+  /* ---------- L2-7 阴影与光效 ---------- */
+  --shadow-xs: 2px 2px 0 #111111;
+  --shadow-sm: 3px 3px 0 #111111;
+  --shadow-md: 4px 4px 0 #111111;
+  --shadow-lg: 6px 6px 0 #111111;
+  --shadow-xl: 8px 8px 0 #111111;
+  --shadow-inset: none;
+  --shadow-glow: 4px 4px 0 #2B5BFF;
+  --shadow-focus: 0 0 0 3px #FFD400;
+
+  /* ---------- L2-8 字体 ---------- */
+  --font-family-sans: 'Archivo', 'Inter', 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-family-display: 'Archivo', 'Inter', 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+  --font-feature-settings: 'tnum';
+
+  /* ---------- L2-9 圆角覆写（风格形状语言） ---------- */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+
+  /* ---------- L2-10 描边与玻璃 ---------- */
+  --size-border-thin: 2px;
+  --size-border-thick: 3px;
+  --effect-blur: 0px;
+  --effect-saturate: 1;
+
+  /* ---------- L2-11 环境装饰（背景层） ---------- */
+  --component-backdrop-image: repeating-linear-gradient(45deg, rgba(17, 17, 17, 0.05) 0px, rgba(17, 17, 17, 0.05) 2px, transparent 2px, transparent 10px);
+  --component-backdrop-size: cover;
+  --component-backdrop-repeat: no-repeat;
+  --component-backdrop-opacity: 1;
+
+  /* ---------- L3 组件级表现开关 ---------- */
+  --component-nav-item-radius: 0px;
+  --component-nav-indicator-w: 4px;
+  --component-nav-indicator-color: #111111;
+  --component-nav-item-active-bg: #FFD400;
+  --component-nav-item-active-color: #111111;
+
+  --component-panel-radius: 0px;
+  --component-panel-border-w: 2px;
+  --component-panel-border-color: #111111;
+  --component-panel-shadow: none;
+
+  --component-card-radius: 0px;
+  --component-card-border-w: 2px;
+  --component-card-border-color: #111111;
+  --component-card-bg: #FFFFFF;
+  --component-card-shadow: 4px 4px 0 #111111;
+  --component-card-shadow-hover: 6px 6px 0 #111111;
+  --component-card-lift: -2px;
+
+  --component-button-radius: 0px;
+  --component-button-shadow: 3px 3px 0 #111111;
+  --component-button-shadow-hover: 5px 5px 0 #111111;
+  --component-button-primary-bg: #2B5BFF;
+  --component-button-primary-bg-hover: #1E4AE8;
+  --component-button-primary-color: #FFFFFF;
+
+  --component-icon-button-radius: 0px;
+  --component-icon-button-bg: #FFFFFF;
+  --component-icon-button-bg-hover: #FFD400;
+
+  --component-list-item-radius: 0px;
+  --component-list-item-active-bg: #FFD400;
+
+  --component-chip-radius: 0px;
+  --component-chip-border-w: 2px;
+  --component-chip-bg: #FFFFFF;
+  --component-chip-bg-hover: #FFD400;
+  --component-chip-color: #111111;
+
+  --component-tag-radius: 0px;
+  --component-tag-border-w: 2px;
+  --component-tag-bg: #FFD400;
+
+  --component-input-radius: 0px;
+  --component-input-border-w: 2px;
+  --component-input-bg: #FFFFFF;
+  --component-input-bg-focus: #FFFFFF;
+  --component-input-shadow-focus: 4px 4px 0 #2B5BFF;
+  --component-input-min-h: 44px;
+
+  --component-avatar-radius: 0px;
+  --component-avatar-ring: 0 0 0 2px #111111;
+  --component-avatar-shadow: 3px 3px 0 #111111;
+
+  --component-badge-radius: 0px;
+  --component-badge-border-w: 2px;
+
+  --component-bubble-radius: 0px;
+  --component-bubble-shadow: 3px 3px 0 #111111;
+
+  --component-hero-radius: 0px;
+  --component-hero-bg: #FFD400;
+  --component-hero-shadow: 6px 6px 0 #111111;
+  --component-hero-color: #111111;
+
+  --component-progress-radius: 0px;
+  --component-progress-track: #E8E1D2;
+  --component-progress-fill: #2B5BFF;
+
+  --component-slider-track: #E8E1D2;
+  --component-slider-fill: #2B5BFF;
+  --component-slider-thumb-bg: #2B5BFF;
+  --component-slider-thumb-ring: 0 0 0 3px #111111;
+
+  --component-divider-style: solid;
+  --component-title-letter-spacing: -0.02em;
+  --component-title-transform: none;
+  --component-glass-blur: 0px;
+  --component-focus-offset: 2px;
+}

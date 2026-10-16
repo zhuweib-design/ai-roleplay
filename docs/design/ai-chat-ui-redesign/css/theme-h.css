@@ -1,0 +1,199 @@
+/* =============================================================
+   theme-h.css —— 霓虹东京（Neon Tokyo）
+   深蓝紫夜色底（#0A0A1F）配霓虹粉（#FF2E88）与霓虹青（#00E5FF），模拟雨夜霓虹招牌。
+   发光代替阴影：所有层级由主色的多层光晕（10px / 30px / 60px）表达，没有一处黑色投影。
+   主按钮用亮粉底配深色字（#0A0A1F），既保住霓虹亮度，又把对比度拉到 5.4:1。
+   环境层是 44px 周期的青色网格加两团霓虹光斑，网格提供赛博质感，光斑提供纵深。
+   卡片使用半透明底加内侧青色辉光，让背景网格透出来，形成「玻璃幕墙」的观感。
+
+   本文件是「霓虹东京」风格唯一的视觉取值来源：
+     L2 语义 Token —— 颜色、字体、阴影、圆角、玻璃与动效质感
+     L3 组件 Token —— 组件级表现开关（形状、边框、阴影、指示器）
+
+   切换风格只需替换 <link> 的 theme 文件，DOM 结构保持不变。
+   组件层禁止硬编码，全部取值来自本文件与 tokens.base.css。
+   ============================================================= */
+
+[data-theme="h"] {
+
+  /* ---------- L2-1 背景与表面 ---------- */
+  --color-bg-app: #0A0A1F;
+  --color-bg-canvas: #0D0D26;
+  --color-bg-rail: #07071A;
+  --color-bg-list: #0C0C22;
+  --color-bg-panel: #10102B;
+  --color-bg-surface: #16163A;
+  --color-bg-surface-raised: #1C1C46;
+  --color-bg-inset: #060614;
+  --color-bg-hover: rgba(0, 229, 255, 0.08);
+  --color-bg-active: rgba(0, 229, 255, 0.15);
+  --color-bg-selected: rgba(255, 46, 136, 0.18);
+  --color-bg-selected-hover: rgba(255, 46, 136, 0.28);
+  --color-bg-glass: rgba(16, 16, 43, 0.80);
+  --color-bg-scrim: rgba(3, 3, 12, 0.72);
+
+  /* ---------- L2-2 文本 ---------- */
+  --color-text-primary: #EDE9FF;
+  --color-text-secondary: #A9A3D0;
+  --color-text-tertiary: #7A76A8;
+  --color-text-disabled: #4A4870;
+  --color-text-inverse: #0A0A1F;
+  --color-text-on-accent: #0A0A1F;
+  --color-text-link: #00E5FF;
+
+  /* ---------- L2-3 边框与分隔 ---------- */
+  --color-border-subtle: rgba(0, 229, 255, 0.14);
+  --color-border-default: rgba(0, 229, 255, 0.26);
+  --color-border-strong: rgba(0, 229, 255, 0.48);
+  --color-border-accent: rgba(255, 46, 136, 0.60);
+  --color-divider: rgba(0, 229, 255, 0.18);
+
+  /* ---------- L2-4 主色与强调 ---------- */
+  --color-accent: #FF2E88;
+  --color-accent-hover: #FF5AA3;
+  --color-accent-active: #E01F73;
+  --color-accent-soft: rgba(255, 46, 136, 0.16);
+  --color-accent-softer: rgba(255, 46, 136, 0.08);
+  --color-accent-contrast: #0A0A1F;
+  --color-accent-2: #00E5FF;
+  --color-accent-2-soft: rgba(0, 229, 255, 0.14);
+  --color-highlight: #FFE600;
+  --color-highlight-soft: rgba(255, 230, 0, 0.16);
+
+  /* ---------- L2-5 语义状态色 ---------- */
+  --color-success: #2BE8A0;
+  --color-success-soft: rgba(43, 232, 160, 0.14);
+  --color-success-contrast: #04231A;
+  --color-warning: #FFB020;
+  --color-warning-soft: rgba(255, 176, 32, 0.16);
+  --color-warning-contrast: #2A1900;
+  --color-danger: #FF3D5A;
+  --color-danger-soft: rgba(255, 61, 90, 0.16);
+  --color-danger-contrast: #2A0009;
+  --color-info: #00E5FF;
+  --color-info-soft: rgba(0, 229, 255, 0.14);
+  --color-info-contrast: #002028;
+
+  /* ---------- L2-6 焦点与滚动条 ---------- */
+  --color-focus-ring: #00E5FF;
+  --color-scrollbar-track: transparent;
+  --color-scrollbar-thumb: rgba(255, 46, 136, 0.32);
+  --color-scrollbar-thumb-hover: rgba(255, 46, 136, 0.55);
+
+  /* ---------- L2-7 阴影与光效 ---------- */
+  --shadow-xs: 0 0 6px rgba(255, 46, 136, 0.20);
+  --shadow-sm: 0 0 12px rgba(255, 46, 136, 0.22);
+  --shadow-md: 0 0 24px rgba(255, 46, 136, 0.24);
+  --shadow-lg: 0 0 40px rgba(255, 46, 136, 0.26);
+  --shadow-xl: 0 0 64px rgba(255, 46, 136, 0.28);
+  --shadow-inset: inset 0 0 20px rgba(0, 229, 255, 0.06);
+  --shadow-glow: 0 0 10px rgba(255, 46, 136, 0.55), 0 0 30px rgba(255, 46, 136, 0.30), 0 0 0 1px rgba(255, 46, 136, 0.60);
+  --shadow-focus: 0 0 0 2px rgba(0, 229, 255, 0.55), 0 0 18px rgba(0, 229, 255, 0.40);
+
+  /* ---------- L2-8 字体 ---------- */
+  --font-family-sans: 'Inter', 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-family-display: 'Inter', 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+  --font-feature-settings: 'tnum', 'ss01';
+
+  /* ---------- L2-9 圆角覆写（风格形状语言） ---------- */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+
+  /* ---------- L2-10 描边与玻璃 ---------- */
+  --size-border-thin: 1px;
+  --size-border-thick: 2px;
+  --effect-blur: 16px;
+  --effect-saturate: 1.5;
+
+  /* ---------- L2-11 环境装饰（背景层） ---------- */
+  --component-backdrop-image: linear-gradient(rgba(0, 229, 255, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 229, 255, 0.06) 1px, transparent 1px), radial-gradient(700px 500px at 15% -5%, rgba(255, 46, 136, 0.28), transparent 60%), radial-gradient(620px 480px at 95% 8%, rgba(0, 229, 255, 0.22), transparent 58%);
+  --component-backdrop-size: 44px 44px, 44px 44px, cover, cover;
+  --component-backdrop-repeat: repeat, repeat, no-repeat, no-repeat;
+  --component-backdrop-opacity: 1;
+
+  /* ---------- L3 组件级表现开关 ---------- */
+  --component-nav-item-radius: 10px;
+  --component-nav-indicator-w: 3px;
+  --component-nav-indicator-color: #FF2E88;
+  --component-nav-item-active-bg: rgba(255, 46, 136, 0.20);
+  --component-nav-item-active-color: #EDE9FF;
+
+  --component-panel-radius: 0px;
+  --component-panel-border-w: 1px;
+  --component-panel-border-color: rgba(0, 229, 255, 0.16);
+  --component-panel-shadow: none;
+
+  --component-card-radius: 14px;
+  --component-card-border-w: 1px;
+  --component-card-border-color: rgba(0, 229, 255, 0.22);
+  --component-card-bg: rgba(22, 22, 58, 0.72);
+  --component-card-shadow: 0 0 18px rgba(255, 46, 136, 0.16), inset 0 0 24px rgba(0, 229, 255, 0.04);
+  --component-card-shadow-hover: 0 0 30px rgba(255, 46, 136, 0.28), inset 0 0 24px rgba(0, 229, 255, 0.06);
+  --component-card-lift: -2px;
+
+  --component-button-radius: 10px;
+  --component-button-shadow: 0 0 12px rgba(255, 46, 136, 0.35);
+  --component-button-shadow-hover: 0 0 20px rgba(255, 46, 136, 0.55), 0 0 0 1px rgba(255, 46, 136, 0.50);
+  --component-button-primary-bg: linear-gradient(135deg, #FF2E88 0%, #E01F73 100%);
+  --component-button-primary-bg-hover: linear-gradient(135deg, #FF5AA3 0%, #F02A80 100%);
+  --component-button-primary-color: #0A0A1F;
+
+  --component-icon-button-radius: 10px;
+  --component-icon-button-bg: transparent;
+  --component-icon-button-bg-hover: rgba(0, 229, 255, 0.12);
+
+  --component-list-item-radius: 12px;
+  --component-list-item-active-bg: rgba(255, 46, 136, 0.18);
+
+  --component-chip-radius: 999px;
+  --component-chip-border-w: 1px;
+  --component-chip-bg: rgba(255, 255, 255, 0.04);
+  --component-chip-bg-hover: rgba(0, 229, 255, 0.14);
+  --component-chip-color: #A9A3D0;
+
+  --component-tag-radius: 999px;
+  --component-tag-border-w: 1px;
+  --component-tag-bg: rgba(255, 46, 136, 0.16);
+
+  --component-input-radius: 14px;
+  --component-input-border-w: 1px;
+  --component-input-bg: rgba(255, 255, 255, 0.04);
+  --component-input-bg-focus: rgba(0, 229, 255, 0.06);
+  --component-input-shadow-focus: 0 0 0 2px rgba(0, 229, 255, 0.40), 0 0 20px rgba(0, 229, 255, 0.25);
+  --component-input-min-h: 44px;
+
+  --component-avatar-radius: 50%;
+  --component-avatar-ring: 0 0 0 2px rgba(0, 229, 255, 0.40);
+  --component-avatar-shadow: 0 0 18px rgba(255, 46, 136, 0.35);
+
+  --component-badge-radius: 999px;
+  --component-badge-border-w: 1px;
+
+  --component-bubble-radius: 18px;
+  --component-bubble-shadow: 0 0 16px rgba(255, 46, 136, 0.18);
+
+  --component-hero-radius: 50%;
+  --component-hero-bg: linear-gradient(135deg, rgba(255, 46, 136, 0.30), rgba(0, 229, 255, 0.22));
+  --component-hero-shadow: 0 0 0 1px rgba(255, 46, 136, 0.55), 0 0 40px rgba(255, 46, 136, 0.40);
+  --component-hero-color: #FF6FB0;
+
+  --component-progress-radius: 999px;
+  --component-progress-track: rgba(0, 229, 255, 0.14);
+  --component-progress-fill: #FF2E88;
+
+  --component-slider-track: rgba(0, 229, 255, 0.16);
+  --component-slider-fill: #FF2E88;
+  --component-slider-thumb-bg: #FF2E88;
+  --component-slider-thumb-ring: 0 0 0 3px rgba(255, 46, 136, 0.28);
+
+  --component-divider-style: solid;
+  --component-title-letter-spacing: 0.02em;
+  --component-title-transform: none;
+  --component-glass-blur: 16px;
+  --component-focus-offset: 2px;
+}

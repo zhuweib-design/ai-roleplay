@@ -11,12 +11,24 @@
  * 1. docs 下的路径确实被忽略（用 ESLint 自己的判定，不是读字符串）；
  * 2. docs 下不允许出现**被 git 跟踪的** js/mjs/ts/vue —— 一旦出现这条就红，
  *    逼一次"这段代码是不是产品代码"的判断（是就挪进 src/scripts，别靠 lint 看不见）。
+ *
+ * 2026-10-16 走到了第三个分支：`ai-chat-ui-redesign/` 那套静态原型作为设计交付物入库
+ * （12 个主题 × HTML/CSS/JS + 页面生成工具），它确实不是产品代码，也不该被产品门禁扫，
+ * 但红着不放也不是答案。所以判断改成**显式登记**：登记一次、写清为什么，登记之外的
+ * docs 源码照样让这条用例红。登记项本身还有牙齿——目录里已经没有源码时它会报错，
+ * 免得名单只增不减地烂在那儿。
  */
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { ESLint } from 'eslint';
 
 const SOURCE_EXT = /\.(js|mjs|cjs|ts|tsx|vue)$/;
+
+/** 显式登记的"设计交付物，不是产品代码"目录；键是路径前缀，值是判断依据。 */
+const DECLARED_PROTOTYPE_DIRS: Record<string, string> = {
+  'docs/design/ai-chat-ui-redesign/':
+    '12 套主题的静态原型：演示用 js 与生成原型页面的工具脚本。改产品界面不经过这里（2026-10-16 随 v1.1.1 收口登记）',
+};
 
 /**
  * 探针在**模块加载阶段**求值，而不是写在用例体内。
@@ -47,14 +59,32 @@ describe('lint 作用域', () => {
     expect(ignored['scripts/eval-run.mjs'], 'scripts 被误忽略').toBe(false);
   });
 
-  it('docs 下没有被 git 跟踪的源码文件（忽略 docs 不会藏住产品代码）', () => {
+  it('docs 下没有被 git 跟踪的源码文件（除显式登记的设计原型目录）', () => {
     const tracked = execFileSync('git', ['ls-files', 'docs'], { encoding: 'utf8' })
       .split(/\r?\n/)
       .filter(Boolean)
       .filter((p) => SOURCE_EXT.test(p));
+    const isDeclared = (p: string) =>
+      Object.keys(DECLARED_PROTOTYPE_DIRS).some((prefix) => p.startsWith(prefix));
+    const offenders = tracked.filter((p) => !isDeclared(p));
+
     expect(
-      tracked,
-      `docs/ 下出现了被跟踪的源码：${tracked.join(', ')}。它现在不会被 lint——要么挪进 src/scripts，要么显式把它加回 lint 范围`
+      offenders,
+      `docs/ 下出现了未登记的被跟踪源码：${offenders.join(', ')}。它现在不会被 lint——` +
+        '要么挪进 src/scripts，要么在这里登记"这是设计交付物、判断依据是什么"'
     ).toEqual([]);
+  });
+
+  it('每条登记都还要有用：登记的目录里确实有被跟踪的源码', () => {
+    const tracked = execFileSync('git', ['ls-files', 'docs'], { encoding: 'utf8' })
+      .split(/\r?\n/)
+      .filter((p) => SOURCE_EXT.test(p));
+
+    for (const [prefix, why] of Object.entries(DECLARED_PROTOTYPE_DIRS)) {
+      expect(
+        tracked.some((p) => p.startsWith(prefix)),
+        `登记项 ${prefix} 已经指不到任何源码（依据当初写的是"${why}"），名单该删掉这条，别留着烂掉`
+      ).toBe(true);
+    }
   });
 });
