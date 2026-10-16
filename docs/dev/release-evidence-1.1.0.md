@@ -169,3 +169,8 @@ Release 仍是 v0.3.1），因此也不存在"安装包挂在 Release 上"——
 要挂 APK 需要在网页里建 Release 并上传，这一步留给用户点；`android` 侧当前 `installer/` 里的
 调试包仍是 `versionName "1.0"` / `versionCode 1` 那次构建的产物，**不含 1.1.0 的版本号**，
 要发安卓包需要重跑一次 `node scripts/android-apk.mjs`。
+
+> 后续（同日 1.1.1）：这两件都做了，但不是给 1.1.0 做的——版本号升级后才出的包属于 1.1.1，
+> 挂在了新建的 `v1.1.1` Release 上（`AI-roleplay-1.1.1-debug.apk`，debug 签名，
+> sha256 与逐字节复核见 `docs/dev/release-notes-1.1.1.md` 的"收口读数"）；
+> `v1.1.0` 也补了一个只有源码归档的 Release 对象。1.1.0 那个标签本身没有动过。
