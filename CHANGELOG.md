@@ -7,6 +7,33 @@
 
 （暂无）
 
+## [1.1.1] - 2026-10-16
+
+补丁位。1.1.0 的标签已经推出去（合并提交 `25da9ab`），所以这次修的那处界面缺陷不再塞回已发布的标签，
+单独占一个修订版本。发布说明见 `docs/dev/release-notes-1.1.1.md`。
+
+### 修复（设置 → 关于终于显示真实版本号）
+- 现场：`SettingsAboutPanel.vue` 里 `appVersion` 声明后从未赋值，模板用 `appVersion || '—'` 兜底，
+  于是桌面 / 网页 / 安卓三个平台的"设置 → 关于"都显示"版本：—"。1.1.0 的发布说明因此把
+  "应用内显示运行时读到的版本"这句改成了如实描述，并在"未覆盖项"里留了这条。
+- 修法：编译期注入 `__APP_VERSION__`——`vite.config.ts` 的 `define` 从 `package.json` 读版本，
+  `vitest.config.ts` 同步定义（少了这条，单测挂载组件时该标识符直接未定义），类型声明补在
+  `src/vite-env.d.ts`，`.vue` 的 script 块还要在 `eslint.config.js` 里声明全局（`no-undef`
+  对 `.vue` 生效、对 `.ts` 被 typescript-eslint 关掉了，这个不对称是本次实测出来的）。
+- 断言：`tests/components/settings-about-version.test.ts` 三条 + `e2e/ux-gap-visibility.spec.ts`
+  一条真实浏览器断言。两条"牙口"都验证过：把组件回退成 `ref('')` 后，单测红在
+  `expected '…版本：—…' to contain '版本：1.1.0'`，e2e 红在同一处。
+- 版本号同步四处，安卓 `versionCode` 2 → 3、`versionName` "1.1.1"。
+
+### 变更（一次性探针脚本请出产品门禁）
+- 13 个 `tmp-*.mjs` 移出版本控制（文件仍留在磁盘上，属于并行会话的现场），`.gitignore` 新增
+  `/tmp-*.mjs`，`eslint.config.js` 的 ignores 同步请出仓库根探针。
+- 直接起因：一次"导入设计资源"的提交顺手把 13 个探针带进仓库，其中 4 个共 6 条
+  `no-unused-vars` / `no-empty` error，于是本机 `npm run lint` 红而 CI 在干净检出上绿——
+  两边看到的文件不一样，这种差值最耗排查时间。处置与既有先例同族：
+  `docs/design/**` 的静态原型早在 2026-10-11 就被请出 lint 范围（`tests/tooling/lint-scope.test.ts`
+  还盯着"docs 里不许藏被跟踪的产品代码"）。
+
 ## [1.1.0] - 2026-10-16
 
 版本定位：1.0.0 冻结的稳定契约**未变**（无数据迁移、无破坏性变更），这一版是把"能在手机上用"补齐，
