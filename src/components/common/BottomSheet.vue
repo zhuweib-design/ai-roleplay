@@ -12,10 +12,13 @@
  * 焦点：打开后焦点落到关闭按钮，Esc 关闭，关闭后父级把焦点还给触发按钮。
  * 幽灵点击：抬手时浏览器补发的 click 会落在刚弹出的遮罩上，自己把自己关掉——
  * 与 MessageActionSheet 同一个坑，同一段 400ms 防护。
+ * 系统返回：抽屉开着时按安卓返回键只关抽屉，不会连底下的二级页一起退掉
+ * （`useBackLayer`，批次 2-3）。
  */
 import { computed, nextTick, ref, watch } from 'vue';
 import Icon from '@/components/common/Icon.vue';
 import { useScrollLock } from '@/composables/useScrollLock';
+import { useBackLayer } from '@/composables/useBackLayer';
 import { t } from '@/i18n';
 
 const props = defineProps<{
@@ -29,6 +32,12 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{ close: [] }>();
+
+/**
+ * 抽屉自己吃掉一次系统返回（批次 2-3）。没有这一行的话，抽屉开着按返回会：
+ * 有二级页 ⇒ 退掉二级（抽屉还盖在列表上）；没有二级页 ⇒ 直接离开页面。
+ */
+useBackLayer({ isOpen: () => props.open, onBack: () => emit('close') });
 
 const closeBtn = ref<HTMLButtonElement | null>(null);
 

@@ -1,5 +1,14 @@
 import { computed, onBeforeUnmount, ref, type ComputedRef, type Ref } from 'vue';
 import { isMobile } from '@/core/viewport';
+import {
+  newLayerToken,
+  offLayerPop,
+  onLayerPop,
+  popLayer,
+  pushLayer,
+  stripLayerMark,
+  topLayerToken,
+} from '@/core/history-layer';
 
 /**
  * useDrilldown — 手机端「两级互换」原语的状态机（MOBILE_PLAN 批次 1-1）
@@ -28,13 +37,6 @@ import { isMobile } from '@/core/viewport';
  */
 
 export type DrilldownLevel = 1 | 2;
-
-/**
- * 压进浏览器历史时打的标记键。
- * 用途只有一个：识别"栈顶这条是我们压的"，避免把跨路由后退误判成本页后退。
- * 用带项目前缀的字符串做键，避免和 vue-router 写的 state 撞名。
- */
-const MARK = '__aijiuDrilldown';
 
 export interface UseDrilldownOptions {
   /**
@@ -83,41 +85,19 @@ export interface UseDrilldown {
   goBack: () => boolean;
 }
 
-// 多个页面实例共享同一个 window 监听器：popstate 是全局事件，每实例各挂一个会
-// 在后退时被调用 N 次，且互相不知道彼此压了几层。用一个分发集合代替。
-const popListeners = new Set<() => void>();
-let popBound = false;
-
-function dispatchPop(): void {
-  // 复制一份再遍历：回调里可能触发卸载（从而修改集合），直接遍历 Set 会漏项
-  for (const fn of Array.from(popListeners)) fn();
-}
-
-function bindPop(fn: () => void): void {
-  popListeners.add(fn);
-  if (popBound || typeof window === 'undefined') return;
-  window.addEventListener('popstate', dispatchPop);
-  popBound = true;
-}
-
-function unbindPop(fn: () => void): void {
-  popListeners.delete(fn);
-  if (popListeners.size > 0 || !popBound || typeof window === 'undefined') return;
-  window.removeEventListener('popstate', dispatchPop);
-  popBound = false;
-}
-
-/** 读取当前历史记录上有没有我们的标记（没有 = 栈顶不是本页压的那层） */
-function currentEntryMarked(): boolean {
-  if (typeof window === 'undefined') return false;
-  const state = window.history.state as Record<string, unknown> | null;
-  return state?.[MARK] === true;
-}
-
 export function useDrilldown(options: UseDrilldownOptions = {}): UseDrilldown {
   const level = ref<DrilldownLevel>(1);
   const activeKey = ref<string | null>(null);
   const isDetail = computed(() => level.value === 2);
+
+  /**
+   * 本实例在历史栈里的唯一 token（批次 2-3 从布尔量改过来）。
+   *
+   * 布尔量只能回答"我压过一层吗"，回答不了"被弹掉的是不是我"——抽屉/模态也压层
+   * 之后，它们在栈顶被弹掉时本实例会误以为"二级被返回了"，于是抽屉开着按一次返回
+   * 会连二级页一起退掉（A7 登记的边界）。改成 token 后：栈顶还是我 ⇒ 弹掉的是别人。
+   */
+  const token = newLayerToken('drilldown');
 
   /**
    * 本实例是否在历史栈里压过一层。
@@ -140,23 +120,13 @@ export function useDrilldown(options: UseDrilldownOptions = {}): UseDrilldown {
 
   const track = options.trackHistory ?? (() => isMobile.value);
 
-  /** 压一层历史；返回是否真的压成功（无 window 环境下压不成功，别把 pushed 置真） */
-  function pushEntry(): boolean {
-    if (typeof window === 'undefined') return false;
-    const base = (window.history.state ?? {}) as Record<string, unknown>;
-    // 合并而不是覆盖：vue-router 的 state 里带着 position / back / current / forward，
-    // 覆盖掉会让路由自己在后退时算错位置，症状是"后退了但视图不换"。
-    window.history.pushState({ ...base, [MARK]: true }, '', window.location.href);
-    return true;
-  }
-
   function enterDetail(key?: string): void {
     if (typeof key === 'string') activeKey.value = key;
     if (level.value === 2) return; // 已在二级：只换内容，别把历史栈压成阶梯
     level.value = 2;
     if (!track()) return;
     if (backPending) return; // 上一次后退还没落地，这一层不再压栈（见 backPending 注释）
-    if (pushEntry()) pushed = true;
+    if (pushLayer(token)) pushed = true;
   }
 
   function leaveDetail(): void {
@@ -169,35 +139,31 @@ export function useDrilldown(options: UseDrilldownOptions = {}): UseDrilldown {
     pushed = false;
     // 顺序要紧：先改状态、再退历史。popstate 要等一帧才到，先退历史会让界面
     // 空一拍；而改完 pushed 已是 false，popstate 到达时本实例会忽略它，不会二次归位。
-    if (currentEntryMarked()) {
-      backPending = true;
-      window.history.back();
-    }
+    if (popLayer(token)) backPending = true;
   }
 
   function handlePop(): void {
     backPending = false;
     if (!pushed) return; // 不是我们压的那层，或本实例已经自己收拾过
+    // 栈顶还是我 ⇒ 被弹掉的是我上面那层（抽屉 / 模态），我不该跟着退
+    if (topLayerToken() === token) return;
     pushed = false;
     level.value = 1;
     activeKey.value = null;
     options.onLeaveDetail?.();
   }
 
-  bindPop(handlePop);
+  onLayerPop(handlePop);
 
   onBeforeUnmount(() => {
-    unbindPop(handlePop);
+    offLayerPop(handlePop);
     if (!pushed) return;
     pushed = false;
     // 卸载时**不能** history.back()：卸载多半是路由切换引起的，back 会把用户
     // 退回上一个页面。只能把当前记录上的标记抹掉，让这一层退化成一条普通的
     // 同 URL 记录。代价是用户多点一次返回才离开本页——这是登记过的已知边界，
     // 见 DEV_PLAN §6.2 A8。
-    if (!currentEntryMarked() || typeof window === 'undefined') return;
-    const state = { ...((window.history.state ?? {}) as Record<string, unknown>) };
-    delete state[MARK];
-    window.history.replaceState(state, '', window.location.href);
+    stripLayerMark(token);
   });
 
   return {

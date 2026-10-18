@@ -14,8 +14,13 @@ import { defineComponent, h } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { useDrilldown, type UseDrilldown, type UseDrilldownOptions } from '../../src/composables/useDrilldown';
 import { isMobile } from '@/core/viewport';
+import { LAYER_MARK } from '@/core/history-layer';
 
-const MARK = '__aijiuDrilldown';
+/**
+ * 批次 2-3 起标记值从 `true` 变成**每实例唯一 token**：布尔量分不清
+ * "我压的那层被弹了"和"我上面那层被弹了"，抽屉/模态也压层之后就会一次退两级。
+ */
+const MARK = LAYER_MARK;
 
 let fakeState: Record<string, unknown> | null = null;
 let pushCount = 0;
@@ -114,7 +119,7 @@ describe('useDrilldown · 历史记录', () => {
       const swap = mountSwap();
       swap.open('x');
       expect(pushCount).toBe(1);
-      expect(fakeState?.[MARK]).toBe(true);
+      expect(typeof fakeState?.[MARK]).toBe('string');
     } finally {
       isMobile.value = prev;
     }
@@ -124,12 +129,13 @@ describe('useDrilldown · 历史记录', () => {
     fakeState = { position: 3, current: '/chat', back: '/character' };
     const swap = mountSwap({ trackHistory: () => true });
     swap.open('x');
-    expect(fakeState).toEqual({
+    expect(fakeState).toMatchObject({
       position: 3,
       current: '/chat',
       back: '/character',
-      [MARK]: true,
     });
+    // token 是动态的，只断言"带了我们这一层的标记且是字符串"
+    expect(typeof fakeState?.[MARK]).toBe('string');
   });
 
   it('trackHistory 为 false 时不压历史（桌面并置两栏的默认语义）', () => {
@@ -234,7 +240,7 @@ describe('useDrilldown · 卸载', () => {
   it('卸载时抹掉标记而不是 back（卸载多半是路由切换，back 会把用户退回上一页）', () => {
     const swap = mountSwap({ trackHistory: () => true });
     swap.open('x');
-    expect(fakeState?.[MARK]).toBe(true);
+    expect(typeof fakeState?.[MARK]).toBe('string');
 
     wrapper?.unmount();
     wrapper = null;
