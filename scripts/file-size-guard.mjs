@@ -59,7 +59,10 @@ const ALLOWLIST = {
   'src/i18n/locales/zh.ts': { lines: 3416, ratchet: false, reason: '同上（中英键数严格相等，拆分会引入同步面）' },
 
   // ── R1 批（§7.3，优先拆分）──
-  'src/views/StoryEngineView.vue': { lines: 3326, reason: 'R1-2：拆为 9 个文件' },
+  // 2026-10-19 R1-2 拆完：StoryEngineView 3326 → 652，已 ≤800，条目按 §7.10 删除。
+  // 拆出 11 个文件：StoryQuickSetupPanel / StoryCard / StoryDetailPanel /
+  // StoryDetailCharacters / StoryDetailWorld / StoryUploadModal / StoryImportModal /
+  // StoryProtagonistModal + useStoryGeneration / useStoryFilters + story-display.ts
   'src/views/WorldBookView.vue': {
     // 2026-10-19 显式上调 3099 → 3115：B2 触摸目标（页头动作 ≥44）+ C1 生成后回显
     // "绑到谁、生效几条"（合理功能增量，非无声漂移）。R1-3 拆分时以拆后实测回填。
