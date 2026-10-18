@@ -182,9 +182,9 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 
 批次 0 与批次 1 大体可并行，但有两条依赖：**0-4（就绪条一行）是 1-2 的前置**——群聊页要让出那 34px 才够把消息区做到 40%；**0-6（inert 方向）独立**，不受任何批次影响。批次 2 依赖批次 1（形态定下来才知道 Tab 怎么调）。
 
-### 实施状态（2026-10-18 更新：批次 0 六项 + 1-1 已完成，其余未做）
+### 实施状态（2026-10-18 更新：批次 0 六项 + 1-1 + 1-2 已完成，其余未做）
 
-2026-10-17 首次回源复核时全部"未实施"；2026-10-18 批次 0 六项与 1-1 已落地（提交 `7def703` / `de12599` / `9da8c15`）。逐条抽验证据如下（抽验的是每批最容易被改掉的那一行）：
+2026-10-17 首次回源复核时全部"未实施"；2026-10-18 批次 0 六项、1-1、1-2 已落地（提交 `7def703` / `de12599` / `9da8c15` / `87c5de5` / `f0b9789`）。逐条抽验证据如下（抽验的是每批最容易被改掉的那一行）：
 
 | 批次 | 抽验点 | 现状 |
 |---|---|---|
@@ -195,7 +195,7 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 | 0-5 | `MoreView.vue` | 已改 `calc(var(--spacing-md,16px) + env(safe-area-inset-bottom,0px))` ⇒ **已做** |
 | 0-6 | `ChatView.vue` 的 inert 三条件 | 两抽屉条件已取反（自身关着 ⇒ inert），`ChatMain` 根 `<main>` 已接 `props.inert` ⇒ **已做** |
 | 1-1 | `src/composables/useDrilldown.ts` / `src/styles/m-swap.css` | 已交付两件（状态机 + 只在 ≤640 生效的两态 CSS），`router/index.ts` 零改动 ⇒ **已做**。尚无页面消费者，e2e 待首个消费者落地时补 |
-| 1-2 | `GroupChatView.vue` `.messages-area` | 仍是 `flex:1; overflow-y:auto`，群列表仍在同屏 ⇒ 未做 |
+| 1-2 | `GroupChatView.vue` 结构 + `.group-body` | 已挂 `.m-swap`/`data-level`，群列表 = `m-swap__master`、主区 = `m-swap__detail`；动作组/成员条/Runtime/发言模式搬进 `GroupInfoPanel` + `GroupSettingsDrawer` ⇒ **已做**（消息区 844 档 59%、500 档输入条 bottom 447） |
 | 2-1 | `BottomNav` Tab 数 / `toHaveCount(6)` 断言 | 仍 6 Tab，两处断言均在（`mobile-layout.spec.ts:49`、`mobile-nav-groups.spec.ts:14`）⇒ 未做 |
 | 3-x | `--touch-min` 直接引用 | 仍 3 文件 7 处，控件阶梯未整体上移 ⇒ 未做 |
 
@@ -358,7 +358,7 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 | 0-5 | P0-7 | `.more-view` 的 `padding-bottom` ≤ 16px（现状 `calc(72px + env(safe-area-inset-bottom, 0))`） | 新 e2e（量 `.more-view` 的 padding-bottom） |
 | 0-6 | P0-4 | 抽屉关着：12 次 Tab 无 x<0 停靠点；抽屉开着：Tab 不离开抽屉 | 新 e2e |
 | 1-1 | —（新增公共件） | 路由表条目数不变（**不新增路由**，只加一层 `pushState`）；`goBack()` 能回一级 | 单测 20 条（已绿）；真实浏览器 e2e 待首个消费者落地补 |
-| 1-2 | **P0-1 + P0-3** | 844 下消息区 ≥40%（B2 实测 43%）**且** 输入条在视口内；**390×500 下输入条 bottom ≤500**（B2 实测 456）；群数 1→5 时消息区不下降 | 新 e2e（`setViewportSize` + 受控造数） |
+| 1-2 | **P0-1 + P0-3** | 844 下消息区 ≥40%（**实测 59%**）**且** 输入条在视口内（**bottom 791 / 844**）；**390×500 下输入条 bottom ≤500**（**实测 447**）；群数 1→5 时消息区不下降（**改用结构断言**：二级页群列表 `display:none`，不参与布局） | 已交付 `e2e/mobile/group-composition.spec.ts`（实跑绿） |
 | 1-3 | —（证据在审计 §1.2） | 世界书无**滚动三层**嵌套（同屏内 列表 / 详情 / 外滚 三个独立滚动容器，与 §3.3.2 的"路由三级"不是同一件事）；主体区 ≥40% | 新 e2e |
 | 1-4 | P0-2（治本） | 设置首页 → 分类页两级可达 | 新 e2e |
 | 1-5 | —（证据在审计 §1.3） | 角色列表一屏 ≥3 张卡；点卡开抽屉，抽屉内编辑/开始对话/导出/删除四动作可见可点 | 新 e2e |
