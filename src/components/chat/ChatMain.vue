@@ -44,7 +44,8 @@ const settings = useSettingsStore();
 const storyStore = useStoryStore();
 // I-1：aria-expanded 随视口反映正确的面板状态（桌面 panelExpanded / 移动平板 contextDrawerOpen）
 // isCoarsePointer：手指端（软键盘没有 Shift 键），Enter 让位给换行、发送靠按钮
-const { isCompact, isCoarsePointer } = useViewport();
+// isMobile：批次 2-4 起用于"手机档不挂页头分段控件"（群聊已是底栏 Tab）
+const { isCompact, isCoarsePointer, isMobile } = useViewport();
 
 // I-14：承接 ChatView 传入的 inert，仅作用于聊天内容区与输入区，
 // 顶栏的 panel-toggle-btn 保持可交互（打开上下文面板后仍能二次点击关闭）
@@ -809,8 +810,13 @@ function startWithExample(text: string) {
         <span class="model-badge" :class="{ 'not-configured': !settings.activeProfile }">{{ settings.activeProfile?.model ?? t('chat.modelNotConfigured') }}</span>
       </div>
 
-      <!-- 单聊 ⇄ 群聊：两条通道是同一次对话的两种形态，切换要在这里看得见 -->
-      <ChatModeSwitch class="chat-mode-switch-slot" />
+      <!--
+        单聊 ⇄ 群聊：两条通道是同一次对话的两种形态，切换要在这里看得见。
+        **手机档不挂**（批次 2-4）：A12 把群聊升成底部 Tab 之后，这条切换在手机上
+        就是"底栏那个「群聊」Tab"，而它自己占 146px——390 宽下把角色名压到 28px
+        （整行只剩 62px）。桌面没有底栏，切换仍然需要，所以按端分流。
+      -->
+      <ChatModeSwitch v-if="!isMobile" class="chat-mode-switch-slot" />
 
       <!--
         原来整块 aria-hidden="true"：读屏完全拿不到 token 用量与缓存命中率。
