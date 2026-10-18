@@ -159,7 +159,7 @@ test('群聊组成层：两级互换、消息区占比、输入条在视口内�
   await page.setViewportSize({ width: VIEW_W, height: VIEW_H_TALL });
   await expect(page.locator('.group-header .action-btn')).toHaveCount(0);
   await page.locator('.group-settings-btn').click();
-  const drawer = page.locator('.settings-panel');
+  const drawer = page.locator('.bs-panel');
   await expect(drawer).toBeVisible();
   await expect(drawer.locator('.members-bar')).toBeVisible();
   await expect(drawer.getByRole('button', { name: '添加成员' })).toBeVisible();

@@ -86,6 +86,8 @@ test.describe('批次 0-2 · 横屏无死预留', () => {
   test('844×390：.chat-main 不再为不存在的底部导航留 56px', async ({ page }) => {
     await page.setViewportSize({ width: 844, height: 390 });
     await page.goto('/chat');
+    // 同 0-5：懒加载 chunk 的挂载竞态，先等元素再量
+    await page.waitForSelector('.chat-main');
 
     const padBottom = Number.parseFloat(await styleOf(page, '.chat-main', 'padding-bottom'));
     // 修复前恒为 56px，占 390px 高的 14%，而该档 .bottom-nav 根本不在 DOM
@@ -153,6 +155,8 @@ test.describe('批次 0-5 · MoreView 无 72px 死空白', () => {
   test('390×844：.more-view 的 padding-bottom ≤16px（+ 安全区容错）', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/more');
+    // 路由组件是懒加载 chunk：goto 返回不代表 DOM 已挂载，先等元素出现再量
+    await page.waitForSelector('.more-view');
 
     const padBottom = Number.parseFloat(await styleOf(page, '.more-view', 'padding-bottom'));
     // 修复前为 calc(72px + env(safe-area-inset-bottom, 0))；安全区在有刘海的设备上会有值

@@ -93,7 +93,7 @@ test('群聊页头部：412px 下群名保持一行、动作按钮进抽屉后�
   ).toBeLessThanOrEqual(28);
 
   await page.locator('.group-settings-btn').click();
-  const drawer = page.locator('.settings-panel');
+  const drawer = page.locator('.bs-panel');
   await expect(drawer).toBeVisible();
   const widths = await drawer
     .locator('.action-btn')

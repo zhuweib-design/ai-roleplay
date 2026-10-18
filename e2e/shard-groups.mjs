@@ -45,6 +45,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/group-header-narrow.spec.ts': 2.3,
   // 手工登记（2026-10-18）：设置两级互换，两条用例含 IndexedDB 无关的纯几何与深链，估 8s。
   'e2e/mobile/settings-composition.spec.ts': 8.0,
+  // 手工登记（2026-10-18）：角色卡详情抽屉，两条用例（IndexedDB 造数 + 两端分流），估 8s。
+  'e2e/mobile/character-drawer.spec.ts': 8.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -75,11 +77,12 @@ export const SPEC_WEIGHTS = {
 };
 
 export const E2E_GROUPS = [
-  // 第 1 组：实测 221s
+  // 第 1 组：实测 221s（2026-10-18 手工加入 character-drawer 约 8s ⇒ 约 229s）
   [
     'e2e/chat-search.spec.ts',
     'e2e/long-history-scroll.spec.ts',
     'e2e/mobile-control-font-size.spec.ts',
+    'e2e/mobile/character-drawer.spec.ts',
     'e2e/theme-flow.spec.ts',
     'e2e/ux-deep-link-group.spec.ts',
     'e2e/ux-duplicate-a11y-names.spec.ts',

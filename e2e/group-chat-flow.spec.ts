@@ -17,7 +17,7 @@ async function setGroupMode(page: import('@playwright/test').Page, label: string
     return;
   }
   await page.locator('.group-settings-btn').click();
-  await page.locator('.settings-panel').getByRole('radio', { name: label }).click();
+  await page.locator('.bs-panel').getByRole('radio', { name: label }).click();
   await page.keyboard.press('Escape');
 }
 
