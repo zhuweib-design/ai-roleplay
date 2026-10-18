@@ -34,6 +34,9 @@ export const SPEC_WEIGHTS = {
   'e2e/i18n-locale.spec.ts': 1.0,
   'e2e/long-history-scroll.spec.ts': 4.8,
   'e2e/mobile-control-font-size.spec.ts': 17.2,
+  // 手工登记（2026-10-17）：新增批次 0 断言 spec，实测 9 条约 10s。
+  // 未跑单 worker 全量基线，权重按实测填；下次重跑 --report 时会被真实跑数覆盖。
+  'e2e/mobile/batch0-composition.spec.ts': 10.0,
   'e2e/mobile/chat-touch-composer.spec.ts': 10.2,
   'e2e/mobile/group-header-narrow.spec.ts': 2.3,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
@@ -91,10 +94,11 @@ export const E2E_GROUPS = [
     'e2e/ux-status-color.spec.ts',
     'e2e/worldbook-flow.spec.ts',
   ],
-  // 第 3 组：实测 221s
+  // 第 3 组：实测 221s（2026-10-17 手工加入 batch0-composition 约 10s ⇒ 约 231s）
   [
     'e2e/character-crud.spec.ts',
     'e2e/databank-flow.spec.ts',
+    'e2e/mobile/batch0-composition.spec.ts',
     'e2e/mobile/group-header-narrow.spec.ts',
     'e2e/mobile/mobile-layout.spec.ts',
     'e2e/mobile/narrow-squeeze.spec.ts',
