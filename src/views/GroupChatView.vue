@@ -19,7 +19,8 @@ import { ref, computed, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useDeepLinkId } from '@/composables/useDeepLinkId';
-import { useSectionMemory } from '@/composables/useSectionMemory';
+import { useDrilldown } from '@/composables/useDrilldown';
+import { useViewport } from '@/core/viewport';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useChatStore } from '@/stores/chat';
 import { createApiClient } from '@/api';
@@ -32,14 +33,13 @@ import { parseNarrationSegments } from '@/core/narration';
 import Icon from '@/components/common/Icon.vue';
 import ChatModeSwitch from '@/components/chat/ChatModeSwitch.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
-import Collapse from '@/components/common/Collapse.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
+import GroupInfoPanel from '@/components/group/GroupInfoPanel.vue';
+import GroupSettingsDrawer from '@/components/group/GroupSettingsDrawer.vue';
 import ContextReadinessBar from '@/components/layout/ContextReadinessBar.vue';
 import Toast from '@/components/common/Toast.vue';
 import ThinkingBlock from '@/components/chat/ThinkingBlock.vue';
-import StatusHud from '@/components/chat/StatusHud.vue';
-import RuntimeStatePanel from '@/components/chat/RuntimeStatePanel.vue';
 import { resolveLatestStatus } from '@core/status-parser';
 import type { GroupChatMode, GroupMember } from '@/core/group-chat';
 import type { UICharacter } from '@/types';
@@ -84,15 +84,33 @@ function goBack() {
   }
 }
 
-// 群聊 Runtime 状态查看：当前选中的成员
-const runtimeInspectMemberId = ref<string | null>(null);
+// 群聊 Runtime 状态查看：整块（含展开态记忆与成员选择）已搬进 GroupInfoPanel，
+// 父组件不再持有这些状态——两处各存一份会分叉（桌面展开、手机收起）。
+
+/** 手机端「群设置」抽屉开关（桌面用页头内联面板，不渲染抽屉） */
+const settingsDrawerOpen = ref(false);
+
 /**
- * M7-d/M8-b：排障段的开合跨会话记住（默认收起）。
- * key 带群 id——"这个群我要盯着 Runtime、那个群不用看"是两回事。
+ * 手机端「两级互换」（MOBILE_PLAN 批次 1-2）：群列表 → 群对话。
+ * 桌面是并置两栏，level 恒为 1 且不写历史（useDrilldown 的默认行为）。
  */
-const runtimeInspectOpen = useSectionMemory(
-  () => `group.runtimeInspect:${currentGroup.value?.id ?? ''}`
-);
+const { isMobile } = useViewport();
+const {
+  level: swapLevel,
+  open: openSwapDetail,
+  goBack: swapGoBack,
+} = useDrilldown({
+  // 系统返回或页内返回落到一级时，顺手把抽屉收掉：抽屉盖在二级上，留着会遮住列表
+  onLeaveDetail: () => {
+    settingsDrawerOpen.value = false;
+  },
+});
+
+/** 二级页的「← 全部群聊」：回列表级，同时把抽屉收掉 */
+function backToGroupList(): void {
+  settingsDrawerOpen.value = false;
+  swapGoBack();
+}
 
 // ── UI 状态 ──
 const createModalOpen = ref(false);
@@ -137,19 +155,6 @@ const addMemberTargetGroupId = ref<string | null>(null);
 const currentGroup = computed(() => groupStore.currentGroup);
 const currentMessages = computed(() => groupStore.currentMessages);
 const currentMembers = computed(() => groupStore.currentMembers);
-
-// 群聊 Runtime 状态查看：可选成员与当前查看对象
-const runtimeInspectMember = computed(() => {
-  const members = currentGroup.value?.members ?? [];
-  if (members.length === 0) return null;
-  return members.find((member) => member.characterId === runtimeInspectMemberId.value) ?? members[0]!;
-});
-
-const runtimeInspectCharacter = computed(() => {
-  const member = runtimeInspectMember.value;
-  if (!member) return null;
-  return characterStore.characters.find((item) => item.id === member.characterId) ?? null;
-});
 
 // 当前群组是否存在未处理的群组定义 CAS 冲突
 const currentGroupConflict = computed(() => {
@@ -324,9 +329,23 @@ function selectGroup(id: string) {
   void syncRemoteTurnsForGroup(id);
   // 地址栏跟着当前群走（M15-d）：刷新或分享后仍落回这个群，深链的另一半。
   // 用 replace 是为了不让"连着点三个群"堆出三条历史记录。
-  if (route.query.group !== id) {
-    void router.replace({ query: { ...route.query, group: id } });
-  }
+  const navigate =
+    route.query.group !== id
+      ? router.replace({ query: { ...route.query, group: id } })
+      : Promise.resolve();
+  /**
+   * 顺序是有讲究的：**必须在 router.replace 之后**才压自己那层。
+   * vue-router 的 replace 是整体替换当前历史记录的 state，如果先 pushState 再 replace，
+   * 我们打在 state 上的 `__aijiuDrilldown` 标记会被覆盖掉——于是"页内返回"认不出这一层
+   * 是自己压的，history.back() 不会执行，用户按返回时会先遇到一条空记录。
+   */
+  void navigate
+    .catch(() => undefined)
+    .then(() => {
+      if (!isMobile.value) return;
+      settingsDrawerOpen.value = false;
+      openSwapDetail(id);
+    });
 }
 
 /**
@@ -420,6 +439,13 @@ function confirmCreate() {
 
   if (id) {
     createModalOpen.value = false;
+    /*
+     * 手机：建完直接进这个群的对话。
+     * 两级互换之后，一级只有列表——新建完留在列表上，用户看到的是"我建的群在哪"，
+     * 还得再点一下才进得去。用户刚建完的下一步必然是说话，所以这里替他点这一下。
+     * 桌面不动：两栏并置时新群已经在右侧出现过，再改 URL 是多余行为变更。
+     */
+    if (isMobile.value) selectGroup(id);
   }
 }
 
@@ -953,12 +979,14 @@ function isSystem(msg: { role: string }): boolean {
       与其让用户假设一致，不如在页头把差异说出来（E18/E08 的"显式声明不存在"）。
     -->
     <ContextReadinessBar />
-    <p class="group-capability-note" role="note">{{ t('group.capabilityNote') }}</p>
+    <p class="group-capability-note" role="note" v-tip="t('group.capabilityNote')">
+      {{ t('group.capabilityNote') }}
+    </p>
 
-    <!-- 主体：左群聊列表 + 右群聊消息区 -->
-    <div class="group-body">
-      <!-- 左侧群聊列表 -->
-      <aside class="group-list-panel tk-scroll" :aria-label="t('group.listAria')">
+    <!-- 主体：桌面并置两栏；手机两级互换（群列表 → 群对话），由 .m-swap 切换 -->
+    <div class="group-body m-swap" :data-level="swapLevel">
+      <!-- 左侧群聊列表（手机：一级页，满屏） -->
+      <aside class="group-list-panel m-swap__master tk-scroll" :aria-label="t('group.listAria')">
         <!-- 需求6 筛选：状态 + 关键词 -->
         <div class="group-filter-bar">
           <div class="group-filter-tabs" role="tablist" :aria-label="t('group.filterAria')">
@@ -1022,8 +1050,8 @@ function isSystem(msg: { role: string }): boolean {
         </ul>
       </aside>
 
-      <!-- 右侧群聊主区 -->
-      <main class="group-main-panel" id="main-content" tabindex="-1">
+      <!-- 右侧群聊主区（手机：二级页，满屏） -->
+      <main class="group-main-panel m-swap__detail" id="main-content" tabindex="-1">
         <div v-if="!currentGroup" class="empty-group">
           <Icon name="users" :size="48" />
           <p>{{ t('group.selectHint') }}</p>
@@ -1034,8 +1062,19 @@ function isSystem(msg: { role: string }): boolean {
 
         <div v-else class="group-content">
           <!-- 群聊信息栏 -->
-          <header class="group-header">
+          <header class="group-header" :class="{ 'is-compact': isMobile }">
             <div class="group-title-row">
+              <!-- 手机：回列表级。文案说出目的地（「全部群聊」）而不是裸的「返回」 -->
+              <button
+                v-if="isMobile"
+                type="button"
+                class="m-swap__back"
+                :aria-label="t('group.allGroups')"
+                @click="backToGroupList"
+              >
+                <Icon name="arrow-left" :size="16" />
+                <span>{{ t('group.allGroups') }}</span>
+              </button>
               <h2>
                 {{ currentGroup.name }}
                 <span
@@ -1045,226 +1084,46 @@ function isSystem(msg: { role: string }): boolean {
                   {{ t('group.archivedBadge') }}
                 </span>
               </h2>
-              <div class="group-header-actions">
-                <template v-if="currentGroup.lifecycleStatus !== 'archived'">
-                  <button
-                    type="button"
-                    class="action-btn add-member"
-                    :aria-label="t('group.addMemberAria')"
-                    @click="openAddMemberModal"
-                  >
-                    <Icon name="plus" :size="14" />
-                    <span>{{ t('group.addMember') }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="action-btn generate-npc"
-                    :aria-label="t('group.generateNpcAria')"
-                    :disabled="npcGenerating"
-                    @click="openNpcModal"
-                  >
-                    <Icon name="star" :size="14" />
-                    <span>{{ npcGenerating ? t('group.generatingNpc') : t('group.generateNpc') }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="action-btn archive-btn"
-                    :aria-label="t('group.archiveAria')"
-                    @click="archiveCurrentGroup"
-                  >
-                    <Icon name="save" :size="14" />
-                    <span>{{ t('group.archive') }}</span>
-                  </button>
-                </template>
-                <template v-else>
-                  <button
-                    type="button"
-                    class="action-btn restore-btn"
-                    :aria-label="t('group.restoreAria')"
-                    @click="restoreCurrentGroup"
-                  >
-                    <Icon name="refresh-cw" :size="14" />
-                    <span>{{ t('group.restore') }}</span>
-                  </button>
-                </template>
-                <button
-                  type="button"
-                  class="action-btn delete"
-                  :aria-label="t('group.deleteAria')"
-                  @click="deleteGroup(currentGroup.id)"
-                >
-                  <Icon name="trash-2" :size="14" />
-                  <span>{{ t('group.delete') }}</span>
-                </button>
-                <!-- T-07: SillyTavern 群聊格式互导 -->
-                <button
-                  type="button"
-                  class="action-btn"
-                  :aria-label="t('group.exportStAria')"
-                  v-tip="t('group.exportStTitle')"
-                  @click="handleExportGroupSt"
-                >
-                  <Icon name="download" :size="14" />
-                  <span>{{ t('group.exportSt') }}</span>
-                </button>
-                <label class="action-btn" v-tip="t('group.importStTitle')">
-                  <Icon name="upload" :size="14" />
-                  <span>{{ t('group.importSt') }}</span>
-                  <input
-                    type="file"
-                    accept=".json,application/json"
-                    class="sr-only"
-                    @change="handleStImport"
-                  />
-                </label>
-              </div>
-            </div>
-
-            <!-- Virtual Character OS：成员级 Runtime 最小状态查看与回放自检。
-                 整段是排障面（实测 94px，占页头 234px 的四成），默认收进高级段 -->
-            <Collapse
-              v-if="currentMembers.length > 0"
-              v-model:open="runtimeInspectOpen"
-              title-key="group.runtimeInspectTitle"
-              hint-key="group.runtimeInspectHint"
-              icon="cpu"
-              :level="3"
-              :advanced="true"
-              plain
-            >
-              <div class="group-runtime-inspect">
-                <label class="group-runtime-label" for="group-runtime-member">{{ t('runtime.title') }}</label>
-                <select
-                  id="group-runtime-member"
-                  class="group-runtime-select"
-                  :value="runtimeInspectMember?.characterId ?? ''"
-                  @change="runtimeInspectMemberId = ($event.target as HTMLSelectElement).value"
-                >
-                  <option v-for="member in currentMembers" :key="member.characterId" :value="member.characterId">
-                    {{ member.name }}
-                  </option>
-                </select>
-                <RuntimeStatePanel
-                  v-if="runtimeInspectCharacter"
-                  :key="runtimeInspectCharacter.id"
-                  :character="runtimeInspectCharacter"
-                  :label="runtimeInspectMember?.name"
-                />
-              </div>
-            </Collapse>
-
-            <!-- 群组定义 CAS 冲突：显式提示，不静默覆盖远端 -->
-            <div v-if="currentGroupConflict" class="conflict-banner" role="alert">
-              <Icon name="alert-triangle" :size="14" />
-              <span class="conflict-text">{{ t('group.runtimeConflict') }}</span>
+              <!-- 手机：群设置入口。动作 / 成员 / Runtime / 发言模式全在抽屉里 -->
               <button
+                v-if="isMobile"
                 type="button"
-                class="link-btn conflict-action"
-                @click="adoptRemoteGroupDefinition"
+                class="group-settings-btn"
+                :aria-label="t('group.settingsOpenAria')"
+                @click="settingsDrawerOpen = true"
               >
-                {{ t('group.runtimeConflictAdopt') }}
-              </button>
-              <button
-                type="button"
-                class="link-btn conflict-action"
-                @click="chatStore.clearGroupRuntimeConflict()"
-              >
-                {{ t('group.runtimeConflictDismiss') }}
+                <Icon name="menu" :size="16" />
+                <span>{{ t('group.settingsTitle') }}</span>
               </button>
             </div>
 
-            <!-- 成员列表 -->
-            <div class="members-bar" role="list" :aria-label="t('group.membersAria')">
-              <div
-                v-for="member in currentMembers"
-                :key="member.characterId"
-                class="member-chip"
-                role="listitem"
-                v-tip="t('group.memberTitle', { name: member.name, talk: member.talkativeness ?? 50 })"
-              >
-                <Avatar
-                  :character="{
-                    id: member.characterId,
-                    name: member.name,
-                    avatar: member.avatar,
-                    avatarType: member.avatar ? 'image' : 'gradient',
-                    initial: memberInitial(member.name),
-                  } as UICharacter"
-                  :size="24"
-                />
-                <button
-                  type="button"
-                  class="member-name"
-                  data-rel-jump="rel-group-member"
-                  :aria-label="t('group.editMember', { name: member.name })"
-                  @click="editMember(member.characterId)"
-                >
-{{ member.name }}
-</button>
-                <button
-type="button"
-                  v-if="currentMembers.length > 2"
-                  class="member-remove"
-                  :aria-label="t('group.removeMember', { name: member.name })"
-                  @click="removeMember(member, $event)"
-                >
-                  <Icon name="x-circle" :size="12" />
-                </button>
-              </div>
-            </div>
-
-            <div
-              v-if="pendingRuntimeTurns.length > 0"
-              class="runtime-retry-banner"
-              role="status"
-              aria-live="polite"
-            >
-              <span>{{ t('group.runtimePending', { count: pendingRuntimeTurns.length }) }}</span>
-              <button
-                type="button"
-                class="action-btn"
-                :disabled="groupStore.isStreaming"
-                @click="retryPendingRuntimeTurns"
-              >
-                {{ t('group.runtimeRetry') }}
-              </button>
-            </div>
-
-            <!-- 发言模式切换 -->
-            <div class="mode-switcher" role="radiogroup" :aria-label="t('group.modeAria')">
-              <button
-                type="button"
-                role="radio"
-                :aria-checked="currentGroup.mode === 'natural'"
-                class="mode-btn"
-                :class="{ active: currentGroup.mode === 'natural' }"
-                @click="setMode('natural')"
-              >
-                <Icon name="refresh-cw" :size="12" />
-                <span>{{ t('group.modeNatural') }}</span>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                :aria-checked="currentGroup.mode === 'designated'"
-                class="mode-btn"
-                :class="{ active: currentGroup.mode === 'designated' }"
-                @click="setMode('designated')"
-              >
-                <Icon name="user" :size="12" />
-                <span>{{ t('group.modeDesignated') }}</span>
-              </button>
-            </div>
-            <div
-              v-if="memberStatuses.length > 0"
-              class="member-status-bar"
-              :aria-label="t('status.hudAria')"
-            >
-              <div v-for="ms in memberStatuses" :key="ms.characterId" class="member-status-row">
-                <span class="member-status-name">{{ ms.name }}</span>
-                <StatusHud variant="inline" :status="ms.status" />
-              </div>
-            </div>
+            <!--
+              桌面：整块内联在页头（动作组一行、成员条一行、模式一行）。
+              手机：这一块不渲染，改由页脚那个 GroupSettingsDrawer 承载。
+              两处是**同一个组件**——模板只有一份，否则"桌面能归档、手机不能"是迟早的事。
+            -->
+            <GroupInfoPanel
+              v-if="!isMobile"
+              :group="currentGroup"
+              :members="currentMembers"
+              :statuses="memberStatuses"
+              :pending-count="pendingRuntimeTurns.length"
+              :conflict="currentGroupConflict !== null"
+              :streaming="groupStore.isStreaming"
+              @add-member="openAddMemberModal"
+              @generate-npc="openNpcModal"
+              @archive="archiveCurrentGroup"
+              @restore="restoreCurrentGroup"
+              @remove="deleteGroup(currentGroup.id)"
+              @export-st="handleExportGroupSt"
+              @import-st="handleStImport"
+              @set-mode="setMode"
+              @edit-member="editMember"
+              @remove-member="removeMember"
+              @retry-runtime="retryPendingRuntimeTurns"
+              @adopt-conflict="adoptRemoteGroupDefinition"
+              @dismiss-conflict="chatStore.clearGroupRuntimeConflict()"
+            />
           </header>
 
           <!-- 消息列表 -->
@@ -1405,6 +1264,40 @@ type="button"
         </div>
       </main>
     </div>
+
+    <!--
+      手机「群设置」抽屉：动作 / 成员 / Runtime / 发言模式 / 成员状态。
+      桌面不渲染——页头内联的是同一个 GroupInfoPanel，模板只有一份。
+    -->
+    <GroupSettingsDrawer
+      v-if="isMobile && currentGroup"
+      :open="settingsDrawerOpen"
+      :heading="t('group.settingsTitle')"
+      @close="settingsDrawerOpen = false"
+    >
+      <GroupInfoPanel
+        layout="sheet"
+        :group="currentGroup"
+        :members="currentMembers"
+        :statuses="memberStatuses"
+        :pending-count="pendingRuntimeTurns.length"
+        :conflict="currentGroupConflict !== null"
+        :streaming="groupStore.isStreaming"
+        @add-member="openAddMemberModal"
+        @generate-npc="openNpcModal"
+        @archive="archiveCurrentGroup"
+        @restore="restoreCurrentGroup"
+        @remove="deleteGroup(currentGroup.id)"
+        @export-st="handleExportGroupSt"
+        @import-st="handleStImport"
+        @set-mode="setMode"
+        @edit-member="editMember"
+        @remove-member="removeMember"
+        @retry-runtime="retryPendingRuntimeTurns"
+        @adopt-conflict="adoptRemoteGroupDefinition"
+        @dismiss-conflict="chatStore.clearGroupRuntimeConflict()"
+      />
+    </GroupSettingsDrawer>
 
     <!-- 创建群聊向导 -->
     <Modal
@@ -1966,87 +1859,6 @@ type="button"
   font-weight: 600;
 }
 
-.group-header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  background: var(--background);
-  color: var(--foreground);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .action-btn:hover {
-    background: var(--card-elevated);
-  }
-}
-
-.action-btn.delete {
-  color: var(--error-fg);
-  border-color: var(--error);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .action-btn.delete:hover {
-    background: var(--error);
-    color: var(--on-accent);
-  }
-}
-
-/* F10.3 生成随机 NPC 按钮 */
-.action-btn.generate-npc {
-  color: var(--accent-orange);
-  border-color: var(--accent-orange);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .action-btn.generate-npc:hover:not(:disabled) {
-    background: var(--accent-orange);
-    color: var(--on-accent);
-  }
-}
-
-.action-btn.generate-npc:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* F10.4 归档/恢复按钮 */
-.action-btn.archive-btn {
-  color: var(--muted-foreground);
-  border-color: var(--border, #3a3d52);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .action-btn.archive-btn:hover {
-    background: var(--card-elevated);
-    color: var(--foreground, #f5f5f7);
-  }
-}
-
-.action-btn.restore-btn {
-  color: var(--accent-blue);
-  border-color: var(--accent-blue);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .action-btn.restore-btn:hover {
-    background: var(--accent-blue);
-    color: var(--on-accent);
-  }
-}
-
-/* 群聊列表中的归档标记 */
 .group-item.archived {
   opacity: 0.6;
 }
@@ -2173,186 +1985,6 @@ type="button"
 
 /* 成员列表 */
 /* 群组定义 CAS 冲突提示条 */
-.conflict-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  margin-bottom: 10px;
-  border-radius: var(--radius-md, 8px);
-  background: var(--warning-bg);
-  /* 用 warning-text：tokens.css 中专门为「警示色作文字」派生的可读变体，
-     直接使用 --warning-fg 在当前主题下仅 4.26:1，未达 AA 4.5:1。 */
-  color: var(--warning-text);
-  border: 1px solid var(--warning-border);
-  font-size: 13px;
-}
-
-.conflict-text {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.conflict-action {
-  flex-shrink: 0;
-}
-
-/* 群聊 Runtime 状态查看区 */
-.group-runtime-inspect {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.group-runtime-label {
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
-
-.group-runtime-select {
-  width: 100%;
-  height: 32px;
-  padding: 0 8px;
-  font-size: 13px;
-  color: var(--foreground);
-  background: var(--video-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.group-runtime-select:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 1px;
-}
-
-@media (max-width: 640px) {
-  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7） */
-  .group-runtime-select {
-    font-size: 16px;
-  }
-}
-
-.members-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-/* 成员状态条 */
-.member-status-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.member-status-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  max-width: 100%;
-}
-
-.member-status-name {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-}
-
-.member-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px 2px 4px;
-  border-radius: var(--radius-sm);
-  background: var(--background);
-  border: 1px solid var(--border);
-  font-size: 12px;
-}
-
-.member-name {
-  font-size: 12px;
-  max-width: 80px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  /* E17：名字现在是可点的跳转，去掉按钮默认外观，只保留可点语义 */
-  padding: 0;
-  border: none;
-  background: none;
-  color: inherit;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-@media (max-width: 640px) {
-  .member-name {
-    font-size: 16px;
-  }
-}
-
-@media (hover: hover) {
-  .member-name:hover {
-    text-decoration: underline;
-  }
-}
-
-.member-name:focus-visible {
-  outline: 2px solid var(--ring, var(--secondary));
-  outline-offset: 1px;
-}
-
-.member-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border: none;
-  background: transparent;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  border-radius: 50%;
-  padding: 0;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .member-remove:hover {
-    background: var(--error);
-    color: var(--on-accent);
-  }
-}
-
-/* 模式切换 */
-.mode-switcher {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.mode-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: none;
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.mode-btn.active {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-
-/* 消息区 */
 .messages-area {
   flex: 1;
   overflow-y: auto;
@@ -2743,24 +2375,6 @@ type="button"
   color: var(--muted-foreground);
 }
 
-.runtime-retry-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--warning, var(--border));
-  border-radius: var(--radius-md);
-  color: var(--foreground);
-  background: var(--card-elevated);
-  font-size: 12px;
-}
-
-.runtime-retry-banner .action-btn {
-  flex: 0 0 auto;
-}
-
 /* 响应式 */
 @media (max-width: 1024px) {
   .group-body {
@@ -2784,6 +2398,66 @@ type="button"
   .form-input,
   .form-textarea {
     font-size: 16px;
+  }
+
+  /*
+   * 两级互换（批次 1-2）。三条都要，缺一条形态就不成立：
+   *
+   * 1. 把 .group-body 从 grid 换成纵向 flex。scoped 规则的特异性(0,2,0)高于全局
+   *    `.m-swap`(0,1,0)，不自己换的话 m-swap.css 里的 display 会被这条 grid 压住，
+   *    症状是"两级同时显示、消息区还是 32px"。
+   * 2. 一级页的群列表取消 1024 档那个 max-height:42vh。那是"堆叠两段"的遗产，
+   *    现在一级就是满屏列表，留 42% 会让列表只占半屏、下半屏是空的。
+   * 3. 页头收紧：手机上群名一行即可，动作/成员/Runtime/模式全在「群设置」抽屉里。
+   */
+  .group-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .group-list-panel {
+    max-height: none;
+    min-height: 0;
+  }
+  .group-header {
+    padding: 8px 12px;
+  }
+  .group-title-row {
+    margin-bottom: 0;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  .group-title-row h2 {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* 群设置入口：44px 命中区，视觉上不显大靠 padding 让它贴右 */
+  .group-settings-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+    min-height: var(--touch-min, 44px);
+    padding: 0 var(--space-2, 8px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--background);
+    color: var(--foreground);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  /*
+   * 能力说明收成一行：它是"显式声明群聊缺哪些能力"（E18/E08），不能删，
+   * 但手机上三行文字约 60px，比它解释的问题还贵。单行省略 + tip 看全文。
+   */
+  .group-capability-note {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 4px 12px;
   }
 }
 .group-capability-note {

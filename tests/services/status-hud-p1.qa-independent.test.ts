@@ -461,14 +461,20 @@ describe('5. 静态红线', () => {
     const ctx = readFileSync(resolve(ROOT, 'src/components/layout/ContextPanel.vue'), 'utf8');
     expect([...ctx.matchAll(/<StatusHud\b/g)].length, 'ContextPanel 不应挂载 StatusHud').toBe(0);
     // 群聊的成员状态条同样是"会话级派生"（绑定 resolveLatestStatus 的 memberStatuses），
-    // 不是消息级渲染 —— 允许挂载，但必须绑会话派生数据
-    const group = readFileSync(resolve(ROOT, 'src/views/GroupChatView.vue'), 'utf8');
-    const groupMounts = [...group.matchAll(/<StatusHud\b[^>]*>/g)].map((m) => m[0]);
-    expect(groupMounts.length).toBe(1);
+    // 不是消息级渲染 —— 允许挂载，但必须绑会话派生数据。
+    // 2026-10-18（批次 1-2）：这一块随群头一起搬进 GroupInfoPanel（桌面内联与手机抽屉
+    // 共用同一份模板），所以**挂载点**的断言跟着搬到新文件；"派生数据来自 GroupChatView
+    // 的 memberStatuses"这条仍守在原处，且反过来钉住旧位置不许再自己挂一份。
+    const groupPanel = readFileSync(resolve(ROOT, 'src/components/group/GroupInfoPanel.vue'), 'utf8');
+    const groupMounts = [...groupPanel.matchAll(/<StatusHud\b[^>]*>/g)].map((m) => m[0]);
+    expect(groupMounts.length, 'GroupInfoPanel 应恰好挂一处成员状态条').toBe(1);
     expect(groupMounts[0]).toContain('ms.status'); // 绑的是会话派生结果，不是 msg.status
-    expect(group).toContain('v-for="ms in memberStatuses"');
-    expect(group).toContain('resolveLatestStatus');
     expect(groupMounts[0]).not.toContain('msg.status');
+    expect(groupPanel).toContain('v-for="ms in statuses"');
+    const group = readFileSync(resolve(ROOT, 'src/views/GroupChatView.vue'), 'utf8');
+    expect(group, '群聊视图自己不应再挂 StatusHud（已移入 GroupInfoPanel）').not.toContain('<StatusHud');
+    expect(group).toContain('resolveLatestStatus');
+    expect(group).toContain('memberStatuses');
   });
 
   it('5-5 群聊不塞假 <status> 样例，真实流式状态进入成员快照', () => {
