@@ -391,4 +391,12 @@ function cardAria(entry: NavEntry): string {
     border-color: var(--secondary);
   }
 }
+
+/* 批次 3-2：返回与「编辑侧栏」都是独立可点元素 */
+@media (max-width: 640px) {
+  .more-back-btn,
+  .more-prefs-toggle {
+    min-height: var(--touch-min);
+  }
+}
 </style>

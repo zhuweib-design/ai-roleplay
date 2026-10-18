@@ -2025,7 +2025,7 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 28px;
+  height: var(--size-control-sm);
   padding: 0 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
@@ -2097,7 +2097,7 @@ watch(
 }
 
 .field-input {
-  height: 36px;
+  height: var(--size-control-md);
   padding: 0 12px;
   background: var(--video-bg);
   border: 1px solid var(--border);
@@ -2111,7 +2111,7 @@ watch(
 }
 
 select.field-input {
-  height: 36px;
+  height: var(--size-control-md);
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23AEB2C0' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -2242,7 +2242,7 @@ select.field-input {
   top: 50%;
   transform: translateY(-50%);
   width: 28px;
-  height: 28px;
+  height: var(--size-control-sm);
   background: none;
   border: none;
   color: var(--muted-foreground);

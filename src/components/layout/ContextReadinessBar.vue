@@ -158,4 +158,28 @@ function onChip(chip: ReadinessChip): void {
 .chip-state {
   font-size: 13px;
 }
+
+/*
+ * 批次 3-2：胶囊直接给到 44（手指端独立可点元素的下限）。
+ *
+ * 试过用透明伪元素撑命中区（批次 3-3 的手法），这里行不通：`.readiness-bar` 是
+ * `overflow-x: auto` 的横向滚动容器，按 CSS 规范另一轴会被强制成 auto ⇒ 伪元素
+ * 在纵向被裁掉，实测只到 30px。
+ *
+ * 于是改撑本体，同时把条高钉回 ≤44（批次 0-4 的判据）：
+ * - padding-block 归零：44 = 44 + 0
+ * - 底部分隔线改用 inset box-shadow：border 会让盒子高 1px，45 就破了判据
+ */
+@media (max-width: 640px) {
+  .readiness-bar {
+    padding-block: 0;
+    border-bottom: 0;
+    box-shadow: inset 0 -1px 0 var(--border);
+  }
+  .readiness-chip,
+  .readiness-summary {
+    min-height: var(--touch-min);
+    padding-block: 0;
+  }
+}
 </style>

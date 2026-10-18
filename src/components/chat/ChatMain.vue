@@ -1692,4 +1692,48 @@ function startWithExample(text: string) {
     font-size: 16px;
   }
 }
+
+/*
+ * 批次 3-2/3-3：页头命中区。
+ *
+ * 页头横向空间是零和的：390 宽下「菜单 + 右簇三个动作 + 角色名」必须一起放下，
+ * 而 A15 的判据是 `.chat-title` ≥200px（名字不许被挤成两三个字）。
+ *
+ * 分配：
+ * - 右簇三个动作给**真 44×44 盒子**——它们是手指的主战场，且三个都是 44 时才
+ *   132px，配合收紧后的留白刚好给标题留出 200+。
+ * - 菜单键保持视觉 26、命中区用伪元素撑到 46：它贴着左边缘，命中区可以往
+ *   padding 里长，不占标题的宽度。这是 B3 的手法，页头是典型密集行。
+ * - 页头留白 8→6、簇内间距归零：让出的 14px 全给标题（实测 198 → 202，
+ *   判据是 200，只差 2px 也要挤出来）。
+ *
+ * 46 而不是 44：探针按 1px 步进，正好 44 时边界像素不属于元素，量出来是 43。
+ */
+@media (max-width: 640px) {
+  .chat-header {
+    padding: 0 6px;
+    gap: 6px;
+  }
+  .chat-actions {
+    /* 归零而不是 2px：2px 时标题只剩 198，差 2px 过不了 A15 的 ≥200。
+       按钮本身 44 宽、图标 20，视觉上仍有 12px 空隙，不挤。 */
+    gap: 0;
+  }
+  .panel-toggle-btn {
+    min-width: var(--touch-min);
+    min-height: var(--touch-min);
+  }
+  .mobile-menu-btn {
+    position: relative;
+  }
+  .mobile-menu-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(var(--touch-min) + 2px);
+    height: calc(var(--touch-min) + 2px);
+    transform: translate(-50%, -50%);
+  }
+}
 </style>

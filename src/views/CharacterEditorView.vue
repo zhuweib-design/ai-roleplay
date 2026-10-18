@@ -1398,7 +1398,7 @@ function handleExport() {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
+  height: var(--size-control-md);
   padding: 0 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -1519,7 +1519,7 @@ function handleExport() {
 }
 
 .field-input {
-  height: 36px;
+  height: var(--size-control-md);
   padding: 0 12px;
   background: var(--video-bg);
   border: 1px solid var(--border);
@@ -1715,7 +1715,7 @@ function handleExport() {
 }
 
 .footer-btn {
-  height: 36px;
+  height: var(--size-control-md);
   padding: 0 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);

@@ -269,4 +269,11 @@ function onKeydown(e: KeyboardEvent): void {
     font-size: 12px;
   }
 }
+
+/* 批次 3-2：筛选 chip 也是独立可点元素 */
+@media (max-width: 640px) {
+  .filter-tab {
+    min-height: var(--touch-min);
+  }
+}
 </style>

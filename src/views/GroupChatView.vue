@@ -2153,7 +2153,7 @@ function isSystem(msg: { role: string }): boolean {
   align-items: center;
   justify-content: center;
   width: 36px;
-  height: 36px;
+  height: var(--size-control-md);
   border: none;
   background: var(--primary);
   color: var(--on-primary);
@@ -2467,5 +2467,20 @@ function isSystem(msg: { role: string }): boolean {
   color: var(--muted-foreground);
   border-bottom: 1px solid var(--border);
   background: var(--card);
+}
+
+/* 批次 3-2：页头动作按钮 */
+@media (max-width: 640px) {
+  .header-btn {
+    min-height: var(--touch-min);
+    min-width: var(--touch-min);
+  }
+}
+
+/* 批次 3-2：群聊页自己的筛选 chip（组件版在 FilterTabs.vue 里另有一条） */
+@media (max-width: 640px) {
+  .filter-tab {
+    min-height: var(--touch-min);
+  }
 }
 </style>

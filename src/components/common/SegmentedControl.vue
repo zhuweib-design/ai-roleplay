@@ -123,7 +123,7 @@ function onKeydown(e: KeyboardEvent, index: number): void {
 
 .seg-item {
   flex: 1;
-  min-height: 44px;
+  min-height: var(--size-control-touch);
   display: flex;
   align-items: center;
   justify-content: center;

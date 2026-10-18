@@ -3096,4 +3096,12 @@ function strategyLabel(s: LorebookStrategy): string {
   outline: 2px solid var(--ring, var(--secondary));
   outline-offset: 1px;
 }
+
+/* 批次 3-2：页头动作按钮 */
+@media (max-width: 640px) {
+  .header-btn {
+    min-height: var(--touch-min);
+    min-width: var(--touch-min);
+  }
+}
 </style>

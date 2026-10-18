@@ -213,7 +213,7 @@ function openMasterPasswordModal(mode: MasterPasswordMode): void {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 28px;
+  height: var(--size-control-sm);
   padding: 0 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);

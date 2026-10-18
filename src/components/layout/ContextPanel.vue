@@ -1122,7 +1122,7 @@ function onCtxTouchEnd(e: TouchEvent) {
   align-items: center;
   justify-content: center;
   width: 24px;
-  height: 24px;
+  height: var(--size-control-xs);
   padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -1256,6 +1256,14 @@ function onCtxTouchEnd(e: TouchEvent) {
   /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
   .status-field-input {
     font-size: 16px;
+  }
+}
+
+/* 批次 3-2：抽屉关闭按钮是独立可点元素 */
+@media (max-width: 640px) {
+  .mobile-menu-btn {
+    min-width: var(--touch-min);
+    min-height: var(--touch-min);
   }
 }
 </style>

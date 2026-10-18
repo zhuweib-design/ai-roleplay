@@ -669,7 +669,7 @@ const prereqRows = useDataBankPrereqs();
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 28px;
+  height: var(--size-control-sm);
   border: none;
   background: none;
   color: var(--muted-foreground);
@@ -816,7 +816,7 @@ const prereqRows = useDataBankPrereqs();
 }
 
 .char-select-input {
-  height: 36px;
+  height: var(--size-control-md);
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);

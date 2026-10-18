@@ -97,6 +97,11 @@ jobs:
       - name: File size guard (check:file-size)
         run: npm run check:file-size
 
+      # 控件高度字面量棘轮（批次 3-1）：token 化之后只许降不许升，
+      # 否则批次 3-2 的"≤640 阶梯上移"永远只能覆盖一半控件。
+      - name: Control size guard (check:control-size)
+        run: npm run check:control-size
+
       # 存盘方式守卫（2026-10-14 安卓模拟器实测立）：blob + `<a download>` 在 Capacitor 的
       # WebView 里静默无效（不报错、无下载记录、全盘搜不到文件），所以存盘必须走 utils/save-blob.ts。
       # 基线已清零（2026-10-15 实测：存量 0 处 / 基线 0 处，9 处导出全部改走 saveBlob），

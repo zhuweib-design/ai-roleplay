@@ -807,7 +807,7 @@ function tagsPreview(tags: string[]): string {
 
 .search-input {
   width: 100%;
-  height: 36px;
+  height: var(--size-control-md);
   padding: 0 12px 0 36px;
   background: var(--video-bg);
   border: 1px solid var(--border);
@@ -831,7 +831,7 @@ function tagsPreview(tags: string[]): string {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
+  height: var(--size-control-md);
   padding: 0 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -1056,7 +1056,7 @@ function tagsPreview(tags: string[]): string {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  height: 28px;
+  height: var(--size-control-sm);
   padding: 0 8px;
   border-radius: var(--radius-sm);
   background: var(--video-bg);
@@ -1355,6 +1355,34 @@ function tagsPreview(tags: string[]): string {
   .search-input,
   .sort-select {
     font-size: 16px;
+  }
+}
+
+/* 批次 3-2：页头动作与排序选择器 */
+@media (max-width: 640px) {
+  .header-btn,
+  .sort-select {
+    min-height: var(--touch-min);
+  }
+  .header-btn {
+    min-width: var(--touch-min);
+  }
+}
+
+/* 批次 3-3：卡片星标命中区撑到 44，视觉仍是 24（卡面密度不变） */
+@media (max-width: 640px) {
+  .favorite-btn {
+    position: relative;
+  }
+  .favorite-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* 46 而不是 44：探针按 1px 步进，正好 44 时边界像素不属于元素，量出来是 43 */
+    width: calc(var(--touch-min) + 2px);
+    height: calc(var(--touch-min) + 2px);
+    transform: translate(-50%, -50%);
   }
 }
 </style>

@@ -101,7 +101,7 @@ function onBlur(): void {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 28px;
+  min-height: var(--size-control-sm);
   padding: 2px 10px;
   border: none;
   border-radius: var(--radius-pill, 999px);
@@ -135,9 +135,16 @@ function onBlur(): void {
 
 @media (max-width: 640px) {
   .chat-mode-tab {
-    min-height: 36px;
+    min-height: var(--size-control-md);
     padding: 4px 12px;
     font-size: 13px;
+  }
+}
+
+/* 批次 3-2：分段控件在手指端要够 44（sm 档在 ≤640 已是 36） */
+@media (max-width: 640px) {
+  .chat-mode-tab {
+    min-height: var(--touch-min);
   }
 }
 </style>

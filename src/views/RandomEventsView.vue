@@ -946,7 +946,7 @@ function formatCooldown(ms: number): string {
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 28px;
+  height: var(--size-control-sm);
   padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);

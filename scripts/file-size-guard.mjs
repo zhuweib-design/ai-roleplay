@@ -61,17 +61,24 @@ const ALLOWLIST = {
   // ── R1 批（§7.3，优先拆分）──
   'src/views/StoryEngineView.vue': { lines: 3326, reason: 'R1-2：拆为 9 个文件' },
   'src/views/WorldBookView.vue': {
+    // 2026-10-19 显式上调 3099 → 3107：B2 触摸目标（页头动作 ≥44）（合理功能增量，非无声漂移）。R1-3 拆分时以拆后实测回填。
     // 2026-10-18 显式上调 +123：A9 两级互换（useDrilldown 接线 + 条目第三态 +
     // ≤640 样式整块重写）。R1-3 拆分时以拆后实测回填。
-    lines: 3099,
+    lines: 3107,
     reason: 'R1-3：拆为 9 个文件（A9 已改完，可开工）',
   },
   'src/components/settings/SettingsModelPanel.vue': { lines: 2545, reason: 'R1-4：拆为 6 个文件（A10 会先改它）' },
-  'src/views/GroupChatView.vue': { lines: 2472, reason: 'R1-1：A7 已拆 2 个，剩 7 个' },
+  'src/views/GroupChatView.vue': {
+    // 2026-10-19 显式上调 2472 → 2486：B2 触摸目标（页头动作与筛选 chip ≥44）（合理功能增量，非无声漂移）。R1-1 拆分时以拆后实测回填。
+    lines: 2486,
+    reason: 'R1-1：A7 已拆 2 个，剩 7 个' 
+  },
   'src/components/chat/ChatMain.vue': {
+    // 2026-10-19 显式上调 1695 → 1739：B2/B3 触摸目标（页头右簇 44×44、菜单键伪元素命中区、
+    // 留白与簇间距收紧，全部带原因注释）。R1-5 拆分时以拆后实测回填。
     // 2026-10-18 显式上调 +5：A15 页头按端分流（分段控件 v-if="!isMobile"）
     // 的注释与解构。R1-5 拆分时以拆后实测回填。
-    lines: 1695,
+    lines: 1739,
     reason: 'R1-5：等 C1 完成后再拆（共享热文件）',
   },
 
@@ -85,7 +92,11 @@ const ALLOWLIST = {
     lines: 1838,
     reason: 'R2-4：拆为 5 个文件',
   },
-  'src/components/layout/ContextPanel.vue': { lines: 1262, reason: 'R2-3：拆为 3 个文件' },
+  'src/components/layout/ContextPanel.vue': {
+    // 2026-10-19 显式上调 1262 → 1269：B2 触摸目标（抽屉关闭按钮 ≥44）（合理功能增量，非无声漂移）。R2-3 拆分时以拆后实测回填。
+    lines: 1269,
+    reason: 'R2-3：拆为 3 个文件' 
+  },
   'src/stores/settings.ts': { lines: 1621, reason: 'R2-5：拆为 3 个文件（其余 store 的拆分模板）' },
 
   // ── R3 批 ──
@@ -93,10 +104,11 @@ const ALLOWLIST = {
   'src/views/LocalModelView.vue': { lines: 1275, reason: 'R3-3：拆为 3 个文件' },
   'src/views/RandomEventsView.vue': { lines: 1269, reason: 'R3-4：拆为 3 个文件' },
   'src/views/CharactersView.vue': {
+    // 2026-10-19 显式上调 1360 → 1388：B2/B3 触摸目标（页头与排序 ≥44、星标伪元素命中区）（合理功能增量，非无声漂移）。R3-5 拆分时以拆后实测回填。
     // 2026-10-18 显式上调：A11 角色抽屉状态 +66 行、判据瘦身样式 +27 行
     // （"一屏 ≥3 卡"的媒体块），合计 +93，均为合理功能增量而非无声漂移。
     // R3-5 拆分时以拆后实测回填。
-    lines: 1360,
+    lines: 1388,
     reason: 'R3-5：拆为 3 个文件',
   },
   'src/views/ImageGeneratorView.vue': { lines: 1238, reason: 'R3-6：拆为 3 个文件' },

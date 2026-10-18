@@ -1,0 +1,148 @@
+#!/usr/bin/env node
+/**
+ * control-size-guard — 控件高度字面量棘轮（MOBILE_PLAN 批次 3-1 / DEV_PLAN B1）
+ *
+ * 为什么需要它：`--size-control-*`（xs 24 / sm 28 / md 36 / lg 44 / touch 44）
+ * 是控件尺寸的单一来源，但组件里仍散落着 `height: 32px` 这类字面量。
+ * 字面量的两个害处：
+ *   1. 批次 3-2 要在 ≤640 把阶梯整体上移（sm36/md44/lg48），**没接 token 的控件
+ *      不会跟着变大**——"手机上按钮 44px"这条判据就永远差一截；
+ *   2. 改一次设计尺寸要全仓搜，漏掉一处就是"这个按钮跟别的不一样高"。
+ *
+ * 判定与 token-guard / important-guard 同构：按文件锁存量，**只许降不许升**。
+ * 只锁总数不够——"这里迁了 3 处、那里新写 3 处"会互相抵消成平局。
+ *
+ * 统计口径（刻意窄）：
+ *   - 只看 `src/components/**` 与 `src/views/**` 的 .vue：`src/styles` 是 token
+ *     与布局骨架的家，那里的 height 不是"控件"。
+ *   - 只看 20–60px：小于 20 的多是图标/圆点，大于 60 的是容器高度。
+ *   - `height` 与 `min-height` 都算（两者都在定控件尺寸）。
+ *   - 不区分"是否已接 token"——接了 token 的写法是 `var(--size-control-md)`，
+ *     根本不会命中 `\d+px`，所以计数下降本身就是迁移进度的度量。
+ *
+ * 三种模式：
+ *   node scripts/control-size-guard.mjs            # 只统计（迁移动员 / 看分布）
+ *   node scripts/control-size-guard.mjs --strict   # 棘轮（CI 用）
+ *   node scripts/control-size-guard.mjs --list     # 打印每文件登记值与当前值
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+
+const ROOT = path.resolve(import.meta.dirname, '..');
+const argv = process.argv.slice(2);
+const STRICT = argv.includes('--strict');
+const LIST = argv.includes('--list');
+
+/**
+ * 按文件的存量基线（2026-10-18 B1 迁移后实测）。
+ *
+ * 未列出的文件视为 0：新写一处字面量就会红。
+ * 迁移进度：从 104 处降到下面的数字；剩下的都是"尺度缺口"（22/26/30/32/34/40…），
+ * 它们没有对应的 token，硬映射会改变桌面密度，留给下一轮设计系统决策。
+ */
+const BASELINE = {
+  'src/components/chat/ChatMain.vue': 7,
+  'src/components/chat/MessageActionSheet.vue': 1,
+  'src/components/chat/NewConversationModal.vue': 3,
+  'src/components/chat/RuntimeStatePanel.vue': 1,
+  'src/components/chat/StatusHud.vue': 1,
+  'src/components/chat/ThinkingBlock.vue': 1,
+  'src/components/common/EmptyState.vue': 1,
+  'src/components/common/GuidedTasksCard.vue': 2,
+  'src/components/common/OnboardingModal.vue': 1,
+  'src/components/common/StepFlow.vue': 1,
+  'src/components/group/GroupInfoPanel.vue': 1,
+  'src/components/layout/ContextPanel.vue': 4,
+  'src/components/mobile/BottomNav.vue': 1,
+  'src/components/random-events/TemplateEditorModal.vue': 1,
+  'src/components/settings/SettingsAboutPanel.vue': 1,
+  'src/components/settings/SettingsAppearancePanel.vue': 5,
+  'src/components/settings/SettingsDataPanel.vue': 2,
+  'src/components/settings/SettingsModelPanel.vue': 4,
+  'src/components/settings/SettingsSecurityPanel.vue': 1,
+  'src/components/settings/VectorModelPanel.vue': 1,
+  'src/components/worldbook/QuickLorebookFlow.vue': 1,
+  'src/views/CharacterEditorView.vue': 7,
+  'src/views/CharacterVersionView.vue': 1,
+  'src/views/CharactersView.vue': 3,
+  'src/views/CommunityMarketView.vue': 1,
+  'src/views/DataBankView.vue': 1,
+  'src/views/GroupChatView.vue': 2,
+  'src/views/ImageGeneratorView.vue': 1,
+  'src/views/WorldBookView.vue': 4,
+};
+
+const ROOTS = ['src/components', 'src/views'];
+const HEIGHT_RE = /(?:^|[^-\w])(min-height|height):\s*(\d+)px/g;
+
+function walk(dir, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full, out);
+    else if (entry.name.endsWith('.vue')) out.push(full);
+  }
+  return out;
+}
+
+function countFile(file) {
+  const text = fs.readFileSync(file, 'utf8');
+  let n = 0;
+  for (const m of text.matchAll(HEIGHT_RE)) {
+    const px = Number(m[2]);
+    if (px >= 20 && px <= 60) n += 1;
+  }
+  return n;
+}
+
+const files = ROOTS.flatMap((r) => walk(path.join(ROOT, r)));
+const counts = new Map();
+for (const file of files) {
+  const n = countFile(file);
+  if (n > 0) counts.set(path.relative(ROOT, file).replace(/\\/g, '/'), n);
+}
+
+const total = [...counts.values()].reduce((a, b) => a + b, 0);
+const baselineTotal = Object.values(BASELINE).reduce((a, b) => a + b, 0);
+
+if (LIST) {
+  const rows = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  for (const [file, n] of rows) {
+    const base = BASELINE[file] ?? 0;
+    const mark = n > base ? '✗' : n < base ? '↓' : ' ';
+    console.log(`${mark} ${String(n).padStart(3)} (登记 ${String(base).padStart(3)})  ${file}`);
+  }
+  console.log(`\n合计 ${total} 处（登记 ${baselineTotal}）`);
+  process.exit(0);
+}
+
+const regressions = [];
+const improvements = [];
+for (const [file, n] of counts) {
+  const base = BASELINE[file] ?? 0;
+  if (n > base) regressions.push({ file, n, base });
+}
+for (const [file, base] of Object.entries(BASELINE)) {
+  const n = counts.get(file) ?? 0;
+  if (n < base) improvements.push({ file, n, base });
+}
+
+console.log(`[control-size] 扫描 ${files.length} 个 .vue：字面量 ${total} 处（登记 ${baselineTotal}）`);
+
+if (improvements.length > 0) {
+  console.log('[control-size] 这些文件已经比登记值小，请顺手下调基线：');
+  for (const { file, n, base } of improvements) console.log(`  ↓ ${file} ${base} → ${n}`);
+}
+
+if (!STRICT) process.exit(0);
+
+if (regressions.length > 0) {
+  console.error('[control-size] 失败：控件高度字面量只许降不许升');
+  for (const { file, n, base } of regressions) {
+    console.error(`  ✗ ${file} — 登记 ${base} → 当前 ${n}（+${n - base}）`);
+  }
+  console.error('  接 token：--size-control-xs 24 / sm 28 / md 36 / lg 44 / touch 44');
+  console.error('  真的没有对应档位（尺度缺口）就在 §7.10 同类纪律下显式上调基线并写原因');
+  process.exit(1);
+}
+
+console.log('[control-size] 严格模式通过：控件高度字面量没有增长');

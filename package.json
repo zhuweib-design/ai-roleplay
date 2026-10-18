@@ -26,6 +26,7 @@
     "check:hover": "node scripts/hover-guard.mjs",
     "check:important": "node scripts/important-guard.mjs",
     "check:file-size": "node scripts/file-size-guard.mjs --strict",
+    "check:control-size": "node scripts/control-size-guard.mjs --strict",
     "check:i7-control-font-size": "node scripts/i7-control-font-size-guard.mjs",
     "check:css-conventions": "node scripts/css-conventions-guard.mjs",
     "check:save-blob": "node scripts/save-blob-guard.mjs",
