@@ -55,6 +55,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/guide-entry.spec.ts': 6.0,
   // 手工登记（2026-10-18）：A18 市场叙事，3 条桌面用例（页面 + 昵称 Modal + 发布），估 14s。
   'e2e/market-narrative.spec.ts': 14.0,
+  // 手工登记（2026-10-18）：A16 force-desktop，3 条用例各含一次整页加载，估 28s。
+  'e2e/mobile/force-desktop.spec.ts': 28.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -98,7 +100,7 @@ export const E2E_GROUPS = [
     'e2e/ux-gap-visibility.spec.ts',
     'e2e/ux-narrow-editor-preview.spec.ts',
   ],
-  // 第 2 组：实测 220s（2026-10-18 手工加入 group-composition 约 10s ⇒ 约 231s）
+  // 第 2 组：实测 220s（2026-10-18 手工加入 group-composition 约 10s、force-desktop 约 28s ⇒ 约 259s）
   [
     'e2e/backup-restore.spec.ts',
     'e2e/character-batch-import.spec.ts',
@@ -106,6 +108,7 @@ export const E2E_GROUPS = [
     'e2e/contrast-axe.spec.ts',
     'e2e/i18n-locale.spec.ts',
     'e2e/mobile/chat-touch-composer.spec.ts',
+    'e2e/mobile/force-desktop.spec.ts',
     'e2e/mobile/group-composition.spec.ts',
     'e2e/model-install-web.spec.ts',
     'e2e/ux-interaction-feedback.spec.ts',
