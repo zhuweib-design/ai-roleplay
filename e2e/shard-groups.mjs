@@ -53,6 +53,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/back-button.spec.ts': 16.0,
   // 手工登记（2026-10-18）：A17 guide 手机入口，2 条纯导航用例，估 6s。
   'e2e/mobile/guide-entry.spec.ts': 6.0,
+  // 手工登记（2026-10-18）：A18 市场叙事，3 条桌面用例（页面 + 昵称 Modal + 发布），估 14s。
+  'e2e/market-narrative.spec.ts': 14.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -83,12 +85,13 @@ export const SPEC_WEIGHTS = {
 };
 
 export const E2E_GROUPS = [
-  // 第 1 组：实测 221s（2026-10-18 手工加入 character-drawer 约 8s ⇒ 约 229s）
+  // 第 1 组：实测 221s（2026-10-18 手工加入 character-drawer 约 8s、market-narrative 约 14s ⇒ 约 243s）
   [
     'e2e/chat-search.spec.ts',
     'e2e/long-history-scroll.spec.ts',
     'e2e/mobile-control-font-size.spec.ts',
     'e2e/mobile/character-drawer.spec.ts',
+    'e2e/market-narrative.spec.ts',
     'e2e/theme-flow.spec.ts',
     'e2e/ux-deep-link-group.spec.ts',
     'e2e/ux-duplicate-a11y-names.spec.ts',
