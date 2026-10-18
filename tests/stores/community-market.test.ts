@@ -224,7 +224,7 @@ describe('community-market store', () => {
       if (!cardId) return;
       const ok = store.downloadCard(cardId);
       expect(ok).toBe(false);
-      expect(store.lastError).toContain('登录');
+      expect(store.lastError).toContain('昵称'); // 批次 2-7：文案从"请先登录"改为"请先设置本地昵称"
     });
 
     it('getDownloadHistory 返回历史', () => {
@@ -279,7 +279,7 @@ describe('community-market store', () => {
       store.logout();
       const marketId = store.publishCard(makeCard());
       expect(marketId).toBeNull();
-      expect(store.lastError).toContain('登录');
+      expect(store.lastError).toContain('昵称'); // 批次 2-7：文案从"请先登录"改为"请先设置本地昵称"
     });
 
     it('发布后角色卡出现在我的发布列表', () => {

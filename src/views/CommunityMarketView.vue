@@ -3,13 +3,13 @@
  * CommunityMarketView — 角色卡社区市场页面 (模块5)
  *
  * 功能：
- * - 顶部：返回按钮 + 登录/用户信息
+ * - 顶部：返回按钮 + 本地昵称/身份
  * - Tab 1 市场：搜索/筛选/排序 + 角色卡卡片网格
  * - Tab 2 推荐：个性化推荐列表（基于收藏标签）
  * - Tab 3 收藏：已收藏的角色卡
  * - Tab 4 我的发布：已发布的角色卡管理
  * - Tab 5 管理：审核/举报管理（所有用户可见 pending 状态）
- * - Modal：登录、角色卡详情、发布、评论、举报
+ * - Modal：昵称、角色卡详情、发布、评论、举报
  *
  * 无障碍：
  * - 语义化 main/header/nav/section
@@ -119,7 +119,7 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
   { value: 'alphabetical', label: t('market.sortName') },
 ];
 
-// ── 登录 Modal ──
+// ── 昵称 Modal（本地身份，无凭据、无后端） ──
 const loginModalOpen = ref(false);
 const loginName = ref('');
 
@@ -822,8 +822,9 @@ type="button"
       </section>
     </main>
 
-    <!-- 登录 Modal -->
+    <!-- 昵称 Modal（批次 2-7：本地模拟、无凭据、无后端） -->
     <Modal v-model="loginModalOpen" :title="t('market.loginTitle')">
+      <p class="login-hint">{{ t('market.nicknameHint') }}</p>
       <div class="form-group">
         <label for="login-name" class="form-label">{{ t('market.username') }}</label>
         <input
@@ -998,7 +999,7 @@ type="button"
   display: flex;
   align-items: center;
   /* 下面那两句说明写的是 flex:1 1 100%（本意独占一行），但这个容器一直没开 wrap，
-     于是"标题 + 两句说明 + 右侧登录"全挤在同一行里按比例缩——真机量到「登录」按钮
+     于是"标题 + 两句说明 + 右侧昵称入口"全挤在同一行里按比例缩——真机量到该按钮
      被压成 42×48（两个字竖排两行）。开 wrap 才是这段样式原本想表达的样子。 */
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -1685,6 +1686,14 @@ type="button"
   font-weight: 500;
   margin-bottom: 0.375rem;
   color: var(--text);
+}
+
+/* 昵称 Modal 的说明行：把"这只是本机昵称"说在用户填之前，而不是填完再解释 */
+.login-hint {
+  margin: 0 0 var(--space-3, 12px);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
 }
 
 .form-input {

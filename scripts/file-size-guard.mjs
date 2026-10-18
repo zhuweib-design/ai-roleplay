@@ -69,7 +69,12 @@ const ALLOWLIST = {
   'src/views/CharacterEditorView.vue': { lines: 2320, reason: 'R2-1：拆为 6 个文件（A11 会先改它）' },
   'src/views/CharacterVersionView.vue': { lines: 1999, reason: 'R2-2：拆为 5 个文件' },
   'src/components/settings/SettingsAppearancePanel.vue': { lines: 1894, reason: 'R3-1：拆为 4 个文件' },
-  'src/views/CommunityMarketView.vue': { lines: 1830, reason: 'R2-4：拆为 5 个文件' },
+  'src/views/CommunityMarketView.vue': {
+    // 2026-10-18 显式上调 +8：A18 叙事降级给昵称 Modal 加了一行说明 + 它的样式
+    // （合理功能增量，非无声漂移）。R2-4 拆分时以拆后实测回填。
+    lines: 1838,
+    reason: 'R2-4：拆为 5 个文件',
+  },
   'src/components/layout/ContextPanel.vue': { lines: 1262, reason: 'R2-3：拆为 3 个文件' },
   'src/stores/settings.ts': { lines: 1621, reason: 'R2-5：拆为 3 个文件（其余 store 的拆分模板）' },
 
