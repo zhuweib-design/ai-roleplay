@@ -2183,6 +2183,7 @@ const en: Record<MessageKey, string> = {
   'wb.generateHint': 'Pick a world type and AI will generate a complete world setting: overall description + 3-5 regions + sub-areas. Output length is derived from the model context — no cap to set.',
   'wb.genOwnerLabel': 'Who owns this world',
   'wb.genOwnerGlobal': 'Global (injected for every character)',
+  'wb.genDoneBound': 'Created and bound to "{owner}" — {count} entries active in this conversation',
   'wb.genOwnerHint':
     'Pick a character and the generated world binds only to them and applies in their chats; leave it global to apply to every character.',
   'wb.generateTypeAria': 'World types',

@@ -475,9 +475,17 @@ async function confirmGenerate() {
   );
   if (lbId) {
     // 角色侧的 boundWorldBookIds 才是生效判定的正向数据源，光写书上的 characterId 不够
-    if (ownerId) characterStore.bindWorldBook(ownerId, lbId);
+    if (ownerId) {
+      characterStore.bindWorldBook(ownerId, lbId);
+      // 回显要说清"绑给谁、这次对话能吃到几条"——只说"已生成新世界"，
+      // 用户不知道它到底对谁生效（这正是"绑定感缺失"的原症状）
+      const ownerName = characterStore.characters.find((c) => c.id === ownerId)?.name ?? ownerId;
+      const count = store.lorebooks.find((l) => l.id === lbId)?.entries.length ?? 0;
+      showToast('success', t('wb.genDoneBound', { owner: ownerName, count }));
+    } else {
+      showToast('success', store.lastInfo ?? t('wb.generated'));
+    }
     generateModalOpen.value = false;
-    showToast('success', store.lastInfo ?? t('wb.generated'));
   } else {
     showToast('error', store.lastError ?? t('wb.generateFailed'));
   }

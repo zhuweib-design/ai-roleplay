@@ -36,7 +36,6 @@ function makeChar(id: string, overrides: Partial<UICharacter> = {}): UICharacter
     authorDepth: 4,
     temperature: 0.7,
     maxTokens: 2048,
-    worldEntries: [],
     tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
     ...overrides,
   } as UICharacter;

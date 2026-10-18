@@ -317,7 +317,6 @@ const previewCharacter = computed<UICharacter>(() => ({
   authorNote: form.value.authorNote,
   authorDepth: form.value.authorDepth,
   temperature: form.value.temperature,
-  worldEntries: [],
   tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
   // F01.6 角色属性预览
   attributes: buildAttributes(),

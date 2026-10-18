@@ -2183,6 +2183,7 @@ export default {
   'wb.generateHint': '选择世界类型，AI 将生成完整世界设定：整体描述 + 3-5 个大区 + 子区域。输出长度由模型的上下文自动推导，不需要你设上限。',
   'wb.genOwnerLabel': '这本世界归谁',
   'wb.genOwnerGlobal': '全局（所有角色都注入）',
+  'wb.genDoneBound': '已生成并绑定到「{owner}」，本次对话生效 {count} 条',
   'wb.genOwnerHint':
     '选了某个角色，生成的世界只绑给他、在他的对话里生效；不选则作为全局世界书，对所有角色都生效。',
   'wb.generateTypeAria': '世界类型',

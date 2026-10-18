@@ -6,10 +6,9 @@ import {
   chatMsgToUiMsg,
   uiMsgsToChatMsgs,
   chatMsgsToUiMsgs,
-  worldEntriesToStorage,
 } from '../../src/services/type-adapters';
 import type { CharacterCard, ChatMessage } from '@core/character-card';
-import type { UICharacter, UIMessage, WorldEntry } from '@/types';
+import type { UICharacter, UIMessage } from '@/types';
 import type { CharacterStatus } from '@core/status-schema';
 
 // ── 测试夹具 ──
@@ -33,7 +32,6 @@ function makeUIChar(overrides: Partial<UICharacter> = {}): UICharacter {
     authorNote: '保持温柔语调',
     authorDepth: 4,
     temperature: 0.8,
-    worldEntries: [],
     tokenBudget: { character: 100, worldInfo: 50, chatHistory: 200, remaining: 7842 },
     ...overrides,
   };
@@ -226,14 +224,14 @@ describe('type-adapters — cardToUiChar', () => {
     expect(cardToUiChar(makeCard({ name: '' })).initial).toBe('?');
   });
 
-  it('应使用 overrides 中的 model/temperature/worldEntries/tokenBudget/conversations/messages', () => {
+  it('应使用 overrides 中的 model/temperature/tokenBudget/conversations/messages', () => {
     const card = makeCard();
     const overrides: Partial<UICharacter> = {
       model: 'claude-3-5-sonnet',
       temperature: 1.2,
       conversations: [{ id: 'c1', title: '对话1', updatedAt: '2026-07-10T00:00:00Z' }],
       messages: [makeUIMsg()],
-      worldEntries: [{ id: 'w1', name: '世界1', enabled: true }],
+      
       tokenBudget: { character: 10, worldInfo: 5, chatHistory: 0, remaining: 100 },
     };
 
@@ -243,7 +241,6 @@ describe('type-adapters — cardToUiChar', () => {
     expect(ui.temperature).toBe(1.2);
     expect(ui.conversations).toHaveLength(1);
     expect(ui.messages).toHaveLength(1);
-    expect(ui.worldEntries).toHaveLength(1);
     expect(ui.tokenBudget.remaining).toBe(100);
   });
 
@@ -254,7 +251,6 @@ describe('type-adapters — cardToUiChar', () => {
     expect(ui.temperature).toBe(1.0);
     expect(ui.conversations).toEqual([]);
     expect(ui.messages).toEqual([]);
-    expect(ui.worldEntries).toEqual([]);
     expect(ui.tokenBudget).toEqual({
       character: 0,
       worldInfo: 0,
@@ -269,6 +265,26 @@ describe('type-adapters — cardToUiChar', () => {
 
     expect(ui.tags).not.toBe(card.tags);
     expect(ui.tags).toEqual(card.tags);
+  });
+});
+
+describe('type-adapters — 已废弃的 worldEntries 兼容', () => {
+  /**
+   * OPT_PLAN 专项 B 第三条：`UICharacter.worldEntries` 是一条死路径
+   * （不参与注入，只有 store 动作和三条单测在维持它活着）。本轮删掉后，
+   * 唯一要守的是**旧备份还能导进来**——导入是按字段显式重建对象，
+   * 多出来的键会被丢掉，不会报错，也不会被当成"生效开关"。
+   */
+  it('旧数据里带 worldEntries：能正常导入，字段被丢弃而不是报错', () => {
+    const legacyCard = {
+      ...makeCard(),
+      worldEntries: [{ id: 'w1', name: '翡翠森林', enabled: true }],
+    } as unknown as Parameters<typeof cardToUiChar>[0];
+
+    const ui = cardToUiChar(legacyCard);
+
+    expect(ui.name).toBe('Lyra');
+    expect(ui).not.toHaveProperty('worldEntries');
   });
 });
 
@@ -354,7 +370,7 @@ describe('type-adapters — 角色卡 round-trip', () => {
     const original = makeUIChar({
       conversations: [{ id: 'c1', title: '对话', updatedAt: '2026-07-10T00:00:00Z' }],
       messages: [makeUIMsg()],
-      worldEntries: [{ id: 'w1', name: '世界', enabled: true }],
+      
       tokenBudget: { character: 10, worldInfo: 5, chatHistory: 0, remaining: 100 },
     });
 
@@ -363,7 +379,6 @@ describe('type-adapters — 角色卡 round-trip', () => {
     // 这些字段不写入 CharacterCard，round-trip 后回到空默认（有意设计）
     expect(roundTrip.conversations).toEqual([]);
     expect(roundTrip.messages).toEqual([]);
-    expect(roundTrip.worldEntries).toEqual([]);
     expect(roundTrip.tokenBudget).toEqual({
       character: 0,
       worldInfo: 0,
@@ -590,46 +605,6 @@ describe('type-adapters — 批量转换', () => {
   });
 });
 
-describe('type-adapters — worldEntriesToStorage', () => {
-  it('应原样复制所有条目', () => {
-    const entries: WorldEntry[] = [
-      { id: 'w1', name: '世界1', enabled: true },
-      { id: 'w2', name: '世界2', enabled: false },
-    ];
-
-    const result = worldEntriesToStorage(entries);
-
-    expect(result).toEqual(entries);
-  });
-
-  it('应对每个条目做浅拷贝（不共享引用）', () => {
-    const entries: WorldEntry[] = [
-      { id: 'w1', name: '世界1', enabled: true },
-    ];
-
-    const result = worldEntriesToStorage(entries);
-
-    expect(result).not.toBe(entries);
-    expect(result[0]).not.toBe(entries[0]);
-    expect(result[0]).toEqual(entries[0]);
-  });
-
-  it('空数组应返回空数组', () => {
-    expect(worldEntriesToStorage([])).toEqual([]);
-  });
-
-  it('修改返回值不影响原数组', () => {
-    const entries: WorldEntry[] = [
-      { id: 'w1', name: '世界1', enabled: true },
-    ];
-
-    const result = worldEntriesToStorage(entries);
-    result[0]!.name = '修改后';
-
-    expect(entries[0]!.name).toBe('世界1');
-  });
-});
-
 // ── P0-1 / P0-2 / P0-3 新增字段的 round-trip ──
 
 describe('type-adapters — P0 新字段 round-trip', () => {
@@ -650,7 +625,6 @@ describe('type-adapters — P0 新字段 round-trip', () => {
     const back = cardToUiChar(card, {
       conversations: ui.conversations,
       messages: ui.messages,
-      worldEntries: ui.worldEntries,
       tokenBudget: ui.tokenBudget,
     });
     expect(back.reasoningEffort).toBe('high');

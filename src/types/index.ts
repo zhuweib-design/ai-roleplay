@@ -81,12 +81,6 @@ export interface Conversation {
   variables?: Record<string, string>;
 }
 
-export interface WorldEntry {
-  id: string;
-  name: string;
-  enabled: boolean;
-}
-
 export interface TokenBudget {
   character: number;
   worldInfo: number;
@@ -120,7 +114,6 @@ export interface UICharacter {
   authorNote: string;
   authorDepth: number;
   temperature: number;
-  worldEntries: WorldEntry[];
   tokenBudget: TokenBudget;
   /** P0-2：角色级思考强度覆盖；undefined/null = 跟随 Profile */
   reasoningEffort?: ReasoningEffort | null;

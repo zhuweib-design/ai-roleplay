@@ -61,10 +61,11 @@ const ALLOWLIST = {
   // ── R1 批（§7.3，优先拆分）──
   'src/views/StoryEngineView.vue': { lines: 3326, reason: 'R1-2：拆为 9 个文件' },
   'src/views/WorldBookView.vue': {
-    // 2026-10-19 显式上调 3099 → 3107：B2 触摸目标（页头动作 ≥44）（合理功能增量，非无声漂移）。R1-3 拆分时以拆后实测回填。
+    // 2026-10-19 显式上调 3099 → 3115：B2 触摸目标（页头动作 ≥44）+ C1 生成后回显
+    // "绑到谁、生效几条"（合理功能增量，非无声漂移）。R1-3 拆分时以拆后实测回填。
     // 2026-10-18 显式上调 +123：A9 两级互换（useDrilldown 接线 + 条目第三态 +
     // ≤640 样式整块重写）。R1-3 拆分时以拆后实测回填。
-    lines: 3107,
+    lines: 3115,
     reason: 'R1-3：拆为 9 个文件（A9 已改完，可开工）',
   },
   'src/components/settings/SettingsModelPanel.vue': { lines: 2545, reason: 'R1-4：拆为 6 个文件（A10 会先改它）' },

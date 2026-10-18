@@ -245,15 +245,6 @@ describe('useCharacterStore — E5 单元测试', () => {
       expect(store.characters.find((c) => c.id === newId)!.favorite).toBe(!before);
     });
 
-    it('toggleWorldEntry 应切换 worldEntry.enabled', () => {
-      const store = useCharacterStore();
-      const newId = store.createCharacter();
-      // 注入一个 world entry
-      const char = store.characters.find((c) => c.id === newId)!;
-      char.worldEntries = [{ id: 'w1', name: '世界观 1', enabled: true }];
-      store.toggleWorldEntry(newId, 'w1');
-      expect(char.worldEntries[0]!.enabled).toBe(false);
-    });
   });
 
   describe('需求7：角色与世界书双向绑定', () => {
@@ -326,9 +317,9 @@ describe('useCharacterStore — E5 单元测试', () => {
       const id2 = 'test-char-bind-2';
       const id3 = 'test-char-bind-3';
       store.characters.push(
-        { id: id1, name: 'C1', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
-        { id: id2, name: 'C2', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
-        { id: id3, name: 'C3', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } }
+        { id: id1, name: 'C1', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
+        { id: id2, name: 'C2', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
+        { id: id3, name: 'C3', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } }
       );
       // id1 和 id2 绑定 lb-shared，id3 绑定 lb-other
       store.bindWorldBook(id1, 'lb-shared');

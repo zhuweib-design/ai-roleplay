@@ -3,7 +3,7 @@ import type { ReasoningEffort } from '@api/types';
 import type { StatusSchema } from '@core/status-schema';
 import { normalizeStatusSchema } from '@core/status-schema';
 import { PRESET_IDS, type PresetId } from '@core/creation-preset';
-import type { UICharacter, UIMessage, WorldEntry, SamplingOverrides } from '@/types';
+import type { UICharacter, UIMessage, SamplingOverrides } from '@/types';
 import { t } from '@/i18n';
 
 /**
@@ -219,7 +219,6 @@ export function cardToUiChar(
     /**
      * T-16：未设置时**不再兜底 4096**
      */
-    worldEntries: overrides?.worldEntries ?? [],
     tokenBudget: overrides?.tokenBudget ?? {
       character: 0,
       worldInfo: 0,
@@ -327,10 +326,3 @@ export function chatMsgsToUiMsgs(messages: ChatMessage[]): UIMessage[] {
     .filter((m): m is UIMessage => m !== null);
 }
 
-// ── WorldEntry 适配（核心层无对应类型，直接复用） ──
-
-export function worldEntriesToStorage(
-  entries: WorldEntry[]
-): WorldEntry[] {
-  return entries.map((e) => ({ ...e }));
-}
