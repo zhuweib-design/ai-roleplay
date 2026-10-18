@@ -57,6 +57,8 @@ export const SPEC_WEIGHTS = {
   'e2e/market-narrative.spec.ts': 14.0,
   // 手工登记（2026-10-18）：A16 force-desktop，3 条用例各含一次整页加载，估 28s。
   'e2e/mobile/force-desktop.spec.ts': 28.0,
+  // 手工登记（2026-10-18）：A15 单聊页头，2 条（手机档 + 桌面对照），各含一次整页加载，估 26s。
+  'e2e/mobile/chat-header.spec.ts': 26.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -87,12 +89,13 @@ export const SPEC_WEIGHTS = {
 };
 
 export const E2E_GROUPS = [
-  // 第 1 组：实测 221s（2026-10-18 手工加入 character-drawer 约 8s、market-narrative 约 14s ⇒ 约 243s）
+  // 第 1 组：实测 221s（2026-10-18 手工加入 character-drawer 8s、market-narrative 14s、chat-header 26s ⇒ 约 269s）
   [
     'e2e/chat-search.spec.ts',
     'e2e/long-history-scroll.spec.ts',
     'e2e/mobile-control-font-size.spec.ts',
     'e2e/mobile/character-drawer.spec.ts',
+    'e2e/mobile/chat-header.spec.ts',
     'e2e/market-narrative.spec.ts',
     'e2e/theme-flow.spec.ts',
     'e2e/ux-deep-link-group.spec.ts',
