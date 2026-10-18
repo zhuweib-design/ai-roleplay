@@ -1,3 +1,4 @@
+/* eslint-disable vue/one-component-per-file -- 测试文件按用例内联挂载最小组件，不是组件文件 */
 /**
  * useBackLayer 单元测试（MOBILE_PLAN 批次 2-3）
  *
