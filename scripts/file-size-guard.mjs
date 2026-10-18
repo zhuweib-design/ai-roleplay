@@ -60,10 +60,20 @@ const ALLOWLIST = {
 
   // ── R1 批（§7.3，优先拆分）──
   'src/views/StoryEngineView.vue': { lines: 3326, reason: 'R1-2：拆为 9 个文件' },
-  'src/views/WorldBookView.vue': { lines: 2976, reason: 'R1-3：拆为 9 个文件（A9 会先改它）' },
+  'src/views/WorldBookView.vue': {
+    // 2026-10-18 显式上调 +123：A9 两级互换（useDrilldown 接线 + 条目第三态 +
+    // ≤640 样式整块重写）。R1-3 拆分时以拆后实测回填。
+    lines: 3099,
+    reason: 'R1-3：拆为 9 个文件（A9 已改完，可开工）',
+  },
   'src/components/settings/SettingsModelPanel.vue': { lines: 2545, reason: 'R1-4：拆为 6 个文件（A10 会先改它）' },
   'src/views/GroupChatView.vue': { lines: 2472, reason: 'R1-1：A7 已拆 2 个，剩 7 个' },
-  'src/components/chat/ChatMain.vue': { lines: 1690, reason: 'R1-5：等 C1 完成后再拆（共享热文件）' },
+  'src/components/chat/ChatMain.vue': {
+    // 2026-10-18 显式上调 +5：A15 页头按端分流（分段控件 v-if="!isMobile"）
+    // 的注释与解构。R1-5 拆分时以拆后实测回填。
+    lines: 1695,
+    reason: 'R1-5：等 C1 完成后再拆（共享热文件）',
+  },
 
   // ── R2 批 ──
   'src/views/CharacterEditorView.vue': { lines: 2320, reason: 'R2-1：拆为 6 个文件（A11 会先改它）' },

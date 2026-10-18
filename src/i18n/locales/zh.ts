@@ -2037,6 +2037,7 @@ export default {
 
   // ── 世界书（WorldBookView） ──
   'wb.backAria': '返回对话页',
+  'wb.backToEntries': '条目列表',
   'wb.back': '返回',
   'wb.title': '世界书',
   'wb.count': '{count} 个',

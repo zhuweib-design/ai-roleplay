@@ -20,6 +20,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useDeepLinkId } from '@/composables/useDeepLinkId';
 import { useSectionMemory } from '@/composables/useSectionMemory';
+import { useDrilldown } from '@/composables/useDrilldown';
+import { useViewport } from '@/core/viewport';
 import { useLorebookStore } from '@/stores/lorebook';
 import Icon from '@/components/common/Icon.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
@@ -110,12 +112,43 @@ const filterScope = computed({
 
 /** 返回对话页 */
 function goBack() {
+  // 手机二级页：页头返回先回列表级，而不是直接离开世界书页
+  if (isMobile.value && swap.goBack()) return;
   if (window.history.state?.back) {
     void router.back();
   } else {
     void router.push({ name: 'chat' });
   }
 }
+
+// ── 组成层（批次 1-3）：手机两级互换 ──
+// 一级 = 世界书列表（满屏），二级 = 该书（条目树满屏）。
+// 条目表单是二级内的**互斥第三态**：同屏最多一个滚动容器，不再是
+// 「列表 38vh + 条目树 38vh + 表单」三层嵌套滚动。
+const { isMobile } = useViewport();
+const entryPaneOpen = ref(false);
+const swap = useDrilldown({
+  masterLabel: t('wb.title'),
+  onLeaveDetail: () => {
+    entryPaneOpen.value = false;
+  },
+});
+/** `data-level` 要字符串：数字会被 Vue 渲染成 "1"/"2" 也一样，但显式转一次免得歧义 */
+const swapLevel = computed(() => String(swap.level.value));
+
+/**
+ * 手机上打开条目表单后把它滚进视口。
+ * 表单在二级里替换的是**条目树**，但元信息 / 世界描述 / 事件还在它上面——
+ * 不滚一下，用户点完「新增」看到的还是元信息，会以为没反应。
+ */
+watch(entryPaneOpen, (open) => {
+  if (!open || !isMobile.value) return;
+  void nextTick(() => {
+    document
+      .querySelector('.entry-editor-panel')
+      ?.scrollIntoView({ block: 'start', behavior: 'auto' });
+  });
+});
 
 // ── UI 状态 ──
 const deleteTargetId = ref<string | null>(null);
@@ -346,16 +379,25 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 
 // ── Lorebook 操作 ──
 function createLorebook() {
-  store.createLorebook();
+  const id = store.createLorebook();
+  if (!id) return;
+  entryPaneOpen.value = false;
+  // 建完直接进二级：停在列表级会让用户以为"没建成"（A7 建群后停在列表级同款）
+  if (isMobile.value) swap.open(id);
 }
 
 function selectLorebook(id: string) {
   store.selectLorebook(id);
+  entryPaneOpen.value = false;
   // 地址栏跟着当前书走（M17-b）：刷新/分享后仍在这本世界上，深链的另一半。
   // 用 replace 是为了不让"连着点三本书"堆出三条历史记录；保留原 query 免得抹掉 from。
-  if (route.query.book !== id) {
-    void router.replace({ query: { ...route.query, book: id } });
-  }
+  const navigate =
+    route.query.book !== id
+      ? router.replace({ query: { ...route.query, book: id } })
+      : Promise.resolve();
+  // 压层必须在 replace 落地**之后**：`router.replace` 会整体覆盖 history.state，
+  // 先 pushState 再 replace 会把 `__aijiuLayer` 标记冲掉（A7 踩过同一个坑）。
+  if (isMobile.value) void navigate.then(() => swap.open(id));
 }
 
 /**
@@ -624,17 +666,21 @@ function onDescInput(e: Event) {
 function addEntry() {
   if (!currentLorebook.value) return;
   const id = store.addEntry(currentLorebook.value.id);
-  if (id) {
-    void nextTick(() => {
-      const el = document.querySelector(`[data-entry-id="${id}"]`);
-      (el as HTMLElement | null)?.focus();
-    });
-  }
+  if (!id) return;
+  // 手机档：store.addEntry 会把 currentEntryId 指到新条目，但视图的"第三态"是
+  // 视图自己的状态——不跟着打开的话，用户点「新增」看不到表单（像没建成）。
+  if (isMobile.value) entryPaneOpen.value = true;
+  void nextTick(() => {
+    const el = document.querySelector(`[data-entry-id="${id}"]`);
+    (el as HTMLElement | null)?.focus();
+  });
 }
 
 function selectEntry(id: string) {
   if (currentLorebook.value) {
     store.selectEntry(id);
+    // 手机档：条目表单满屏替换条目树（桌面并置，不受影响）
+    if (isMobile.value) entryPaneOpen.value = true;
   }
 }
 
@@ -861,7 +907,7 @@ function strategyLabel(s: LorebookStrategy): string {
 </script>
 
 <template>
-  <div class="worldbook-view">
+  <div class="worldbook-view m-swap" :data-level="swapLevel">
     <!-- 顶部 Header -->
     <header class="page-header">
       <div class="header-title">
@@ -922,7 +968,7 @@ function strategyLabel(s: LorebookStrategy): string {
     <!-- 主体：左 Lorebook 列表 + 右编辑器 -->
     <div class="worldbook-body">
       <!-- 左侧 Lorebook 列表 -->
-      <aside class="lorebook-list-panel tk-scroll" :aria-label="t('wb.listAria')">
+      <aside class="lorebook-list-panel m-swap__master tk-scroll" :aria-label="t('wb.listAria')">
         <div class="search-box">
           <input
             type="text"
@@ -977,7 +1023,7 @@ function strategyLabel(s: LorebookStrategy): string {
       </aside>
 
       <!-- 右侧 Lorebook 编辑器 -->
-      <main class="lorebook-editor-panel" id="main-content" tabindex="-1">
+      <main class="lorebook-editor-panel m-swap__detail" id="main-content" tabindex="-1">
         <!--
           三步流程**不能**挂在 !currentLorebook 分支里：createLorebook 会把新书设成当前选中，
           于是第一步一完成宿主就消失，用户做到一半被踢回编辑器（浏览器实测踩过这个）。
@@ -1007,7 +1053,7 @@ function strategyLabel(s: LorebookStrategy): string {
           </button>
         </div>
 
-        <div v-else-if="currentLorebook && !quickFlowOpen" class="editor-content">
+        <div v-else-if="currentLorebook && !quickFlowOpen" class="editor-content" :data-entry="entryPaneOpen ? '1' : '0'">
           <!--
             三步走原先只挂在"一本书都没有"的空态里：选中一本书之后就再也打不开，
             可"再按最短路径建一本能生效的"恰恰是在已有书的人身上最常发生的事。
@@ -1442,6 +1488,20 @@ function strategyLabel(s: LorebookStrategy): string {
 
               <form v-else class="entry-form" @submit.prevent>
                 <div class="entry-form-header">
+                  <!--
+                    手机档：条目表单满屏替换条目树之后，需要一条明确的回头路。
+                    它不说"返回"而说目的地（「← 条目列表」）——同一个词在三级页面里
+                    指不了方向。
+                  -->
+                  <button
+                    v-if="isMobile"
+                    type="button"
+                    class="m-swap__back wb-entry-back"
+                    @click="entryPaneOpen = false"
+                  >
+                    <Icon name="arrow-left" :size="16" />
+                    <span>{{ t('wb.backToEntries') }}</span>
+                  </button>
                   <h3>
                     {{ currentEntry.title || t('wb.unnamedEntry') }}
                     <span
@@ -2781,14 +2841,54 @@ function strategyLabel(s: LorebookStrategy): string {
   }
 }
 
+/* ── ≤640：两级互换（批次 1-3）────────────────────────────────────────
+   改之前是"列表 38vh + 条目树 38vh + 条目表单"三层堆叠，每层各自滚动，
+   主体区只剩不到 30%。现在：
+     一级 = 世界书列表（满屏）
+     二级 = 该书：条目树满屏；选中条目后**表单满屏替换条目树**（互斥第三态）
+   于是同屏最多一个滚动容器。
+   注意特异性：页面自己的 `.lorebook-list-panel{display:flex}` 是 (0,1,0)，
+   压不过全局 `.m-swap[data-level='2'] > .m-swap__master`（(0,2,0)）没问题，
+   但反向（要显示的那个）必须自己写 flex，否则会被 `.worldbook-body` 的
+   grid 布局按行分配。 */
 @media (max-width: 640px) {
+  /* 两栏在手机上变一列。用 flex 而不是 grid：grid 的单行是内容高度，
+     显示中的那一级撑不满剩余空间（两级互换要求"显示的那级满屏"）。 */
   .worldbook-body {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
   }
-  /* 移动端不隐藏列表,改为堆叠+限高滚动,保留选择/新建能力 */
+  /*
+   * 显隐必须由页面自己写：`.m-swap` 的规则是 `> .m-swap__master`（直接子元素），
+   * 而这里的 master/detail 在 `.worldbook-body` 里面一层——原语够不到。
+   * 特异性 (0,3,0) 也保证压得过下面两条 (0,2,0) 的 display:flex。
+   */
+  .worldbook-view[data-level='1'] .lorebook-editor-panel {
+    display: none;
+  }
+  .worldbook-view[data-level='2'] .lorebook-list-panel {
+    display: none;
+  }
   .lorebook-list-panel {
     display: flex;
-    max-height: 38vh;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    border-right: 0;
+  }
+  .lorebook-editor-panel {
+    flex: 1;
+    min-height: 0;
+  }
+  /*
+   * 二级只留**一个**滚动容器：`.editor-content`。原来条目树自己滚、条目列表再滚、
+   * 外层还滚——手机上三层嵌套，手指划一下不知道滚的是哪层。
+   * 现在元信息 / 世界描述 / 事件 / 条目树一起随 `.editor-content` 滚，
+   * 条目树本身 overflow: visible（内容自然撑高）。
+   */
+  .editor-content {
     overflow-y: auto;
   }
   .entries-layout {
@@ -2796,12 +2896,36 @@ function strategyLabel(s: LorebookStrategy): string {
   }
   .entries-list-panel {
     display: flex;
-    /* 必须显式指定列方向：默认 row 会让 .entries-list 的 flex:1 被头部挤压为 0 宽，
-       导致条目树在移动端实际不可见、不可点选（移动视口 E2E 已捕获该回归）。 */
+    /* 显式列方向：默认 row 会让 .entries-list 的 flex:1 被头部挤成 0 宽，
+       条目树在移动端实际不可见（移动视口 E2E 捕获过该回归）。 */
     flex-direction: column;
     min-height: 0;
-    max-height: 38vh;
-    overflow-y: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .entries-list {
+    overflow: visible;
+    flex: 0 0 auto;
+  }
+  /* 二级内的第三态：条目表单与条目树互斥，同一时刻只有一个在布局里 */
+  .editor-content[data-entry='1'] .entries-list-panel {
+    display: none;
+  }
+  .editor-content[data-entry='0'] .entry-editor-panel {
+    display: none;
+  }
+  .entry-editor-panel {
+    flex: 1;
+    min-height: 0;
+  }
+  /* 表单头在手机上要能换行：返回按钮 + 标题 + 动作组一行放不下 */
+  .entry-form-header {
+    flex-wrap: wrap;
+    gap: var(--space-2, 8px);
+  }
+  .wb-entry-back {
+    flex: 1 0 100%;
+    justify-content: flex-start;
   }
 }
 

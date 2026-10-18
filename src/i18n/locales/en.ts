@@ -2037,6 +2037,7 @@ const en: Record<MessageKey, string> = {
 
   // ── World book (WorldBookView) ──
   'wb.backAria': 'Back to chat',
+  'wb.backToEntries': 'Entries',
   'wb.back': 'Back',
   'wb.title': 'World Book',
   'wb.count': '{count} book(s)',
