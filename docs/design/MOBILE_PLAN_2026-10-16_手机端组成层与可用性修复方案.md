@@ -182,7 +182,7 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 
 批次 0 与批次 1 大体可并行，但有两条依赖：**0-4（就绪条一行）是 1-2 的前置**——群聊页要让出那 34px 才够把消息区做到 40%；**0-6（inert 方向）独立**，不受任何批次影响。批次 2 依赖批次 1（形态定下来才知道 Tab 怎么调）。
 
-### 实施状态（2026-10-18 更新：批次 0 六项 + 1-1 / 1-2 / 1-4 / 1-5 + 2-1 / 2-2 / 2-3 / 2-4 / 2-5 / 2-6 / 2-7 已完成，其余未做）
+### 实施状态（2026-10-18 更新：批次 0 六项 + 1-1 / 1-2 / 1-3 / 1-4 / 1-5 + 2-1 / 2-2 / 2-3 / 2-4 / 2-5 / 2-6 / 2-7 已完成，其余未做）
 
 2026-10-17 首次回源复核时全部"未实施"；2026-10-18 批次 0 六项、1-1、1-2 已落地（提交 `7def703` / `de12599` / `9da8c15` / `87c5de5` / `f0b9789` / A10、A11、A12、A13 一系）。逐条抽验证据如下（抽验的是每批最容易被改掉的那一行）：
 
@@ -196,6 +196,7 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 | 0-6 | `ChatView.vue` 的 inert 三条件 | 两抽屉条件已取反（自身关着 ⇒ inert），`ChatMain` 根 `<main>` 已接 `props.inert` ⇒ **已做** |
 | 1-1 | `src/composables/useDrilldown.ts` / `src/styles/m-swap.css` | 已交付两件（状态机 + 只在 ≤640 生效的两态 CSS），`router/index.ts` 零改动 ⇒ **已做**。尚无页面消费者，e2e 待首个消费者落地时补 |
 | 1-2 | `GroupChatView.vue` 结构 + `.group-body` | 已挂 `.m-swap`/`data-level`，群列表 = `m-swap__master`、主区 = `m-swap__detail`；动作组/成员条/Runtime/发言模式搬进 `GroupInfoPanel` + `BottomSheet` 抽屉 ⇒ **已做**（消息区 844 档 59%、500 档输入条 bottom 447） |
+| 1-3 | `WorldBookView.vue` 结构 + ≤640 样式 | **已做**：`.worldbook-view` 挂 `m-swap`/`data-level`，列表 = master、编辑器 = detail；条目表单降级为二级内**互斥第三态**（`entryPaneOpen` → `.editor-content[data-entry]`），带「← 条目列表」；≤640 只剩 `.editor-content` 一个滚动容器（条目面板/条目树 `overflow: visible`）。**实测一级/二级主体各 691px（82%）、条目态互斥** |
 | 1-4 | `SettingsView.vue` 结构 + ≤640 分类条 | 已挂 `.m-swap`，横排条删除、分类变一级竖排满屏列表（描述常显、命中区 ≥44px）；深链 `?cat=` 手机直落二级 ⇒ **已做**（0-1 三档断言在删横排条后仍绿） |
 | 1-5 | `CharactersView.vue` 卡面 + `CharacterDetailDrawer` | 卡面四动作移出（桌面保留）、点卡开 `BottomSheet` 抽屉（三级排版）；卡 139px ⇒ **已做**（一屏 3.9 张，判据 ≥3） |
 | 2-1 | `BottomNav` Tab 数 / `toHaveCount(6)` 断言 | **已做**：5 Tab（会话/角色/群聊/更多/设置），两处断言均已改 `toHaveCount(5)`；`nav-model` 无孤儿入口（guide 白名单已写明理由——它在更多页顶部有专门进度卡） |
@@ -367,7 +368,7 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 | 0-6 | P0-4 | 抽屉关着：12 次 Tab 无 x<0 停靠点；抽屉开着：Tab 不离开抽屉 | 新 e2e |
 | 1-1 | —（新增公共件） | 路由表条目数不变（**不新增路由**，只加一层 `pushState`）；`goBack()` 能回一级 | 单测 20 条（已绿）；真实浏览器 e2e 待首个消费者落地补 |
 | 1-2 | **P0-1 + P0-3** | 844 下消息区 ≥40%（**实测 59%**）**且** 输入条在视口内（**bottom 791 / 844**）；**390×500 下输入条 bottom ≤500**（**实测 447**）；群数 1→5 时消息区不下降（**改用结构断言**：二级页群列表 `display:none`，不参与布局） | 已交付 `e2e/mobile/group-composition.spec.ts`（实跑绿） |
-| 1-3 | —（证据在审计 §1.2） | 世界书无**滚动三层**嵌套（同屏内 列表 / 详情 / 外滚 三个独立滚动容器，与 §3.3.2 的"路由三级"不是同一件事）；主体区 ≥40% | 新 e2e |
+| 1-3 | —（证据在审计 §1.2） | 世界书无**滚动三层**嵌套（同屏内 列表 / 详情 / 外滚 三个独立滚动容器）；主体区 ≥40%——**实测**：`.editor-content` 是唯一滚动容器（条目面板/条目树 overflow 非 auto），一级与二级主体各 **691px = 82%**，条目态与条目树互斥 | 已交付 `e2e/mobile/worldbook-composition.spec.ts`（5 条） |
 | 1-4 | P0-2（治本） | 设置首页 → 分类页两级可达（**实测绿**：`settings-composition` 2 条，含深链直落二级与系统返回）；0-1 三档断言在删掉横排条后**仍绿**——缓解与治本不冲突 | 已交付 `e2e/mobile/settings-composition.spec.ts` |
 | 1-5 | —（证据在审计 §1.3） | 角色列表一屏 ≥3 张卡；点卡开抽屉，抽屉内编辑/开始对话/导出/删除四动作可见可点（**实测绿**） | 已交付 `e2e/mobile/character-drawer.spec.ts`（2 条，含桌面对照） |
 | 2-1 | P0-7 | `BottomNav` 计数 5（两处断言均已改，**实测绿**）；**且 `nav-model` 无孤儿条目**（worldbook/market 的 inMore 已置 true；guide 白名单：顶部进度卡承载） | 两处 spec 已改 + `nav-model.test.ts` 新增判据断言（含 guide 白名单理由） |
