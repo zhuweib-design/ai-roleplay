@@ -182,7 +182,7 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 
 批次 0 与批次 1 大体可并行，但有两条依赖：**0-4（就绪条一行）是 1-2 的前置**——群聊页要让出那 34px 才够把消息区做到 40%；**0-6（inert 方向）独立**，不受任何批次影响。批次 2 依赖批次 1（形态定下来才知道 Tab 怎么调）。
 
-### 实施状态（2026-10-18 更新：批次 0 六项 + 1-1 / 1-2 / 1-4 / 1-5 + 2-1 / 2-2 / 2-3 / 2-6 / 2-7 已完成，其余未做）
+### 实施状态（2026-10-18 更新：批次 0 六项 + 1-1 / 1-2 / 1-4 / 1-5 + 2-1 / 2-2 / 2-3 / 2-5 / 2-6 / 2-7 已完成，其余未做）
 
 2026-10-17 首次回源复核时全部"未实施"；2026-10-18 批次 0 六项、1-1、1-2 已落地（提交 `7def703` / `de12599` / `9da8c15` / `87c5de5` / `f0b9789` / A10、A11、A12、A13 一系）。逐条抽验证据如下（抽验的是每批最容易被改掉的那一行）：
 
@@ -199,6 +199,7 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 | 1-4 | `SettingsView.vue` 结构 + ≤640 分类条 | 已挂 `.m-swap`，横排条删除、分类变一级竖排满屏列表（描述常显、命中区 ≥44px）；深链 `?cat=` 手机直落二级 ⇒ **已做**（0-1 三档断言在删横排条后仍绿） |
 | 1-5 | `CharactersView.vue` 卡面 + `CharacterDetailDrawer` | 卡面四动作移出（桌面保留）、点卡开 `BottomSheet` 抽屉（三级排版）；卡 139px ⇒ **已做**（一屏 3.9 张，判据 ≥3） |
 | 2-1 | `BottomNav` Tab 数 / `toHaveCount(6)` 断言 | **已做**：5 Tab（会话/角色/群聊/更多/设置），两处断言均已改 `toHaveCount(5)`；`nav-model` 无孤儿入口（guide 白名单已写明理由——它在更多页顶部有专门进度卡） |
+| 2-5 | `core/viewport.ts` | **已做**：`viewportMode` 成唯一真值（mobile/tablet/desktop），四个布尔量由 `syncFlags()` 一处派生；无匹配即 desktop（消灭"三者皆假"）；新增 `?forceDesktop=1/0`（localStorage 持久化）；`bind/unbind` 改引用计数（修"先卸载的组件摘掉监听"）。**边界：只切运行时判定，不切 CSS 断点** |
 | 2-7 | `market.*` 与 `mkt.*` 两套文案 | **已做**：登录/登出/用户名 → 设置昵称/清除身份/昵称；新增 `market.nicknameHint`（本机昵称、无后端）渲染在 Modal 顶部。**两套命名空间都要改**——store 层的 `t('mkt.needLogin')` 是另一条路 |
 | 2-6 | `nav-model.ts` 的 guide 项 | **无需改动**：`MoreView.vue:69` 顶部已有专用引导卡（带 `n/6` 进度），手机路径「底栏更多 → 引导卡」= **2 步**（判据 ≤3）。A12 已实测过置 `inMore: true` 会造重复入口（strict violation），故保持 false 并写进 e2e |
 | 2-3 | `useDrilldown` 的层标记 / 三个浮层的返回键处理 | **已做**：抽 `core/history-layer.ts`（标记从布尔量改每实例 token）+ 新增 `useBackLayer`；`BottomSheet` / `MessageActionSheet` / `Modal` 全部接上，返回键一次只关一层（A7 那条"一次退两级"边界已解） |
@@ -372,7 +373,7 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 | 2-2 | P0-7 | 无页面摘掉底部导航（遍历 **8 个**视图）——**实测绿**：`detail-nav.spec.ts` 逐页断言底栏 1 个、入口 5 个、高亮恰好 1 项且落在正确段（编辑器→角色，其余→更多）；另两条守「能从二级页点底栏离开」与「底栏不遮内容」 | 已交付 `e2e/mobile/detail-nav.spec.ts`（3 条） |
 | 2-3 | P0-7 | 返回键三条路径：关层 / 回一级 / 默认——**实测绿**：`back-button.spec.ts` 四条（三态各一条 + 层序完整一条，关抽屉 → 回一级 → 离开，一次一层） | 已交付 `e2e/mobile/back-button.spec.ts`（4 条） |
 | 2-4 | —（依据在本文 §3.2） | 单聊页头 `.chat-title` ≥200px（现在 62px） | 新 e2e |
-| 2-5 | P0-6 | `isCompact` 单一来源；强制桌面后底部导航不渲染 | 单测 `viewport.ts` |
+| 2-5 | P0-6 | `isCompact` 单一来源；强制桌面后底部导航不渲染——**实测**：`viewport.test.ts` 9 条（三模式互斥 + `isCompact` 恒等非桌面 + force 开关 + 引用计数）；`force-desktop.spec.ts` 3 条（底栏 0 / rail 1 / 跨路由保留） | 已交付 `tests/core/viewport.test.ts` + `e2e/mobile/force-desktop.spec.ts` |
 | 2-6 | —（依据在 IA_EVAL §5.3 / 本文 T3） | 手机新用户 ≤3 步到达任务中心——**实测 2 步**（底栏更多 → 顶部引导卡）；并断言入口只有一处（卡片列表 `href="/guide"` 计数 0） | 已交付 `e2e/mobile/guide-entry.spec.ts`（2 条） |
 | 2-7 | —（依据在 IA_EVAL §5.3 / 本文 T7） | 市场相关界面无"登录/账号"表述——**实测零命中**：`market-narrative.spec.ts` 按渲染文本查中英 8 个禁用词；入口「设置昵称」、Modal 标题「设置本地昵称」+ 说明行含"没有后端" | 已交付 `e2e/market-narrative.spec.ts`（3 条）+ i18n 门禁 |
 | 3-1 | P0-5 | 控件高度字面量计数相对基线下降（**改动前先用 `scripts/token-guard.mjs` 存一份基线**，否则"下降"无从判定） | 扩 `scripts/token-guard.mjs` |
