@@ -65,6 +65,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/touch-target.spec.ts': 35.0,
   // 手工登记（2026-10-19）：C2 导出落点三端，3 条各含一次设置页加载 + 折叠展开，实测 32.6s。
   'e2e/save-outcome.spec.ts': 33.0,
+  // 手工登记（2026-10-19）：B4 平板档形态，4 条（820/1000/一致性/桌面对照），实测 34.0s。
+  'e2e/tablet-form.spec.ts': 34.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -95,7 +97,8 @@ export const SPEC_WEIGHTS = {
 };
 
 export const E2E_GROUPS = [
-  // 第 1 组：实测 221s（2026-10-18 手工加入 character-drawer 8s、market-narrative 14s、chat-header 26s ⇒ 约 269s）
+  // 第 1 组：实测 221s（2026-10-18 加入 character-drawer 8s、market-narrative 14s、chat-header 26s ⇒ 269s；
+  // 2026-10-19 加入 tablet-form 34s ⇒ 约 303s）
   [
     'e2e/chat-search.spec.ts',
     'e2e/long-history-scroll.spec.ts',
@@ -103,6 +106,7 @@ export const E2E_GROUPS = [
     'e2e/mobile/character-drawer.spec.ts',
     'e2e/mobile/chat-header.spec.ts',
     'e2e/market-narrative.spec.ts',
+    'e2e/tablet-form.spec.ts',
     'e2e/theme-flow.spec.ts',
     'e2e/ux-deep-link-group.spec.ts',
     'e2e/ux-duplicate-a11y-names.spec.ts',
