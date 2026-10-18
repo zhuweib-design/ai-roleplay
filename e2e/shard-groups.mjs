@@ -49,6 +49,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/character-drawer.spec.ts': 8.0,
   // 手工登记（2026-10-18）：A13 二级页底栏遍历，3 条用例（8 个视图逐个 goto + 两条几何/离开），估 13s。
   'e2e/mobile/detail-nav.spec.ts': 13.0,
+  // 手工登记（2026-10-18）：A14 返回键三态，4 条用例（各自 IndexedDB 造数 + 多次 goBack），估 16s。
+  'e2e/mobile/back-button.spec.ts': 16.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -113,6 +115,7 @@ export const E2E_GROUPS = [
     'e2e/mobile/batch0-composition.spec.ts',
     'e2e/mobile/group-header-narrow.spec.ts',
     'e2e/mobile/mobile-layout.spec.ts',
+    'e2e/mobile/back-button.spec.ts',
     'e2e/mobile/narrow-squeeze.spec.ts',
     'e2e/theme-visual.spec.ts',
     'e2e/token-neutrality.spec.ts',
