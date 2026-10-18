@@ -91,6 +91,12 @@ jobs:
       - name: CSS conventions guard (check:css-conventions)
         run: npm run check:css-conventions
 
+      # 单文件行数棘轮（DEV_PLAN §7 大文件拆分专项的配套门禁）：白名单锁"登记行数"，
+      # 只许降不许升。没有这条，§7 拆完的 92 个文件半年后会重新长回去，那 20–30 人日
+      # 就白花了。新增 >1000 行的文件会被拦下：要么拆开，要么在白名单登记并写明理由。
+      - name: File size guard (check:file-size)
+        run: npm run check:file-size
+
       # 存盘方式守卫（2026-10-14 安卓模拟器实测立）：blob + `<a download>` 在 Capacitor 的
       # WebView 里静默无效（不报错、无下载记录、全盘搜不到文件），所以存盘必须走 utils/save-blob.ts。
       # 基线已清零（2026-10-15 实测：存量 0 处 / 基线 0 处，9 处导出全部改走 saveBlob），
