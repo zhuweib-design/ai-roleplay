@@ -36,7 +36,7 @@ import EmptyState from '@/components/common/EmptyState.vue';
 import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import GroupInfoPanel from '@/components/group/GroupInfoPanel.vue';
-import GroupSettingsDrawer from '@/components/group/GroupSettingsDrawer.vue';
+import BottomSheet from '@/components/common/BottomSheet.vue';
 import ContextReadinessBar from '@/components/layout/ContextReadinessBar.vue';
 import Toast from '@/components/common/Toast.vue';
 import ThinkingBlock from '@/components/chat/ThinkingBlock.vue';
@@ -1099,7 +1099,7 @@ function isSystem(msg: { role: string }): boolean {
 
             <!--
               桌面：整块内联在页头（动作组一行、成员条一行、模式一行）。
-              手机：这一块不渲染，改由页脚那个 GroupSettingsDrawer 承载。
+              手机：这一块不渲染，改由页脚那个 BottomSheet 抽屉承载。
               两处是**同一个组件**——模板只有一份，否则"桌面能归档、手机不能"是迟早的事。
             -->
             <GroupInfoPanel
@@ -1269,7 +1269,7 @@ function isSystem(msg: { role: string }): boolean {
       手机「群设置」抽屉：动作 / 成员 / Runtime / 发言模式 / 成员状态。
       桌面不渲染——页头内联的是同一个 GroupInfoPanel，模板只有一份。
     -->
-    <GroupSettingsDrawer
+    <BottomSheet
       v-if="isMobile && currentGroup"
       :open="settingsDrawerOpen"
       :heading="t('group.settingsTitle')"
@@ -1297,7 +1297,7 @@ function isSystem(msg: { role: string }): boolean {
         @adopt-conflict="adoptRemoteGroupDefinition"
         @dismiss-conflict="chatStore.clearGroupRuntimeConflict()"
       />
-    </GroupSettingsDrawer>
+    </BottomSheet>
 
     <!-- 创建群聊向导 -->
     <Modal

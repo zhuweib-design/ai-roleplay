@@ -16,6 +16,8 @@ import { useCharacterStore } from '@/stores/character';
 import { useChatStore } from '@/stores/chat';
 import { getActiveProfileId } from '@/storage/storage-factory';
 import { useSettingsStore } from '@/stores/settings';
+import { useViewport } from '@/core/viewport';
+import CharacterDetailDrawer from '@/components/character/CharacterDetailDrawer.vue';
 import { useCharacterVersionStore } from '@/stores/character-version';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 import Icon from '@/components/common/Icon.vue';
@@ -151,13 +153,62 @@ function startConversation(id: string) {
   void router.push({ name: 'chat' });
 }
 
+const { isMobile } = useViewport();
+
+/**
+ * 手机端角色详情抽屉（批次 1-5，方案乙）：点卡不再直进编辑，开抽屉。
+ * 卡面四个动作全部移出（桌面保留原样），抽屉里「开始对话」是唯一主动作。
+ */
+const detailCharacterId = ref<string | null>(null);
+const detailCharacter = computed(
+  () => characterList.value.find((c) => c.id === detailCharacterId.value) ?? null
+);
+
+function onCardClick(id: string): void {
+  if (isMobile.value) {
+    detailCharacterId.value = id;
+    return;
+  }
+  editCharacter(id);
+}
+
+function closeDetailDrawer(): void {
+  detailCharacterId.value = null;
+}
+
+function chatFromDrawer(): void {
+  const id = detailCharacterId.value;
+  closeDetailDrawer();
+  if (id) startConversation(id);
+}
+
+function editFromDrawer(): void {
+  const id = detailCharacterId.value;
+  closeDetailDrawer();
+  if (id) editCharacter(id);
+}
+
+function exportFromDrawer(): void {
+  const id = detailCharacterId.value;
+  if (!id) return;
+  closeDetailDrawer();
+  void exportCharacter(id);
+}
+
+function deleteFromDrawer(): void {
+  const char = detailCharacter.value;
+  if (!char) return;
+  // 先关抽屉再开确认：两个浮层叠着会让 Esc 语义变成"关一层"而不是"取消删除"
+  detailCharacterId.value = null;
+  confirmDelete(char);
+}
+
 function toggleFavorite(id: string, e: Event) {
   e.stopPropagation();
   characterStore.toggleFavorite(id);
 }
 
-async function exportCharacter(id: string, e: Event) {
-  e.stopPropagation();
+async function exportCharacter(id: string) {
   busyCharacterId.value = id;
   try {
     // false = 找不到（lastError 显示）/ 用户取消保存面板，两种情况都不报成功
@@ -167,8 +218,7 @@ async function exportCharacter(id: string, e: Event) {
   }
 }
 
-function confirmDelete(char: UICharacter, e: Event) {
-  e.stopPropagation();
+function confirmDelete(char: UICharacter) {
   deleteTarget.value = char;
   deleteModalOpen.value = true;
 }
@@ -474,12 +524,12 @@ function tagsPreview(tags: string[]): string {
         :class="{ 'is-busy': busyCharacterId === char.id }"
         tabindex="0"
         :aria-label="t('characters.cardAria', { name: char.name })"
-        @click="editCharacter(char.id)"
-        @keydown.enter="editCharacter(char.id)"
-        @keydown.space.prevent="editCharacter(char.id)"
+        @click="onCardClick(char.id)"
+        @keydown.enter="onCardClick(char.id)"
+        @keydown.space.prevent="onCardClick(char.id)"
       >
         <div class="card-header">
-          <Avatar :character="char" :size="56" />
+          <Avatar :character="char" :size="isMobile ? 44 : 56" />
           <button
             type="button"
             class="favorite-btn"
@@ -494,7 +544,7 @@ function tagsPreview(tags: string[]): string {
 
         <h2 class="card-name">{{ char.name }}</h2>
         <p class="card-tags">{{ tagsPreview(char.tags) }}</p>
-        <p class="card-desc">{{ char.description }}</p>
+        <p v-if="!isMobile" class="card-desc">{{ char.description }}</p>
 
         <div class="card-meta">
           <span class="meta-item">
@@ -519,7 +569,8 @@ function tagsPreview(tags: string[]): string {
           </button>
         </div>
 
-        <div class="card-actions">
+        <!-- 手机：四个动作在详情抽屉里（批次 1-5 方案乙）；桌面保留卡面内联 -->
+        <div v-if="!isMobile" class="card-actions">
           <button
             type="button"
             class="action-btn edit"
@@ -543,7 +594,7 @@ function tagsPreview(tags: string[]): string {
             class="action-btn export"
             :aria-label="t('characters.exportAria')"
             :disabled="busyCharacterId === char.id"
-            @click.stop="exportCharacter(char.id, $event)"
+            @click.stop="exportCharacter(char.id)"
           >
             <Icon name="download" :size="14" />
             <span>{{ t('characters.export') }}</span>
@@ -552,7 +603,7 @@ function tagsPreview(tags: string[]): string {
             type="button"
             class="action-btn delete"
             :aria-label="t('characters.deleteAria')"
-            @click.stop="confirmDelete(char, $event)"
+            @click.stop="confirmDelete(char)"
           >
             <Icon name="trash-2" :size="14" />
             <span>{{ t('characters.delete') }}</span>
@@ -574,6 +625,22 @@ function tagsPreview(tags: string[]): string {
         <p>{{ t('characters.dropHint') }}</p>
       </div>
     </div>
+
+    <!--
+      手机角色详情抽屉（批次 1-5 方案乙）。桌面不挂：isMobile 为 false 时抽屉
+      状态恒为 null，这里再加一层 v-if 保证组件根本不挂载。
+    -->
+    <CharacterDetailDrawer
+      v-if="isMobile"
+      :open="detailCharacter !== null"
+      :character="detailCharacter"
+      :busy="busyCharacterId !== null"
+      @close="closeDetailDrawer"
+      @chat="chatFromDrawer"
+      @edit="editFromDrawer"
+      @export="exportFromDrawer"
+      @delete="deleteFromDrawer"
+    />
 
     <!-- 删除确认对话框 -->
     <Modal
@@ -1246,6 +1313,33 @@ function tagsPreview(tags: string[]): string {
 
   .characters-grid {
     grid-template-columns: 1fr;
+  }
+  /*
+   * 一屏 ≥3 张卡（批次 1-5 判据）。卡面四个动作搬走只省了一半，剩下的靠
+   * "卡 = 索引、抽屉 = 详情"的分工把卡压瘦：
+   * - 页头返回按钮隐藏：底部导航全程在场，Tab 就是回去的路，页头返回是第二个
+   * - 简介 clamp 1 行、标签隐藏：全量信息在抽屉里，卡只留"这是谁"的一眼
+   * - 头像 44：见模板 :size 的 isMobile 分流
+   */
+  .characters-header .header-btn.back {
+    display: none;
+  }
+  .card-tags {
+    display: none;
+  }
+  .characters-grid {
+    gap: 10px;
+  }
+  .card-name {
+    font-size: 14px;
+  }
+  /* chrome 也得让位：容器 padding 与块间距是"一屏 ≥3 卡"的另一半 */
+  .characters-view {
+    padding: 12px;
+    gap: 12px;
+  }
+  .sort-bar {
+    padding: 0 0 4px;
   }
 
   .card-actions {

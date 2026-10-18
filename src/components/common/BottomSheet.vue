@@ -1,14 +1,13 @@
 <script setup lang="ts">
 /**
- * GroupSettingsDrawer — 手机端「群设置」底部抽屉（MOBILE_PLAN 批次 1-2）
+ * BottomSheet — 手机端底部抽屉外壳（通用件；首个使用者是批次 1-2 的「群设置」）
  *
- * 群聊页头现在挂着 8 个动作按钮 + 成员条 + Runtime 排障 + 发言模式，实测把页头
- * 撑到 234px、把消息区压到 32px。手机上的修法不是把它们变小，而是搬走：页头只留
- * 群名与一个「群设置」入口，其余整块进这里。
+ * 几何照 `MessageActionSheet` 已经验证过的形状（贴底、上部圆角、max-width 480、
+ * 底部带 safe-area）。**不直接复用那个组件**——它是"消息动作清单"专用件（只接受
+ * MsgAction[] 并渲染成列表），硬套会把两件事绑死；这里只借几何。
  *
- * 几何不自己发明：照 `MessageActionSheet` 的已经验证过的形状（贴底、上部圆角、
- * max-width 480、底部带 safe-area）。**不直接复用那个组件**——它是"消息动作清单"
- * 专用件（只接受 MsgAction[] 并渲染成列表），硬套会把两件事绑死；这里只借几何。
+ * 内容全部走 slot：外壳只管"弹出/遮罩/焦点/滚动锁"，不管里面是什么。
+ * 第二个使用者是批次 1-5 的角色详情抽屉（CharacterDetailDrawer）。
  *
  * 焦点：打开后焦点落到关闭按钮，Esc 关闭，关闭后父级把焦点还给触发按钮。
  * 幽灵点击：抬手时浏览器补发的 click 会落在刚弹出的遮罩上，自己把自己关掉——
@@ -69,27 +68,27 @@ watch(
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="group-settings-root" @keydown.esc.prevent="emit('close')">
-      <div class="settings-mask" @click="onMaskClick" />
+    <div v-if="open" class="bs-root" @keydown.esc.prevent="emit('close')">
+      <div class="bs-mask" @click="onMaskClick" />
       <section
-        class="settings-panel"
+        class="bs-panel"
         role="dialog"
         aria-modal="true"
         :aria-label="heading"
       >
-        <header class="settings-head">
-          <h2 class="settings-title">{{ heading }}</h2>
+        <header class="bs-head">
+          <h2 class="bs-title">{{ heading }}</h2>
           <button
             ref="closeBtn"
             type="button"
-            class="settings-close"
+            class="bs-close"
             :aria-label="t('common.close')"
             @click="emit('close')"
           >
             <Icon name="close" :size="18" />
           </button>
         </header>
-        <div class="settings-body">
+        <div class="bs-body">
           <slot />
         </div>
       </section>
@@ -98,14 +97,14 @@ watch(
 </template>
 
 <style scoped>
-.settings-mask {
+.bs-mask {
   position: fixed;
   inset: 0;
   background: var(--scrim-mask);
   z-index: var(--z-modal);
 }
 
-.settings-panel {
+.bs-panel {
   position: fixed;
   left: 0;
   right: 0;
@@ -125,7 +124,7 @@ watch(
   z-index: var(--z-modal);
 }
 
-.settings-head {
+.bs-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -134,7 +133,7 @@ watch(
   flex-shrink: 0;
 }
 
-.settings-title {
+.bs-title {
   margin: 0;
   min-width: 0;
   font-size: var(--font-size-lg, 16px);
@@ -145,7 +144,7 @@ watch(
   white-space: nowrap;
 }
 
-.settings-close {
+.bs-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -160,18 +159,18 @@ watch(
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .settings-close:hover {
+  .bs-close:hover {
     background: color-mix(in srgb, var(--foreground) 8%, transparent);
     color: var(--foreground);
   }
 }
 
-.settings-close:focus-visible {
+.bs-close:focus-visible {
   outline: 2px solid var(--secondary);
   outline-offset: -2px;
 }
 
-.settings-body {
+.bs-body {
   padding: 0 var(--space-3, 12px) var(--space-3, 12px);
   overflow-y: auto;
   min-height: 0;

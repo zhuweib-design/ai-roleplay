@@ -607,6 +607,8 @@ export default {
   'characters.cardAria': '角色：{name}',
   'characters.unfavorite': '取消收藏',
   'characters.favorite': '收藏',
+  'characters.noTags': '暂无标签',
+  'characters.startChat': '开始对话',
   'characters.convCount': '{count} 对话',
   'characters.trackedTag': '已跟踪',
   'characters.trackedHint': '该角色已纳入版本跟踪，点击查看历史',

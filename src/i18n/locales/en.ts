@@ -608,6 +608,8 @@ const en: Record<MessageKey, string> = {
   'characters.cardAria': 'Character: {name}',
   'characters.unfavorite': 'Remove from favorites',
   'characters.favorite': 'Add to favorites',
+  'characters.noTags': 'No tags',
+  'characters.startChat': 'Start chat',
   'characters.convCount': '{count} chats',
   'characters.trackedTag': 'Tracked',
   'characters.trackedHint': 'This character is version-tracked. Open to see its history',
