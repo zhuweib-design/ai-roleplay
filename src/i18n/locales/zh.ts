@@ -3203,6 +3203,7 @@ export default {
 
   // ── 设置 ──
   'settings.title': '设置',
+  'settings.allCategories': '所有分类',
   'settings.versionLabel': '版本',
   'settings.releaseSourceOnly': 'GitHub 发布仅提供源码归档，桌面应用需从源码本地构建。',
   'settings.general': '通用',

@@ -3,9 +3,11 @@ import Icon from '@/components/common/Icon.vue';
 import SettingsModelPanel from '@/components/settings/SettingsModelPanel.vue';
 import VectorModelPanel from '@/components/settings/VectorModelPanel.vue';
 import type { IconName } from '@/components/common/icons';
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, computed, nextTick, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useReadinessJump } from '@/composables/useReadinessJump';
+import { useDrilldown } from '@/composables/useDrilldown';
+import { useViewport } from '@/core/viewport';
 import { showToast } from '@/utils/toast-service';
 import { t } from '@/i18n';;
 import { useSettingsStore } from '@/stores/settings';
@@ -25,6 +27,34 @@ interface SettingsCategory {
 type SettingsCategoryId = 'appearance' | 'model' | 'retrieval' | 'extension' | 'data' | 'security' | 'about';
 
 const activeCategory = ref<SettingsCategoryId>('appearance');
+
+const { isMobile } = useViewport();
+
+/**
+ * 手机端两级互换（MOBILE_PLAN 批次 1-4）：设置首页（7 个分类的全屏列表）→ 分类页。
+ *
+ * 与批次 0-1 的关系：0-1 把横排分类条改成"可横向滚动、7/7 够得着"，那是**缓解**；
+ * 这里把横排条整个去掉、分类变成一级页，是**治本**。两者不冲突——0-1 的"7/7 可达"
+ * 断言在竖排满屏列表下同样成立，所以那条 e2e 不用改。
+ *
+ * 桌面不动：左栏 + 右内容并置，level 恒为 1 且不写历史（useDrilldown 的默认行为）。
+ */
+const {
+  level: swapLevel,
+  open: openCategoryDetail,
+  goBack: swapGoBack,
+} = useDrilldown();
+
+/** 二级页顶栏的「← 所有分类」 */
+function backToCategoryList(): void {
+  swapGoBack();
+  // 焦点交还给刚进去的那个分类：键盘用户不该回到列表开头重新 Tab 七次
+  void nextTick(() => {
+    document
+      .querySelector<HTMLElement>(`.settings-nav-item[data-cat="${activeCategory.value}"]`)
+      ?.focus();
+  });
+}
 
 // L 层深链：其他页面用 /settings?cat=<id>&from=<原页面> 跳进来时，
 // 必须落在用户被指引的那一类（此前恒落"外观"，导致"去设置"按钮把用户送到无关页）。
@@ -128,6 +158,9 @@ function onReservedInput(e: Event): void {
 
 function selectCategory(id: SettingsCategoryId) {
   activeCategory.value = id;
+  // 手机：选中即进分类页。一级只是入口列表，不是"预览"——
+  // 若只切 activeCategory 不进二级，用户点完看不出任何变化（内容区在另一级）。
+  if (isMobile.value) openCategoryDetail(id);
 }
 
 const settings = useSettingsStore();
@@ -141,6 +174,26 @@ const settingsCategories = computed<SettingsCategory[]>(() => [
   { id: 'security', label: t('settingsView.categorySecurity'), description: t('settingsView.categorySecurityDesc'), icon: 'lock-keyhole' },
   { id: 'about', label: t('settingsView.categoryAbout'), description: t('settingsView.categoryAboutDesc'), icon: 'info' },
 ]);
+
+/** 二级页顶栏：手机显示当前分类的图标与名字（桌面仍显示「设置」） */
+const activeCategoryMeta = computed(() =>
+  settingsCategories.value.find((c) => c.id === activeCategory.value)
+);
+
+/**
+ * 深链 `?cat=<id>` 在手机上直接落二级。
+ * 用户是被别的页面的"去设置"按钮指到某个分类的（如就绪条跳"模型"），
+ * 停在一级列表等于让他再找一遍。只在挂载时判一次，不做 watch：
+ * watch 盯着 activeCategory 会在用户点返回后被重新推回二级（形成"退不出去"的环）。
+ */
+onMounted(() => {
+  if (!isMobile.value) return;
+  const raw = route.query.cat;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value === 'string' && CATEGORY_IDS.includes(value)) {
+    openCategoryDetail(value);
+  }
+});
 import SettingsAppearancePanel from '@/components/settings/SettingsAppearancePanel.vue';
 import SettingsExtensionPanel from '@/components/settings/SettingsExtensionPanel.vue';
 import SettingsSecurityPanel from '@/components/settings/SettingsSecurityPanel.vue';
@@ -149,9 +202,15 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
 </script>
 
 <template>
-  <main id="main-content" class="settings-view" :aria-label="t('settings.title')" tabindex="-1">
+  <main
+    id="main-content"
+    class="settings-view m-swap"
+    :data-level="swapLevel"
+    :aria-label="t('settings.title')"
+    tabindex="-1"
+  >
     <!-- 浮动侧边栏：设置分类切换（固定） -->
-    <aside class="settings-nav" :aria-label="t('settings.title')">
+    <aside class="settings-nav m-swap__master" :aria-label="t('settings.title')">
       <div class="settings-nav-inner">
         <h2 class="settings-nav-title">{{ t('settings.title') }}</h2>
         <div class="settings-nav-list" role="tablist" :aria-label="t('settings.title')">
@@ -161,6 +220,7 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
             type="button"
             class="settings-nav-item"
             :class="{ active: activeCategory === cat.id }"
+            :data-cat="cat.id"
             role="tab"
             :aria-selected="activeCategory === cat.id"
             :tabindex="activeCategory === cat.id ? 0 : -1"
@@ -169,19 +229,29 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
           >
             <Icon :name="cat.icon" :size="15" aria-hidden="true" />
             <span class="settings-nav-item-label">{{ cat.label }}</span>
-            <span class="settings-nav-item-desc" role="tooltip" :hidden="activeCategory === cat.id">{{ cat.description }}</span>
+            <!-- 桌面：描述是 tooltip（仅非当前项弹出）；手机：一级列表里常显，它就是"这个分类是干什么的" -->
+            <span
+              class="settings-nav-item-desc"
+              role="tooltip"
+              :hidden="!isMobile && activeCategory === cat.id"
+            >{{ cat.description }}</span>
           </button>
         </div>
       </div>
     </aside>
 
     <!-- 设置内容区（唯一纵向滚动容器，横向裁剪避免 xy 双滚动轴） -->
-    <div class="settings-body tk-scroll">
+    <div class="settings-body m-swap__detail tk-scroll">
     <!-- 头部 -->
     <header class="settings-header">
+      <!-- 手机二级页：回一级分类列表。文案说出目的地，不是裸的「返回」 -->
+      <button v-if="isMobile" type="button" class="m-swap__back" @click="backToCategoryList">
+        <Icon name="arrow-left" :size="16" aria-hidden="true" />
+        <span>{{ t('settings.allCategories') }}</span>
+      </button>
       <h1 class="settings-title">
-        <Icon name="gear" :size="22" />
-        <span>{{ t('settings.title') }}</span>
+        <Icon :name="isMobile ? (activeCategoryMeta?.icon ?? 'gear') : 'gear'" :size="22" />
+        <span>{{ isMobile ? (activeCategoryMeta?.label ?? t('settings.title')) : t('settings.title') }}</span>
       </h1>
       <p class="settings-subtitle">{{ activeCategoryDesc }}</p>
       <!-- 深链进来时给一条回头路（浏览器的返回键同样可用） -->
@@ -681,51 +751,76 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
   line-height: 1.5;
 }
 
-/* ── 窄屏：侧边栏转为顶部横向分类栏 ── */
+/* ── 窄屏：两级互换（批次 1-4）──────────────────────────────────────────
+   一级 = 设置首页（7 个分类的全屏列表），二级 = 分类页。
+   批次 0-1 曾把侧栏改成"横向滚动条"让 7/7 够得着——那是缓解；分类本身成为
+   一级页面之后，横排条连同它的横向滚动一起不需要了，竖排列表天然全可见。 */
 @media (max-width: 640px) {
   .settings-view {
     flex-direction: column;
   }
-  /* 批次 0-1：宽度与收缩约束。
-     缺 `min-width: 0` / `max-width: 100%` 时，7 个 `flex: 0 0 auto` 的分类 item 把
-     `.settings-nav-list` 撑到 444px（> 视口 390），祖先三层 `overflow-x: hidden`
-     把多出的 89px **静默裁掉**；条自身虽有 `overflow-x: auto`，但盒子已比视口宽，
-     滚动条在屏外 ⇒ 390/412 上有 3 个分类、360 上有 4 个分类**没有任何手势能到达**
-     （含主密码所在的「安全」）。根因不是"缺滚动"，是"缺收缩约束"。 */
+  /* 一级：分类列表满屏（.m-swap 在 ≤640 已给 master 一个 flex:1，这里只补外观） */
   .settings-nav {
     width: auto;
-    max-width: 100%;
+    max-width: none;
     min-width: 0;
-    margin: 8px;
-    max-height: none;
+    margin: 0;
+    /* 覆盖桌面的 align-self: flex-start —— 那是给 sticky 侧栏用的，
+       在纵向 flex 里会让一级列表缩成"内容高度"，下面的空区就露出背景了 */
+    align-self: stretch;
+    padding: 12px;
+    border: 0;
+    border-radius: 0;
+    background: var(--background);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     position: static;
-    overflow-x: auto;
-    overflow-y: hidden;
+    max-height: none;
+    overflow-y: auto;
   }
   .settings-nav-inner {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
+    display: block;
+    padding: 0;
+  }
+  .settings-nav-title {
+    margin: 0 0 10px 4px;
   }
   .settings-nav-list {
-    flex-direction: row;
+    flex-direction: column;
     gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
+    overflow: visible;
   }
+  /* 一级列表项：整行 + 图标与名字一行、描述另起一行（描述在手机上不是 tooltip，
+     它是"这个分类是干什么的"，一级页面正是需要它的地方） */
   .settings-nav-item {
-    flex: 0 0 auto;
-    width: auto;
-    padding: 8px 12px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 2px 8px;
+    width: 100%;
+    min-height: var(--touch-min, 44px);
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--card);
+  }
+  .settings-nav-item-label {
+    font-size: var(--font-size-md, 14px);
   }
   .settings-nav-item-desc {
-    display: none;
+    grid-column: 1 / -1;
+    position: static;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 12px;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
   }
+  /* 二级：内容满屏，返回按钮在页头 */
   .settings-body {
     padding: 16px;
     max-width: none;

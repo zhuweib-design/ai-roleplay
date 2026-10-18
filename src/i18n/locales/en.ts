@@ -3203,6 +3203,7 @@ const en: Record<MessageKey, string> = {
 
   // ── Settings ──
   'settings.title': 'Settings',
+  'settings.allCategories': 'All categories',
   'settings.versionLabel': 'Version',
   'settings.releaseSourceOnly': 'GitHub Releases provide source archives only; build the desktop app locally from source.',
   'settings.general': 'General',
