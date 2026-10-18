@@ -47,6 +47,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/settings-composition.spec.ts': 8.0,
   // 手工登记（2026-10-18）：角色卡详情抽屉，两条用例（IndexedDB 造数 + 两端分流），估 8s。
   'e2e/mobile/character-drawer.spec.ts': 8.0,
+  // 手工登记（2026-10-18）：A13 二级页底栏遍历，3 条用例（8 个视图逐个 goto + 两条几何/离开），估 13s。
+  'e2e/mobile/detail-nav.spec.ts': 13.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -119,12 +121,13 @@ export const E2E_GROUPS = [
     'e2e/ux-modal-describedby-version.spec.ts',
     'e2e/ux-prompt-trace.spec.ts',
   ],
-  // 第 4 组：实测 221s（2026-10-18 手工加入 settings-composition 约 8s ⇒ 约 229s）
+  // 第 4 组：实测 221s（2026-10-18 手工加入 settings-composition 约 8s、detail-nav 约 13s ⇒ 约 242s）
   [
     'e2e/custom-theme-contrast.spec.ts',
     'e2e/group-chat-flow.spec.ts',
     'e2e/mobile/mobile-nav-groups.spec.ts',
     'e2e/mobile/settings-composition.spec.ts',
+    'e2e/mobile/detail-nav.spec.ts',
     'e2e/ux-event-manual-trace.spec.ts',
     'e2e/ux-event-trace.spec.ts',
     'e2e/ux-modal-describedby-more.spec.ts',

@@ -1,7 +1,8 @@
 /**
- * N 层导航改造的移动端回归（设计文档 §3.2.4：群聊移出 DETAIL_ROUTES）
+ * 移动端底栏在群聊页与二级页的在场性
  *
- * 现状缺陷：/group 既不在底部 Tab、又属二级沉浸页（隐藏底栏），进入后成为单向门。
+ * 演进：A12（2-1）把群聊从"既不在 Tab、又属沉浸页"的单向门里救出来并升为 Tab；
+ * A13（2-2）把剩下的 8 个二级视图也一并恢复——底栏在移动端恒在，不再有"沉浸页"例外。
  */
 import { test, expect } from '@playwright/test';
 
@@ -24,8 +25,12 @@ test.describe('移动端底栏', () => {
     await expect(page.locator('.more-card[href="/worldbook"]')).toBeVisible();
   });
 
-  test('二级沉浸页仍然隐藏底栏（未把隐藏规则整体拆掉）', async ({ page }) => {
+  test('二级页也保留底栏（A13 之后不再有"沉浸页"例外）', async ({ page }) => {
     await page.goto('/character/new');
-    await expect(page.locator('.bottom-nav')).toHaveCount(0);
+    // A13 之前这里断言 toHaveCount(0)：底栏被"二级沉浸页"规则摘掉。
+    // 现在反过来——底栏恒在，归属感由高亮表达（编辑器亮「角色」）。
+    // 全量 8 个视图的遍历在 e2e/mobile/detail-nav.spec.ts
+    await expect(page.locator('.bottom-nav')).toHaveCount(1);
+    await expect(page.locator('.bottom-nav-item.active')).toContainText('角色');
   });
 });
