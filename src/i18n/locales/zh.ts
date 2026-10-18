@@ -271,6 +271,7 @@ export default {
   'mobile.navAria': '底部导航',
   'mobile.tabChat': '会话',
   'mobile.tabChar': '角色',
+  'mobile.tabGroup': '群聊',
   'mobile.tabMarket': '市场',
   'mobile.tabWorldbook': '世界书',
   'mobile.tabSettings': '设置',

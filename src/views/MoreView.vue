@@ -30,6 +30,7 @@ const groups = NAV_GROUPS.map((group) => ({
 
 const sections = computed(() => groups);
 
+
 const tasks = useGuidedTasks();
 const progress = computed(() => guideProgress(tasks.value));
 

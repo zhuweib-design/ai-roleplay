@@ -25,6 +25,8 @@ function makeRouter() {
     routes: [
       { path: '/chat', name: 'chat', component: { template: '<div />' } },
       { path: '/character', name: 'character-list', component: { template: '<div />' } },
+      // A12：group 升为底部 Tab，mock 路由必须跟着有它（否则 router.resolve 直接抛 No match）
+      { path: '/group', name: 'group', component: { template: '<div />' } },
       { path: '/worldbook', name: 'worldbook', component: { template: '<div />' } },
       { path: '/community-market', name: 'community-market', component: { template: '<div />' } },
       { path: '/more', name: 'more', component: { template: '<div />' } },

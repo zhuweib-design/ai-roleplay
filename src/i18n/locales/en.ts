@@ -271,6 +271,7 @@ const en: Record<MessageKey, string> = {
   'mobile.navAria': 'Bottom navigation',
   'mobile.tabChat': 'Chat',
   'mobile.tabChar': 'Characters',
+  'mobile.tabGroup': 'Group',
   'mobile.tabMarket': 'Market',
   'mobile.tabWorldbook': 'Worldbook',
   'mobile.tabSettings': 'Settings',
