@@ -61,6 +61,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/chat-header.spec.ts': 26.0,
   // 手工登记（2026-10-18）：A9 世界书两级互换，5 条（几何 + 滚动容器 + 互斥 + 返回 + 桌面），估 16s。
   'e2e/mobile/worldbook-composition.spec.ts': 16.0,
+  // 手工登记（2026-10-19）：B2/B3 触摸目标，2 条但每条遍历 6 个页面 × 逐像素探针，实测 35.3s。
+  'e2e/mobile/touch-target.spec.ts': 35.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -130,6 +132,7 @@ export const E2E_GROUPS = [
     'e2e/mobile/group-header-narrow.spec.ts',
     'e2e/mobile/mobile-layout.spec.ts',
     'e2e/mobile/back-button.spec.ts',
+    'e2e/mobile/touch-target.spec.ts',
     'e2e/mobile/narrow-squeeze.spec.ts',
     'e2e/theme-visual.spec.ts',
     'e2e/token-neutrality.spec.ts',
