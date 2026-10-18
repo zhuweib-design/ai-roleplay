@@ -38,6 +38,10 @@ export const SPEC_WEIGHTS = {
   // 未跑单 worker 全量基线，权重按实测填；下次重跑 --report 时会被真实跑数覆盖。
   'e2e/mobile/batch0-composition.spec.ts': 10.0,
   'e2e/mobile/chat-touch-composer.spec.ts': 10.2,
+  // 手工登记（2026-10-18）：群聊组成层几何断言，单条用例含 IndexedDB 造数与
+  // 三次视口切换（390×844 / 390×500 / 1280×900），按同类用例估 10s。
+  // 未跑单 worker 全量基线；下次重跑 --report 时会被真实跑数覆盖。
+  'e2e/mobile/group-composition.spec.ts': 10.0,
   'e2e/mobile/group-header-narrow.spec.ts': 2.3,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
@@ -80,7 +84,7 @@ export const E2E_GROUPS = [
     'e2e/ux-gap-visibility.spec.ts',
     'e2e/ux-narrow-editor-preview.spec.ts',
   ],
-  // 第 2 组：实测 220s
+  // 第 2 组：实测 220s（2026-10-18 手工加入 group-composition 约 10s ⇒ 约 231s）
   [
     'e2e/backup-restore.spec.ts',
     'e2e/character-batch-import.spec.ts',
@@ -88,6 +92,7 @@ export const E2E_GROUPS = [
     'e2e/contrast-axe.spec.ts',
     'e2e/i18n-locale.spec.ts',
     'e2e/mobile/chat-touch-composer.spec.ts',
+    'e2e/mobile/group-composition.spec.ts',
     'e2e/model-install-web.spec.ts',
     'e2e/ux-interaction-feedback.spec.ts',
     'e2e/ux-quick-forms.spec.ts',
