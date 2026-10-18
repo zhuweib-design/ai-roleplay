@@ -171,7 +171,11 @@ function cardAria(entry: NavEntry): string {
 <style scoped>
 .more-view {
   padding: var(--spacing-md, 16px);
-  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0));
+  /* 原为 calc(72px + env(safe-area-inset-bottom, 0))：
+     其中 72px 是给底部导航的死预留，但 `.app-main.has-mobile-nav` 的全局留白
+     已在 app-global.css:160-162 归零、其余 Tab 页都不留 ⇒ 这 72px 是纯空带（MOBILE_PLAN 批次 0-5）。
+     env() 要保留：index.html:11 已开 viewport-fit=cover，安全区现在真的取到值了。 */
+  padding-bottom: calc(var(--spacing-md, 16px) + env(safe-area-inset-bottom, 0px));
 }
 .more-header {
   margin-bottom: var(--spacing-md, 16px);

@@ -105,7 +105,14 @@
   .client-compact-only { display: inline-flex; }
 }
 
-/* 横屏移动端：底部导航为 sticky,主内容预留高度避免被遮挡（S-1 删除 NavRail 横屏旧规则后保留此兜底） */
-@media (max-height: 480px) and (orientation: landscape) and (max-width: 900px) {
-  .chat-main { padding-bottom: 56px; }
-}
+/* （已删除，2026-10-17 · MOBILE_PLAN 批次 0-2）
+   原规则：
+     @media (max-height: 480px) and (orientation: landscape) and (max-width: 900px) {
+       .chat-main { padding-bottom: 56px; }
+     }
+   删除理由（实测）：该媒体查询在 844×390 命中，但同一档 `.bottom-nav` **不在 DOM**——
+   844 宽 > 640 ⇒ JS 侧 `useViewport().isMobile` 为 false ⇒ 渲染的是 64px rail 而非底部导航。
+   这条 56px 是**给一个不存在的导航留的**，白吃横屏 390px 高度的 14%。
+   根因是"是不是手机"有两套互不覆盖的定义：JS 按宽度（>640 非手机），CSS 按 max-width:900 + 横屏。
+   彻底解法是 MOBILE_PLAN 批次 2-5（断点收敛成单一运行时值 + CSS 只消费它写出的标记类）。
+   在 2-5 落地之前，宁可不留——留了就是死空白。 */

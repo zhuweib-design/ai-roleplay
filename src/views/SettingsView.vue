@@ -686,8 +686,16 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
   .settings-view {
     flex-direction: column;
   }
+  /* 批次 0-1：宽度与收缩约束。
+     缺 `min-width: 0` / `max-width: 100%` 时，7 个 `flex: 0 0 auto` 的分类 item 把
+     `.settings-nav-list` 撑到 444px（> 视口 390），祖先三层 `overflow-x: hidden`
+     把多出的 89px **静默裁掉**；条自身虽有 `overflow-x: auto`，但盒子已比视口宽，
+     滚动条在屏外 ⇒ 390/412 上有 3 个分类、360 上有 4 个分类**没有任何手势能到达**
+     （含主密码所在的「安全」）。根因不是"缺滚动"，是"缺收缩约束"。 */
   .settings-nav {
     width: auto;
+    max-width: 100%;
+    min-width: 0;
     margin: 8px;
     max-height: none;
     position: static;
@@ -697,12 +705,18 @@ import SettingsAboutPanel from '@/components/settings/SettingsAboutPanel.vue';
   .settings-nav-inner {
     display: flex;
     flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
   .settings-nav-list {
     flex-direction: row;
     gap: 6px;
     overflow-x: auto;
     padding-bottom: 2px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
   .settings-nav-item {
     flex: 0 0 auto;

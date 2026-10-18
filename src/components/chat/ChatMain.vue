@@ -781,7 +781,17 @@ function startWithExample(text: string) {
 </script>
 
 <template>
-  <main id="main-content" class="chat-main" :style="bubbleCssVars" :aria-label="t('chat.mainAria')" tabindex="-1">
+  <!-- 批次 0-6：此前 props.inert 只落在 `<footer class="chat-footer">` 上，
+       抽屉打开时第 13 次 Tab 会逃到遮罩后面的聊天区。根元素接上 inert 后，
+       遮罩后面的整个主区（含页头与消息区）都不再可聚焦。 -->
+  <main
+    id="main-content"
+    class="chat-main"
+    :inert="props.inert ? true : undefined"
+    :style="bubbleCssVars"
+    :aria-label="t('chat.mainAria')"
+    tabindex="-1"
+  >
     <!-- 顶栏 -->
     <header class="chat-header">
       <button
