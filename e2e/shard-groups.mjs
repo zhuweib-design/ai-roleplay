@@ -43,6 +43,8 @@ export const SPEC_WEIGHTS = {
   // 未跑单 worker 全量基线；下次重跑 --report 时会被真实跑数覆盖。
   'e2e/mobile/group-composition.spec.ts': 10.0,
   'e2e/mobile/group-header-narrow.spec.ts': 2.3,
+  // 手工登记（2026-10-18）：设置两级互换，两条用例含 IndexedDB 无关的纯几何与深链，估 8s。
+  'e2e/mobile/settings-composition.spec.ts': 8.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -114,11 +116,12 @@ export const E2E_GROUPS = [
     'e2e/ux-modal-describedby-version.spec.ts',
     'e2e/ux-prompt-trace.spec.ts',
   ],
-  // 第 4 组：实测 221s
+  // 第 4 组：实测 221s（2026-10-18 手工加入 settings-composition 约 8s ⇒ 约 229s）
   [
     'e2e/custom-theme-contrast.spec.ts',
     'e2e/group-chat-flow.spec.ts',
     'e2e/mobile/mobile-nav-groups.spec.ts',
+    'e2e/mobile/settings-composition.spec.ts',
     'e2e/ux-event-manual-trace.spec.ts',
     'e2e/ux-event-trace.spec.ts',
     'e2e/ux-modal-describedby-more.spec.ts',
