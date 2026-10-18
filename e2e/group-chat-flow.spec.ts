@@ -31,7 +31,7 @@ test('两个角色群聊使用真实模型、独立 Runtime Context 与 Event', 
   });
 
   await page.goto('/settings');
-  await page.getByRole('tab', { name: /模型/ }).click();
+  await page.getByRole('tab', { name: /^模型/ }).click();
   await page.getByRole('button', { name: '新增 API 配置' }).click();
   await page.locator('#p-name').fill('群聊测试模型');
   await page.locator('#p-baseurl').fill(`http://localhost:${process.env.E2E_PORT ?? '5173'}/mock`);
@@ -124,7 +124,7 @@ test('群聊生成中可中止，且中止后不提交公共回合与旁听事�
   });
 
   await page.goto('/settings');
-  await page.getByRole('tab', { name: /模型/ }).click();
+  await page.getByRole('tab', { name: /^模型/ }).click();
   await page.getByRole('button', { name: '新增 API 配置' }).click();
   await page.locator('#p-name').fill('中止测试模型');
   await page.locator('#p-baseurl').fill(`http://localhost:${process.env.E2E_PORT ?? '5173'}/mock`);

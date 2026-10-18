@@ -52,6 +52,10 @@ const BASELINE = {
   'src/components/common/OnboardingModal.vue': 1,
   'src/components/common/StepFlow.vue': 1,
   'src/components/group/GroupInfoPanel.vue': 1,
+  // R1-1（2026-10-19）：这两处不是新增，是从 GroupChatView 原样搬过来的
+  // （.group-avatar 36px / .gen-spinner 32px）。视图那边同步从 2 降到 0，总数不变。
+  'src/components/group/GroupListPanel.vue': 1,
+  'src/components/group/GroupNpcModal.vue': 1,
   'src/components/layout/ContextPanel.vue': 4,
   'src/components/mobile/BottomNav.vue': 1,
   'src/components/random-events/TemplateEditorModal.vue': 1,
@@ -67,7 +71,7 @@ const BASELINE = {
   'src/views/CharactersView.vue': 3,
   'src/views/CommunityMarketView.vue': 1,
   'src/views/DataBankView.vue': 1,
-  'src/views/GroupChatView.vue': 2,
+  // 2026-10-19 R1-1：2 → 0（.group-avatar / .gen-spinner 随组件搬走，见上方两条）
   'src/views/ImageGeneratorView.vue': 1,
   'src/views/WorldBookView.vue': 4,
 };

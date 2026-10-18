@@ -478,8 +478,12 @@ describe('5. 静态红线', () => {
   });
 
   it('5-5 群聊不塞假 <status> 样例，真实流式状态进入成员快照', () => {
-    const raw = readFileSync(resolve(ROOT, 'src/views/GroupChatView.vue'), 'utf8');
-    const code = stripComments(raw);
+    // R1-1（2026-10-19）：流式回调随发送链路搬进 useGroupComposer.ts，
+    // 视图只剩渲染与接线。断言内容不变，两处一起守——视图不许自己再造一份
+    // 假样例，composer 必须把真实 status 落到消息上。
+    const view = stripComments(readFileSync(resolve(ROOT, 'src/views/GroupChatView.vue'), 'utf8'));
+    const code = stripComments(readFileSync(resolve(ROOT, 'src/composables/useGroupComposer.ts'), 'utf8'));
+    expect(view).not.toContain('<status>');
     expect(code).not.toContain('<status>');
     expect(code).toContain('onStatus: (status) =>');
     expect(code).toContain('groupStore.updateAssistantMessage(groupId, messageId, { status })');

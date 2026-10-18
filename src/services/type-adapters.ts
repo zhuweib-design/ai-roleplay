@@ -22,6 +22,24 @@ import { t } from '@/i18n';
 // ── UICharacter ↔ CharacterCard ──
 
 /**
+ * UICharacter → 群聊成员用的 CharacterCard
+ *
+ * 群聊建群/加人要把角色卡的"问候语"一起带上（群聊首消息从成员问候里随机取），
+ * 而 `uiCharToCard` 刻意不填 firstMessage / alternateGreetings（UI 层把它们
+ * 存在 messages 里，单聊走另一条路径）。这个变体只补这两个字段。
+ *
+ * R1-1 从 GroupChatView 的本地 `characterToCard` 提上来：拆分后视图与
+ * `useGroupMembers` 都要用，留在视图里会变成"composable 反向 import 视图"。
+ */
+export function uiCharToGroupCard(ui: UICharacter): CharacterCard {
+  return {
+    ...uiCharToCard(ui),
+    firstMessage: ui.messages[0]?.content ?? '',
+    alternateGreetings: ui.messages.slice(1).map((message) => message.content),
+  };
+}
+
+/**
  * UICharacter → CharacterCard
  * 用于将 UI 层角色卡转换为核心层格式，以便调用 prompt-builder / 持久化
  */

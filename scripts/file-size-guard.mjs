@@ -70,9 +70,12 @@ const ALLOWLIST = {
   },
   'src/components/settings/SettingsModelPanel.vue': { lines: 2545, reason: 'R1-4：拆为 6 个文件（A10 会先改它）' },
   'src/views/GroupChatView.vue': {
-    // 2026-10-19 显式上调 2472 → 2486：B2 触摸目标（页头动作与筛选 chip ≥44）（合理功能增量，非无声漂移）。R1-1 拆分时以拆后实测回填。
-    lines: 2486,
-    reason: 'R1-1：A7 已拆 2 个，剩 7 个' 
+    // 2026-10-19 R1-1 拆完：2486 → 864（-1622）。仍 >800，保留条目继续压着。
+    // 拆出 9 个文件：GroupListPanel / GroupMessageList / GroupMessageInput /
+    // GroupCreateModal / GroupMemberModals / GroupNpcModal / CharacterPickerList
+    // + useGroupComposer / useGroupMembers / useGroupLifecycle。
+    lines: 864,
+    reason: 'R1-1：已拆（2486 → 864），继续盯回长'
   },
   'src/components/chat/ChatMain.vue': {
     // 2026-10-19 显式上调 1695 → 1739：B2/B3 触摸目标（页头右簇 44×44、菜单键伪元素命中区、
