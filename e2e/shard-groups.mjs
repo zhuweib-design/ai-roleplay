@@ -63,6 +63,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/worldbook-composition.spec.ts': 16.0,
   // 手工登记（2026-10-19）：B2/B3 触摸目标，2 条但每条遍历 6 个页面 × 逐像素探针，实测 35.3s。
   'e2e/mobile/touch-target.spec.ts': 35.0,
+  // 手工登记（2026-10-19）：C2 导出落点三端，3 条各含一次设置页加载 + 折叠展开，实测 32.6s。
+  'e2e/save-outcome.spec.ts': 33.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -148,6 +150,7 @@ export const E2E_GROUPS = [
     'e2e/mobile/mobile-nav-groups.spec.ts',
     'e2e/mobile/settings-composition.spec.ts',
     'e2e/mobile/detail-nav.spec.ts',
+    'e2e/save-outcome.spec.ts',
     'e2e/mobile/guide-entry.spec.ts',
     'e2e/ux-event-manual-trace.spec.ts',
     'e2e/ux-event-trace.spec.ts',

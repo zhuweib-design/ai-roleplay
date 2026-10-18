@@ -66,6 +66,7 @@ import {
   type LorebookImportPort,
   type EventsImportPort,
 } from '@core/story-importer';
+import { describeSaveResult } from '@/utils/save-blob';
 import type {
   ImportConflictStrategy,
   ImportResult,
@@ -754,8 +755,9 @@ export const useStoryStore = defineStore('story', () => {
     }
     const filename = `${story.sourceFileName.replace(/\.[^.]+$/, '')}-scripts.json`;
     const outcome = await downloadScripts(story.scripts, filename);
-    if (outcome === 'cancelled') return;
-    lastInfo.value = t('story.scriptsExported', { count: story.scripts.length });
+    const saved = describeSaveResult(outcome);
+    if (!saved) return;
+    lastInfo.value = saved.message;
   }
 
   /** 汇总导入结果到 lastInfo/lastError */

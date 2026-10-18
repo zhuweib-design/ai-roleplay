@@ -3418,6 +3418,10 @@ const en: Record<MessageKey, string> = {
   'preset.statusOn': 'Require status block',
   'preset.statusOff': 'Not required',
   'preset.followGlobal': 'Follow global',
+  'save.savedBrowser': 'Saved: {name} (browser downloads folder)',
+  'save.savedTauri': 'Saved: {name} (system downloads folder)',
+  'save.savedPicked': 'Saved: {name}',
+  'save.unsupportedWebView': 'This WebView cannot pick a save location; handed to the system downloader. Look for {name} in the Files app downloads folder.',
 };
 
 export default en;

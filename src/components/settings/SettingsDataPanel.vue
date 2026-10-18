@@ -29,7 +29,7 @@ import { loadOptimizationConfig, saveOptimizationConfig } from '@/core/optimizat
 import { persistState, requestPersistentStorage } from '@/core/storage-persistence';;
 import { ref, computed, useTemplateRef } from 'vue';;;;
 import { showToast } from '@/utils/toast-service';
-import { saveBlob } from '@/utils/save-blob';
+import { saveBlob, describeSaveResult } from '@/utils/save-blob';
 import { t } from '@/i18n';;
 import { useCharacterStore } from '@/stores/character';
 import { useEventsStore } from '@/stores/events';
@@ -156,9 +156,10 @@ async function handleExportAuditLog() {
     const outcome = await saveBlob(`audit-log-${new Date().toISOString().slice(0, 10)}.json`, () =>
       new Blob([json], { type: 'application/json' })
     );
-    // 用户在系统保存面板里取消：不能说"审核日志已导出"
-    if (outcome === 'cancelled') return;
-    showToast('success', t('settingsView.auditExported'));
+    // 取消 ⇒ 不提示；成功 ⇒ 说清落到哪；安卓 WebView ⇒ 说清去哪找
+    const saved = describeSaveResult(outcome);
+    if (!saved) return;
+    showToast(saved.type, saved.message);
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
   }
@@ -176,8 +177,14 @@ async function handleExportBackup() {
     // 已解锁主密码 → 加密备份文件；未设置 → 明文备份
     const password = settings.isUnlocked ? settings.getSessionMasterPassword() : undefined;
     const outcome = await downloadBackupFile(data, password);
-    if (outcome === 'cancelled') {
+    const saved = describeSaveResult(outcome);
+    if (!saved) {
       // 用户在系统保存面板里取消了：不能说"备份已导出"
+      return;
+    }
+    if (outcome.outcome === 'unsupported') {
+      // 环境做不到选择保存位置：这句话比"备份已导出"重要得多，优先说它
+      showToast(saved.type, saved.message);
       return;
     }
     showToast(
@@ -213,8 +220,9 @@ function handleExportCharacterPng() {
       .then(async ({ uiCharToCard }) => {
         const card = uiCharToCard(char);
         const outcome = await downloadCharacterPng(card);
-        if (outcome === 'cancelled') return;
-        showToast('success', t('settingsView.pngExported', { name: char.name }));
+        const saved = describeSaveResult(outcome);
+        if (!saved) return;
+        showToast(saved.type, saved.message);
       })
       .catch((err) => {
         showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
@@ -250,8 +258,9 @@ async function handleExportChatMarkdown() {
     const latestChat = chats[0]!;
     // 导出名称跟随该角色关联的世界资料，不再读取全局“当前身份”。
     const mdOutcome = await downloadChatMarkdown(latestChat, char.name, getWorldUserDisplayName(char.id));
-    if (mdOutcome === 'cancelled') return;
-    showToast('success', t('settingsView.mdExported', { name: char.name }));
+    const mdSaved = describeSaveResult(mdOutcome);
+    if (!mdSaved) return;
+    showToast(mdSaved.type, mdSaved.message);
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
   } finally {
@@ -262,9 +271,10 @@ async function handleExportChatMarkdown() {
 async function handleExportQuickReplies() {
   try {
     const outcome = await settings.exportQuickRepliesSt();
-    // 用户在系统保存面板里取消：不能说"快捷回复已导出"
-    if (outcome === 'cancelled') return;
-    showToast('success', t('settingsView.qrExported'));
+    // 取消 ⇒ 不提示；成功 ⇒ 说清落到哪
+    const saved = describeSaveResult(outcome);
+    if (!saved) return;
+    showToast(saved.type, saved.message);
   } catch (err) {
     showToast('error', t('settingsView.exportFailed', { error: err instanceof Error ? err.message : String(err) }));
   }

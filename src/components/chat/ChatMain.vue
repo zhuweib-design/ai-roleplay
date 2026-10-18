@@ -11,6 +11,7 @@ import { uiMsgsToChatMsgs } from '@/services/type-adapters';
 import { getWorldUserDisplayName } from '@/stores/chat-context';
 import { resolveLatestStatus } from '@core/status-parser';
 import { stripNarrationMarkers, parseNarrationSegments } from '@core/narration';
+import { describeSaveResult } from '@/utils/save-blob';
 import { downloadChatMarkdown } from '@/services/backup-service';
 import type { Chat } from '@/storage/types';
 import Icon from '@/components/common/Icon.vue';
@@ -544,10 +545,12 @@ async function handleExportChat() {
     updatedAt: new Date().toISOString(),
   };
   const outcome = await downloadChatMarkdown(chat, char.value.name, getWorldUserDisplayName(char.value.id));
-  // 用户在系统保存面板里取消 ⇒ 不报"已导出"
-  if (outcome === 'cancelled') return;
-  toastMessage.value = t('chat.exportedMarkdown');
-  toastType.value = 'success';
+  // 取消 ⇒ 不提示；成功 ⇒ 说清落到哪（浏览器下载目录 / 系统下载目录）；
+  // 安卓 WebView 拿不到选择器 ⇒ 说清"去哪找"，不再静默
+  const saved = describeSaveResult(outcome);
+  if (!saved) return;
+  toastMessage.value = saved.message;
+  toastType.value = saved.type;
   toastOpen.value = true;
 }
 

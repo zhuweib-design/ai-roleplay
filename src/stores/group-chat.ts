@@ -17,7 +17,7 @@ import {
 // F10.3 随机 NPC 生成（v1.1 新增）
 import { createApiClient } from '@/api';
 import { useSettingsStore } from './settings';
-import { saveBlob } from '@/utils/save-blob';
+import { saveBlob, describeSaveResult } from '@/utils/save-blob';
 import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
 import { exportGroupChatToStJson, importGroupChatFromSt } from '@/core/st-compat';
 import type { CharacterTemplateId } from '@core/character-generator';
@@ -200,8 +200,9 @@ export const useGroupChatStore = defineStore('groupChat', () => {
     const outcome = await saveBlob(t('group.stExportName', { name: safeName }), () =>
       new Blob([json], { type: 'application/json' })
     );
-    if (outcome === 'cancelled') return false;
-    lastInfo.value = t('group.exportedSt', { name: g?.name ?? '' });
+    const saved = describeSaveResult(outcome);
+    if (!saved) return false;
+    lastInfo.value = saved.message;
     return true;
   }
 

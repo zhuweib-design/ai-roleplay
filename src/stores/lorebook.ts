@@ -17,7 +17,7 @@ import {
 import { createApiClient } from '../api';
 import { mergeKeptLocal } from '@/core/store-merge';
 import { useSettingsStore } from './settings';
-import { saveBlob } from '@/utils/save-blob';
+import { saveBlob, describeSaveResult } from '@/utils/save-blob';
 import {
   type WorldTemplateId,
   type GeneratedRegion,
@@ -974,8 +974,9 @@ export const useLorebookStore = defineStore('lorebook', () => {
     const lb = lorebooks.value.find((l) => l.id === id);
     const safeName = (lb?.name ?? 'lorebook').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
     const outcome = await saveBlob(`${safeName}.json`, () => new Blob([json], { type: 'application/json' }));
-    if (outcome === 'cancelled') return false;
-    lastInfo.value = t('lb.exported2', { name: safeName });
+    const saved = describeSaveResult(outcome);
+    if (!saved) return false;
+    lastInfo.value = saved.message;
     return true;
   }
 

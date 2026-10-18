@@ -79,7 +79,7 @@ const ALLOWLIST = {
     // 留白与簇间距收紧，全部带原因注释）。R1-5 拆分时以拆后实测回填。
     // 2026-10-18 显式上调 +5：A15 页头按端分流（分段控件 v-if="!isMobile"）
     // 的注释与解构。R1-5 拆分时以拆后实测回填。
-    lines: 1739,
+    lines: 1742,
     reason: 'R1-5：等 C1 完成后再拆（共享热文件）',
   },
 
@@ -101,7 +101,12 @@ const ALLOWLIST = {
   'src/stores/settings.ts': { lines: 1621, reason: 'R2-5：拆为 3 个文件（其余 store 的拆分模板）' },
 
   // ── R3 批 ──
-  'src/components/settings/SettingsDataPanel.vue': { lines: 1380, reason: 'R3-2：拆为 3 个文件' },
+  'src/components/settings/SettingsDataPanel.vue': {
+    // 2026-10-19 显式上调 1380 → 1389：C2 五处导出回显统一走 describeSaveResult
+    // （取消不提示 / 成功说清落点 / 环境不支持说清去哪找）。R3-2 拆分时以拆后实测回填。
+    lines: 1389,
+    reason: 'R3-2：拆为 3 个文件',
+  },
   'src/views/LocalModelView.vue': { lines: 1275, reason: 'R3-3：拆为 3 个文件' },
   'src/views/RandomEventsView.vue': { lines: 1269, reason: 'R3-4：拆为 3 个文件' },
   'src/views/CharactersView.vue': {
@@ -119,7 +124,12 @@ const ALLOWLIST = {
   'src/components/settings/VectorModelPanel.vue': { lines: 1024, reason: 'R4-1：拆为 2 个文件' },
   'src/stores/lorebook.ts': { lines: 1469, reason: 'R4-3：拆为 2 个文件' },
   'src/stores/chat-generation.ts': { lines: 1502, reason: 'R4-4：拆为 2 个文件' },
-  'src/stores/story.ts': { lines: 1227, reason: 'R4-5：拆为 2 个文件' },
+  'src/stores/story.ts': {
+    // 2026-10-19 显式上调 1227 → 1228：C2 剧本导出回显走 describeSaveResult。
+    // R4-5 拆分时以拆后实测回填。
+    lines: 1228,
+    reason: 'R4-5：拆为 2 个文件',
+  },
   'src/core/community-market.ts': { lines: 1274, reason: 'R4-7：拆为 2 个文件' },
   'src/core/random-event-generator.ts': { lines: 1063, reason: 'R4-8：拆为 2 个文件' },
   'src/stores/group-chat.ts': { lines: 1077, reason: 'R4-6：拆为 2 个文件' },

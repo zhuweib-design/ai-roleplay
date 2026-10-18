@@ -3419,4 +3419,8 @@ export default {
   'preset.statusOn': '要求输出状态块',
   'preset.statusOff': '不要求',
   'preset.followGlobal': '跟随全局',
+  'save.savedBrowser': '已保存：{name}（浏览器下载目录）',
+  'save.savedTauri': '已保存：{name}（系统下载目录）',
+  'save.savedPicked': '已保存：{name}',
+  'save.unsupportedWebView': '当前 WebView 不支持选择保存位置，已交给系统下载，请在「文件」App 的下载目录中查看：{name}',
 } as const;

@@ -16,7 +16,7 @@ import {
   validateCharacterCard,
 } from '../core/character-card';
 import { useSettingsStore } from './settings';
-import { saveBlob } from '@/utils/save-blob';
+import { saveBlob, describeSaveResult } from '@/utils/save-blob';
 import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
 import { isCompact } from '@/core/viewport';
 import { createApiClient } from '../api';
@@ -523,8 +523,9 @@ export const useCharacterStore = defineStore('character', () => {
     const char = characters.value.find((c) => c.id === id);
     const safeName = (char?.name ?? 'character').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
     const outcome = await saveBlob(`${safeName}.json`, () => new Blob([json], { type: 'application/json' }));
-    if (outcome === 'cancelled') return false;
-    lastInfo.value = t('char.exported2', { name: safeName });
+    const saved = describeSaveResult(outcome);
+    if (!saved) return false;
+    lastInfo.value = saved.message;
     return true;
   }
 
