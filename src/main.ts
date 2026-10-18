@@ -8,6 +8,9 @@ import './styles/tokens-structure.css';
 import './styles/base.css';
 import './styles/layout.css';
 import './styles/responsive.css';
+// 移动端「两级互换」原语（MOBILE_PLAN 批次 1-1）：只在 ≤640 生效，
+// 桌面不写任何声明，所以放在 responsive.css 之后、app-global 之前不会改写既有布局
+import './styles/m-swap.css';
 import './styles/app-global.css';
 
 import { createApp } from 'vue';
