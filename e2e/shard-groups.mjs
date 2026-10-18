@@ -59,6 +59,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/force-desktop.spec.ts': 28.0,
   // 手工登记（2026-10-18）：A15 单聊页头，2 条（手机档 + 桌面对照），各含一次整页加载，估 26s。
   'e2e/mobile/chat-header.spec.ts': 26.0,
+  // 手工登记（2026-10-18）：A9 世界书两级互换，5 条（几何 + 滚动容器 + 互斥 + 返回 + 桌面），估 16s。
+  'e2e/mobile/worldbook-composition.spec.ts': 16.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -103,7 +105,7 @@ export const E2E_GROUPS = [
     'e2e/ux-gap-visibility.spec.ts',
     'e2e/ux-narrow-editor-preview.spec.ts',
   ],
-  // 第 2 组：实测 220s（2026-10-18 手工加入 group-composition 约 10s、force-desktop 约 28s ⇒ 约 259s）
+  // 第 2 组：实测 220s（2026-10-18 手工加入 group-composition 10s、force-desktop 28s、worldbook-composition 16s ⇒ 约 275s）
   [
     'e2e/backup-restore.spec.ts',
     'e2e/character-batch-import.spec.ts',
@@ -113,6 +115,7 @@ export const E2E_GROUPS = [
     'e2e/mobile/chat-touch-composer.spec.ts',
     'e2e/mobile/force-desktop.spec.ts',
     'e2e/mobile/group-composition.spec.ts',
+    'e2e/mobile/worldbook-composition.spec.ts',
     'e2e/model-install-web.spec.ts',
     'e2e/ux-interaction-feedback.spec.ts',
     'e2e/ux-quick-forms.spec.ts',
