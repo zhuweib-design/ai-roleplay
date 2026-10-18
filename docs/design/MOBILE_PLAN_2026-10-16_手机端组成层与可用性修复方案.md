@@ -182,7 +182,7 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 
 批次 0 与批次 1 大体可并行，但有两条依赖：**0-4（就绪条一行）是 1-2 的前置**——群聊页要让出那 34px 才够把消息区做到 40%；**0-6（inert 方向）独立**，不受任何批次影响。批次 2 依赖批次 1（形态定下来才知道 Tab 怎么调）。
 
-### 实施状态（2026-10-18 更新：批次 0 六项 + 1-1 / 1-2 / 1-3 / 1-4 / 1-5 + 2-1 / 2-2 / 2-3 / 2-4 / 2-5 / 2-6 / 2-7 已完成，其余未做）
+### 实施状态（2026-10-19 更新：批次 0 六项 + 1-1～1-5 + 2-1～2-7 + 3-1～3-3 已完成；剩 3-4 平板档未排期）
 
 2026-10-17 首次回源复核时全部"未实施"；2026-10-18 批次 0 六项、1-1、1-2 已落地（提交 `7def703` / `de12599` / `9da8c15` / `87c5de5` / `f0b9789` / A10、A11、A12、A13 一系）。逐条抽验证据如下（抽验的是每批最容易被改掉的那一行）：
 
@@ -206,7 +206,11 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 | 2-6 | `nav-model.ts` 的 guide 项 | **无需改动**：`MoreView.vue:69` 顶部已有专用引导卡（带 `n/6` 进度），手机路径「底栏更多 → 引导卡」= **2 步**（判据 ≤3）。A12 已实测过置 `inMore: true` 会造重复入口（strict violation），故保持 false 并写进 e2e |
 | 2-3 | `useDrilldown` 的层标记 / 三个浮层的返回键处理 | **已做**：抽 `core/history-layer.ts`（标记从布尔量改每实例 token）+ 新增 `useBackLayer`；`BottomSheet` / `MessageActionSheet` / `Modal` 全部接上，返回键一次只关一层（A7 那条"一次退两级"边界已解） |
 | 2-2 | `src/core/mobile-nav.ts` 的 `DETAIL_ROUTES` + `App.vue` 的 `showBottomNav` | **已做且整条移除**：`mobile-nav.ts` 与它的单测已删除，`showBottomNav = isMobile`（移动端恒在）；8 个视图逐个遍历实测底栏在场、5 入口、恰好高亮一项。归属感改由高亮表达（`activeEntryForRoute`，二级页亮父段或「更多」） |
-| 3-x | `--touch-min` 直接引用 | 仍 3 文件 7 处，控件阶梯未整体上移 ⇒ 未做 |
+| 3-1 | 控件高度字面量 | **已做**：32 处迁到 `--size-control-xs/sm/md/lg/touch`，全仓字面量 **93 → 61**；新增棘轮 `check:control-size`（已进 CI），只许降不许升 |
+| 3-2 | `tokens-structure.css` ≤640 阶梯 | **已做**：390 下 `--size-control-sm/md/lg` = **36/44/48**，1280 下 = **28/36/44**（计算值实读）。**坑：第一版嵌在 `:root{}` 里被解析成 `:root :root`，整块静默失效** |
+| 3-3 | 密集行命中区 | **已做**：页头图标（视觉 26）/ 输入条发送（视觉 36）/ 卡片星标（视觉 24）用伪元素撑到 46；就绪条胶囊因横向滚动容器裁切改用撑本体 + `padding-block:0` 钉回 ≤44 |
+| 3-x | `--touch-min` 直接引用 | **已做**：新代码统一用 `var(--touch-min)`（阶梯外的语义 token），旧的 7 处保持原样；3-2 的阶梯作用于 `--size-control-*`，两者不冲突 |
+| 3-4 | 平板档（641–1024）定形 | 未排期（P2） |
 
 ### 与《重构计划》的跨计划串行约定（**阻断级，动手前必读**）
 
@@ -378,9 +382,9 @@ B 的根因是 `.messages-area` 只有 `flex: 1` 而没有 `min-height`：空间
 | 2-5 | P0-6 | `isCompact` 单一来源；强制桌面后底部导航不渲染——**实测**：`viewport.test.ts` 9 条（三模式互斥 + `isCompact` 恒等非桌面 + force 开关 + 引用计数）；`force-desktop.spec.ts` 3 条（底栏 0 / rail 1 / 跨路由保留） | 已交付 `tests/core/viewport.test.ts` + `e2e/mobile/force-desktop.spec.ts` |
 | 2-6 | —（依据在 IA_EVAL §5.3 / 本文 T3） | 手机新用户 ≤3 步到达任务中心——**实测 2 步**（底栏更多 → 顶部引导卡）；并断言入口只有一处（卡片列表 `href="/guide"` 计数 0） | 已交付 `e2e/mobile/guide-entry.spec.ts`（2 条） |
 | 2-7 | —（依据在 IA_EVAL §5.3 / 本文 T7） | 市场相关界面无"登录/账号"表述——**实测零命中**：`market-narrative.spec.ts` 按渲染文本查中英 8 个禁用词；入口「设置昵称」、Modal 标题「设置本地昵称」+ 说明行含"没有后端" | 已交付 `e2e/market-narrative.spec.ts`（3 条）+ i18n 门禁 |
-| 3-1 | P0-5 | 控件高度字面量计数相对基线下降（**改动前先用 `scripts/token-guard.mjs` 存一份基线**，否则"下降"无从判定） | 扩 `scripts/token-guard.mjs` |
-| 3-2 | P0-5 | 独立可点元素 ≥44px 比例 ≥90%（390/360 两档） | 扩 `tmp-mobile-audit.mjs` 成 `e2e/mobile/touch-target.spec.ts` |
-| 3-3 | P0-5 | 同上，且群聊动作行高度不变 | 同上 |
+| 3-1 | P0-5 | 控件高度字面量计数相对基线下降——**实测 93 → 61**（−32，全部来自迁移）。口径修正：token-guard 管的是 `!important`，与本项无关；实际新写 `scripts/control-size-guard.mjs` 专扫控件高度 | 已交付 `scripts/control-size-guard.mjs`（棘轮，已进 CI）+ `tests/tooling/control-size-guard.test.ts`（3 条） |
+| 3-2 | P0-5 | 独立可点元素 ≥44px 比例 ≥90%（390/360 两档）——**两档均 100%**（390: 12/23/15/14/12/10；360: 11/23/14/14/12/10） | 已交付 `e2e/mobile/touch-target.spec.ts`（逐像素探有效命中区，2 条） |
+| 3-3 | P0-5 | 同上，且密集行视觉尺寸不变——**实测**：页头图标仍 26、星标仍 24、就绪条 chip 视觉 25（条高 44）、输入条仍 **73px**（判据 ≤76） | 同上 |
 | 全程 | —（回归面） | 15.15 挤压扫描保持 0 命中；全站横向溢出 0；对比度门禁 26×9 与 67 处存量不涨 | `e2e/mobile/narrow-squeeze.spec.ts`、`a11y:contrast` |
 | 全程 | —（守卫面，来自 OPT_PLAN §3） | `check:css-conventions` **5/5 全绿**（`breakpoint-guard` 只允许 380/480/640/641/900/1024/1025 —— **本计划不得自拟新断点**）；`check:important` **≤26**（当前 24，**余量仅 2 处**）；`i18n:check:strict` 中英键数严格相等 | `npm run check:css-conventions`、`check:important`、`i18n:check:strict` |
 
