@@ -162,12 +162,6 @@ defineProps<{
   border-color: var(--destructive);
 }
 
-/* 待清理：M6-b2 把必填星号交给 FormField 后，本页已无 `class="required"` 元素
-   （实测 template 零命中）。先随组件搬过来让 CSS 差集报"0 丢失"，下一提交单独删。 */
-.required {
-  color: var(--destructive);
-}
-
 .field-textarea {
   height: auto;
   padding: 10px 12px;
