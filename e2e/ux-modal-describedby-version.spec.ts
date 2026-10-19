@@ -124,15 +124,29 @@ async function waitCharacterDescription(page: Page, id: string, text: string): P
  * 只有"非当前分支"的卡片才有「切换」按钮，按钮数量随当前分支变化，位置猜不得。
  * 没断言时的后果是两次改动都落在同一条分支上，合并自然"自动解决 0 个字段"，
  * 冲突对话框永远不出现（实测 Safari 就是这样，Chromium 正常）。
+ *
+ * 2026-10-19 改掉第二个形状：CI 上这条在 #122 / #123 / #128 各出现 1 次 flaky
+ * （`locator.click` 撞到 60 秒测试超时，重试才过；#117 / #120 为 0 次）。原因是它直接
+ * `click()` 那个按钮，而按钮是 `v-if="b.name !== currentBranch"` 渲染的——列表刚读回来、
+ * 当前分支还没落到 store 上时它压根不存在，于是动作性等待一路吃掉整条用例的预算，
+ * 报错也只说"点不动"，不说为什么点不动。现在先看状态再决定点不点，并给两处等待各自的话。
  */
 async function switchBranch(page: Page, target: string): Promise<void> {
   await page.getByRole('tab', { name: /分支/ }).click();
   const card = page.locator('.branch-card', { hasText: target }).first();
-  await expect(card).toBeVisible({ timeout: 10_000 });
-  await card.getByRole('button', { name: '切换到此分支' }).click();
-  await expect(
-    page.locator('.branch-card', { hasText: target }).first()
-  ).toContainText('当前', { timeout: 10_000 });
+  await expect(card, `分支卡片没出现：${target}（分支列表还没从 IndexedDB 读回来）`)
+    .toBeVisible({ timeout: 10_000 });
+
+  // 已经是当前分支 ⇒ 按钮本来就不渲染，不该再等它
+  const alreadyCurrent = await card.locator('.badge.current').count();
+  if (alreadyCurrent === 0) {
+    const switchBtn = card.getByRole('button', { name: '切换到此分支' });
+    await expect(switchBtn, `「切换到此分支」不可点：${target}（既不是当前分支，按钮又没渲染出来）`)
+      .toBeEnabled({ timeout: 10_000 });
+    await switchBtn.click();
+  }
+
+  await expect(card, `切换后「${target}」没变成当前分支`).toContainText('当前', { timeout: 10_000 });
 }
 
 async function commitWithMessage(page: Page, message: string, charName: string): Promise<void> {
