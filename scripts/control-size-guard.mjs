@@ -62,7 +62,13 @@ const BASELINE = {
   'src/components/settings/SettingsAboutPanel.vue': 1,
   'src/components/settings/SettingsAppearancePanel.vue': 5,
   'src/components/settings/SettingsDataPanel.vue': 2,
-  'src/components/settings/SettingsModelPanel.vue': 4,
+  // 2026-10-19 R1-4：4 → 2（.data-mgmt-btn 32 / .modal-btn 32 仍留在宿主的两段
+  // section 骨架里；.modal-btn 32 与 .data-mgmt-btn 32 各被搬到 ModelProfileForm /
+  // ModelLocalSection，值未改，只是换了归属）。
+  'src/components/settings/SettingsModelPanel.vue': 2,
+  'src/components/settings/ModelLocalSection.vue': 1,
+  'src/components/settings/ModelProfileForm.vue': 1,
+  'src/components/settings/ModelProfileList.vue': 1,
   'src/components/settings/SettingsSecurityPanel.vue': 1,
   'src/components/settings/VectorModelPanel.vue': 1,
   'src/components/worldbook/QuickLorebookFlow.vue': 1,

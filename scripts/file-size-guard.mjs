@@ -70,7 +70,11 @@ const ALLOWLIST = {
   // 外壳（.worldbook-body / .lorebook-list-panel / .lorebook-editor-panel /
   // .editor-content / .entries-layout / .entries-list-panel / .entry-editor-panel）
   // 刻意留在视图里 —— 手机两级互换与第三态互斥都靠属性/后代选择器圈它们。
-  'src/components/settings/SettingsModelPanel.vue': { lines: 2545, reason: 'R1-4：拆为 6 个文件（A10 会先改它）' },
+  // 2026-10-19 R1-4 拆完：SettingsModelPanel 2544 → 369（≤800），条目按 §7.10 删除。
+  // 拆出 6 个组件：ModelCloudList / ModelLocalSection / ModelProfileList /
+  // ModelProfileForm / ModelThinkingSection / ModelPresetSection
+  // + composable：useModelProfileForm.ts。宿主只留 5 个 section 的顺序、云端/本地
+  // Tab 切换、以及"两处新增入口 → 同一扇表单弹窗"的接线（`defineExpose` 转发）。
   'src/views/GroupChatView.vue': {
     // 2026-10-19 R1-1 拆完：2486 → 864（-1622）。仍 >800，保留条目继续压着。
     // 拆出 9 个文件：GroupListPanel / GroupMessageList / GroupMessageInput /
