@@ -5,7 +5,15 @@
 
 ## 未发布
 
-（暂无）
+### 变更（安装包不再对外托管）
+- GitHub Release 从此只保留自动生成的源码归档，不再上传安装包。1.1.1 的安卓 debug 包曾于 2026-10-16
+  挂在 `v1.1.1` 上，同日按要求撤下（删除资产返回 204，原下载链接现在 404，Release 正文同步改成
+  "安装包不挂在 Release 上，需要时从源码本地构建"）。
+- 这同时纠正了一处文档与事实不一致：1.1.0 那批改动里"安装包改走 GitHub Releases"这句话，写的是一条
+  从未真正对外执行过的分发路径。README 双语与 `docs/dev/release-notes-1.1.1.md`、
+  `docs/dev/release-evidence-1.1.0.md` 一起改成同一口径。
+- 需要包的人自己构建：安卓 `node scripts/android-apk.mjs`，桌面 `npm run tauri:build`；
+  本机 `installer/` 下的产物保留。
 
 ## [1.1.1] - 2026-10-16
 

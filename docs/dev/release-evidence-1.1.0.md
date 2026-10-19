@@ -171,6 +171,10 @@ Release 仍是 v0.3.1），因此也不存在"安装包挂在 Release 上"——
 要发安卓包需要重跑一次 `node scripts/android-apk.mjs`。
 
 > 后续（同日 1.1.1）：这两件都做了，但不是给 1.1.0 做的——版本号升级后才出的包属于 1.1.1，
-> 挂在了新建的 `v1.1.1` Release 上（`AI-roleplay-1.1.1-debug.apk`，debug 签名，
+> 曾挂在新建的 `v1.1.1` Release 上（`AI-roleplay-1.1.1-debug.apk`，debug 签名，
 > sha256 与逐字节复核见 `docs/dev/release-notes-1.1.1.md` 的"收口读数"）；
 > `v1.1.0` 也补了一个只有源码归档的 Release 对象。1.1.0 那个标签本身没有动过。
+>
+> 再后续（同日稍晚，用户要求）：那个 APK **已从 Release 撤下**——删资产返回 204，原下载链接现在 404，
+> `v1.1.1` 的 Release 正文同步改成了"安装包不挂在 Release 上，需要时从源码本地构建"。
+> 最终口径：安装包既不进 git，也不对外托管；本机 `installer/` 里的产物保留。

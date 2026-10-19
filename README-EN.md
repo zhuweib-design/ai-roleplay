@@ -57,7 +57,7 @@ Built for role-playing and narrative creation, **AI 酒馆** focuses on more tha
 | **Community market** | GitHub-indexed templates / cards / lorebooks with hash check & offline fallback |
 | **Extension system** | Sandboxed execution, permission-gated (deny by default), not auto-run |
 | **Desktop enhancements** | System tray, global shortcut (`Ctrl+Alt+Space`), drag-drop import, offline banner |
-| **Mobile and Android shell** | Bottom navigation, composer that grows with input and avoids the soft keyboard, long-press message action bar, narrow-screen labels no longer squeezed one glyph per line; `node scripts/android-apk.mjs` builds a debug APK (installers stay out of git, distributed via GitHub Releases) |
+| **Mobile and Android shell** | Bottom navigation, composer that grows with input and avoids the soft keyboard, long-press message action bar, narrow-screen labels no longer squeezed one glyph per line; `node scripts/android-apk.mjs` builds a debug APK (installers stay out of git and are not hosted on GitHub Releases either - build locally when needed) |
 
 ## 🖼️ Preview
 
@@ -238,6 +238,7 @@ This project is open-sourced under the **Apache License 2.0**. See [LICENSE](LIC
 - **0.3.1**: see [`docs/dev/release-notes-0.3.1.md`](docs/dev/release-notes-0.3.1.md) for new capabilities, upgrade steps and known limitations.
 - **0.3.0**: see [`docs/dev/release-notes-0.3.0.md`](docs/dev/release-notes-0.3.0.md) for new capabilities, upgrade steps and known limitations.
 - **Database migration drill**: see [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md).
+- **Installers**: not hosted here. GitHub Releases keep only the automatically generated source archives; build the Android debug APK with `node scripts/android-apk.mjs` and the desktop app with `npm run tauri:build`.
 
 ### Security & Privacy
 
