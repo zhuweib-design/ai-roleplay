@@ -59,13 +59,6 @@ const { chatStore, TOTAL_BUDGET, usedTokens, usedPercent, remainingTokens } = us
   width: 100%;
 }
 
-/* 待清理：多段配色用量条时代的分段元素，现用量条只有 fill 一层（模板零命中）。
-   按 R1-4 立下的纪律"先分离再删"，下一提交单独删。 */
-.token-segment {
-  height: 100%;
-  transition: width 0.2s ease;
-}
-
 .token-legend {
   list-style: none;
   margin: 0;

@@ -48,18 +48,6 @@ const { effectiveLorebooks, openLorebook } = useContextPanel();
   gap: 6px;
 }
 
-/* 待清理：早先整行可点时代的行容器，E03 改成行内按钮后模板已无此 class
-   （现存的是 .world-lorebook / .world-entry-name / .world-entry-count）。
-   按 R1-4 立下的纪律"先分离再删"，下一提交单独删。 */
-.world-entry {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 4px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
 .world-entry-name {
   flex: 1;
   font-size: 13px;

@@ -208,20 +208,6 @@ function onCtxTouchEnd(e: TouchEvent) {
   color: var(--secondary-text);
 }
 
-/* 待清理：全站已有 base.css 的 `.sr-only`（每条带 !important），本页副本从未被引用。
-   按 R1-4 立下的纪律"先分离再删"，下一提交单独删。 */
-.context-panel :deep(.visually-hidden) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 /* P0-2/P0-3：思考强度与采样参数行 */
 .context-panel :deep(.ctx-param-row) {
   display: flex;
