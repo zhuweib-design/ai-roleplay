@@ -681,19 +681,6 @@ function handleSave(): void {
 }
 
 /* 按钮三件套（全仓惯例：每个视图自带一份） */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--on-surface);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background .15s ease, border-color .15s ease;
-}
 
 @media (hover: hover) and (pointer: fine) {
   .btn:hover:not(:disabled) {
@@ -701,31 +688,10 @@ function handleSave(): void {
   }
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: var(--on-primary);
-  border-color: var(--primary);
-}
-
 @media (hover: hover) and (pointer: fine) {
   .btn-primary:hover:not(:disabled) {
     background: var(--primary-hover, var(--primary));
   }
-}
-
-.btn-secondary {
-  background: var(--card);
-}
-
-.btn-sm {
-  padding: 4px 10px;
-  font-size: 12px;
-  gap: 4px;
 }
 
 @media (max-width: 640px) {

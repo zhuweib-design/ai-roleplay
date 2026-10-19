@@ -950,11 +950,6 @@ onMounted(async () => {
   font-size: 13px;
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .btn.primary {
   background: var(--primary);
   color: var(--on-primary);
@@ -1204,8 +1199,6 @@ onMounted(async () => {
 }
 
 /* 空状态 */
-
-
 
 /* 响应式 */
 @media (max-width: 640px) {

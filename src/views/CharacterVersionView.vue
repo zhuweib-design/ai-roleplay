@@ -1265,11 +1265,6 @@ type="button"
   }
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .btn.primary {
   background: var(--primary);
   color: var(--on-primary);
@@ -1379,8 +1374,6 @@ type="button"
 }
 
 /* Empty state */
-
-
 
 /* Commit list */
 .commit-list {

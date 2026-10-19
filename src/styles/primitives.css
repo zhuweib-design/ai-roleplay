@@ -1,0 +1,78 @@
+/* ═══════════════════════════════════════════════════════════════
+   primitives.css — 跨组件共享的 UI 原语（按钮族）
+
+   为什么存在：R1-1 / R1-2 把视图切细后，每个新组件都要复制一份 `.btn`，
+   两批合计多出约 600 行纯样板（DEV_PLAN §7.8.1 的归因）。把「完全同值」
+   的那一份提到全局，组件只写差异。
+
+   层叠关系（这是本文件敢直接定义 `.btn` 的前提）：
+   - 组件内是 `<style scoped>`，编译成 `.btn[data-v-xxx]`（特异性 0,2,0）
+   - 本文件是全局 `.btn`（特异性 0,1,0）
+   局部定义**稳定胜出**，不依赖 Vite 对 `<style>` 的注入顺序。因此：
+   1) 迁移是纯加法，未迁移文件的视觉零变化；
+   2) 组件想覆盖本文件只需写同名规则，不需要 !important。
+
+   基线取值依据（2026-10-19 全仓指纹聚类：52 条 `.btn` 规则 / 23 个变体）：
+   - `.btn` 取 5 处**实测逐字同值**的那一份（故事族 4 个组件 + StoryEngineView）
+   - 其余 5 个变体保持局部，不并入本文件：
+     · random-events（6px 14px / --card-elevated）
+     · CharacterVersion / RandomEvents（6px 12px / --card-elevated）
+     · CommunityMarket（rem 体系 / transparent 边框）
+     · ImageGenerator（--radius-sm / --foreground）
+     · LocalModel（--radius-sm / 12px）
+     它们视觉确实不同，强行合并等于改版式，不属于「原语化」范畴。
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 按钮基类 ── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--on-surface);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 按钮内的文字标签。窄屏页头靠它防换行；此前有 7 处引用、
+   只有 2 处定义，另外 5 处是失效引用（不报错，只是不生效）。 */
+.btn-label {
+  white-space: nowrap;
+}
+
+/* ── 语义修饰符 ──
+   连字符命名（`.btn-primary`）是本文件的标准形式；历史遗留的
+   `.btn.primary` 两段式仍在 6 个文件里，语义相同但类名不同，
+   不在本文件覆盖范围内，改动它要同步改模板，单独评估。 */
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+.btn-secondary {
+  background: var(--card);
+}
+
+.btn-danger {
+  background: var(--error);
+  color: var(--on-accent);
+  border-color: var(--error);
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+  gap: 4px;
+}

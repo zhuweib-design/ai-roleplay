@@ -178,10 +178,6 @@ async function handleQuickSetup(): Promise<void> {
   cursor: not-allowed;
 }
 
-.btn-label {
-  white-space: nowrap;
-}
-
 /* T-08: 一键生成设定面板 */
 .quick-setup-panel {
   margin: 12px 20px;

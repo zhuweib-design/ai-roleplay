@@ -6,6 +6,9 @@ import './styles/themes.css';
 // 让"改名"与"换肤"两件事能被分开评审（见 docs/design/TOKEN_PILOT_2026-10-11.md）
 import './styles/tokens-structure.css';
 import './styles/base.css';
+// 跨组件共享原语（按钮族）：只放「多处逐字同值」的那一份，组件 scoped 规则
+// 特异性更高、稳定胜出，所以引入本文件不会改写任何未迁移组件的视觉
+import './styles/primitives.css';
 import './styles/layout.css';
 import './styles/responsive.css';
 // 移动端「两级互换」原语（MOBILE_PLAN 批次 1-1）：只在 ≤640 生效，

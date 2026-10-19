@@ -363,19 +363,6 @@ const emit = defineEmits<{
 
 /* 辅助样式：按钮（与上传/导入/主角三个弹窗各自持有一份，全仓惯例见
    RandomEventsView / LocalModelView 等 8 个视图，均自带 `.btn`） */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--on-surface);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background .15s ease, border-color .15s ease;
-}
 
 @media (hover: hover) and (pointer: fine) {
   .btn:hover:not(:disabled) {
@@ -383,31 +370,10 @@ const emit = defineEmits<{
   }
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--card);
-}
-
-.btn-danger {
-  background: var(--error);
-  color: var(--on-accent);
-  border-color: var(--error);
-}
-
 @media (hover: hover) and (pointer: fine) {
   .btn-danger:hover:not(:disabled) {
     background: color-mix(in srgb, var(--error) 75%, #000);
   }
-}
-
-.btn-sm {
-  padding: 4px 10px;
-  font-size: 12px;
-  gap: 4px;
 }
 
 @media (max-width: 640px) {

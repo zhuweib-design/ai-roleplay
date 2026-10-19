@@ -441,10 +441,6 @@ function handleClearProtagonist(storyId: string) {
   padding: 6px 10px;
 }
 
-.btn-label {
-  white-space: nowrap;
-}
-
 /* 搜索框 */
 .search-bar {
   display: flex;
@@ -579,39 +575,11 @@ function handleClearProtagonist(storyId: string) {
 }
 
 /* 按钮三件套（全仓惯例：每个视图自带一份） */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--on-surface);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background .15s ease, border-color .15s ease;
-}
 
 @media (hover: hover) and (pointer: fine) {
   .btn:hover:not(:disabled) {
     background: var(--card-elevated);
   }
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--card);
-}
-
-.btn-danger {
-  background: var(--error);
-  color: var(--on-accent);
-  border-color: var(--error);
 }
 
 @media (hover: hover) and (pointer: fine) {
