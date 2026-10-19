@@ -97,11 +97,7 @@ const ALLOWLIST = {
     lines: 1838,
     reason: 'R2-4：拆为 5 个文件',
   },
-  'src/components/layout/ContextPanel.vue': {
-    // 2026-10-19 显式上调 1262 → 1269：B2 触摸目标（抽屉关闭按钮 ≥44）（合理功能增量，非无声漂移）。R2-3 拆分时以拆后实测回填。
-    lines: 1269,
-    reason: 'R2-3：拆为 3 个文件' 
-  },
+  // 2026-10-19 R2-3：ContextPanel 已拆（1269 → 284），本条销账。
   'src/stores/settings.ts': { lines: 1621, reason: 'R2-5：拆为 3 个文件（其余 store 的拆分模板）' },
 
   // ── R3 批 ──

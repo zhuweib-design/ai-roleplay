@@ -338,8 +338,10 @@ describe('上下文长度 —— ContextPanel 用量条回归守卫', () => {
   it('TOTAL_BUDGET 响应式跟随 settings.maxContextTokens（不得硬编码 8192）', async () => {
     const { readFileSync } = await import('node:fs');
     const { resolve } = await import('node:path');
+    // R2-3：TOTAL_BUDGET 随上下文面板拆分搬到 useContextPanel，判据不变
+    // （用量条仍是这个面板的一部分，只是渲染层拆到了 context/ContextTokenBudget.vue）
     const code = readFileSync(
-      resolve(process.cwd(), 'src/components/layout/ContextPanel.vue'),
+      resolve(process.cwd(), 'src/composables/useContextPanel.ts'),
       'utf8'
     );
     // 哨兵 1：不得再出现 `const TOTAL_BUDGET = 8192` 这类硬编码

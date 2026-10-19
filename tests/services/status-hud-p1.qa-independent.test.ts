@@ -9,7 +9,7 @@
  * 5. StatusHud.vue 纯文本插值、零 v-html（XSS 红线）
  * 6. 静态红线：icons.ts 零新增、src 零 innerHTML、只挂会话级 sticky
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
@@ -429,6 +429,15 @@ describe('5. 静态红线', () => {
       'src/services/type-adapters.ts',
       'src/views/GroupChatView.vue',
       'src/components/layout/ContextPanel.vue',
+      // R2-3：ContextPanel 拆出的八个 section 组件同样要在"零 v-html"白名单里
+      'src/components/layout/context/ContextCharacterCard.vue',
+      'src/components/layout/context/ContextTokenBudget.vue',
+      'src/components/layout/context/ContextWorldBooks.vue',
+      'src/components/layout/context/ContextAuthorNote.vue',
+      'src/components/layout/context/ContextRuntimeSection.vue',
+      'src/components/layout/context/ContextGenParams.vue',
+      'src/components/layout/context/ContextSamplingSection.vue',
+      'src/components/layout/context/ContextStatusSection.vue',
       'src/stores/chat.ts',
       'src/stores/settings.ts',
     ];
@@ -463,8 +472,19 @@ describe('5. 静态红线', () => {
     // 注：以上为静态守卫；运行期行为（有无 status / showInline=false 时是否真的不渲染）
     // 由 tests/views/thinking-tokens-inline-status.qa-independent.test.ts 的 DOM 级用例覆盖
     // 上下文面板（角色级配置）不挂状态条
-    const ctx = readFileSync(resolve(ROOT, 'src/components/layout/ContextPanel.vue'), 'utf8');
-    expect([...ctx.matchAll(/<StatusHud\b/g)].length, 'ContextPanel 不应挂载 StatusHud').toBe(0);
+    // R2-3：面板拆成宿主 + 八个 section 组件，判据扩到整目录（逐个列文件容易漏新组件）
+    const ctxDir = resolve(ROOT, 'src/components/layout/context');
+    const ctxFiles = [
+      resolve(ROOT, 'src/components/layout/ContextPanel.vue'),
+      ...readdirSync(ctxDir)
+        .filter((f) => f.endsWith('.vue'))
+        .map((f) => resolve(ctxDir, f)),
+    ];
+    expect(ctxFiles.length, '上下文面板拆分后应至少 8 个文件').toBeGreaterThanOrEqual(8);
+    for (const file of ctxFiles) {
+      const ctx = readFileSync(file, 'utf8');
+      expect([...ctx.matchAll(/<StatusHud\b/g)].length, `${file} 不应挂载 StatusHud`).toBe(0);
+    }
     // 群聊的成员状态条同样是"会话级派生"（绑定 resolveLatestStatus 的 memberStatuses），
     // 不是消息级渲染 —— 允许挂载，但必须绑会话派生数据。
     // 2026-10-18（批次 1-2）：这一块随群头一起搬进 GroupInfoPanel（桌面内联与手机抽屉

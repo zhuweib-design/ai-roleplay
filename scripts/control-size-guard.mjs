@@ -62,7 +62,10 @@ const BASELINE = {
   // （.group-avatar 36px / .gen-spinner 32px）。视图那边同步从 2 降到 0，总数不变。
   'src/components/group/GroupListPanel.vue': 1,
   'src/components/group/GroupNpcModal.vue': 1,
-  'src/components/layout/ContextPanel.vue': 4,
+  // 2026-10-19 R2-3：4 → 2（.ctx-close 32 / .ctx-header 56 留在宿主外壳；
+  // .ctx-schema-toggle 与 .ctx-schema-add 两个 32 随状态栏搬到 ContextStatusSection）。
+  'src/components/layout/ContextPanel.vue': 2,
+  'src/components/layout/context/ContextStatusSection.vue': 2,
   'src/components/mobile/BottomNav.vue': 1,
   'src/components/random-events/TemplateEditorModal.vue': 1,
   'src/components/settings/SettingsAboutPanel.vue': 1,
