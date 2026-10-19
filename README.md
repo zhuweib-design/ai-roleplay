@@ -93,8 +93,12 @@ npm run snapshot:migration:check  # 快照迁移计划检查
 npm run i18n:check:strict     # i18n 严格扫描（无硬编码中文，中英键数对齐）
 npm run eval:manifest         # eval manifest 自检（strict）
 npm run check:css-conventions # CSS 约定守卫（5 项合一：断点单一来源 / 动态视口 / 触屏 hover / !important 棘轮 / 可编辑控件字号 I-7）
+npm run check:file-size       # 单文件行数棘轮（>1000 行即红；白名单只许降不许升）
+npm run check:control-size    # 控件高度字面量棘轮（尺寸接 --size-control-* token，按文件锁存量）
+npm run check:primitives      # 共享原语复用守卫（与 primitives.css 逐字同值的复制即红）
 npm run check:save-blob       # 存盘方式守卫（导出统一走 saveBlob 单入口，基线 0）
 npm run check:no-artifact     # 产物入库守卫（安装包 / 大二进制不许进 git）
+npm run check:no-release-assets  # Release 零资产守卫（安装包不挂 Releases；需联网打 GitHub API，打不通时报"无法判定"并红）
 npm run check:token-baseline  # Token 死引用棘轮
 npm run a11y:contrast         # 无障碍对比度（语义配对 ≥ AA 4.5:1；存量基线零余量棘轮）
 npm run test:coverage         # Vitest + 覆盖率（statements 78 / branches 73 / functions 78 / lines 78）
@@ -111,7 +115,7 @@ npm run check:ort             # ORT 首屏隔离守卫（须在 build 之后跑�
 npm run tauri:build        # 桌面端编译验证（需 Rust 工具链，耗时较长）
 ```
 
-> CI（`.github/workflows/ci.yml`）共三个 job。`quality-gates`（ubuntu-latest，带 postgres:16 service）按序执行：依赖审计（high 及以上）→ lint → Runtime Schema 漂移检查 → 快照迁移计划检查 → i18n strict → eval manifest 自检 → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7）→ 存盘方式守卫（含自检）→ 产物入库守卫（安装包与大二进制不许进 git，含自检）→ Token 死引用棘轮（含自检）→ 对比度审计（含自检）→ 测试与覆盖率门禁（78/73/78/78，同一步承载真实 PostgreSQL 集成用例，不再单设重复 job）→ 构建 → CSP 守卫 → ORT 首屏守卫。`e2e` 按 `e2e/shard-groups.mjs`（由单 worker 实测时长生成，并有"每个 spec 恰好属于一组"的对账守卫）分成 4 组并行，chromium 覆盖桌面与 Pixel 5 视口、webkit 覆盖 Safari 近似内核。`tauri-build` 验证桌面 release 二进制可编译（`--no-bundle`，不生成也不上传安装包）。GitHub Release 只保留自动生成的源码归档。
+> CI（`.github/workflows/ci.yml`）共三个 job。`quality-gates`（ubuntu-latest，带 postgres:16 service）按序执行：依赖审计（high 及以上）→ lint → Runtime Schema 漂移检查 → 快照迁移计划检查 → i18n strict → eval manifest 自检 → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7）→ 单文件行数棘轮 → 控件高度字面量棘轮 → 共享原语复用守卫 → 存盘方式守卫（含自检）→ 产物入库守卫（安装包与大二进制不许进 git，含自检）→ Release 零资产守卫（安装包不挂 GitHub Releases，含自检）→ Token 死引用棘轮（含自检）→ 对比度审计（含自检）→ 测试与覆盖率门禁（78/73/78/78，同一步承载真实 PostgreSQL 集成用例，不再单设重复 job）→ 构建 → CSP 守卫 → ORT 首屏守卫。`e2e` 按 `e2e/shard-groups.mjs`（由单 worker 实测时长生成，并有"每个 spec 恰好属于一组"的对账守卫）分成 4 组并行，chromium 覆盖桌面与 Pixel 5 视口、webkit 覆盖 Safari 近似内核。`tauri-build` 验证桌面 release 二进制可编译（`--no-bundle`，不生成也不上传安装包）。GitHub Release 只保留自动生成的源码归档。
 
 **Runtime 改动（`src/runtime/`、`migrations/` 时追加；Schema 漂移检查已并入 CI `quality-gates`）**
 
@@ -314,7 +318,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 - **Web 端（静态托管）**：完整流程见 [`docs/dev/web-deployment-sop.md`](docs/dev/web-deployment-sop.md) —— 含部署前验证清单、6 项硬性要求（HTTPS / `frame-ancestors` 响应头 / **`.wasm` MIME** / SPA 回退排除 / 缓存策略 / 剔除 source map）、Nginx / Caddy / Vercel / Netlify / 对象存储+CDN 的具体配置、12 项部署后验证清单与常见坑。
   - 部署前必须跑：`npm run build && npm run check:csp`，并在 `vite preview` 下跑 `npm run csp:audit`（逐路由 CSP 违规 + 负向对照 + **WASM/blob Worker 能力探针**）。
 - **桌面端（Tauri）**：GitHub 发布不上传安装包；本地桌面构建使用 `npm run tauri:build`，GitHub Release 只保留源码归档。
-- **安卓端（Capacitor 壳）**：`node scripts/android-apk.mjs` 一条脚本出 debug APK（需本机 JDK 21 与 Android SDK，`android/local.properties` 写 `sdk.dir`）。安装包由 `.gitignore` 与"产物入库"守卫双重挡在仓库外，并且**不对外挂在 GitHub Releases 上**——Release 只保留自动生成的源码归档，需要真机包请从源码本地构建。原生壳构建期会关闭 Service Worker（否则覆盖安装不生效），真机调试用 Chrome 133 的 WebView + CDP。
+- **安卓端（Capacitor 壳）**：`node scripts/android-apk.mjs` 一条脚本出 debug APK（需本机 JDK 21 与 Android SDK，`android/local.properties` 写 `sdk.dir`）。安装包由 `.gitignore` 与"产物入库"守卫双重挡在仓库外，并且**不对外挂在 GitHub Releases 上**——这条口径另有 `check:no-release-assets` 机器检查守着（Release 挂任何资产即红），Release 只保留自动生成的源码归档，需要真机包请从源码本地构建。为什么撤干净、撤了哪 7 个包、怎么复核，见 [`docs/dev/installer-distribution-2026-10-19.md`](docs/dev/installer-distribution-2026-10-19.md)。原生壳构建期会关闭 Service Worker（否则覆盖安装不生效），真机调试用 Chrome 133 的 WebView + CDP。
   - **版本发布说明**：最新见 [`docs/dev/release-notes-1.1.1.md`](docs/dev/release-notes-1.1.1.md)（补丁版：为什么单开一版、验证读数与仍未闭环的项）；1.1.0 的能力清单见 [`docs/dev/release-notes-1.1.0.md`](docs/dev/release-notes-1.1.0.md)，逐项门禁读数见 [`docs/dev/release-evidence-1.1.0.md`](docs/dev/release-evidence-1.1.0.md)；再上一版见 [`docs/dev/release-notes-1.0.0.md`](docs/dev/release-notes-1.0.0.md)（稳定版边界与验证结果）；数据库迁移演练见 [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md)。
 
 ### 隐私与安全
@@ -325,4 +329,4 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
   - **Web 端**：生产构建由 `vite.config.ts` 的 `webCspPlugin()` 注入 `<meta>` CSP（`script-src 'self' 'wasm-unsafe-eval'`、`object-src 'none'`、`base-uri 'self'` 等 12 条指令），并由 `npm run check:csp` 作为 CI 契约守卫；`frame-ancestors` 等 meta 不支持的指令需在托管侧配置响应头，见 [Web 端已知限制](#️-web-端已知限制)
 - XSS 纵深防御：CSP（浏览器侧拦截）+ `src/core/sanitize.ts` 的 DOMPurify 封装（渲染侧净化，新增 `v-html` 前必须接线）
 - API Key 落盘加密（PBKDF2 + AES-GCM），主密码不本地存储
-- GitHub Release 仅保留自动生成的源码归档，不上传桌面安装包或更新器清单；桌面应用需从源码本地构建
+- GitHub Release 仅保留自动生成的源码归档，不上传任何安装包或更新器清单（桌面与安卓都不挂，由 `check:no-release-assets` 守着）；应用需从源码本地构建
