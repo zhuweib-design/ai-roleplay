@@ -98,7 +98,10 @@ docs/design/THEME_ACG_PREVIEW/*.png
 docs/design/THEME_BASE_PREVIEW/*.png
 
 # 安卓调试包（27MB/次，每重新出包就多一份，且仓库是公开的）
-# 出包脚本 scripts/android-apk.mjs 每次都把产物落到这里；要分发走 GitHub Releases 手工拖拽，
+# 出包脚本 scripts/android-apk.mjs 每次都把产物落到这里；安装包既不入库、也**不挂 GitHub Releases**。
+# 桌面端不上传这条早在 0.3.1（2026-09-26，提交 fa30b40）就定了；安卓 debug 包 2026-10-16 曾挂上
+# v1.1.1，2026-10-19 撤下、并把 v0.2.0 遗留的桌面包一起清干净，此后不再上传任何安装包，
+# CI 用 check:no-release-assets 盯 Release 资产数。要真机包就本地构建。
 # 不进 git 历史（进了就永久占体积，删掉记录也不能瘦下来）。决策见指导文档 §15.7。
 installer/
 
