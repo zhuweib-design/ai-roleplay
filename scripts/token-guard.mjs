@@ -51,7 +51,9 @@ const BASELINE_UNDEF_BARE = {
   'src/components/worldbook/LorebookBindings.vue': 5,
   'src/components/story/StoryCard.vue': 4,
   'src/components/story/StoryProtagonistModal.vue': 4,
-  'src/views/CharacterEditorView.vue': 4,
+  // 2026-10-19 R2-1：4 处（.wb-bind-info 的 --text 与三条 --border-subtle）随
+  // "世界书绑定"段搬到 CharacterEditorWorldBookSection，值一处未改，只是换了归属。
+  'src/components/character/editor/CharacterEditorWorldBookSection.vue': 4,
   'src/components/story/StoryQuickSetupPanel.vue': 1,
 };
 

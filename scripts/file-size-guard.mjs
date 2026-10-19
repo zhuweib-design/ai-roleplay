@@ -88,7 +88,7 @@ const ALLOWLIST = {
   // 宿主只剩接线：三个子组件 + 四扇浮层 + 消息动作分发 + 导出 + API 错误诊断。
 
   // ── R2 批 ──
-  'src/views/CharacterEditorView.vue': { lines: 2320, reason: 'R2-1：拆为 6 个文件（A11 会先改它）' },
+  // 2026-10-19 R2-1：CharacterEditorView 已拆（2320 → 532），本条销账。
   'src/views/CharacterVersionView.vue': { lines: 1999, reason: 'R2-2：拆为 5 个文件' },
   'src/components/settings/SettingsAppearancePanel.vue': { lines: 1894, reason: 'R3-1：拆为 4 个文件' },
   'src/views/CommunityMarketView.vue': {

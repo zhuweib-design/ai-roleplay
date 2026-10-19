@@ -82,7 +82,12 @@ const BASELINE = {
   // 已绑定角色的 .bound-chars-count 20 随组件搬到新文件（值未改，只是换了归属）。
   'src/components/worldbook/LorebookEntryTree.vue': 2,
   'src/components/worldbook/LorebookBindings.vue': 1,
-  'src/views/CharacterEditorView.vue': 7,
+  // 2026-10-19 R2-1：7 → 1（.preset-swatch 32 / .upload-btn 32 搬到 AvatarSection，
+  // .add-stat-btn 26 / .stat-input 32 / .stat-select 32 / .stat-remove 32 搬到 AttrSection，
+  // 值一处未改，只是换了归属；剩下 1 处是 .modal-btn 32）。
+  'src/views/CharacterEditorView.vue': 1,
+  'src/components/character/editor/CharacterEditorAvatarSection.vue': 2,
+  'src/components/character/editor/CharacterEditorAttrSection.vue': 4,
   'src/views/CharacterVersionView.vue': 1,
   'src/views/CharactersView.vue': 3,
   'src/views/CommunityMarketView.vue': 1,
