@@ -194,20 +194,40 @@
 |---|---|---|---|
 | 4 | **EVAL-01/02/03 评测闭环** | 补 20–50 条事实长对话样本 + 四层固定集，把 opt-eval.mjs 的一致率/连贯率从占位改为真实判定链。当前"质量闭环"尚未真正闭合。 | 3–4 天 |
 | 5 | ~~**MODEL-02 自动重试**~~ **已完成** | 见 §五.1 | 1 天 |
-| 6 | **DB-01 / API-01 真实环境回归** | 配置 CI 用 PG 实例 + 至少 1 个真实 provider key，让门禁 #13 与 PG 事务测试真正执行。 | 1–2 天（含环境） |
+| 6 | **DB-01 / API-01 真实环境回归** | **DB-01 已完成**（2026-10-19 复核）：`ci.yml` 的 quality-gates 带 `postgres:16-alpine` service，`Test + coverage gate` 那一步注入 `RUNTIME_PG_TEST_URL`，PG 事务/并发/回滚用例在 CI 真实执行；**API-01 仍未做**（不设真实 provider key，opt-eval 相关项继续标 `requires-real-env`）。 | 1–2 天（含环境） |
 | 7 | ~~**MIG-02 RTO/RPO 目标**~~ **已完成** | 见 §五.1 | 0.5 天 |
 
 ### P2 — 体验/功能补全
 
 | # | 缺口 | 建议 | 工作量 |
 |---|---|---|---|
-| 8 | **UX-03 群聊游标分页** | 将单聊虚拟化窗口机制扩展到 GroupChatView + group-chat store 加 cursor/pageSize。 | 2 天 |
-| 9 | **MODEL-03 创作模式/采样 Preset** | 新增 creativeMode/samplingPreset 数据结构 + UI，接入各 provider 采样参数。 | 2–3 天 |
+| 8 | **UX-03 群聊游标分页（2026-10-19 复核：仍未做）** | 将单聊虚拟化窗口机制扩展到 GroupChatView + group-chat store 加 cursor/pageSize。 | 2 天 |
+| 9 | **MODEL-03 创作模式/采样 Preset（2026-10-19 复核：仍未做，`creativeMode` / `samplingPreset` 全仓 0 命中）** | 新增 creativeMode/samplingPreset 数据结构 + UI，接入各 provider 采样参数。 | 2–3 天 |
 | 10 | ~~**UX-05 五主题冒烟补 light**~~ **已完成** | 见 §五.1 | 0.2 天 |
-| 11 | **EXP-01 预设/正则绑定** | 参照 boundWorldBookIds 扩展 boundPresetId/boundRegex。 | 1–2 天 |
+| 11 | **EXP-01 预设/正则绑定（2026-10-19 复核：做了一半——预设绑定已进数据契约 `boundPresetId`（`src/core/character-card.ts:134`、`src/core/relations.ts:93`），正则绑定 `boundRegex` 全仓 0 命中）** | 参照 boundWorldBookIds 扩展 boundPresetId/boundRegex。 | 1–2 天 |
 | 12 | **STORY 系列规格对齐** | 与产品确认：是补齐计划规格（章节层级/作品级打包/故事分支/冒险面板），还是把计划改为追认既有小说分析引擎。**先决策，再动工**。 | 需产品决策 |
 
 > 建议节奏：先做 P0（1–2 周锁定 1.0.0 迁移与可观测性风险），再并行 P1 质量闭环；P2 中 STORY 系列须先经产品决策，避免继续"按另一套规格做"。
+
+### 五.0 2026-10-19 状态复核（每条都附复核方法）
+
+本审计写于 2026-09-28，之后落了 1.1.0 / 1.1.1 与一整轮大文件拆分，好几行状态已经过期。
+下面每一条都附**当时跑过的命令**，下次复核照跑即可，不用重读全文：
+
+| 项 | 复核方法 | 2026-10-19 的读数 |
+|---|---|---|
+| O-2 / O-3 拆分 | `find src -name "chat-*.ts" -o -path "*components/settings*" \| xargs wc -l \| sort -rn` | chat 已拆 7 个 store；设置拆出分类面板组件 |
+| §6.2 超大文件 | `find src \( -name "*.ts" -o -name "*.vue" \) \| xargs wc -l \| sort -rn \| head` | 只有 en.ts / zh.ts 两个语言包还在 2000 行以上 |
+| DB-01 | `grep -c "postgres:16" .github/workflows/ci.yml` | 1（CI 带 PG 服务并注入 `RUNTIME_PG_TEST_URL`） |
+| API-01 | `grep -c "requires-real-env\|占位" scripts/opt-eval.mjs` | 14（评测闭环仍是占位，未收口） |
+| UX-03 群聊分页 | `grep -rn "RENDER_WINDOW" src \| cut -d: -f1 \| sort -u` | 只命中 `ChatMessageArea.vue` 与 `useChatWindowing.ts`，群聊侧不引用 → 仍未做 |
+| MODEL-03 | `grep -rl "creativeMode\|samplingPreset" src \| wc -l` | 0 |
+| EXP-01 | `grep -rn "boundPresetId" src \| head -2; grep -rl "boundRegex" src \| wc -l` | 预设绑定在契约里；正则 0 命中 |
+| MIG-01 / OBS-01 / 证据包（P0 三条） | §五.1 修复记录 + `node scripts/release-evidence-pack.mjs --check` | 已完成状态未变 |
+
+另有一条不属于本审计原文、但同期出现的发布口径变化：安装包**既不入库也不上传 GitHub Releases**
+（v0.2.0 遗留的 6 个桌面包与 v1.1.1 的安卓包均于 2026-10-19 撤下，CI 加
+`check:no-release-assets` 盯 Release 资产数）。下文 §五.1 与发布文档以这条为准。
 
 ### 五.1 修复记录（2026-09-28）
 
@@ -287,8 +307,8 @@
 | # | 优化项 | 当前状态 | 未完成原因 | 风险 | 建议优先级 |
 |---|---|---|---|---|---|
 | O-1 | ort 首屏彻底移除 | ⚠️部分缓解 | `index` entry chunk 仍静态 import `ort.bundle.min`（104KB gzip）；彻底解法需将 onnxruntime 隔离到独立入口 / Web Worker | 中（架构级） | **P1** |
-| O-2 | chat.ts 拆分（2519 行 → 5 专职 store） | ❌未做 | 60+ 导出被全仓引用，属高风险架构重构（报告自估 2–3 天） | 高 | **P2**（独立迭代 + 充分回归） |
-| O-3 | SettingsView.vue 拆分（4131 行 → 10+ 子组件） | ❌未做 | 高工作量、高回归风险 | 高 | **P2** |
+| O-2 | chat.ts 拆分（2519 行 → 5 专职 store） | ✅已完成（2026-10-19 复核，原记"未做"已过期） | `src/stores/` 下已切成 chat-context / chat-generation / chat-group-runtime / chat-memory / chat-runtime / chat-session + chat 外壳，最大 store 降到 settings.ts 1620 行 | 高 | 已消化 |
+| O-3 | SettingsView.vue 拆分（4131 行 → 10+ 子组件） | ✅已完成（2026-10-19 复核，原记"未做"已过期） | `src/components/settings/` 已有分类面板组件；SettingsView.vue 已不在仓库前 12 大文件之列（现最大是 SettingsAppearancePanel 1893 行） | 高 | 已消化 |
 | O-4 | 类型定义重组（types/ 分文件） | ❌未做 | 性能收益低；大范围 import 调整收益/风险比不佳 | 中 | **P3** |
 | O-5 | 魔法数字提取为 constants | ❌未做 | LOW 优先级，属可维护性项 | 低 | **P3** |
 | O-6 | IndexedDB 复合索引 | ❌未做 | 报告自称"推测"（未验证是否存在全表扫描）；需先做查询画像 | 低 | **P2**（先画像后决策） |
@@ -312,6 +332,12 @@
 | CharacterEditorView.vue | 2224 |
 
 > i18n 语言包（en.ts/zh.ts）体量属正常，不在拆分建议范围。
+>
+> **2026-10-19 复核：上表已过期**（除语言包外全部降下来了）。同一命令重跑后的现状是：
+> `src/` 下 >2000 行的只剩 en.ts 3427 / zh.ts 3426 两个语言包；代码文件最大依次是
+> SettingsAppearancePanel 1893、CommunityMarketView 1838、stores/settings 1620、
+> stores/chat-generation 1501、stores/lorebook 1469。拆分的余量集中在设置外观面板与市场页，
+> 由 `check:file-size` 棘轮守着（见 `docs/design/DEV_PLAN_2026-10-17_开发计划.md` 的分批进度）。
 
 ### 6.3 与计划任务的交叉关系
 
