@@ -42,10 +42,17 @@ const SELF_TEST = argv.includes('--self-test');
  * 而按文件锁照样变红。
  */
 const BASELINE_UNDEF_BARE = {
-  'src/views/StoryEngineView.vue': 55,
+  'src/views/StoryEngineView.vue': 12,
+  'src/components/story/StoryDetailCharacters.vue': 12,
   'src/views/CommunityMarketView.vue': 10,
-  'src/views/WorldBookView.vue': 5,
+  'src/components/story/StoryUploadModal.vue': 10,
+  'src/components/story/StoryDetailWorld.vue': 9,
+  'src/components/story/StoryDetailPanel.vue': 6,
+  'src/components/worldbook/LorebookBindings.vue': 5,
+  'src/components/story/StoryCard.vue': 4,
+  'src/components/story/StoryProtagonistModal.vue': 4,
   'src/views/CharacterEditorView.vue': 4,
+  'src/components/story/StoryQuickSetupPanel.vue': 1,
 };
 
 const SKIP_RE = /(node_modules|dist|public[\\/]vendor|src[\\/]runtime)/;

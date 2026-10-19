@@ -63,14 +63,13 @@ const ALLOWLIST = {
   // 拆出 11 个文件：StoryQuickSetupPanel / StoryCard / StoryDetailPanel /
   // StoryDetailCharacters / StoryDetailWorld / StoryUploadModal / StoryImportModal /
   // StoryProtagonistModal + useStoryGeneration / useStoryFilters + story-display.ts
-  'src/views/WorldBookView.vue': {
-    // 2026-10-19 显式上调 3099 → 3115：B2 触摸目标（页头动作 ≥44）+ C1 生成后回显
-    // "绑到谁、生效几条"（合理功能增量，非无声漂移）。R1-3 拆分时以拆后实测回填。
-    // 2026-10-18 显式上调 +123：A9 两级互换（useDrilldown 接线 + 条目第三态 +
-    // ≤640 样式整块重写）。R1-3 拆分时以拆后实测回填。
-    lines: 3115,
-    reason: 'R1-3：拆为 9 个文件（A9 已改完，可开工）',
-  },
+  // 2026-10-19 R1-3 拆完：WorldBookView 3115 → 741（≤800），条目按 §7.10 删除。
+  // 拆出 9 个组件：LorebookHeader / LorebookListPanel / LorebookMetaSection /
+  // LorebookWorldSections / LorebookBindings / LorebookEntryTree / LorebookEntryForm /
+  // LorebookGenerateModal；+3 composable：useLorebookTree / useLorebookEntryForm / useLorebookIO。
+  // 外壳（.worldbook-body / .lorebook-list-panel / .lorebook-editor-panel /
+  // .editor-content / .entries-layout / .entries-list-panel / .entry-editor-panel）
+  // 刻意留在视图里 —— 手机两级互换与第三态互斥都靠属性/后代选择器圈它们。
   'src/components/settings/SettingsModelPanel.vue': { lines: 2545, reason: 'R1-4：拆为 6 个文件（A10 会先改它）' },
   'src/views/GroupChatView.vue': {
     // 2026-10-19 R1-1 拆完：2486 → 864（-1622）。仍 >800，保留条目继续压着。

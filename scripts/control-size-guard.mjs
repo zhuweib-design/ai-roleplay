@@ -66,6 +66,10 @@ const BASELINE = {
   'src/components/settings/SettingsSecurityPanel.vue': 1,
   'src/components/settings/VectorModelPanel.vue': 1,
   'src/components/worldbook/QuickLorebookFlow.vue': 1,
+  // 2026-10-19 R1-3：条目树的 .tree-action-btn 26 / .entry-toggle 22、
+  // 已绑定角色的 .bound-chars-count 20 随组件搬到新文件（值未改，只是换了归属）。
+  'src/components/worldbook/LorebookEntryTree.vue': 2,
+  'src/components/worldbook/LorebookBindings.vue': 1,
   'src/views/CharacterEditorView.vue': 7,
   'src/views/CharacterVersionView.vue': 1,
   'src/views/CharactersView.vue': 3,
@@ -73,7 +77,9 @@ const BASELINE = {
   'src/views/DataBankView.vue': 1,
   // 2026-10-19 R1-1：2 → 0（.group-avatar / .gen-spinner 随组件搬走，见上方两条）
   'src/views/ImageGeneratorView.vue': 1,
-  'src/views/WorldBookView.vue': 4,
+  // 2026-10-19 R1-3：4 → 1（.tree-action-btn 26 / .entry-toggle 22 / .bound-chars-count 20
+  // 随组件搬到 LorebookEntryTree / LorebookBindings；剩下 1 处是 .wb-open-flow-inline 的 min-height:32px）。
+  'src/views/WorldBookView.vue': 1,
 };
 
 const ROOTS = ['src/components', 'src/views'];
