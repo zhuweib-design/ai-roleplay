@@ -89,7 +89,7 @@ const ALLOWLIST = {
 
   // ── R2 批 ──
   // 2026-10-19 R2-1：CharacterEditorView 已拆（2320 → 532），本条销账。
-  'src/views/CharacterVersionView.vue': { lines: 1999, reason: 'R2-2：拆为 5 个文件' },
+  // 2026-10-19 R2-2：CharacterVersionView 已拆（1999 → 597），本条销账。
   'src/components/settings/SettingsAppearancePanel.vue': { lines: 1894, reason: 'R3-1：拆为 4 个文件' },
   'src/views/CommunityMarketView.vue': {
     // 2026-10-18 显式上调 +8：A18 叙事降级给昵称 Modal 加了一行说明 + 它的样式

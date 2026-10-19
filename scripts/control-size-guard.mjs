@@ -88,7 +88,9 @@ const BASELINE = {
   'src/views/CharacterEditorView.vue': 1,
   'src/components/character/editor/CharacterEditorAvatarSection.vue': 2,
   'src/components/character/editor/CharacterEditorAttrSection.vue': 4,
-  'src/views/CharacterVersionView.vue': 1,
+  // 2026-10-19 R2-2：1 → 0（.commit-dot 的 24px 随提交列表搬到 VersionHistoryPanel）。
+  'src/views/CharacterVersionView.vue': 0,
+  'src/components/character/version/VersionHistoryPanel.vue': 1,
   'src/views/CharactersView.vue': 3,
   'src/views/CommunityMarketView.vue': 1,
   'src/views/DataBankView.vue': 1,

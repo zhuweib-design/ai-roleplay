@@ -52,7 +52,6 @@ const RATCHET = {
   'src/components/common/ApiErrorModal.vue': 3,
   'src/components/random-events/SceneConfigModal.vue': 1,
   'src/components/random-events/TemplateEditorModal.vue': 1,
-  'src/views/CharacterVersionView.vue': 1,
   'src/views/CommunityMarketView.vue': 4,
   'src/views/ImageGeneratorView.vue': 1,
   'src/views/LocalModelView.vue': 1,
