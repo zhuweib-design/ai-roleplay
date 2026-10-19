@@ -30,6 +30,8 @@
     "check:primitives": "node scripts/primitives-guard.mjs --strict",
     "check:i7-control-font-size": "node scripts/i7-control-font-size-guard.mjs",
     "check:css-conventions": "node scripts/css-conventions-guard.mjs",
+    "check:css-equiv": "node scripts/css-equiv-guard.mjs",
+    "check:css-equiv:self-test": "node scripts/css-equiv-guard.mjs --self-test",
     "check:save-blob": "node scripts/save-blob-guard.mjs",
     "check:save-blob:self-test": "node scripts/save-blob-guard.mjs --self-test",
     "check:no-artifact": "node scripts/no-artifact-in-git-guard.mjs",
