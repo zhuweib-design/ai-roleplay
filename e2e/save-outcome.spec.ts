@@ -25,6 +25,13 @@ async function openAuditExport(page: Page): Promise<void> {
 
 const TOAST = '.toast-message';
 
+// 提示是**一条队列，同时只显示队首**（`src/utils/toast-service.ts`），错误提示活 5 秒。
+// 所以每条断言都按"那一条提示"定位，不抓屏幕上任意一条：只要有别的提示排在队首，
+// `toContainText` 就会一直拿到它，5 秒 expect 超时后红。
+function savedToast(page: Page) {
+  return page.locator(TOAST, { hasText: '已保存' });
+}
+
 test('浏览器：触发下载，提示说清落在浏览器下载目录', async ({ page }) => {
   await openAuditExport(page);
 
@@ -36,22 +43,32 @@ test('浏览器：触发下载，提示说清落在浏览器下载目录', async
   expect(file.suggestedFilename()).toMatch(/^audit-log-\d{4}-\d{2}-\d{2}\.json$/);
 
   // ② 提示说清落点
-  await expect(page.locator(TOAST)).toContainText('已保存');
-  await expect(page.locator(TOAST)).toContainText('浏览器下载目录');
+  await expect(savedToast(page)).toContainText('浏览器下载目录');
 });
 
 test('Tauri 桌面：同一落点，但文案不说"浏览器"', async ({ page }) => {
-  // Tauri 的 UA 与普通浏览器一致，只靠这个全局标记区分
-  await page.addInitScript(() => {
+  // Tauri 的 UA 与普通浏览器一致，只靠这个全局标记区分。
+  //
+  // 标记**必须等启动之后再打**。原因（2026-10-19 全量跑红的复盘）：`storage-factory` 在启动时
+  // 就看这个标记选适配器，见到它换成 `TauriFSAdapter`，而这里的桩是个空对象、没有 `invoke`，
+  // 于是设置一读一写都抛 "window.__TAURI_INTERNALS__.invoke is not a function" 并弹出错误提示。
+  // 提示只显示队首那条、错误提示活 5 秒——负载一高，它就压在"已保存"前面迟迟不上屏，
+  // 断言拿到的是那句报错。实测：12 个自旋进程的负载下连跑 4 次红 1 次，与全量跑同一条报错。
+  //
+  // 这样做的取舍：被测的是**提示文案按环境分叉**，`detectSaveEnv()` 是在点导出时读的，
+  // 启动后补标记足够触发它；代价是这里模拟的不是"开机就在 Tauri 里"的完整环境，
+  // 真到 Tauri 里的持久化路径由 `src/storage/tauri-fs-adapter.ts` 的单测与桌面端实跑覆盖，不靠这条。
+  await openAuditExport(page);
+  await page.evaluate(() => {
     (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
   });
-  await openAuditExport(page);
 
   await page.getByRole('button', { name: '导出审计 JSON' }).click();
 
-  await expect(page.locator(TOAST)).toContainText('已保存');
-  await expect(page.locator(TOAST)).toContainText('系统下载目录');
-  await expect(page.locator(TOAST)).not.toContainText('浏览器');
+  const saved = savedToast(page);
+  await expect(saved).toBeVisible();
+  await expect(saved).toContainText('系统下载目录');
+  await expect(saved).not.toContainText('浏览器');
 });
 
 test.describe('安卓 WebView', () => {
@@ -80,7 +97,8 @@ test.describe('安卓 WebView', () => {
     await page.getByRole('button', { name: '导出审计 JSON' }).click();
 
     // 关键断言：**不许**说"已保存"（旧实现归成 cancelled 后干脆什么都不说）
-    await expect(page.locator(TOAST)).toContainText('不支持选择保存位置');
-    await expect(page.locator(TOAST)).not.toContainText('已保存');
+    const unsupported = page.locator(TOAST, { hasText: '不支持选择保存位置' });
+    await expect(unsupported).toBeVisible();
+    await expect(unsupported).not.toContainText('已保存');
   });
 });
