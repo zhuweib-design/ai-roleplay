@@ -301,8 +301,10 @@ const KNOWN_ISSUES = `# 已知问题（${pkg.version}）
 
 ## 计划符合度未闭环项
 
-详见 \`docs/dev/PLAN_AUDIT_2026-09-28.md\`：其中 P2 项（群聊游标分页、创作模式 Preset、
-预设/正则绑定、故事分支等）尚未实现；P1 的真实 PG / Provider 回归需在具备环境后执行。
+详见 \`docs/dev/PLAN_AUDIT_2026-09-28.md\`，**以其中"五.0 2026-10-19 状态复核"那张表为准**：
+群聊游标分页（UX-03）、创作模式与采样 Preset（MODEL-03）、正则绑定（EXP-01 的一半）、STORY 系列
+规格决策仍未收口；真实 PG 回归已进 CI（\`postgres:16\` service + \`RUNTIME_PG_TEST_URL\`），
+真实 Provider 回归（API-01）仍缺 key，opt-eval 的相关项继续标 \`requires-real-env\`。
 `;
 
 if (args.includes('--write')) {
