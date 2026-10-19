@@ -58,7 +58,7 @@
 | **社区市场** | 基于 GitHub 索引的模板 / 角色卡 / 世界书下载，含哈希校验与离线回退 |
 | **扩展系统** | 沙箱执行、按需权限（默认拒绝），社区扩展默认不自动执行 |
 | **桌面强化** | 系统托盘、全局快捷键（`Ctrl+Alt+Space`）、拖拽导入、断网提示 |
-| **手机端与安卓壳** | 底部导航、输入条自动增高与键盘避让、长按唤起消息动作条、窄屏标题不再竖排挤压；`node scripts/android-apk.mjs` 一条脚本出 debug APK（安装包不进 git，改走 GitHub Releases） |
+| **手机端与安卓壳** | 底部导航、输入条自动增高与键盘避让、长按唤起消息动作条、窄屏标题不再竖排挤压；`node scripts/android-apk.mjs` 一条脚本出 debug APK（安装包不进 git，也不挂 GitHub Releases，需要时本地构建） |
 
 ## 🖼️ 预览
 
@@ -314,7 +314,7 @@ artifacts/           历史构建 / 覆盖率 / 测试结果快照（已被 .git
 - **Web 端（静态托管）**：完整流程见 [`docs/dev/web-deployment-sop.md`](docs/dev/web-deployment-sop.md) —— 含部署前验证清单、6 项硬性要求（HTTPS / `frame-ancestors` 响应头 / **`.wasm` MIME** / SPA 回退排除 / 缓存策略 / 剔除 source map）、Nginx / Caddy / Vercel / Netlify / 对象存储+CDN 的具体配置、12 项部署后验证清单与常见坑。
   - 部署前必须跑：`npm run build && npm run check:csp`，并在 `vite preview` 下跑 `npm run csp:audit`（逐路由 CSP 违规 + 负向对照 + **WASM/blob Worker 能力探针**）。
 - **桌面端（Tauri）**：GitHub 发布不上传安装包；本地桌面构建使用 `npm run tauri:build`，GitHub Release 只保留源码归档。
-- **安卓端（Capacitor 壳）**：`node scripts/android-apk.mjs` 一条脚本出 debug APK（需本机 JDK 21 与 Android SDK，`android/local.properties` 写 `sdk.dir`）。安装包由 `.gitignore` 与"产物入库"守卫双重挡在仓库外，分发走 GitHub Releases。原生壳构建期会关闭 Service Worker（否则覆盖安装不生效），真机调试用 Chrome 133 的 WebView + CDP。
+- **安卓端（Capacitor 壳）**：`node scripts/android-apk.mjs` 一条脚本出 debug APK（需本机 JDK 21 与 Android SDK，`android/local.properties` 写 `sdk.dir`）。安装包由 `.gitignore` 与"产物入库"守卫双重挡在仓库外，并且**不对外挂在 GitHub Releases 上**——Release 只保留自动生成的源码归档，需要真机包请从源码本地构建。原生壳构建期会关闭 Service Worker（否则覆盖安装不生效），真机调试用 Chrome 133 的 WebView + CDP。
   - **版本发布说明**：最新见 [`docs/dev/release-notes-1.1.1.md`](docs/dev/release-notes-1.1.1.md)（补丁版：为什么单开一版、验证读数与仍未闭环的项）；1.1.0 的能力清单见 [`docs/dev/release-notes-1.1.0.md`](docs/dev/release-notes-1.1.0.md)，逐项门禁读数见 [`docs/dev/release-evidence-1.1.0.md`](docs/dev/release-evidence-1.1.0.md)；再上一版见 [`docs/dev/release-notes-1.0.0.md`](docs/dev/release-notes-1.0.0.md)（稳定版边界与验证结果）；数据库迁移演练见 [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md)。
 
 ### 隐私与安全
