@@ -897,6 +897,7 @@ ai-roleplay/
 | `docs/dev/evidence/ux-ia-guided-flow/m8-c-describedby/02-未保存确认.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/evidence/ux-ia-guided-flow/m8-c-describedby/03-列表删除确认.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/evidence/ux-ia-guided-flow/m8-c-describedby/04-世界书删除确认.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/installer-distribution-2026-10-19.md` | md | 开发文档 | 安装包分发决策记录：为什么不挂 Releases、撤下的 7 个资产清单、sha256、可复制的复核命令与负向对照 | 已跟踪 |  |
 | `docs/dev/llm-controls-p0-落地记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/llm-controls-收尾三项记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/mobile-pwa-plan.md` | md | 开发文档 | 开发文档：手机端 PWA 实现计划 | 已跟踪 |  |

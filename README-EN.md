@@ -90,8 +90,12 @@ npm run snapshot:migration:check # Snapshot migration plan
 npm run i18n:check:strict     # i18n strict scan (no hardcoded Chinese; zh/en key parity)
 npm run eval:manifest        # Eval manifest self-check (strict)
 npm run check:css-conventions # CSS guard: breakpoints / viewport / hover / !important ratchet / I-7 font size
+npm run check:file-size       # Per-file line-count ratchet (over 1000 lines fails; whitelisted files may only shrink)
+npm run check:control-size    # Control height literals ratchet (heights must come from --size-control-* tokens)
+npm run check:primitives      # Shared primitive guard (copying a rule that already exists in primitives.css fails)
 npm run check:save-blob       # Exports go through the single saveBlob entry point (baseline 0)
 npm run check:no-artifact     # Installers and large binaries must not enter git
+npm run check:no-release-assets # GitHub Releases must carry zero assets (needs network; it fails as "undecidable" when the API is unreachable)
 npm run check:token-baseline  # Token dead-reference ratchet
 npm run a11y:contrast         # Contrast audit (semantic pairs >= AA 4.5:1; legacy baseline is a zero-headroom ratchet)
 npm run test:coverage         # Vitest + coverage (statements 78 / branches 73 / functions 78 / lines 78)
@@ -102,7 +106,7 @@ npm run check:ort             # ORT first-screen isolation guard (must run after
 
 > A 2026-10-16 lesson: a `.load-earlier-btn:hover` violation reached `master` because local verification only ran the familiar subset. Walk the full `ci.yml` step list; treat CI's 4 parallel E2E groups as the E2E verdict (the local full serial run takes ~15 minutes and is memory-hungry).
 
-> CI (`.github/workflows/ci.yml`) has three jobs. `quality-gates` (ubuntu-latest, with a postgres:16 service) runs, in order: dependency audit (high and above) → lint → runtime schema drift → snapshot migration plan → i18n strict → eval manifest self-check → CSS conventions guard (breakpoints / viewport / hover / `!important` ratchet / editable control font size I-7) → save-blob guard (+ self-test) → no-artifact-in-git guard (+ self-test) → token dead-reference ratchet (+ self-test) → contrast audit (+ self-test) → test and coverage gate (78/73/78/78; the same step carries the real PostgreSQL integration cases, so no duplicate job) → build → CSP guard → ORT first-screen guard. `e2e` runs Playwright in 4 weight-balanced groups derived from measured single-worker durations (`e2e/shard-groups.mjs`, guarded by a "every spec belongs to exactly one group" census test), chromium for desktop and the Pixel 5 viewport, webkit as the Safari-class engine. `tauri-build` checks that the desktop release binary compiles (`--no-bundle`; no installer is built or uploaded). GitHub Releases keep only the automatically generated source archives.
+> CI (`.github/workflows/ci.yml`) has three jobs. `quality-gates` (ubuntu-latest, with a postgres:16 service) runs, in order: dependency audit (high and above) → lint → runtime schema drift → snapshot migration plan → i18n strict → eval manifest self-check → CSS conventions guard (breakpoints / viewport / hover / `!important` ratchet / editable control font size I-7) → per-file line-count ratchet → control-height literal ratchet → shared-primitive guard → save-blob guard (+ self-test) → no-artifact-in-git guard (+ self-test) → no-release-assets guard (+ self-test) → token dead-reference ratchet (+ self-test) → contrast audit (+ self-test) → test and coverage gate (78/73/78/78; the same step carries the real PostgreSQL integration cases, so no duplicate job) → build → CSP guard → ORT first-screen guard. `e2e` runs Playwright in 4 weight-balanced groups derived from measured single-worker durations (`e2e/shard-groups.mjs`, guarded by a "every spec belongs to exactly one group" census test), chromium for desktop and the Pixel 5 viewport, webkit as the Safari-class engine. `tauri-build` checks that the desktop release binary compiles (`--no-bundle`; no installer is built or uploaded). GitHub Releases keep only the automatically generated source archives.
 
 **Runtime changes (`src/runtime/`, `migrations/`) add:**
 
@@ -227,7 +231,16 @@ This project is open-sourced under the **Apache License 2.0**. See [LICENSE](LIC
 
 ## 📚 More
 
+- [Deployment](#deployment)
+- [Release notes](#release-notes)
 - [Security & Privacy](#-security--privacy)
+
+### Deployment
+
+- **Web (static hosting)**: full procedure in [`docs/dev/web-deployment-sop.md`](docs/dev/web-deployment-sop.md) - pre-deploy checklist, the 6 hard requirements (HTTPS / `frame-ancestors` header / **`.wasm` MIME** / SPA fallback exclusion / caching policy / shipping without source maps), concrete Nginx / Caddy / Vercel / Netlify / object-storage+CDN configs, a 12-item post-deploy checklist and the known traps.
+  Before deploying run `npm run build && npm run check:csp`, then `npm run csp:audit` under `vite preview` (per-route CSP violations + negative control + WASM/blob Worker capability probe).
+- **Desktop (Tauri)**: releases never upload installers; build locally with `npm run tauri:build`. GitHub Releases keep only the source archives.
+- **Android (Capacitor shell)**: `node scripts/android-apk.mjs` builds a debug APK in one command (needs JDK 21 and the Android SDK on the machine, with `sdk.dir` set in `android/local.properties`). Installers are kept out of the repository by `.gitignore` plus the no-artifact guard, and are **not hosted on GitHub Releases** either - the no-release-assets guard fails if any Release carries an asset. Build from source when you need a device package. The native shell disables the Service Worker at build time (otherwise an overwrite install would not take effect); real-device debugging uses Chrome 133 WebView + CDP. Why everything was withdrawn, which 7 assets came down, and how to re-verify: [`docs/dev/installer-distribution-2026-10-19.md`](docs/dev/installer-distribution-2026-10-19.md).
 
 ### Release notes
 
@@ -238,11 +251,10 @@ This project is open-sourced under the **Apache License 2.0**. See [LICENSE](LIC
 - **0.3.1**: see [`docs/dev/release-notes-0.3.1.md`](docs/dev/release-notes-0.3.1.md) for new capabilities, upgrade steps and known limitations.
 - **0.3.0**: see [`docs/dev/release-notes-0.3.0.md`](docs/dev/release-notes-0.3.0.md) for new capabilities, upgrade steps and known limitations.
 - **Database migration drill**: see [`docs/dev/runtime-database-migration-runbook.md`](docs/dev/runtime-database-migration-runbook.md).
-- **Installers**: not hosted here. GitHub Releases keep only the automatically generated source archives; build the Android debug APK with `node scripts/android-apk.mjs` and the desktop app with `npm run tauri:build`.
 
 ### Security & Privacy
 
 - Least-privilege client: capabilities only `core:default`; updater, `fs/shell/http/dialog/os` permissions are not enabled
 - Tightened CSP: `script-src 'self'`, `freezePrototype` enabled
 - API keys encrypted at rest (PBKDF2 + AES-GCM); master password never stored locally
-- GitHub Releases contain only the automatically generated source archives; desktop installers and updater manifests are not uploaded, so build the desktop app locally from source
+- GitHub Releases contain only the automatically generated source archives; no installer of any kind (desktop or Android) and no updater manifest is uploaded - `check:no-release-assets` enforces it, so build the app locally from source

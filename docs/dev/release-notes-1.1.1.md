@@ -39,7 +39,7 @@
 | 关于页版本号断言 | 单测 3 条 + 真实浏览器 1 条，两条链都做过头故障注入实测：把组件回退成 `ref('')` 时，单测红在 `expected '…版本：—…' to contain '版本：1.1.0'`，e2e 红在同一条 `toContainText(APP_VERSION)` |
 | `docs` 源码登记守卫 | 3 条全绿；把登记前缀改成不存在的目录后，"未登记源码"与"登记项必须还指得到源码"两条同时红（实测过） |
 | CI（PR #7，run #122，提交 `db25809`） | 6 个 job 全 success：Quality Gates（含 `Lint (eslint .)` 与覆盖率 82.64 / 76.49 / 84.22 / 84.75，213 文件通过 / 1 跳过）、E2E 四组 53 + 73 + 50 + 66 = **242 项全通过**、Tauri `--no-bundle` |
-| CI 的 E2E 里有 1 条 flaky | group 3/4 报 `1 flaky`：`e2e/ux-modal-describedby-version.spec.ts` 的 `switchBranch()` 里"切换到此分支"按钮点击在 60 秒超时后重试通过（`locator.click: Test timeout of 60000ms exceeded`，该文件 131/135 行）。run 对着看：本轮之前的 `#117`（`2324ffe`）与 `#120`（`f47b95f`）这条 0 flaky、50 项直接全过；本轮的 `#122`（`db25809`）、`#123`（`7c4e6bf`）与合并 README 之后的 `#128`（`4914206`）**三次各出现 1 次** flaky（49 通过 + 1 重试通过）。也就是说这条在当前代码上是可复现的（3/3），不是偶发一次。**两组读数之间我没有改过这条用例，也没改它所在分组的文件清单**（本轮新增的那条 e2e 落在 group 1：52 → 53），所以既不能判定为本轮引入，也不能排除；单独记在下面"已知未闭环"，不用"job 绿"混过去 |
+| CI 的 E2E 里有 1 条 flaky | group 3/4 报 `1 flaky`：`e2e/ux-modal-describedby-version.spec.ts` 的 `switchBranch()` 里"切换到此分支"按钮点击在 60 秒超时后重试通过（`locator.click: Test timeout of 60000ms exceeded`，该文件 131/135 行）。run 对着看：本轮之前的 `#117`（`2324ffe`）与 `#120`（`f47b95f`）这条 0 flaky、50 项直接全过；本轮的 `#122`（`db25809`）、`#123`（`7c4e6bf`）与合并 README 之后的 `#128`（`4914206`）**三次各出现 1 次** flaky（49 通过 + 1 重试通过）。也就是说这条在当前代码上是可复现的（3/3），不是偶发一次。**两组读数之间我没有改过这条用例，也没改它所在分组的文件清单**（本轮新增的那条 e2e 落在 group 1：52 → 53），所以既不能判定为本轮引入，也不能排除；单独记在下面"已知未闭环"，不用"job 绿"混过去。**2026-10-19 已收**（改成先读 `.badge.current` 状态，见下面"已知未闭环"的首条） |
 | 安卓真机（本机模拟器 ns36，headless 起、验完关机归还；WebView Chrome 133 / Android 16） | 新包 `installer/AI酒馆-1.1.1-debug.apk` 26.1 MB，`aapt dump badging`：`versionCode='3' versionName='1.1.1'`；解包核对入口哈希 `assets/public/assets/index-DmEoYUGZ.js` 与本机 `dist` 同一份；覆盖安装后运行页读到 **"版本：1.1.1"**、`<html lang>` 为 `zh-CN`、Service Worker 注册数 0、CacheStorage 0、IndexedDB 旧数据仍在（characters 4 / settings 1） |
 
 ### 本次新抓到的失败与处置
@@ -84,10 +84,23 @@
 - 安卓导出按钮仍是死按钮，需要原生插件才能修（与 1.1.0 同）。
 - `worldEntries` 的死路径为兼容旧备份/导入暂未清理。
 - `PROJECT_INDEX.md` 里 `src/` 下仍有约 70 个文件的用途是"待确认"，需要一次专门的人工核对。
-- 有一条 e2e 用例在 CI 上 flaky：`e2e/ux-modal-describedby-version.spec.ts` 的 `switchBranch()`，
-  症状是"切换到此分支"按钮点击 60 秒超时、重试才过。本轮之后的 #122 / #123 / #128 三次
-  各复现 1 次（可复现，不是偶发），本轮之前的 #117 / #120 两次为 0 次；两组读数之间我没有改过
-  这条用例，也没有改它所在分组的文件清单（本轮新增的那条 e2e 落在 group 1），所以既不能判定为
-  本轮引入，也不能排除。
-  它被 `retries: 2` 兜住所以 job 仍绿，但"绿"不等于"稳"——收口方式按 15.15 那张网的办法走：
-  先量它在单 worker 下的真实耗时，再把等待点改成读存储/读状态，而不是加大超时。
+- 有一条 e2e 用例在 CI 上 flaky：`e2e/ux-modal-describedby-version.spec.ts` 的 `switchBranch()`
+  —— **2026-10-19 已收**。根因确认不是等待时长：那个按钮是 `v-if="b.name !== currentBranch"`，
+  已经是当前分支时压根不渲染，而 `switchBranch()` 无条件等它可点，状态没收敛时这一次点击就把
+  60 秒用例预算烧光。改成先读卡片上的 `.badge.current` 计数、已是当前分支就不等按钮，
+  所有预算仍是 10 秒（没有靠加超时压绿）。读数：单文件 `--workers=1 --repeat-each=3` 双核 12 条全过；
+  反向故障注入（把状态判断删掉、第二次仍调用它）稳定报 `toBeEnabled` 找不到元素，证明省掉那次等待才是牙；
+  全量单 worker 287 条里这条 spec 四个用例全绿（webkit 13.8 秒，原先撞 60 秒）。
+- 同一次全量单 worker 跑（287 条 / 18.2 分钟）另有 4 条红，**不是上面这条改动引入，也尚未修**：
+  - 3 条在 `mobile-functional` 项目且隔离复现稳定红：`character-crud`、`backup-restore`
+    都停在 `点角色卡 → /character/:id/edit` 这一步（拿到的是 `/character`），
+    `worldbook-flow` 停在"改名后 `.lorebook-item` 应可见"（实际是 hidden）。
+    归因清楚：`d305372`（2026-10-18，角色卡详情抽屉，批次 1-5）把窄屏点卡的交互换成了开抽屉，
+    `6226986`（三级改两级）动了世界书列表的滚动容器，而这三个 spec 自 `7b74e36` 之后一行没改。
+    也就是说属"实现按新设计改了、用例还按旧设计断"，要更新的是用例，得先确认新交互里"进编辑器"的入口。
+  - 1 条 `save-outcome`「Tauri 桌面」在全量里红、隔离 `--repeat-each=3` 9/9 绿。
+    报错是断言拿到了 `保存设置失败：window.__TAURI_INTERNALS__.invoke is not a function` 这条提示。
+    两件事叠在一起：设置存储现在只要看见 `__TAURI_INTERNALS__` 标记就走原生 IPC，而该用例注入的是
+    空对象桩（没有 `invoke`）；再加上 success 提示只活 3.2 秒，负载高时那条错误提示会盖住被断言的那条。
+    桩该补全，提示断言也该从"抓活的"改成"记录出现过的文本"，两件事都单独跟。
+
