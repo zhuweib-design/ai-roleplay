@@ -41,7 +41,13 @@ const LIST = argv.includes('--list');
  * 它们没有对应的 token，硬映射会改变桌面密度，留给下一轮设计系统决策。
  */
 const BASELINE = {
-  'src/components/chat/ChatMain.vue': 7,
+  // 2026-10-19 R1-5：7 → 1。页头三键 32×3 + 搜索条 min-height 44 / 输入 32 / 按钮 30 与
+  // 回到底部 34 随 ChatHeader / ChatComposer / ChatMessageArea 搬走，总数不变（7）。
+  'src/components/chat/ChatMain.vue': 1,
+  // R1-5 新增：页头菜单键 32 + 右簇三键 32×3 + 搜索输入 32 + 搜索按钮 30 + 搜索条 min-height 44
+  'src/components/chat/ChatHeader.vue': 5,
+  // R1-5 新增：回到底部浮动按钮 34
+  'src/components/chat/ChatMessageArea.vue': 1,
   'src/components/chat/MessageActionSheet.vue': 1,
   'src/components/chat/NewConversationModal.vue': 3,
   'src/components/chat/RuntimeStatePanel.vue': 1,

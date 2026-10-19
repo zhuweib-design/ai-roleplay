@@ -83,14 +83,9 @@ const ALLOWLIST = {
     lines: 864,
     reason: 'R1-1：已拆（2486 → 864），继续盯回长'
   },
-  'src/components/chat/ChatMain.vue': {
-    // 2026-10-19 显式上调 1695 → 1739：B2/B3 触摸目标（页头右簇 44×44、菜单键伪元素命中区、
-    // 留白与簇间距收紧，全部带原因注释）。R1-5 拆分时以拆后实测回填。
-    // 2026-10-18 显式上调 +5：A15 页头按端分流（分段控件 v-if="!isMobile"）
-    // 的注释与解构。R1-5 拆分时以拆后实测回填。
-    lines: 1742,
-    reason: 'R1-5：等 C1 完成后再拆（共享热文件）',
-  },
+  // 2026-10-19 R1-5 拆完：1742 → 583（-1159），销账。
+  // 拆出 4 个文件：ChatHeader / ChatMessageArea / ChatComposer + useChatWindowing.ts。
+  // 宿主只剩接线：三个子组件 + 四扇浮层 + 消息动作分发 + 导出 + API 错误诊断。
 
   // ── R2 批 ──
   'src/views/CharacterEditorView.vue': { lines: 2320, reason: 'R2-1：拆为 6 个文件（A11 会先改它）' },

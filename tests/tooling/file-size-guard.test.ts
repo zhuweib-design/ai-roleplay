@@ -32,14 +32,15 @@ describe('file-size-guard', () => {
    * 销掉一条，白名单从 26 变 25。
    * 2026-10-19：R1-3 把 WorldBookView 拆到 741 行（≤800），再销一条，25 → 24。
    * 2026-10-19：R1-4 把 SettingsModelPanel 拆到 369 行（≤800），再销一条，24 → 23。
+   * 2026-10-19：R1-5 把 ChatMain 拆到 583 行（≤800），再销一条，23 → 22。
    */
-  it('白名单条目数固定为 23（2 个 i18n 字典 + 21 个未拆完的目标）', () => {
+  it('白名单条目数固定为 22（2 个 i18n 字典 + 20 个未拆完的目标）', () => {
     const r = runGuard(['--list']);
     expect(r.status).toBe(0);
     const m = /共 (\d+) 条/.exec(r.stdout);
     expect(m, `输出里没有条目数：\n${r.stdout}`).not.toBeNull();
     // 数字变小=有人删了条目；数字变大=有人塞了新的大文件进来。两边都要解释
-    expect(Number(m![1])).toBe(23);
+    expect(Number(m![1])).toBe(22);
   });
 
   it('白名单每一条都带 reason（没有理由的豁免等于没有门禁）', () => {
@@ -47,7 +48,7 @@ describe('file-size-guard', () => {
     const allow = src.split('const ALLOWLIST = {')[1]?.split('\n};')[0] ?? '';
     const entries = [...allow.matchAll(/^\s{2}'[^']+':\s*\{/gm)];
     const reasons = [...allow.matchAll(/reason:/g)];
-    expect(entries.length, '白名单条目数应为 23').toBe(23);
+    expect(entries.length, '白名单条目数应为 22').toBe(22);
     expect(reasons.length, '每条都要有 reason').toBe(entries.length);
   });
 });

@@ -418,6 +418,10 @@ describe('5. 静态红线', () => {
     const targets = [
       'src/components/chat/StatusHud.vue',
       'src/components/chat/ChatMain.vue',
+      // R1-5：ChatMain 拆出的三个子组件同样要在"零 v-html"白名单里
+      'src/components/chat/ChatHeader.vue',
+      'src/components/chat/ChatMessageArea.vue',
+      'src/components/chat/ChatComposer.vue',
       'src/core/status-parser.ts',
       'src/core/status-schema.ts',
       'src/core/status-prompt.ts',
@@ -436,9 +440,10 @@ describe('5. 静态红线', () => {
   });
 
   it('5-4 会话级 sticky + 消息级 inline 双挂载（决策 2 已放宽：消息级补渲染）', () => {
-    const main = readFileSync(resolve(ROOT, 'src/components/chat/ChatMain.vue'), 'utf8');
+    // R1-5：消息区（含 StatusHud 的 sticky 挂载点）搬进 ChatMessageArea，判据跟着走。
+    const main = readFileSync(resolve(ROOT, 'src/components/chat/ChatMessageArea.vue'), 'utf8');
     expect(main).toContain('variant="sticky"');
-    // ChatMain 只挂会话级一条（sticky 仍是"截至当前"的唯一顶部条）
+    // ChatMessageArea 只挂会话级一条（sticky 仍是"截至当前"的唯一顶部条）
     expect(main).not.toContain('variant="inline"');
     expect([...main.matchAll(/<StatusHud\b/g)].length).toBe(1);
     // 消息级渲染：MessageBubble 挂 **inline** variant（且只在 msg.status 存在时渲染）
