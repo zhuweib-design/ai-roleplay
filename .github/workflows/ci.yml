@@ -194,6 +194,18 @@ jobs:
       - name: ORT first-screen guard (check:ort)
         run: npm run check:ort
 
+      # README 门禁清单对账（2026-10-19 立）：把 quality-gates 里每条 `npm run X`（不含
+      # `X:self-test` 伴生步）与中英两份 README 的"本地开发门禁"代码块双向比对，
+      # 缺一条或多一条都红，CI 侧解析到 0 条也红（防判据空跑）。
+      # 起因：check:file-size / check:control-size / check:primitives / check:no-release-assets
+      # 四条早已进 CI，README 一条没提；清单靠人手抄就会一直漂。放在最后一步，
+      # 前面新增的守卫这一轮就能被它对出来。
+      - name: README gates parity (check:readme-gates)
+        run: npm run check:readme-gates
+
+      - name: README gates parity self-test
+        run: npm run check:readme-gates:self-test
+
       # 持久化覆盖率报告供人工查看（不影响门禁结果）
       - name: Upload coverage report
         if: always()

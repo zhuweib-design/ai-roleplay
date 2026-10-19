@@ -5,6 +5,25 @@
 
 ## 未发布
 
+### 新增（README 的门禁清单与 CI 对账）
+- 新增门禁 `check:readme-gates`（`scripts/readme-gates-guard.mjs` + CI 两步）：把 `quality-gates`
+  里每条 `npm run X`（`X:self-test` 那种伴生步不算）与中英两份 README 的"本地开发门禁"代码块**双向**比对，
+  少抄一条红、多列一条也红；从 ci.yml 一条都没解析出来同样红（防作业改名后判据空跑）。
+  起因就在今天：给 README 补口径时发现 `check:file-size` / `check:control-size` / `check:primitives` /
+  `check:no-release-assets` 早就在 CI 里跑，README 一条没提——清单靠人手抄就会一直漂。
+  牙口实测：删掉 README 一行 → 红并指名 `check:no-artifact`；往 CI 插一条假守卫 → 中英两侧同时红；
+  在 README 多列一条 CI 不跑的 → 红并指名那条。自检 11 项另含"注释里的 `npm run` 不算实跑"这一条
+  （第一版就是被 ci.yml 的注释骗出过一个假缺口）。
+- 同一条门禁上线即发现自己的一处盲区：`ci.yml` 注释里"各子检查仍可单独运行"提到的 `check:breakpoints`
+  曾被当成 CI 实跑，已改成只认非注释行。
+
+### 修复（e2e：导出落点那条 Tauri 用例不再被别的提示抢走）
+- `e2e/save-outcome.spec.ts`：`__TAURI_INTERNALS__` 桩从"启动前注入"改为"启动后补打"，提示断言改为
+  锁定含"已保存"的那一条。旧形状下空对象桩让存储层选了原生 IPC，设置一读一写就弹
+  "`invoke` is not a function"，而提示只显示队首一条、错误提示活 5 秒，负载一高被断言的那条迟迟上不了屏。
+  合成负载下旧形状 4 次红 1 次（与 10-19 全量跑同一条报错），改后同负载 4 次 0 次；
+  产品文案双向故障注入验牙。详见 `docs/dev/release-notes-1.1.1.md` 的"已知未闭环"。
+
 ### 变更（安装包不再对外托管）
 - GitHub Release 从此只保留自动生成的源码归档，不再上传安装包。1.1.1 的安卓 debug 包曾于 2026-10-16
   挂在 `v1.1.1` 上，**2026-10-19 按要求撤下**（删除资产返回 204，原下载链接现在 404，Release 正文同步改成

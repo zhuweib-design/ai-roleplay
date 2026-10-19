@@ -105,6 +105,7 @@ npm run test:coverage         # Vitest + 覆盖率（statements 78 / branches 73
 npm run build                 # vue-tsc 类型检查 + vite 生产构建
 npm run check:csp             # Web 端 CSP 契约守卫（须在 build 之后跑）
 npm run check:ort             # ORT 首屏隔离守卫（须在 build 之后跑）
+npm run check:readme-gates    # 本清单与 CI 的对账守卫（CI 实跑的守卫与上面这块双向比对，缺一条即红）
 ```
 
 > 2026-10-16 的教训：一台 `.load-earlier-btn:hover` 的违规之所以能进了 master，是因为本机只跑了熟悉的那几条。**本机核对必须照 `ci.yml` 的整条 step 清单走**，不要凭记忆挑子集；E2E 的结论以 CI 的 4 组并行为准（本机全量串行约 15 分钟，且吃内存）。
@@ -115,7 +116,7 @@ npm run check:ort             # ORT 首屏隔离守卫（须在 build 之后跑�
 npm run tauri:build        # 桌面端编译验证（需 Rust 工具链，耗时较长）
 ```
 
-> CI（`.github/workflows/ci.yml`）共三个 job。`quality-gates`（ubuntu-latest，带 postgres:16 service）按序执行：依赖审计（high 及以上）→ lint → Runtime Schema 漂移检查 → 快照迁移计划检查 → i18n strict → eval manifest 自检 → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7）→ 单文件行数棘轮 → 控件高度字面量棘轮 → 共享原语复用守卫 → 存盘方式守卫（含自检）→ 产物入库守卫（安装包与大二进制不许进 git，含自检）→ Release 零资产守卫（安装包不挂 GitHub Releases，含自检）→ Token 死引用棘轮（含自检）→ 对比度审计（含自检）→ 测试与覆盖率门禁（78/73/78/78，同一步承载真实 PostgreSQL 集成用例，不再单设重复 job）→ 构建 → CSP 守卫 → ORT 首屏守卫。`e2e` 按 `e2e/shard-groups.mjs`（由单 worker 实测时长生成，并有"每个 spec 恰好属于一组"的对账守卫）分成 4 组并行，chromium 覆盖桌面与 Pixel 5 视口、webkit 覆盖 Safari 近似内核。`tauri-build` 验证桌面 release 二进制可编译（`--no-bundle`，不生成也不上传安装包）。GitHub Release 只保留自动生成的源码归档。
+> CI（`.github/workflows/ci.yml`）共三个 job。`quality-gates`（ubuntu-latest，带 postgres:16 service）按序执行：依赖审计（high 及以上）→ lint → Runtime Schema 漂移检查 → 快照迁移计划检查 → i18n strict → eval manifest 自检 → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7）→ 单文件行数棘轮 → 控件高度字面量棘轮 → 共享原语复用守卫 → 存盘方式守卫（含自检）→ 产物入库守卫（安装包与大二进制不许进 git，含自检）→ Release 零资产守卫（安装包不挂 GitHub Releases，含自检）→ Token 死引用棘轮（含自检）→ 对比度审计（含自检）→ 测试与覆盖率门禁（78/73/78/78，同一步承载真实 PostgreSQL 集成用例，不再单设重复 job）→ 构建 → CSP 守卫 → ORT 首屏守卫 → README 门禁清单对账（含自检：CI 实跑的守卫与本页上面那块清单双向比对，缺一条即红）。`e2e` 按 `e2e/shard-groups.mjs`（由单 worker 实测时长生成，并有"每个 spec 恰好属于一组"的对账守卫）分成 4 组并行，chromium 覆盖桌面与 Pixel 5 视口、webkit 覆盖 Safari 近似内核。`tauri-build` 验证桌面 release 二进制可编译（`--no-bundle`，不生成也不上传安装包）。GitHub Release 只保留自动生成的源码归档。
 
 **Runtime 改动（`src/runtime/`、`migrations/` 时追加；Schema 漂移检查已并入 CI `quality-gates`）**
 
