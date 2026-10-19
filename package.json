@@ -36,6 +36,8 @@
     "check:save-blob:self-test": "node scripts/save-blob-guard.mjs --self-test",
     "check:no-artifact": "node scripts/no-artifact-in-git-guard.mjs",
     "check:no-artifact:self-test": "node scripts/no-artifact-in-git-guard.mjs --self-test",
+    "check:no-release-assets": "node scripts/no-release-assets-guard.mjs",
+    "check:no-release-assets:self-test": "node scripts/no-release-assets-guard.mjs --self-test",
     "check:token-baseline": "node scripts/token-guard.mjs --strict",
     "token:self-test": "node scripts/token-guard.mjs --self-test",
     "token:census": "node scripts/token-guard.mjs",

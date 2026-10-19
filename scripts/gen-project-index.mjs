@@ -178,6 +178,8 @@ const CURATED = {
     '存盘唯一入口（原生 WebView 里 blob + a[download] 静默失效，由 check:save-blob 守卫盯住，基线 0）',
   'scripts/no-artifact-in-git-guard.mjs':
     '门禁：安装包与大二进制不许进 git（按扩展名与 1 MiB 阈值扫 git 索引，附 --self-test）',
+  'scripts/no-release-assets-guard.mjs':
+    '门禁：GitHub Release 上不保留任何安装包资产（assets 非空即红；源码归档不算资产，附 --self-test，2026-10-19 立）',
   'scripts/android-apk.mjs':
     '安卓出包：vite build → cap sync → gradlew assembleDebug → 复制进 installer/（需本机 JDK 21 与 Android SDK）',
   'docs/dev/release-notes-1.1.0.md':

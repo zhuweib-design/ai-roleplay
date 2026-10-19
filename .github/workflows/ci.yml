@@ -118,13 +118,27 @@ jobs:
         run: npm run check:save-blob:self-test
 
       # 产物入库守卫（2026-10-16 立）：出包脚本会把约 27MB 的 debug APK 放进仓库根 installer/，
-      # 而公开仓库的 git 历史收下大文件之后删掉记录也不会瘦。分发改走 GitHub Releases。
+      # 而公开仓库的 git 历史收下大文件之后删掉记录也不会瘦。安装包既不入库也不挂 Release，
+      # 需要的人从源码本地构建。
       # .gitignore 挡"顺手 add"，这一条挡"已经 add 了"：按扩展名 + 1MB 体积上限扫已跟踪文件。
       # 实测当前 1034 个跟踪文件无一命中（最大 418KB），所以门禁上线即是绿的。
       - name: No-artifact-in-git guard (check:no-artifact)
         run: npm run check:no-artifact
       - name: No-artifact-in-git guard self-test
         run: npm run check:no-artifact:self-test
+
+      # Release 零资产守卫（2026-10-19 立）：v0.2.0 那阵 automation 往 Release 传过桌面安装包，
+      # v1.1.1 又在 2026-10-16 手工挂过一次安卓 debug 包 —— 两处都在 2026-10-19 撤下。
+      # "之后不再上传任何安装包"这条策略要能被机器检查，否则下一次顺手一拖就破了。
+      # 源码归档 (zip/tar.gz) 不在 assets 里，所以不会误伤。
+      # 匿名读公开仓库即可；判据的反向对照见自检与仓库外实测（有资产的仓库必红）。
+      - name: No-release-assets guard (check:no-release-assets)
+        env:
+          # 公开仓库匿名也能读；带上任务令牌只为避开共享出口 IP 的匿名限流
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run check:no-release-assets
+      - name: No-release-assets guard self-test
+        run: npm run check:no-release-assets:self-test
 
       # Token 死引用棘轮（M18 试点 → M19 入门禁）：组件层裸引用一个没定义的 CSS 变量时，
       # 浏览器会把整条声明丢掉 —— 今天就是失效代码，不是风格问题。实测存量 74 处 / 4 文件

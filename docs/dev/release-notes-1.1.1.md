@@ -67,8 +67,8 @@
 | 合并后 master | run #125（提交 `aef30ff`）success |
 | 标签 | 附注标签 `v1.1.1`，`refs/tags/v1.1.1^{}` = `aef30ff` |
 | Release 对象 | 新建两个：`v1.1.0`（id 414902351，无资产，只有自动生成的源码归档）与 `v1.1.1`（id 414902372） |
-| 安卓包 | 本机 `installer/AI酒馆-1.1.1-debug.apk`，27,335,537 字节（26.1 MiB），sha256 `3f64b6b381de17ba1840ebdff2caf810abeaa3c69456b234769afc6f0f4834`。**当天曾以 `AI-roleplay-1.1.1-debug.apk` 挂到 v1.1.1 Release 上并下载回来 `cmp` 逐字节一致，随后按用户要求从 Release 撤下**（资产删除返回 204，原下载链接现在 404，Release 页面本身仍在）；本机产物保留 |
-| 安装包策略（同日更新） | 安装包既不进 git，也**不再对外挂在 GitHub Releases 上**：Release 只保留自动生成的源码归档，需要真机包的人从源码本地构建（`node scripts/android-apk.mjs`）。v1.1.1 的 Release 正文已同步改成这个说法 |
+| 安卓包 | 本机 `installer/AI酒馆-1.1.1-debug.apk`，27,335,537 字节（26.1 MiB），sha256 `3f64b6b381de17ba1840ebdff2caf810abeaa3c69456b234769afc6f0f4834`。**2026-10-16 曾以 `AI-roleplay-1.1.1-debug.apk` 挂到 v1.1.1 Release 上并下载回来 `cmp` 逐字节一致；2026-10-19 按用户要求从 Release 撤下**（资产删除返回 204，原下载链接现在 404，Release 页面本身仍在）；本机产物保留 |
+| 安装包策略（2026-10-19 定） | **之后不再上传任何安装包**：Release 只保留自动生成的源码归档。`v1.1.1` 的正文已改成这句话；`v0.2.0` 上历史遗留的 6 个桌面产物（exe / msi / appimage + 三个 .sig）同一天撤下，至此全部 Release 资产数为 0（两条老下载链接实测 404）。为此加了机器检查 `check:no-release-assets`（CI 两步），判据含"挂任何资产即红"，并用一个外部有资产的公开仓库跑实路验证它不是空转、自检 5 项覆盖空/非空两类 |
 | 签名的诚实说法 | 这是 **debug 签名**包（gradle 自动生成 debug keystore），用于自测与真机验证，不是正式发布签名；Release 正文里也这么写了 |
 
 出包与上传过程中撞到的两个坑，记下来免得下次重查：
