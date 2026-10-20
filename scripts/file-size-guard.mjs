@@ -93,7 +93,7 @@ const ALLOWLIST = {
   'src/components/settings/SettingsAppearancePanel.vue': { lines: 1894, reason: 'R3-1：拆为 4 个文件' },
   // 2026-10-19 R2-4：CommunityMarketView 已拆（1838 → 580），本条销账。
   // 2026-10-19 R2-3：ContextPanel 已拆（1269 → 284），本条销账。
-  'src/stores/settings.ts': { lines: 1621, reason: 'R2-5：拆为 3 个文件（其余 store 的拆分模板）' },
+  // 2026-10-20 R2-5：settings.ts 已拆（1621 → 335，拆入 src/stores/settings/ 四个域模块），本条销账。
 
   // ── R3 批 ──
   'src/components/settings/SettingsDataPanel.vue': {

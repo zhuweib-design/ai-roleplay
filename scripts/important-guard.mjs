@@ -27,7 +27,7 @@ const ROOT = join(__dirname, '..');
 const SRC = join(ROOT, 'src');
 
 /** 当前存量基线（2026-09-22 实测，已剥离注释）。只允许下调，不允许上调。 */
-const BASELINE_TOTAL = 26;
+const BASELINE_TOTAL = 24;
 /** S-1 的历史目标（responsive.css 收敛到个位数）—— 仅作提示，不阻断 */
 const RESPONSIVE_TARGET_FILE = 'src/styles/responsive.css';
 const RESPONSIVE_TARGET_MAX = 9;

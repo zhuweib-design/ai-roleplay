@@ -320,6 +320,14 @@ const CURATED = {
   'src/components/market/MarketAdminSection.vue': '组件：社区市场管理段（R2-4 拆分）',
   'src/components/market/MarketDetailModal.vue': '组件：社区市场详情/评论/举报三扇弹窗（R2-4 拆分，Teleport 到 body）',
   'src/components/market/market-format.ts': '工具：市场页日期/计数/星级/字节格式化（R2-4 拆分）',
+
+  // R2-5：settings store 拆出的四个域模块 + 上下文 + 纯工具
+  'src/stores/settings/ctx.ts': '上下文：settings store 各域共享的 ref 集合与持久化回调（R2-5 拆分）',
+  'src/stores/settings/normalize.ts': '工具：自定义主题/采样默认值/图像 Provider 的归一并自愈脏数据（R2-5 拆分）',
+  'src/stores/settings/appearance.ts': '模块：主题/字号/语言/背景/气泡/自定义 CSS 与主题（R2-5 拆分）',
+  'src/stores/settings/profiles.ts': '模块：API Profile CRUD/模型分类/各类配置/Quick Reply/偏好开关（R2-5 拆分）',
+  'src/stores/settings/security.ts': '模块：AC20 主密码会话与 P1-4 远程向量密钥加密（R2-5 拆分）',
+  'src/stores/settings/persistence.ts': '模块：首帧加载/串行化写入/透明加密快照（R2-5 拆分）',
   'src/components/random-events/SceneConfigModal.vue': '组件：随机事件场景配置',
   'src/components/random-events/TemplateEditorModal.vue': '组件：随机事件模板编辑器',
   'src/components/settings/SettingsModelPanel.vue': '组件：设置-模型面板',
