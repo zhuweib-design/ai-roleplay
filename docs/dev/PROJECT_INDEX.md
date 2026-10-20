@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-10-20 16:52（本地时区）
+- **生成时间**：2026-10-20 17:18（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v1.1.1 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：1389 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：742 个
+- **收录文件**：1393 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：741 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -151,9 +151,9 @@ ai-roleplay/
 - `scripts/`  — 49 个文件
   - `archive/`  — 8 个文件
     - `round3-settings-split/`  — 8 个文件
-- `src/`  — 345 个文件
+- `src/`  — 349 个文件
   - `api/`  — 13 个文件
-  - `components/`  — 117 个文件
+  - `components/`  — 121 个文件
     - `character/`  — 17 个文件
       - `editor/`  — 8 个文件
       - `version/`  — 7 个文件
@@ -165,7 +165,7 @@ ai-roleplay/
     - `market/`  — 7 个文件
     - `mobile/`  — 1 个文件
     - `random-events/`  — 2 个文件
-    - `settings/`  — 17 个文件
+    - `settings/`  — 21 个文件
     - `story/`  — 10 个文件
     - `worldbook/`  — 10 个文件
   - `composables/`  — 18 个文件
@@ -227,7 +227,7 @@ ai-roleplay/
 
 ## 二、文件索引
 
-### 2.1 程序（359）
+### 2.1 程序（363）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -339,10 +339,10 @@ ai-roleplay/
 | `src/components/mobile/BottomNav.vue` | vue | 程序 | 布局：移动端底部导航 | 已跟踪 |  |
 | `src/components/random-events/SceneConfigModal.vue` | vue | 程序 | 组件：随机事件场景配置 | 已跟踪 |  |
 | `src/components/random-events/TemplateEditorModal.vue` | vue | 程序 | 组件：随机事件模板编辑器 | 已跟踪 |  |
-| `src/components/settings/AppearanceFontSizeSection.vue` | vue | 程序 | 分区：外观-字号选择与实时预览（R3-1 拆分） | 未跟踪 |  |
-| `src/components/settings/AppearanceLocaleSection.vue` | vue | 程序 | 分区：外观-语言选择（R3-1 拆分） | 未跟踪 |  |
-| `src/components/settings/AppearanceThemeSection.vue` | vue | 程序 | 分区：外观-主题选择与自定义主题编辑器（R3-1 拆分） | 未跟踪 |  |
-| `src/components/settings/AppearanceUiCustomSection.vue` | vue | 程序 | 分区：外观-界面自定义（背景/气泡/CSS/开合记忆，R3-1 拆分） | 未跟踪 |  |
+| `src/components/settings/AppearanceFontSizeSection.vue` | vue | 程序 | 分区：外观-字号选择与实时预览（R3-1 拆分） | 已跟踪 |  |
+| `src/components/settings/AppearanceLocaleSection.vue` | vue | 程序 | 分区：外观-语言选择（R3-1 拆分） | 已跟踪 |  |
+| `src/components/settings/AppearanceThemeSection.vue` | vue | 程序 | 分区：外观-主题选择与自定义主题编辑器（R3-1 拆分） | 已跟踪 |  |
+| `src/components/settings/AppearanceUiCustomSection.vue` | vue | 程序 | 分区：外观-界面自定义（背景/气泡/CSS/开合记忆，R3-1 拆分） | 已跟踪 |  |
 | `src/components/settings/ModelCloudList.vue` | vue | 程序 | 组件：ModelCloudList（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/ModelLocalSection.vue` | vue | 程序 | 组件：ModelLocalSection（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/ModelPresetSection.vue` | vue | 程序 | 组件：ModelPresetSection（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -350,12 +350,16 @@ ai-roleplay/
 | `src/components/settings/ModelProfileList.vue` | vue | 程序 | 组件：ModelProfileList（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/ModelThinkingSection.vue` | vue | 程序 | 组件：ModelThinkingSection（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsAboutPanel.vue` | vue | 程序 | 组件：SettingsAboutPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
-| `src/components/settings/SettingsAppearancePanel.vue` | vue | 程序 | 组件：设置-外观（装配层，R3-1 拆分） | 已修改 |  |
-| `src/components/settings/SettingsDataPanel.vue` | vue | 程序 | 组件：SettingsDataPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/settings/SettingsAppearancePanel.vue` | vue | 程序 | 组件：设置-外观（装配层，R3-1 拆分） | 已跟踪 |  |
+| `src/components/settings/SettingsDataAdvancedSection.vue` | vue | 程序 | 分区：数据-QR 互导/PWA 持久性/嵌入优化/审计日志（R3-2 拆分） | 未跟踪 |  |
+| `src/components/settings/SettingsDataDailySection.vue` | vue | 程序 | 分区：数据-资料档案/全量备份/PNG/Markdown 导出（R3-2 拆分） | 未跟踪 |  |
+| `src/components/settings/SettingsDataModals.vue` | vue | 程序 | 弹窗：数据-导入结果/审计日志/清空确认/主密码（R3-2 拆分） | 未跟踪 |  |
+| `src/components/settings/SettingsDataPanel.vue` | vue | 程序 | 组件：设置-数据（装配层，R3-2 拆分） | 已修改 |  |
 | `src/components/settings/SettingsExtensionPanel.vue` | vue | 程序 | 组件：SettingsExtensionPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsModelPanel.vue` | vue | 程序 | 组件：设置-模型面板 | 已跟踪 |  |
 | `src/components/settings/SettingsSecurityPanel.vue` | vue | 程序 | 组件：SettingsSecurityPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/VectorModelPanel.vue` | vue | 程序 | 组件：设置-向量模型面板 | 已跟踪 |  |
+| `src/components/settings/useDataPanelState.ts` | ts | 程序 | 状态：数据面板弹窗共享单例（R3-2 拆分） | 未跟踪 |  |
 | `src/components/story/StoryCard.vue` | vue | 程序 | 组件：StoryCard（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/story/StoryDetailCharacters.vue` | vue | 程序 | 组件：StoryDetailCharacters（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/story/StoryDetailPanel.vue` | vue | 程序 | 组件：StoryDetailPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -910,7 +914,7 @@ ai-roleplay/
 | `docs/dev/P2-11-virtualization-plan.md` | md | 开发文档 | 开发文档：P2-11 长对话虚拟化分批计划 | 已跟踪 |  |
 | `docs/dev/PERF_OPTIMIZATION_2026-09-28.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/PLAN_AUDIT_2026-09-28.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/dev/PROJECT_INDEX.md` | md | 开发文档 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已修改 | 索引文件（不递归展开） |
+| `docs/dev/PROJECT_INDEX.md` | md | 开发文档 | 本索引文件（由 scripts/gen-project-index.mjs 生成） | 已跟踪 | 索引文件（不递归展开） |
 | `docs/dev/QUICK_START.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/REAL_DEVICE_FIX_2026-10-03.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/REAL_DEVICE_TEST_2026-10-03.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
@@ -1675,7 +1679,7 @@ ai-roleplay/
 
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
-| 程序 | 359 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
+| 程序 | 363 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 286 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
 | 开发文档 | 167 | docs/dev/ 实现计划、Runbook、审计记录 |
@@ -1686,7 +1690,7 @@ ai-roleplay/
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 49 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 381 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **1389** | 与「收录文件」数一致 |
+| **合计** | **1393** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

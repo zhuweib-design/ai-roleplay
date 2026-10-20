@@ -76,7 +76,11 @@ const BASELINE = {
   'src/components/settings/SettingsAppearancePanel.vue': 0,
   'src/components/settings/AppearanceThemeSection.vue': 2,
   'src/components/settings/AppearanceUiCustomSection.vue': 1,
-  'src/components/settings/SettingsDataPanel.vue': 2,
+  'src/components/settings/SettingsDataPanel.vue': 0,
+  // 2026-10-20 R3-2：宿主 2 → 0，.data-mgmt-select 32 搬到 SettingsDataDailySection、
+  // .modal-btn 32 搬到 SettingsDataModals。总数 60 不变，只换归属。
+  'src/components/settings/SettingsDataDailySection.vue': 1,
+  'src/components/settings/SettingsDataModals.vue': 1,
   // 2026-10-19 R1-4：4 → 2（.data-mgmt-btn 32 / .modal-btn 32 仍留在宿主的两段
   // section 骨架里；.modal-btn 32 与 .data-mgmt-btn 32 各被搬到 ModelProfileForm /
   // ModelLocalSection，值未改，只是换了归属）。

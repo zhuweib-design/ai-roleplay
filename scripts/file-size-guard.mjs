@@ -98,12 +98,8 @@ const ALLOWLIST = {
   // 2026-10-20 R2-5：settings.ts 已拆（1621 → 335，拆入 src/stores/settings/ 四个域模块），本条销账。
 
   // ── R3 批 ──
-  'src/components/settings/SettingsDataPanel.vue': {
-    // 2026-10-19 显式上调 1380 → 1389：C2 五处导出回显统一走 describeSaveResult
-    // （取消不提示 / 成功说清落点 / 环境不支持说清去哪找）。R3-2 拆分时以拆后实测回填。
-    lines: 1389,
-    reason: 'R3-2：拆为 3 个文件',
-  },
+  // 2026-10-20 R3-2：SettingsDataPanel 已拆（1389 → 97，拆入 DailySection 600 /
+  // AdvancedSection 359 / Modals 383 / useDataPanelState 15），本条销账。
   'src/views/LocalModelView.vue': { lines: 1275, reason: 'R3-3：拆为 3 个文件' },
   'src/views/RandomEventsView.vue': { lines: 1269, reason: 'R3-4：拆为 3 个文件' },
   'src/views/CharactersView.vue': {
