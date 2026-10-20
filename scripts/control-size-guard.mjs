@@ -95,7 +95,10 @@ const BASELINE = {
   'src/views/CharacterVersionView.vue': 0,
   'src/components/character/version/VersionHistoryPanel.vue': 1,
   'src/views/CharactersView.vue': 3,
-  'src/views/CommunityMarketView.vue': 1,
+  // 2026-10-19 R2-4：1 → 0（.form-textarea 的 min-height:60px 整体搬到 MarketDetailModal，
+  // 宿主无 textarea；总数 62 不变）。
+  'src/views/CommunityMarketView.vue': 0,
+  'src/components/market/MarketDetailModal.vue': 1,
   'src/views/DataBankView.vue': 1,
   // 2026-10-19 R1-1：2 → 0（.group-avatar / .gen-spinner 随组件搬走，见上方两条）
   'src/views/ImageGeneratorView.vue': 1,

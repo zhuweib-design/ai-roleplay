@@ -44,7 +44,13 @@ const SELF_TEST = argv.includes('--self-test');
 const BASELINE_UNDEF_BARE = {
   'src/views/StoryEngineView.vue': 12,
   'src/components/story/StoryDetailCharacters.vue': 12,
-  'src/views/CommunityMarketView.vue': 10,
+  'src/views/CommunityMarketView.vue': 6,
+  // 2026-10-19 R2-4：市场页拆分，4 处裸 --text 随样式搬到子组件，值一处未改：
+  // .card-author(--text) → MarketCard；.search-input 的 --text → MarketToolbar；
+  // .detail-desc/.review-comment 各 1 处 --text → MarketDetailModal。总数 77 不变。
+  'src/components/market/MarketCard.vue': 1,
+  'src/components/market/MarketToolbar.vue': 1,
+  'src/components/market/MarketDetailModal.vue': 2,
   'src/components/story/StoryUploadModal.vue': 10,
   'src/components/story/StoryDetailWorld.vue': 9,
   'src/components/story/StoryDetailPanel.vue': 6,

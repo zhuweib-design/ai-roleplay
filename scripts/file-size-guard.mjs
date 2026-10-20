@@ -91,12 +91,7 @@ const ALLOWLIST = {
   // 2026-10-19 R2-1：CharacterEditorView 已拆（2320 → 532），本条销账。
   // 2026-10-19 R2-2：CharacterVersionView 已拆（1999 → 597），本条销账。
   'src/components/settings/SettingsAppearancePanel.vue': { lines: 1894, reason: 'R3-1：拆为 4 个文件' },
-  'src/views/CommunityMarketView.vue': {
-    // 2026-10-18 显式上调 +8：A18 叙事降级给昵称 Modal 加了一行说明 + 它的样式
-    // （合理功能增量，非无声漂移）。R2-4 拆分时以拆后实测回填。
-    lines: 1838,
-    reason: 'R2-4：拆为 5 个文件',
-  },
+  // 2026-10-19 R2-4：CommunityMarketView 已拆（1838 → 580），本条销账。
   // 2026-10-19 R2-3：ContextPanel 已拆（1269 → 284），本条销账。
   'src/stores/settings.ts': { lines: 1621, reason: 'R2-5：拆为 3 个文件（其余 store 的拆分模板）' },
 

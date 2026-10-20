@@ -52,7 +52,10 @@ const RATCHET = {
   'src/components/common/ApiErrorModal.vue': 3,
   'src/components/random-events/SceneConfigModal.vue': 1,
   'src/components/random-events/TemplateEditorModal.vue': 1,
-  'src/views/CommunityMarketView.vue': 4,
+  // 2026-10-19 R2-4：4 → 2（两条 .btn-sm 转 :deep() 副本不计数；剩下的 .btn/.btn-primary
+  // 是宿主两扇 Modal 自用的 plain scoped）。MarketDetailModal 另带一份传送门副本。
+  'src/views/CommunityMarketView.vue': 2,
+  'src/components/market/MarketDetailModal.vue': 1,
   'src/views/ImageGeneratorView.vue': 1,
   'src/views/LocalModelView.vue': 1,
   'src/views/RandomEventsView.vue': 1,
