@@ -111,7 +111,9 @@ const ALLOWLIST = {
     lines: 1388,
     reason: 'R3-5：拆为 3 个文件',
   },
-  'src/views/ImageGeneratorView.vue': { lines: 1238, reason: 'R3-6：拆为 3 个文件' },
+  // 2026-10-20 R3-6：ImageGeneratorView 已拆（1230 → 470 行装配层，拆入 Generate /
+  // Gallery / Settings 三个 tab 面板 + image-gen-format.ts；跨面板共用的表单与按钮族
+  // 留宿主 `.image-gen-view :deep()` 单点定义），本条销账。
 
   // ── R4 批 ──
   // 2026-10-20 R4-1：VectorModelPanel 已拆（1023 → 285 装配层，拆入 Enhance / Install /

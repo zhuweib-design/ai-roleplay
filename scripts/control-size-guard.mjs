@@ -111,7 +111,10 @@ const BASELINE = {
   'src/components/market/MarketDetailModal.vue': 1,
   'src/views/DataBankView.vue': 1,
   // 2026-10-19 R1-1：2 → 0（.group-avatar / .gen-spinner 随组件搬走，见上方两条）
-  'src/views/ImageGeneratorView.vue': 1,
+  // 2026-10-20 R3-6：1 → 0（.form-textarea 的 min-height:60px 随生成面板搬到
+  // ImageGenGeneratePanel；下面一行登记它，总数 60 不变）。
+  'src/views/ImageGeneratorView.vue': 0,
+  'src/views/ImageGenGeneratePanel.vue': 1,
   // 2026-10-19 R1-3：4 → 1（.tree-action-btn 26 / .entry-toggle 22 / .bound-chars-count 20
   // 随组件搬到 LorebookEntryTree / LorebookBindings；剩下 1 处是 .wb-open-flow-inline 的 min-height:32px）。
   'src/views/WorldBookView.vue': 1,

@@ -439,8 +439,11 @@ export function provideWorldBookEvents(): WorldBookEventsContext {
   return ctx;
 }
 
+// i18n-ignore-start  // 开发者侧不变式异常（不是 UI 文案）：只有在面板子树之外
+// 误调 useWorldBookEvents() 时才会抛出，用户看不到它，不需要翻译。
 export function useWorldBookEvents(): WorldBookEventsContext {
   const ctx = inject(EVENTS_CTX, null);
   if (!ctx) throw new Error('useWorldBookEvents() 必须在 WorldBookEventsPanel 子树内调用');
   return ctx;
 }
+// i18n-ignore-end
