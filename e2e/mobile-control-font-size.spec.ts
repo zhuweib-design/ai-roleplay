@@ -32,6 +32,7 @@ const ROUTES = [
   '/guide',
   '/settings',
   '/settings?cat=model',
+  '/settings?cat=retrieval',
   '/settings?cat=extension',
   '/settings?cat=data',
   '/settings?cat=security',

@@ -115,7 +115,8 @@ const ALLOWLIST = {
 
   // ── R4 批 ──
   'src/components/worldbook/WorldBookEventsPanel.vue': { lines: 1161, reason: 'R4-2：拆为 2 个文件' },
-  'src/components/settings/VectorModelPanel.vue': { lines: 1024, reason: 'R4-1：拆为 2 个文件' },
+  // 2026-10-20 R4-1：VectorModelPanel 已拆（1023 → 285 装配层，拆入 Enhance / Install /
+  // User / Remote 四个子面板；共用皮肤留宿主 `.settings-section :deep()` 单点定义），本条销账。
   'src/stores/lorebook.ts': { lines: 1469, reason: 'R4-3：拆为 2 个文件' },
   'src/stores/chat-generation.ts': { lines: 1502, reason: 'R4-4：拆为 2 个文件' },
   'src/stores/story.ts': {
