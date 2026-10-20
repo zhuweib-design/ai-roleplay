@@ -114,9 +114,11 @@ const ALLOWLIST = {
   'src/views/ImageGeneratorView.vue': { lines: 1238, reason: 'R3-6：拆为 3 个文件' },
 
   // ── R4 批 ──
-  'src/components/worldbook/WorldBookEventsPanel.vue': { lines: 1161, reason: 'R4-2：拆为 2 个文件' },
   // 2026-10-20 R4-1：VectorModelPanel 已拆（1023 → 285 装配层，拆入 Enhance / Install /
   // User / Remote 四个子面板；共用皮肤留宿主 `.settings-section :deep()` 单点定义），本条销账。
+  // 2026-10-20 R4-2：WorldBookEventsPanel 已拆（1161 → 235 装配层，拆入 EventList /
+  // EventEditor 两个子组件 + useWorldBookEvents 模块级单例；共用徽标留宿主
+  // `.events-section :deep()` 单点定义），本条销账。
   'src/stores/lorebook.ts': { lines: 1469, reason: 'R4-3：拆为 2 个文件' },
   'src/stores/chat-generation.ts': { lines: 1502, reason: 'R4-4：拆为 2 个文件' },
   'src/stores/story.ts': {
