@@ -69,7 +69,13 @@ const BASELINE = {
   'src/components/mobile/BottomNav.vue': 1,
   'src/components/random-events/TemplateEditorModal.vue': 1,
   'src/components/settings/SettingsAboutPanel.vue': 1,
-  'src/components/settings/SettingsAppearancePanel.vue': 5,
+  // 2026-10-20 R3-1：5 → 0。宿主只剩装配（32 行），三个 32px 字面量随分区搬到
+  // AppearanceThemeSection（.theme-swatch 32 / .theme-swatch 的 width 不计，
+  // 实为 .theme-swatch height 32 + .data-mgmt-btn 未命中 ⇒ 2 处）
+  // 与 AppearanceUiCustomSection（.bg-source-tab height 32）。总数不变，只换归属。
+  'src/components/settings/SettingsAppearancePanel.vue': 0,
+  'src/components/settings/AppearanceThemeSection.vue': 2,
+  'src/components/settings/AppearanceUiCustomSection.vue': 1,
   'src/components/settings/SettingsDataPanel.vue': 2,
   // 2026-10-19 R1-4：4 → 2（.data-mgmt-btn 32 / .modal-btn 32 仍留在宿主的两段
   // section 骨架里；.modal-btn 32 与 .data-mgmt-btn 32 各被搬到 ModelProfileForm /

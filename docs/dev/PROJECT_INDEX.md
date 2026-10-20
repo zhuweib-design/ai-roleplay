@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-10-20 15:33（本地时区）
+- **生成时间**：2026-10-20 16:52（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v1.1.1 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：1666 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：1025 个
+- **收录文件**：1389 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：742 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -76,11 +76,6 @@ ai-roleplay/
         - `res/`  — 1 个文件
   - `gradle/`  — 2 个文件
     - `wrapper/`  — 2 个文件
-- `dist-old-r24/`  — 281 个文件
-  - `assets/`  — 162 个文件
-    - `icons/`  — 12 个文件
-      - `dl_builtin_tik_tok/`  — 12 个文件
-  - `fonts/`  — 106 个文件
 - `docs/`  — 510 个文件
   - `assets/`  — 132 个文件
     - `screenshots/`  — 132 个文件
@@ -156,9 +151,9 @@ ai-roleplay/
 - `scripts/`  — 49 个文件
   - `archive/`  — 8 个文件
     - `round3-settings-split/`  — 8 个文件
-- `src/`  — 341 个文件
+- `src/`  — 345 个文件
   - `api/`  — 13 个文件
-  - `components/`  — 113 个文件
+  - `components/`  — 117 个文件
     - `character/`  — 17 个文件
       - `editor/`  — 8 个文件
       - `version/`  — 7 个文件
@@ -170,7 +165,7 @@ ai-roleplay/
     - `market/`  — 7 个文件
     - `mobile/`  — 1 个文件
     - `random-events/`  — 2 个文件
-    - `settings/`  — 13 个文件
+    - `settings/`  — 17 个文件
     - `story/`  — 10 个文件
     - `worldbook/`  — 10 个文件
   - `composables/`  — 18 个文件
@@ -232,7 +227,7 @@ ai-roleplay/
 
 ## 二、文件索引
 
-### 2.1 程序（355）
+### 2.1 程序（359）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -344,6 +339,10 @@ ai-roleplay/
 | `src/components/mobile/BottomNav.vue` | vue | 程序 | 布局：移动端底部导航 | 已跟踪 |  |
 | `src/components/random-events/SceneConfigModal.vue` | vue | 程序 | 组件：随机事件场景配置 | 已跟踪 |  |
 | `src/components/random-events/TemplateEditorModal.vue` | vue | 程序 | 组件：随机事件模板编辑器 | 已跟踪 |  |
+| `src/components/settings/AppearanceFontSizeSection.vue` | vue | 程序 | 分区：外观-字号选择与实时预览（R3-1 拆分） | 未跟踪 |  |
+| `src/components/settings/AppearanceLocaleSection.vue` | vue | 程序 | 分区：外观-语言选择（R3-1 拆分） | 未跟踪 |  |
+| `src/components/settings/AppearanceThemeSection.vue` | vue | 程序 | 分区：外观-主题选择与自定义主题编辑器（R3-1 拆分） | 未跟踪 |  |
+| `src/components/settings/AppearanceUiCustomSection.vue` | vue | 程序 | 分区：外观-界面自定义（背景/气泡/CSS/开合记忆，R3-1 拆分） | 未跟踪 |  |
 | `src/components/settings/ModelCloudList.vue` | vue | 程序 | 组件：ModelCloudList（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/ModelLocalSection.vue` | vue | 程序 | 组件：ModelLocalSection（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/ModelPresetSection.vue` | vue | 程序 | 组件：ModelPresetSection（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -351,7 +350,7 @@ ai-roleplay/
 | `src/components/settings/ModelProfileList.vue` | vue | 程序 | 组件：ModelProfileList（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/ModelThinkingSection.vue` | vue | 程序 | 组件：ModelThinkingSection（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsAboutPanel.vue` | vue | 程序 | 组件：SettingsAboutPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
-| `src/components/settings/SettingsAppearancePanel.vue` | vue | 程序 | 组件：SettingsAppearancePanel（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/settings/SettingsAppearancePanel.vue` | vue | 程序 | 组件：设置-外观（装配层，R3-1 拆分） | 已修改 |  |
 | `src/components/settings/SettingsDataPanel.vue` | vue | 程序 | 组件：SettingsDataPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsExtensionPanel.vue` | vue | 程序 | 组件：SettingsExtensionPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsModelPanel.vue` | vue | 程序 | 组件：设置-模型面板 | 已跟踪 |  |
@@ -549,13 +548,13 @@ ai-roleplay/
 | `src/stores/local-model.ts` | ts | 程序 | 状态存储：本地模型加载状态 | 已跟踪 |  |
 | `src/stores/lorebook.ts` | ts | 程序 | 状态存储：世界书 | 已跟踪 |  |
 | `src/stores/random-events.ts` | ts | 程序 | 状态存储：随机事件 | 已跟踪 |  |
-| `src/stores/settings.ts` | ts | 程序 | 状态存储：应用设置（含主密码加密与 API Profile） | 已修改 |  |
-| `src/stores/settings/appearance.ts` | ts | 程序 | 模块：主题/字号/语言/背景/气泡/自定义 CSS 与主题（R2-5 拆分） | 未跟踪 |  |
-| `src/stores/settings/ctx.ts` | ts | 程序 | 上下文：settings store 各域共享的 ref 集合与持久化回调（R2-5 拆分） | 未跟踪 |  |
-| `src/stores/settings/normalize.ts` | ts | 程序 | 工具：自定义主题/采样默认值/图像 Provider 的归一并自愈脏数据（R2-5 拆分） | 未跟踪 |  |
-| `src/stores/settings/persistence.ts` | ts | 程序 | 模块：首帧加载/串行化写入/透明加密快照（R2-5 拆分） | 未跟踪 |  |
-| `src/stores/settings/profiles.ts` | ts | 程序 | 模块：API Profile CRUD/模型分类/各类配置/Quick Reply/偏好开关（R2-5 拆分） | 未跟踪 |  |
-| `src/stores/settings/security.ts` | ts | 程序 | 模块：AC20 主密码会话与 P1-4 远程向量密钥加密（R2-5 拆分） | 未跟踪 |  |
+| `src/stores/settings.ts` | ts | 程序 | 状态存储：应用设置（含主密码加密与 API Profile） | 已跟踪 |  |
+| `src/stores/settings/appearance.ts` | ts | 程序 | 模块：主题/字号/语言/背景/气泡/自定义 CSS 与主题（R2-5 拆分） | 已跟踪 |  |
+| `src/stores/settings/ctx.ts` | ts | 程序 | 上下文：settings store 各域共享的 ref 集合与持久化回调（R2-5 拆分） | 已跟踪 |  |
+| `src/stores/settings/normalize.ts` | ts | 程序 | 工具：自定义主题/采样默认值/图像 Provider 的归一并自愈脏数据（R2-5 拆分） | 已跟踪 |  |
+| `src/stores/settings/persistence.ts` | ts | 程序 | 模块：首帧加载/串行化写入/透明加密快照（R2-5 拆分） | 已跟踪 |  |
+| `src/stores/settings/profiles.ts` | ts | 程序 | 模块：API Profile CRUD/模型分类/各类配置/Quick Reply/偏好开关（R2-5 拆分） | 已跟踪 |  |
+| `src/stores/settings/security.ts` | ts | 程序 | 模块：AC20 主密码会话与 P1-4 远程向量密钥加密（R2-5 拆分） | 已跟踪 |  |
 | `src/stores/story.ts` | ts | 程序 | 状态存储：剧情引擎 | 已跟踪 |  |
 | `src/stores/user-vector-model.ts` | ts | 程序 | 状态存储：用户自备向量模型 | 已跟踪 |  |
 | `src/styles/app-global.css` | css | 程序 | 应用全局样式 | 已跟踪 |  |
@@ -1250,7 +1249,7 @@ ai-roleplay/
 | `scripts/check-ort-firstscreen.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/clean.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/contrast-audit.mjs` | mjs | 脚本 | 审计：对比度全量扫描报告 | 已跟踪 |  |
-| `scripts/control-size-guard.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/control-size-guard.mjs` | mjs | 脚本 | 门禁：控件高度字面量棘轮守卫（20–60px 未接 token 的 height，只许降不许升） | 已修改 |  |
 | `scripts/csp-audit.mjs` | mjs | 脚本 | 工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用） | 已跟踪 |  |
 | `scripts/csp-guard.mjs` | mjs | 脚本 | 门禁：Web 端 CSP 契约校验（构建产物含 CSP、关键指令齐备、script-src 未被削弱） | 已跟踪 |  |
 | `scripts/css-conventions-guard.mjs` | mjs | 脚本 | 门禁：CSS 约定守卫单一入口（编排断点 / 视口 / hover / !important / 控件字号五项子检查） | 已跟踪 |  |
@@ -1264,7 +1263,7 @@ ai-roleplay/
 | `scripts/hover-guard.mjs` | mjs | 脚本 | 门禁：禁止未按 (hover: hover) 分流的 :hover，防触屏 tap 后 hover 粘滞 | 已跟踪 |  |
 | `scripts/i18n-scan.mjs` | mjs | 脚本 | 门禁：硬编码中文 UI 文案扫描（strict 模式） | 已跟踪 |  |
 | `scripts/i7-control-font-size-guard.mjs` | mjs | 脚本 | 门禁：移动断点内可编辑控件字号 ≥16px 兜底（I-7，防 iOS 聚焦放大页面） | 已跟踪 |  |
-| `scripts/important-guard.mjs` | mjs | 脚本 | 门禁：!important 棘轮守卫（基线锁定，只许降不许升） | 已修改 |  |
+| `scripts/important-guard.mjs` | mjs | 脚本 | 门禁：!important 棘轮守卫（基线锁定，只许降不许升） | 已跟踪 |  |
 | `scripts/measure-startup.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/no-artifact-in-git-guard.mjs` | mjs | 脚本 | 门禁：安装包与大二进制不许进 git（按扩展名与 1 MiB 阈值扫 git 索引，附 --self-test） | 已跟踪 |  |
 | `scripts/no-release-assets-guard.mjs` | mjs | 脚本 | 门禁：GitHub Release 上不保留任何安装包资产（assets 非空即红；源码归档不算资产，附 --self-test，2026-10-19 立） | 已跟踪 |  |
@@ -1286,7 +1285,7 @@ ai-roleplay/
 | `scripts/vendor-fonts.mjs` | mjs | 脚本 | 工具：把 Google Fonts 镜像到 public/fonts/，消除第三方字体请求（支持 --check 供校验） | 已跟踪 |  |
 | `scripts/vendor-ort.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 
-### 2.11 其他（662）
+### 2.11 其他（381）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -1627,287 +1626,6 @@ ai-roleplay/
 | `android/settings.gradle` | gradle | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `android/variables.gradle` | gradle | 其他 | 待确认 | 已跟踪 | 用途待确认 |
 | `capacitor.config.ts` | ts | 其他 | 模块：capacitor.config（待确认具体功能） | 已跟踪 | 用途待确认 |
-| `dist-old-r24/ai-roleplay-dev-plan.html` | html | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/apple-touch-icon.png` | png | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/ArchivesView-B-iWSeXL.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/ArchivesView-B-iWSeXL.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/ArchivesView-DQEDWdBF.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/Avatar-CZMZP3xS.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/Avatar-CZMZP3xS.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/BottomSheet-BEHiLzUU.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/BottomSheet-mzFs6daV.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/BottomSheet-mzFs6daV.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CharacterEditorView-C8Sbis6R.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CharacterEditorView-C8Sbis6R.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CharacterEditorView-CJxHg6lX.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CharacterVersionView-BOPd0Wp6.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CharacterVersionView-BOPd0Wp6.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CharacterVersionView-JlmQ1sv3.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CharactersView-BitO9TA2.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CharactersView-CbFyH8iM.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CharactersView-CbFyH8iM.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/ChatView-BhdS81Cr.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/ChatView-BhdS81Cr.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/ChatView-jG86lbQP.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/Collapse-Dhev9g7M.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/Collapse-F4gqOWcE.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/Collapse-F4gqOWcE.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CommunityMarketView-BuJKH89i.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CommunityMarketView-Wjrx1Jcl.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/CommunityMarketView-Wjrx1Jcl.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/DataBankView-CbVrU6Cf.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/DataBankView-D5EPgPkI.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/DataBankView-D5EPgPkI.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/EmptyState-DAa7Xr81.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/EmptyState-DAa7Xr81.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/EmptyState-YjdMI_iQ.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/FilterTabs-DNXNbpr8.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/FilterTabs-qDeMOylo.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/FilterTabs-qDeMOylo.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/FormField-BmE8YnQy.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/FormField-C2o-umm8.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/FormField-C2o-umm8.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/GroupChatView-L7xh9wMv.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/GroupChatView-L7xh9wMv.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/GroupChatView-rOx6SW8X.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/GuideView-CBhvJHRF.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/GuideView-CBhvJHRF.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/GuideView-DzuQXeRn.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/GuidedTasksCard-D3Hts3Dr.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/GuidedTasksCard-D3Hts3Dr.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/GuidedTasksCard-UR47O47l.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/ImageGeneratorView-BKlE8wCR.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/ImageGeneratorView-BKlE8wCR.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/ImageGeneratorView-Dmonaweq.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/LocalModelView-Cdkv6yTf.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/LocalModelView-Cdkv6yTf.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/LocalModelView-O7Tu1LgT.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/MoreView-BVssmRbZ.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/MoreView-BVssmRbZ.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/MoreView-Cz0afpPC.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/PrereqNotice-CSxALSqx.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/PrereqNotice-CSxALSqx.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/PrereqNotice-DTyHmKc1.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/RandomEventsView-BUIm8KcQ.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/RandomEventsView-CU_1NoJc.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/RandomEventsView-CU_1NoJc.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/RuntimeStatePanel-DvArMw-M.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/RuntimeStatePanel-DvArMw-M.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/RuntimeStatePanel-LdByMgYU.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/SettingsView-BHrV8IYu.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/SettingsView-BHrV8IYu.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/SettingsView-Cp_SiDs_.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/StepFlow-0AN-BAXG.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/StepFlow-ZOcjtKvU.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/StepFlow-ZOcjtKvU.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/StoryEngineView-Cn-3YSwY.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/StoryEngineView-DPLL8Yw0.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/StoryEngineView-DPLL8Yw0.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/WorldBookView-Ct58fmfS.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/WorldBookView-Ct58fmfS.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/WorldBookView-Hv0F4egJ.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/character-generator-CqApei8N.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/character-generator-CqApei8N.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/chat-context-CPjLOQ_T.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/chat-context-CPjLOQ_T.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/chat-d-Kcy7PH.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/chat-d-Kcy7PH.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/chat-generation-B53iY8iL.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/chat-generation-B53iY8iL.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/core-0_kFspMt.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/core-0_kFspMt.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/creation-preset-BFR4NvNf.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/creation-preset-BFR4NvNf.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/dual-channel-runtime-BjeqY4M5.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/dual-channel-runtime-BjeqY4M5.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/event-CfcUJN_e.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/event-CfcUJN_e.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/gpt-tokenizer-cVqiqDzj.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/gpt-tokenizer-cVqiqDzj.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/hero-cyber-nexus.jpg` | jpg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/hero-seraphina.jpg` | jpg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/i18n-ojMRCigT.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/i18n-ojMRCigT.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/arrow-left.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/bookmark-simple.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/chat-circle.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/compass.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/gear.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/heart.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/house.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/music-notes.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/play.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/plus.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/share-fat.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/icons/dl_builtin_tik_tok/user.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/index-Cc1KKOn0.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/index-Cc1KKOn0.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/index-CzgCllwb.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/local-model-BJ-hpWEU.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/local-model-BJ-hpWEU.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/logger-B5hC6U7A.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/logger-B5hC6U7A.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/model-fs-ipc-Dn5a3uqg.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/model-fs-ipc-Dn5a3uqg.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/onnx-embedding-provider-DeZOWLeY.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/onnx-embedding-provider-DeZOWLeY.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/pinia-CbUUa6-j.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/pinia-CbUUa6-j.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/preload-helper-Czpn1I53.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/rag-benchmark-CYshFQZi.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/rag-benchmark-CYshFQZi.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/rag-retriever-CvzzWSlS.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/rag-retriever-CvzzWSlS.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/remote-api-key-state-DDFZ2BBS.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/remote-api-key-state-DDFZ2BBS.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/rolldown-runtime-DK3Fl9T5.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/runtime-core.esm-bundler-C9x3klxh.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/runtime-core.esm-bundler-C9x3klxh.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/settings-D3LG_q0U.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/settings-D3LG_q0U.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/snapshot-plans-aa8sPhoh.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/snapshot-plans-aa8sPhoh.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/stopword-filter-BukuGxAo.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/stopword-filter-BukuGxAo.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/story-CkKRALn-.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/story-CkKRALn-.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/token-counter-Cz2hHr-h.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/token-counter-Cz2hHr-h.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/type-adapters-Ch0L89YF.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/type-adapters-Ch0L89YF.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/useDeepLinkId-6oELim_h.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/useDeepLinkId-6oELim_h.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/useScrollLock-ChwxKYJf.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/useScrollLock-ChwxKYJf.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/useSectionMemory-Ey5OK4We.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/useSectionMemory-Ey5OK4We.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/vector-model-install-Dd0GShzT.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/vector-model-install-Dd0GShzT.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/vector-model-storage-Bq37DXvh.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/vector-model-storage-Bq37DXvh.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/vector-model-tauri-CdVoj_AB.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/vector-model-tauri-CdVoj_AB.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/viewport-C7wRFYrA.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/viewport-C7wRFYrA.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/web-llm-tDiHn3lA.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/assets/web-llm-tDiHn3lA.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7kq-Wbghq.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7kq6Wbghq.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7kqGWbg.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7kqWWbghq.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.100.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.101.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.102.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.103.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.104.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.105.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.106.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.107.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.108.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.109.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.110.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.111.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.112.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.113.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.114.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.115.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.116.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.117.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.118.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.119.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.21.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.22.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.23.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.24.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.25.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.26.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.27.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.28.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.29.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.30.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.31.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.32.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.33.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.34.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.35.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.36.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.37.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.38.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.39.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.4.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.40.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.41.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.42.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.43.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.44.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.45.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.46.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.47.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.48.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.49.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.5.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.50.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.51.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.52.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.53.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.54.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.55.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.56.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.57.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.58.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.59.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.6.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.60.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.61.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.62.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.63.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.64.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.65.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.66.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.67.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.68.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.69.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.70.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.71.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.72.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.73.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.74.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.75.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.76.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.77.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.78.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.79.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.80.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.81.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.82.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.83.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.84.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.85.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.86.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.87.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.88.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.89.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.90.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.91.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.97.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.98.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.99.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/fonts.css` | css | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/nuFiD-vYSZviVYUb_rj3ij__anPXDTLYgFE_.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/nuFiD-vYSZviVYUb_rj3ij__anPXDTPYgFE_.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/nuFiD-vYSZviVYUb_rj3ij__anPXDTjYgFE_.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/fonts/nuFiD-vYSZviVYUb_rj3ij__anPXDTzYgA.woff2` | woff2 | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/index.html` | html | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/manifest.webmanifest` | webmanifest | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/pwa-192x192.png` | png | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/pwa-512x512.png` | png | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/pwa-icon.svg` | svg | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/registerSW.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/sillytavern-vs-airoleplay.html` | html | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/sw.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/sw.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/workbox-9c191d2f.js` | js | 其他 | 待确认 | 已忽略 | 用途待确认 |
-| `dist-old-r24/workbox-9c191d2f.js.map` | map | 其他 | 待确认 | 已忽略 | 用途待确认 |
 | `docs/Virtual-Character-OS-v1.0-database-schema.sql.md` | md | 其他 | 设计文档：Virtual Character OS 权威 Schema（迁移文件的事实源） | 已跟踪 |  |
 | `docs/Virtual-Character-OS-v1.0-技术规格.md` | md | 其他 | 设计文档：Virtual Character OS v1.0 技术规格 | 已跟踪 |  |
 | `docs/Virtual-Character-OS-v1.0-数据库-Schema-设计说明.md` | md | 其他 | 设计文档：Virtual Character OS 数据库 Schema 设计说明 | 已跟踪 |  |
@@ -1957,7 +1675,7 @@ ai-roleplay/
 
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
-| 程序 | 355 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
+| 程序 | 359 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 286 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
 | 开发文档 | 167 | docs/dev/ 实现计划、Runbook、审计记录 |
@@ -1967,8 +1685,8 @@ ai-roleplay/
 | 截图 | 1 | docs/assets/screenshots/ 下 UI 冒烟截图 |
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 49 | scripts/ 门禁、审计与工具脚本 |
-| 其他 | 662 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **1666** | 与「收录文件」数一致 |
+| 其他 | 381 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
+| **合计** | **1389** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

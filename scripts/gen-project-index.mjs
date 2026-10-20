@@ -331,6 +331,11 @@ const CURATED = {
   'src/components/random-events/SceneConfigModal.vue': '组件：随机事件场景配置',
   'src/components/random-events/TemplateEditorModal.vue': '组件：随机事件模板编辑器',
   'src/components/settings/SettingsModelPanel.vue': '组件：设置-模型面板',
+  'src/components/settings/SettingsAppearancePanel.vue': '组件：设置-外观（装配层，R3-1 拆分）',
+  'src/components/settings/AppearanceLocaleSection.vue': '分区：外观-语言选择（R3-1 拆分）',
+  'src/components/settings/AppearanceThemeSection.vue': '分区：外观-主题选择与自定义主题编辑器（R3-1 拆分）',
+  'src/components/settings/AppearanceFontSizeSection.vue': '分区：外观-字号选择与实时预览（R3-1 拆分）',
+  'src/components/settings/AppearanceUiCustomSection.vue': '分区：外观-界面自定义（背景/气泡/CSS/开合记忆，R3-1 拆分）',
   'src/components/settings/VectorModelPanel.vue': '组件：设置-向量模型面板',
   'src/components/story/StoryTimeConfigPanel.vue': '组件：剧情时间轴配置面板',
   'src/components/worldbook/WorldBookEventsPanel.vue': '组件：世界书事件面板',
@@ -358,6 +363,7 @@ const CURATED = {
   'scripts/csp-audit.mjs': '工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用）',
   'scripts/hover-guard.mjs': '门禁：禁止未按 (hover: hover) 分流的 :hover，防触屏 tap 后 hover 粘滞',
   'scripts/important-guard.mjs': '门禁：!important 棘轮守卫（基线锁定，只许降不许升）',
+  'scripts/control-size-guard.mjs': '门禁：控件高度字面量棘轮守卫（20–60px 未接 token 的 height，只许降不许升）',
   'scripts/css-conventions-guard.mjs': '门禁：CSS 约定守卫单一入口（编排断点 / 视口 / hover / !important / 控件字号五项子检查）',
   'scripts/i7-control-font-size-guard.mjs': '门禁：移动断点内可编辑控件字号 ≥16px 兜底（I-7，防 iOS 聚焦放大页面）',
   'scripts/skin-preview.mjs': '工具：把原型配色注入真实产品页面，出截图并逐元素实测 WCAG 对比度（换肤评审用）',
@@ -566,6 +572,10 @@ function walk(dir, relDir, acc) {
     const rel = relDir ? `${relDir}/${e.name}` : e.name;
     if (e.isDirectory()) {
       if (EXCLUDE_DIR_NAMES.has(e.name)) continue;
+      // `dist-old-<ts>` / `dist-preopt-*` / `dist-qa`：构建绕开 safe-delete 守卫时
+      // 用 mv 挪出来的副产物。它们已被 .gitignore 的 `dist-*/` 通配忽略，但本生成器
+      // 是按文件名精确匹配的，不加这条会被扫进索引（2026-10-20 实测 282 条噪音）。
+      if (e.name.startsWith('dist-')) continue;
       if (EXCLUDE_REL_DIRS.has(rel)) continue;
       walk(path.join(dir, e.name), rel, acc);
     } else if (e.isFile()) {

@@ -90,7 +90,9 @@ const ALLOWLIST = {
   // ── R2 批 ──
   // 2026-10-19 R2-1：CharacterEditorView 已拆（2320 → 532），本条销账。
   // 2026-10-19 R2-2：CharacterVersionView 已拆（1999 → 597），本条销账。
-  'src/components/settings/SettingsAppearancePanel.vue': { lines: 1894, reason: 'R3-1：拆为 4 个文件' },
+  // 2026-10-20 R3-1：SettingsAppearancePanel 已拆（1893 → 32 行装配层），
+  // 分区落到 Appearance{Locale,Theme,FontSize,UiCustom}Section.vue（154/601/259/614），
+  // 顺带删掉 447 行从 SettingsView 搬过来的死样式（模板里不存在的选择器），本条销账。
   // 2026-10-19 R2-4：CommunityMarketView 已拆（1838 → 580），本条销账。
   // 2026-10-19 R2-3：ContextPanel 已拆（1269 → 284），本条销账。
   // 2026-10-20 R2-5：settings.ts 已拆（1621 → 335，拆入 src/stores/settings/ 四个域模块），本条销账。
