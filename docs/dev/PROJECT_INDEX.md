@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-10-20 17:18（本地时区）
+- **生成时间**：2026-10-20 17:48（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v1.1.1 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：1393 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：741 个
+- **收录文件**：1399 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：741 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -151,7 +151,7 @@ ai-roleplay/
 - `scripts/`  — 49 个文件
   - `archive/`  — 8 个文件
     - `round3-settings-split/`  — 8 个文件
-- `src/`  — 349 个文件
+- `src/`  — 355 个文件
   - `api/`  — 13 个文件
   - `components/`  — 121 个文件
     - `character/`  — 17 个文件
@@ -182,7 +182,7 @@ ai-roleplay/
   - `styles/`  — 10 个文件
   - `types/`  — 1 个文件
   - `utils/`  — 5 个文件
-  - `views/`  — 16 个文件
+  - `views/`  — 22 个文件
 - `src-tauri/`  — 66 个文件
   - `capabilities/`  — 1 个文件
   - `icons/`  — 49 个文件
@@ -227,7 +227,7 @@ ai-roleplay/
 
 ## 二、文件索引
 
-### 2.1 程序（363）
+### 2.1 程序（369）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -351,15 +351,15 @@ ai-roleplay/
 | `src/components/settings/ModelThinkingSection.vue` | vue | 程序 | 组件：ModelThinkingSection（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsAboutPanel.vue` | vue | 程序 | 组件：SettingsAboutPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsAppearancePanel.vue` | vue | 程序 | 组件：设置-外观（装配层，R3-1 拆分） | 已跟踪 |  |
-| `src/components/settings/SettingsDataAdvancedSection.vue` | vue | 程序 | 分区：数据-QR 互导/PWA 持久性/嵌入优化/审计日志（R3-2 拆分） | 未跟踪 |  |
-| `src/components/settings/SettingsDataDailySection.vue` | vue | 程序 | 分区：数据-资料档案/全量备份/PNG/Markdown 导出（R3-2 拆分） | 未跟踪 |  |
-| `src/components/settings/SettingsDataModals.vue` | vue | 程序 | 弹窗：数据-导入结果/审计日志/清空确认/主密码（R3-2 拆分） | 未跟踪 |  |
-| `src/components/settings/SettingsDataPanel.vue` | vue | 程序 | 组件：设置-数据（装配层，R3-2 拆分） | 已修改 |  |
+| `src/components/settings/SettingsDataAdvancedSection.vue` | vue | 程序 | 分区：数据-QR 互导/PWA 持久性/嵌入优化/审计日志（R3-2 拆分） | 已跟踪 |  |
+| `src/components/settings/SettingsDataDailySection.vue` | vue | 程序 | 分区：数据-资料档案/全量备份/PNG/Markdown 导出（R3-2 拆分） | 已跟踪 |  |
+| `src/components/settings/SettingsDataModals.vue` | vue | 程序 | 弹窗：数据-导入结果/审计日志/清空确认/主密码（R3-2 拆分） | 已跟踪 |  |
+| `src/components/settings/SettingsDataPanel.vue` | vue | 程序 | 组件：设置-数据（装配层，R3-2 拆分） | 已跟踪 |  |
 | `src/components/settings/SettingsExtensionPanel.vue` | vue | 程序 | 组件：SettingsExtensionPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsModelPanel.vue` | vue | 程序 | 组件：设置-模型面板 | 已跟踪 |  |
 | `src/components/settings/SettingsSecurityPanel.vue` | vue | 程序 | 组件：SettingsSecurityPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/VectorModelPanel.vue` | vue | 程序 | 组件：设置-向量模型面板 | 已跟踪 |  |
-| `src/components/settings/useDataPanelState.ts` | ts | 程序 | 状态：数据面板弹窗共享单例（R3-2 拆分） | 未跟踪 |  |
+| `src/components/settings/useDataPanelState.ts` | ts | 程序 | 状态：数据面板弹窗共享单例（R3-2 拆分） | 已跟踪 |  |
 | `src/components/story/StoryCard.vue` | vue | 程序 | 组件：StoryCard（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/story/StoryDetailCharacters.vue` | vue | 程序 | 组件：StoryDetailCharacters（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/story/StoryDetailPanel.vue` | vue | 程序 | 组件：StoryDetailPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -587,12 +587,18 @@ ai-roleplay/
 | `src/views/GroupChatView.vue` | vue | 程序 | 页面：群聊 | 已跟踪 |  |
 | `src/views/GuideView.vue` | vue | 程序 | 页面：Guide（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/views/ImageGeneratorView.vue` | vue | 程序 | 页面：图像生成 | 已跟踪 |  |
-| `src/views/LocalModelView.vue` | vue | 程序 | 页面：本地模型管理 | 已跟踪 |  |
+| `src/views/LocalModelBenchmarkPanel.vue` | vue | 程序 | 面板：本地模型-性能基准（R3-3 拆分） | 未跟踪 |  |
+| `src/views/LocalModelCachePanel.vue` | vue | 程序 | 面板：本地模型-推理缓存（R3-3 拆分） | 未跟踪 |  |
+| `src/views/LocalModelModelsPanel.vue` | vue | 程序 | 面板：本地模型-模型列表与加载卸载（R3-3 拆分） | 未跟踪 |  |
+| `src/views/LocalModelPerformancePanel.vue` | vue | 程序 | 面板：本地模型-性能指标（R3-3 拆分） | 未跟踪 |  |
+| `src/views/LocalModelSettingsPanel.vue` | vue | 程序 | 面板：本地模型-设置（R3-3 拆分） | 未跟踪 |  |
+| `src/views/LocalModelView.vue` | vue | 程序 | 页面：本地模型管理（装配层，R3-3 拆分） | 已修改 |  |
 | `src/views/MoreView.vue` | vue | 程序 | 页面：More（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/views/RandomEventsView.vue` | vue | 程序 | 页面：随机事件 | 已跟踪 |  |
 | `src/views/SettingsView.vue` | vue | 程序 | 页面：设置中心（含数据管理与安全） | 已跟踪 |  |
 | `src/views/StoryEngineView.vue` | vue | 程序 | 页面：剧情引擎 | 已跟踪 |  |
 | `src/views/WorldBookView.vue` | vue | 程序 | 页面：世界书管理 | 已跟踪 |  |
+| `src/views/local-model-format.ts` | ts | 程序 | 工具：本地模型页数值格式化（R3-3 拆分） | 未跟踪 |  |
 | `src/vite-env.d.ts` | ts | 程序 | Vite 环境变量与静态资源类型声明 | 已跟踪 |  |
 
 ### 2.2 测试（286）
@@ -1253,7 +1259,7 @@ ai-roleplay/
 | `scripts/check-ort-firstscreen.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/clean.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/contrast-audit.mjs` | mjs | 脚本 | 审计：对比度全量扫描报告 | 已跟踪 |  |
-| `scripts/control-size-guard.mjs` | mjs | 脚本 | 门禁：控件高度字面量棘轮守卫（20–60px 未接 token 的 height，只许降不许升） | 已修改 |  |
+| `scripts/control-size-guard.mjs` | mjs | 脚本 | 门禁：控件高度字面量棘轮守卫（20–60px 未接 token 的 height，只许降不许升） | 已跟踪 |  |
 | `scripts/csp-audit.mjs` | mjs | 脚本 | 工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用） | 已跟踪 |  |
 | `scripts/csp-guard.mjs` | mjs | 脚本 | 门禁：Web 端 CSP 契约校验（构建产物含 CSP、关键指令齐备、script-src 未被削弱） | 已跟踪 |  |
 | `scripts/css-conventions-guard.mjs` | mjs | 脚本 | 门禁：CSS 约定守卫单一入口（编排断点 / 视口 / hover / !important / 控件字号五项子检查） | 已跟踪 |  |
@@ -1275,7 +1281,7 @@ ai-roleplay/
 | `scripts/p11-baseline.mjs` | mjs | 脚本 | 测量：P11 性能基线采集 | 已跟踪 |  |
 | `scripts/p11-scroll-fps.mjs` | mjs | 脚本 | 测量：滚动帧率采集 | 已跟踪 |  |
 | `scripts/perf-analysis.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
-| `scripts/primitives-guard.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/primitives-guard.mjs` | mjs | 脚本 | 待确认 | 已修改 | 用途待确认 |
 | `scripts/readme-gates-guard.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/release-evidence-pack.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/release-evidence.mjs` | mjs | 脚本 | 门禁：生成绑定当前 commit 的 1.0.0 发布证据清单 | 已跟踪 |  |
@@ -1679,7 +1685,7 @@ ai-roleplay/
 
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
-| 程序 | 363 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
+| 程序 | 369 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
 | 测试 | 286 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
 | 开发文档 | 167 | docs/dev/ 实现计划、Runbook、审计记录 |
@@ -1690,7 +1696,7 @@ ai-roleplay/
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
 | 脚本 | 49 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 381 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **1393** | 与「收录文件」数一致 |
+| **合计** | **1399** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

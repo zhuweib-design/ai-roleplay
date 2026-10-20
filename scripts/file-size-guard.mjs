@@ -100,7 +100,8 @@ const ALLOWLIST = {
   // ── R3 批 ──
   // 2026-10-20 R3-2：SettingsDataPanel 已拆（1389 → 97，拆入 DailySection 600 /
   // AdvancedSection 359 / Modals 383 / useDataPanelState 15），本条销账。
-  'src/views/LocalModelView.vue': { lines: 1275, reason: 'R3-3：拆为 3 个文件' },
+  // 2026-10-20 R3-3：LocalModelView 已拆（1267 → 568，拆入 5 个 tab 面板组件 +
+  // local-model-format.ts；共用样式走宿主 :deep() 不重复），本条销账。
   'src/views/RandomEventsView.vue': { lines: 1269, reason: 'R3-4：拆为 3 个文件' },
   'src/views/CharactersView.vue': {
     // 2026-10-19 显式上调 1360 → 1388：B2/B3 触摸目标（页头与排序 ≥44、星标伪元素命中区）（合理功能增量，非无声漂移）。R3-5 拆分时以拆后实测回填。
