@@ -3,34 +3,42 @@
  * ImageGeneratorView — 图像生成集成 (模块3)
  *
  * 功能：
- * - 提示词输入与参数调整
- * - 风格预设选择
- * - 批量生成
- * - 图像画廊
- * - Provider 配置
+ * - 提示词输入与参数调整 / 风格预设选择 / 批量生成（生成 tab）
+ * - 图像画廊（画廊 tab）
+ * - Provider 配置（设置 tab）
  *
  * 无障碍：
- * - 语义化结构
- * - ARIA 标签
- * - 键盘可访问
+ * - 语义化结构 / ARIA 标签 / 键盘可访问
+ *
+ * R3-6 拆分说明：样式占 540/1230 行，死样式 0 条（机械核对：71 条规则的选择器
+ * 里的每个类都出现在模板中），只能真拆。切面现成 —— 模板里三个
+ * `<section v-show="activeTab === ...">` 各管一个 tab，彼此没有 props 往来。
+ *
+ * 宿主只留四件「跨 tab 或必须在顶层」的东西：
+ *   ① 页头与 tab 条（tab 是切换动作本身）
+ *   ② 图像详情 Modal（生成 tab 的预览图与画廊卡片都会打开它）
+ *   ③ Toast（三个面板的通知都汇到这里）
+ *   ④ 跨面板共用的表单 / 按钮族样式（:deep() 穿透，见样式段注释）
+ *
+ * 通信一律 emit，不引入共享单例：R4-2 的教训是模块级 ref 会被同页面所有实例
+ * 共享（含单测里没 unmount 的旧实例），必须实例级隔离。
  */
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useImageGenerationStore } from '@/stores/image-generation';
-import { useSettingsStore } from '@/stores/settings';
 import { useReadinessJump } from '@/composables/useReadinessJump';
-import { isEncrypted } from '@core/api-key-crypto';
 import Icon from '@/components/common/Icon.vue';
-import EmptyState from '@/components/common/EmptyState.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
-import { SIZE_DIMENSIONS } from '@/core/image-generation';
-import type { ImageSize, ImageQuality, StylePresetId, ProviderType, GeneratedImage } from '@/core/image-generation';
+import type { GeneratedImage } from '@/core/image-generation';
 import { t } from '@/i18n';
+import { downloadImage, formatDuration } from './image-gen-format';
+import ImageGenGeneratePanel from './ImageGenGeneratePanel.vue';
+import ImageGenGalleryPanel from './ImageGenGalleryPanel.vue';
+import ImageGenSettingsPanel from './ImageGenSettingsPanel.vue';
 
 const router = useRouter();
 const store = useImageGenerationStore();
-const settingsStore = useSettingsStore();
 const { pushWithReturn } = useReadinessJump();
 
 // ── Tab ──
@@ -41,28 +49,6 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'settings', label: t('imgGen.tabSettings') },
 ];
 const activeTab = ref<TabKey>('generate');
-
-// ── 尺寸选项 ──
-const sizeOptions = computed(() =>
-  Object.entries(SIZE_DIMENSIONS).map(([key, val]) => ({
-    value: key as ImageSize,
-    label: val.label,
-  }))
-);
-
-// ── 质量选项 ──
-const qualityOptions: Array<{ value: ImageQuality; label: string }> = [
-  { value: 'draft', label: t('imgGen.qualityDraft') },
-  { value: 'standard', label: t('imgGen.qualityStandard') },
-  { value: 'high', label: t('imgGen.qualityHigh') },
-  { value: 'ultra', label: t('imgGen.qualityUltra') },
-];
-
-// ── Provider 类型选项 ──
-const providerTypeOptions: Array<{ value: ProviderType; label: string }> = [
-  { value: 'openai', label: t('imgGen.providerOpenai') },
-  { value: 'custom', label: t('imgGen.providerCustom') },
-];
 
 // ── Toast ──
 const toastOpen = ref(false);
@@ -75,34 +61,16 @@ function showToast(message: string, type: 'info' | 'success' | 'error' = 'info')
   toastOpen.value = true;
 }
 
-// ── 画廊搜索 ──
-const searchQuery = ref('');
-const filterStyle = ref<string>('all');
-const filteredGallery = computed(() => {
-  let list = store.galleryImages;
-  if (filterStyle.value !== 'all') {
-    list = list.filter((img) => img.params.style === filterStyle.value);
-  }
-  if (searchQuery.value.trim()) {
-    const q = searchQuery.value.toLowerCase();
-    list = list.filter(
-      (img) =>
-        img.params.prompt.toLowerCase().includes(q) ||
-        img.provider.toLowerCase().includes(q)
-    );
-  }
-  return list;
-});
-
-// ── 图像详情 Modal ──
+// ── 图像详情 Modal（跨 tab：生成 tab 的预览图与画廊卡片共用） ──
 const detailOpen = ref(false);
 const detailImage = ref<GeneratedImage | null>(null);
-// P2-8 删除确认(pre-launch 全检): 删单图/清空画廊均为破坏性操作, 先确认后执行
-const deleteModalOpen = ref(false);
-const deleteTargetId = ref<string | null>(null);
-const clearAllOpen = ref(false);
 
-// ── 操作 ──
+function openDetail(image: GeneratedImage) {
+  detailImage.value = image;
+  detailOpen.value = true;
+}
+
+// ── 导航 ──
 function goBack() {
   if (window.history.state?.back) {
     void router.back();
@@ -114,90 +82,12 @@ function goBack() {
 /**
  * P2-6 UI 修复 + E22：未配置时引导去「模型」类（此前无 `?cat=`，
  * 一律落在「外观」，而图像 Profile 在「模型」类里）。
+ *
+ * 留在宿主：生成 tab 的未配置提示与设置 tab 的「去模型设置」都走这里，
+ * 导航策略单点定义，避免两处抄同一串 query。
  */
 function goToSettings(): void {
   pushWithReturn({ name: 'settings', query: { cat: 'model' } });
-}
-
-/** 设置侧「图像/视频」分类的主要 Profile（与设置页同一判定源 getPrimaryModel） */
-const imageVideoPrimary = computed(() => settingsStore.getPrimaryModel('image-video'));
-
-/**
- * 一键把设置侧的 Profile 填进本页配置。
- * 主密码未解锁时 Profile 的 apiKey 仍是密文，直接抄过来会得到一个"看起来有值其实不能用"的密钥，
- * 因此这种情况只填端点与模型，并说明原因。
- */
-function useImageVideoProfile(): void {
-  const p = imageVideoPrimary.value;
-  if (!p) return;
-  const patch: Partial<typeof store.providerConfig> = {
-    endpoint: p.baseUrl,
-    model: p.model,
-    enabled: true,
-  };
-  if (p.apiKey && !isEncrypted(p.apiKey)) {
-    patch.apiKey = p.apiKey;
-  } else {
-    showToast(t('imgGen.profileKeyLocked'), 'info');
-  }
-  store.updateProviderConfig(patch);
-}
-
-async function handleGenerate() {
-  if (!store.canGenerate) {
-    showToast(t('imgGen.needConfig'), 'error');
-    return;
-  }
-  const image = await store.generate();
-  if (image) {
-    showToast(t('imgGen.success'), 'success');
-  } else {
-    showToast(store.lastError ?? t('imgGen.failed'), 'error');
-  }
-}
-
-async function handleBatchGenerate() {
-  if (!store.canGenerate) {
-    showToast(t('imgGen.needConfig'), 'error');
-    return;
-  }
-  const images = await store.generateBatch();
-  showToast(t('imgGen.batchDone', { count: images.length }), images.length > 0 ? 'success' : 'error');
-}
-
-function openDetail(image: GeneratedImage) {
-  detailImage.value = image;
-  detailOpen.value = true;
-}
-
-function downloadImage(image: GeneratedImage) {
-  const link = document.createElement('a');
-  link.href = image.data;
-  link.download = `${image.id}.png`;
-  link.click();
-}
-
-function handleDelete(id: string) {
-  deleteTargetId.value = id;
-  deleteModalOpen.value = true;
-}
-
-async function confirmDeleteImage() {
-  if (!deleteTargetId.value) return;
-  await store.deleteFromGallery(deleteTargetId.value);
-  deleteTargetId.value = null;
-  deleteModalOpen.value = false;
-  showToast(t('imgGen.deleted'), 'info');
-}
-
-function handleClearGallery() {
-  clearAllOpen.value = true;
-}
-
-async function confirmClearGallery() {
-  await store.clearGallery();
-  clearAllOpen.value = false;
-  showToast(t('imgGen.galleryCleared'), 'info');
 }
 
 // ── 工具 ──
@@ -208,11 +98,6 @@ function formatTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
-}
-
-function formatDuration(ms: number): string {
-  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
-  return `${Math.round(ms)}ms`;
 }
 
 // ── 初始化 ──
@@ -256,359 +141,24 @@ onMounted(async () => {
     </nav>
 
     <main class="page-body">
-      <!-- 生成面板 -->
-      <section
+      <ImageGenGeneratePanel
         v-show="activeTab === 'generate'"
-        id="panel-generate"
-        role="tabpanel"
-        aria-labelledby="tab-generate"
-        class="panel"
-      >
-        <!-- P2-6 UI 修复: 未配置时醒目引导用户前往设置添加模型 -->
-        <div v-if="!store.canGenerate" class="config-warning" role="alert">
-          <Icon name="alert-triangle" :size="18" aria-hidden="true" />
-          <span class="config-warning-text">{{ t('imgGen.configWarning') }}</span>
-          <button type="button" class="config-warning-btn" @click="goToSettings">
-            {{ t('imgGen.goToSettings') }}
-          </button>
-        </div>
-        <div class="generate-layout">
-          <!-- 左侧：参数 -->
-          <div class="params-section">
-            <div class="form-group">
-              <label for="prompt" class="form-label">{{ t('imgGen.promptLabel') }}</label>
-              <textarea
-                id="prompt"
-                v-model="store.params.prompt"
-                class="form-textarea"
-                rows="4"
-                :placeholder="t('imgGen.promptPlaceholder')"
-                aria-describedby="prompt-hint"
-              />
-              <p id="prompt-hint" class="form-hint">{{ t('imgGen.promptHint') }}</p>
-            </div>
-
-            <div class="form-group">
-              <label for="negative-prompt" class="form-label">{{ t('imgGen.negativeLabel') }}</label>
-              <textarea
-                id="negative-prompt"
-                v-model="store.params.negativePrompt"
-                class="form-textarea"
-                rows="2"
-                :placeholder="t('imgGen.negativePlaceholder')"
-              />
-            </div>
-
-            <div class="form-group">
-              <span class="form-label">{{ t('imgGen.styleLabel') }}</span>
-              <div class="style-grid" role="radiogroup" :aria-label="t('imgGen.styleAria')">
-                <button
-                  v-for="preset in store.stylePresets"
-                  :key="preset.id"
-                  type="button"
-                  role="radio"
-                  :aria-checked="store.params.style === preset.id"
-                  class="style-chip"
-                  :class="{ active: store.params.style === preset.id }"
-                  v-tip="preset.description"
-                  @click="store.setStyle(preset.id as StylePresetId)"
-                >
-                  {{ preset.name }}
-                </button>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="size" class="form-label">{{ t('imgGen.sizeLabel') }}</label>
-                <select id="size" v-model="store.params.size" class="form-select">
-                  <option v-for="opt in sizeOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="quality" class="form-label">{{ t('imgGen.qualityLabel') }}</label>
-                <select id="quality" v-model="store.params.quality" class="form-select">
-                  <option v-for="opt in qualityOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="steps" class="form-label">{{ t('imgGen.stepsLabel') }}</label>
-                <input
-                  id="steps"
-                  type="number"
-                  min="1"
-                  max="100"
-                  v-model.number="store.params.steps"
-                  class="form-input"
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="cfg" class="form-label">{{ t('imgGen.cfgLabel') }}</label>
-                <input
-                  id="cfg"
-                  type="number"
-                  min="1"
-                  max="30"
-                  step="0.5"
-                  v-model.number="store.params.cfgScale"
-                  class="form-input"
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="seed" class="form-label">{{ t('imgGen.seedLabel') }}</label>
-                <input
-                  id="seed"
-                  type="number"
-                  min="-1"
-                  v-model.number="store.params.seed"
-                  class="form-input"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="batch" class="form-label">{{ t('imgGen.batchLabel') }}</label>
-              <input
-                id="batch"
-                type="number"
-                min="1"
-                max="10"
-                v-model.number="store.params.batchCount"
-                class="form-input"
-              />
-            </div>
-
-            <div class="generate-actions">
-              <button
-                type="button"
-                class="btn primary"
-                :disabled="!store.canGenerate || store.isGenerating"
-                @click="handleGenerate"
-              >
-                <Icon name="play" :size="14" aria-hidden="true" />
-                {{ t('imgGen.generateBtn') }}
-              </button>
-              <button
-                type="button"
-                class="btn"
-                :disabled="!store.canGenerate || store.isGenerating"
-                @click="handleBatchGenerate"
-              >
-                <Icon name="image-stack" :size="14" aria-hidden="true" />
-                {{ t('imgGen.batchBtn') }}
-              </button>
-              <button
-                v-if="store.isGenerating"
-                type="button"
-                class="btn danger"
-                @click="store.cancelGeneration()"
-              >
-                <Icon name="stop" :size="14" aria-hidden="true" />
-                {{ t('imgGen.cancelBtn') }}
-              </button>
-            </div>
-          </div>
-
-          <!-- 右侧：最新结果 -->
-          <div class="preview-section">
-            <h2 class="section-title">{{ t('imgGen.latestTitle') }}</h2>
-            <div v-if="store.galleryImages.length > 0" class="latest-image">
-              <img
-                :src="store.galleryImages[0]!.data"
-                :alt="store.galleryImages[0]!.params.prompt"
-                :width="store.galleryImages[0]!.width"
-                :height="store.galleryImages[0]!.height"
-                class="preview-img"
-                @click="openDetail(store.galleryImages[0]!)"
-              />
-              <p class="preview-prompt">{{ store.galleryImages[0]!.params.prompt }}</p>
-              <p class="preview-meta">
-                {{ formatDuration(store.galleryImages[0]!.durationMs) }} ·
-                {{ store.galleryImages[0]!.width }}×{{ store.galleryImages[0]!.height }}
-              </p>
-            </div>
-            <div v-else class="empty-preview">
-              <Icon name="image" :size="48" aria-hidden="true" />
-              <p>{{ t('imgGen.emptyPreview') }}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
+        @notify="showToast"
+        @open-detail="openDetail"
+        @go-settings="goToSettings"
+      />
       <!-- 画廊 -->
-      <section
+      <ImageGenGalleryPanel
         v-show="activeTab === 'gallery'"
-        id="panel-gallery"
-        role="tabpanel"
-        aria-labelledby="tab-gallery"
-        class="panel"
-      >
-        <div class="panel-toolbar">
-          <input
-            type="search"
-            v-model="searchQuery"
-            class="search-input"
-            :placeholder="t('imgGen.searchPlaceholder')"
-            :aria-label="t('imgGen.searchAria')"
-          />
-          <select v-model="filterStyle" class="form-select small" :aria-label="t('imgGen.filterAria')">
-            <option value="all">{{ t('imgGen.filterAll') }}</option>
-            <option v-for="preset in store.stylePresets" :key="preset.id" :value="preset.id">
-              {{ preset.name }}
-            </option>
-          </select>
-          <button type="button" class="btn danger" @click="handleClearGallery">
-            <Icon name="trash-2" :size="14" aria-hidden="true" />
-            {{ t('imgGen.clearBtn') }}
-          </button>
-        </div>
-
-        <div class="gallery-stats">
-          <span>{{ t('imgGen.statsCount', { count: store.galleryStats.count }) }}</span>
-          <span>{{ t('imgGen.statsSize', { size: store.galleryStats.totalSizeMb.toFixed(1) }) }}</span>
-          <span>{{ t('imgGen.statsAvg', { duration: formatDuration(store.galleryStats.avgDurationMs) }) }}</span>
-        </div>
-
-        <ul v-if="filteredGallery.length > 0" class="gallery-grid" role="list">
-          <li
-            v-for="img in filteredGallery"
-            :key="img.id"
-            class="gallery-item"
-          >
-            <img
-              :src="img.data"
-              :alt="img.params.prompt"
-              :width="img.width"
-              :height="img.height"
-              class="gallery-img"
-              loading="lazy"
-              @click="openDetail(img)"
-            />
-            <div class="gallery-overlay">
-              <p class="gallery-prompt">{{ img.params.prompt }}</p>
-              <div class="gallery-item-actions">
-                <button type="button" class="icon-btn" :aria-label="t('imgGen.downloadAria')" @click="downloadImage(img)">
-                  <Icon name="download" :size="14" aria-hidden="true" />
-                </button>
-                <button type="button" class="icon-btn danger" :aria-label="t('imgGen.deleteAria')" @click="handleDelete(img.id)">
-                  <Icon name="trash-2" :size="14" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          </li>
-        </ul>
-        <EmptyState
-          v-else
-          title-key="imgGen.emptyGallery"
-          desc-key="imgGen.emptyGalleryHint"
-          icon="image"
-        />
-      </section>
-
+        @notify="showToast"
+        @open-detail="openDetail"
+      />
       <!-- 设置 -->
-      <section
+      <ImageGenSettingsPanel
         v-show="activeTab === 'settings'"
-        id="panel-settings"
-        role="tabpanel"
-        aria-labelledby="tab-settings"
-        class="panel"
-      >
-        <div class="settings-form">
-          <!-- E22：两处配置的关系首次说明清楚，并给一个"从模型接入填入"的去路 -->
-          <div class="provider-source">
-            <p class="provider-source-text">{{ t('imgGen.configPersistedNote') }}</p>
-            <div class="provider-source-actions">
-              <button
-                v-if="imageVideoPrimary"
-                type="button"
-                class="config-warning-btn"
-                data-rel-jump="imggen-use-model-profile"
-                @click="useImageVideoProfile"
-              >
-                {{ t('imgGen.fillFromProfile', { name: imageVideoPrimary.name }) }}
-              </button>
-              <button
-                type="button"
-                class="config-warning-btn"
-                data-rel-jump="imggen-go-settings"
-                @click="goToSettings"
-              >
-                {{ t('imgGen.goToModelSettings') }}
-              </button>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="provider-type" class="form-label">{{ t('imgGen.providerType') }}</label>
-            <select
-              id="provider-type"
-              :value="store.providerConfig.type"
-              class="form-select"
-              @change="store.updateProviderConfig({ type: ($event.target as HTMLSelectElement).value as ProviderType })"
-            >
-              <option v-for="opt in providerTypeOptions" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="endpoint" class="form-label">{{ t('imgGen.endpoint') }}</label>
-            <input
-              id="endpoint"
-              type="url"
-              :value="store.providerConfig.endpoint"
-              class="form-input"
-              placeholder="https://api.openai.com/v1"
-              @input="store.updateProviderConfig({ endpoint: ($event.target as HTMLInputElement).value })"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="api-key" class="form-label">{{ t('imgGen.apiKey') }}</label>
-            <input
-              id="api-key"
-              type="password"
-              :value="store.providerConfig.apiKey"
-              class="form-input"
-              placeholder="sk-..."
-              autocomplete="off"
-              @input="store.updateProviderConfig({ apiKey: ($event.target as HTMLInputElement).value })"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="model" class="form-label">{{ t('imgGen.model') }}</label>
-            <input
-              id="model"
-              type="text"
-              :value="store.providerConfig.model"
-              class="form-input"
-              placeholder="dall-e-3"
-              @input="store.updateProviderConfig({ model: ($event.target as HTMLInputElement).value })"
-            />
-          </div>
-
-          <label class="setting-row">
-            <input
-              type="checkbox"
-              :checked="store.providerConfig.enabled"
-              @change="store.updateProviderConfig({ enabled: ($event.target as HTMLInputElement).checked })"
-            />
-            <span>{{ t('imgGen.enableProvider') }}</span>
-          </label>
-        </div>
-      </section>
+        @notify="showToast"
+        @go-settings="goToSettings"
+      />
     </main>
 
     <!-- 图像详情 Modal -->
@@ -644,42 +194,6 @@ onMounted(async () => {
       </template>
     </Modal>
 
-    <!-- P2-8 删除单图确认 -->
-    <Modal
-      v-model="deleteModalOpen"
-      :title="t('imgGen.deleteConfirmTitle')"
-      :aria-label="t('imgGen.deleteConfirmTitle')"
-      described-by="img-delete-desc"
-    >
-      <p id="img-delete-desc">{{ t('imgGen.deleteConfirm') }}</p>
-      <template #footer>
-        <button type="button" class="modal-btn modal-cancel" @click="deleteTargetId = null">
-          {{ t('common.cancel') }}
-        </button>
-        <button type="button" class="modal-btn modal-confirm" @click="confirmDeleteImage">
-          {{ t('common.delete') }}
-        </button>
-      </template>
-    </Modal>
-
-    <!-- P2-8 清空画廊确认 -->
-    <Modal
-      v-model="clearAllOpen"
-      :title="t('imgGen.clearConfirmTitle')"
-      :aria-label="t('imgGen.clearConfirmTitle')"
-      described-by="img-clear-desc"
-    >
-      <p id="img-clear-desc">{{ t('imgGen.clearConfirm') }}</p>
-      <template #footer>
-        <button type="button" class="modal-btn modal-cancel" @click="clearAllOpen = false">
-          {{ t('common.cancel') }}
-        </button>
-        <button type="button" class="modal-btn modal-confirm" @click="confirmClearGallery">
-          {{ t('common.delete') }}
-        </button>
-      </template>
-    </Modal>
-
     <Toast
       v-model="toastOpen"
       :type="toastType"
@@ -689,6 +203,10 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* R3-6：三个 tab 面板已拆为子组件（ImageGenGenerate/Gallery/SettingsPanel）。
+ * 这里只留 ① 页头 / tab 条 / 页面容器 ② 详情 Modal 的样式 ③ 跨面板共用的
+ * 表单与按钮族 —— 后者用 `:deep()` 穿透到子组件内部。 */
+
 .image-gen-view {
   display: flex;
   flex-direction: column;
@@ -794,149 +312,18 @@ onMounted(async () => {
   padding: 16px 20px;
 }
 
-.panel-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-/* 生成布局 */
-.generate-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-/* P2-6 UI 修复: 未配置模型时醒目引导卡片 */
-.config-warning {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 16px;
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--destructive) 14%, var(--card));
-  border: 1px solid color-mix(in srgb, var(--destructive) 35%, transparent);
-  color: var(--foreground);
-  font-size: 13px;
-}
-
-.config-warning > :first-child {
-  color: var(--destructive);
-  flex-shrink: 0;
-}
-
-.config-warning-text {
-  flex: 1 1 auto;
-}
-
-.config-warning-btn {
-  flex-shrink: 0;
-  padding: 6px 14px;
-  border-radius: var(--radius-md);
-  border: none;
-  background: var(--primary);
-  /* primary 背景须配 --on-primary（白 / 深金）。原用 --primary-fg（浅品牌色），
-     与 --primary 同色系，light 主题下文字与背景同色（1.00:1）完全不可见。 */
-  color: var(--on-primary);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .config-warning-btn:hover {
-    background: color-mix(in srgb, var(--primary) 88%, var(--foreground));
-  }
-}
-
-.params-section {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-}
-
-.form-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted-foreground);
-}
-
-.form-textarea,
-.form-input,
-.form-select {
-  padding: 8px 10px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--foreground);
-  font-size: 13px;
-  font-family: inherit;
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 60px;
-}
-
-.form-select.small {
-  width: auto;
-  min-width: 120px;
-}
-
-.form-hint {
-  font-size: 11px;
-  color: var(--muted-foreground);
-  margin: 0;
-}
-
-/* 风格选择 */
-.style-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 6px;
-}
-
-.style-chip {
-  padding: 6px 8px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--muted-foreground);
-  cursor: pointer;
-  font-size: 12px;
-  text-align: center;
-  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
-}
-
-.style-chip.active {
-  background: var(--primary);
-  color: var(--on-primary);
-  border-color: var(--primary);
-}
-
-/* 生成按钮 */
-.generate-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
+/* ── 共用：按钮族 ──
+ * 生成 tab 与画廊 tab 都在用 `.btn` / `.btn.primary` / `.btn.danger`。
+ * 各面板自带一份会让 primitives-guard 的 `.btn` 族计数从 1 涨到 3
+ * （未登记文件视为 0 ⇒ 直接失败），故统一留在宿主写成 `:deep()`；
+ * 该守卫对 `:deep()` 副本不计数（见其文件头 R2-4 / R3-3 记录）。
+ *
+ * 下面两份**故意重复**，不能合并：
+ *   · plain `.btn` / `.btn.primary` 编译成 `.btn[data-v-x]` —— 属性直接挂在元素上，
+ *     Modal 用 <Teleport to="body"> 传送出去以后照样命中（详情 Modal 的 footer 用它）。
+ *   · `:deep(.btn)` 编译成 `[data-v-x] .btn` —— 依赖"祖先带 scopeId"，
+ *     传送后祖先变成 <body>，规则失效。
+ * 两者服务不同元素，改一份必须同步另一份。 */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -956,210 +343,81 @@ onMounted(async () => {
   border-color: var(--primary);
 }
 
-.btn.danger {
+.image-gen-view :deep(.btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--foreground);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.image-gen-view :deep(.btn.primary) {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+.image-gen-view :deep(.btn.danger) {
   color: var(--danger, #ef4444);
   border-color: var(--danger, #ef4444);
 }
 
-/* 预览 */
-.preview-section {
-  border-left: 1px solid var(--border);
-  padding-left: 20px;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 12px;
-}
-
-.latest-image {
+/* ── 共用：表单族 ──
+ * 生成 tab（提示词 / 尺寸 / 质量 / 步数 / CFG / 种子 / 批量）、
+ * 画廊 tab（风格筛选 `.form-select.small`）、设置 tab（type / endpoint / key / model）
+ * 三处都在用，各带一份会让同一套控件出现三份可能漂移的定义。 */
+.image-gen-view :deep(.form-group) {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
-.preview-img {
-  width: 100%;
-  max-height: 400px;
-  object-fit: contain;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  background: var(--card-elevated);
-}
-
-.preview-prompt {
-  font-size: 13px;
-  margin: 0;
-}
-
-.preview-meta {
+.image-gen-view :deep(.form-label) {
   font-size: 12px;
+  font-weight: 500;
   color: var(--muted-foreground);
-  margin: 0;
 }
 
-.empty-preview {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  color: var(--muted-foreground);
-  gap: 8px;
-}
-
-/* 画廊 */
-.gallery-stats {
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-  color: var(--muted-foreground);
-  margin-bottom: 16px;
-}
-
-.search-input {
-  flex: 1;
-  padding: 6px 10px;
+.image-gen-view :deep(.form-textarea),
+.image-gen-view :deep(.form-input),
+.image-gen-view :deep(.form-select) {
+  padding: 8px 10px;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--foreground);
   font-size: 13px;
-  min-width: 200px;
+  font-family: inherit;
 }
 
-.gallery-grid {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-.gallery-item {
-  position: relative;
-  aspect-ratio: 1;
+/* ── 共用：「去配置 / 从模型接入」按钮 ──
+ * 生成 tab 的未配置提示与设置 tab 的 provider-source 各一处，
+ * 必须逐字一致（同一动作在两个位置不能是两种外观）。宿主自己不用这个类，
+ * 故只留 :deep() 一份（与 .btn 族不同，这里没有 Teleport 场景要照顾）。 */
+.image-gen-view :deep(.config-warning-btn) {
+  flex-shrink: 0;
+  padding: 6px 14px;
   border-radius: var(--radius-md);
-  overflow: hidden;
-  background: var(--card-elevated);
-  cursor: pointer;
-}
-
-.gallery-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.gallery-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 60%);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 8px;
-  opacity: 0;
-  transition: opacity .2s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .gallery-item:hover .gallery-overlay {
-    opacity: 1;
-  }
-}
-/* I-5（2026-09-16）：触屏无 hover，画廊操作遮罩常显，保证下载/查看等操作可达 */
-@media (hover: none) {
-  .gallery-overlay {
-    opacity: 1;
-  }
-}
-
-.gallery-prompt {
-  font-size: 11px;
-  color: var(--on-media);
-  margin: 0 0 4px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.gallery-item-actions {
-  display: flex;
-  gap: 4px;
-  justify-content: flex-end;
-}
-
-.icon-btn {
-  background: rgba(255,255,255,0.2);
   border: none;
-  color: var(--on-media);
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  display: inline-flex;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .icon-btn:hover {
-    background: rgba(255,255,255,0.3);
-  }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .icon-btn.danger:hover {
-    background: var(--danger, #ef4444);
-  }
-}
-
-/* 设置表单 */
-.provider-source {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--card);
-  margin-bottom: 16px;
-}
-
-.provider-source-text {
-  margin: 0;
+  background: var(--primary);
+  /* primary 背景须配 --on-primary（白 / 深金）。原用 --primary-fg（浅品牌色），
+     与 --primary 同色系，light 主题下文字与背景同色（1.00:1）完全不可见。 */
+  color: var(--on-primary);
   font-size: 12px;
-  color: var(--muted-foreground);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
-.provider-source-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.settings-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  max-width: 500px;
-}
-
-.setting-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.setting-row input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--primary);
+@media (hover: hover) and (pointer: fine) {
+  .image-gen-view :deep(.config-warning-btn:hover) {
+    background: color-mix(in srgb, var(--primary) 88%, var(--foreground));
+  }
 }
 
 /* 图像详情 */
@@ -1198,32 +456,14 @@ onMounted(async () => {
   margin: 0;
 }
 
-/* 空状态 */
-
-/* 响应式 */
 @media (max-width: 640px) {
-  .generate-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .preview-section {
-    border-left: none;
-    padding-left: 0;
-    border-top: 1px solid var(--border);
-    padding-top: 16px;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
-  .form-textarea,
-  .form-input,
-  .form-select,
-  .search-input {
+  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1）
+   * i7 守卫按「同文件内、同选择器、源码序在后」判已覆盖，故这四条必须与
+   * 上面共用块里的选择器**逐字相同**（含 .image-gen-view :deep(...) 前缀）。
+   * .search-input 的基础规则在画廊面板里，故它的 16px 兜底也放在画廊面板。 */
+  .image-gen-view :deep(.form-textarea),
+  .image-gen-view :deep(.form-input),
+  .image-gen-view :deep(.form-select) {
     font-size: 16px;
   }
 }
