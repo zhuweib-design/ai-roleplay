@@ -1,0 +1,6 @@
+status=200
+url=http://localhost:5173/chat
+errs=[
+ "Viewport argument key \"interactive-widget\" not recognized and ignored."
+]
+app-html=<a href="#app-main" class="skip-link">跳到主内容</a><div class="app-shell"><!----><!----><!----><nav data-v-8252bc81="" class="nav-rail nav-rail-desktop" aria-label="主导航"><div data-v-8252bc81="" class="nav-group" role="group" aria-labelledby="nav-group-conversation"><h2 data-v-8252bc81="" id="nav-group-c
