@@ -1,0 +1,8 @@
+
+Running 4 tests using 4 workers
+
+[1/4] [mobile-msedge] › e2e\mobile\narrow-squeeze.spec.ts:180:5 › 窄屏竖排挤压：412px · 路由第 1/2 组
+[2/4] [mobile-msedge] › e2e\mobile\narrow-squeeze.spec.ts:180:5 › 窄屏竖排挤压：390px · 路由第 1/2 组
+[3/4] [mobile-msedge] › e2e\mobile\narrow-squeeze.spec.ts:180:5 › 窄屏竖排挤压：412px · 路由第 2/2 组
+[4/4] [mobile-msedge] › e2e\mobile\narrow-squeeze.spec.ts:180:5 › 窄屏竖排挤压：390px · 路由第 2/2 组
+  4 passed (1.5m)

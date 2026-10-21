@@ -102,7 +102,9 @@ const ALLOWLIST = {
   // AdvancedSection 359 / Modals 383 / useDataPanelState 15），本条销账。
   // 2026-10-20 R3-3：LocalModelView 已拆（1267 → 568，拆入 5 个 tab 面板组件 +
   // local-model-format.ts；共用样式走宿主 :deep() 不重复），本条销账。
-  'src/views/RandomEventsView.vue': { lines: 1269, reason: 'R3-4：拆为 3 个文件' },
+  // 2026-10-20 R3-4：RandomEventsView 已拆（实测 1268 → 555，拆入 Templates/Scenes/
+  // Generator/Results 四个面板 + random-events-shared.ts；共用样式走宿主 :deep()），
+  // 本条销账。
   'src/views/CharactersView.vue': {
     // 2026-10-19 显式上调 1360 → 1388：B2/B3 触摸目标（页头与排序 ≥44、星标伪元素命中区）（合理功能增量，非无声漂移）。R3-5 拆分时以拆后实测回填。
     // 2026-10-18 显式上调：A11 角色抽屉状态 +66 行、判据瘦身样式 +27 行

@@ -1,0 +1,21 @@
+
+Running 17 tests using 4 workers
+
+[1/17] [msedge] › e2e\mobile-control-font-size.spec.ts:86:5 › 移动端 I-7 运行时判定：390px 宽 · 路由第 3/4 组（/image-gen…/settings?cat=model）
+[2/17] [msedge] › e2e\mobile-control-font-size.spec.ts:80:1 › I-7 用例的路由分组没有漏掉任何一条路由
+[3/17] [msedge] › e2e\mobile-control-font-size.spec.ts:86:5 › 移动端 I-7 运行时判定：390px 宽 · 路由第 1/4 组（/chat…/group）
+[4/17] [msedge] › e2e\mobile-control-font-size.spec.ts:86:5 › 移动端 I-7 运行时判定：390px 宽 · 路由第 2/4 组（/databank…/local-model）
+[5/17] [msedge] › e2e\mobile-control-font-size.spec.ts:86:5 › 移动端 I-7 运行时判定：390px 宽 · 路由第 4/4 组（/settings?cat=retrieval…/settings?cat=appearance）
+[6/17] [msedge] › e2e\mobile-control-font-size.spec.ts:86:5 › 移动端 I-7 运行时判定：640px 宽 · 路由第 1/4 组（/chat…/group）
+[7/17] [msedge] › e2e\mobile-control-font-size.spec.ts:86:5 › 移动端 I-7 运行时判定：640px 宽 · 路由第 2/4 组（/databank…/local-model）
+[8/17] [msedge] › e2e\mobile-control-font-size.spec.ts:86:5 › 移动端 I-7 运行时判定：640px 宽 · 路由第 3/4 组（/image-gen…/settings?cat=model）
+[9/17] [msedge] › e2e\mobile-control-font-size.spec.ts:86:5 › 移动端 I-7 运行时判定：640px 宽 · 路由第 4/4 组（/settings?cat=retrieval…/settings?cat=appearance）
+[10/17] [msedge] › e2e\ux-gap-visibility.spec.ts:114:3 › E03 上下文面板与真实注入一致 › 未绑定任何书时，全局书仍要出现在面板里并标明来源
+[11/17] [msedge] › e2e\ux-gap-visibility.spec.ts:132:3 › E03 上下文面板与真实注入一致 › 面板里的全局书可点进世界书页（可见且可一跳）
+[12/17] [msedge] › e2e\ux-gap-visibility.spec.ts:153:3 › E23 图片产物的去向说清楚 › 图片页页头写明产物只进画廊、不进对话
+[13/17] [msedge] › e2e\ux-gap-visibility.spec.ts:161:3 › E22 图像 Provider 配置不再刷新即丢 › 填完刷新后端点/模型/密钥都还在
+[14/17] [msedge] › e2e\ux-gap-visibility.spec.ts:232:3 › E22 图像 Provider 配置不再刷新即丢 › 「去设置」落到模型分类而不是外观
+[15/17] [msedge] › e2e\ux-gap-visibility.spec.ts:241:3 › E22 图像 Provider 配置不再刷新即丢 › 设置里配了图像 Profile 后，图片页可一键填入（两处打通）
+[16/17] [msedge] › e2e\ux-gap-visibility.spec.ts:272:3 › E19 已跟踪可查 › 进过一次版本页的角色，卡片上出现可点回的标记
+[17/17] [msedge] › e2e\ux-gap-visibility.spec.ts:299:3 › 关于页的版本号（1.1.0 发布时抓到：三个平台都显示破折号） › 关于页显示的就是 package.json 里的版本号
+  17 passed (47.6s)

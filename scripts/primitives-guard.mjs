@@ -59,7 +59,8 @@ const RATCHET = {
   'src/views/ImageGeneratorView.vue': 1,
   // 2026-10-20 R3-3：LocalModelView 的 `.btn` 族转成宿主 `:deep()` 共享块（五组样式被
   // 2–5 个 tab 面板同时使用，各带一份会让本条从 1 涨到 5），`:deep()` 不计数 ⇒ 1 → 0。
-  'src/views/RandomEventsView.vue': 1,
+  // 2026-10-20 R3-4：RandomEventsView 同理——`.btn` 族随四面板下放、宿主以 `:deep()`
+  // 共享（无 Teleport 场景故不需要 plain 副本），本条销账 1 → 0。
 };
 
 function walk(dir) {
