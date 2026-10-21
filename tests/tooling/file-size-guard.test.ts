@@ -48,14 +48,16 @@ describe('file-size-guard', () => {
    * 2026-10-21：R3-5 把 CharactersView 拆到 815 行——**815 > 800 观察线，不满足
    * 「≤800 才销」的规则 4**，本条保留并把登记行数回填 1388 → 815（棘轮继续管），
    * 条目数 10 不变。待二次瘦身到 ≤800 再销。
+   * 2026-10-21：R4-3 把 lorebook.ts 拆到 724 行（≤800，拆出 hierarchy 232 /
+   * io 242 / world-gen 167 / world-gen-run 235 / entries 184），销一条，10 → 9。
    */
-  it('白名单条目数固定为 10（2 个 i18n 字典 + 8 个未拆完的目标）', () => {
+  it('白名单条目数固定为 9（2 个 i18n 字典 + 7 个未拆完的目标）', () => {
     const r = runGuard(['--list']);
     expect(r.status).toBe(0);
     const m = /共 (\d+) 条/.exec(r.stdout);
     expect(m, `输出里没有条目数：\n${r.stdout}`).not.toBeNull();
     // 数字变小=有人删了条目；数字变大=有人塞了新的大文件进来。两边都要解释
-    expect(Number(m![1])).toBe(10);
+    expect(Number(m![1])).toBe(9);
   });
 
   it('白名单每一条都带 reason（没有理由的豁免等于没有门禁）', () => {
@@ -63,7 +65,7 @@ describe('file-size-guard', () => {
     const allow = src.split('const ALLOWLIST = {')[1]?.split('\n};')[0] ?? '';
     const entries = [...allow.matchAll(/^\s{2}'[^']+':\s*\{/gm)];
     const reasons = [...allow.matchAll(/reason:/g)];
-    expect(entries.length, '白名单条目数应为 10').toBe(10);
+    expect(entries.length, '白名单条目数应为 9').toBe(9);
     expect(reasons.length, '每条都要有 reason').toBe(entries.length);
   });
 });
