@@ -122,7 +122,7 @@ const ALLOWLIST = {
   // 2026-10-20 R4-2：WorldBookEventsPanel 已拆（1161 → 235 装配层，拆入 EventList /
   // EventEditor 两个子组件 + useWorldBookEvents 模块级单例；共用徽标留宿主
   // `.events-section :deep()` 单点定义），本条销账。
-  // 2026-10-21 R4-4：chat-generation 已拆（1501 → 735 装配层，拆入 random-event 139 /
+  // 2026-10-21 R4-4：chat-generation 已拆（1501 → 738 装配层，拆入 random-event 139 /
   // commands 148 / persistence 216 / profile 326 + helpers 133；持久化与 Profile 用工厂
   // 收实例状态，执行体不 import store），销账 9 → 8。
   'src/stores/story.ts': {
