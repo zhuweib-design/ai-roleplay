@@ -106,12 +106,11 @@ const ALLOWLIST = {
   // Generator/Results 四个面板 + random-events-shared.ts；共用样式走宿主 :deep()），
   // 本条销账。
   'src/views/CharactersView.vue': {
-    // 2026-10-19 显式上调 1360 → 1388：B2/B3 触摸目标（页头与排序 ≥44、星标伪元素命中区）（合理功能增量，非无声漂移）。R3-5 拆分时以拆后实测回填。
-    // 2026-10-18 显式上调：A11 角色抽屉状态 +66 行、判据瘦身样式 +27 行
-    // （"一屏 ≥3 卡"的媒体块），合计 +93，均为合理功能增量而非无声漂移。
-    // R3-5 拆分时以拆后实测回填。
-    lines: 1388,
-    reason: 'R3-5：拆为 3 个文件',
+    // 2026-10-21 R3-5 拆分实测回填 1388 → 815（拆出 CharacterGridPanel 409 +
+    // CharacterGenerateModal 285）。815 > 800 观察线，按守卫规则 4 不销账，
+    // 本条保留棘轮；待二次瘦身到 ≤800 再删。
+    lines: 815,
+    reason: 'R3-5 已拆 2 面板；宿主 815 仍 >800，待二次瘦身',
   },
   // 2026-10-20 R3-6：ImageGeneratorView 已拆（1230 → 470 行装配层，拆入 Generate /
   // Gallery / Settings 三个 tab 面板 + image-gen-format.ts；跨面板共用的表单与按钮族

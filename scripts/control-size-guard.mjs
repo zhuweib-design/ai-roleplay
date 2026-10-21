@@ -104,7 +104,12 @@ const BASELINE = {
   // 2026-10-19 R2-2：1 → 0（.commit-dot 的 24px 随提交列表搬到 VersionHistoryPanel）。
   'src/views/CharacterVersionView.vue': 0,
   'src/components/character/version/VersionHistoryPanel.vue': 1,
-  'src/views/CharactersView.vue': 3,
+  // 2026-10-21 R3-5：3 → 2（.card-desc 的 min-height:39px 随卡片网格搬到
+  // CharacterGridPanel；下面两行登记拆出文件，总数 60 不变）。
+  'src/views/CharactersView.vue': 2,
+  'src/views/CharacterGridPanel.vue': 1,
+  // .modal-btn 的 height:32px 复制副本（O-6：Modal 走 Teleport，footer 共用样式须 plain 各留一份）。
+  'src/views/CharacterGenerateModal.vue': 1,
   // 2026-10-19 R2-4：1 → 0（.form-textarea 的 min-height:60px 整体搬到 MarketDetailModal，
   // 宿主无 textarea；总数 62 不变）。
   'src/views/CommunityMarketView.vue': 0,
