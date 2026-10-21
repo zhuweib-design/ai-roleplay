@@ -125,12 +125,8 @@ const ALLOWLIST = {
   // 2026-10-21 R4-4：chat-generation 已拆（1501 → 738 装配层，拆入 random-event 139 /
   // commands 148 / persistence 216 / profile 326 + helpers 133；持久化与 Profile 用工厂
   // 收实例状态，执行体不 import store），销账 9 → 8。
-  'src/stores/story.ts': {
-    // 2026-10-19 显式上调 1227 → 1228：C2 剧本导出回显走 describeSaveResult。
-    // R4-5 拆分时以拆后实测回填。
-    lines: 1228,
-    reason: 'R4-5：拆为 2 个文件',
-  },
+  // 2026-10-21 R4-5：story 已拆（1228 → 230 装配层，拆入 persistence 117 / analysis 391 /
+  // import 218 / protagonist 247 / time 219；五个工厂收实例状态），销账 8 → 7。
   'src/core/community-market.ts': { lines: 1274, reason: 'R4-7：拆为 2 个文件' },
   'src/core/random-event-generator.ts': { lines: 1063, reason: 'R4-8：拆为 2 个文件' },
   'src/stores/group-chat.ts': { lines: 1077, reason: 'R4-6：拆为 2 个文件' },
