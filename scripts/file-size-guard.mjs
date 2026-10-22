@@ -133,7 +133,9 @@ const ALLOWLIST = {
   // 2026-10-22 R4-7：community-market 已拆（1273 → 679 装配层，拆入 types 227 /
   // queries 153 / mock 295；筛选/排序/推荐提为无副作用自由函数，宿主与 Mock 装配留
   // 原地避免反向依赖成环），销账 6 → 5。
-  'src/core/random-event-generator.ts': { lines: 1063, reason: 'R4-8：拆为 2 个文件' },
+  // 2026-10-22 R4-8：random-event-generator 已拆（1063 → 86 纯 barrel，拆入 core 203 /
+  // types 221 / factories 185 / runtime 525；types 层零函数、中立共享，使 factories 与
+  // runtime 两条依赖边互不对向，四层单向无环），R-F 批收官，销账 5 → 4。
 };
 
 function walk(dir, out = []) {
