@@ -15,13 +15,19 @@
  * - aria-live 区域通知新消息
  * - 键盘可访问（Tab 导航、Enter 发送、Esc 关闭弹窗）
  *
- * R1-1 拆分后的分工（本文件只剩"页头 + 两级骨架 + 主区接线"）：
+ * R1-1 / R4-9 拆分后的分工（本文件只剩"页头 + 两级骨架 + 主区接线"）：
  * - 群列表与筛选 → `GroupListPanel`
  * - 消息渲染与滚动 → `GroupMessageList`
  * - 输入区与 @提及下拉 → `GroupMessageInput`
  * - 三个弹窗 → `GroupCreateModal` / `GroupMemberModals` / `GroupNpcModal`
  * - 发送链路（流式 / 中止 / 指定发言）→ `useGroupComposer`
  * - 成员增删与上限 → `useGroupMembers`
+ * - 归档 / 恢复 / 冲突采纳 → `useGroupLifecycle`
+ * - 建群 / 删群 / ST 导入导出 / 随机 NPC / 发言模式 → `useGroupActions`
+ *
+ * 留在宿主的只有三类：骨架与路由接线（selectGroup 的地址栏与压栈顺序）、
+ * 跨模块共享的只读派生量（currentGroup / currentMembers / memberStatuses）、
+ * 以及 Toast——四个 composable 共用同一个出口，所以它的状态不能下沉。
  */
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -31,12 +37,11 @@ import { useDrilldown } from '@/composables/useDrilldown';
 import { useGroupComposer } from '@/composables/useGroupComposer';
 import { useGroupMembers } from '@/composables/useGroupMembers';
 import { useGroupLifecycle } from '@/composables/useGroupLifecycle';
+import { useGroupActions } from '@/composables/useGroupActions';
 import { useViewport } from '@/core/viewport';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useChatStore } from '@/stores/chat';
 import { useCharacterStore } from '@/stores/character';
-import { useSettingsStore } from '@/stores/settings';
-import { uiCharToGroupCard } from '@/services/type-adapters';
 import Icon from '@/components/common/Icon.vue';
 import ChatModeSwitch from '@/components/chat/ChatModeSwitch.vue';
 import GroupInfoPanel from '@/components/group/GroupInfoPanel.vue';
@@ -50,14 +55,11 @@ import BottomSheet from '@/components/common/BottomSheet.vue';
 import ContextReadinessBar from '@/components/layout/ContextReadinessBar.vue';
 import Toast from '@/components/common/Toast.vue';
 import { resolveLatestStatus } from '@core/status-parser';
-import type { GroupChatMode } from '@/core/group-chat';
-import type { CharacterTemplateId } from '@core/character-generator';
 import { t } from '@/i18n';
 
 const groupStore = useGroupChatStore();
 const chatStore = useChatStore();
 const characterStore = useCharacterStore();
-const settingsStore = useSettingsStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -105,18 +107,10 @@ function backToGroupList(): void {
   swapGoBack();
 }
 
-// ── UI 状态 ──
-const createModalOpen = ref(false);
-const deleteGroupTargetId = ref<string | null>(null);
-const deleteModalOpen = ref(false);
+// ── UI 状态（toast 三件套留宿主：四个 composable 共用同一出口）──
 const toastOpen = ref(false);
 const toastType = ref<'info' | 'success' | 'error'>('info');
 const toastMessage = ref('');
-
-// ── F10.3 随机 NPC 生成状态 ──
-const npcModalOpen = ref(false);
-const npcGenerating = computed(() => groupStore.isGeneratingNpc);
-const hasApiProfile = computed(() => settingsStore.activeApiProfileId !== null);
 
 // ── 计算属性 ──
 const currentGroup = computed(() => groupStore.currentGroup);
@@ -259,118 +253,24 @@ async function syncRemoteTurnsForGroup(groupId: string): Promise<void> {
   await chatStore.recoverRemoteGroupOutbox({ group, characters: characterStore.characters });
 }
 
-function openCreateModal() {
-  createModalOpen.value = true;
-}
+// ── 写操作（建群/删群/ST 导入导出/NPC/模式）──
+// 整块在 useGroupActions 里，这里只解构模板要绑的开关与处理器。
+const {
+  createModalOpen,
+  deleteModalOpen,
+  npcModalOpen,
+  npcGenerating,
+  openCreateModal,
+  confirmCreate,
+  deleteGroup,
+  confirmDeleteGroup,
+  handleStImport,
+  handleExportGroupSt,
+  openNpcModal,
+  confirmGenerateNpc,
+  setMode,
+} = useGroupActions({ showToast, selectGroup });
 
-/** 建群向导提交：表单校验与状态都在弹窗里，这里只做"落库 + 手机进对话" */
-function confirmCreate(payload: {
-  name: string;
-  description: string;
-  mode: GroupChatMode;
-  memberIds: string[];
-}): void {
-  // 取角色卡完整数据
-  const characters = characterStore.characters
-    .filter((c) => payload.memberIds.includes(c.id))
-    .map((c) => uiCharToGroupCard(c));
-
-  const id = groupStore.createGroup(
-    {
-      name: payload.name,
-      description: payload.description,
-      memberIds: payload.memberIds,
-      mode: payload.mode,
-    },
-    characters
-  );
-
-  if (id) {
-    createModalOpen.value = false;
-    /*
-     * 手机：建完直接进这个群的对话。
-     * 两级互换之后，一级只有列表——新建完留在列表上，用户看到的是"我建的群在哪"，
-     * 还得再点一下才进得去。用户刚建完的下一步必然是说话，所以这里替他点这一下。
-     * 桌面不动：两栏并置时新群已经在右侧出现过，再改 URL 是多余行为变更。
-     */
-    if (isMobile.value) selectGroup(id);
-  }
-}
-
-function deleteGroup(id: string) {
-  deleteGroupTargetId.value = id;
-  deleteModalOpen.value = true;
-}
-
-function confirmDeleteGroup() {
-  if (deleteGroupTargetId.value) {
-    const id = deleteGroupTargetId.value;
-    groupStore.deleteGroup(id);
-    void chatStore.discardPendingGroupRuntimeTurns(id);
-  }
-  deleteModalOpen.value = false;
-  deleteGroupTargetId.value = null;
-}
-
-// ── T-07: SillyTavern 群聊导入 ──
-async function handleStImport(e: Event) {
-  const input = e.target as HTMLInputElement;
-  if (!input.files || input.files.length === 0) return;
-  const file = input.files[0]!;
-  input.value = '';
-  const knownIds = characterStore.characters.map((c) => c.id);
-  const id = await groupStore.importGroupFromStFile(file, knownIds);
-  if (id) {
-    groupStore.selectGroup(id);
-    return;
-  }
-  // O-23：同名/同 id 冲突 → 弹确认（覆盖该群聊全部消息）→ 用户确认后 force 重导
-  if (groupStore.lastError && groupStore.lastError.includes(t('group.importDuplicate').split('「')[0]!)) {
-    const confirmed = window.confirm(t('group.importOverwriteConfirm'));
-    if (confirmed) {
-      const forceId = await groupStore.importGroupFromStFile(file, knownIds, { force: true });
-      if (forceId) groupStore.selectGroup(forceId);
-    }
-  }
-}
-
-// ── 成员管理 ──
-function handleExportGroupSt() {
-  const groupId = currentGroup.value?.id;
-  if (!groupId) return;
-  void groupStore.downloadGroupSt(groupId);
-}
-
-// ── F10.3 随机 NPC 生成 ──
-
-function openNpcModal() {
-  if (!currentGroup.value) return;
-  if (currentGroup.value.members.length >= 8) {
-    showToast('error', t('group.maxMembers'));
-    return;
-  }
-  if (!hasApiProfile.value) {
-    showToast('error', t('group.apiRequired'));
-    return;
-  }
-  npcModalOpen.value = true;
-}
-
-async function confirmGenerateNpc(templateId: CharacterTemplateId) {
-  if (!currentGroup.value) return;
-  const id = await groupStore.generateRandomNpc(currentGroup.value.id, templateId);
-  if (id) {
-    npcModalOpen.value = false;
-    showToast('success', t('group.npcGenerated'));
-  } else if (groupStore.lastError) {
-    showToast('error', groupStore.lastError);
-  }
-}
-
-function setMode(mode: GroupChatMode) {
-  if (!currentGroup.value) return;
-  groupStore.setMode(currentGroup.value.id, mode);
-}
 </script>
 
 <template>
