@@ -63,14 +63,17 @@ describe('file-size-guard', () => {
    * 拆出 core 203 / types 221 / factories 185 / runtime 525），销一条，5 → 4。
    * 2026-10-22：O-9 把 CharactersView.vue 二次瘦身到 725 行（R3-5 首拆只到 815，
    * 本轮把导入/拖拽/运行时同步重试抽成 useCharacterImport 158 行），销一条，4 → 3。
+   * 2026-10-22：R4-9 把 GroupChatView.vue 拆到 764 行（R1-1 首拆只到 864，本轮把
+   * 建群/删群/ST 导入导出/随机 NPC/发言模式抽成 useGroupActions 182 行），销一条，3 → 2。
+   *   ⇒ 至此白名单只剩 2 个 i18n 字典（ratchet:false），§7.3 目标文件全部销账。
    */
-  it('白名单条目数固定为 3（2 个 i18n 字典 + 1 个未拆完的目标）', () => {
+  it('白名单条目数固定为 2（只剩 2 个 i18n 字典，§7.3 目标已全部拆完）', () => {
     const r = runGuard(['--list']);
     expect(r.status).toBe(0);
     const m = /共 (\d+) 条/.exec(r.stdout);
     expect(m, `输出里没有条目数：\n${r.stdout}`).not.toBeNull();
     // 数字变小=有人删了条目；数字变大=有人塞了新的大文件进来。两边都要解释
-    expect(Number(m![1])).toBe(3);
+    expect(Number(m![1])).toBe(2);
   });
 
   it('白名单每一条都带 reason（没有理由的豁免等于没有门禁）', () => {
@@ -78,7 +81,7 @@ describe('file-size-guard', () => {
     const allow = src.split('const ALLOWLIST = {')[1]?.split('\n};')[0] ?? '';
     const entries = [...allow.matchAll(/^\s{2}'[^']+':\s*\{/gm)];
     const reasons = [...allow.matchAll(/reason:/g)];
-    expect(entries.length, '白名单条目数应为 3').toBe(3);
+    expect(entries.length, '白名单条目数应为 2').toBe(2);
     expect(reasons.length, '每条都要有 reason').toBe(entries.length);
   });
 });

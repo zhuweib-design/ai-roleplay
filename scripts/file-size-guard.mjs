@@ -75,14 +75,14 @@ const ALLOWLIST = {
   // ModelProfileForm / ModelThinkingSection / ModelPresetSection
   // + composable：useModelProfileForm.ts。宿主只留 5 个 section 的顺序、云端/本地
   // Tab 切换、以及"两处新增入口 → 同一扇表单弹窗"的接线（`defineExpose` 转发）。
-  'src/views/GroupChatView.vue': {
-    // 2026-10-19 R1-1 拆完：2486 → 864（-1622）。仍 >800，保留条目继续压着。
-    // 拆出 9 个文件：GroupListPanel / GroupMessageList / GroupMessageInput /
-    // GroupCreateModal / GroupMemberModals / GroupNpcModal / CharacterPickerList
-    // + useGroupComposer / useGroupMembers / useGroupLifecycle。
-    lines: 864,
-    reason: 'R1-1：已拆（2486 → 864），继续盯回长'
-  },
+  // 2026-10-22 R4-9 拆完：GroupChatView 864 → 764（-100），条目按 §7.10 删除。
+  // 拆出 useGroupActions.ts（182）：建群/删群/ST 导入导出/随机 NPC/发言模式，
+  // 连同三扇弹窗开关与"上线校验"一起下沉。toast 三件套**留在宿主**——
+  // 四个 composable 共用同一出口，下沉会让同一操作在两处弹不同 toast。
+  // R1-1 遗留记录：2486 → 864（-1622），拆出 9 个文件：GroupListPanel /
+  // GroupMessageList / GroupMessageInput / GroupCreateModal / GroupMemberModals /
+  // GroupNpcModal / CharacterPickerList + useGroupComposer / useGroupMembers /
+  // useGroupLifecycle。
   // 2026-10-19 R1-5 拆完：1742 → 583（-1159），销账。
   // 拆出 4 个文件：ChatHeader / ChatMessageArea / ChatComposer + useChatWindowing.ts。
   // 宿主只剩接线：三个子组件 + 四扇浮层 + 消息动作分发 + 导出 + API 错误诊断。
