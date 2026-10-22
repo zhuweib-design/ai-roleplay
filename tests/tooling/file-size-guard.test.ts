@@ -57,14 +57,16 @@ describe('file-size-guard', () => {
    * 2026-10-21：R4-6 把 group-chat.ts 拆到 218 行（≤800，拆出 persistence 108 /
    * st 106 / crud 182 / members 284 / speaking 165 / messages 128 / npc 167），
    * 销一条，7 → 6。
+   * 2026-10-22：R4-7 把 community-market.ts 拆到 679 行（≤800，拆出 types 227 /
+   * queries 153 / mock 295），销一条，6 → 5。
    */
-  it('白名单条目数固定为 6（2 个 i18n 字典 + 4 个未拆完的目标）', () => {
+  it('白名单条目数固定为 5（2 个 i18n 字典 + 3 个未拆完的目标）', () => {
     const r = runGuard(['--list']);
     expect(r.status).toBe(0);
     const m = /共 (\d+) 条/.exec(r.stdout);
     expect(m, `输出里没有条目数：\n${r.stdout}`).not.toBeNull();
     // 数字变小=有人删了条目；数字变大=有人塞了新的大文件进来。两边都要解释
-    expect(Number(m![1])).toBe(6);
+    expect(Number(m![1])).toBe(5);
   });
 
   it('白名单每一条都带 reason（没有理由的豁免等于没有门禁）', () => {
@@ -72,7 +74,7 @@ describe('file-size-guard', () => {
     const allow = src.split('const ALLOWLIST = {')[1]?.split('\n};')[0] ?? '';
     const entries = [...allow.matchAll(/^\s{2}'[^']+':\s*\{/gm)];
     const reasons = [...allow.matchAll(/reason:/g)];
-    expect(entries.length, '白名单条目数应为 6').toBe(6);
+    expect(entries.length, '白名单条目数应为 5').toBe(5);
     expect(reasons.length, '每条都要有 reason').toBe(entries.length);
   });
 });

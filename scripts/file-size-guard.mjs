@@ -130,7 +130,9 @@ const ALLOWLIST = {
   // 2026-10-21 R4-6：group-chat 已拆（1077 → 218 装配层，拆入 persistence 108 / st 106 /
   // crud 182 / members 284 / speaking 165 / messages 128 / npc 167；七个工厂收实例状态，
   // 单 ref 薄方法留宿主），销账 7 → 6。
-  'src/core/community-market.ts': { lines: 1274, reason: 'R4-7：拆为 2 个文件' },
+  // 2026-10-22 R4-7：community-market 已拆（1273 → 679 装配层，拆入 types 227 /
+  // queries 153 / mock 295；筛选/排序/推荐提为无副作用自由函数，宿主与 Mock 装配留
+  // 原地避免反向依赖成环），销账 6 → 5。
   'src/core/random-event-generator.ts': { lines: 1063, reason: 'R4-8：拆为 2 个文件' },
 };
 
