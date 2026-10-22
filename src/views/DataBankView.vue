@@ -14,6 +14,11 @@
  * - Modal 焦点陷阱
  * - 删除前确认
  * - Toast role=alert 反馈
+ *
+ * R4-10 拆分后的分工（本文件只剩「页头 + 搜索 + 分组容器 + 两个弹窗接线」）：
+ * - 文档卡片（含展开分块、删除按钮）→ `components/databank/DocCard.vue`
+ * - 上传弹窗（含拖拽 / 校验 / 提交）→ `components/databank/DataBankUploadModal.vue`
+ * - formatFileSize / formatDate    → `utils/format.ts`
  */
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
@@ -23,10 +28,11 @@ import Icon from '@/components/common/Icon.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
 import Modal from '@/components/common/Modal.vue';
 import PrereqNotice from '@/components/common/PrereqNotice.vue';
+import DocCard from '@/components/databank/DocCard.vue';
+import DataBankUploadModal from '@/components/databank/DataBankUploadModal.vue';
 import { useDataBankPrereqs } from '@/core/readiness';
 import Toast from '@/components/common/Toast.vue';
-import type { DataBankScope } from '@/core/data-bank';
-import { MAX_FILE_SIZE } from '@/core/data-bank';
+import { formatFileSize, formatDate } from '@/utils/format';
 import { t } from '@/i18n';
 
 const router = useRouter();
@@ -35,9 +41,6 @@ const characterStore = useCharacterStore();
 
 // ── UI 状态 ──
 const uploadModalOpen = ref(false);
-const selectedScope = ref<DataBankScope>('global');
-const selectedCharacterId = ref<string>('');
-const selectedFile = ref<File | null>(null);
 const deleteTargetId = ref<string | null>(null);
 const deleteModalOpen = ref(false);
 const expandedDocId = ref<string | null>(null);
@@ -70,64 +73,12 @@ function showToast(type: 'info' | 'success' | 'error', message: string) {
 }
 
 function openUploadModal() {
-  selectedScope.value = 'global';
-  selectedCharacterId.value = '';
-  selectedFile.value = null;
   uploadModalOpen.value = true;
 }
 
-function closeUploadModal() {
-  uploadModalOpen.value = false;
-}
-
-function handleFileSelect(event: Event) {
-  const input = event.target as HTMLInputElement;
-  if (input.files && input.files.length > 0) {
-    selectedFile.value = input.files[0]!;
-  }
-}
-
-function handleDrop(event: DragEvent) {
-  event.preventDefault();
-  if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
-    selectedFile.value = event.dataTransfer.files[0]!;
-  }
-}
-
-function handleDragOver(event: DragEvent) {
-  event.preventDefault();
-}
-
-async function handleUpload() {
-  if (!selectedFile.value) {
-    showToast('error', t('databank.selectFileFirst'));
-    return;
-  }
-
-  if (selectedFile.value.size > MAX_FILE_SIZE) {
-    showToast('error', t('databank.fileTooLarge', { size: MAX_FILE_SIZE / 1024 / 1024 }));
-    return;
-  }
-
-  const characterId =
-    selectedScope.value === 'character' && selectedCharacterId.value
-      ? selectedCharacterId.value
-      : undefined;
-
-  const id = await store.createDocumentFromFile(
-    selectedFile.value,
-    selectedScope.value,
-    characterId
-  );
-
-  if (id) {
-    closeUploadModal();
-    if (store.lastInfo) {
-      showToast('success', store.lastInfo);
-    }
-  } else if (store.lastError) {
-    showToast('error', store.lastError);
-  }
+/** 上传完成回调：提示文案由子组件透传（它握着 store.lastInfo） */
+function handleUploaded(info: string) {
+  showToast('success', info);
 }
 
 function confirmDelete(id: string) {
@@ -145,20 +96,6 @@ async function handleDelete() {
 
 function toggleExpand(id: string) {
   expandedDocId.value = expandedDocId.value === id ? null : id;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString('zh-CN');
-  } catch {
-    return iso;
-  }
 }
 
 function getCharacterName(id?: string): string {
@@ -236,50 +173,15 @@ const prereqRows = useDataBankPrereqs();
           <span class="section-count">{{ globalDocuments.length }}</span>
         </h2>
         <div class="doc-grid">
-          <article
-            v-for="doc in globalDocuments"
-            :key="doc.id"
-            class="doc-card"
-          >
-            <div class="card-header" @click="toggleExpand(doc.id)">
-              <Icon name="file" :size="20" class="doc-icon" />
-              <div class="card-info">
-                <h3 class="doc-name">{{ doc.name }}</h3>
-                <span class="doc-meta">{{ formatFileSize(doc.fileSize) }} · {{ t('databank.chunksCount', { count: doc.chunks.length }) }} · {{ formatDate(doc.createdAt) }}</span>
-              </div>
-              <button
-                type="button"
-                class="card-expand"
-                :aria-label="expandedDocId === doc.id ? t('databank.collapseChunks') : t('databank.expandChunks')"
-                :aria-expanded="expandedDocId === doc.id"
-                @click.stop="toggleExpand(doc.id)"
-              >
-                <Icon :name="expandedDocId === doc.id ? 'chevron-up' : 'chevron-down'" :size="16" />
-              </button>
-            </div>
-            <div v-if="expandedDocId === doc.id" class="card-chunks">
-              <div
-                v-for="chunk in doc.chunks"
-                :key="chunk.id"
-                class="chunk-item"
-              >
-                <span class="chunk-index">#{{ chunk.index + 1 }}</span>
-                <span class="chunk-content">{{ chunk.content }}</span>
-                <span class="chunk-tokens">{{ chunk.tokenCount }} tok</span>
-              </div>
-            </div>
-            <div class="card-actions">
-              <button
-                type="button"
-                class="card-btn delete-btn"
-                :aria-label="t('databank.deleteAria')"
-                @click="confirmDelete(doc.id)"
-              >
-                <Icon name="trash-2" :size="14" />
-                <span>{{ t('databank.delete') }}</span>
-              </button>
-            </div>
-          </article>
+          <DocCard
+            :docs="globalDocuments"
+            :expanded-doc-id="expandedDocId"
+            :format-file-size="formatFileSize"
+            :format-date="formatDate"
+            :get-character-name="getCharacterName"
+            @toggle-expand="toggleExpand"
+            @confirm-delete="confirmDelete"
+          />
         </div>
       </section>
 
@@ -291,53 +193,17 @@ const prereqRows = useDataBankPrereqs();
           <span class="section-count">{{ characterDocuments.length }}</span>
         </h2>
         <div class="doc-grid">
-          <article
-            v-for="doc in characterDocuments"
-            :key="doc.id"
-            class="doc-card"
-          >
-            <div class="card-header" @click="toggleExpand(doc.id)">
-              <Icon name="file" :size="20" class="doc-icon" />
-              <div class="card-info">
-                <h3 class="doc-name">{{ doc.name }}</h3>
-                <span class="doc-meta">{{ formatFileSize(doc.fileSize) }} · {{ t('databank.chunksCount', { count: doc.chunks.length }) }} · {{ getCharacterName(doc.characterId) }}</span>
-              </div>
-              <button
-                type="button"
-                class="card-expand"
-                :aria-label="expandedDocId === doc.id ? t('databank.collapseChunks') : t('databank.expandChunks')"
-                :aria-expanded="expandedDocId === doc.id"
-                @click="toggleExpand(doc.id)"
-              >
-                <Icon :name="expandedDocId === doc.id ? 'chevron-up' : 'chevron-down'" :size="16" />
-              </button>
-            </div>
-            <div v-if="expandedDocId === doc.id" class="card-chunks">
-              <div
-                v-for="chunk in doc.chunks"
-                :key="chunk.id"
-                class="chunk-item"
-              >
-                <span class="chunk-index">#{{ chunk.index + 1 }}</span>
-                <span class="chunk-content">{{ chunk.content }}</span>
-                <span class="chunk-tokens">{{ chunk.tokenCount }} tok</span>
-              </div>
-            </div>
-            <div class="card-actions">
-              <button
-                type="button"
-                class="card-btn delete-btn"
-                :aria-label="t('databank.deleteAria')"
-                @click="confirmDelete(doc.id)"
-              >
-                <Icon name="trash-2" :size="14" />
-                <span>{{ t('databank.delete') }}</span>
-              </button>
-            </div>
-          </article>
+          <DocCard
+            :docs="characterDocuments"
+            :expanded-doc-id="expandedDocId"
+            :format-file-size="formatFileSize"
+            :format-date="formatDate"
+            :get-character-name="getCharacterName"
+            @toggle-expand="toggleExpand"
+            @confirm-delete="confirmDelete"
+          />
         </div>
       </section>
-
 
       <!-- O-24（REAL_DEVICE_TEST_2026-10-03）：筛选无结果时的空态（对齐记录页做法） -->
       <div v-if="documents.length === 0" class="search-empty" role="status">
@@ -352,96 +218,8 @@ const prereqRows = useDataBankPrereqs();
       </div>
     </main>
 
-    <!-- 上传 Modal -->
-    <Modal
-      v-model="uploadModalOpen"
-      :title="t('databank.uploadTitle')"
-      :aria-label="t('databank.uploadAria2')"
-    >
-      <div class="upload-content">
-        <!-- 作用域选择 -->
-        <fieldset class="scope-fieldset">
-          <legend class="scope-legend">{{ t('databank.scope') }}</legend>
-          <div class="scope-options" role="radiogroup" :aria-label="t('databank.scopeAria')">
-            <label class="scope-option">
-              <input
-                type="radio"
-                name="scope"
-                value="global"
-                v-model="selectedScope"
-              />
-              <span class="scope-label">{{ t('databank.scopeGlobal') }}</span>
-            </label>
-            <label class="scope-option">
-              <input
-                type="radio"
-                name="scope"
-                value="character"
-                v-model="selectedScope"
-              />
-              <span class="scope-label">{{ t('databank.scopeCharacter') }}</span>
-            </label>
-          </div>
-        </fieldset>
-
-        <!-- 角色选择（scope=character 时显示） -->
-        <div v-if="selectedScope === 'character'" class="char-select">
-          <label for="character-select" class="char-select-label">{{ t('databank.bindCharacter') }}</label>
-          <select
-            id="character-select"
-            v-model="selectedCharacterId"
-            class="char-select-input"
-            :aria-label="t('databank.bindCharacterAria')"
-          >
-            <option value="">{{ t('databank.selectCharacter') }}</option>
-            <option
-              v-for="char in characterStore.characters"
-              :key="char.id"
-              :value="char.id"
-            >
-              {{ char.name }}
-            </option>
-          </select>
-        </div>
-
-        <!-- 文件拖拽区 -->
-        <div
-          class="drop-zone"
-          :class="{ active: selectedFile }"
-          @drop="handleDrop"
-          @dragover="handleDragOver"
-        >
-          <Icon name="upload" :size="32" class="drop-icon" />
-          <p v-if="!selectedFile" class="drop-text">{{ t('databank.dropHint') }}</p>
-          <p v-else class="drop-file-name">{{ t('databank.fileNameSize', { name: selectedFile.name, size: formatFileSize(selectedFile.size) }) }}</p>
-          <input
-            type="file"
-            class="hidden-file-input"
-            accept=".txt,.md,.markdown,.html,.htm,.csv,.json"
-            :aria-label="t('databank.selectFileAria')"
-            @change="handleFileSelect"
-          />
-        </div>
-
-        <p class="upload-hint">
-          {{ t('databank.uploadHint', { size: MAX_FILE_SIZE / 1024 / 1024 }) }}
-        </p>
-      </div>
-
-      <template #footer>
-        <button type="button" class="modal-btn modal-cancel" @click="closeUploadModal">
-          {{ t('databank.cancel') }}
-        </button>
-        <button
-          type="button"
-          class="modal-btn modal-confirm"
-          :disabled="!selectedFile || (selectedScope === 'character' && !selectedCharacterId)"
-          @click="handleUpload"
-        >
-          {{ t('databank.uploadBtn') }}
-        </button>
-      </template>
-    </Modal>
+    <!-- 上传 Modal（内部自持表单状态与提交逻辑） -->
+    <DataBankUploadModal v-model="uploadModalOpen" @uploaded="handleUploaded" />
 
     <!-- 删除确认 Modal -->
     <Modal
@@ -608,288 +386,14 @@ const prereqRows = useDataBankPrereqs();
   border-radius: 10px;
 }
 
-/* 文档卡片 */
+/* 卡片网格容器（卡片本体在 DocCard.vue） */
 .doc-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 12px;
 }
 
-.doc-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--card);
-  overflow: hidden;
-  transition: border-color 0.15s;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .doc-card:hover {
-    border-color: var(--border);
-  }
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  cursor: pointer;
-}
-
-.doc-icon {
-  color: var(--muted-foreground);
-  flex-shrink: 0;
-}
-
-.card-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.doc-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--foreground);
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.doc-meta {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  display: block;
-  margin-top: 2px;
-}
-
-.card-expand {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: var(--size-control-sm);
-  border: none;
-  background: none;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  flex-shrink: 0;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .card-expand:hover {
-    background: var(--card-elevated);
-  }
-}
-
-/* 分块预览 */
-.card-chunks {
-  border-top: 1px solid var(--border);
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 8px;
-  background: var(--background);
-}
-
-.chunk-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px;
-  border-bottom: 1px solid var(--border);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.chunk-item:last-child {
-  border-bottom: none;
-}
-
-.chunk-index {
-  color: var(--muted-foreground);
-  font-weight: 600;
-  flex-shrink: 0;
-  min-width: 28px;
-}
-
-.chunk-content {
-  flex: 1;
-  color: var(--foreground);
-  word-break: break-word;
-  max-height: 60px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
-
-.chunk-tokens {
-  color: var(--muted-foreground);
-  font-size: 11px;
-  flex-shrink: 0;
-}
-
-/* 卡片操作 */
-.card-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px 12px;
-  border-top: 1px solid var(--border);
-}
-
-.card-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: none;
-  background: none;
-  font-size: 12px;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  color: var(--muted-foreground);
-  transition: background-color 0.15s, color 0.15s;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .delete-btn:hover {
-    background: color-mix(in srgb, var(--error) 10%, transparent);
-    color: var(--error-fg);
-  }
-}
-
-/* 上传 Modal */
-.upload-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.scope-fieldset {
-  border: none;
-  padding: 0;
-  margin: 0;
-}
-
-.scope-legend {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--foreground);
-  margin-bottom: 8px;
-  padding: 0;
-}
-
-.scope-options {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.scope-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.scope-option input[type="radio"] {
-  cursor: pointer;
-}
-
-.scope-label {
-  font-size: 13px;
-  color: var(--foreground);
-}
-
-.char-select {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.char-select-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--foreground);
-}
-
-.char-select-input {
-  height: var(--size-control-md);
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--background);
-  color: var(--foreground);
-  font-size: 13px;
-}
-
-.char-select-input:focus {
-  outline: 2px solid var(--secondary);
-  outline-offset: -1px;
-}
-
-/* 拖拽区 */
-.drop-zone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 32px 20px;
-  border: 2px dashed var(--border);
-  border-radius: var(--radius-md);
-  background: var(--background);
-  cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
-  position: relative;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .drop-zone:hover {
-    border-color: var(--secondary);
-    background: var(--card-elevated);
-  }
-}
-
-.drop-zone.active {
-  border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 5%, var(--background));
-}
-
-.drop-icon {
-  color: var(--muted-foreground);
-}
-
-.drop-text {
-  font-size: 13px;
-  color: var(--muted-foreground);
-  margin: 0;
-}
-
-.drop-file-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--foreground);
-  margin: 0;
-}
-
-.hidden-file-input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.upload-hint {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* Modal 按钮 */
+/* Modal 按钮（删除确认弹窗用；上传弹窗自带一份） */
 .modal-btn {
   padding: 6px 16px;
   border: 1px solid var(--border);
@@ -910,12 +414,6 @@ const prereqRows = useDataBankPrereqs();
 .modal-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.modal-confirm {
-  background: var(--primary);
-  color: var(--on-primary);
-  border-color: var(--primary);
 }
 
 .modal-delete {
@@ -954,8 +452,7 @@ const prereqRows = useDataBankPrereqs();
 
 @media (max-width: 640px) {
   /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
-  .search-input,
-  .char-select-input {
+  .search-input {
     font-size: 16px;
   }
 }
