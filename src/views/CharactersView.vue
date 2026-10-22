@@ -20,6 +20,7 @@ import { useViewport } from '@/core/viewport';
 import CharacterDetailDrawer from '@/components/character/CharacterDetailDrawer.vue';
 import CharacterGenerateModal from './CharacterGenerateModal.vue';
 import CharacterGridPanel from './CharacterGridPanel.vue';
+import { useCharacterImport } from './useCharacterImport';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 import Icon from '@/components/common/Icon.vue';
 import Modal from '@/components/common/Modal.vue';
@@ -46,11 +47,6 @@ const toastMessage = ref('');
 // 隐藏的文件输入
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput');
 
-// 拖拽状态
-const isDragging = ref(false);
-const importBusy = ref(false);
-const importProgress = ref(0);
-const importTotal = ref(0);
 const pendingRuntimeKey = `ai-roleplay:pending-runtime-imports:${getActiveProfileId()}`;
 function loadPendingRuntimeIds(): string[] {
   try {
@@ -230,106 +226,20 @@ function openGenerateModal() {
   generateModalOpen.value = true;
 }
 
-// ── 导入 ──
+// ── 导入（拖拽 / 文件选择 / 运行时同步重试 → useCharacterImport） ──
 
-function triggerFileInput() {
-  fileInput.value?.click();
-}
-
-async function syncImportedCharacters(ids: string[]): Promise<number> {
-  const characters = ids.map((id) => characterStore.characters.find((character) => character.id === id))
-    .filter((character): character is UICharacter => Boolean(character));
-  const failed: string[] = [];
-  let synced = 0;
-  for (let index = 0; index < characters.length; index += 50) {
-    const batch = characters.slice(index, index + 50);
-    const result = await chatStore.createRuntimeCharactersBatch(batch);
-    if (!result) {
-      failed.push(...batch.map((character) => character.id));
-      continue;
-    }
-    failed.push(...result.items.filter((item) => item.status === 'invalid')
-      .map((item) => batch[item.index]?.id)
-      .filter((id): id is string => Boolean(id)));
-    synced += result.items.filter((item) => item.status !== 'invalid').length;
-  }
-  pendingRuntimeIds.value = [...new Set([...pendingRuntimeIds.value.filter((id) => !ids.includes(id)), ...failed])];
-  return synced;
-}
-
-async function importFiles(files: File[]): Promise<void> {
-  if (importBusy.value || files.length === 0) return;
-  if (files.length > 50) {
-    showToast('error', t('characters.importLimit'));
-    return;
-  }
-  importBusy.value = true;
-  importTotal.value = files.length;
-  importProgress.value = 0;
-  const importedIds: string[] = [];
-  let failed = 0;
-  try {
-    for (const file of files) {
-      if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
-        failed += 1;
-      } else {
-        const id = await characterStore.importV2File(file);
-        if (id) importedIds.push(id);
-        else failed += 1;
-      }
-      importProgress.value += 1;
-    }
-    const synced = importedIds.length ? await syncImportedCharacters(importedIds) : 0;
-    if (failed > 0 || synced < importedIds.length) {
-      showToast('error', t('characters.importSummary', {
-        count: importedIds.length, synced, failed: failed + importedIds.length - synced,
-      }));
-    } else {
-      showToast('success', t('characters.importSummary', { count: importedIds.length, synced, failed: 0 }));
-    }
-  } finally {
-    importBusy.value = false;
-  }
-}
-
-async function retryRuntimeSync(): Promise<void> {
-  if (importBusy.value || pendingRuntimeIds.value.length === 0) return;
-  importBusy.value = true;
-  try {
-    const ids = [...pendingRuntimeIds.value];
-    const synced = await syncImportedCharacters(ids);
-    showToast(pendingRuntimeIds.value.length ? 'error' : 'success', t('characters.importSummary', {
-      count: ids.length, synced, failed: pendingRuntimeIds.value.length,
-    }));
-  } finally {
-    importBusy.value = false;
-  }
-}
-
-async function handleFileSelected(e: Event) {
-  const input = e.target as HTMLInputElement;
-  const files = [...(input.files ?? [])];
-  input.value = '';
-  await importFiles(files);
-}
-
-async function handleDrop(e: DragEvent) {
-  e.preventDefault();
-  isDragging.value = false;
-  await importFiles([...(e.dataTransfer?.files ?? [])]);
-}
-
-function handleDragOver(e: DragEvent) {
-  e.preventDefault();
-  isDragging.value = true;
-}
-
-function handleDragLeave(e: DragEvent) {
-  e.preventDefault();
-  if (e.currentTarget === e.target) {
-    isDragging.value = false;
-  }
-}
+const {
+  isDragging,
+  importBusy,
+  importProgress,
+  importTotal,
+  triggerFileInput,
+  retryRuntimeSync,
+  handleFileSelected,
+  handleDrop,
+  handleDragOver,
+  handleDragLeave,
+} = useCharacterImport({ characterStore, chatStore, showToast, pendingRuntimeIds, fileInput });
 
 // 角色卡片列表
 const characterList = computed(() => characterStore.filteredCharacters);
