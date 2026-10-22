@@ -66,7 +66,7 @@ function wrapDeep(css) {
 }
 
 // 面板内调用形态改写：getCategoryLabel/getSeverityLabel 加 store 参数（map 传函数名的两处包箭头）
-function rewire(text, file) {
+function rewire(text, _file) {
   let s = text;
   const n1 = (s.match(/\bgetCategoryLabel\(/g) ?? []).length;
   const n2 = (s.match(/\bgetSeverityLabel\(/g) ?? []).length;
