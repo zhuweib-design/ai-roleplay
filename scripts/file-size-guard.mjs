@@ -127,9 +127,11 @@ const ALLOWLIST = {
   // 收实例状态，执行体不 import store），销账 9 → 8。
   // 2026-10-21 R4-5：story 已拆（1228 → 230 装配层，拆入 persistence 117 / analysis 391 /
   // import 218 / protagonist 247 / time 219；五个工厂收实例状态），销账 8 → 7。
+  // 2026-10-21 R4-6：group-chat 已拆（1077 → 218 装配层，拆入 persistence 108 / st 106 /
+  // crud 182 / members 284 / speaking 165 / messages 128 / npc 167；七个工厂收实例状态，
+  // 单 ref 薄方法留宿主），销账 7 → 6。
   'src/core/community-market.ts': { lines: 1274, reason: 'R4-7：拆为 2 个文件' },
   'src/core/random-event-generator.ts': { lines: 1063, reason: 'R4-8：拆为 2 个文件' },
-  'src/stores/group-chat.ts': { lines: 1077, reason: 'R4-6：拆为 2 个文件' },
 };
 
 function walk(dir, out = []) {
