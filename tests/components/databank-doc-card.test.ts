@@ -24,7 +24,7 @@ function makeDoc(over: Partial<DataBankDocument> = {}): DataBankDocument {
     name: '设定集.md',
     scope: 'global',
     chunks: [
-      { id: 'c1', index: 0, content: '第一段内容', tokenCount: 12 },
+      { id: 'doc-1-0', documentId: 'doc-1', index: 0, content: '第一段内容', tokenCount: 12 },
     ],
     fileSize: 2048,
     mimeType: 'text/markdown',
