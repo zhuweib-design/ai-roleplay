@@ -105,13 +105,11 @@ const ALLOWLIST = {
   // 2026-10-20 R3-4：RandomEventsView 已拆（实测 1268 → 555，拆入 Templates/Scenes/
   // Generator/Results 四个面板 + random-events-shared.ts；共用样式走宿主 :deep()），
   // 本条销账。
-  'src/views/CharactersView.vue': {
-    // 2026-10-21 R3-5 拆分实测回填 1388 → 815（拆出 CharacterGridPanel 409 +
-    // CharacterGenerateModal 285）。815 > 800 观察线，按守卫规则 4 不销账，
-    // 本条保留棘轮；待二次瘦身到 ≤800 再删。
-    lines: 815,
-    reason: 'R3-5 已拆 2 面板；宿主 815 仍 >800，待二次瘦身',
-  },
+  // 2026-10-22 O-9：CharactersView 二次瘦身完成（815 → 725），本条销账。
+  // R3-5 首拆只降到 815（>800 观察线），按规则 4 保留棘轮；本轮把「导入 / 拖拽 /
+  // 运行时同步重试」整块（约 100 行：4 个状态 ref + 9 个函数）抽成
+  // `views/useCharacterImport.ts`（158 行 composable，deps 只三个入口：
+  // showToast / pendingRuntimeIds / fileInput），宿主降到 725 ≤ 800 故删除条目。
   // 2026-10-20 R3-6：ImageGeneratorView 已拆（1230 → 470 行装配层，拆入 Generate /
   // Gallery / Settings 三个 tab 面板 + image-gen-format.ts；跨面板共用的表单与按钮族
   // 留宿主 `.image-gen-view :deep()` 单点定义），本条销账。
