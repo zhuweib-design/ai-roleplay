@@ -551,7 +551,7 @@ function handleSave(): void {
   padding: 6px 10px;
   border: 1px solid var(--border);
   background: var(--background);
-  color: var(--on-surface);
+  color: var(--foreground);
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-family: inherit;
@@ -567,7 +567,7 @@ function handleSave(): void {
   padding: 8px 10px;
   border: 1px solid var(--border);
   background: var(--background);
-  color: var(--on-surface);
+  color: var(--foreground);
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-family: inherit;
@@ -616,7 +616,7 @@ function handleSave(): void {
 
 .rel-target {
   font-weight: 600;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .rel-sep {
@@ -625,7 +625,7 @@ function handleSave(): void {
 
 .rel-text {
   flex: 1;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
 }
 
 .rel-remove-btn {

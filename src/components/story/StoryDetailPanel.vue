@@ -118,7 +118,7 @@ const emit = defineEmits<{
   margin: 6px 0 0;
   padding-left: 18px;
   font-size: 12px;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .error-item {
@@ -144,12 +144,12 @@ const emit = defineEmits<{
   font-size: 13px;
   font-weight: 600;
   margin: 0 0 8px;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .detail-desc {
   font-size: 13px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   line-height: 1.5;
   margin: 4px 0;
   word-break: break-word;
@@ -165,7 +165,7 @@ const emit = defineEmits<{
 
 .tag-label {
   font-size: 12px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
 }
 
 .tag {
@@ -173,7 +173,7 @@ const emit = defineEmits<{
   background: var(--card-elevated);
   border-radius: 10px;
   font-size: 11px;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .detail-meta {
@@ -183,6 +183,6 @@ const emit = defineEmits<{
   padding-top: 8px;
   border-top: 1px solid var(--border);
   font-size: 11px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
 }
 </style>

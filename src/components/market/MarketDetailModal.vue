@@ -240,7 +240,7 @@ type="button"
 
 .detail-desc {
   font-size: 0.875rem;
-  color: var(--text);
+  color: var(--foreground);
   margin: 0;
 }
 
@@ -295,7 +295,7 @@ type="button"
 
 .review-comment {
   font-size: 0.8125rem;
-  color: var(--text);
+  color: var(--foreground);
   margin: 0 0 0.25rem 0;
 }
 

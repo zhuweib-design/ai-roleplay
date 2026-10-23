@@ -159,7 +159,7 @@ async function handleQuickSetup(): Promise<void> {
   padding: 6px 12px;
   border: 1px solid var(--border);
   background: var(--card);
-  color: var(--on-surface);
+  color: var(--foreground);
   border-radius: var(--radius-md);
   font-size: 13px;
   cursor: pointer;

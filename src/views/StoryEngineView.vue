@@ -371,8 +371,8 @@ function handleClearProtagonist(storyId: string) {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: var(--bg);
-  color: var(--on-bg);
+  background: var(--card);
+  color: var(--foreground);
 }
 
 /* 顶部 Header */
@@ -402,7 +402,7 @@ function handleClearProtagonist(storyId: string) {
 
 .header-count {
   font-size: 13px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   white-space: nowrap;
 }
 
@@ -418,7 +418,7 @@ function handleClearProtagonist(storyId: string) {
   padding: 6px 12px;
   border: 1px solid var(--border);
   background: var(--card);
-  color: var(--on-surface);
+  color: var(--foreground);
   border-radius: var(--radius-md);
   font-size: 13px;
   cursor: pointer;
@@ -452,7 +452,7 @@ function handleClearProtagonist(storyId: string) {
 }
 
 .search-icon {
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin-right: 8px;
 }
 
@@ -460,8 +460,8 @@ function handleClearProtagonist(storyId: string) {
   flex: 1;
   padding: 6px 10px;
   border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--on-bg);
+  background: var(--card);
+  color: var(--foreground);
   border-radius: var(--radius-md);
   font-size: 13px;
   outline: none;
@@ -494,7 +494,7 @@ function handleClearProtagonist(storyId: string) {
 .progress-stage {
   flex: 1;
   font-size: 13px;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .cancel-btn {
@@ -503,8 +503,8 @@ function handleClearProtagonist(storyId: string) {
   gap: 4px;
   padding: 4px 10px;
   border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--on-bg);
+  background: var(--card);
+  color: var(--foreground);
   border-radius: var(--radius-sm);
   font-size: 12px;
   cursor: pointer;
@@ -534,7 +534,7 @@ function handleClearProtagonist(storyId: string) {
 .progress-meta {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   text-align: right;
 }
 
@@ -563,7 +563,7 @@ function handleClearProtagonist(storyId: string) {
 /* 删除确认 */
 .confirm-text {
   font-size: 14px;
-  color: var(--on-surface);
+  color: var(--foreground);
   margin: 0 0 16px;
 }
 

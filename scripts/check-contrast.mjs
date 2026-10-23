@@ -370,8 +370,11 @@ console.log('══════════════════════�
  * `!important` 基线 46 的做法）——只允许下降，不允许新增。
  *
  * 收敛后请同步下调此值；若某次改动使数字上升，说明引入了新的低对比度配对。
+ *
+ * 2026-10-23：MOBILE_PLAN 批次 4 清掉 provider 徽章 15 处（4 provider × 4 主题，
+ * 落在 ModelCloudList / ModelProfileList 两个文件），67 → 52。
  */
-const BASELINE_SCAN_FAILURES = 67;
+const BASELINE_SCAN_FAILURES = 52;
 
 let semanticFailed = 0;
 let scanFailed = 0;

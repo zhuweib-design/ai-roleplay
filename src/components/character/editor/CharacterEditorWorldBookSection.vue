@@ -255,7 +255,7 @@ function unbindWorldBook(worldBookId: string): void {
   justify-content: space-between;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--card);
   transition: border-color 0.15s;
@@ -271,7 +271,7 @@ function unbindWorldBook(worldBookId: string): void {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text);
+  color: var(--foreground);
   min-width: 0;
 }
 
@@ -293,7 +293,7 @@ function unbindWorldBook(worldBookId: string): void {
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border);
   border-radius: 6px;
   background: transparent;
   color: var(--muted-foreground);
@@ -320,7 +320,7 @@ function unbindWorldBook(worldBookId: string): void {
   font-size: 0.9em;
   padding: 12px;
   text-align: center;
-  border: 1px dashed var(--border-subtle);
+  border: 1px dashed var(--border);
   border-radius: 8px;
   margin: 12px 0;
 }

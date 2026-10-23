@@ -252,7 +252,7 @@ function handleUpload(): void {
   padding: 0 8px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .depth-options {
@@ -296,19 +296,19 @@ function handleUpload(): void {
 .depth-label {
   font-size: 14px;
   font-weight: 600;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .depth-desc {
   font-size: 12px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin-top: 2px;
   line-height: 1.4;
 }
 
 .depth-token {
   font-size: 11px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin-top: 2px;
 }
 
@@ -355,12 +355,12 @@ function handleUpload(): void {
 .template-label {
   font-size: 14px;
   font-weight: 600;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .template-desc {
   font-size: 12px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin-top: 2px;
   line-height: 1.4;
 }
@@ -400,7 +400,7 @@ function handleUpload(): void {
 }
 
 .drop-icon {
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin-bottom: 8px;
 }
 
@@ -410,20 +410,20 @@ function handleUpload(): void {
 
 .drop-text {
   font-size: 14px;
-  color: var(--on-surface);
+  color: var(--foreground);
   margin: 0;
   word-break: break-all;
 }
 
 .drop-meta {
   margin-left: 6px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   font-size: 12px;
 }
 
 .drop-hint {
   font-size: 12px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin: 4px 0 0;
 }
 

@@ -105,7 +105,7 @@ defineProps<{
   font-size: 13px;
   font-weight: 600;
   margin: 0 0 8px;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 /* 场景 / 脚本列表：拆分前与 `.char-*` 共用一条规则，这里按各自前缀重写，
@@ -120,7 +120,7 @@ defineProps<{
 .scene-item,
 .script-item {
   padding: 8px 10px;
-  background: var(--bg);
+  background: var(--card);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
 }
@@ -138,7 +138,7 @@ defineProps<{
 .scene-desc,
 .script-content {
   font-size: 12px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin: 4px 0 0;
   line-height: 1.5;
   word-break: break-word;
@@ -150,7 +150,7 @@ defineProps<{
   padding: 1px 6px;
   background: var(--card-elevated);
   border-radius: 8px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   font-weight: normal;
 }
 
@@ -169,7 +169,7 @@ defineProps<{
 
 .event-item {
   padding: 8px 10px;
-  background: var(--bg);
+  background: var(--card);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
 }
@@ -193,20 +193,20 @@ defineProps<{
   padding: 1px 6px;
   background: var(--card-elevated);
   border-radius: 8px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   font-weight: normal;
 }
 
 .event-desc {
   font-size: 12px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin: 4px 0 0;
   line-height: 1.5;
 }
 
 .event-meta {
   font-size: 11px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin-top: 2px;
 }
 
@@ -238,7 +238,7 @@ defineProps<{
 
 .script-meta {
   font-size: 11px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin-top: 4px;
 }
 </style>

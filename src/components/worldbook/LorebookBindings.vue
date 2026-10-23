@@ -96,7 +96,7 @@ const emit = defineEmits<{
   font-size: 14px;
   font-weight: 600;
   margin: 0;
-  color: var(--text);
+  color: var(--foreground);
 }
 
 .bound-chars-count {
@@ -133,9 +133,9 @@ const emit = defineEmits<{
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--bg);
+  background: var(--card);
   transition: border-color 0.15s;
 }
 
@@ -147,7 +147,7 @@ const emit = defineEmits<{
 
 .bound-char-name {
   font-weight: 500;
-  color: var(--text);
+  color: var(--foreground);
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -164,7 +164,7 @@ const emit = defineEmits<{
 .bound-chars-empty {
   margin: 8px 0;
   padding: 12px;
-  border: 1px dashed var(--border-subtle);
+  border: 1px dashed var(--border);
   border-radius: 8px;
   color: var(--muted-foreground);
   font-size: 13px;

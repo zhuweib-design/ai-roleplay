@@ -168,7 +168,7 @@ function onToggle(): void {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   flex-wrap: wrap;
 }
 
@@ -208,7 +208,7 @@ function onToggle(): void {
 .card-expand {
   background: transparent;
   border: none;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   cursor: pointer;
   padding: 4px;
   border-radius: var(--radius-sm);
@@ -234,8 +234,8 @@ function onToggle(): void {
   gap: 4px;
   padding: 4px 10px;
   border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--on-bg);
+  background: var(--card);
+  color: var(--foreground);
   border-radius: var(--radius-sm);
   font-size: 12px;
   cursor: pointer;

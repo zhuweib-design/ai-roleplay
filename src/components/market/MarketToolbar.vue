@@ -114,7 +114,7 @@ type="button"
   flex: 1;
   border: none;
   background: none;
-  color: var(--text);
+  color: var(--foreground);
   font-size: 0.875rem;
   outline: none;
 }

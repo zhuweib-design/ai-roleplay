@@ -119,7 +119,7 @@ const badgeText = computed(() => {
 .card-name {
   font-weight: 600;
   font-size: 1rem;
-  color: var(--text);
+  color: var(--foreground);
 }
 
 .badge {

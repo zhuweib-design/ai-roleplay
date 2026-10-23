@@ -61,7 +61,7 @@ const {
 .events-list-panel {
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--surface-1, var(--bg-default));
+  background: var(--surface-1, var(--card));
   overflow-y: auto;
   max-height: 480px;
 }

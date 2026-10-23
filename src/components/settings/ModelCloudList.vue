@@ -171,22 +171,22 @@ function handleSetPrimary(profile: ApiProfile, category: ModelCategory): void {
 
 .provider-badge[data-provider='openai'] {
   background: color-mix(in srgb, var(--brand-openai) 20%, transparent);
-  color: var(--brand-openai);
+  color: var(--brand-openai-text);
 }
 
 .provider-badge[data-provider='anthropic'] {
   background: color-mix(in srgb, var(--brand-anthropic) 20%, transparent);
-  color: var(--brand-anthropic);
+  color: var(--brand-anthropic-text);
 }
 
 .provider-badge[data-provider='custom'] {
   background: color-mix(in srgb, var(--primary) 20%, transparent);
-  color: var(--primary-fg);
+  color: var(--brand-primary-text);
 }
 
 .provider-badge[data-provider='deepseek'] {
   background: color-mix(in srgb, var(--accent-blue) 20%, transparent);
-  color: var(--accent-blue);
+  color: var(--brand-accent-blue-text);
 }
 
 .profile-meta {

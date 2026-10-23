@@ -377,8 +377,8 @@ type="button"
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--card);
+  color: var(--foreground);
 }
 
 .tabs {
@@ -402,7 +402,7 @@ type="button"
 
 @media (hover: hover) and (pointer: fine) {
   .tab:hover {
-    color: var(--text);
+    color: var(--foreground);
   }
 }
 
@@ -502,7 +502,7 @@ type="button"
   font-size: 0.8125rem;
   font-weight: 500;
   margin-bottom: 0.375rem;
-  color: var(--text);
+  color: var(--foreground);
 }
 
 .form-input {
@@ -511,7 +511,7 @@ type="button"
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   background: var(--background);
-  color: var(--text);
+  color: var(--foreground);
   font-size: 0.875rem;
   outline: none;
   box-sizing: border-box;
@@ -548,7 +548,7 @@ type="button"
 
 .btn-ghost {
   background: var(--card);
-  color: var(--text);
+  color: var(--foreground);
   border-color: var(--border);
 }
 

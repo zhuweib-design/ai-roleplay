@@ -338,7 +338,7 @@ const {
 .event-editor-panel {
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--surface-1, var(--bg-default));
+  background: var(--surface-1, var(--card));
   padding: var(--spacing-md);
   overflow-y: auto;
   max-height: 600px;

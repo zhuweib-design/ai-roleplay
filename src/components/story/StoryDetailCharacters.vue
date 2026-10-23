@@ -147,7 +147,7 @@ const emit = defineEmits<{
   font-size: 13px;
   font-weight: 600;
   margin: 0 0 8px;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .char-list {
@@ -160,7 +160,7 @@ const emit = defineEmits<{
    padding），这里按先后顺序原样保留两条，计算值与拆分前一致。 */
 .char-item {
   padding: 8px 10px;
-  background: var(--bg);
+  background: var(--card);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
 }
@@ -176,7 +176,7 @@ const emit = defineEmits<{
 
 .char-desc {
   font-size: 12px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin: 4px 0 0;
   line-height: 1.5;
   word-break: break-word;
@@ -184,14 +184,14 @@ const emit = defineEmits<{
 
 .char-aliases {
   font-size: 11px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   font-weight: normal;
 }
 
 .char-relations {
   margin-top: 4px;
   font-size: 11px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -199,7 +199,7 @@ const emit = defineEmits<{
 }
 
 .relation-label {
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
 }
 
 .relation {
@@ -237,7 +237,7 @@ const emit = defineEmits<{
   padding: 4px 8px;
   border: 1px solid var(--border);
   background: var(--card);
-  color: var(--on-surface);
+  color: var(--foreground);
   border-radius: var(--radius-sm);
   font-size: 12px;
   cursor: pointer;
@@ -283,7 +283,7 @@ const emit = defineEmits<{
 .protagonist-name {
   font-size: 14px;
   font-weight: 600;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .protagonist-badge {
@@ -312,7 +312,7 @@ const emit = defineEmits<{
 
 .protagonist-desc {
   font-size: 13px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
   margin: 0;
   white-space: pre-wrap;
 }
@@ -321,7 +321,7 @@ const emit = defineEmits<{
   display: flex;
   gap: 4px;
   font-size: 12px;
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
 }
 
 .protagonist-relations {
@@ -347,11 +347,11 @@ const emit = defineEmits<{
 
 .relation-target {
   font-weight: 600;
-  color: var(--on-surface);
+  color: var(--foreground);
 }
 
 .relation-text {
-  color: var(--on-surface-variant);
+  color: var(--muted-foreground);
 }
 
 .protagonist-actions {
