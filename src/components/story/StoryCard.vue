@@ -187,7 +187,7 @@ function onToggle(): void {
  * 状态是这张卡的**元信息**，不是它的主题色，所以限定到徽标上。 */
 .status-badge.status-pending {
   background: rgba(245, 158, 11, 0.15);
-  color: var(--accent-orange);
+  color: var(--accent-orange-text);
 }
 
 .status-badge.status-analyzing {

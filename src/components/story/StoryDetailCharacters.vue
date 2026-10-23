@@ -297,12 +297,14 @@ const emit = defineEmits<{
 
 .protagonist-badge.role-protagonist {
   background: color-mix(in srgb, var(--primary) 15%, transparent);
-  color: var(--primary-fg, #3b82f6);
+  /* --primary-fg 的语义是「主色底上的前景色」，落在淡染底上语义与对比度双错
+     （light 4.04 / brutal 4.44）；文字档走派生色。 */
+  color: var(--brand-primary-text);
 }
 
 .protagonist-badge.role-observer {
   background: color-mix(in srgb, var(--accent-orange) 15%, transparent);
-  color: var(--accent-orange);
+  color: var(--accent-orange-text);
 }
 
 .protagonist-badge.source-badge {

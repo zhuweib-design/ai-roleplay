@@ -373,8 +373,16 @@ console.log('══════════════════════�
  *
  * 2026-10-23：MOBILE_PLAN 批次 4 清掉 provider 徽章 15 处（4 provider × 4 主题，
  * 落在 ModelCloudList / ModelProfileList 两个文件），67 → 52。
+ *
+ * 2026-10-23（同日第二轮）：52 → 0，全部产线清零，故基线归零——此后为**硬卡**，
+ * 任何新增低对比度配对都会直接判红。四类根因分别处理：
+ *   ① `--tag-*` 作文字：浅色主题此前没覆盖这四个 token，补 light 深色变体（−8）
+ *   ② `--accent-orange` / `--accent-blue` / `--primary(-fg)` / `--success` /
+ *      `--destructive` 直接作文本色：一律换成既有或新增的 -text / -fg 变体（−40）
+ *   ③ 徽章用半透明染层当底：底会随父级底色漂移，改不透明 `--badge-bg`（−3）
+ *   ④ 图片浮层白 20% 蒙版：新增与 `--on-media` 成对的 `--media-scrim`（−1）
  */
-const BASELINE_SCAN_FAILURES = 52;
+const BASELINE_SCAN_FAILURES = 0;
 
 let semanticFailed = 0;
 let scanFailed = 0;

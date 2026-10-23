@@ -362,7 +362,7 @@ defineExpose({ closeSearch });
   border: none;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
-  color: var(--accent-blue);
+  color: var(--accent-blue-text);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;

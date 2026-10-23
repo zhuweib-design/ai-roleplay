@@ -166,7 +166,9 @@ function openMasterPasswordModal(mode: MasterPasswordMode): void {
 
 .provider-badge[data-provider='custom'] {
   background: color-mix(in srgb, var(--primary) 20%, transparent);
-  color: var(--primary-fg);
+  /* 与 ModelLocalSection 同口径：--primary-fg 是「主色底上的前景色」，
+     落在 20% 淡染底上 light 3.60 / brutal 3.98；文字档走派生色。 */
+  color: var(--brand-primary-text);
 }
 
 .profile-item.is-primary {
@@ -418,7 +420,7 @@ function openMasterPasswordModal(mode: MasterPasswordMode): void {
 
 .status-badge[data-status='loaded'] {
   background: color-mix(in srgb, var(--primary) 16%, transparent);
-  color: var(--primary-fg);
+  color: var(--brand-primary-text);
 }
 
 .profile-item.is-loaded {

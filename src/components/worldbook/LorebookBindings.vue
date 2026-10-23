@@ -108,7 +108,7 @@ const emit = defineEmits<{
   padding: 0 6px;
   border-radius: 10px;
   background: var(--accent-blue-bg, rgba(96, 165, 250, 0.15));
-  color: var(--accent-blue);
+  color: var(--accent-blue-text);
   font-size: 12px;
   font-weight: 600;
 }

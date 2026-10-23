@@ -541,7 +541,7 @@ function goToGroupChat(id: string) {
   padding: 1px 6px;
   font-size: 10px;
   font-weight: 500;
-  color: var(--accent-orange);
+  color: var(--accent-orange-text);
   background: color-mix(in srgb, var(--accent-orange) 12%, transparent);
   border-radius: var(--radius-pill, 999px);
 }

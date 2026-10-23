@@ -153,7 +153,7 @@ function selectNpcTemplate(id: CharacterTemplateId): void {
   align-items: center;
   gap: 12px;
   padding: 24px 0;
-  color: var(--accent-orange);
+  color: var(--accent-orange-text);
 }
 
 .gen-spinner {
@@ -177,7 +177,7 @@ function selectNpcTemplate(id: CharacterTemplateId): void {
   background: color-mix(in srgb, var(--accent-orange) 10%, transparent);
   border-left: 3px solid var(--accent-orange);
   font-size: 12px;
-  color: var(--accent-orange);
+  color: var(--accent-orange-text);
   border-radius: 4px;
 }
 

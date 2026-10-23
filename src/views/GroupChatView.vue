@@ -674,7 +674,7 @@ const {
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 500;
-  color: var(--accent-orange);
+  color: var(--accent-orange-text);
   background: color-mix(in srgb, var(--accent-orange) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent-orange) 30%, transparent);
   border-radius: var(--radius-pill, 999px);

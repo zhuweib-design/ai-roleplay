@@ -414,7 +414,7 @@ const {
   flex-wrap: wrap;
 }
 .action-btn.trigger {
-  color: var(--success);
+  color: var(--success-fg);
   border-color: var(--success);
 }
 @media (hover: hover) and (pointer: fine) {

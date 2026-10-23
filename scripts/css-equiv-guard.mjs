@@ -82,6 +82,30 @@ export function normalizeTokens(body) {
 }
 
 /**
+ * 有意为之的规则体变更台账（2026-10-23 对比度存量收敛时引入）。
+ *
+ * 为什么需要：本脚本以**历史基线**做等价比对，"搬漏"与"故意改值"在字符串层面
+ * 长得一模一样。52 处对比度存量收敛里，WorldBook 两个文件的规则体被有意改过
+ * （`--accent-orange` / `--accent-blue` 换成 -text 变体），于是回放报"丢失 2 条"。
+ *
+ * 口径为什么是「选择器 + 旧规则体全文」而不是只写选择器：只写选择器的话，将来
+ * 真把这条规则搬丢了、同时又因别的理由改过它的值，就会被这张表静默放过。写全文
+ * 意味着**旧值一字不差**才算登记过——改了字面就自动失效，回到"报丢失"。
+ *
+ * 维护：这是历史债记账，不是活口。新代码里的规则变更不需要登记（登记只为兼容
+ * 固定的历史基线），登记项也只服务于 `--base 25451f8` 这一次回放。
+ */
+export const INTENTIONAL_BODY_CHANGES = {
+  '.bound-chars-count || display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--accent-blue-bg, rgba(96, 165, 250, 0.15)); color: var(--accent-blue); font-size: 12px; font-weight: 600;':
+    '数字徽章文字 --accent-blue → --accent-blue-text（dark 下 4.39，差 0.11 不达标）',
+  '.action-btn.extend || color: var(--accent-orange); border-color: var(--accent-orange);':
+    '按钮文字 --accent-orange → --accent-orange-text，边框保留原色（light 下 3.88）',
+};
+
+/** 去掉容器前缀（@media 包裹层），只留「选择器 || 规则体」用于查台账 */
+export const bodyKey = (key) => key.split(' || ').slice(1).join(' || ').trim();
+
+/**
  * 按括号深度切选择器组：`.a, .b` → ['.a', '.b']。
  * 不能用 `split(',')` —— `:is(a, b)` / `:not(a, b)` 里的逗号会被切坏，
  * 那是假阳性（明明同一条规则，却被报成"丢了一条"）。
@@ -257,6 +281,21 @@ function selfTest() {
     return d.missing.length === 1;
   })(), '');
 
+  // ── 有意变更台账（2026-10-23 对比度收敛）──
+  check('台账按「选择器 + 旧规则体全文」匹配 ⇒ 命中登记项', (() => {
+    const registered = Object.keys(INTENTIONAL_BODY_CHANGES)[1];
+    return Boolean(INTENTIONAL_BODY_CHANGES[bodyKey(` || ${registered}`)]);
+  })(), '');
+  check('登记过的规则体改掉一个字符 ⇒ 不再命中（台账不是活口）', (() => {
+    const [sel, body] = Object.keys(INTENTIONAL_BODY_CHANGES)[1].split(' || ');
+    return !INTENTIONAL_BODY_CHANGES[bodyKey(` || ${sel} || ${body};`)] && Boolean(body);
+  })(), '');
+  check('容器前缀不影响台账匹配（@media 里包着的同一条规则）', (() => {
+    const registered = Object.keys(INTENTIONAL_BODY_CHANGES)[1];
+    return (
+      bodyKey(`@media (hover: hover) and (pointer: fine) || ${registered}`) === registered
+    );
+  })(), '');
   let failed = 0;
   for (const r of results) {
     console.log(`${r.pass ? 'ok  ' : 'FAIL'} ${r.name}${r.detail ? `  [${r.detail}]` : ''}`);
@@ -327,14 +366,24 @@ function main() {
 
   const { missing, extra } = diff(baseKeys, currentKeys);
 
+  // 「搬漏」与「有意改值」在字符串层面同形，靠台账区分：台账按「选择器 + 旧规则体全文」
+  // 精确匹配，改一个字就不再命中（防止台账变成掩盖真搬漏的活口）。
+  const intentional = missing.filter((k) => INTENTIONAL_BODY_CHANGES[bodyKey(k)]);
+  const realMissing = missing.filter((k) => !INTENTIONAL_BODY_CHANGES[bodyKey(k)]);
+
   console.log(`基线 ${base}:${fromPath} → ${baseKeys.length} 条规则`);
   console.log(`当前 ${files.length} 个文件 → ${currentKeys.length} 条规则`);
+  if (intentional.length > 0) {
+    console.log(`已登记的规则体变更 ${intentional.length} 条（不算丢失，逐条附理由）：`);
+    for (const k of intentional) console.log(`   ~ ${bodyKey(k)}\n     理由：${INTENTIONAL_BODY_CHANGES[bodyKey(k)]}`);
+  }
   console.log('');
 
-  if (missing.length > 0) {
-    console.error(`失败：丢失 ${missing.length} 条规则（拆文件时搬漏了）：`);
-    for (const k of missing) console.error(`   - ${k}`);
+  if (realMissing.length > 0) {
+    console.error(`失败：丢失 ${realMissing.length} 条规则（拆文件时搬漏了）：`);
+    for (const k of realMissing) console.error(`   - ${k}`);
     console.error('\n处理：把缺的规则补进对应的子组件（scoped 到不了子组件内部，父级规则不会生效）。');
+    console.error('若确认是"故意改值"而非搬漏，请登记到 INTENTIONAL_BODY_CHANGES 并写清理由。');
     process.exitCode = 1;
     return;
   }

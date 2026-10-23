@@ -236,7 +236,8 @@ defineExpose({ handleSearchJump, clearHighlight });
 @media (hover: hover) and (pointer: fine) {
   .jump-bottom-btn:hover {
     background: color-mix(in srgb, var(--primary) 14%, var(--card-elevated));
-    color: var(--primary-fg);
+    /* 底是 14% 主色叠在 elevated 上，--primary-fg 在此处 3.60~4.48，走派生色。 */
+    color: var(--brand-primary-text);
   }
 }
 
@@ -346,7 +347,7 @@ defineExpose({ handleSearchJump, clearHighlight });
   .example-chip:hover:not(:disabled) {
     background: color-mix(in srgb, var(--primary) 12%, var(--card));
     border-color: color-mix(in srgb, var(--primary) 30%, transparent);
-    color: var(--primary-fg);
+    color: var(--brand-primary-text);
   }
 }
 

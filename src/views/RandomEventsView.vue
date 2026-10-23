@@ -442,7 +442,7 @@ function goBack(): void {
 
 :deep(.badge.severity[data-sev='major']) {
   background: color-mix(in srgb, var(--accent-orange) 15%, transparent);
-  color: var(--accent-orange);
+  color: var(--accent-orange-text);
 }
 
 :deep(.badge.severity[data-sev='critical']) {

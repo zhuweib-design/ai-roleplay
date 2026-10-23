@@ -339,7 +339,9 @@ async function detectLocalEngine() {
   appearance: none;
   border: 1px solid var(--border);
   background: transparent;
-  color: var(--primary, #4f8cff);
+  /* --primary 是「填充 + 白字」档（dark 3.37 / midnight 3.05 / oled 3.85），
+     作文字走派生色；见 tokens.css 的 --brand-primary-text。 */
+  color: var(--brand-primary-text);
   font-size: 13px;
   padding: 6px var(--spacing-md);
   border-radius: 6px;
@@ -398,14 +400,25 @@ async function detectLocalEngine() {
   color: var(--secondary-text);
 }
 
+/* 徽章底色一律用不透明的 --badge-bg（= card-elevated），不用
+ * `color-mix(..., transparent)` 的半透明染层。
+ *
+ * 原因（2026-10-23）：半透明底会与**父级实际底色**合成，同一枚徽章落在白卡、
+ * 灰分区面、浮起面板上会得到三种不同底色，文字对比度随之漂移、无法静态保证。
+ * 实测这四个徽章原先在 light / brutal / ink 下分别只有 2.54~2.71（size-large、error）、
+ * 3.95~4.34（loaded）、4.22~4.40（medium / loading），而把底换成不透明后，
+ * 文字色一个都没改就全部 ≥4.5（light 6.24 / brutal 6.39 / ink 5.54）。
+ * ⇒ 问题从来不在文字色，而在「底不可控」。 */
 .size-badge[data-size='medium'] {
-  background: color-mix(in srgb, var(--warning-fg, #f59e0b) 16%, transparent);
+  background: var(--badge-bg);
   color: var(--warning-fg, #f59e0b);
 }
 
 .size-badge[data-size='large'] {
-  background: color-mix(in srgb, var(--tk-red-500, #ef4444) 14%, transparent);
-  color: var(--tk-red-500, #ef4444);
+  background: var(--badge-bg);
+  /* --tk-red-500 在 tokens.css 的注释里明确「供头像渐变等非文本场景使用」，
+   * 它作文字时 2.54~2.71 全线不合格；文字档该走派生色（同批次 4 的 provider 徽章）。 */
+  color: var(--tk-red-text);
 }
 
 .status-badge {
@@ -420,19 +433,21 @@ async function detectLocalEngine() {
 }
 
 .status-badge[data-status='loaded'] {
-  background: color-mix(in srgb, var(--primary) 16%, transparent);
-  color: var(--primary-fg);
+  background: var(--badge-bg);
+  /* 同 .link-btn：--primary-fg 的语义是「主色底上的前景色」，落在 --badge-bg
+     这种中性浮起面上语义与对比度双错（dark 3.91 / midnight 3.97 / oled 4.23）。 */
+  color: var(--brand-primary-text);
 }
 
 .status-badge[data-status='loading'],
 .status-badge[data-status='downloading'] {
-  background: color-mix(in srgb, var(--warning-fg, #f59e0b) 16%, transparent);
+  background: var(--badge-bg);
   color: var(--warning-fg, #f59e0b);
 }
 
 .status-badge[data-status='error'] {
-  background: color-mix(in srgb, var(--tk-red-500, #ef4444) 14%, transparent);
-  color: var(--tk-red-500, #ef4444);
+  background: var(--badge-bg);
+  color: var(--tk-red-text);
 }
 
 .profile-item.is-loaded {

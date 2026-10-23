@@ -166,7 +166,7 @@ const emit = defineEmits<{
 }
 
 .action-btn.extend {
-  color: var(--accent-orange);
+  color: var(--accent-orange-text);
   border-color: var(--accent-orange);
 }
 

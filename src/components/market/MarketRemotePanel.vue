@@ -353,7 +353,7 @@ function handleLoadRemote(): void {
   text-align: right;
 }
 .remote-done {
-  color: var(--success);
+  color: var(--success-fg);
   font-size: 0.8rem;
   font-weight: 600;
 }

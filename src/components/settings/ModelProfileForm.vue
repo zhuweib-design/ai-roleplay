@@ -534,13 +534,16 @@ select.field-input {
 .test-result.ok {
   border-color: color-mix(in srgb, var(--success) 45%, transparent);
   background: color-mix(in srgb, var(--success) 10%, transparent);
-  color: var(--success);
+  /* --success 是「填充 + 白字」档（见 themes.css 注释），作文字用它 light 下仅 3.04；
+     文字一律走 -fg 变体。 */
+  color: var(--success-fg);
 }
 
 .test-result.fail {
   border-color: color-mix(in srgb, var(--destructive) 45%, transparent);
   background: color-mix(in srgb, var(--destructive) 10%, transparent);
-  color: var(--destructive);
+  /* 同上：--destructive 是填充档，作文字走 --error-fg。 */
+  color: var(--error-fg);
 }
 
 .test-result-icon {
@@ -575,11 +578,11 @@ select.field-input {
 }
 
 .model-list-result.ok {
-  color: var(--success);
+  color: var(--success-fg);
 }
 
 .model-list-result.fail {
-  color: var(--destructive);
+  color: var(--error-fg);
 }
 
 .apikey-input-wrap {

@@ -366,7 +366,7 @@ function avatarOf(member: GroupMember): UICharacter {
 }
 
 .action-btn.generate-npc {
-  color: var(--accent-orange);
+  color: var(--accent-orange-text);
   border-color: var(--accent-orange);
 }
 

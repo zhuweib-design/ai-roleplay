@@ -284,7 +284,11 @@ async function confirmClearGallery() {
 }
 
 .icon-btn {
-  background: rgba(255,255,255,0.2);
+  /* 原为 rgba(255,255,255,0.2) + --on-media 白字：这组控件是叠在**图片**上的浮层，
+     白 20% 蒙版落在浅色图片上时白字几乎不可读（静态扫描合成到白卡上得 1.00:1，
+     不是纯误报）。改用 --media-scrim（与 --on-media 成对，随皮肤反向）后与图片
+     明暗无关，恒达 AA。 */
+  background: var(--media-scrim);
   border: none;
   color: var(--on-media);
   padding: 4px;
@@ -295,7 +299,7 @@ async function confirmClearGallery() {
 
 @media (hover: hover) and (pointer: fine) {
   .icon-btn:hover {
-    background: rgba(255,255,255,0.3);
+    background: var(--media-scrim-hover);
   }
 }
 

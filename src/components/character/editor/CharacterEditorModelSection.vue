@@ -115,7 +115,8 @@ const settingsStore = useSettingsStore();
 
 .value-badge.err {
   background: color-mix(in srgb, var(--destructive) 12%, transparent);
-  color: var(--destructive);
+  /* --destructive 是填充档；文字走 --error-fg（light 下 #DC2626 → #991B1B）。 */
+  color: var(--error-fg);
   font-weight: 500;
 }
 
