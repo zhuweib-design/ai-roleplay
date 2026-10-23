@@ -1,10 +1,10 @@
 # PROJECT_INDEX
 
-- **生成时间**：2026-10-20 23:29（本地时区）
+- **生成时间**：2026-10-23 14:19（本地时区）
 - **项目根目录**：`.`（本文件所在目录；全文均为相对路径）
 - **项目标识**：`ai-roleplay` v1.1.1 — AI 角色扮演与多模型对话平台（Tauri 2.0 原生封装 + Web 降级）
 - **生成方式**：`node scripts/gen-project-index.mjs`（扫描文件系统 + 只读调用 git，不执行任何 git 写操作）
-- **收录文件**：1403 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：745 个
+- **收录文件**：1540 个 ｜ **忽略目录**：13 类 ｜ **待确认用途**：875 个
 
 > 用途说明来源：人工核对清单优先；未核对者按文件命名规则推断并标注「待确认」，不做臆测。
 > 敏感文件（密钥 / 证书 / 环境变量）只记录排除原因，不读取内容、不列入表格。
@@ -15,8 +15,8 @@
 ai-roleplay/
 - `.github/`  — 1 个文件
   - `workflows/`  — 1 个文件
-- `.workbuddy/`  — 16 个文件
-  - `memory/`  — 16 个文件
+- `.workbuddy/`  — 19 个文件
+  - `memory/`  — 19 个文件
 - `.workbuddy-ai/`  — 6 个文件
   - `memory/`  — 6 个文件
 - `android/`  — 334 个文件
@@ -76,7 +76,7 @@ ai-roleplay/
         - `res/`  — 1 个文件
   - `gradle/`  — 2 个文件
     - `wrapper/`  — 2 个文件
-- `docs/`  — 510 个文件
+- `docs/`  — 511 个文件
   - `assets/`  — 132 个文件
     - `screenshots/`  — 132 个文件
       - `themes/`  — 106 个文件
@@ -85,7 +85,7 @@ ai-roleplay/
         - `oled/`  — 21 个文件
         - `terminal/`  — 22 个文件
         - `theatre/`  — 21 个文件
-  - `design/`  — 190 个文件
+  - `design/`  — 191 个文件
     - `PSY_NARRATION_STYLE_2026-10-15/`  — 1 个文件
     - `THEME_5_GENERIC_PREVIEW/`  — 26 个文件
     - `THEME_ACG_PREVIEW/`  — 33 个文件
@@ -148,41 +148,65 @@ ai-roleplay/
     - `icons/`  — 12 个文件
       - `dl_builtin_tik_tok/`  — 12 个文件
   - `fonts/`  — 106 个文件
-- `scripts/`  — 49 个文件
-  - `archive/`  — 8 个文件
+- `scripts/`  — 117 个文件
+  - `archive/`  — 76 个文件
+    - `o9-charactersview/`  — 1 个文件
+    - `r3-4-random-events/`  — 9 个文件
+    - `r3-5-characters-split/`  — 12 个文件
+    - `r3-6-image-split/`  — 4 个文件
+    - `r4-1-vector-split/`  — 1 个文件
+    - `r4-10-databank/`  — 2 个文件
+    - `r4-11-cvcontrol/`  — 2 个文件
+    - `r4-12-pgstore/`  — 2 个文件
+    - `r4-13-slashcmd/`  — 2 个文件
+    - `r4-14-cmarket/`  — 2 个文件
+    - `r4-15-settings/`  — 5 个文件
+    - `r4-16-chatmanager/`  — 2 个文件
+    - `r4-17-archives/`  — 2 个文件
+    - `r4-2-wbevents/`  — 2 个文件
+    - `r4-3-lorebook-split/`  — 5 个文件
+    - `r4-4-chatgen-split/`  — 4 个文件
+    - `r4-5-story-split/`  — 3 个文件
+    - `r4-6-groupchat-split/`  — 2 个文件
+    - `r4-7-market-split/`  — 2 个文件
+    - `r4-8-randomevent-split/`  — 2 个文件
+    - `r4-9-groupchat/`  — 2 个文件
     - `round3-settings-split/`  — 8 个文件
-- `src/`  — 359 个文件
+- `src/`  — 421 个文件
   - `api/`  — 13 个文件
-  - `components/`  — 125 个文件
+  - `components/`  — 132 个文件
+    - `archives/`  — 1 个文件
     - `character/`  — 17 个文件
       - `editor/`  — 8 个文件
       - `version/`  — 7 个文件
     - `chat/`  — 14 个文件
     - `common/`  — 18 个文件
+    - `databank/`  — 2 个文件
     - `group/`  — 8 个文件
     - `layout/`  — 13 个文件
       - `context/`  — 8 个文件
     - `market/`  — 7 个文件
     - `mobile/`  — 1 个文件
     - `random-events/`  — 2 个文件
-    - `settings/`  — 25 个文件
+    - `settings/`  — 26 个文件
     - `story/`  — 10 个文件
-    - `worldbook/`  — 10 个文件
-  - `composables/`  — 18 个文件
-  - `core/`  — 91 个文件
+    - `worldbook/`  — 13 个文件
+  - `composables/`  — 19 个文件
+  - `core/`  — 106 个文件
   - `data/`  — 1 个文件
   - `i18n/`  — 3 个文件
     - `locales/`  — 2 个文件
   - `router/`  — 1 个文件
-  - `runtime/`  — 22 个文件
-  - `services/`  — 8 个文件
+  - `runtime/`  — 24 个文件
+  - `services/`  — 9 个文件
   - `storage/`  — 9 个文件
-  - `stores/`  — 26 个文件
+  - `stores/`  — 49 个文件
+    - `community-market/`  — 1 个文件
     - `settings/`  — 6 个文件
   - `styles/`  — 10 个文件
   - `types/`  — 1 个文件
-  - `utils/`  — 5 个文件
-  - `views/`  — 22 个文件
+  - `utils/`  — 6 个文件
+  - `views/`  — 34 个文件
 - `src-tauri/`  — 66 个文件
   - `capabilities/`  — 1 个文件
   - `icons/`  — 49 个文件
@@ -209,14 +233,14 @@ ai-roleplay/
   - `mobile-batch0-composition--bd086-开时：Tab-不离开抽屉（遮罩后面的主区-inert）-mobile-msedge/`  — 1 个文件
 - `test-results-old-1792172422/`  — 2 个文件
   - `mobile-batch0-composition--bd086-开时：Tab-不离开抽屉（遮罩后面的主区-inert）-mobile-msedge/`  — 1 个文件
-- `tests/`  — 225 个文件
+- `tests/`  — 228 个文件
   - `accessibility/`  — 7 个文件
   - `api/`  — 10 个文件
-  - `components/`  — 23 个文件
+  - `components/`  — 24 个文件
     - `settings/`  — 1 个文件
   - `composables/`  — 4 个文件
-  - `core/`  — 88 个文件
-  - `runtime/`  — 9 个文件
+  - `core/`  — 89 个文件
+  - `runtime/`  — 10 个文件
   - `services/`  — 11 个文件
   - `storage/`  — 6 个文件
   - `stores/`  — 36 个文件
@@ -227,7 +251,7 @@ ai-roleplay/
 
 ## 二、文件索引
 
-### 2.1 程序（373）
+### 2.1 程序（435）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -259,6 +283,7 @@ ai-roleplay/
 | `src/api/reasoning-capability.ts` | ts | 程序 | 模块：reasoning-capability（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/api/tauri-openai-client.ts` | ts | 程序 | Tauri 侧 OpenAI 兼容客户端 | 已跟踪 |  |
 | `src/api/types.ts` | ts | 程序 | API 请求/响应类型定义 | 已跟踪 |  |
+| `src/components/archives/ArchiveDetailModal.vue` | vue | 程序 | 组件：ArchiveDetailModal（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/character/CharacterDetailDrawer.vue` | vue | 程序 | 组件：CharacterDetailDrawer（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/character/QuickCharacterForm.vue` | vue | 程序 | 组件：QuickCharacterForm（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/character/editor/CharacterEditorAdvancedSection.vue` | vue | 程序 | 组件：CharacterEditorAdvancedSection（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -308,6 +333,8 @@ ai-roleplay/
 | `src/components/common/StepFlow.vue` | vue | 程序 | 组件：StepFlow（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/common/Toast.vue` | vue | 程序 | 通用组件：轻提示 | 已跟踪 |  |
 | `src/components/common/icons.ts` | ts | 程序 | 图标路径常量表 | 已跟踪 |  |
+| `src/components/databank/DataBankUploadModal.vue` | vue | 程序 | 组件：DataBankUploadModal（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/databank/DocCard.vue` | vue | 程序 | 组件：DocCard（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/group/CharacterPickerList.vue` | vue | 程序 | 组件：CharacterPickerList（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/group/GroupCreateModal.vue` | vue | 程序 | 组件：GroupCreateModal（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/group/GroupInfoPanel.vue` | vue | 程序 | 组件：GroupInfoPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -351,6 +378,7 @@ ai-roleplay/
 | `src/components/settings/ModelThinkingSection.vue` | vue | 程序 | 组件：ModelThinkingSection（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsAboutPanel.vue` | vue | 程序 | 组件：SettingsAboutPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsAppearancePanel.vue` | vue | 程序 | 组件：设置-外观（装配层，R3-1 拆分） | 已跟踪 |  |
+| `src/components/settings/SettingsContextLengthSection.vue` | vue | 程序 | 组件：SettingsContextLengthSection（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsDataAdvancedSection.vue` | vue | 程序 | 分区：数据-QR 互导/PWA 持久性/嵌入优化/审计日志（R3-2 拆分） | 已跟踪 |  |
 | `src/components/settings/SettingsDataDailySection.vue` | vue | 程序 | 分区：数据-资料档案/全量备份/PNG/Markdown 导出（R3-2 拆分） | 已跟踪 |  |
 | `src/components/settings/SettingsDataModals.vue` | vue | 程序 | 弹窗：数据-导入结果/审计日志/清空确认/主密码（R3-2 拆分） | 已跟踪 |  |
@@ -358,11 +386,11 @@ ai-roleplay/
 | `src/components/settings/SettingsExtensionPanel.vue` | vue | 程序 | 组件：SettingsExtensionPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/SettingsModelPanel.vue` | vue | 程序 | 组件：设置-模型面板 | 已跟踪 |  |
 | `src/components/settings/SettingsSecurityPanel.vue` | vue | 程序 | 组件：SettingsSecurityPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
-| `src/components/settings/VectorModelEnhanceSection.vue` | vue | 程序 | 组件：VectorModelEnhanceSection（待确认具体功能） | 未跟踪 | 用途待确认 |
-| `src/components/settings/VectorModelInstallSection.vue` | vue | 程序 | 组件：VectorModelInstallSection（待确认具体功能） | 未跟踪 | 用途待确认 |
-| `src/components/settings/VectorModelPanel.vue` | vue | 程序 | 组件：设置-向量模型面板 | 已修改 |  |
-| `src/components/settings/VectorModelRemoteSection.vue` | vue | 程序 | 组件：VectorModelRemoteSection（待确认具体功能） | 未跟踪 | 用途待确认 |
-| `src/components/settings/VectorModelUserSection.vue` | vue | 程序 | 组件：VectorModelUserSection（待确认具体功能） | 未跟踪 | 用途待确认 |
+| `src/components/settings/VectorModelEnhanceSection.vue` | vue | 程序 | 组件：VectorModelEnhanceSection（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/settings/VectorModelInstallSection.vue` | vue | 程序 | 组件：VectorModelInstallSection（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/settings/VectorModelPanel.vue` | vue | 程序 | 组件：设置-向量模型面板 | 已跟踪 |  |
+| `src/components/settings/VectorModelRemoteSection.vue` | vue | 程序 | 组件：VectorModelRemoteSection（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/settings/VectorModelUserSection.vue` | vue | 程序 | 组件：VectorModelUserSection（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/settings/useDataPanelState.ts` | ts | 程序 | 状态：数据面板弹窗共享单例（R3-2 拆分） | 已跟踪 |  |
 | `src/components/story/StoryCard.vue` | vue | 程序 | 组件：StoryCard（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/story/StoryDetailCharacters.vue` | vue | 程序 | 组件：StoryDetailCharacters（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -383,13 +411,17 @@ ai-roleplay/
 | `src/components/worldbook/LorebookMetaSection.vue` | vue | 程序 | 组件：LorebookMetaSection（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/worldbook/LorebookWorldSections.vue` | vue | 程序 | 组件：LorebookWorldSections（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/worldbook/QuickLorebookFlow.vue` | vue | 程序 | 组件：QuickLorebookFlow（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/worldbook/WorldBookEventEditor.vue` | vue | 程序 | 组件：WorldBookEventEditor（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/components/worldbook/WorldBookEventList.vue` | vue | 程序 | 组件：WorldBookEventList（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/components/worldbook/WorldBookEventsPanel.vue` | vue | 程序 | 组件：世界书事件面板 | 已跟踪 |  |
+| `src/components/worldbook/useWorldBookEvents.ts` | ts | 程序 | 模块：useWorldBookEvents（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/composables/useBackLayer.ts` | ts | 程序 | 模块：useBackLayer（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/composables/useCharacterEditorForm.ts` | ts | 程序 | 模块：useCharacterEditorForm（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/composables/useChatWindowing.ts` | ts | 程序 | 模块：useChatWindowing（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/composables/useContextPanel.ts` | ts | 程序 | 模块：useContextPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/composables/useDeepLinkId.ts` | ts | 程序 | 模块：useDeepLinkId（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/composables/useDrilldown.ts` | ts | 程序 | 模块：useDrilldown（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/composables/useGroupActions.ts` | ts | 程序 | 模块：useGroupActions（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/composables/useGroupComposer.ts` | ts | 程序 | 模块：useGroupComposer（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/composables/useGroupLifecycle.ts` | ts | 程序 | 模块：useGroupLifecycle（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/composables/useGroupMembers.ts` | ts | 程序 | 模块：useGroupMembers（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -410,6 +442,13 @@ ai-roleplay/
 | `src/core/character-card.ts` | ts | 程序 | 角色卡模型与解析（含 SillyTavern 兼容） | 已跟踪 |  |
 | `src/core/character-generator.ts` | ts | 程序 | AI 角色生成 | 已跟踪 |  |
 | `src/core/character-version-control.ts` | ts | 程序 | 角色卡版本控制 | 已跟踪 |  |
+| `src/core/character-version-merge.ts` | ts | 程序 | 模块：character-version-merge（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/character-version-repository.ts` | ts | 程序 | 模块：character-version-repository（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/character-version-types.ts` | ts | 程序 | 模块：character-version-types（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/character-version-utils.ts` | ts | 程序 | 模块：character-version-utils（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/community-market-mock.ts` | ts | 程序 | 模块：community-market-mock（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/community-market-queries.ts` | ts | 程序 | 模块：community-market-queries（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/community-market-types.ts` | ts | 程序 | 模块：community-market-types（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/community-market.ts` | ts | 程序 | 社区市场客户端 | 已跟踪 |  |
 | `src/core/compression.ts` | ts | 程序 | 内容压缩算法 | 已跟踪 |  |
 | `src/core/creation-preset.ts` | ts | 程序 | 模块：creation-preset（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -455,6 +494,10 @@ ai-roleplay/
 | `src/core/rag-model-catalog.ts` | ts | 程序 | 模块：rag-model-catalog（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/rag-retriever.ts` | ts | 程序 | RAG 检索器：向量召回与上下文注入 | 已跟踪 |  |
 | `src/core/rail-prefs.ts` | ts | 程序 | 模块：rail-prefs（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/random-event-generator-core.ts` | ts | 程序 | 模块：random-event-generator-core（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/random-event-generator-factories.ts` | ts | 程序 | 模块：random-event-generator-factories（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/random-event-generator-runtime.ts` | ts | 程序 | 模块：random-event-generator-runtime（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/random-event-generator-types.ts` | ts | 程序 | 模块：random-event-generator-types（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/random-event-generator.ts` | ts | 程序 | 随机事件生成 | 已跟踪 |  |
 | `src/core/range-fill.ts` | ts | 程序 | 模块：range-fill（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/readiness.ts` | ts | 程序 | 模块：readiness（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -462,6 +505,9 @@ ai-roleplay/
 | `src/core/remote-api-key-state.ts` | ts | 程序 | 模块：remote-api-key-state（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/sanitize.ts` | ts | 程序 | HTML 净化（DOMPurify 封装，防 XSS） | 已跟踪 |  |
 | `src/core/schema-contract.ts` | ts | 程序 | 模块：schema-contract（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/slash-command-builtin.ts` | ts | 程序 | 模块：slash-command-builtin（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/slash-command-parser.ts` | ts | 程序 | 模块：slash-command-parser（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/core/slash-command-types.ts` | ts | 程序 | 模块：slash-command-types（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/slash-command.ts` | ts | 程序 | 斜杠命令解析与执行 | 已跟踪 |  |
 | `src/core/st-compat.ts` | ts | 程序 | SillyTavern 数据格式兼容层 | 已跟踪 |  |
 | `src/core/status-parser.ts` | ts | 程序 | 模块：status-parser（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -490,6 +536,7 @@ ai-roleplay/
 | `src/core/vector-model-source.ts` | ts | 程序 | 向量模型来源映射 | 已跟踪 |  |
 | `src/core/vector-model-storage.ts` | ts | 程序 | 向量模型本地存储 | 已跟踪 |  |
 | `src/core/vector-model-tauri.ts` | ts | 程序 | 向量模型 Tauri 侧扫描（PRESCAN_DIRS 含 model/） | 已跟踪 |  |
+| `src/core/version-control-engine.ts` | ts | 程序 | 模块：version-control-engine（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/core/viewport.ts` | ts | 程序 | 视口/断点唯一来源（matchMedia 仅允许出现在此文件） | 已跟踪 |  |
 | `src/core/world-generator.ts` | ts | 程序 | 世界观生成 | 已跟踪 |  |
 | `src/core/world-setting-chunker.ts` | ts | 程序 | 世界设定分块器 | 已跟踪 |  |
@@ -509,6 +556,8 @@ ai-roleplay/
 | `src/runtime/index.ts` | ts | 程序 | Virtual Character OS Runtime 统一出口 | 已跟踪 |  |
 | `src/runtime/postgres-executor.ts` | ts | 程序 | node-postgres Pool 到 SqlExecutor 的事务适配器（服务端专用） | 已跟踪 |  |
 | `src/runtime/postgres-group-runtime.ts` | ts | 程序 | Virtual Character OS PostgreSQL 群组事务、成员授权与多角色 Event 证据关联 | 已跟踪 |  |
+| `src/runtime/postgres-sql-port.ts` | ts | 程序 | 模块：postgres-sql-port（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/runtime/postgres-store-writer.ts` | ts | 程序 | 模块：postgres-store-writer（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/runtime/postgres-store.ts` | ts | 程序 | Virtual Character OS PostgreSQL RuntimeStore 与事务边界 | 已跟踪 |  |
 | `src/runtime/project-runtime.ts` | ts | 程序 | AI 酒馆项目级 Runtime 工厂 | 已跟踪 |  |
 | `src/runtime/runtime-api.ts` | ts | 程序 | Virtual Character OS 运行时 API 适配器 | 已跟踪 |  |
@@ -523,6 +572,7 @@ ai-roleplay/
 | `src/runtime/types.ts` | ts | 程序 | Virtual Character OS Runtime 领域类型与 API 契约 | 已跟踪 |  |
 | `src/services/backup-service.ts` | ts | 程序 | 备份导出/导入服务 | 已跟踪 |  |
 | `src/services/chat-error.ts` | ts | 程序 | 对话错误类型与用户提示映射 | 已跟踪 |  |
+| `src/services/chat-manager-types.ts` | ts | 程序 | 模块：chat-manager-types（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/services/chat-manager.ts` | ts | 程序 | 对话流程编排（发送 / 流式接收 / 重试） | 已跟踪 |  |
 | `src/services/group-chat-prompt.ts` | ts | 程序 | 群聊提示词组装（公共历史窗口与成员名单，隔离其他成员私有记忆） | 已跟踪 |  |
 | `src/services/group-chat-runtime.ts` | ts | 程序 | 群聊发言选择与旁听 Event 投递规则 | 已跟踪 |  |
@@ -542,6 +592,11 @@ ai-roleplay/
 | `src/stores/character-version.ts` | ts | 程序 | 状态存储：角色卡版本历史 | 已跟踪 |  |
 | `src/stores/character.ts` | ts | 程序 | 状态存储：角色卡列表与当前角色 | 已跟踪 |  |
 | `src/stores/chat-context.ts` | ts | 程序 | 状态存储：对话上下文绑定（角色 / 世界书） | 已跟踪 |  |
+| `src/stores/chat-generation-commands.ts` | ts | 程序 | 模块：chat-generation-commands（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/chat-generation-helpers.ts` | ts | 程序 | 模块：chat-generation-helpers（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/chat-generation-persistence.ts` | ts | 程序 | 模块：chat-generation-persistence（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/chat-generation-profile.ts` | ts | 程序 | 模块：chat-generation-profile（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/chat-generation-random-event.ts` | ts | 程序 | 模块：chat-generation-random-event（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/stores/chat-generation.ts` | ts | 程序 | 模块：chat-generation（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/stores/chat-group-runtime.ts` | ts | 程序 | 模块：chat-group-runtime（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/stores/chat-memory.ts` | ts | 程序 | 模块：chat-memory（待确认具体功能） | 已跟踪 | 用途待确认 |
@@ -549,11 +604,24 @@ ai-roleplay/
 | `src/stores/chat-session.ts` | ts | 程序 | 模块：chat-session（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/stores/chat.ts` | ts | 程序 | 状态存储：会话与消息管理 | 已跟踪 |  |
 | `src/stores/community-market.ts` | ts | 程序 | 状态存储：社区市场 | 已跟踪 |  |
+| `src/stores/community-market/remote.ts` | ts | 程序 | 模块：remote（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/stores/data-bank.ts` | ts | 程序 | 状态存储：数据银行素材 | 已跟踪 |  |
 | `src/stores/events.ts` | ts | 程序 | 状态存储：全局事件总线 | 已跟踪 |  |
+| `src/stores/group-chat-crud.ts` | ts | 程序 | 模块：group-chat-crud（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/group-chat-members.ts` | ts | 程序 | 模块：group-chat-members（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/group-chat-messages.ts` | ts | 程序 | 模块：group-chat-messages（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/group-chat-npc.ts` | ts | 程序 | 模块：group-chat-npc（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/group-chat-persistence.ts` | ts | 程序 | 模块：group-chat-persistence（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/group-chat-speaking.ts` | ts | 程序 | 模块：group-chat-speaking（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/group-chat-st.ts` | ts | 程序 | 模块：group-chat-st（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/stores/group-chat.ts` | ts | 程序 | 状态存储：群聊 | 已跟踪 |  |
 | `src/stores/image-generation.ts` | ts | 程序 | 状态存储：图像生成任务 | 已跟踪 |  |
 | `src/stores/local-model.ts` | ts | 程序 | 状态存储：本地模型加载状态 | 已跟踪 |  |
+| `src/stores/lorebook-entries.ts` | ts | 程序 | 模块：lorebook-entries（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/lorebook-hierarchy.ts` | ts | 程序 | 模块：lorebook-hierarchy（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/lorebook-io.ts` | ts | 程序 | 模块：lorebook-io（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/lorebook-world-gen-run.ts` | ts | 程序 | 模块：lorebook-world-gen-run（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/lorebook-world-gen.ts` | ts | 程序 | 模块：lorebook-world-gen（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/stores/lorebook.ts` | ts | 程序 | 状态存储：世界书 | 已跟踪 |  |
 | `src/stores/random-events.ts` | ts | 程序 | 状态存储：随机事件 | 已跟踪 |  |
 | `src/stores/settings.ts` | ts | 程序 | 状态存储：应用设置（含主密码加密与 API Profile） | 已跟踪 |  |
@@ -563,6 +631,11 @@ ai-roleplay/
 | `src/stores/settings/persistence.ts` | ts | 程序 | 模块：首帧加载/串行化写入/透明加密快照（R2-5 拆分） | 已跟踪 |  |
 | `src/stores/settings/profiles.ts` | ts | 程序 | 模块：API Profile CRUD/模型分类/各类配置/Quick Reply/偏好开关（R2-5 拆分） | 已跟踪 |  |
 | `src/stores/settings/security.ts` | ts | 程序 | 模块：AC20 主密码会话与 P1-4 远程向量密钥加密（R2-5 拆分） | 已跟踪 |  |
+| `src/stores/story-analysis.ts` | ts | 程序 | 模块：story-analysis（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/story-import.ts` | ts | 程序 | 模块：story-import（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/story-persistence.ts` | ts | 程序 | 模块：story-persistence（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/story-protagonist.ts` | ts | 程序 | 模块：story-protagonist（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/stores/story-time.ts` | ts | 程序 | 模块：story-time（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/stores/story.ts` | ts | 程序 | 状态存储：剧情引擎 | 已跟踪 |  |
 | `src/stores/user-vector-model.ts` | ts | 程序 | 状态存储：用户自备向量模型 | 已跟踪 |  |
 | `src/styles/app-global.css` | css | 程序 | 应用全局样式 | 已跟踪 |  |
@@ -576,6 +649,7 @@ ai-roleplay/
 | `src/styles/tokens-structure.css` | css | 程序 | 待确认 | 已跟踪 | 用途待确认 |
 | `src/styles/tokens.css` | css | 程序 | 设计令牌（颜色/间距/字号） | 已跟踪 |  |
 | `src/types/index.ts` | ts | 程序 | 全局共享类型定义 | 已跟踪 |  |
+| `src/utils/format.ts` | ts | 程序 | 模块：format（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/utils/logger.ts` | ts | 程序 | 模块：logger（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/utils/master-password-modal-state.ts` | ts | 程序 | 模块：master-password-modal-state（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/utils/onboarding.ts` | ts | 程序 | 新手引导状态读写（完成标志值为 "1"） | 已跟踪 |  |
@@ -583,6 +657,8 @@ ai-roleplay/
 | `src/utils/toast-service.ts` | ts | 程序 | 模块：toast-service（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/views/ArchivesView.vue` | vue | 程序 | 页面：归档 | 已跟踪 |  |
 | `src/views/CharacterEditorView.vue` | vue | 程序 | 页面：角色编辑 | 已跟踪 |  |
+| `src/views/CharacterGenerateModal.vue` | vue | 程序 | 组件：CharacterGenerateModal（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/views/CharacterGridPanel.vue` | vue | 程序 | 组件：CharacterGridPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/views/CharacterVersionView.vue` | vue | 程序 | 页面：角色版本管理 | 已跟踪 |  |
 | `src/views/CharactersView.vue` | vue | 程序 | 页面：角色列表 | 已跟踪 |  |
 | `src/views/ChatView.vue` | vue | 程序 | 页面：对话主界面 | 已跟踪 |  |
@@ -590,6 +666,9 @@ ai-roleplay/
 | `src/views/DataBankView.vue` | vue | 程序 | 页面：数据银行 | 已跟踪 |  |
 | `src/views/GroupChatView.vue` | vue | 程序 | 页面：群聊 | 已跟踪 |  |
 | `src/views/GuideView.vue` | vue | 程序 | 页面：Guide（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/views/ImageGenGalleryPanel.vue` | vue | 程序 | 组件：ImageGenGalleryPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/views/ImageGenGeneratePanel.vue` | vue | 程序 | 组件：ImageGenGeneratePanel（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/views/ImageGenSettingsPanel.vue` | vue | 程序 | 组件：ImageGenSettingsPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/views/ImageGeneratorView.vue` | vue | 程序 | 页面：图像生成 | 已跟踪 |  |
 | `src/views/LocalModelBenchmarkPanel.vue` | vue | 程序 | 面板：本地模型-性能基准（R3-3 拆分） | 已跟踪 |  |
 | `src/views/LocalModelCachePanel.vue` | vue | 程序 | 面板：本地模型-推理缓存（R3-3 拆分） | 已跟踪 |  |
@@ -598,14 +677,21 @@ ai-roleplay/
 | `src/views/LocalModelSettingsPanel.vue` | vue | 程序 | 面板：本地模型-设置（R3-3 拆分） | 已跟踪 |  |
 | `src/views/LocalModelView.vue` | vue | 程序 | 页面：本地模型管理（装配层，R3-3 拆分） | 已跟踪 |  |
 | `src/views/MoreView.vue` | vue | 程序 | 页面：More（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/views/RandomEventsGeneratorPanel.vue` | vue | 程序 | 组件：RandomEventsGeneratorPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/views/RandomEventsResultsPanel.vue` | vue | 程序 | 组件：RandomEventsResultsPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/views/RandomEventsScenesPanel.vue` | vue | 程序 | 组件：RandomEventsScenesPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/views/RandomEventsTemplatesPanel.vue` | vue | 程序 | 组件：RandomEventsTemplatesPanel（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/views/RandomEventsView.vue` | vue | 程序 | 页面：随机事件 | 已跟踪 |  |
 | `src/views/SettingsView.vue` | vue | 程序 | 页面：设置中心（含数据管理与安全） | 已跟踪 |  |
 | `src/views/StoryEngineView.vue` | vue | 程序 | 页面：剧情引擎 | 已跟踪 |  |
 | `src/views/WorldBookView.vue` | vue | 程序 | 页面：世界书管理 | 已跟踪 |  |
+| `src/views/image-gen-format.ts` | ts | 程序 | 模块：image-gen-format（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/views/local-model-format.ts` | ts | 程序 | 工具：本地模型页数值格式化（R3-3 拆分） | 已跟踪 |  |
+| `src/views/random-events-shared.ts` | ts | 程序 | 模块：random-events-shared（待确认具体功能） | 已跟踪 | 用途待确认 |
+| `src/views/useCharacterImport.ts` | ts | 程序 | 模块：useCharacterImport（待确认具体功能） | 已跟踪 | 用途待确认 |
 | `src/vite-env.d.ts` | ts | 程序 | Vite 环境变量与静态资源类型声明 | 已跟踪 |  |
 
-### 2.2 测试（286）
+### 2.2 测试（289）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -622,7 +708,7 @@ ai-roleplay/
 | `e2e/i18n-locale.spec.ts` | ts | 测试 | E2E 测试：i18n-locale 场景 | 已跟踪 |  |
 | `e2e/long-history-scroll.spec.ts` | ts | 测试 | E2E 测试：long-history-scroll 场景 | 已跟踪 |  |
 | `e2e/market-narrative.spec.ts` | ts | 测试 | E2E 测试：market-narrative 场景 | 已跟踪 |  |
-| `e2e/mobile-control-font-size.spec.ts` | ts | 测试 | E2E 测试：mobile-control-font-size 场景 | 已修改 |  |
+| `e2e/mobile-control-font-size.spec.ts` | ts | 测试 | E2E 测试：mobile-control-font-size 场景 | 已跟踪 |  |
 | `e2e/mobile/back-button.spec.ts` | ts | 测试 | E2E 测试：back-button 场景 | 已跟踪 |  |
 | `e2e/mobile/batch0-composition.spec.ts` | ts | 测试 | E2E 测试：batch0-composition 场景 | 已跟踪 |  |
 | `e2e/mobile/character-drawer.spec.ts` | ts | 测试 | E2E 测试：character-drawer 场景 | 已跟踪 |  |
@@ -693,6 +779,7 @@ ai-roleplay/
 | `tests/components/chat-touch-and-composer.test.ts` | ts | 测试 | 单元测试：chat-touch-and-composer 模块 | 已跟踪 |  |
 | `tests/components/collapse.test.ts` | ts | 测试 | 单元测试：collapse 模块 | 已跟踪 |  |
 | `tests/components/context-panel-lorebooks.test.ts` | ts | 测试 | 单元测试：context-panel-lorebooks 模块 | 已跟踪 |  |
+| `tests/components/databank-doc-card.test.ts` | ts | 测试 | 单元测试：databank-doc-card 模块 | 已跟踪 |  |
 | `tests/components/event-trace-summary.test.ts` | ts | 测试 | 单元测试：event-trace-summary 模块 | 已跟踪 |  |
 | `tests/components/guided-tasks-card.test.ts` | ts | 测试 | 单元测试：guided-tasks-card 模块 | 已跟踪 |  |
 | `tests/components/help-tip-form-field.test.ts` | ts | 测试 | 单元测试：help-tip-form-field 模块 | 已跟踪 |  |
@@ -722,6 +809,7 @@ ai-roleplay/
 | `tests/core/character-card.test.ts` | ts | 测试 | 单元测试：character-card 模块 | 已跟踪 |  |
 | `tests/core/character-generator.test.ts` | ts | 测试 | 单元测试：character-generator 模块 | 已跟踪 |  |
 | `tests/core/character-version-control.test.ts` | ts | 测试 | 单元测试：character-version-control 模块 | 已跟踪 |  |
+| `tests/core/character-version-merge.test.ts` | ts | 测试 | 单元测试：character-version-merge 模块 | 已跟踪 |  |
 | `tests/core/community-market.test.ts` | ts | 测试 | 单元测试：community-market 模块 | 已跟踪 |  |
 | `tests/core/compression.test.ts` | ts | 测试 | 单元测试：compression 模块 | 已跟踪 |  |
 | `tests/core/creation-preset.test.ts` | ts | 测试 | 单元测试：creation-preset 模块 | 已跟踪 |  |
@@ -808,6 +896,7 @@ ai-roleplay/
 | `tests/runtime/postgres-executor.test.ts` | ts | 测试 | 单元测试：postgres-executor 模块 | 已跟踪 |  |
 | `tests/runtime/postgres-group.integration.test.ts` | ts | 测试 | 真实 PostgreSQL 群聊原子性、授权、并发及回滚集成测试 | 已跟踪 |  |
 | `tests/runtime/postgres-runtime.integration.test.ts` | ts | 测试 | 单元测试：postgres-runtime.integration 模块 | 已跟踪 |  |
+| `tests/runtime/postgres-store-writer.test.ts` | ts | 测试 | 单元测试：postgres-store-writer 模块 | 已跟踪 |  |
 | `tests/runtime/runtime-core.test.ts` | ts | 测试 | 单元测试：runtime-core 模块 | 已跟踪 |  |
 | `tests/runtime/runtime-http.test.ts` | ts | 测试 | 单元测试：runtime-http 模块 | 已跟踪 |  |
 | `tests/runtime/runtime-trace.test.ts` | ts | 测试 | 单元测试：runtime-trace 模块 | 已跟踪 |  |
@@ -870,7 +959,7 @@ ai-roleplay/
 | `tests/tooling/control-size-guard.test.ts` | ts | 测试 | 单元测试：control-size-guard 模块 | 已跟踪 |  |
 | `tests/tooling/css-equiv-guard.test.ts` | ts | 测试 | 单元测试：css-equiv-guard 模块 | 已跟踪 |  |
 | `tests/tooling/e2e-shard-groups.test.ts` | ts | 测试 | 单元测试：e2e-shard-groups 模块 | 已跟踪 |  |
-| `tests/tooling/file-size-guard.test.ts` | ts | 测试 | 单元测试：file-size-guard 模块 | 已修改 |  |
+| `tests/tooling/file-size-guard.test.ts` | ts | 测试 | 单元测试：file-size-guard 模块 | 已跟踪 |  |
 | `tests/tooling/lint-scope.test.ts` | ts | 测试 | 单元测试：lint-scope 模块 | 已跟踪 |  |
 | `tests/tooling/primitives-guard.test.ts` | ts | 测试 | 单元测试：primitives-guard 模块 | 已跟踪 |  |
 | `tests/utils/save-blob.test.ts` | ts | 测试 | 单元测试：save-blob 模块 | 已跟踪 |  |
@@ -1043,7 +1132,7 @@ ai-roleplay/
 | `docs/dev/evidence/ux-ia-guided-flow/m8-c-describedby/02-未保存确认.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/evidence/ux-ia-guided-flow/m8-c-describedby/03-列表删除确认.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/evidence/ux-ia-guided-flow/m8-c-describedby/04-世界书删除确认.png` | png | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
-| `docs/dev/installer-distribution-2026-10-19.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
+| `docs/dev/installer-distribution-2026-10-19.md` | md | 开发文档 | 安装包分发决策记录：为什么不挂 Releases、撤下的 7 个资产清单、sha256、可复制的复核命令与负向对照 | 已跟踪 |  |
 | `docs/dev/llm-controls-p0-落地记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/llm-controls-收尾三项记录.md` | md | 开发文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/dev/mobile-pwa-plan.md` | md | 开发文档 | 开发文档：手机端 PWA 实现计划 | 已跟踪 |  |
@@ -1096,7 +1185,7 @@ ai-roleplay/
 | `docs/fixes/web-sop-fix-batch4-report.md` | md | 修复文档 | 修复文档：Web SOP 修复第四批交付报告（口径统一与流程固化） | 已跟踪 |  |
 | `docs/fixes/web-sop-review-2026-09-18.md` | md | 修复文档 | 修复文档：Web 端 SOP 评审报告（完整性/准确性/一致性/可执行性四维） | 已跟踪 |  |
 
-### 2.6 设计文档（89）
+### 2.6 设计文档（90）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -1107,6 +1196,7 @@ ai-roleplay/
 | `docs/design/MOBILE_PLAN_2026-10-16_手机端组成层与可用性修复方案.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/OPT_PLAN_2026-10-15_移动端与五项体验重构.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/P2-9-csp-whitelist-report.md` | md | 设计文档 | 设计文档：P2-9 CSP / remote 白名单盘点与决策记录 | 已跟踪 |  |
+| `docs/design/PLAN_CHECK_2026-10-23_双计划完成项核查.md` | md | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/PSY_NARRATION_STYLE_2026-10-15/index.html` | html | 设计文档 | 待确认 | 已跟踪 | 用途待确认 |
 | `docs/design/THEME_5_GENERIC_PREVIEW/a-characters.png` | png | 设计文档 | 待确认 | 已忽略 | 用途待确认 |
 | `docs/design/THEME_5_GENERIC_PREVIEW/a-chat.png` | png | 设计文档 | 待确认 | 已忽略 | 用途待确认 |
@@ -1190,7 +1280,7 @@ ai-roleplay/
 | `docs/design/virtual-character-os-多角色群聊实施计划.md` | md | 设计文档 | 设计文档：多角色群聊与 PostgreSQL 群组事务实施计划及验证记录 | 已跟踪 |  |
 | `docs/design/virtual-character-os-实现基线.md` | md | 设计文档 | 设计文档：Virtual Character OS 实现基线（Schema → Runtime → Emotion → Compiler → API） | 已跟踪 |  |
 
-### 2.7 AI记忆（22）
+### 2.7 AI记忆（25）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
@@ -1215,6 +1305,9 @@ ai-roleplay/
 | `.workbuddy/memory/2026-10-18.md` | md | AI记忆 | AI记忆：2026-10-18 工作日志 | 已忽略 |  |
 | `.workbuddy/memory/2026-10-19.md` | md | AI记忆 | AI记忆：2026-10-19 工作日志 | 已忽略 |  |
 | `.workbuddy/memory/2026-10-20.md` | md | AI记忆 | AI记忆：2026-10-20 工作日志 | 已忽略 |  |
+| `.workbuddy/memory/2026-10-21.md` | md | AI记忆 | AI记忆：2026-10-21 工作日志 | 已忽略 |  |
+| `.workbuddy/memory/2026-10-22.md` | md | AI记忆 | AI记忆：2026-10-22 工作日志 | 已忽略 |  |
+| `.workbuddy/memory/2026-10-23.md` | md | AI记忆 | AI记忆：2026-10-23 工作日志 | 已忽略 |  |
 | `.workbuddy/memory/MEMORY.md` | md | AI记忆 | AI记忆：项目长期记忆（已归档的跨会话结论） | 已忽略 |  |
 
 ### 2.8 截图（1）
@@ -1245,11 +1338,79 @@ ai-roleplay/
 | `vite.config.ts` | ts | 配置 | Vite 构建配置：别名、代码分包、PWA 插件 | 已跟踪 |  |
 | `vitest.config.ts` | ts | 配置 | Vitest 单测配置：jsdom 环境、覆盖率阈值门禁 | 已跟踪 |  |
 
-### 2.10 脚本（49）
+### 2.10 脚本（117）
 
 | 相对路径 | 文件类型 | 分类 | 用途说明 | Git状态 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | `scripts/android-apk.mjs` | mjs | 脚本 | 安卓出包：vite build → cap sync → gradlew assembleDebug → 复制进 installer/（需本机 JDK 21 与 Android SDK） | 已跟踪 |  |
+| `scripts/archive/o9-charactersview/CharactersView.orig.vue.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-4-random-events/RandomEventsView.orig.vue.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-4-random-events/deadcss-check.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-4-random-events/e2e-b1.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-4-random-events/e2e-b2.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-4-random-events/e2e-fail-detail.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-4-random-events/e2e-rerun.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-4-random-events/e2e-rerun2.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-4-random-events/equiv-lost-raw.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-4-random-events/verify-equiv.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/CharactersView.orig.vue.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/deadcss-check.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/inspect-out.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/inspect-results.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/split-characters.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/vt-debug-plain.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/vt-head.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/vt-tail.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/webkit-smoke.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/webkit-smoke.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/webkit-smoke2.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-5-characters-split/webkit-smoke2.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-6-image-split/ImageGeneratorView.orig.vue.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-6-image-split/deadcss-before.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-6-image-split/deadcss-check.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r3-6-image-split/verify-equiv.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-1-vector-split/README.md` | md | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-10-databank/DataBankView.orig.vue.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-10-databank/gen-split.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-11-cvcontrol/character-version-control.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-11-cvcontrol/gen-split.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-12-pgstore/gen-split.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-12-pgstore/postgres-store.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-13-slashcmd/gen-split.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-13-slashcmd/slash-command.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-14-cmarket/community-market.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-14-cmarket/gen-split.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-15-settings/SettingsView.orig.vue.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-15-settings/audit-dead-css.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-15-settings/audit-usage.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-15-settings/gen-split.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-15-settings/verify-new.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-16-chatmanager/chat-manager.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-16-chatmanager/gen-split.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-17-archives/ArchivesView.orig.vue.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-17-archives/gen-split.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-2-wbevents/README.md` | md | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-2-wbevents/WorldBookEventsPanel.orig.vue.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-3-lorebook-split/lorebook.orig.ts.bak` | bak | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-3-lorebook-split/lorebook.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-3-lorebook-split/split-lorebook.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-3-lorebook-split/wk-route-probe.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-3-lorebook-split/wk-route-probe.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-4-chatgen-split/chat-generation.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-4-chatgen-split/gen-clean.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-4-chatgen-split/gen-helpers.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-4-chatgen-split/gen-modules.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-5-story-split/gen-clean.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-5-story-split/gen-modules.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-5-story-split/story.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-6-groupchat-split/gen-modules.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-6-groupchat-split/group-chat.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-7-market-split/community-market.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-7-market-split/gen-modules.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-8-randomevent-split/gen-modules.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-8-randomevent-split/random-event-generator.orig.ts.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-9-groupchat/GroupChatView.orig.vue.txt` | txt | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/archive/r4-9-groupchat/gen-split.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/archive/round3-settings-split/README.md` | md | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/archive/round3-settings-split/apply-s1-toast.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/archive/round3-settings-split/debug-splitter.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
@@ -1271,8 +1432,8 @@ ai-roleplay/
 | `scripts/css-viewport-guard.mjs` | mjs | 脚本 | 门禁：CSS 视口单位使用校验 | 已跟踪 |  |
 | `scripts/e2e-shard-groups.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/eval-run.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
-| `scripts/file-size-guard.mjs` | mjs | 脚本 | 待确认 | 已修改 | 用途待确认 |
-| `scripts/gen-project-index.mjs` | mjs | 脚本 | 工具：生成本索引文件 | 已跟踪 |  |
+| `scripts/file-size-guard.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
+| `scripts/gen-project-index.mjs` | mjs | 脚本 | 工具：生成本索引文件 | 已修改 |  |
 | `scripts/generate-pwa-icons.mjs` | mjs | 脚本 | 工具：由 icon-source.png 生成 PWA 图标到 public/ | 已跟踪 |  |
 | `scripts/hover-guard.mjs` | mjs | 脚本 | 门禁：禁止未按 (hover: hover) 分流的 :hover，防触屏 tap 后 hover 粘滞 | 已跟踪 |  |
 | `scripts/i18n-scan.mjs` | mjs | 脚本 | 门禁：硬编码中文 UI 文案扫描（strict 模式） | 已跟踪 |  |
@@ -1689,18 +1850,18 @@ ai-roleplay/
 
 | 分类 | 文件数 | 说明 |
 | --- | --- | --- |
-| 程序 | 373 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
-| 测试 | 286 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
+| 程序 | 435 | src/ 前端源码与 src-tauri/src/ Rust 源码、index.html |
+| 测试 | 289 | tests/ 单元与组件测试、e2e/ Playwright 场景 |
 | 产品文档 | 1 | public/ 产品对比静态页（docs/product/ 为本地专用目录，已排除） |
 | 开发文档 | 167 | docs/dev/ 实现计划、Runbook、审计记录 |
 | 修复文档 | 17 | docs/fixes/ 缺陷评审、修复交付与进度台账 |
-| 设计文档 | 89 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
-| AI记忆 | 22 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
+| 设计文档 | 90 | docs/design/ 设计系统、软件设计、移动端设计、威胁模型、决策文档 |
+| AI记忆 | 25 | .workbuddy/memory/ 与 .workbuddy-ai/memory/ 项目记忆与跨会话结论 |
 | 截图 | 1 | docs/assets/screenshots/ 下 UI 冒烟截图 |
 | 配置 | 17 | 构建、CI、Tauri 应用与根级工程配置 |
-| 脚本 | 49 | scripts/ 门禁、审计与工具脚本 |
+| 脚本 | 117 | scripts/ 门禁、审计与工具脚本 |
 | 其他 | 381 | docs/other/ 文档体系规范，以及静态资源、市场数据、许可证、图标等 |
-| **合计** | **1403** | 与「收录文件」数一致 |
+| **合计** | **1540** | 与「收录文件」数一致 |
 
 ## 四、忽略清单
 

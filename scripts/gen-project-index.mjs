@@ -105,6 +105,7 @@ const CURATED = {
   'icon-source.png': '应用图标设计源图（生成 PWA / Tauri 图标用）',
   'docs/dev/PROJECT_INDEX.md': '本索引文件（由 scripts/gen-project-index.mjs 生成）',
   'docs/dev/MIGRATION_LOG.md': '目录整理迁移日志',
+  'docs/dev/installer-distribution-2026-10-19.md': '安装包分发决策记录：为什么不挂 Releases、撤下的 7 个资产清单、sha256、可复制的复核命令与负向对照',
 
   '.github/workflows/ci.yml': 'CI 流水线：i18n / 断点 / 对比度 / 覆盖率 / 构建 / E2E / Tauri 七道门禁',
 

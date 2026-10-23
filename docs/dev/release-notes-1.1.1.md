@@ -92,13 +92,19 @@
   反向故障注入（把状态判断删掉、第二次仍调用它）稳定报 `toBeEnabled` 找不到元素，证明省掉那次等待才是牙；
   全量单 worker 287 条里这条 spec 四个用例全绿（webkit 13.8 秒，原先撞 60 秒）。
 - 同一次全量单 worker 跑（287 条 / 18.2 分钟）另有 4 条红，**都不是上面那条改动引入**；
-  其中 `save-outcome` 一条已于同日修掉（见下），另外 3 条 mobile 用例尚未修：
+  其中 `save-outcome` 一条已于同日修掉（见下），另外 3 条 mobile 用例 **2026-10-23 已修**：
   - 3 条在 `mobile-functional` 项目且隔离复现稳定红：`character-crud`、`backup-restore`
     都停在 `点角色卡 → /character/:id/edit` 这一步（拿到的是 `/character`），
     `worldbook-flow` 停在"改名后 `.lorebook-item` 应可见"（实际是 hidden）。
     归因清楚：`d305372`（2026-10-18，角色卡详情抽屉，批次 1-5）把窄屏点卡的交互换成了开抽屉，
     `6226986`（三级改两级）动了世界书列表的滚动容器，而这三个 spec 自 `7b74e36` 之后一行没改。
     也就是说属"实现按新设计改了、用例还按旧设计断"，要更新的是用例，得先确认新交互里"进编辑器"的入口。
+    2026-10-23 处理：逐条按视口分叉改用例（`(page.viewportSize()?.width ?? 1280) <= 640` 判窄屏，
+    沿用 `e2e/chat-flow.spec.ts` 既有先例，比探测 DOM 少了挂载时序竞态）：`character-crud` 两处
+    "进编辑"改窄屏点卡开抽屉 → 点抽屉内"编辑"；`backup-restore` 删除前同样处理；`worldbook-flow`
+    列表与条目树两级在窄屏断 `toHaveCount(1)`（存在）而非 `toBeVisible()`（可见），因为两级互换下
+    每级都有一处"看不见"是设计本身。三条用例未被排除、断言未被放宽。读数：全量 287 条 / 0 失败 /
+    EXIT=0 / 11.0 分钟；定向复跑 6/6、单跑 9/9。
   - `save-outcome`「Tauri 桌面」**2026-10-19 已修**。报错是断言拿到了
     `保存设置失败：window.__TAURI_INTERNALS__.invoke is not a function` 这条提示。成因有两层：
     `storage-factory` 在启动时就按 `__TAURI_INTERNALS__` 选适配器，用例那个空对象桩没有 `invoke`，
