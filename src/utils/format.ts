@@ -21,3 +21,24 @@ export function formatDate(iso: string): string {
     return iso;
   }
 }
+
+/**
+ * ISO 时间串 → 「YYYY/MM/DD HH:mm」本地时间（R4-17 自 ArchivesView 迁出）
+ *
+ * 与原实现逐字一致：显式指定 year/month/day/hour/minute，缺 minute 前不要省；
+ * 非法输入原样返回（不抛错、不显示 Invalid Date）。
+ */
+export function formatDateTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}

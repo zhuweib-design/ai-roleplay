@@ -24,10 +24,10 @@ import { useReadinessJump } from '@/composables/useReadinessJump';
 import Icon from '@/components/common/Icon.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
 import Avatar from '@/components/common/Avatar.vue';
-import Modal from '@/components/common/Modal.vue';
-import Toast from '@/components/common/Toast.vue';
+import ArchiveDetailModal from '@/components/archives/ArchiveDetailModal.vue';
 import type { GroupChat } from '@/core/group-chat';
 import type { UICharacter } from '@/types';
+import { formatDateTime } from '@/utils/format';
 import { t } from '@/i18n';
 
 const groupStore = useGroupChatStore();
@@ -55,11 +55,8 @@ const showArchivedOnly = ref(false);
 const viewModalOpen = ref(false);
 const viewingGroup = ref<GroupChat | null>(null);
 
-// ── Toast（保留用于后续错误反馈扩展） ──
-const toastOpen = ref(false);
-const toastMessage = ref('');
-const toastType = ref<'info' | 'success' | 'error'>('info');
 
+// ── Toast 段已移除（R4-17）：三个 ref 全仓无写入点，组件永不显示 ──
 // ── 计算属性：筛选后的群聊列表 ──
 
 const filteredGroups = computed<GroupChat[]>(() => {
@@ -106,21 +103,6 @@ const filteredGroups = computed<GroupChat[]>(() => {
 
 // ── 工具函数 ──
 
-function formatDateTime(ts: string): string {
-  try {
-    const d = new Date(ts);
-    return d.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return ts;
-  }
-}
-
 function memberInitial(name: string): string {
   return name?.[0] ?? '?';
 }
@@ -156,9 +138,7 @@ function viewGroup(g: GroupChat) {
   viewModalOpen.value = true;
 }
 
-function goToGroupChat() {
-  if (!viewingGroup.value) return;
-  const id = viewingGroup.value.id;
+function goToGroupChat(id: string) {
   viewModalOpen.value = false;
   // 原来这里是"push 到 /group，然后命令式 selectGroup"——目标只活在内存里：
   // 刷新、分享、或群列表读得比导航慢时都会落回别的群。M15-d 改由 URL 携带目标，
@@ -327,64 +307,11 @@ function goToGroupChat() {
       />
     </main>
 
-    <!-- 查看对话 Modal -->
-    <Modal
+    <!-- 查看对话 Modal（R4-17 抽出为独立组件，导航回调留在本页） -->
+    <ArchiveDetailModal
       v-model="viewModalOpen"
-      :title="viewingGroup ? viewingGroup.name : t('archives.viewTitle')"
-    >
-      <div v-if="viewingGroup" class="view-modal-body tk-scroll">
-        <div class="view-modal-info">
-          <span>{{ t('archives.viewMembers', { names: viewingGroup.members.map((m) => m.name).join('、') }) }}</span>
-          <span>{{ t('archives.viewMessages', { count: viewingGroup.messages.length }) }}</span>
-          <span>{{ t('archives.viewUpdated', { time: formatDateTime(viewingGroup.updatedAt) }) }}</span>
-          <span v-if="viewingGroup.lifecycleStatus === 'archived'" class="archived-tag">
-            {{ t('archives.archivedTag') }}
-          </span>
-        </div>
-        <ul class="view-msg-list" role="list">
-          <li
-            v-for="msg in viewingGroup.messages"
-            :key="msg.id"
-            class="view-msg"
-            :class="`view-msg-${msg.role}`"
-            role="listitem"
-          >
-            <div v-if="msg.role === 'system'" class="view-msg-system">
-              {{ msg.content }}
-            </div>
-            <template v-else>
-              <div class="view-msg-sender">
-                {{ msg.role === 'user' ? t('archives.senderMe') : msg.characterName ?? t('archives.senderAi') }}
-              </div>
-              <div class="view-msg-content">{{ msg.content }}</div>
-            </template>
-          </li>
-        </ul>
-      </div>
-      <template #footer>
-        <button
-          type="button"
-          class="modal-btn modal-cancel"
-          @click="viewModalOpen = false"
-        >
-          {{ t('archives.close') }}
-        </button>
-        <button
-          v-if="viewingGroup && viewingGroup.lifecycleStatus !== 'archived'"
-          type="button"
-          class="modal-btn modal-confirm"
-          @click="goToGroupChat"
-        >
-          {{ t('archives.goGroup') }}
-        </button>
-      </template>
-    </Modal>
-
-    <!-- Toast -->
-    <Toast
-      v-model="toastOpen"
-      :type="toastType"
-      :message="toastMessage"
+      :group="viewingGroup"
+      @go-group="goToGroupChat"
     />
   </div>
 </template>
@@ -671,103 +598,6 @@ function goToGroupChat() {
 .match-count {
   color: var(--accent-orange);
   font-weight: 500;
-}
-
-/* 空状态 */
-
-
-.link-btn {
-  background: none;
-  border: none;
-  color: var(--accent-blue);
-  font-size: 13px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-/* 查看 Modal */
-.view-modal-body {
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.view-modal-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  background: var(--background);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  color: var(--muted-foreground);
-}
-
-.view-msg-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.view-msg {
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.view-msg-user {
-  background: color-mix(in srgb, var(--primary, #dc1434) 8%, transparent);
-  align-self: flex-end;
-}
-
-.view-msg-assistant {
-  background: color-mix(in srgb, var(--secondary, #25f4ee) 5%, transparent);
-  border-left: 2px solid var(--secondary, #25f4ee);
-}
-
-.view-msg-system {
-  text-align: center;
-  font-style: italic;
-  color: var(--muted-foreground);
-  font-size: 12px;
-  padding: 4px 8px;
-}
-
-.view-msg-sender {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted-foreground);
-  margin-bottom: 4px;
-}
-
-.view-msg-content {
-  color: var(--foreground);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-/* Modal 按钮 */
-.modal-btn {
-  padding: 8px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.modal-cancel {
-  background: var(--card-elevated);
-  color: var(--foreground);
-}
-
-.modal-confirm {
-  background: var(--accent-blue);
-  color: var(--on-accent);
-  border-color: var(--accent-blue);
 }
 
 /* 响应式 */
