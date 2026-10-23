@@ -46,7 +46,10 @@ describe('css-equiv-guard', () => {
   it('self-test 全过（判定能力未回归）', () => {
     const r = run(['--self-test']);
     expect(r.status, `self-test 失败：\n${r.stdout}\n${r.stderr}`).toBe(0);
-    expect(r.stdout).toContain('9/9 通过');
+    // 只断言"自检全部通过"，不锁死用例数：新增用例不该让这条测试变红，
+    // 但任何一条自检失败都必须红（所以同时要求 stdout 里没有 FAIL 行）。
+    expect(r.stdout).toMatch(/(\d+)\/\1 通过/);
+    expect(r.stdout).not.toContain('FAIL');
   });
 
   it('R1-3 回放：拆前后规则集 0 条丢失', () => {

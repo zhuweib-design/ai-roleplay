@@ -50,6 +50,38 @@ export function styleOf(text, file = '') {
 const norm = (s) => s.replace(/\s+/g, ' ').trim();
 
 /**
+ * 历史 token 别名表（2026-10-23 死 token 归零时引入）。
+ *
+ * 为什么需要：本脚本拿**历史基线**比规则体，而 2026-10-23 的 MOBILE_PLAN 批次 4
+ * 把 81 处「引用了一个从未定义过的 token」的声明映射到了真实 token。规则的选择器
+ * 与声明结构都没变，只有 `var()` 里的名字变了 —— 从"这条声明被浏览器静默丢弃"
+ * 变成"这条声明终于生效"。这不是搬漏，但字符串比对会判成丢失 4 条（假阳性）。
+ *
+ * 为什么不干脆放宽判定或改基线 ref：基线 ref 就是 R1-3 拆分前的父提交，改了
+ * 回放就失去意义；而放宽判定会让真正的搬漏漏网。别名表只在 `var(--旧名)` 这一
+ * 个维度上做等价，其余一个字符都不放过。
+ *
+ * 维护：旧名全部已从代码里消失（`grep` 应为 0 命中）。这张表是**历史债的记账**，
+ * 不是给新代码留的活口 —— 新代码禁止再写旧名。
+ */
+export const TOKEN_RENAMES = {
+  '--on-surface-variant': '--muted-foreground',
+  '--on-surface': '--foreground',
+  '--on-bg': '--foreground',
+  '--text': '--foreground',
+  '--bg': '--card',
+  '--border-subtle': '--border',
+  '--bg-default': '--card',
+};
+
+/** 把规则体里的旧 token 名换成现名，使"历史上同一条声明"两侧可比 */
+export function normalizeTokens(body) {
+  return body.replace(/var\(\s*(--[a-zA-Z0-9-]+)\s*\)/g, (whole, name) =>
+    TOKEN_RENAMES[name] ? `var(${TOKEN_RENAMES[name]})` : whole
+  );
+}
+
+/**
  * 按括号深度切选择器组：`.a, .b` → ['.a', '.b']。
  * 不能用 `split(',')` —— `:is(a, b)` / `:not(a, b)` 里的逗号会被切坏，
  * 那是假阳性（明明同一条规则，却被报成"丢了一条"）。
@@ -115,7 +147,7 @@ export function rules(css) {
   return out;
 }
 
-const keyOf = (r) => `${r.prefix} || ${r.sel} || ${r.body}`;
+const keyOf = (r) => `${r.prefix} || ${r.sel} || ${normalizeTokens(r.body)}`;
 
 export function styleKeys(text, file = '') {
   return rules(styleOf(text, file)).map(keyOf);
@@ -203,6 +235,26 @@ function selfTest() {
   check('注释不影响判定', (() => {
     const withComment = '<style scoped>\n/* 说明 */\n.a { color: red; }\n.b { color: blue; }\n</style>';
     return diff(styleKeys(A), styleKeys(withComment)).missing.length === 0;
+  })(), '');
+
+  // ── 历史 token 别名（2026-10-23 批次 4）──
+  const oldTok = '<style scoped>\n.a { color: var(--text); background: var(--bg); }\n</style>';
+  const newTok = '<style scoped>\n.a { color: var(--foreground); background: var(--card); }\n</style>';
+  check('旧 token 改名为现名 ⇒ 判等价（历史回放不误报搬漏）', (() => {
+    const d = diff(styleKeys(oldTok), styleKeys(newTok));
+    return d.missing.length === 0 && d.extra.length === 0;
+  })(), '');
+
+  const nearTok = '<style scoped>\n.a { color: var(--foreground); background: var(--border); }\n</style>';
+  check('token 改了但**改错**（--bg→--border）⇒ 仍报丢失', (() => {
+    const d = diff(styleKeys(oldTok), styleKeys(nearTok));
+    return d.missing.length === 1;
+  })(), '');
+
+  const otherProp = '<style scoped>\n.a { color: var(--foreground); background: var(--card); font-size: 13px; }\n</style>';
+  check('token 等价但多出声明 ⇒ 仍判不等（别名表只管 token 名）', (() => {
+    const d = diff(styleKeys(oldTok), styleKeys(otherProp));
+    return d.missing.length === 1;
   })(), '');
 
   let failed = 0;
