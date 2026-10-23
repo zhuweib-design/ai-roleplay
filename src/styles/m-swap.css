@@ -1,0 +1,75 @@
+/**
+ * .m-swap — 手机端「两级互换」原语（MOBILE_PLAN 批次 1-1，配套 useDrilldown.ts）
+ *
+ * 形态：桌面是并置两栏；手机是**两级互换**，同一时刻只存在一级，两级都满屏。
+ * 结构约定（三选二，二者互斥显示）：
+ *
+ *   <div v-bind="swap.rootProps">
+ *     <div class="m-swap__master">列表级，满屏</div>
+ *     <div class="m-swap__detail">详情级，满屏</div>
+ *   </div>
+ *
+ * 三条刻意的取舍：
+ *
+ * 1. **只在 ≤640 生效，桌面一条声明都不写。** 原语是"手机上怎么收拢"的答案，
+ *    不是新的布局系统。桌面各页已有自己的两栏骨架，若这里也接管，会把
+ *    已有布局整体挤变形，而这类变形在评审里很难归因（看起来像"点了某个条目"）。
+ *
+ * 2. **用 display 切换，不做位移/淡入动画。** 位移动画中途的几何是"两者都在
+ *    视口里"，任何按位置断言的 e2e 都会拿到中间态——批次 0-6 就因为抽屉
+ *    transform 未归零踩过一次。零动画换来判据稳定，这个交易划算。
+ *
+ * 3. **两级都是 flex 撑满，不用 height: 100%。** 父容器多半是 `flex: 1` 加
+ *    `min-height: 0` 的弹性项，它的高度不是"确定高度"，height:100% 会解析失败；
+ *    而 vh/dvh 又违反"内容不设 vh 下限"（方案文档立场三，40vh 那版实测两档皆坏）。
+ */
+
+@media (max-width: 640px) {
+  .m-swap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* 两级同一套尺寸约束：被隐藏的那个不参与 flex，显示的那个撑满剩余高度 */
+  .m-swap > .m-swap__master,
+  .m-swap > .m-swap__detail {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* 同一时刻只存在一级——这是整个原语的核心，也是"消息区能到 40%"的前提 */
+  .m-swap[data-level='1'] > .m-swap__detail,
+  .m-swap[data-level='2'] > .m-swap__master {
+    display: none;
+  }
+
+  /*
+   * 二级页顶栏左侧的返回动作。规格要求它**说出目的地**（「← 全部群聊」），
+   * 不是裸的"返回"——用户在二级页需要知道能退到哪，尤其在多层页面里。
+   *
+   * 44px 是按键下限（--touch-min）：这一条如果只有 24px，是全页最贵的误触点，
+   * 因为它紧贴屏幕左边缘。视觉上不显大是靠 padding + 负边距把它推回来，
+   * 命中区留在 44px（与批次 3-3 同一手法）。
+   */
+  .m-swap__back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1-5, 6px);
+    min-height: var(--touch-min, 44px);
+    margin-left: calc(var(--space-2, 8px) * -1);
+    padding: 0 var(--space-2, 8px);
+    border: 0;
+    border-radius: var(--radius-sm, 6px);
+    background: none;
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .m-swap__back:active {
+    opacity: 0.72;
+  }
+}

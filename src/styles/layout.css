@@ -99,9 +99,19 @@
   text-overflow: ellipsis;
 }
 
-/* 平板宽度（641–900px）：主内容要给聊天区让位，rail 收成图标栏，
-   文字靠 title / aria-label 兜住（rail 仅在 >640px 渲染，移动端走 BottomNav） */
-@media (max-width: 900px) {
+/*
+ * 平板档（641–1024px）的形态定义（DEV_PLAN B4 / OPT_PLAN §2.3 待办 1）：
+ *
+ *   图标 rail（64px，无文字）+ 两侧栏抽屉化（默认收起）+ **无底部导航**。
+ *
+ * 边界用 1024 而不是原来的 900：900 是「横屏」阈值（--bp-landscape-w），
+ * 与形态切换无关。用 900 的结果是 901–1024 这一段变成"半个桌面"——
+ * rail 仍是 112px 全宽，而两侧栏已经抽屉化，聊天列被无谓地挤掉 48px。
+ * 现在 641–1024 整档一个形态，边界与 --bp-tablet-max / JS 的 isCompact 对齐。
+ *
+ * 文字靠 title / aria-label 兜住（rail 仅在 >640px 渲染，移动端走 BottomNav）。
+ */
+@media (max-width: 1024px) {
   .nav-rail {
     width: 64px;
   }

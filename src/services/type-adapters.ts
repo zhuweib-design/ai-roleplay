@@ -3,7 +3,7 @@ import type { ReasoningEffort } from '@api/types';
 import type { StatusSchema } from '@core/status-schema';
 import { normalizeStatusSchema } from '@core/status-schema';
 import { PRESET_IDS, type PresetId } from '@core/creation-preset';
-import type { UICharacter, UIMessage, WorldEntry, SamplingOverrides } from '@/types';
+import type { UICharacter, UIMessage, SamplingOverrides } from '@/types';
 import { t } from '@/i18n';
 
 /**
@@ -20,6 +20,24 @@ import { t } from '@/i18n';
  */
 
 // ── UICharacter ↔ CharacterCard ──
+
+/**
+ * UICharacter → 群聊成员用的 CharacterCard
+ *
+ * 群聊建群/加人要把角色卡的"问候语"一起带上（群聊首消息从成员问候里随机取），
+ * 而 `uiCharToCard` 刻意不填 firstMessage / alternateGreetings（UI 层把它们
+ * 存在 messages 里，单聊走另一条路径）。这个变体只补这两个字段。
+ *
+ * R1-1 从 GroupChatView 的本地 `characterToCard` 提上来：拆分后视图与
+ * `useGroupMembers` 都要用，留在视图里会变成"composable 反向 import 视图"。
+ */
+export function uiCharToGroupCard(ui: UICharacter): CharacterCard {
+  return {
+    ...uiCharToCard(ui),
+    firstMessage: ui.messages[0]?.content ?? '',
+    alternateGreetings: ui.messages.slice(1).map((message) => message.content),
+  };
+}
 
 /**
  * UICharacter → CharacterCard
@@ -219,7 +237,6 @@ export function cardToUiChar(
     /**
      * T-16：未设置时**不再兜底 4096**
      */
-    worldEntries: overrides?.worldEntries ?? [],
     tokenBudget: overrides?.tokenBudget ?? {
       character: 0,
       worldInfo: 0,
@@ -327,10 +344,3 @@ export function chatMsgsToUiMsgs(messages: ChatMessage[]): UIMessage[] {
     .filter((m): m is UIMessage => m !== null);
 }
 
-// ── WorldEntry 适配（核心层无对应类型，直接复用） ──
-
-export function worldEntriesToStorage(
-  entries: WorldEntry[]
-): WorldEntry[] {
-  return entries.map((e) => ({ ...e }));
-}

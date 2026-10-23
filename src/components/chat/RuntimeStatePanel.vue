@@ -390,7 +390,7 @@ function toggle(): void {
 
 .runtime-btn {
   flex: 1;
-  min-height: 28px;
+  min-height: var(--size-control-sm);
   padding: 0 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -423,7 +423,7 @@ function toggle(): void {
   /* iOS 聚焦防放大：按钮文字非输入控件，无需 16px；保持紧凑可读 */
   .runtime-toggle,
   .runtime-btn {
-    min-height: 36px;
+    min-height: var(--size-control-md);
   }
 }
 </style>

@@ -1,0 +1,36 @@
+2026-10-21T06:35:01.581Z vitest:projects no projects declared, the root config is the only project
+2026-10-21T06:35:01.585Z vitest:projects resolved projects: (root)
+
+ RUN  v5.0.1 D:/AI_data/AIjiuguan
+
+2026-10-21T06:35:02.163Z vitest:cache:fs [write] D:/AI_data/AIjiuguan/tests/setup.ts is cached in C:/Users/zym/AppData/Local/Temp/_IUuAkGB_Gg9zw4cVp5YX/ssr/7ec324954b2b799b317ef92a9816e201715fbd62
+2026-10-21T06:35:02.200Z vitest:cache:fs [write] D:/AI_data/AIjiuguan/tests/setup-locale.ts is cached in C:/Users/zym/AppData/Local/Temp/_IUuAkGB_Gg9zw4cVp5YX/ssr/d46a5709d787a19accc35bdcf0973fd23bfd5dca
+2026-10-21T06:35:02.439Z vitest:cache:fs [write] D:/AI_data/AIjiuguan/src/core/tip.ts is cached in C:/Users/zym/AppData/Local/Temp/_IUuAkGB_Gg9zw4cVp5YX/ssr/b1116c5de7e1c5d4c91fbd1da36458334dba9a0f
+2026-10-21T06:35:02.478Z vitest:cache:fs [write] D:/AI_data/AIjiuguan/src/core/range-fill.ts is cached in C:/Users/zym/AppData/Local/Temp/_IUuAkGB_Gg9zw4cVp5YX/ssr/19fbf0854075557ee6508231b81e38da67ae550e
+2026-10-21T06:35:02.494Z vitest:cache:fs [write] D:/AI_data/AIjiuguan/src/styles/tokens.css is cached in C:/Users/zym/AppData/Local/Temp/_IUuAkGB_Gg9zw4cVp5YX/ssr/9ab69143561011347d5837de440f673c056622db
+2026-10-21T06:35:02.506Z vitest:cache:fs [write] D:/AI_data/AIjiuguan/src/styles/themes.css is cached in C:/Users/zym/AppData/Local/Temp/_IUuAkGB_Gg9zw4cVp5YX/ssr/ae2894be8ea84e47557a6a72ea19fbafee8845f8
+2026-10-21T06:35:02.517Z vitest:cache:fs [write] D:/AI_data/AIjiuguan/src/styles/base.css is cached in C:/Users/zym/AppData/Local/Temp/_IUuAkGB_Gg9zw4cVp5YX/ssr/9b958ad388f04b68f277e9bd7fbb1f12ad2f14e0
+2026-10-21T06:35:02.532Z vitest:cache:fs [write] D:/AI_data/AIjiuguan/src/styles/layout.css is cached in C:/Users/zym/AppData/Local/Temp/_IUuAkGB_Gg9zw4cVp5YX/ssr/b1e80729cf32269ee6897b40fb08569cc43360e9
+2026-10-21T06:35:02.545Z vitest:cache:fs [write] D:/AI_data/AIjiuguan/src/styles/responsive.css is cached in C:/Users/zym/AppData/Local/Temp/_IUuAkGB_Gg9zw4cVp5YX/ssr/283c308f140272088a60d8be8f01255210bc5447
+ M-bM-^]M-/ tests/i18n.test.ts (0 test)
+
+M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/ Failed Suites 1 M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/
+
+ FAIL  tests/i18n.test.ts [ tests/i18n.test.ts ]
+ReferenceError: window is not defined
+ M-bM-^]M-/ tests/setup.ts:43:1
+     41|
+     42| // M-bM-^TM-^@M-bM-^TM-^@ matchMedia polyfill M-bM-^TM-^@M-bM-^TM-^@
+     43| if (!window.matchMedia) {
+       | ^
+     44|   Object.defineProperty(window, 'matchMedia', {
+     45|     writable: true,
+
+M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/M-bM-^NM-/[1/1]M-bM-^NM-/
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  14:35:01
+   Duration  855ms (worker 98%, environment 2%)
+

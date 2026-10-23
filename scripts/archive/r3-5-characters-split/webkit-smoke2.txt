@@ -1,0 +1,49 @@
+200 text/html http://localhost:5173/
+200 text/html http://localhost:5173/fonts/fonts.css?v=20260920
+404 - http://localhost:5173/assets/preload-helper-Czpn1I53.js
+FAIL Load request cancelled http://localhost:5173/assets/preload-helper-Czpn1I53.js
+200 text/javascript http://localhost:5173/assets/index-CdkDSPbr.js
+404 - http://localhost:5173/assets/creation-preset-BFR4NvNf.js
+FAIL Load request cancelled http://localhost:5173/assets/creation-preset-BFR4NvNf.js
+200 text/javascript http://localhost:5173/assets/rolldown-runtime-DK3Fl9T5.js
+404 - http://localhost:5173/assets/token-counter-Cz2hHr-h.js
+FAIL Load request cancelled http://localhost:5173/assets/token-counter-Cz2hHr-h.js
+404 - http://localhost:5173/assets/remote-api-key-state-DDFZ2BBS.js
+FAIL Load request cancelled http://localhost:5173/assets/remote-api-key-state-DDFZ2BBS.js
+404 - http://localhost:5173/assets/settings-B3bQyE1F.js
+FAIL Load request cancelled http://localhost:5173/assets/settings-B3bQyE1F.js
+404 - http://localhost:5173/assets/character-generator-CqApei8N.js
+FAIL Load request cancelled http://localhost:5173/assets/character-generator-CqApei8N.js
+200 text/javascript http://localhost:5173/assets/pinia-CbUUa6-j.js
+200 text/javascript http://localhost:5173/assets/i18n-ojMRCigT.js
+404 - http://localhost:5173/assets/rag-retriever-CvzzWSlS.js
+FAIL Load request cancelled http://localhost:5173/assets/rag-retriever-CvzzWSlS.js
+200 text/javascript http://localhost:5173/assets/runtime-core.esm-bundler-C9x3klxh.js
+404 - http://localhost:5173/assets/type-adapters-Ch0L89YF.js
+FAIL Load request cancelled http://localhost:5173/assets/type-adapters-Ch0L89YF.js
+404 - http://localhost:5173/assets/viewport-C7wRFYrA.js
+FAIL Load request cancelled http://localhost:5173/assets/viewport-C7wRFYrA.js
+404 - http://localhost:5173/assets/logger-CL23Prn0.js
+FAIL Load request cancelled http://localhost:5173/assets/logger-CL23Prn0.js
+404 - http://localhost:5173/assets/model-fs-ipc-Dn5a3uqg.js
+FAIL Load request cancelled http://localhost:5173/assets/model-fs-ipc-Dn5a3uqg.js
+404 - http://localhost:5173/assets/story-ybcLwQZS.js
+FAIL Load request cancelled http://localhost:5173/assets/story-ybcLwQZS.js
+404 - http://localhost:5173/assets/chat-context-bwC1wD7-.js
+FAIL Load request cancelled http://localhost:5173/assets/chat-context-bwC1wD7-.js
+404 - http://localhost:5173/assets/stopword-filter-BukuGxAo.js
+FAIL Load request cancelled http://localhost:5173/assets/stopword-filter-BukuGxAo.js
+404 - http://localhost:5173/assets/dual-channel-runtime-BjeqY4M5.js
+FAIL Load request cancelled http://localhost:5173/assets/dual-channel-runtime-BjeqY4M5.js
+404 - http://localhost:5173/assets/snapshot-plans-aa8sPhoh.js
+FAIL Load request cancelled http://localhost:5173/assets/snapshot-plans-aa8sPhoh.js
+404 - http://localhost:5173/assets/chat-generation-BVF7-gGf.js
+FAIL Load request cancelled http://localhost:5173/assets/chat-generation-BVF7-gGf.js
+404 - http://localhost:5173/assets/chat-CnvoaTp9.js
+FAIL Load request cancelled http://localhost:5173/assets/chat-CnvoaTp9.js
+404 - http://localhost:5173/assets/local-model-BJ-hpWEU.js
+FAIL Load request cancelled http://localhost:5173/assets/local-model-BJ-hpWEU.js
+404 - http://localhost:5173/registerSW.js
+FAIL Load request cancelled http://localhost:5173/registerSW.js
+200 text/html http://localhost:5173/assets/index-CzgCllwb.css
+200 text/html http://localhost:5173/manifest.webmanifest

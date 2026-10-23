@@ -34,8 +34,39 @@ export const SPEC_WEIGHTS = {
   'e2e/i18n-locale.spec.ts': 1.0,
   'e2e/long-history-scroll.spec.ts': 4.8,
   'e2e/mobile-control-font-size.spec.ts': 17.2,
+  // 手工登记（2026-10-17）：新增批次 0 断言 spec，实测 9 条约 10s。
+  // 未跑单 worker 全量基线，权重按实测填；下次重跑 --report 时会被真实跑数覆盖。
+  'e2e/mobile/batch0-composition.spec.ts': 10.0,
   'e2e/mobile/chat-touch-composer.spec.ts': 10.2,
+  // 手工登记（2026-10-18）：群聊组成层几何断言，单条用例含 IndexedDB 造数与
+  // 三次视口切换（390×844 / 390×500 / 1280×900），按同类用例估 10s。
+  // 未跑单 worker 全量基线；下次重跑 --report 时会被真实跑数覆盖。
+  'e2e/mobile/group-composition.spec.ts': 10.0,
   'e2e/mobile/group-header-narrow.spec.ts': 2.3,
+  // 手工登记（2026-10-18）：设置两级互换，两条用例含 IndexedDB 无关的纯几何与深链，估 8s。
+  'e2e/mobile/settings-composition.spec.ts': 8.0,
+  // 手工登记（2026-10-18）：角色卡详情抽屉，两条用例（IndexedDB 造数 + 两端分流），估 8s。
+  'e2e/mobile/character-drawer.spec.ts': 8.0,
+  // 手工登记（2026-10-18）：A13 二级页底栏遍历，3 条用例（8 个视图逐个 goto + 两条几何/离开），估 13s。
+  'e2e/mobile/detail-nav.spec.ts': 13.0,
+  // 手工登记（2026-10-18）：A14 返回键三态，4 条用例（各自 IndexedDB 造数 + 多次 goBack），估 16s。
+  'e2e/mobile/back-button.spec.ts': 16.0,
+  // 手工登记（2026-10-18）：A17 guide 手机入口，2 条纯导航用例，估 6s。
+  'e2e/mobile/guide-entry.spec.ts': 6.0,
+  // 手工登记（2026-10-18）：A18 市场叙事，3 条桌面用例（页面 + 昵称 Modal + 发布），估 14s。
+  'e2e/market-narrative.spec.ts': 14.0,
+  // 手工登记（2026-10-18）：A16 force-desktop，3 条用例各含一次整页加载，估 28s。
+  'e2e/mobile/force-desktop.spec.ts': 28.0,
+  // 手工登记（2026-10-18）：A15 单聊页头，2 条（手机档 + 桌面对照），各含一次整页加载，估 26s。
+  'e2e/mobile/chat-header.spec.ts': 26.0,
+  // 手工登记（2026-10-18）：A9 世界书两级互换，5 条（几何 + 滚动容器 + 互斥 + 返回 + 桌面），估 16s。
+  'e2e/mobile/worldbook-composition.spec.ts': 16.0,
+  // 手工登记（2026-10-19）：B2/B3 触摸目标，2 条但每条遍历 6 个页面 × 逐像素探针，实测 35.3s。
+  'e2e/mobile/touch-target.spec.ts': 35.0,
+  // 手工登记（2026-10-19）：C2 导出落点三端，3 条各含一次设置页加载 + 折叠展开，实测 32.6s。
+  'e2e/save-outcome.spec.ts': 33.0,
+  // 手工登记（2026-10-19）：B4 平板档形态，4 条（820/1000/一致性/桌面对照），实测 34.0s。
+  'e2e/tablet-form.spec.ts': 34.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
@@ -66,18 +97,23 @@ export const SPEC_WEIGHTS = {
 };
 
 export const E2E_GROUPS = [
-  // 第 1 组：实测 221s
+  // 第 1 组：实测 221s（2026-10-18 加入 character-drawer 8s、market-narrative 14s、chat-header 26s ⇒ 269s；
+  // 2026-10-19 加入 tablet-form 34s ⇒ 约 303s）
   [
     'e2e/chat-search.spec.ts',
     'e2e/long-history-scroll.spec.ts',
     'e2e/mobile-control-font-size.spec.ts',
+    'e2e/mobile/character-drawer.spec.ts',
+    'e2e/mobile/chat-header.spec.ts',
+    'e2e/market-narrative.spec.ts',
+    'e2e/tablet-form.spec.ts',
     'e2e/theme-flow.spec.ts',
     'e2e/ux-deep-link-group.spec.ts',
     'e2e/ux-duplicate-a11y-names.spec.ts',
     'e2e/ux-gap-visibility.spec.ts',
     'e2e/ux-narrow-editor-preview.spec.ts',
   ],
-  // 第 2 组：实测 220s
+  // 第 2 组：实测 220s（2026-10-18 手工加入 group-composition 10s、force-desktop 28s、worldbook-composition 16s ⇒ 约 275s）
   [
     'e2e/backup-restore.spec.ts',
     'e2e/character-batch-import.spec.ts',
@@ -85,18 +121,24 @@ export const E2E_GROUPS = [
     'e2e/contrast-axe.spec.ts',
     'e2e/i18n-locale.spec.ts',
     'e2e/mobile/chat-touch-composer.spec.ts',
+    'e2e/mobile/force-desktop.spec.ts',
+    'e2e/mobile/group-composition.spec.ts',
+    'e2e/mobile/worldbook-composition.spec.ts',
     'e2e/model-install-web.spec.ts',
     'e2e/ux-interaction-feedback.spec.ts',
     'e2e/ux-quick-forms.spec.ts',
     'e2e/ux-status-color.spec.ts',
     'e2e/worldbook-flow.spec.ts',
   ],
-  // 第 3 组：实测 221s
+  // 第 3 组：实测 221s（2026-10-17 手工加入 batch0-composition 约 10s ⇒ 约 231s）
   [
     'e2e/character-crud.spec.ts',
     'e2e/databank-flow.spec.ts',
+    'e2e/mobile/batch0-composition.spec.ts',
     'e2e/mobile/group-header-narrow.spec.ts',
     'e2e/mobile/mobile-layout.spec.ts',
+    'e2e/mobile/back-button.spec.ts',
+    'e2e/mobile/touch-target.spec.ts',
     'e2e/mobile/narrow-squeeze.spec.ts',
     'e2e/theme-visual.spec.ts',
     'e2e/token-neutrality.spec.ts',
@@ -105,11 +147,15 @@ export const E2E_GROUPS = [
     'e2e/ux-modal-describedby-version.spec.ts',
     'e2e/ux-prompt-trace.spec.ts',
   ],
-  // 第 4 组：实测 221s
+  // 第 4 组：实测 221s（2026-10-18 手工加入 settings-composition 约 8s、detail-nav 约 13s ⇒ 约 242s）
   [
     'e2e/custom-theme-contrast.spec.ts',
     'e2e/group-chat-flow.spec.ts',
     'e2e/mobile/mobile-nav-groups.spec.ts',
+    'e2e/mobile/settings-composition.spec.ts',
+    'e2e/mobile/detail-nav.spec.ts',
+    'e2e/save-outcome.spec.ts',
+    'e2e/mobile/guide-entry.spec.ts',
     'e2e/ux-event-manual-trace.spec.ts',
     'e2e/ux-event-trace.spec.ts',
     'e2e/ux-modal-describedby-more.spec.ts',

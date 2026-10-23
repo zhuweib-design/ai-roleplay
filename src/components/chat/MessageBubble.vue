@@ -378,7 +378,7 @@ onBeforeUnmount(cancelLongPress);
   align-items: center;
   justify-content: center;
   width: 24px;
-  height: 24px;
+  height: var(--size-control-xs);
   border-radius: var(--radius-xs);
   color: var(--muted-foreground);
   cursor: pointer;

@@ -374,7 +374,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
 }
 
 .char-search-input {
-  height: 36px;
+  height: var(--size-control-md);
   width: 100%;
   background: var(--video-bg);
   border: 1px solid var(--border);
@@ -550,7 +550,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
   align-items: center;
   justify-content: center;
   width: 24px;
-  height: 24px;
+  height: var(--size-control-xs);
   background: none;
   border: none;
   color: var(--muted-foreground);
@@ -608,7 +608,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
   justify-content: center;
   gap: 6px;
   width: 100%;
-  height: 36px;
+  height: var(--size-control-md);
   border: 1px dashed var(--border);
   border-radius: var(--radius-md);
   color: var(--muted-foreground);
@@ -641,6 +641,17 @@ function onDrawerTouchEnd(e: TouchEvent) {
   /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
   .char-search-input {
     font-size: 16px;
+  }
+}
+
+/* 批次 3-2：手指端独立可点元素 ≥44px */
+@media (max-width: 640px) {
+  .new-char-btn,
+  .char-close-btn {
+    min-height: var(--touch-min);
+  }
+  .char-close-btn {
+    min-width: var(--touch-min);
   }
 }
 </style>

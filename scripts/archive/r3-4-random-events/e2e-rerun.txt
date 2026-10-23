@@ -1,0 +1,190 @@
+
+Running 9 tests using 4 workers
+
+[1/9] [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:92:3 › 实时 DOM 的 id 与可访问名唯一性 › 审计清单里每条路由都真的注册在 router 上
+[2/9] [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:102:5 › 实时 DOM 的 id 与可访问名唯一性 › 第 2 组共 10 条路由：无重复 id、无同区域同名、无仅靠占位符命名的控件
+[3/9] [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:102:5 › 实时 DOM 的 id 与可访问名唯一性 › 第 1 组共 11 条路由：无重复 id、无同区域同名、无仅靠占位符命名的控件
+[4/9] [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:132:3 › 实时 DOM 的 id 与可访问名唯一性 › 展开所有折叠段后再扫一遍（共 21 条路由）
+[5/9] [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:168:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：藏在展开面板里的违规必须被展开扫出来
+  1) [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:102:5 › 实时 DOM 的 id 与可访问名唯一性 › 第 1 组共 11 条路由：无重复 id、无同区域同名、无仅靠占位符命名的控件 
+
+    TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for locator('#app button, #app [role="button"]') to be visible
+
+
+      79 | async function gotoRendered(page: Page, route: string): Promise<void> {
+      80 |   await page.goto(route);
+    > 81 |   await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
+         |              ^
+      82 |   await expect
+      83 |     .poll(async () => (await mainContent(page)).buttons, {
+      84 |       timeout: 15_000,
+        at gotoRendered (D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:81:14)
+        at D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:106:9
+
+    Error Context: test-results\ux-duplicate-a11y-names-实时-9ca3c-由：无重复-id、无同区域同名、无仅靠占位符命名的控件-msedge\error-context.md
+
+
+  2) [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:132:3 › 实时 DOM 的 id 与可访问名唯一性 › 展开所有折叠段后再扫一遍（共 21 条路由） 
+
+    TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for locator('#app button, #app [role="button"]') to be visible
+
+
+      79 | async function gotoRendered(page: Page, route: string): Promise<void> {
+      80 |   await page.goto(route);
+    > 81 |   await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
+         |              ^
+      82 |   await expect
+      83 |     .poll(async () => (await mainContent(page)).buttons, {
+      84 |       timeout: 15_000,
+        at gotoRendered (D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:81:14)
+        at D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:139:7
+
+    Error Context: test-results\ux-duplicate-a11y-names-实时-af440-名唯一性-展开所有折叠段后再扫一遍（共-21-条路由）-msedge\error-context.md
+
+
+  3) [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:102:5 › 实时 DOM 的 id 与可访问名唯一性 › 第 2 组共 10 条路由：无重复 id、无同区域同名、无仅靠占位符命名的控件 
+
+    TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for locator('#app button, #app [role="button"]') to be visible
+
+
+      79 | async function gotoRendered(page: Page, route: string): Promise<void> {
+      80 |   await page.goto(route);
+    > 81 |   await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
+         |              ^
+      82 |   await expect
+      83 |     .poll(async () => (await mainContent(page)).buttons, {
+      84 |       timeout: 15_000,
+        at gotoRendered (D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:81:14)
+        at D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:106:9
+
+    Error Context: test-results\ux-duplicate-a11y-names-实时-cf1d1-由：无重复-id、无同区域同名、无仅靠占位符命名的控件-msedge\error-context.md
+
+
+  4) [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:168:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：藏在展开面板里的违规必须被展开扫出来 
+
+    TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for locator('button.collapse-toggle:visible') to be visible
+
+
+      170 |     await page.goto('/settings?cat=data');
+      171 |     // 折叠段要等设置页读完 store 才出现，扫"半个页面"只会少扫不会报错，所以先等它出现
+    > 172 |     await page.waitForSelector('button.collapse-toggle:visible', { timeout: 15_000 });
+          |                ^
+      173 |     await settle(page);
+      174 |     const { closedBefore } = await expandAllCollapsed(page);
+      175 |     expect(closedBefore, '这一页没有收着的段，换一条路由再验').toBeGreaterThan(0);
+        at D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:172:16
+
+    Error Context: test-results\ux-duplicate-a11y-names-实时-500c6-唯一性-负向对照：藏在展开面板里的违规必须被展开扫出来-msedge\error-context.md
+
+
+[6/9] [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:224:3 › 实时 DOM 的 id 与可访问名唯一性 › 点开每个 Tab 后再扫一遍（共 21 条路由）
+[7/9] [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:264:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：Tab 切走后，可见性判定收手、文档级判定仍然报
+[8/9] [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:383:3 › 实时 DOM 的 id 与可访问名唯一性 › 对话页两种分支各自只有一个主内容锚点
+[9/9] [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:309:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：造出违规必须报出来，隐藏的重复不该误报
+  5) [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:224:3 › 实时 DOM 的 id 与可访问名唯一性 › 点开每个 Tab 后再扫一遍（共 21 条路由） 
+
+    TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for locator('#app button, #app [role="button"]') to be visible
+
+
+      79 | async function gotoRendered(page: Page, route: string): Promise<void> {
+      80 |   await page.goto(route);
+    > 81 |   await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
+         |              ^
+      82 |   await expect
+      83 |     .poll(async () => (await mainContent(page)).buttons, {
+      84 |       timeout: 15_000,
+        at gotoRendered (D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:81:14)
+        at D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:232:7
+
+    Error Context: test-results\ux-duplicate-a11y-names-实时-bd56e-一性-点开每个-Tab-后再扫一遍（共-21-条路由）-msedge\error-context.md
+
+
+  6) [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:309:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：造出违规必须报出来，隐藏的重复不该误报 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForSelector: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('#app button') to be visible
+        - waiting for "http://localhost:5173/books" navigation to finish...
+        - navigated to "http://localhost:5173/books"
+
+
+      309 |   test('负向对照：造出违规必须报出来，隐藏的重复不该误报', async ({ page }) => {
+      310 |     await page.goto('/character');
+    > 311 |     await page.waitForSelector('#app button');
+          |                ^
+      312 |     const before = await audit(page);
+      313 |     expect(before.dupIds, '基线就该是干净的').toEqual([]);
+      314 |     expect(before.sameRegionDupNames, '基线就该是干净的').toEqual([]);
+        at D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:311:16
+
+    Error Context: test-results\ux-duplicate-a11y-names-实时-ed437-一性-负向对照：造出违规必须报出来，隐藏的重复不该误报-msedge\error-context.md
+
+
+  7) [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:383:3 › 实时 DOM 的 id 与可访问名唯一性 › 对话页两种分支各自只有一个主内容锚点 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForSelector: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('#main-content') to be visible
+        - waiting for "http://localhost:5173/books" navigation to finish...
+        - navigated to "http://localhost:5173/books"
+
+
+      385 |     // 静态看是"重复"，运行时靠 v-if/v-else 互斥。这条用例把"必须互斥"钉住。
+      386 |     await page.goto('/chat');
+    > 387 |     await page.waitForSelector('#main-content');
+          |                ^
+      388 |     expect(await page.locator('#main-content').count()).toBe(1);
+      389 |   });
+      390 | });
+        at D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:387:16
+
+    Error Context: test-results\ux-duplicate-a11y-names-实时-71576-与可访问名唯一性-对话页两种分支各自只有一个主内容锚点-msedge\error-context.md
+
+
+  8) [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:264:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：Tab 切走后，可见性判定收手、文档级判定仍然报 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForSelector: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('[role="tab"]:visible') to be visible
+        - waiting for "http://localhost:5173/books" navigation to finish...
+        - navigated to "http://localhost:5173/books"
+
+
+      264 |   test('负向对照：Tab 切走后，可见性判定收手、文档级判定仍然报', async ({ page }) => {
+      265 |     await page.goto('/random-events');
+    > 266 |     await page.waitForSelector('[role="tab"]:visible');
+          |                ^
+      267 |     expect(
+      268 |       await page.locator('[role="tab"]:visible').count(),
+      269 |       '这条路由上至少要有两个 Tab 才验得出切换'
+        at D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:266:16
+
+    Error Context: test-results\ux-duplicate-a11y-names-实时-28d71-对照：Tab-切走后，可见性判定收手、文档级判定仍然报-msedge\error-context.md
+
+
+  8 failed
+    [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:102:5 › 实时 DOM 的 id 与可访问名唯一性 › 第 1 组共 11 条路由：无重复 id、无同区域同名、无仅靠占位符命名的控件 
+    [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:102:5 › 实时 DOM 的 id 与可访问名唯一性 › 第 2 组共 10 条路由：无重复 id、无同区域同名、无仅靠占位符命名的控件 
+    [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:132:3 › 实时 DOM 的 id 与可访问名唯一性 › 展开所有折叠段后再扫一遍（共 21 条路由） 
+    [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:168:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：藏在展开面板里的违规必须被展开扫出来 
+    [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:224:3 › 实时 DOM 的 id 与可访问名唯一性 › 点开每个 Tab 后再扫一遍（共 21 条路由） 
+    [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:264:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：Tab 切走后，可见性判定收手、文档级判定仍然报 
+    [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:309:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：造出违规必须报出来，隐藏的重复不该误报 
+    [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:383:3 › 实时 DOM 的 id 与可访问名唯一性 › 对话页两种分支各自只有一个主内容锚点 
+  1 passed (1.6m)

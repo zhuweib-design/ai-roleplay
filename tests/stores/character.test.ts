@@ -245,15 +245,6 @@ describe('useCharacterStore — E5 单元测试', () => {
       expect(store.characters.find((c) => c.id === newId)!.favorite).toBe(!before);
     });
 
-    it('toggleWorldEntry 应切换 worldEntry.enabled', () => {
-      const store = useCharacterStore();
-      const newId = store.createCharacter();
-      // 注入一个 world entry
-      const char = store.characters.find((c) => c.id === newId)!;
-      char.worldEntries = [{ id: 'w1', name: '世界观 1', enabled: true }];
-      store.toggleWorldEntry(newId, 'w1');
-      expect(char.worldEntries[0]!.enabled).toBe(false);
-    });
   });
 
   describe('需求7：角色与世界书双向绑定', () => {
@@ -326,9 +317,9 @@ describe('useCharacterStore — E5 单元测试', () => {
       const id2 = 'test-char-bind-2';
       const id3 = 'test-char-bind-3';
       store.characters.push(
-        { id: id1, name: 'C1', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
-        { id: id2, name: 'C2', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
-        { id: id3, name: 'C3', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, worldEntries: [], tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } }
+        { id: id1, name: 'C1', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
+        { id: id2, name: 'C2', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } },
+        { id: id3, name: 'C3', avatarType: 'gradient', lastActive: '', favorite: false, tags: [], description: '', model: '', conversations: [], messages: [], authorNote: '', authorDepth: 4, temperature: 1, tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 0 } }
       );
       // id1 和 id2 绑定 lb-shared，id3 绑定 lb-other
       store.bindWorldBook(id1, 'lb-shared');
@@ -621,7 +612,8 @@ describe('useCharacterStore — E5 单元测试', () => {
         const ok = await store.downloadV2(newId);
         expect(ok).toBe(true);
         expect(clickSpy).toHaveBeenCalled();
-        expect(store.lastInfo).toContain('已导出');
+        // C2 起文案改为"已保存：<文件名>（落点）"，不再只说"已导出"
+        expect(store.lastInfo).toContain('已保存');
       } finally {
         // 恢复
         URL.createObjectURL = originalCreate;
@@ -632,12 +624,17 @@ describe('useCharacterStore — E5 单元测试', () => {
       }
     });
 
-    it('downloadV2 在安卓 WebView 里被用户取消 ⇒ 返回 false 且不写"已导出"', async () => {
+    it('downloadV2 在安卓 WebView 里撞到桩式面板 ⇒ 说清"去哪找"，不再静默', async () => {
       const store = useCharacterStore();
       const newId = store.createCharacter();
       store.clearLastError();
 
-      // 安卓 WebView 的 UA 标记 + 用户在系统保存面板按下取消
+      /*
+       * 这条以前叫"被用户取消 ⇒ 返回 false 且不写已导出"——那是**旧行为**，
+       * 也正是"点了导出没反应"的成因：WebView 的 showSaveFilePicker 是桩，
+       * 14ms 抛 AbortError，被归成 cancelled 之后调用方按约定什么都不提示。
+       * C2 起：立即抛的 AbortError 判为桩 ⇒ unsupported，界面必须说清去哪找。
+       */
       const abort = Object.assign(new Error('user aborted'), { name: 'AbortError' });
       vi.stubGlobal('navigator', {
         userAgent: 'Mozilla/5.0 (Linux; Android 16; sdk_gphone64_x86_64; wv) Chrome/133 Mobile Safari/537.36',
@@ -645,9 +642,9 @@ describe('useCharacterStore — E5 单元测试', () => {
       vi.stubGlobal('window', { showSaveFilePicker: vi.fn(async () => { throw abort; }) });
       try {
         const ok = await store.downloadV2(newId);
-        expect(ok).toBe(false);
-        // 用户取消时界面不许说"已导出"（lastInfo 保持为空）
-        expect(store.lastInfo).toBeNull();
+        expect(ok).toBe(true);
+        expect(store.lastInfo).toContain('不支持选择保存位置');
+        expect(store.lastInfo).not.toContain('已保存');
       } finally {
         vi.unstubAllGlobals();
       }

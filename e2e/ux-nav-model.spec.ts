@@ -102,9 +102,10 @@ test.describe('桌面端分层导航', () => {
     await page.locator('.nav-rail .nav-item[aria-label="更多"]').click();
 
     await expect(page).toHaveURL(/\/more$/);
-    // 群聊/数据银行·故事·随机事件/本地模型·图片/记录·版本 = 4 个组都有卡片
+    // A12 后仍是 4 个内容组，但卡片 8 → 10（+世界书 +市场）。
+    // 引导不在此列：它在页顶部有专门的进度卡（.more-guide）
     await expect(page.locator('.more-section-title')).toHaveCount(4);
-    await expect(page.locator('.more-card')).toHaveCount(8);
+    await expect(page.locator('.more-card')).toHaveCount(10);
     await expect(page.locator('.more-card-desc').first()).toContainText('对话');
     // 系统项自身高亮，而不是留在上一个内容入口
     await expect(page.locator('.nav-rail .nav-item[aria-current="page"]')).toHaveAttribute('aria-label', '更多');

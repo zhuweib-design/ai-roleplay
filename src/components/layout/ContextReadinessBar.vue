@@ -69,8 +69,17 @@ function onChip(chip: ReadinessChip): void {
 <style scoped>
 .readiness-bar {
   display: flex;
-  flex-wrap: wrap;
+  /* 批次 0-4：原 `flex-wrap: wrap` 在 390×844 下让 5 个胶囊换成两行、占 69px 竖向空间；
+     改为横向滚动单行——自家 ai-chat-ui-redesign/docs/05-响应式规格.md:119 的规格
+     本来写的就是"状态条胶囊：横向滚动"，成品当初写成了 wrap。
+     对话页与群聊页各回收 ≥34px（群聊页这 34px 是批次 1-2 把消息区做到 40% 的前置）。 */
+  flex-wrap: nowrap;
   align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* 横向滚动条自身还会再占高度，隐藏它——滚动靠手势即可 */
+  scrollbar-width: none;
   /* 6px 已由 M18 裁决 3 补成半档 --space-1-5；剩下的 5px / 3px / 7px 仍不在阶上，
      留在字面量里等逐处裁决（它们不构成批量归档的收益，补档反而让尺度变脏）。 */
   gap: var(--space-1-5);
@@ -88,6 +97,8 @@ function onChip(chip: ReadinessChip): void {
 
 .readiness-summary {
   display: inline-flex;
+  /* 批次 0-4：横向滚动下不参与收缩，否则摘要会被压扁 */
+  flex: 0 0 auto;
   align-items: center;
   gap: 5px;
   margin-right: var(--space-1);
@@ -95,6 +106,8 @@ function onChip(chip: ReadinessChip): void {
 
 .readiness-chip {
   display: inline-flex;
+  /* 同上：胶囊保持自身宽度，靠容器横向滚动而不是靠压缩 */
+  flex: 0 0 auto;
   align-items: center;
   gap: 5px;
   padding: 3px var(--space-2);
@@ -144,5 +157,29 @@ function onChip(chip: ReadinessChip): void {
 
 .chip-state {
   font-size: 13px;
+}
+
+/*
+ * 批次 3-2：胶囊直接给到 44（手指端独立可点元素的下限）。
+ *
+ * 试过用透明伪元素撑命中区（批次 3-3 的手法），这里行不通：`.readiness-bar` 是
+ * `overflow-x: auto` 的横向滚动容器，按 CSS 规范另一轴会被强制成 auto ⇒ 伪元素
+ * 在纵向被裁掉，实测只到 30px。
+ *
+ * 于是改撑本体，同时把条高钉回 ≤44（批次 0-4 的判据）：
+ * - padding-block 归零：44 = 44 + 0
+ * - 底部分隔线改用 inset box-shadow：border 会让盒子高 1px，45 就破了判据
+ */
+@media (max-width: 640px) {
+  .readiness-bar {
+    padding-block: 0;
+    border-bottom: 0;
+    box-shadow: inset 0 -1px 0 var(--border);
+  }
+  .readiness-chip,
+  .readiness-summary {
+    min-height: var(--touch-min);
+    padding-block: 0;
+  }
 }
 </style>

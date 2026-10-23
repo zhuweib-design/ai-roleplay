@@ -1,20 +1,40 @@
-import { OptimisticLockError, RuntimeConflictError } from './store';
-import { stableChatConversationTurnIds, stableRuntimeUuid } from './runtime-id';
-import type { ContextBuildRecord, DomainEvent, Episode, MemoryRecord, RuntimeConversationTurnInput, RuntimeConversationTurnResult, RuntimeSnapshot, RuntimeSnapshotStore, RuntimeCharacterListRequest, RuntimeCharacterListResult, StateChange } from './types';
-
-export interface SqlResult<Row = Record<string, unknown>> {
-  rows: Row[];
-  rowCount: number;
-}
-
 /**
- * PostgreSQL 驱动的最小端口。
- * pg.Pool、Tauri Rust command 或服务端 RPC 只需要实现这个端口即可接入。
+ * PostgreSQL Runtime Store —— 事务编排层
+ *
+ * 保留职责：事务边界、角色行 FOR UPDATE 乐观锁、幂等校验、审计落库、
+ * 租户边界校验。具体每张表的 SQL 写入已下放到 postgres-store-writer.ts，
+ * 本轮改写对调用方零影响：公开面仍只有 PostgresRuntimeStore / SqlExecutor / SqlResult。
+ *
+ * 文件分层（依赖单向，无环）：
+ *
+ *   postgres-sql-port.ts       SqlExecutor 端口 + isUuid / json / parseJson / slugify
+ *        ↑
+ *   postgres-store-writer.ts   10 个 SQL 写入自由函数（tx, tenantId, ...）
+ *        ↑
+ *   postgres-store.ts          PostgresRuntimeStore（本文件）
  */
-export interface SqlExecutor {
-  query<Row = Record<string, unknown>>(text: string, params?: readonly unknown[]): Promise<SqlResult<Row>>;
-  transaction<T>(work: (transaction: SqlExecutor) => Promise<T>): Promise<T>;
-}
+
+import { OptimisticLockError, RuntimeConflictError } from './store';
+import { stableChatConversationTurnIds } from './runtime-id';
+import { isUuid, json, parseJson, slugify, type SqlExecutor } from './postgres-sql-port';
+import {
+  insertEvent,
+  insertEventTurnLinks,
+  insertStateChange,
+  persistNormalizedState,
+} from './postgres-store-writer';
+import type {
+  ContextBuildRecord,
+  RuntimeCharacterListRequest,
+  RuntimeCharacterListResult,
+  RuntimeConversationTurnInput,
+  RuntimeConversationTurnResult,
+  RuntimeSnapshot,
+  RuntimeSnapshotStore,
+} from './types';
+
+// 端口类型从这里再导出，维持拆分前的公开面（postgres-executor 直接 import 本文件）
+export type { SqlExecutor, SqlResult } from './postgres-sql-port';
 
 interface CharacterVersionRow {
   state_version: number;
@@ -23,29 +43,6 @@ interface CharacterVersionRow {
 interface SnapshotRow {
   state: RuntimeSnapshot | string;
   event_sequence: number;
-}
-
-function parseJson<T>(value: T | string): T {
-  return typeof value === 'string' ? (JSON.parse(value) as T) : value;
-}
-
-function slugify(value: string, stableId?: string): string {
-  const slug = value
-    .normalize('NFKC')
-    .toLocaleLowerCase()
-    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
-    .replace(/^-+|-+$/g, '');
-  const base = slug || 'character';
-  const suffix = stableId?.replace(/[^0-9a-z]/gi, '').slice(0, 8).toLocaleLowerCase();
-  return suffix ? `${base}-${suffix}` : base;
-}
-
-function isUuid(value: string | undefined): value is string {
-  return Boolean(value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value));
-}
-
-function json(value: unknown): string {
-  return JSON.stringify(value ?? {});
 }
 
 /**
@@ -306,12 +303,12 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
         ]
       );
       for (const event of snapshot.events) {
-        await this.insertEvent(tx, event);
+        await insertEvent(tx, this.tenantId, event);
       }
       for (const change of snapshot.stateChanges) {
-        await this.insertStateChange(tx, change);
+        await insertStateChange(tx, this.tenantId, change);
       }
-      await this.persistNormalizedState(tx, null, snapshot);
+      await persistNormalizedState(tx, this.tenantId, null, snapshot);
       await tx.query(
         `INSERT INTO state_snapshots (character_id, event_sequence, state)
          VALUES ($1, $2, $3::jsonb)`,
@@ -400,7 +397,7 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
           event.sourceTurnIds?.some((turnId) => committedTurnIds.has(turnId))
         );
         for (const event of relatedEvents) {
-          await this.insertEventTurnLinks(tx, event, [...committedTurnIds]);
+          await insertEventTurnLinks(tx, this.tenantId, event, [...committedTurnIds]);
         }
       }
       return turnResult;
@@ -409,12 +406,12 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
     const newEvents = snapshot.events.filter((item) => !knownEventIds.has(item.id));
     const newStateChanges = snapshot.stateChanges.filter((item) => !knownStateChangeIds.has(item.id));
     for (const event of newEvents) {
-      await this.insertEvent(tx, event);
+      await insertEvent(tx, this.tenantId, event);
     }
     for (const change of newStateChanges) {
-      await this.insertStateChange(tx, change);
+      await insertStateChange(tx, this.tenantId, change);
     }
-    await this.persistNormalizedState(tx, current, snapshot);
+    await persistNormalizedState(tx, this.tenantId, current, snapshot);
     await tx.query(
       `INSERT INTO state_snapshots (character_id, event_sequence, state)
        VALUES ($1, $2, $3::jsonb)`,
@@ -470,454 +467,5 @@ export class PostgresRuntimeStore implements RuntimeSnapshotStore {
 
   private assertUuidBoundary(value: string, label: string): void {
     if (!isUuid(value)) throw new Error(`PostgreSQL Runtime ${label} 要求使用 UUID`);
-  }
-
-  private async persistNormalizedState(
-    tx: SqlExecutor,
-    current: RuntimeSnapshot | null,
-    next: RuntimeSnapshot
-  ): Promise<void> {
-    await this.persistCharacterProjection(tx, next);
-    const knownMemoryIds = new Set(current?.memories.map((memory) => memory.id) ?? []);
-    for (const memory of next.memories.filter((item) => !knownMemoryIds.has(item.id))) {
-      await this.insertMemory(tx, memory);
-    }
-    const previousMemories = new Map((current?.memories ?? []).map((memory) => [memory.id, memory]));
-    for (const memory of next.memories) {
-      const previous = previousMemories.get(memory.id);
-      if (previous && (previous.reviewStatus !== memory.reviewStatus || previous.reviewedAt !== memory.reviewedAt)) {
-        await tx.query(
-          `UPDATE memories
-              SET review_status = $3, reviewed_at = $4, updated_at = now()
-            WHERE id = $1 AND character_id = $2`,
-          [memory.id, next.character.id, memory.reviewStatus ?? 'confirmed', memory.reviewedAt ?? null]
-        );
-      }
-    }
-
-    const knownEpisodeIds = new Set(current?.episodes.map((episode) => episode.id) ?? []);
-    for (const episode of next.episodes) {
-      if (knownEpisodeIds.has(episode.id)) {
-        await this.updateEpisode(tx, next.character.id, episode);
-      } else {
-        await this.insertEpisode(tx, next.character.id, episode);
-      }
-      await this.insertEpisodeEvents(tx, next.character.id, episode);
-    }
-  }
-
-  private async persistCharacterProjection(tx: SqlExecutor, snapshot: RuntimeSnapshot): Promise<void> {
-    const character = snapshot.character;
-    for (const trait of character.traits) {
-      await tx.query(
-        `INSERT INTO character_traits
-          (character_id, trait_key, value, confidence, mutable, locked, source)
-         VALUES ($1, $2, $3, 1, $4, $5, 'character-definition')
-         ON CONFLICT (character_id, trait_key) DO UPDATE SET
-           value = EXCLUDED.value,
-           mutable = EXCLUDED.mutable,
-           locked = EXCLUDED.locked,
-           updated_at = now()`,
-        [character.id, trait.key, trait.value, !trait.locked, Boolean(trait.locked)]
-      );
-    }
-    for (const value of character.values) {
-      await tx.query(
-        `INSERT INTO character_values
-          (character_id, value_key, strength, priority, confidence, locked)
-         VALUES ($1, $2, $3, $4, 1, $5)
-         ON CONFLICT (character_id, value_key) DO UPDATE SET
-           strength = EXCLUDED.strength,
-           priority = EXCLUDED.priority,
-           locked = EXCLUDED.locked`,
-        [
-          character.id,
-          value.key,
-          value.importance,
-          Math.round(value.importance * 100),
-          Boolean(value.locked),
-        ]
-      );
-    }
-    for (const belief of character.beliefs) {
-      const beliefId = stableRuntimeUuid('character-belief', character.id, belief.key);
-      await tx.query(
-        `INSERT INTO character_beliefs
-          (id, character_id, statement, strength, confidence, mutable, locked, source)
-         VALUES ($1, $2, $3, 0.5, $4, $5, $6, 'character-definition')
-         ON CONFLICT (id) DO UPDATE SET
-           statement = EXCLUDED.statement,
-           confidence = EXCLUDED.confidence,
-           mutable = EXCLUDED.mutable,
-           locked = EXCLUDED.locked,
-           updated_at = now()`,
-        [beliefId, character.id, belief.statement, belief.confidence, !belief.locked, Boolean(belief.locked)]
-      );
-    }
-    for (const goal of character.goals) {
-      const goalId = stableRuntimeUuid('character-goal', character.id, goal.key);
-      await tx.query(
-        `INSERT INTO character_goals
-          (id, character_id, description, priority, progress, active, metadata)
-         VALUES ($1, $2, $3, $4, 0, $5, $6::jsonb)
-         ON CONFLICT (id) DO UPDATE SET
-           description = EXCLUDED.description,
-           priority = EXCLUDED.priority,
-           active = EXCLUDED.active,
-           metadata = EXCLUDED.metadata,
-           updated_at = now()`,
-        [goalId, character.id, goal.description, goal.priority, goal.active, json({ key: goal.key })]
-      );
-    }
-    for (const [key, score] of Object.entries(character.preferences)) {
-      const targetId = await this.ensureTarget(
-        tx,
-        stableRuntimeUuid('preference-target', character.tenantId, character.id, key),
-        { type: 'preference', canonicalName: key }
-      );
-      if (!targetId) continue;
-      await tx.query(
-        `INSERT INTO character_preferences
-          (character_id, target_id, dimension, score, baseline, confidence, salience, version)
-         VALUES ($1, $2, 'score', $3, 0, 1, $4, $5)
-         ON CONFLICT (character_id, target_id, dimension) DO UPDATE SET
-           score = EXCLUDED.score,
-           salience = EXCLUDED.salience,
-           version = EXCLUDED.version,
-           updated_at = now()`,
-        [character.id, targetId, Math.max(-1, Math.min(1, score)), Math.min(1, Math.abs(score)), snapshot.version]
-      );
-    }
-    for (const attitude of character.attitudes) {
-      const targetId = await this.ensureTarget(tx, attitude.targetId);
-      if (!targetId) continue;
-      await tx.query(
-        `INSERT INTO character_attitudes
-          (character_id, target_id, dimension, score, baseline, confidence, salience, version)
-         VALUES ($1, $2, 'liking', $3, 0, $4, $5, $6)
-         ON CONFLICT (character_id, target_id, dimension) DO UPDATE SET
-           score = EXCLUDED.score,
-           confidence = EXCLUDED.confidence,
-           salience = EXCLUDED.salience,
-           version = EXCLUDED.version,
-           updated_at = now()`,
-        [character.id, targetId, attitude.liking, attitude.confidence, attitude.salience, snapshot.version]
-      );
-    }
-    for (const relationship of character.relationships) {
-      const targetId = await this.ensureTarget(tx, relationship.targetId);
-      if (!targetId) continue;
-      await tx.query(
-        `INSERT INTO character_relationships
-          (character_id, target_id, relationship_type, status, version)
-         VALUES ($1, $2, 'acquaintance', 'active', $3)
-         ON CONFLICT (character_id, target_id) DO UPDATE SET
-           version = EXCLUDED.version,
-           updated_at = now()`,
-        [character.id, targetId, snapshot.version]
-      );
-      const dimensions = { ...relationship.dimensions, closeness: relationship.closeness };
-      for (const [dimension, score] of Object.entries(dimensions)) {
-        await tx.query(
-          `INSERT INTO relationship_dimensions
-            (character_id, target_id, dimension, score, baseline, version)
-           VALUES ($1, $2, $3, $4, 0, $5)
-           ON CONFLICT (character_id, target_id, dimension) DO UPDATE SET
-             score = EXCLUDED.score,
-             version = EXCLUDED.version,
-             updated_at = now()`,
-          [character.id, targetId, dimension, Math.max(0, Math.min(1, score)), snapshot.version]
-        );
-      }
-    }
-    for (const emotion of character.emotions) {
-      await tx.query(
-        `INSERT INTO character_emotions
-          (character_id, emotion_key, intensity, baseline, half_life_seconds, version)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (character_id, emotion_key) DO UPDATE SET
-           intensity = EXCLUDED.intensity,
-           baseline = EXCLUDED.baseline,
-           half_life_seconds = EXCLUDED.half_life_seconds,
-           version = EXCLUDED.version,
-           updated_at = now()`,
-        [character.id, emotion.emotion, emotion.intensity, emotion.baseline, emotion.halfLifeSeconds, snapshot.version]
-      );
-    }
-    await tx.query(
-      `INSERT INTO character_mood
-        (character_id, valence, arousal, dominance, baseline_valence, baseline_arousal, baseline_dominance, half_life_seconds, version)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       ON CONFLICT (character_id) DO UPDATE SET
-         valence = EXCLUDED.valence,
-         arousal = EXCLUDED.arousal,
-         dominance = EXCLUDED.dominance,
-         baseline_valence = EXCLUDED.baseline_valence,
-         baseline_arousal = EXCLUDED.baseline_arousal,
-         baseline_dominance = EXCLUDED.baseline_dominance,
-         half_life_seconds = EXCLUDED.half_life_seconds,
-         version = EXCLUDED.version,
-         updated_at = now()`,
-      [
-        character.id,
-        character.mood.valence,
-        character.mood.arousal,
-        character.mood.dominance,
-        character.mood.baselineValence,
-        character.mood.baselineArousal,
-        character.mood.baselineDominance,
-        character.mood.halfLifeSeconds,
-        snapshot.version,
-      ]
-    );
-  }
-
-  private async insertMemory(tx: SqlExecutor, memory: MemoryRecord): Promise<void> {
-    if (!isUuid(memory.id) || !isUuid(memory.characterId)) {
-      throw new Error('PostgreSQL Memory 要求 id、characterId 使用 UUID');
-    }
-    const targetId = await this.ensureTarget(tx, memory.targetId);
-    await tx.query(
-      `INSERT INTO memories
-        (id, character_id, memory_type, content, target_id, importance, confidence, salience, occurred_at, valid_from, valid_until, review_status, reviewed_at, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb)
-       ON CONFLICT (id) DO NOTHING`,
-      [
-        memory.id,
-        memory.characterId,
-        memory.type,
-        memory.content,
-        targetId,
-        memory.importance,
-        memory.confidence ?? 1,
-        memory.salience,
-        memory.occurredAt,
-        memory.validFrom ?? null,
-        memory.validUntil ?? null,
-        memory.reviewStatus ?? 'confirmed',
-        memory.reviewedAt ?? null,
-        json({ sourceEventId: memory.sourceEventId, lastAccessedAt: memory.lastAccessedAt }),
-      ]
-    );
-    if (memory.sourceEventId && isUuid(memory.sourceEventId)) {
-      const sourceEvent = await tx.query(
-        'SELECT 1 FROM events WHERE id = $1 AND character_id = $2 AND tenant_id = $3 LIMIT 1',
-        [memory.sourceEventId, memory.characterId, this.tenantId]
-      );
-      if (sourceEvent.rowCount > 0) {
-        await tx.query(
-          `INSERT INTO memory_sources (memory_id, event_id, turn_id, weight)
-           VALUES ($1, $2, NULL, 1)
-           ON CONFLICT DO NOTHING`,
-          [memory.id, memory.sourceEventId]
-        );
-      }
-    }
-  }
-
-  private async insertEpisode(
-    tx: SqlExecutor,
-    characterId: string,
-    episode: Episode
-  ): Promise<void> {
-    if (!isUuid(episode.id) || !isUuid(characterId)) {
-      throw new Error('PostgreSQL Episode 要求 id、characterId 使用 UUID');
-    }
-    await tx.query(
-      `INSERT INTO emotion_episodes
-        (id, character_id, episode_type, started_at, peak_at, recovered_at, peak_intensity, resolution, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
-       ON CONFLICT (id) DO NOTHING`,
-      [
-        episode.id,
-        characterId,
-        episode.topic ?? 'runtime',
-        episode.startedAt,
-        episode.lastEventAt,
-        episode.resolvedAt ?? null,
-        episode.peakIntensity,
-        episode.status === 'resolved' ? 'resolved' : null,
-        json({
-          topic: episode.topic,
-          targetId: episode.targetId,
-          status: episode.status,
-          currentIntensity: episode.currentIntensity,
-          salience: episode.salience,
-          residualInfluence: episode.residualInfluence,
-          unresolved: episode.unresolved,
-        }),
-      ]
-    );
-  }
-
-  private async updateEpisode(
-    tx: SqlExecutor,
-    characterId: string,
-    episode: Episode
-  ): Promise<void> {
-    if (!isUuid(episode.id) || !isUuid(characterId)) {
-      throw new Error('PostgreSQL Episode 要求 id、characterId 使用 UUID');
-    }
-    await tx.query(
-      `UPDATE emotion_episodes
-          SET peak_at = $3, recovered_at = $4, peak_intensity = $5, resolution = $6, metadata = $7::jsonb
-        WHERE id = $1 AND character_id = $2`,
-      [
-        episode.id,
-        characterId,
-        episode.lastEventAt,
-        episode.resolvedAt ?? null,
-        episode.peakIntensity,
-        episode.status === 'resolved' ? 'resolved' : null,
-        json({
-          topic: episode.topic,
-          targetId: episode.targetId,
-          status: episode.status,
-          currentIntensity: episode.currentIntensity,
-          salience: episode.salience,
-          residualInfluence: episode.residualInfluence,
-          unresolved: episode.unresolved,
-        }),
-      ]
-    );
-  }
-
-  private async insertEpisodeEvents(tx: SqlExecutor, characterId: string, episode: Episode): Promise<void> {
-    if (!isUuid(episode.id)) throw new Error('PostgreSQL Episode 要求 id 使用 UUID');
-    for (const [ordinal, eventId] of episode.eventIds.entries()) {
-      if (!isUuid(eventId)) continue;
-      const event = await tx.query(
-        'SELECT 1 FROM events WHERE id = $1 AND character_id = $2 AND tenant_id = $3 LIMIT 1',
-        [eventId, characterId, this.tenantId]
-      );
-      if (event.rowCount === 0) continue;
-      await tx.query(
-        `INSERT INTO emotion_episode_events (episode_id, event_id, ordinal)
-         VALUES ($1, $2, $3)
-         ON CONFLICT DO NOTHING`,
-        [episode.id, eventId, ordinal]
-      );
-    }
-  }
-  private async insertEvent(tx: SqlExecutor, event: DomainEvent): Promise<void> {
-    if (!isUuid(event.id) || !isUuid(event.characterId) || !isUuid(event.tenantId)) {
-      throw new Error('PostgreSQL Runtime Event 要求 tenantId、characterId、eventId 使用 UUID');
-    }
-    const targetId = await this.ensureTarget(tx, event.targetId);
-    await tx.query(
-      `INSERT INTO events
-        (id, tenant_id, character_id, actor_id, target_id, event_type, importance, payload, occurred_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)`,
-      [
-        event.id,
-        event.tenantId,
-        event.characterId,
-        event.actorId && isUuid(event.actorId) ? event.actorId : null,
-        targetId,
-        event.eventType,
-        event.importance,
-        json({
-          ...event.payload,
-          topic: event.topic,
-          effects: event.effects,
-          targetId: event.targetId,
-          schemaVersion: event.schemaVersion,
-          reducerVersion: event.reducerVersion,
-        }),
-        event.occurredAt,
-      ]
-    );
-    await this.insertEventTurnLinks(tx, event);
-  }
-
-  private async insertEventTurnLinks(
-    tx: SqlExecutor,
-    event: DomainEvent,
-    additionalTurnIds: string[] = []
-  ): Promise<void> {
-    const sourceTurnIds = [...new Set([
-      ...(event.sourceTurnIds ?? []),
-      event.sourceTurnId,
-      ...additionalTurnIds,
-    ].filter((value): value is string => isUuid(value)))];
-    for (const sourceTurnId of sourceTurnIds) {
-      const turn = await tx.query(
-        `SELECT 1 FROM conversation_turns AS turn
-          JOIN conversation_sessions AS session ON session.id = turn.session_id
-          JOIN conversations AS conversation ON conversation.id = session.conversation_id
-         WHERE turn.id = $1
-           AND conversation.tenant_id = $2
-           AND conversation.character_id = $3
-         LIMIT 1`,
-        [sourceTurnId, this.tenantId, event.characterId]
-      );
-      if (turn.rowCount > 0) {
-        await tx.query(
-          `INSERT INTO event_turn_links (event_id, turn_id, role)
-           VALUES ($1, $2, 'evidence')
-           ON CONFLICT DO NOTHING`,
-          [event.id, sourceTurnId]
-        );
-      }
-    }
-  }
-
-  private async insertStateChange(tx: SqlExecutor, change: StateChange): Promise<void> {
-    if (!isUuid(change.id) || !isUuid(change.eventId) || !isUuid(change.characterId)) {
-      throw new Error('PostgreSQL StateChange 要求 id、eventId、characterId 使用 UUID');
-    }
-    const targetId = await this.ensureTarget(tx, change.targetId);
-    await tx.query(
-      `INSERT INTO state_changes
-        (id, character_id, event_id, state_type, target_id, dimension, old_value, delta, new_value, reason)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)`,
-      [
-        change.id,
-        change.characterId,
-        change.eventId,
-        change.stateType,
-        targetId,
-        change.dimension,
-        change.oldValue ?? null,
-        change.delta,
-        change.newValue ?? null,
-        json(change.changes),
-      ]
-    );
-  }
-
-  /**
-   * Runtime 的 targetId 可能来自角色卡或聊天上下文，首次出现时通常还没有
-   * 对应的世界实体记录。先建立租户内的最小占位 Target，确保事件、记忆和
-   * 状态变化不会在外键处失败；已有跨租户 ID 则明确拒绝，避免越权关联。
-   */
-  private async ensureTarget(
-    tx: SqlExecutor,
-    targetId?: string,
-    options: { type?: string; canonicalName?: string } = {}
-  ): Promise<string | null> {
-    if (!targetId || !isUuid(targetId)) return null;
-    await tx.query(
-      `INSERT INTO targets (id, tenant_id, type, canonical_name, metadata)
-       VALUES ($1, $2, $3, $4, $5::jsonb)
-       ON CONFLICT (id) DO NOTHING`,
-      [
-        targetId,
-        this.tenantId,
-        options.type ?? 'runtime',
-        options.canonicalName ?? targetId,
-        json({ source: 'runtime-placeholder' }),
-      ]
-    );
-    const result = await tx.query<{ tenant_id: string }>(
-      'SELECT tenant_id FROM targets WHERE id = $1 LIMIT 1',
-      [targetId]
-    );
-    const target = result.rows[0];
-    if (!target) throw new Error(`Runtime Target 创建失败：${targetId}`);
-    if (target.tenant_id !== this.tenantId) {
-      throw new Error(`Runtime Target 租户隔离校验失败：${targetId}`);
-    }
-    return targetId;
   }
 }

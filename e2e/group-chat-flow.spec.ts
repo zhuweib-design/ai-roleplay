@@ -5,6 +5,22 @@ function replyBody(): string {
     '\n\ndata: [DONE]\n';
 }
 
+/**
+ * 切发言模式。桌面在页头内联一排单选，手机在「群设置」抽屉里
+ * （MOBILE_PLAN 批次 1-2 把发言模式连同动作组、成员条一起搬进了抽屉）。
+ * 这个文件同时跑在桌面 project 与 mobile-functional project 上，所以按端分流。
+ */
+async function setGroupMode(page: import('@playwright/test').Page, label: string): Promise<void> {
+  const inline = page.locator('.group-header').getByRole('radio', { name: label });
+  if ((await inline.count()) > 0) {
+    await inline.click();
+    return;
+  }
+  await page.locator('.group-settings-btn').click();
+  await page.locator('.bs-panel').getByRole('radio', { name: label }).click();
+  await page.keyboard.press('Escape');
+}
+
 test('两个角色群聊使用真实模型、独立 Runtime Context 与 Event', async ({ page }) => {
   const prefix = `群聊E2E-${Date.now()}`;
   const names = [`${prefix}-甲`, `${prefix}-乙`];
@@ -15,7 +31,7 @@ test('两个角色群聊使用真实模型、独立 Runtime Context 与 Event', 
   });
 
   await page.goto('/settings');
-  await page.getByRole('tab', { name: /模型/ }).click();
+  await page.getByRole('tab', { name: /^模型/ }).click();
   await page.getByRole('button', { name: '新增 API 配置' }).click();
   await page.locator('#p-name').fill('群聊测试模型');
   await page.locator('#p-baseurl').fill(`http://localhost:${process.env.E2E_PORT ?? '5173'}/mock`);
@@ -68,7 +84,7 @@ test('两个角色群聊使用真实模型、独立 Runtime Context 与 Event', 
   expect(secondContext!.content).not.toContain(`${firstSpeaker}的私有设定`);
   expect(requests[1]!.messages.some((message) => message.content.includes('群聊真实回复'))).toBe(true);
 
-  await page.getByRole('radio', { name: '指定发言' }).click();
+  await setGroupMode(page, '指定发言');
   await input.fill(`@${names[0]}`);
   await page.locator('.mention-item').filter({ hasText: names[0]! }).click();
   await input.fill(`@${names[0]} 第三轮讨论`);
@@ -108,7 +124,7 @@ test('群聊生成中可中止，且中止后不提交公共回合与旁听事�
   });
 
   await page.goto('/settings');
-  await page.getByRole('tab', { name: /模型/ }).click();
+  await page.getByRole('tab', { name: /^模型/ }).click();
   await page.getByRole('button', { name: '新增 API 配置' }).click();
   await page.locator('#p-name').fill('中止测试模型');
   await page.locator('#p-baseurl').fill(`http://localhost:${process.env.E2E_PORT ?? '5173'}/mock`);

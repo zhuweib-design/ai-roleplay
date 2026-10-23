@@ -91,6 +91,23 @@ jobs:
       - name: CSS conventions guard (check:css-conventions)
         run: npm run check:css-conventions
 
+      # 单文件行数棘轮（DEV_PLAN §7 大文件拆分专项的配套门禁）：白名单锁"登记行数"，
+      # 只许降不许升。没有这条，§7 拆完的 92 个文件半年后会重新长回去，那 20–30 人日
+      # 就白花了。新增 >1000 行的文件会被拦下：要么拆开，要么在白名单登记并写明理由。
+      - name: File size guard (check:file-size)
+        run: npm run check:file-size
+
+      # 控件高度字面量棘轮（批次 3-1）：token 化之后只许降不许升，
+      # 否则批次 3-2 的"≤640 阶梯上移"永远只能覆盖一半控件。
+      - name: Control size guard (check:control-size)
+        run: npm run check:control-size
+
+      # 共享原语复用守卫（2026-10-19）：`.btn` 族已提到 styles/primitives.css，
+      # 任何组件再复制一份逐字同值的规则就红；每文件的规则计数也只许降。
+      # 没有这条，下一次拆分照样会把 `.btn` 复制进新组件，R 类整理就白做了。
+      - name: Primitives guard (check:primitives)
+        run: npm run check:primitives
+
       # 存盘方式守卫（2026-10-14 安卓模拟器实测立）：blob + `<a download>` 在 Capacitor 的
       # WebView 里静默无效（不报错、无下载记录、全盘搜不到文件），所以存盘必须走 utils/save-blob.ts。
       # 基线已清零（2026-10-15 实测：存量 0 处 / 基线 0 处，9 处导出全部改走 saveBlob），
@@ -176,6 +193,18 @@ jobs:
       # 该门禁此前只在本地证据包执行，CI 无护栏 —— 2026-10-03 补。必须在 Build 之后。
       - name: ORT first-screen guard (check:ort)
         run: npm run check:ort
+
+      # README 门禁清单对账（2026-10-19 立）：把 quality-gates 里每条 `npm run X`（不含
+      # `X:self-test` 伴生步）与中英两份 README 的"本地开发门禁"代码块双向比对，
+      # 缺一条或多一条都红，CI 侧解析到 0 条也红（防判据空跑）。
+      # 起因：check:file-size / check:control-size / check:primitives / check:no-release-assets
+      # 四条早已进 CI，README 一条没提；清单靠人手抄就会一直漂。放在最后一步，
+      # 前面新增的守卫这一轮就能被它对出来。
+      - name: README gates parity (check:readme-gates)
+        run: npm run check:readme-gates
+
+      - name: README gates parity self-test
+        run: npm run check:readme-gates:self-test
 
       # 持久化覆盖率报告供人工查看（不影响门禁结果）
       - name: Upload coverage report

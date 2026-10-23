@@ -42,10 +42,25 @@ const SELF_TEST = argv.includes('--self-test');
  * 而按文件锁照样变红。
  */
 const BASELINE_UNDEF_BARE = {
-  'src/views/StoryEngineView.vue': 55,
-  'src/views/CommunityMarketView.vue': 10,
-  'src/views/WorldBookView.vue': 5,
-  'src/views/CharacterEditorView.vue': 4,
+  'src/views/StoryEngineView.vue': 12,
+  'src/components/story/StoryDetailCharacters.vue': 12,
+  'src/views/CommunityMarketView.vue': 6,
+  // 2026-10-19 R2-4：市场页拆分，4 处裸 --text 随样式搬到子组件，值一处未改：
+  // .card-author(--text) → MarketCard；.search-input 的 --text → MarketToolbar；
+  // .detail-desc/.review-comment 各 1 处 --text → MarketDetailModal。总数 77 不变。
+  'src/components/market/MarketCard.vue': 1,
+  'src/components/market/MarketToolbar.vue': 1,
+  'src/components/market/MarketDetailModal.vue': 2,
+  'src/components/story/StoryUploadModal.vue': 10,
+  'src/components/story/StoryDetailWorld.vue': 9,
+  'src/components/story/StoryDetailPanel.vue': 6,
+  'src/components/worldbook/LorebookBindings.vue': 5,
+  'src/components/story/StoryCard.vue': 4,
+  'src/components/story/StoryProtagonistModal.vue': 4,
+  // 2026-10-19 R2-1：4 处（.wb-bind-info 的 --text 与三条 --border-subtle）随
+  // "世界书绑定"段搬到 CharacterEditorWorldBookSection，值一处未改，只是换了归属。
+  'src/components/character/editor/CharacterEditorWorldBookSection.vue': 4,
+  'src/components/story/StoryQuickSetupPanel.vue': 1,
 };
 
 const SKIP_RE = /(node_modules|dist|public[\\/]vendor|src[\\/]runtime)/;

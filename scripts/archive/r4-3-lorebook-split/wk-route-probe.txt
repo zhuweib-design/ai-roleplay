@@ -1,0 +1,3 @@
+log=["ROUTE HIT http://localhost:5173/mock/v1/chat/completions"]
+127=ERR TypeError: Load failed
+localhost=200 MOCKED

@@ -16,7 +16,7 @@ import {
   validateCharacterCard,
 } from '../core/character-card';
 import { useSettingsStore } from './settings';
-import { saveBlob } from '@/utils/save-blob';
+import { saveBlob, describeSaveResult } from '@/utils/save-blob';
 import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
 import { isCompact } from '@/core/viewport';
 import { createApiClient } from '../api';
@@ -287,7 +287,14 @@ export const useCharacterStore = defineStore('character', () => {
    * @returns 新角色 id
    */
   function createCharacter(): string {
-    const id = `char-${Date.now()}`;
+    // id = 时间戳 + 去重后缀。纯时间戳在同一毫秒内连建两个角色会撞（实测：
+    // 单测里两次 createCharacter 返回同一个 id；批量导入同样可能落在同一毫秒），
+    // 撞了就是两张卡共用一个 id，后面按 id 查找/删除会一起命中。
+    const base = `char-${Date.now()}`;
+    let id = base;
+    for (let n = 1; characters.value.some((c) => c.id === id); n += 1) {
+      id = `${base}-${n}`;
+    }
     const newChar: UICharacter = {
       id,
       name: t('store.newChar'),
@@ -309,7 +316,6 @@ export const useCharacterStore = defineStore('character', () => {
       temperature: 1.0,
       // T-16：不写 maxTokens = 未设置（回落 Profile 级 → 供应商默认）。
       // 旧实现硬编码 4096，会让角色永远携带一个显式值、无条件覆盖 Profile 级配置。
-      worldEntries: [],
       tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
     };
     characters.value.push(newChar);
@@ -342,15 +348,6 @@ export const useCharacterStore = defineStore('character', () => {
     void deleteFromStorage(id);
     if (currentCharacterId.value === id) {
       currentCharacterId.value = characters.value[0]?.id ?? '';
-    }
-  }
-
-  function toggleWorldEntry(characterId: string, entryId: string) {
-    const char = characters.value.find((c) => c.id === characterId);
-    const entry = char?.worldEntries.find((w) => w.id === entryId);
-    if (entry) {
-      entry.enabled = !entry.enabled;
-      void persistCharacter(characterId);
     }
   }
 
@@ -526,8 +523,9 @@ export const useCharacterStore = defineStore('character', () => {
     const char = characters.value.find((c) => c.id === id);
     const safeName = (char?.name ?? 'character').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
     const outcome = await saveBlob(`${safeName}.json`, () => new Blob([json], { type: 'application/json' }));
-    if (outcome === 'cancelled') return false;
-    lastInfo.value = t('char.exported2', { name: safeName });
+    const saved = describeSaveResult(outcome);
+    if (!saved) return false;
+    lastInfo.value = saved.message;
     return true;
   }
 
@@ -632,7 +630,6 @@ export const useCharacterStore = defineStore('character', () => {
          * 此前这里硬编码 4096，导致 **AI 生成的角色**同样无条件覆盖 Profile 级配置，
          * 任务 1 的死代码修复在这条路径上落空。
          */
-        worldEntries: [],
         tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
         attributes: generated.attributes,
       };
@@ -693,7 +690,6 @@ export const useCharacterStore = defineStore('character', () => {
     createCharacter,
     updateCharacter,
     deleteCharacter,
-    toggleWorldEntry,
     toggleFavorite,
     // 需求7：角色与世界书双向绑定
     getBoundWorldBookIds,

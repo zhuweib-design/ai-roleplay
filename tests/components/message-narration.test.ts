@@ -97,19 +97,29 @@ describe('气泡外的心理段', () => {
 });
 
 describe('群聊走同一套分段（漂移守卫）', () => {
-  const src = fs.readFileSync(
-    path.join(SRC, 'views/GroupChatView.vue'),
+  /*
+   * R1-1（2026-10-19）把 GroupChatView 拆成了消息区组件与发送链路 composable：
+   * 分段渲染搬进 `GroupMessageList.vue`，生成时的旁白人称注入搬进 `useGroupComposer.ts`。
+   * 这条守卫要钉的是"群聊别另写一套"，不是"某个字符串必须留在某个文件里"，
+   * 所以改成读拆分后的两个归属文件——断言内容一字未改，只是找对了地方。
+   */
+  const renderer = fs.readFileSync(
+    path.join(SRC, 'components/group/GroupMessageList.vue'),
+    'utf8'
+  );
+  const composer = fs.readFileSync(
+    path.join(SRC, 'composables/useGroupComposer.ts'),
     'utf8'
   );
 
   it('群聊 import 了同一个解析器，且不再把整条 content 直接塞进气泡', () => {
-    expect(src).toContain("import { parseNarrationSegments } from '@/core/narration'");
+    expect(renderer).toContain("import { parseNarrationSegments } from '@/core/narration'");
     // 反向钉住旧写法：气泡里直接插值整条消息 = 标记会裸出来
-    expect(src).not.toMatch(/<div class="msg-content">\{\{\s*msg\.content\s*\}\}/);
-    expect(src).toContain('segmentsOf(msg.content)');
+    expect(renderer).not.toMatch(/<div class="msg-content">\{\{\s*msg\.content\s*\}\}/);
+    expect(renderer).toContain('segmentsOf(msg.content)');
   });
 
   it('群聊恢复了人称注入（曾经因为没接分段而故意关掉）', () => {
-    expect(src).toContain('narrationPerspective: settingsStore.narrationPerspective');
+    expect(composer).toContain('narrationPerspective: settingsStore.narrationPerspective');
   });
 });
