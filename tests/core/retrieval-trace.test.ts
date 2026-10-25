@@ -7,6 +7,8 @@
 import { describe, it, expect } from 'vitest';
 import { toRetrievalTraceItems, RETRIEVAL_TRACE_MAX } from '@core/retrieval-trace';
 import type { VectorRagSource } from '@core/dual-channel-runtime';
+import { uiMsgToChatMsg, chatMsgToUiMsg } from '@/services/type-adapters';
+import type { UIMessage } from '@/types';
 
 const sources = (...items: Array<[string, string]>): VectorRagSource[] =>
   items.map(([id, text]) => ({ id, text, meta: {} }));
@@ -58,5 +60,41 @@ describe('toRetrievalTraceItems', () => {
     const out = toRetrievalTraceItems(many, sources(...src));
     expect(out.map((o) => o.id)).toEqual(many.slice(0, 8).map((h) => h.id));
     expect(out).toHaveLength(8);
+  });
+});
+
+/**
+ * 持久化往返（照 promptTrace 的同名段落）
+ *
+ * 为什么单独立这条：e2e 那边种的是 characters 记录，走不到 `chatMsgToUiMsg`
+ * （从 chats 记录回读时才用得上，见 chat-generation-persistence.ts:195）。
+ * 实测过：把回读那行摘掉，e2e 仍然全绿 ⇒ 这一环只有这里测得到。
+ */
+describe('retrievalTrace 持久化往返', () => {
+  const base: UIMessage = {
+    id: 'm1',
+    role: 'assistant',
+    content: '你喜欢下雨天。',
+    timestamp: 1700000000000,
+  };
+  const trace = toRetrievalTraceItems(
+    [{ id: 'memory:a', score: 0.9123, channel: 'dynamic' }],
+    sources(['memory:a', '用户喜欢在下雨天读书'])
+  );
+
+  it('有痕迹时写入并可回读', () => {
+    const chat = uiMsgToChatMsg({ ...base, retrievalTrace: trace });
+    expect(chat.retrievalTrace).toHaveLength(1);
+    expect(chatMsgToUiMsg(chat)).toMatchObject({
+      retrievalTrace: [{ id: 'memory:a', label: '用户喜欢在下雨天读书', score: 0.912, channel: 'dynamic' }],
+    });
+  });
+
+  it('空痕迹不写字段，旧数据回读为 undefined（零迁移）', () => {
+    expect(uiMsgToChatMsg({ ...base, retrievalTrace: [] })).not.toHaveProperty('retrievalTrace');
+    expect(uiMsgToChatMsg(base)).not.toHaveProperty('retrievalTrace');
+    expect(
+      chatMsgToUiMsg({ id: 'm1', role: 'assistant', content: 'x', timestamp: '2026-01-01T00:00:00.000Z', swipes: [], swipeIndex: 0 })
+    ).not.toHaveProperty('retrievalTrace');
   });
 });

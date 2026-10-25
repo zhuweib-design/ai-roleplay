@@ -73,6 +73,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/modal-touch-target.spec.ts': 2.4,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
   'e2e/model-install-web.spec.ts': 1.8,
+  // 手工登记（2026-10-25）：检索命中回显，2 条各含一次整页加载，单 worker 实测 1.7 + 1.3 = 3.0s。
+  'e2e/retrieval-trace.spec.ts': 3.0,
   'e2e/theme-flow.spec.ts': 1.7,
   'e2e/theme-visual.spec.ts': 21.7,
   'e2e/token-neutrality.spec.ts': 81.7,
@@ -116,7 +118,7 @@ export const E2E_GROUPS = [
     'e2e/ux-narrow-editor-preview.spec.ts',
   ],
   // 第 2 组：实测 220s（2026-10-18 手工加入 group-composition 10s、force-desktop 28s、worldbook-composition 16s ⇒ 约 275s；
-  // 2026-10-25 手工加入 modal-touch-target 2.4s ⇒ 约 277s）
+  // 2026-10-25 手工加入 modal-touch-target 2.4s、retrieval-trace 3.0s ⇒ 约 280s）
   [
     'e2e/backup-restore.spec.ts',
     'e2e/character-batch-import.spec.ts',
@@ -129,6 +131,7 @@ export const E2E_GROUPS = [
     'e2e/mobile/modal-touch-target.spec.ts',
     'e2e/mobile/worldbook-composition.spec.ts',
     'e2e/model-install-web.spec.ts',
+    'e2e/retrieval-trace.spec.ts',
     'e2e/ux-interaction-feedback.spec.ts',
     'e2e/ux-quick-forms.spec.ts',
     'e2e/ux-status-color.spec.ts',
