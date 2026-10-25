@@ -139,7 +139,6 @@ export default {
   'trace.retrievalMemory': '记忆',
   'trace.retrievalDocument': '资料',
   'trace.retrievalLore': '设定',
-  'trace.retrievalScore': '相关度 {score}',
   // L 层：角色关联面板（判据唯一来源 src/core/relations.ts）
   'rel.title': '角色关联',
   'rel.hint': '每一行都能一跳到达对应模块',

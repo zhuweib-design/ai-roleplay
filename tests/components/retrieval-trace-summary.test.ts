@@ -65,9 +65,10 @@ describe('RetrievalTraceSummary', () => {
     ]);
   });
 
-  it('原始分数留在悬停提示里，且说明它不是跨来源可比的指标', async () => {
+  it('界面上不给分数（三路口径不同），也不挂原生 title', async () => {
     const wrapper = await mountExpanded();
     const first = wrapper.findAll('.retrieval-trace-item')[0]!;
-    expect(first.attributes('title')).toBe(t('trace.retrievalScore', { score: 0.912 }));
+    expect(first.attributes('title')).toBeUndefined();
+    expect(first.text()).not.toContain('0.912');
   });
 });

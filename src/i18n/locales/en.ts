@@ -139,7 +139,6 @@ const en: Record<MessageKey, string> = {
   'trace.retrievalMemory': 'Memory',
   'trace.retrievalDocument': 'Document',
   'trace.retrievalLore': 'Lore',
-  'trace.retrievalScore': 'relevance {score}',
   // L 层：角色关联面板（判据唯一来源 src/core/relations.ts）
   'rel.title': 'Character links',
   'rel.hint': 'Each row jumps straight to the module it refers to',

@@ -107,8 +107,8 @@ test.describe('检索命中回显（C-03）', () => {
     const rows = bubble.locator('.retrieval-trace-item');
     await expect(rows).toHaveCount(3);
     await expect(rows.nth(0)).toContainText('用户喜欢在下雨天读书');
-    // 分数不上脸（三路口径不同），只在悬停提示里
-    await expect(rows.nth(0)).toHaveAttribute('title', /0\.912/);
+    // 分数不上脸（三路口径不同），也不挂原生 title
+    await expect(rows.nth(0)).not.toHaveAttribute('title', /.*/);
     await expect(rows.nth(1)).toContainText('旅行手记：城市的地下铁网');
     await expect(rows.nth(2)).toContainText('永恒酒馆');
 

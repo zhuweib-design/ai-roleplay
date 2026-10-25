@@ -45,14 +45,10 @@ const list = computed(() => props.items ?? []);
     </button>
 
     <ul v-if="open" class="retrieval-trace-list" role="list">
-      <!-- 分数只进 title 不摆在脸上：三路打分口径不同（相似度 / 关键词命中数 / 精确度加权），
-           并排显示 "0.912" 与 "2" 会让读者误以为 2 更相关。顺序已经表达了"谁更靠前"。 -->
-      <li
-        v-for="item in list"
-        :key="item.id"
-        class="retrieval-trace-item"
-        :title="t('trace.retrievalScore', { score: item.score })"
-      >
+      <!-- 界面上不给分数：三路打分口径不同（相似度 / 关键词命中数 / 精确度加权），并排显示
+           "0.912" 与 "2" 会让读者误以为 2 更相关；顺序已经表达了"谁更靠前"。分数仍随消息落盘，
+           供诊断用。也刻意不用原生 title（本项目有无障碍守卫：非交互元素不许挂 title）。 -->
+      <li v-for="item in list" :key="item.id" class="retrieval-trace-item">
         <span class="retrieval-trace-channel">{{ sourceLabel(item.source) }}</span>
         <span class="retrieval-trace-label">{{ item.label }}</span>
       </li>
