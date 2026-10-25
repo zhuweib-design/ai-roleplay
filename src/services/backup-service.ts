@@ -66,6 +66,8 @@ export async function exportAll(
   }
   const trKey = settings?.translationConfig?.apiKey;
   if (trKey && !isEncrypted(trKey)) plaintextKeys.push(t('backup.translationKey'));
+  const imageGenKey = settings?.imageGenConfig?.apiKey;
+  if (imageGenKey && !isEncrypted(imageGenKey)) plaintextKeys.push(t('backup.imageGenKey'));
   // P1-4：远程向量网关密钥存于 localStorage['aijiuguan.remoteEmbedding']（不在
   // settings 内），此前游离于明文检查之外 —— 导出备份时会带着明文一起走。
   try {
