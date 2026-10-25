@@ -135,7 +135,7 @@ defineExpose({ handleSearchJump, clearHighlight });
         :key="msg.id"
         :data-message-id="msg.id"
         :class="{ 'message-search-active': highlightedMessageId === msg.id }"
-        v-memo="[msg.content, msg.thinking, msg.reasoningTokens, msg.status, msg.generating, msg.narration, msg.narrationAfter, msg.promptTrace, msg.eventTrace, highlightedMessageId === msg.id]"
+        v-memo="[msg.content, msg.thinking, msg.reasoningTokens, msg.status, msg.generating, msg.narration, msg.narrationAfter, msg.promptTrace, msg.eventTrace, msg.retrievalTrace, highlightedMessageId === msg.id]"
         :msg="msg"
         @action="(msgId: string, action: string) => emit('action', msgId, action)"
         @longpress="(msgId: string) => emit('longpress', msgId)"

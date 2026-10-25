@@ -135,6 +135,10 @@ export default {
   'trace.openBook': '打开世界书「{name}」',
   'trace.eventsSummary': '本轮带入 {count} 条随机事件',
   'trace.eventsOpen': '打开随机事件页',
+  'trace.retrievalSummary': '本轮检索命中 {count} 条',
+  'trace.retrievalMemory': '记忆',
+  'trace.retrievalStatic': '设定',
+  'trace.retrievalScore': '相关度 {score}',
   // L 层：角色关联面板（判据唯一来源 src/core/relations.ts）
   'rel.title': '角色关联',
   'rel.hint': '每一行都能一跳到达对应模块',

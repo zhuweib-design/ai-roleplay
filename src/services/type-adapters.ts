@@ -291,6 +291,8 @@ export function uiMsgToChatMsg(ui: UIMessage): ChatMessage {
     ...(ui.promptTrace && ui.promptTrace.length > 0 ? { promptTrace: ui.promptTrace } : {}),
     // E11：随机事件注入痕迹随消息持久化（同款可选字段；无事件时不写）
     ...(ui.eventTrace && ui.eventTrace.length > 0 ? { eventTrace: ui.eventTrace } : {}),
+    // C-03：检索命中痕迹随消息持久化（同款可选字段；无命中时不写）
+    ...(ui.retrievalTrace && ui.retrievalTrace.length > 0 ? { retrievalTrace: ui.retrievalTrace } : {}),
   };
 }
 
@@ -325,6 +327,8 @@ export function chatMsgToUiMsg(msg: ChatMessage): UIMessage | null {
     ...(msg.promptTrace && msg.promptTrace.length > 0 ? { promptTrace: msg.promptTrace } : {}),
     // E11：随机事件注入痕迹回读（旧数据无此字段 → undefined → 不渲染回显）
     ...(msg.eventTrace && msg.eventTrace.length > 0 ? { eventTrace: msg.eventTrace } : {}),
+    // C-03：检索命中痕迹回读（旧数据无此字段 → undefined → 不渲染回显）
+    ...(msg.retrievalTrace && msg.retrievalTrace.length > 0 ? { retrievalTrace: msg.retrievalTrace } : {}),
   };
 }
 

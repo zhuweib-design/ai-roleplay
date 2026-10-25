@@ -10,6 +10,7 @@ import type { ReasoningEffort } from '@api/types';
 import type { CharacterStatus, StatusSchema, StatusHudConfig } from '@core/status-schema';
 import type { PromptTraceItem } from '@core/lorebook-scanner'
 import type { EventTraceItem } from '@core/event-trace';
+import type { RetrievalTraceItem } from '@core/retrieval-trace';
 import { t } from '@/i18n';
 
 /**
@@ -70,6 +71,11 @@ export interface UIMessage {
    * 必须在组装提示词那一刻写——事件表只在内存里，刷新后当初那条就没了。
    */
   eventTrace?: EventTraceItem[];
+  /**
+   * C-03：本轮双通道检索实际命中了哪几条（记忆 / 设定资料，含相关度）。
+   * 与 promptTrace 同构：可选字段，旧数据无此字段 → undefined → 不渲染，零迁移。
+   */
+  retrievalTrace?: RetrievalTraceItem[];
   timestamp: number;
 }
 

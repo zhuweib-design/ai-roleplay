@@ -32,6 +32,7 @@ import { type ApiErrorKind } from '../api/types';
 import { uiCharToCard, uiMsgsToChatMsgs } from '../services/type-adapters';
 import { buildChatSessionContext } from './chat-context';
 import { toEventTraceItems } from '@core/event-trace';
+import { toRetrievalTraceItems } from '@core/retrieval-trace';
 import {
   buildVectorRagInjection,
   getRagDynamicModel,
@@ -365,6 +366,10 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
             // 事件表只在内存里（stores/events.ts 注明），刷新后当初那条就没了。
             const eventTrace = toEventTraceItems(ctx.activatedEvents);
             liveMsg.eventTrace = eventTrace.length ? eventTrace : undefined;
+            // C-03：双通道检索的命中同样只在这一刻拿得到（hits 本来就返回了，此前只取 text，
+            // 于是"这轮到底检索到了什么"整条链路没有任何地方可见）。
+            const retrievalTrace = toRetrievalTraceItems(vectorRag.hits, [...staticEntries, ...dynamicEntries]);
+            liveMsg.retrievalTrace = retrievalTrace.length ? retrievalTrace : undefined;
           },
           onEmotionUpdated: () => {
             void memoryStore.persistLocalMemoryStore();
@@ -514,6 +519,8 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
     target.promptTrace = undefined;
     // E11：本轮的事件痕迹属于上一轮，重新生成必须一起清掉
     target.eventTrace = undefined;
+    // C-03：检索痕迹同理属于上一轮
+    target.retrievalTrace = undefined;
     target.generating = true;
 
     // 转换 UI → 核心
@@ -599,6 +606,9 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
             // 所以痕迹同样要重算，不能留着上一轮的那条。
             const eventTrace = toEventTraceItems(ctx.activatedEvents);
             target.eventTrace = eventTrace.length ? eventTrace : undefined;
+            // C-03：重新生成用的是新一轮的检索结果，痕迹要重算，不能留上一轮那份
+            const retrievalTrace = toRetrievalTraceItems(vectorRag.hits, [...staticEntries, ...dynamicEntries]);
+            target.retrievalTrace = retrievalTrace.length ? retrievalTrace : undefined;
           },
           onEmotionUpdated: () => {
             void memoryStore.persistLocalMemoryStore();

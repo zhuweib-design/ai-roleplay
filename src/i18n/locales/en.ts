@@ -135,6 +135,10 @@ const en: Record<MessageKey, string> = {
   'trace.openBook': 'Open lorebook “{name}”',
   'trace.eventsSummary': '{count} random events carried into this turn',
   'trace.eventsOpen': 'Open the random events page',
+  'trace.retrievalSummary': '{count} retrieval hits in this turn',
+  'trace.retrievalMemory': 'Memory',
+  'trace.retrievalStatic': 'Lore',
+  'trace.retrievalScore': 'relevance {score}',
   // L 层：角色关联面板（判据唯一来源 src/core/relations.ts）
   'rel.title': 'Character links',
   'rel.hint': 'Each row jumps straight to the module it refers to',

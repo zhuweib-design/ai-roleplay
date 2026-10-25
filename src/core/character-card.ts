@@ -12,6 +12,7 @@ import type { ReasoningEffort, SamplingParams } from '@api/types';
 import type { CharacterStatus, StatusSchema } from '@core/status-schema';
 import type { PromptTraceItem } from '@core/lorebook-scanner';
 import type { EventTraceItem } from '@core/event-trace';
+import type { RetrievalTraceItem } from '@core/retrieval-trace';
 import type { PresetId } from '@core/creation-preset';
 
 /** 单个属性项（键值对，支持数值或文本类型） */
@@ -78,6 +79,11 @@ export interface ChatMessage {
    * 与 promptTrace 同构：可选字段，旧数据无此字段 → undefined → 不渲染，零迁移。
    */
   eventTrace?: EventTraceItem[];
+  /**
+   * C-03：本轮双通道检索命中的条目（含相关度）。
+   * 与 promptTrace / eventTrace 同构：可选字段，旧数据无此字段 → undefined → 不渲染，零迁移。
+   */
+  retrievalTrace?: RetrievalTraceItem[];
 }
 
 /**

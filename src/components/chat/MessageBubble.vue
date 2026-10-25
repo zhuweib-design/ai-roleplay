@@ -7,6 +7,7 @@ import ThinkingBlock from './ThinkingBlock.vue';
 import StatusHud from './StatusHud.vue';
 import PromptTraceSummary from './PromptTraceSummary.vue';
 import EventTraceSummary from './EventTraceSummary.vue';
+import RetrievalTraceSummary from './RetrievalTraceSummary.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { computed, getCurrentInstance, onBeforeUnmount } from 'vue';
 import { t } from '@/i18n';
@@ -209,6 +210,8 @@ onBeforeUnmount(cancelLongPress);
       <PromptTraceSummary :items="msg.promptTrace" />
       <!-- E11：本轮带入了哪几条随机事件（可跳随机事件页）；无事件时不渲染 -->
       <EventTraceSummary :items="msg.eventTrace" />
+      <!-- C-03：本轮检索命中了哪几条（记忆 / 设定，含相关度）；无命中时不渲染 -->
+      <RetrievalTraceSummary :items="msg.retrievalTrace" />
     </div>
   </div>
 </template>
