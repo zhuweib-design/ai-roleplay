@@ -121,6 +121,25 @@ textarea,
   .hover-bright:hover { filter: brightness(1.12); }
 }
 
+/* 共享输入框基类：此前全仓只有 .tk-input:focus，没有基础盒模型，
+   只写 .tk-input 的控件会落成浏览器原生白框（快速建角色/建世界书）。
+   已有 scoped 类（.char-search-input 等）特异性更高，不会被这里改写。 */
+.tk-input {
+  min-height: var(--size-control-md);
+  padding: var(--space-1-5) var(--space-2);
+  background: var(--video-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 640px) {
+  /* 与 app-global.css 的 16px 兜底同口径，避免 iOS 聚焦放大 */
+  .tk-input { font-size: var(--font-size-lg); }
+}
+
 /* 输入框焦点：边框变色 + 外发光环（深色主题清晰可见，WCAG 2.4.7）
    注意：不设 outline:none —— 由下方全局 :focus-visible outline(var(--ring)) 兜底，
    保证键盘焦点指示对比度 ≥3:1（P2-4） */

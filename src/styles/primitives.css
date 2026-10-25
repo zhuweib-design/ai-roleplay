@@ -76,3 +76,84 @@
   font-size: 12px;
   gap: 4px;
 }
+
+/* ── 弹窗动作按钮族 ──
+   18 个文件使用 .modal-btn，但只有 10 个各自抄了基础样式；缺定义的 7 个组件
+   直接落成浏览器原生按钮（首次引导弹窗就在其中）。这里补全局基类：
+   组件内 scoped 规则是 0,2,0，稳定压过本文件的 0,1,0，已有外观零变化。 */
+.modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-elevated);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.modal-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.modal-btn:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .modal-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--foreground) 8%, var(--card-elevated));
+  }
+}
+
+/* 手机命中区撑到 44 用透明伪元素，不改 height：10 份 scoped `.modal-btn` 各自写着
+   `height:32px`（特异性 0,2,0，压过本文件的 0,1,0），改全局高度只会让"有 scoped 复制的
+   弹窗"与"缺定义的 7 个弹窗"在手机上分成两档。伪元素不吃布局，两类弹窗同一档、视觉零变化。
+   统一把 height 抬到 44 仍属 2D-P1-04（要连那 10 份复制一起改并做像素核对），排下一周期。
+   46 而不是 44：探针按 1px 步进，正好 44 时边界像素不属于元素，量出来是 43。 */
+@media (max-width: 640px) {
+  .modal-btn,
+  .modal-close {
+    position: relative;
+  }
+  .modal-btn::after,
+  .modal-close::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(var(--touch-min) + 2px);
+    height: calc(var(--touch-min) + 2px);
+    transform: translate(-50%, -50%);
+  }
+}
+
+.modal-confirm,
+.modal-next {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.modal-danger,
+.modal-btn.danger {
+  background: var(--error);
+  border-color: var(--error);
+  color: var(--on-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .modal-confirm:hover:not(:disabled),
+  .modal-next:hover:not(:disabled) {
+    background: var(--tk-red-600);
+    border-color: var(--tk-red-600);
+  }
+}
