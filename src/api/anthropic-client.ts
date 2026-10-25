@@ -9,6 +9,7 @@ import {
 } from './anthropic-protocol';
 import { toDevProxyUrl } from './openai-protocol';
 import { isHostReachable } from './cors-probe';
+import { findSSEEventBoundary } from './sse-boundary';
 import {
   toAnthropicBudget,
   resolveAnthropicThinkingMode,
@@ -240,10 +241,12 @@ export class AnthropicClient implements ApiClient {
 
         buffer += decoder.decode(chunk.value, { stream: true });
 
-        let eventEnd: number;
-        while ((eventEnd = buffer.indexOf('\n\n')) >= 0) {
-          const rawEvent = buffer.slice(0, eventEnd);
-          buffer = buffer.slice(eventEnd + 2);
+        // 事件边界：\n\n 与 \r\n\r\n 都合法（见 sse-boundary.ts 的成因说明）
+        let boundary = findSSEEventBoundary(buffer);
+        while (boundary) {
+          const rawEvent = buffer.slice(0, boundary.index);
+          buffer = buffer.slice(boundary.index + boundary.length);
+          boundary = findSSEEventBoundary(buffer);
 
           const parsed = parseAnthropicSSEEvent(rawEvent);
           if (!parsed) continue;

@@ -376,11 +376,12 @@ async fn run_chat_stream(
         // 累积字节（不做逐 chunk lossy 解码，多字节字符可跨 chunk）
         buffer.extend_from_slice(&chunk);
 
-        // 按事件边界（\n\n）切分；事件块完整后再解码，避免截断多字节 UTF-8
-        while let Some(event_end) = buffer.windows(2).position(|w| w == b"\n\n") {
+        // 按事件边界切分；事件块完整后再解码，避免截断多字节 UTF-8
+        // SSE 规范允许 \n\n 与 \r\n\r\n 两种分隔符，只认前者会让 CRLF 网关切不出事件
+        while let Some((event_end, sep_len)) = find_event_boundary(&buffer) {
             let raw_event =
                 String::from_utf8_lossy(&buffer[..event_end]).into_owned();
-            buffer.drain(..event_end + 2);
+            buffer.drain(..event_end + sep_len);
 
             if let Some(parsed) = parse_sse_event(&raw_event) {
                 match parsed {
@@ -610,6 +611,19 @@ enum ParsedSSE {
 ///
 /// data: [DONE]
 /// ```
+/// 找下一个 SSE 事件边界，返回 (起始下标, 分隔符长度)。
+/// 两种分隔符同时存在时取更靠前的那个；都没有表示事件还没收全。
+fn find_event_boundary(buffer: &[u8]) -> Option<(usize, usize)> {
+    let lf = buffer.windows(2).position(|w| w == b"\n\n").map(|i| (i, 2));
+    let crlf = buffer.windows(4).position(|w| w == b"\r\n\r\n").map(|i| (i, 4));
+    match (lf, crlf) {
+        (Some(a), Some(b)) => Some(if b.0 < a.0 { b } else { a }),
+        (Some(a), None) => Some(a),
+        (None, Some(b)) => Some(b),
+        (None, None) => None,
+    }
+}
+
 fn parse_sse_event(raw: &str) -> Option<ParsedSSE> {
     let mut data_lines: Vec<&str> = Vec::new();
 
@@ -1092,5 +1106,18 @@ mod usage_tests {
         assert_eq!(req3.presence_penalty, None);
         assert_eq!(req3.frequency_penalty, None);
         assert_eq!(req3.reasoning_effort, None);
+    }
+
+    #[test]
+    fn find_event_boundary_accepts_lf_and_crlf() {
+        let lf: &[u8] = b"data: a\n\ndata: b";
+        assert_eq!(find_event_boundary(lf), Some((7, 2)));
+
+        let crlf: &[u8] = b"data: a\r\n\r\ndata: b";
+        assert_eq!(find_event_boundary(crlf), Some((7, 4)));
+
+        // 事件还没收全时必须返回 None，让上层继续等下一个 chunk
+        let partial: &[u8] = b"data: a";
+        assert_eq!(find_event_boundary(partial), None);
     }
 }
