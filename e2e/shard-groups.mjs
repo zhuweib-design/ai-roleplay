@@ -72,6 +72,8 @@ export const SPEC_WEIGHTS = {
   // 手工登记（2026-10-25）：弹窗内部命中区，2 条各含一次整页加载，单 worker 实测 1.1 + 1.3 = 2.4s。
   'e2e/mobile/modal-touch-target.spec.ts': 2.4,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
+  // 手工登记（2026-10-25）：供应商预填，2 条各含一次设置页加载，单 worker 实测 2.9 + 1.8 = 4.7s。
+  'e2e/model-profile-presets.spec.ts': 4.7,
   'e2e/model-install-web.spec.ts': 1.8,
   // 手工登记（2026-10-25）：检索命中回显，2 条各含一次整页加载，单 worker 实测 1.7 + 1.3 = 3.0s。
   'e2e/retrieval-trace.spec.ts': 3.0,
@@ -118,7 +120,7 @@ export const E2E_GROUPS = [
     'e2e/ux-narrow-editor-preview.spec.ts',
   ],
   // 第 2 组：实测 220s（2026-10-18 手工加入 group-composition 10s、force-desktop 28s、worldbook-composition 16s ⇒ 约 275s；
-  // 2026-10-25 手工加入 modal-touch-target 2.4s、retrieval-trace 3.0s ⇒ 约 280s）
+  // 2026-10-25 手工加入 modal-touch-target 2.4s、retrieval-trace 3.0s、model-profile-presets 4.7s ⇒ 约 285s）
   [
     'e2e/backup-restore.spec.ts',
     'e2e/character-batch-import.spec.ts',
@@ -130,6 +132,7 @@ export const E2E_GROUPS = [
     'e2e/mobile/group-composition.spec.ts',
     'e2e/mobile/modal-touch-target.spec.ts',
     'e2e/mobile/worldbook-composition.spec.ts',
+    'e2e/model-profile-presets.spec.ts',
     'e2e/model-install-web.spec.ts',
     'e2e/retrieval-trace.spec.ts',
     'e2e/ux-interaction-feedback.spec.ts',

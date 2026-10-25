@@ -38,6 +38,42 @@ function toOptionalNumber(v: string | number): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+export type ProviderValue = 'openai' | 'anthropic' | 'custom' | 'deepseek' | 'local';
+
+export interface ProviderPreset {
+  value: ProviderValue;
+  /** 选它时预填的端点 */
+  defaultBaseUrl: string;
+  /** 选它时预填的模型名；空串表示"这家没法预填，让用户自己填" */
+  defaultModel: string;
+}
+
+/**
+ * 切换供应商时"该跟着换的才换"（C-01 零配置首聊）
+ *
+ * 现场：新建配置的初值是 OpenAI，用户切到 Anthropic 时端点还停在 api.openai.com、
+ * 模型还停在 gpt-4o —— 点"测试连接"必然失败，而界面上看不出是没跟着切。
+ * 判据是"当前值还是上一家的默认值（或空）"：手填过的一律不动，只补没动过的。
+ */
+export function resolveProviderDefaults(
+  current: { baseUrl: string; model: string },
+  from: ProviderPreset | undefined,
+  to: ProviderPreset
+): { baseUrl?: string; model?: string } {
+  const untouched = (value: string, previous: string | undefined): boolean => {
+    const v = value.trim();
+    return v === '' || (!!previous && v === previous);
+  };
+  const patch: { baseUrl?: string; model?: string } = {};
+  if (untouched(current.baseUrl, from?.defaultBaseUrl) && current.baseUrl.trim() !== to.defaultBaseUrl) {
+    patch.baseUrl = to.defaultBaseUrl;
+  }
+  if (untouched(current.model, from?.defaultModel) && current.model.trim() !== to.defaultModel) {
+    patch.model = to.defaultModel;
+  }
+  return patch;
+}
+
 export function useModelProfileForm() {
   const settings = useSettingsStore();
   const chatStore = useChatStore();
@@ -206,17 +242,33 @@ export function useModelProfileForm() {
   }
 
   // provider 选项（computed：普通 const 会把标签快照在 setup 那一刻，切语言不动）
-  const providerOptions = computed<
-    Array<{ value: 'openai' | 'anthropic' | 'custom' | 'deepseek' | 'local'; label: string; defaultBaseUrl: string }>
-  >(() => [
-    { value: 'openai', label: t('modelPanel.providerOpenai'), defaultBaseUrl: 'https://api.openai.com' },
-    { value: 'deepseek', label: t('modelPanel.providerDeepseek'), defaultBaseUrl: 'https://api.deepseek.com' },
-    { value: 'anthropic', label: t('modelPanel.providerAnthropic'), defaultBaseUrl: 'https://api.anthropic.com' },
-    { value: 'custom', label: t('modelPanel.providerCustom'), defaultBaseUrl: '' },
-    { value: 'local', label: t('modelPanel.providerLocal'), defaultBaseUrl: '' },
+  const providerOptions = computed<Array<ProviderPreset & { label: string }>>(() => [
+    {
+      value: 'openai',
+      label: t('modelPanel.providerOpenai'),
+      defaultBaseUrl: 'https://api.openai.com',
+      defaultModel: 'gpt-4o',
+    },
+    {
+      value: 'deepseek',
+      label: t('modelPanel.providerDeepseek'),
+      defaultBaseUrl: 'https://api.deepseek.com',
+      defaultModel: 'deepseek-chat',
+    },
+    {
+      value: 'anthropic',
+      label: t('modelPanel.providerAnthropic'),
+      defaultBaseUrl: 'https://api.anthropic.com',
+      // 别名写法，不带日期戳；供应商改名时只改这一处
+      defaultModel: 'claude-sonnet-4-5',
+    },
+    // 自定义端点与本地模型没法预填模型名：留空让用户填，比塞一个错的强
+    { value: 'custom', label: t('modelPanel.providerCustom'), defaultBaseUrl: '', defaultModel: '' },
+    { value: 'local', label: t('modelPanel.providerLocal'), defaultBaseUrl: '', defaultModel: '' },
   ]);
 
   function resetForm() {
+    lastProvider.value = 'openai';
     form.value = {
       id: '',
       name: '',
@@ -248,6 +300,7 @@ export function useModelProfileForm() {
       presencePenalty: tpl.sampling?.presencePenalty ?? '',
       frequencyPenalty: tpl.sampling?.frequencyPenalty ?? '',
     };
+    lastProvider.value = form.value.provider;
     editMode.value = 'create';
   }
 
@@ -264,15 +317,22 @@ export function useModelProfileForm() {
       presencePenalty: profile.sampling?.presencePenalty ?? '',
       frequencyPenalty: profile.sampling?.frequencyPenalty ?? '',
     };
+    lastProvider.value = form.value.provider;
     editMode.value = 'edit';
   }
 
+  /** 上一次选中的供应商：切走时靠它判断"端点和模型还是不是上一家的默认值" */
+  const lastProvider = ref<ProviderValue>('openai');
+
   function onProviderChange() {
-    // 切换 provider 时自动填充默认 baseUrl
-    const opt = providerOptions.value.find((o) => o.value === form.value.provider);
-    if (opt && !form.value.baseUrl.trim()) {
-      form.value.baseUrl = opt.defaultBaseUrl;
+    const from = providerOptions.value.find((o) => o.value === lastProvider.value);
+    const to = providerOptions.value.find((o) => o.value === form.value.provider);
+    if (to) {
+      const patch = resolveProviderDefaults(form.value, from, to);
+      if (patch.baseUrl !== undefined) form.value.baseUrl = patch.baseUrl;
+      if (patch.model !== undefined) form.value.model = patch.model;
     }
+    lastProvider.value = form.value.provider;
   }
 
   /**
