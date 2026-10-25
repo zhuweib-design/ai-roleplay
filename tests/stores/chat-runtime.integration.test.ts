@@ -253,8 +253,8 @@ describe('Chat Store — Runtime 实际链路', () => {
       createGroup: create, getGroupState, setGroupStatus, commitTurn: commit, buildMemberContext: context,
       enqueueTurn, listPendingTurns, retryPendingTurns,
       addMember, removeMember, listTurns,
-    });
-    const single = createRuntimeHttpHandler(characterApi);
+    }, { allowAnonymous: true });
+    const single = createRuntimeHttpHandler(characterApi, { allowAnonymous: true });
     const paths: string[] = [];
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const request = new Request(input, init);

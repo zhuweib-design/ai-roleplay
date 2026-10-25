@@ -542,6 +542,7 @@ const en: Record<MessageKey, string> = {
   'charList.archive': 'Archive',
   'charList.unarchive': 'Unarchive',
   'charList.newSessionDraft': 'New draft conversation created — it appears in the list after your first message',
+  'charList.generatingBusy': 'A reply is still being generated — stop it or wait before switching conversations',
   'charList.sessionDeleted': 'Conversation "{name}" deleted',
   'charList.archivedToast': 'Conversation archived (badge shown on its row)',
   'charList.unarchivedToast': 'Conversation restored to active',
@@ -2805,6 +2806,7 @@ const en: Record<MessageKey, string> = {
 
   // ── Backup / import / export (backup-service) ──
   'backup.translationKey': 'translation API key',
+  'backup.imageGenKey': 'image generation API key',
   'backup.remoteEmbeddingKey': 'remote embedding gateway API key',
   'backup.plainKeysBlocked': 'Export blocked by plaintext keys: {keys}',
   'backup.abortedPlainKeys': 'Backup aborted: unencrypted API keys detected ({keys}). Set a master password in Settings (then retry), or clear these API keys.',

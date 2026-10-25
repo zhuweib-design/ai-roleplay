@@ -541,6 +541,7 @@ export default {
   'charList.archive': '归档',
   'charList.unarchive': '取消归档',
   'charList.newSessionDraft': '已新建空白会话，发送首条消息后才会保存到列表',
+  'charList.generatingBusy': '正在生成回复，先等它结束或点停止再切换会话',
   'charList.sessionDeleted': '会话「{name}」已删除',
   'charList.archivedToast': '会话已归档，可在会话行查看标记',
   'charList.unarchivedToast': '会话已恢复为活跃状态',
@@ -2805,6 +2806,7 @@ export default {
 
   // ── 备份/导入/导出（backup-service） ──
   'backup.translationKey': '翻译 API Key',
+  'backup.imageGenKey': '图像生成 API Key',
   'backup.remoteEmbeddingKey': '远程向量网关 API Key',
   'backup.plainKeysBlocked': '明文密钥阻止导出:{keys}',
   'backup.abortedPlainKeys': '备份中止：检测到未加密的 API Key（{keys}）。请先在设置中设置主密码（自动加密后重试），或清除这些 API Key。',

@@ -49,6 +49,8 @@ export class ChatManager {
   private config: ChatManagerConfig;
   private abortController: AbortController | null = null;
   private _isGenerating = false;
+  /** 是否收到过停止请求（含 prompt 构建中、AbortController 尚未创建的窗口） */
+  private stopRequested = false;
 
   constructor(config: ChatManagerConfig) {
     this.config = config;
@@ -75,6 +77,8 @@ export class ChatManager {
     if (this._isGenerating) {
       throw new Error(t('api.chatRunning'));
     }
+    // 每次新请求重置停止标记，避免上一次的停止影响本次
+    this.stopRequested = false;
 
     const merged = { ...this.config, ...params.overrides };
     const promptSettings: PromptSettings = {
@@ -204,6 +208,13 @@ export class ChatManager {
     }
 
     // 3. 创建 AbortController（支持外部 stop）
+    // prompt 构建期间点过停止：必须在发请求前收口，不能继续创建流
+    if (this.stopRequested) {
+      callbacks?.onError?.(
+        new ApiError(t('api.stopped'), undefined, this.config.apiClient.provider, 'aborted')
+      );
+      return '';
+    }
     this.abortController = new AbortController();
     request.signal = this.abortController.signal;
 
@@ -465,6 +476,7 @@ export class ChatManager {
     } finally {
       this._isGenerating = false;
       this.abortController = null;
+      this.stopRequested = false;
     }
   }
 
@@ -473,9 +485,9 @@ export class ChatManager {
    * 已收到的部分内容会通过 onDone/onError 返回
    */
   stop(): void {
-    if (this.abortController) {
-      this.abortController.abort();
-    }
+    // 先记标记：即使 controller 还没创建（prompt 构建中）也能在发请求前取消
+    this.stopRequested = true;
+    this.abortController?.abort();
   }
 
   /**

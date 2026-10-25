@@ -467,9 +467,10 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
    * 停止当前生成
    */
   function stop(): void {
-    if (chatManager?.isGenerating) {
-      chatManager.stop();
-    }
+    // 不能看 chatManager.isGenerating：prompt 构建期间它是 false，
+    // 但 store 已经是"正在生成"，此时点停止必须能传达到 manager
+    if (!isGenerating.value) return;
+    chatManager?.stop();
   }
 
   /**

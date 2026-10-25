@@ -78,6 +78,10 @@ function formatConvTime(iso: string): string {
 
 function switchChat(chat: Chat) {
   if (!current.value) return;
+  if (chatStore.isGenerating) {
+    showToast('info', t('charList.generatingBusy'));
+    return;
+  }
   void chatStore.openSession(current.value, chat.id);
   characterStore.closeAllDrawers();
 }
@@ -85,6 +89,10 @@ function switchChat(chat: Chat) {
 /** 新建会话：清空当前角色消息缓冲并进入聊天 */
 function newChat() {
   if (!current.value) return;
+  if (chatStore.isGenerating) {
+    showToast('info', t('charList.generatingBusy'));
+    return;
+  }
   chatStore.newSession(current.value);
   characterStore.closeAllDrawers();
   // O-14（REAL_DEVICE_TEST_2026-10-03）：懒创建草稿不进列表，原高亮消失——
@@ -114,6 +122,11 @@ function cancelDelete() {
   confirmDeleteId.value = null;
 }
 function confirmDelete(chat: Chat) {
+  if (chatStore.isGenerating && chat.id === chatStore.activeChatId) {
+    confirmDeleteId.value = null;
+    showToast('info', t('charList.generatingBusy'));
+    return;
+  }
   confirmDeleteId.value = null;
   const name = chat.title;
   void chatStore.deleteSession(current.value ?? null, chat.id).then(() => {
