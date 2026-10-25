@@ -12,7 +12,10 @@ import {
 describe('Runtime HTTP 持久化边界', () => {
   it('Fetch Handler 可以承载角色、Event、Snapshot 和 Context 的完整请求链', async () => {
     const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
-    const handler = createRuntimeHttpHandler(api, { tenantId: 'tenant-a' });
+    const handler = createRuntimeHttpHandler(api, {
+      tenantId: 'tenant-a',
+      principal: { subject: 'test-user', tenantId: 'tenant-a' },
+    });
 
     const createResponse = await handler(
       new Request('http://runtime.test/v1/runtime/characters', {
@@ -107,6 +110,7 @@ describe('Runtime HTTP 持久化边界', () => {
     const store = new InMemoryRuntimeStore();
     const handler = createRuntimeHttpHandler(new RuntimeApiAdapter(new RuntimeCore(store)), {
       tenantId: 'server-tenant',
+      principal: { subject: 'test-user', tenantId: 'server-tenant' },
     });
     const client = new HttpRuntimeApi({
       baseUrl: 'http://runtime.test',
@@ -154,7 +158,7 @@ describe('Runtime HTTP 持久化边界', () => {
       profile: { displayName: '原子 HTTP 角色' },
       now: '2026-09-22T00:00:00.000Z',
     });
-    const handler = createRuntimeHttpHandler(api);
+    const handler = createRuntimeHttpHandler(api, { allowAnonymous: true });
     const response = await handler(new Request(
       `http://runtime.test/v1/runtime/characters/${created.character.id}/turns`,
       {
@@ -192,7 +196,10 @@ describe('Runtime HTTP 持久化边界', () => {
   });
   it('服务端 Handler 使用认证租户覆盖请求体，避免客户端伪造 tenantId', async () => {
     const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
-    const handler = createRuntimeHttpHandler(api, { tenantId: 'tenant-authenticated' });
+    const handler = createRuntimeHttpHandler(api, {
+      tenantId: 'tenant-authenticated',
+      principal: { subject: 'test-user', tenantId: 'tenant-authenticated' },
+    });
     const response = await handler(
       new Request('http://runtime.test/v1/runtime/characters', {
         method: 'POST',
@@ -206,6 +213,17 @@ describe('Runtime HTTP 持久化边界', () => {
     expect(response.status).toBe(201);
     const snapshot = await response.json() as { character: { tenantId: string } };
     expect(snapshot.character.tenantId).toBe('tenant-authenticated');
+  });
+
+  it('默认拒绝没有认证的 Runtime 请求（fail-closed）', async () => {
+    const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
+    const handler = createRuntimeHttpHandler(api, { tenantId: 'tenant-legacy' });
+    const response = await handler(new Request('http://runtime.test/v1/runtime/characters', {
+      method: 'POST',
+      body: JSON.stringify({ profile: { displayName: '匿名写入' } }),
+    }));
+    expect(response.status).toBe(401);
+    expect(await response.json()).toMatchObject({ error: 'AUTHENTICATION_REQUIRED' });
   });
 
   it('开启强制认证后拒绝匿名 Runtime 请求，并使用认证 principal 的租户', async () => {
@@ -321,7 +339,8 @@ describe('Runtime HTTP 持久化边界', () => {
 
   it('重复创建同一角色返回明确的 409 已存在语义', async () => {
     const handler = createRuntimeHttpHandler(
-      new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()))
+      new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore())),
+      { allowAnonymous: true }
     );
     const body = JSON.stringify({
       tenantId: 'tenant-a',
@@ -344,7 +363,7 @@ describe('Runtime HTTP 持久化边界', () => {
       profile: { displayName: '幂等冲突角色' },
       now: '2026-09-22T00:00:00.000Z',
     });
-    const handler = createRuntimeHttpHandler(api);
+    const handler = createRuntimeHttpHandler(api, { allowAnonymous: true });
     const path = `/v1/runtime/characters/${created.character.id}/events`;
     const first = await handler(new Request(`http://runtime.test${path}`, {
       method: 'POST',
@@ -369,7 +388,7 @@ describe('Runtime HTTP 持久化边界', () => {
 
   it('Handler 对畸形请求返回校验错误，且不泄露内部异常', async () => {
     const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
-    const handler = createRuntimeHttpHandler(api);
+    const handler = createRuntimeHttpHandler(api, { allowAnonymous: true });
     const post = (route: string, body: unknown) => handler(new Request(
       `http://runtime.test/v1/runtime/characters/character-1/${route}`,
       { method: 'POST', body: JSON.stringify(body) }
@@ -401,7 +420,7 @@ describe('Runtime HTTP 持久化边界', () => {
       load: async () => null,
       commit: async () => { throw new Error('内部数据库密码不可泄露'); },
     }));
-    const brokenHandler = createRuntimeHttpHandler(brokenApi);
+    const brokenHandler = createRuntimeHttpHandler(brokenApi, { allowAnonymous: true });
     const internalError = await brokenHandler(new Request('http://runtime.test/v1/runtime/characters', {
       method: 'POST',
       body: JSON.stringify({ tenantId: 'tenant-a', profile: { displayName: '安全测试' } }),
@@ -412,7 +431,7 @@ describe('Runtime HTTP 持久化边界', () => {
 
   it('Handler 拒绝不支持方法和非法 JSON', async () => {
     const api = new RuntimeApiAdapter(new RuntimeCore(new InMemoryRuntimeStore()));
-    const handler = createRuntimeHttpHandler(api);
+    const handler = createRuntimeHttpHandler(api, { allowAnonymous: true });
     const methodResponse = await handler(new Request('http://runtime.test/v1/runtime/health', { method: 'PUT' }));
     const jsonResponse = await handler(new Request('http://runtime.test/v1/runtime/characters', { method: 'POST', body: '{' }));
     expect(methodResponse.status).toBe(405);

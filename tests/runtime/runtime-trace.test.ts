@@ -45,7 +45,7 @@ describe('关联 ID 工具', () => {
 describe('单聊 Runtime HTTP 关联 ID', () => {
   it('服务端回显客户端注入的 ID，并通过 onTrace 上报时延', async () => {
     const events: RuntimeTraceEvent[] = [];
-    const handler = createRuntimeHttpHandler(createApi(), { tenantId: 'tenant-a', onTrace: (e) => events.push(e) });
+    const handler = createRuntimeHttpHandler(createApi(), { tenantId: 'tenant-a', allowAnonymous: true, onTrace: (e) => events.push(e) });
     const response = await handler(new Request('http://runtime.test/v1/runtime/health', {
       headers: { [RUNTIME_TRACE_HEADER]: TRACE },
     }));
@@ -58,7 +58,7 @@ describe('单聊 Runtime HTTP 关联 ID', () => {
 
   it('客户端未注入时服务端生成兜底 ID，保证仍可关联', async () => {
     const events: RuntimeTraceEvent[] = [];
-    const handler = createRuntimeHttpHandler(createApi(), { tenantId: 'tenant-a', onTrace: (e) => events.push(e) });
+    const handler = createRuntimeHttpHandler(createApi(), { tenantId: 'tenant-a', allowAnonymous: true, onTrace: (e) => events.push(e) });
     const response = await handler(new Request('http://runtime.test/v1/runtime/health'));
     const echoed = response.headers.get(RUNTIME_TRACE_HEADER);
     expect(echoed).toBeTruthy();
@@ -109,7 +109,7 @@ describe('群聊 Runtime HTTP 关联 ID', () => {
         throw new Error('boom');
       },
     } as unknown as GroupRuntimeApi;
-    const handler = createGroupRuntimeHttpHandler(api, { onTrace: (e) => events.push(e) });
+    const handler = createGroupRuntimeHttpHandler(api, { allowAnonymous: true, onTrace: (e) => events.push(e) });
     const response = await handler(new Request('http://runtime.test/v1/runtime/groups/g', {
       headers: { [RUNTIME_TRACE_HEADER]: TRACE },
     }));
