@@ -7,6 +7,7 @@
  * `text`，所以"这轮到底检索到了什么"连调试界面都答不上来。
  *
  * 与前两条同纪律：只报"注入了"，不报"模型采纳了"（后者无法从界面证明）。
+ * 三路来源的分数口径不同，所以明面上只给"是哪条 + 哪一路"，原始分数放在悬停提示里。
  * label 是注入文本的开头 40 字（记忆事实没有标题字段，这是唯一能认出"是哪一条"的东西），
  * 条数与长度都在 `retrieval-trace.ts` 里封顶。
  */
@@ -16,6 +17,14 @@ import Icon from '@/components/common/Icon.vue';
 import type { RetrievalTraceItem } from '@core/retrieval-trace';
 
 const props = defineProps<{ items?: RetrievalTraceItem[] }>();
+
+/** 三路检索在界面上的叫法，与注入文本里的标记一致（[记忆] / 资料 / 设定） */
+const sourceLabel = (source: RetrievalTraceItem['source']): string =>
+  source === 'memory'
+    ? t('trace.retrievalMemory')
+    : source === 'document'
+      ? t('trace.retrievalDocument')
+      : t('trace.retrievalLore');
 
 const open = ref(false);
 const list = computed(() => props.items ?? []);
@@ -36,14 +45,16 @@ const list = computed(() => props.items ?? []);
     </button>
 
     <ul v-if="open" class="retrieval-trace-list" role="list">
-      <li v-for="item in list" :key="item.id" class="retrieval-trace-item">
-        <span class="retrieval-trace-channel">{{
-          item.channel === 'dynamic' ? t('trace.retrievalMemory') : t('trace.retrievalStatic')
-        }}</span>
+      <!-- 分数只进 title 不摆在脸上：三路打分口径不同（相似度 / 关键词命中数 / 精确度加权），
+           并排显示 "0.912" 与 "2" 会让读者误以为 2 更相关。顺序已经表达了"谁更靠前"。 -->
+      <li
+        v-for="item in list"
+        :key="item.id"
+        class="retrieval-trace-item"
+        :title="t('trace.retrievalScore', { score: item.score })"
+      >
+        <span class="retrieval-trace-channel">{{ sourceLabel(item.source) }}</span>
         <span class="retrieval-trace-label">{{ item.label }}</span>
-        <span class="retrieval-trace-score" :aria-label="t('trace.retrievalScore', { score: item.score })">
-          {{ item.score }}
-        </span>
       </li>
     </ul>
   </div>
@@ -108,10 +119,5 @@ const list = computed(() => props.items ?? []);
 
 .retrieval-trace-label {
   color: var(--foreground);
-}
-
-.retrieval-trace-score {
-  font-family: var(--font-mono, monospace);
-  font-size: 13px;
 }
 </style>

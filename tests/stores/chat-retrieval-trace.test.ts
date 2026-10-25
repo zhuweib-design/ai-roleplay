@@ -17,10 +17,11 @@ import { setActivePinia, createPinia } from 'pinia';
 import 'fake-indexeddb/auto';
 import { useChatStore } from '../../src/stores/chat';
 import { useChatMemoryStore } from '../../src/stores/chat-memory';
+import { useDataBankStore } from '../../src/stores/data-bank';
 import type { UICharacter, ApiProfile } from '@/types';
 
 const ragMock = vi.hoisted(() => ({
-  current: { text: '', hits: [] as Array<{ id: string; score: number; channel: 'dynamic' | 'static' }>, ran: false },
+  current: { text: '', hits: [] as Array<{ id: string; score: number; source: 'memory' | 'static' }>, ran: false },
 }));
 
 vi.mock('@/core/dual-channel-runtime', async (importOriginal) => {
@@ -109,7 +110,7 @@ describe('检索命中痕迹（C-03）store 契约', () => {
 
     ragMock.current = {
       text: '[记忆]注入的正文',
-      hits: [{ id: hitId, score: 0.9123, channel: 'dynamic' }],
+      hits: [{ id: hitId, score: 0.9123, source: 'memory' }],
       ran: true,
     };
 
@@ -121,10 +122,35 @@ describe('检索命中痕迹（C-03）store 契约', () => {
     const ai = char.messages[char.messages.length - 1]!;
     expect(ai.content).toBe('今夜开门。');
     expect(ai.retrievalTrace).toEqual([
-      { id: hitId, label: expect.stringContaining('雨天读书'), score: 0.912, channel: 'dynamic' },
+      { id: hitId, label: expect.stringContaining('雨天读书'), score: 0.912, source: 'memory' },
     ]);
     // 只给开头一段，不把整条事实正文搬进会话记录
     expect([...(ai.retrievalTrace![0]!.label)].length).toBeLessThanOrEqual(41);
+  });
+
+  it('资料库关键词检索与 L0 记忆检索的命中也会进同一条痕迹', async () => {
+    const char = makeCharacter({ id: 'rag-three' });
+    const mem = useChatMemoryStore();
+    await mem.recordLocalConversationMemory(char, '酒馆几点开门', '酒馆从黄昏开到子夜', 'turn-9');
+    const bank = useDataBankStore();
+    const docId = await bank.createDocumentFromFile(
+      new File(['酒馆的账本记着今晚半价，只有常客知道。'], '账本.txt', { type: 'text/plain' }),
+      'character',
+      char.id
+    );
+    expect(docId, '夹具没建出资料库文档，后面两条断言都无意义').toBeTruthy();
+
+    ragMock.current = { text: '', hits: [], ran: true };
+    const chatStore = useChatStore();
+    chatStore.setApiProfile(makeApiProfile());
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(makeSSEResponse('好。'));
+    await chatStore.sendMessage(char, '今晚酒馆开门吗');
+
+    const ai = char.messages[char.messages.length - 1]!;
+    const bySource = new Map((ai.retrievalTrace ?? []).map((t) => [t.source, t]));
+    expect(bySource.has('document'), `资料库命中的分块没进痕迹：${JSON.stringify(ai.retrievalTrace)}`).toBe(true);
+    expect(bySource.get('document')!.label).toContain('账本');
+    expect(bySource.has('memory'), `L0 记忆命中的事实没进痕迹：${JSON.stringify(ai.retrievalTrace)}`).toBe(true);
   });
 
   it('负向对照：检索跑了但没命中时不写该字段', async () => {
@@ -156,7 +182,7 @@ describe('检索命中痕迹（C-03）store 契约', () => {
           role: 'assistant',
           content: '旧回复',
           timestamp: 2,
-          retrievalTrace: [{ id: 'memory:old', label: '上一轮命中的那条', score: 0.5, channel: 'dynamic' }],
+          retrievalTrace: [{ id: 'memory:old', label: '上一轮命中的那条', score: 0.5, source: 'memory' }],
         },
       ],
     });
@@ -182,7 +208,7 @@ describe('检索命中痕迹（C-03）store 契约', () => {
           role: 'assistant',
           content: '旧回复',
           timestamp: 2,
-          retrievalTrace: [{ id: 'memory:old', label: '上一轮命中的那条', score: 0.5, channel: 'dynamic' }],
+          retrievalTrace: [{ id: 'memory:old', label: '上一轮命中的那条', score: 0.5, source: 'memory' }],
         },
       ],
     });

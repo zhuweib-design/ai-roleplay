@@ -44,8 +44,9 @@ function seedTracedCharacter(db: IDBDatabase): Promise<void> {
           content: '你喜欢下雨天。',
           timestamp: now + 1,
           retrievalTrace: [
-            { id: 'memory:session-rt-rain', label: '用户喜欢在下雨天读书', score: 0.912, channel: 'dynamic' },
-            { id: 'doc:lb-city', label: '设定集：城市的地下铁网', score: 0.42, channel: 'static' },
+            { id: 'memory:session-rt-rain', label: '用户喜欢在下雨天读书', score: 0.912, source: 'memory' },
+            { id: 'd1-0', label: '旅行手记：城市的地下铁网', score: 2, source: 'document' },
+            { id: 'lorebook:lb1:e1', label: '永恒酒馆', score: 0.42, source: 'lore' },
           ],
         },
       ],
@@ -97,21 +98,24 @@ test.describe('检索命中回显（C-03）', () => {
     const bubble = page.locator('.msg-turn', { hasText: '你喜欢下雨天。' }).last();
     const toggle = bubble.locator('.retrieval-trace-toggle');
     await expect(toggle, '回显条没出现：回读链路（type-adapters）或渲染挂错了一环').toBeVisible();
-    await expect(toggle).toContainText('本轮检索命中 2 条');
+    await expect(toggle).toContainText('本轮检索命中 3 条');
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await expect(bubble.locator('.retrieval-trace-item')).toHaveCount(0);
 
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     const rows = bubble.locator('.retrieval-trace-item');
-    await expect(rows).toHaveCount(2);
+    await expect(rows).toHaveCount(3);
     await expect(rows.nth(0)).toContainText('用户喜欢在下雨天读书');
-    await expect(rows.nth(0)).toContainText('0.912');
-    await expect(rows.nth(1)).toContainText('设定集：城市的地下铁网');
+    // 分数不上脸（三路口径不同），只在悬停提示里
+    await expect(rows.nth(0)).toHaveAttribute('title', /0\.912/);
+    await expect(rows.nth(1)).toContainText('旅行手记：城市的地下铁网');
+    await expect(rows.nth(2)).toContainText('永恒酒馆');
 
-    // 通道标记与注入文本里那套说法一致（[记忆] / [设定]），不是第三种叫法
+    // 来源标记与三路检索的叫法一致（记忆 / 资料 / 设定），不是第四种叫法
     await expect(rows.nth(0).locator('.retrieval-trace-channel')).toHaveText('记忆');
-    await expect(rows.nth(1).locator('.retrieval-trace-channel')).toHaveText('设定');
+    await expect(rows.nth(1).locator('.retrieval-trace-channel')).toHaveText('资料');
+    await expect(rows.nth(2).locator('.retrieval-trace-channel')).toHaveText('设定');
   });
 
   test('没有痕迹的旧消息不渲染回显条（不留一颗点了没反应的按钮）', async ({ page }) => {

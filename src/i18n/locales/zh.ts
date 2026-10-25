@@ -137,7 +137,8 @@ export default {
   'trace.eventsOpen': '打开随机事件页',
   'trace.retrievalSummary': '本轮检索命中 {count} 条',
   'trace.retrievalMemory': '记忆',
-  'trace.retrievalStatic': '设定',
+  'trace.retrievalDocument': '资料',
+  'trace.retrievalLore': '设定',
   'trace.retrievalScore': '相关度 {score}',
   // L 层：角色关联面板（判据唯一来源 src/core/relations.ts）
   'rel.title': '角色关联',

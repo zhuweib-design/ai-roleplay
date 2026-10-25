@@ -137,7 +137,8 @@ const en: Record<MessageKey, string> = {
   'trace.eventsOpen': 'Open the random events page',
   'trace.retrievalSummary': '{count} retrieval hits in this turn',
   'trace.retrievalMemory': 'Memory',
-  'trace.retrievalStatic': 'Lore',
+  'trace.retrievalDocument': 'Document',
+  'trace.retrievalLore': 'Lore',
   'trace.retrievalScore': 'relevance {score}',
   // L 层：角色关联面板（判据唯一来源 src/core/relations.ts）
   'rel.title': 'Character links',

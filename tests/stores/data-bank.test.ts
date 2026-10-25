@@ -7,7 +7,7 @@
  * - createDocumentFromFile：文件大小/类型校验、分块、持久化
  * - deleteDocument：内存清理 + 存储删除 + currentDocumentId 重置
  * - getDocumentsForScope：作用域过滤（global / character / chat）
- * - retrieveForChat / retrieveAndBuildContext：RAG 检索链路
+ * - retrieveForChat / retrieveAndBuildContextDetailed：RAG 检索链路
  * - loadFromStorage：从存储加载
  * - 持久化失败错误反馈
  */
@@ -381,7 +381,7 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
     });
   });
 
-  describe('retrieveForChat / retrieveAndBuildContext RAG 检索', () => {
+  describe('retrieveForChat / retrieveAndBuildContextDetailed RAG 检索', () => {
     it('无文档时返回空数组', () => {
       const store = useDataBankStore();
       const result = store.retrieveForChat(['一些消息'], 'global');
@@ -409,7 +409,7 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
       expect(result[0]!.chunk.content).toContain('勇者');
     });
 
-    it('retrieveAndBuildContext 返回注入文本', () => {
+    it('retrieveAndBuildContextDetailed 返回注入文本与命中分块', () => {
       const store = useDataBankStore();
       const doc = makeDocument({
         id: 'd1',
@@ -425,10 +425,12 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
       });
       store.documents.push(doc);
 
-      const context = store.retrieveAndBuildContext(['魔法师的故事'], 'global');
+      const { context, chunks } = store.retrieveAndBuildContextDetailed(['魔法师的故事'], 'global');
       expect(typeof context).toBe('string');
       // 匹配时应包含参考资料标记
       expect(context).toContain('数据银行检索结果');
+      // C-03：命中分块要一起交出去，回显只读它、不做事后重查
+      expect(chunks.map((c) => c.chunk.id)).toEqual(['d1-0']);
     });
 
     it('无匹配时返回空字符串', () => {
@@ -447,11 +449,12 @@ describe('useDataBankStore — F09 数据银行单元测试', () => {
       });
       store.documents.push(doc);
 
-      const context = store.retrieveAndBuildContext(
+      const { context, chunks } = store.retrieveAndBuildContextDetailed(
         ['另一段不相关文字ABC'],
         'global'
       );
       expect(context).toBe('');
+      expect(chunks).toEqual([]);
     });
 
     it('character 作用域检索包含全局文档', () => {

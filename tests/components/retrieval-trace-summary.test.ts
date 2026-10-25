@@ -13,8 +13,9 @@ import { t } from '@/i18n';
 import type { RetrievalTraceItem } from '@core/retrieval-trace';
 
 const items: RetrievalTraceItem[] = [
-  { id: 'memory:a', label: '用户喜欢在下雨天读书', score: 0.912, channel: 'dynamic' },
-  { id: 'doc:b', label: '设定集：城市的地下铁网', score: 0.42, channel: 'static' },
+  { id: 'memory:a', label: '用户喜欢在下雨天读书', score: 0.912, source: 'memory' },
+  { id: 'd1-0', label: '旅行手记：城市的地下铁网', score: 2, source: 'document' },
+  { id: 'lorebook:lb1:e1', label: '永恒酒馆', score: 0.42, source: 'lore' },
 ];
 
 function mountSummary(props: Record<string, unknown>) {
@@ -40,28 +41,33 @@ describe('RetrievalTraceSummary', () => {
   it('折叠态只有一句汇总，展开后才出明细', async () => {
     const wrapper = mountSummary({ items });
     const toggle = wrapper.get('.retrieval-trace-toggle');
-    expect(toggle.text()).toContain(t('trace.retrievalSummary', { count: 2 }));
+    expect(toggle.text()).toContain(t('trace.retrievalSummary', { count: 3 }));
     expect(toggle.attributes('aria-expanded')).toBe('false');
     expect(wrapper.find('.retrieval-trace-list').exists()).toBe(false);
 
     await toggle.trigger('click');
     expect(toggle.attributes('aria-expanded')).toBe('true');
     const rows = wrapper.findAll('.retrieval-trace-item');
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     expect(rows[0]!.text()).toContain('用户喜欢在下雨天读书');
-    expect(rows[0]!.text()).toContain('0.912');
-    expect(rows[1]!.text()).toContain('设定集：城市的地下铁网');
+    expect(rows[1]!.text()).toContain('旅行手记：城市的地下铁网');
+    // 分数不上脸：三路口径不同，并排显示会误导
+    expect(rows[0]!.text()).not.toContain('0.912');
   });
 
-  it('两条通道分别标出"记忆"与"设定"，与注入文本里的标记同一套说法', async () => {
+  it('三路来源分别标出"记忆""资料""设定"', async () => {
     const wrapper = await mountExpanded();
     const chips = wrapper.findAll('.retrieval-trace-channel').map((c) => c.text());
-    expect(chips).toEqual([t('trace.retrievalMemory'), t('trace.retrievalStatic')]);
+    expect(chips).toEqual([
+      t('trace.retrievalMemory'),
+      t('trace.retrievalDocument'),
+      t('trace.retrievalLore'),
+    ]);
   });
 
-  it('分数带可读的 aria 标签（光秃秃一个小数，读屏里等于没说）', async () => {
+  it('原始分数留在悬停提示里，且说明它不是跨来源可比的指标', async () => {
     const wrapper = await mountExpanded();
-    const first = wrapper.findAll('.retrieval-trace-score')[0]!;
-    expect(first.attributes('aria-label')).toBe(t('trace.retrievalScore', { score: 0.912 }));
+    const first = wrapper.findAll('.retrieval-trace-item')[0]!;
+    expect(first.attributes('title')).toBe(t('trace.retrievalScore', { score: 0.912 }));
   });
 });

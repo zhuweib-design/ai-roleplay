@@ -16,7 +16,7 @@
  *
  * 依赖（上层 → 中层/底层，有向无环）：
  * - session 域（activeChatId / sessions / chatVariables，storeToRefs 共享引用）
- * - memory 域（loadLocalMemoryStore / buildLocalMemoryContext /
+ * - memory 域（loadLocalMemoryStore / searchLocalMemoryContext /
  *   recordLocalConversationMemory / seedStandingFacts / persistLocalMemoryStore /
  *   listScopedFacts / getL0L2Deps）
  * - runtime 域（ensureRuntimeIntegration / activePresetInfo 写入）
@@ -32,7 +32,7 @@ import { type ApiErrorKind } from '../api/types';
 import { uiCharToCard, uiMsgsToChatMsgs } from '../services/type-adapters';
 import { buildChatSessionContext } from './chat-context';
 import { toEventTraceItems } from '@core/event-trace';
-import { toRetrievalTraceItems } from '@core/retrieval-trace';
+import { collectRetrievalHits, mergeRetrievalTrace } from '@core/retrieval-trace';
 import {
   buildVectorRagInjection,
   getRagDynamicModel,
@@ -300,9 +300,10 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
       allowEventTrigger: true,
     });
     await memoryStore.loadLocalMemoryStore();
-    ctx.memoryContext = await memoryStore.buildLocalMemoryContext(
+    const memoryRetrieval = await memoryStore.searchLocalMemoryContext(
       [...history.slice(-4).map((m) => m.content), text].join('\n')
     );
+    ctx.memoryContext = memoryRetrieval.context;
     const dataBankStore = useDataBankStore();
     const staticEntries = staticVectorSources(
       dataBankStore.documents,
@@ -366,9 +367,16 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
             // 事件表只在内存里（stores/events.ts 注明），刷新后当初那条就没了。
             const eventTrace = toEventTraceItems(ctx.activatedEvents);
             liveMsg.eventTrace = eventTrace.length ? eventTrace : undefined;
-            // C-03：双通道检索的命中同样只在这一刻拿得到（hits 本来就返回了，此前只取 text，
-            // 于是"这轮到底检索到了什么"整条链路没有任何地方可见）。
-            const retrievalTrace = toRetrievalTraceItems(vectorRag.hits, [...staticEntries, ...dynamicEntries]);
+            // C-03：三路检索的命中都只在这一刻拿得到。向量那路的 hits 本来就返回了、资料库与
+            // L0 记忆的分块/事实也都算出来了，此前都只取拼好的字符串，于是"这轮检索到了什么"
+            // 整条链路没有任何地方可见。
+            const retrievalTrace = mergeRetrievalTrace(
+              collectRetrievalHits({
+                vector: { hits: vectorRag.hits, sources: [...staticEntries, ...dynamicEntries] },
+                documents: ctx.ragChunks,
+                memories: memoryRetrieval.hits,
+              })
+            );
             liveMsg.retrievalTrace = retrievalTrace.length ? retrievalTrace : undefined;
           },
           onEmotionUpdated: () => {
@@ -543,9 +551,10 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
       allowEventTrigger: false, // 重新生成不触发/完成新事件，仅注入已激活事件
     });
     await memoryStore.loadLocalMemoryStore();
-    ctx.memoryContext = await memoryStore.buildLocalMemoryContext(
+    const memoryRetrieval = await memoryStore.searchLocalMemoryContext(
       [...history.slice(-4).map((m) => m.content), userText].join('\n')
     );
+    ctx.memoryContext = memoryRetrieval.context;
     const dataBankStore = useDataBankStore();
     const staticEntries = staticVectorSources(
       dataBankStore.documents,
@@ -607,7 +616,13 @@ export const useChatGenerationStore = defineStore('chat-generation', () => {
             const eventTrace = toEventTraceItems(ctx.activatedEvents);
             target.eventTrace = eventTrace.length ? eventTrace : undefined;
             // C-03：重新生成用的是新一轮的检索结果，痕迹要重算，不能留上一轮那份
-            const retrievalTrace = toRetrievalTraceItems(vectorRag.hits, [...staticEntries, ...dynamicEntries]);
+            const retrievalTrace = mergeRetrievalTrace(
+              collectRetrievalHits({
+                vector: { hits: vectorRag.hits, sources: [...staticEntries, ...dynamicEntries] },
+                documents: ctx.ragChunks,
+                memories: memoryRetrieval.hits,
+              })
+            );
             target.retrievalTrace = retrievalTrace.length ? retrievalTrace : undefined;
           },
           onEmotionUpdated: () => {

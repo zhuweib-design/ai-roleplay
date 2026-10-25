@@ -4,7 +4,7 @@
  * 职责（优化项 7 · S2）：
  * - l0Store / l0l2Deps（MemoryStore + CharacterRegistry + EmotionTracker）
  * - loadLocalMemoryStore / persistLocalMemoryStore（MIG-01 版本信封快照）
- * - buildLocalMemoryContext / recordLocalConversationMemory / seedStandingFacts
+ * - searchLocalMemoryContext / recordLocalConversationMemory / seedStandingFacts
  * - listScopedFacts（供生成域动态向量检索取记忆事实）
  * - 自持 storageAdapter（由兼容层 setStorageAdapter 扇出注入）
  *
@@ -16,7 +16,13 @@ import { defineStore } from 'pinia';
 import { t } from '@/i18n';
 import type { UICharacter } from '@/types';
 import type { CharacterCard } from '@/core/character-card';
-import { MemoryStore, CharacterRegistry, EmotionTracker, type MemoryFact } from '@/core/memory-store';
+import {
+  MemoryStore,
+  CharacterRegistry,
+  EmotionTracker,
+  type MemoryFact,
+  type MemorySearchResult,
+} from '@/core/memory-store';
 import type { L0L2Deps } from '@/core/l0-l2-runtime';
 import { migrateSnapshot, wrapSnapshot } from '../storage/snapshot-migration';
 import { LOCAL_MEMORY_MIGRATION_PLAN } from '../storage/snapshot-plans';
@@ -113,12 +119,23 @@ export const useChatMemoryStore = defineStore('chat-memory', () => {
     }
   }
 
-  async function buildLocalMemoryContext(query: string): Promise<string | undefined> {
+  /**
+   * 本地记忆关键词检索（C-03 记忆可见化要留痕）
+   *
+   * 命中明细只有此刻拿得到：事实会被改写、下一轮查询词也不同，事后重算必然对不上。
+   * 只回字符串的老入口保留给不需要明细的调用方。
+   */
+  async function searchLocalMemoryContext(
+    query: string
+  ): Promise<{ context?: string; hits: MemorySearchResult[] }> {
     await loadLocalMemoryStore();
     const results = await l0Store.search(query, { scope: 'scoped', kind: 'session', limit: 5 });
-    if (results.length === 0) return undefined;
+    if (results.length === 0) return { hits: [] };
     const lines = results.map(({ fact }) => `- ${clipContextText(fact.body, 900)}`);
-    return clipContextText(`${t('memory.promptTitle')}\n${lines.join('\n')}`, 5_000);
+    return {
+      context: clipContextText(`${t('memory.promptTitle')}\n${lines.join('\n')}`, 5_000),
+      hits: results,
+    };
   }
 
   async function recordLocalConversationMemory(
@@ -185,7 +202,7 @@ export const useChatMemoryStore = defineStore('chat-memory', () => {
     setStorageAdapter,
     loadLocalMemoryStore,
     persistLocalMemoryStore,
-    buildLocalMemoryContext,
+    searchLocalMemoryContext,
     recordLocalConversationMemory,
     seedStandingFacts,
     listScopedFacts,
