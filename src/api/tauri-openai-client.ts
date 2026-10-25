@@ -204,6 +204,14 @@ export class TauriOpenAIClient implements ApiClient {
    * 流式对话：通过 Tauri 事件接收增量
    */
   async *chatStream(request: ChatRequest): ChatStream {
+    // abort 事件是一次性的：信号在调用之前就已经 aborted 时，挂监听器等于永远等不到
+    // （本地 WebLLM 客户端 `local-api-client.ts:97` 早就挡了这一手，这里此前漏了）。
+    // 此时既不订阅事件也不发请求，直接按"已停止"收尾。
+    if (request.signal?.aborted) {
+      yield { type: 'error', error: t('api.stopped') };
+      return;
+    }
+
     const channel = `chat-stream-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     // 创建事件队列 + 通知机制（生产者-消费者模式，事件到达时唤醒消费者，替代忙轮询）
@@ -263,6 +271,8 @@ export class TauriOpenAIClient implements ApiClient {
     if (request.signal) {
       request.signal.addEventListener('abort', () => {
         aborted = true;
+        // 队列空时消费者正挂在 waiter 上，不唤醒就永远醒不过来（Rust 侧要等总超时）
+        notify();
         TauriOpenAIClient.invoke<boolean>('cancel_chat_stream', {
           channel,
         }).catch(() => {
@@ -296,8 +306,8 @@ export class TauriOpenAIClient implements ApiClient {
       // P0-1：字段型思考累计值
       let fullThinking = '';
 
-      // 通过事件队列消费增量（事件驱动唤醒，非忙轮询）
-      while (!done || queue.length > 0) {
+      // 通过事件队列消费增量（事件驱动唤醒，非忙轮询）；点停止即退出，不等 Rust 下一块数据
+      while ((!done || queue.length > 0) && !aborted) {
         // 队列空且未完成：挂起等待事件通知
         if (queue.length === 0 && !done) {
           await new Promise<void>((resolve) => {
@@ -330,13 +340,14 @@ export class TauriOpenAIClient implements ApiClient {
         if (done) break;
       }
 
-      // 确保 invoke promise 已完成（捕获潜在错误）
-      await invokePromise;
-
+      // 中止优先：这里不能 await 一个还在等 Rust 总超时的 promise，否则"停止"要点满 300 秒
       if (aborted) {
         yield { type: 'error', error: t('api.stopped') };
         return;
       }
+
+      // 确保 invoke promise 已完成（捕获潜在错误）
+      await invokePromise;
 
       if (streamError) {
         // 显式类型断言：闭包（notify/listen 回调）内的赋值无法被控制流分析识别
