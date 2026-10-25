@@ -16,6 +16,7 @@ import MessageBubble from '@/components/chat/MessageBubble.vue';
 import StatusHud from '@/components/chat/StatusHud.vue';
 import { useChatStore } from '@/stores/chat';
 import { useChatWindowing } from '@/composables/useChatWindowing';
+import { useReadinessJump } from '@/composables/useReadinessJump';
 import type { CharacterStatus } from '@core/status-schema';
 import type { MessageSearchResult } from '@core/message-search';
 import type { UICharacter } from '@/types';
@@ -43,6 +44,17 @@ const emit = defineEmits<{
 }>();
 
 const chatStore = useChatStore();
+/**
+ * 缺模型/被锁时的空态改成一个可点的入口。
+ * 此前空态只有"示例开场白"，点了会发一条然后得到一句不可操作的提示；
+ * 现在直接把下一步摆在原地（诊断：C-01 首聊走查）。
+ */
+const sendBlock = computed(() => chatStore.checkSendBlock());
+const { pushWithReturn } = useReadinessJump();
+function goSetup(): void {
+  if (sendBlock.value === 'locked') pushWithReturn({ name: 'settings', query: { cat: 'security' } });
+  else pushWithReturn({ name: 'settings', query: { cat: 'model' } });
+}
 const msgArea = ref<HTMLElement | null>(null);
 /** 搜索命中的消息（改变时只影响加粗描边，不改变消息尺寸，避免虚拟化滚动跳动） */
 const highlightedMessageId = ref<string | null>(null);
@@ -160,8 +172,28 @@ defineExpose({ handleSearchJump, clearHighlight });
         <Icon name="chat-circle" :size="46" />
       </div>
       <h2 class="empty-state-title">{{ t('chat.emptyStateTitle', { name: character.name }) }}</h2>
-      <p class="empty-state-desc">{{ t('chat.emptyStateDesc') }}</p>
-      <div class="empty-state-examples">
+      <!-- 缺模型时原描述里"从下面的开场白里挑一个"就成了假话（开场白这时不出现），
+           所以这一行整句换掉，而不是再叠一句。 -->
+      <p class="empty-state-desc">
+        {{
+          sendBlock === 'locked'
+            ? t('chat.needUnlockDesc')
+            : sendBlock
+              ? t('chat.needProfileDesc')
+              : t('chat.emptyStateDesc')
+        }}
+      </p>
+      <div v-if="sendBlock" class="empty-setup">
+        <button
+          type="button"
+          class="empty-action"
+          data-rel-jump="chat-setup-profile"
+          @click="goSetup"
+        >
+          {{ t(sendBlock === 'locked' ? 'chat.needUnlockCta' : 'chat.needProfileCta') }}
+        </button>
+      </div>
+      <div v-else class="empty-state-examples">
         <span class="empty-state-examples-label">{{ t('chat.emptyStateExamples') }}</span>
         <div class="example-chips">
           <button
@@ -308,6 +340,32 @@ defineExpose({ handleSearchJump, clearHighlight });
   font-size: 14px;
   line-height: 1.6;
   color: var(--muted-foreground);
+}
+
+/* 与 common/EmptyState 的 .empty-action 同款外观（那份是 scoped，这里用不到） */
+.empty-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.empty-action {
+  /* 档位 token 自己带移动升档（桌面 36 → ≤640 是 44），所以不必再写一条媒体查询 */
+  min-height: var(--size-control-md);
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--secondary);
+  color: var(--on-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.empty-action:focus-visible {
+  outline: 2px solid var(--ring, var(--secondary));
+  outline-offset: 2px;
 }
 
 .empty-state-examples {

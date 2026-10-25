@@ -85,11 +85,13 @@ export function useReadinessChips(): ComputedRef<ReadinessChip[]> {
     };
 
     // ── 世界书（含全局书的真实生效集合） ──
+    // 没绑书是 n-a 不是 attention：世界书是可选能力，开口的前提只有模型。
+    // 以前它和「模型 需处理」同级，新用户会以为要配齐整条就绪条才能开始（C-01 走查）。
     const lorebooks = characterId ? collectLorebooksForCharacter(characterId) : [];
     const bound = char?.boundWorldBookIds?.length ?? 0;
     const worldbookChip: ReadinessChip = {
       id: 'worldbook',
-      state: lorebooks.length > 0 ? 'ready' : 'attention',
+      state: lorebooks.length > 0 ? 'ready' : 'n-a',
       reasonKey: lorebooks.length > 0 ? null : 'readiness.reasonNoWorldbook',
       labelKey: 'readiness.worldbook',
       jump: lorebooks.length > 0 ? { name: 'worldbook' } : { name: 'worldbook' },

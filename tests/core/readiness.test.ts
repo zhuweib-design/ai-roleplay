@@ -91,8 +91,10 @@ describe('useReadinessChips', () => {
     }
   );
 
-  it('无生效世界书 → worldbook 为 attention；加入全局书后即 ready', () => {
-    expect(chipById('worldbook')?.state).toBe('attention');
+  it('无生效世界书 → worldbook 为 n-a（可选能力不冒充阻塞）；加入全局书后即 ready', () => {
+    // C-01 首聊走查：世界书不是开口的前提，却和「模型 需处理」长得一样，
+    // 新用户会以为要配齐五项才能聊天。可选能力一律走 n-a（未启用）。
+    expect(chipById('worldbook')?.state).toBe('n-a');
     const lorebook = useLorebookStore();
     lorebook.lorebooks.push({ id: 'lb1', name: '世界', scope: 'global', entries: [] } as never);
     expect(chipById('worldbook')?.state).toBe('ready');

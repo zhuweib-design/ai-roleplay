@@ -74,6 +74,8 @@ export const SPEC_WEIGHTS = {
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
   // 手工登记（2026-10-25）：供应商预填，2 条各含一次设置页加载，单 worker 实测 2.9 + 1.8 = 4.7s。
   'e2e/model-profile-presets.spec.ts': 4.7,
+  // 手工登记（2026-10-25）：缺模型空态入口，2 条各含一次角色/设置操作，单 worker 实测 1.7 + 2.3 = 4.0s。
+  'e2e/chat-empty-setup.spec.ts': 4.0,
   'e2e/model-install-web.spec.ts': 1.8,
   // 手工登记（2026-10-25）：检索命中回显，2 条各含一次整页加载，单 worker 实测 1.7 + 1.3 = 3.0s。
   'e2e/retrieval-trace.spec.ts': 3.0,
@@ -157,7 +159,8 @@ export const E2E_GROUPS = [
     'e2e/ux-modal-describedby-version.spec.ts',
     'e2e/ux-prompt-trace.spec.ts',
   ],
-  // 第 4 组：实测 221s（2026-10-18 手工加入 settings-composition 约 8s、detail-nav 约 13s ⇒ 约 242s）
+  // 第 4 组：实测 221s（2026-10-18 手工加入 settings-composition 约 8s、detail-nav 约 13s ⇒ 约 242s；
+  // 2026-10-25 手工加入 chat-empty-setup 4.0s ⇒ 约 285s）
   [
     'e2e/custom-theme-contrast.spec.ts',
     'e2e/group-chat-flow.spec.ts',
@@ -174,6 +177,7 @@ export const E2E_GROUPS = [
     'e2e/ux-nav-model.spec.ts',
     'e2e/ux-readiness.spec.ts',
     'e2e/ux-relations-panel.spec.ts',
+    'e2e/chat-empty-setup.spec.ts',
   ],
 ];
 
