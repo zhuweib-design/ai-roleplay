@@ -160,6 +160,15 @@ VITE_RUNTIME_BASE_URL=https://runtime.example.com npm run build
 ```ts
 // 服务端组合入口（租户 ID 必须来自认证中间件）
 const handler = createPgPoolRuntimeHttpHandler(pool, tenantId, {
+  // 默认 fail-closed：除 /health 外，没有可信 principal 的请求一律 401。
+  // 只有在明确清楚风险时，才用 allowAnonymous: true 开放（例如仅本机回环的调试）。
+  httpAuth: {
+    requireAuthentication: true,
+    authenticate: async (request) => {
+      const session = await verifySession(request); // 宿主自己的会话/网关校验
+      return session ? { subject: session.userId, tenantId: session.tenantId } : null;
+    },
+  },
   // OBS-01：关联 ID 与耗时观测。每个请求都会带上 x-runtime-request-id，
   // 该 ID 由客户端注入（缺失时服务端兜底生成）并在响应头回显。
   // 失败时客户端 RuntimeApiError.traceId 即同一 ID，可用于对齐两端日志。
@@ -190,7 +199,7 @@ DELETE /v1/runtime/groups/:id/members/:characterId
 
 设计与验证记录见 [`docs/design/virtual-character-os-实现基线.md`](docs/design/virtual-character-os-实现基线.md) 与 [`docs/design/virtual-character-os-多角色群聊实施计划.md`](docs/design/virtual-character-os-多角色群聊实施计划.md)。
 
-> 生产部署仍需自行提供认证、网关路由、迁移备份与回滚演练；当前仓库提供的是 Runtime 边界、Schema 与可验证实现，不包含生产认证宿主。
+> 生产部署仍需自行提供认证、网关路由、迁移备份与回滚演练；当前仓库提供的是 Runtime 边界、Schema 与可验证实现，不包含生产认证宿主。未传 `httpAuth` 时 Handler 默认拒绝未认证请求；`allowAnonymous: true` 只适合受信任的本地回环调试。
 
 ## ⚠️ Web 端已知限制
 

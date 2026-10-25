@@ -148,7 +148,17 @@ VITE_RUNTIME_BASE_URL=https://runtime.example.com npm run build
 
 ```ts
 // Server composition entry point (tenantId must come from auth middleware)
-const handler = createPgPoolRuntimeHttpHandler(pool, tenantId);
+const handler = createPgPoolRuntimeHttpHandler(pool, tenantId, {
+  // Fail-closed by default: every route except /health returns 401 without a principal.
+  // Use allowAnonymous: true only for trusted loopback debugging.
+  httpAuth: {
+    requireAuthentication: true,
+    authenticate: async (request) => {
+      const session = await verifySession(request); // host-owned session/gateway check
+      return session ? { subject: session.userId, tenantId: session.tenantId } : null;
+    },
+  },
+});
 ```
 
 Server routes:

@@ -203,7 +203,7 @@ async function dispatchGroupRequest(
   {
     try {
       const principal = await resolveRuntimePrincipal(request, options);
-      if (options.requireAuthentication && !principal) return runtimeAuthenticationResponse();
+      if (!principal && !options.allowAnonymous) return runtimeAuthenticationResponse();
       const url = new URL(request.url);
       const method = request.method.toUpperCase();
       if (principal && options.tenantId && principal.tenantId !== options.tenantId) {

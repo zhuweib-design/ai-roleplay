@@ -14,7 +14,7 @@ import type { RuntimeTraceSink } from './runtime-trace';
 export interface PostgresRuntimeApiOptions {
   auditActorType?: 'system' | 'migration';
   core?: RuntimeCoreOptions;
-  /** HTTP 宿主注入的认证解析器；未配置时保持已绑定租户的兼容模式。 */
+  /** HTTP 宿主注入的认证解析器；未配置时默认拒绝未认证请求（仅 allowAnonymous 可显式放开）。 */
   httpAuth?: RuntimeAuthOptions;
   /**
    * 关联事件接收器（OBS-01）；宿主注入后，每个 Runtime 请求的

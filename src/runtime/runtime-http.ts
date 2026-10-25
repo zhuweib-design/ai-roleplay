@@ -245,7 +245,7 @@ export function createRuntimeHttpHandler(
     }
     const url = new URL(request.url);
     const principal = await resolveRuntimePrincipal(request, options);
-    if (options.requireAuthentication && url.pathname !== '/v1/runtime/health' && !principal) {
+    if (!principal && !options.allowAnonymous && url.pathname !== '/v1/runtime/health') {
       return finish(runtimeAuthenticationResponse());
     }
     if (principal && options.tenantId && principal.tenantId !== options.tenantId) {
