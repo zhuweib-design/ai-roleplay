@@ -1,21 +1,20 @@
 import type { RuntimeContext, RuntimeContextRequest } from './types';
 import type { CreateRuntimeGroupInput, CommitRuntimeGroupTurnInput, SetRuntimeGroupStatusInput, RuntimeGroupState, RuntimeGroupOutboxEntry, RuntimeGroupTurn } from './group-runtime-contract';
 import { GroupRuntimeError } from './group-runtime-contract';
-import { RuntimeApiError, type RuntimeFetch, type RuntimeHttpApiOptions, type RuntimeHttpHandler } from './runtime-http';
-import {
-  RUNTIME_TRACE_HEADER,
-  createTraceId,
-  normalizeTraceId,
-  resolveTraceId,
-  type RuntimeTraceSink,
-} from './runtime-trace';
+import type { RuntimeHttpApiOptions, RuntimeHttpHandler } from './runtime-http';
+import { createTraceId, type RuntimeTraceSink } from './runtime-trace';
 import {
   authorizeRuntimeRequest,
-  resolveRuntimePrincipal,
   runtimeAuthorizationResponse,
-  runtimeAuthenticationResponse,
   type RuntimeTenantBindingOptions,
 } from './runtime-auth';
+import {
+  resolveRuntimeAccess,
+  runtimeJsonResponse as respond,
+  sendRuntimeRequest,
+  withRuntimeTrace,
+  type RuntimeFetch,
+} from './http-envelope';
 
 export interface GroupRuntimeApi {
   createGroup(input: CreateRuntimeGroupInput): Promise<void>;
@@ -101,34 +100,18 @@ export class HttpGroupRuntimeApi implements GroupRuntimeApi {
   }
 
   private async request<T>(path: string, method: string, body?: unknown): Promise<T> {
-    const headers = new Headers(this.headers);
-    headers.set('Accept', 'application/json');
-    if (body !== undefined) headers.set('Content-Type', 'application/json');
-    headers.set(RUNTIME_TRACE_HEADER, this.generateTraceId());
-    const response = await this.fetcher(this.baseUrl + path, {
-      method, headers, body: body === undefined ? undefined : JSON.stringify(body),
+    return sendRuntimeRequest<T>({
+      fetcher: this.fetcher,
+      // baseUrl 已在构造函数里去掉尾部 `/`，与单聊的 joinUrl 同结果
+      url: this.baseUrl + path,
+      method,
+      baseHeaders: this.headers ?? {},
+      generateTraceId: this.generateTraceId,
+      body,
+      fallbackCode: 'GROUP_HTTP_ERROR',
+      fallbackMessage: '群聊 Runtime 请求失败',
     });
-    const payload: unknown = response.headers.get('content-type')?.includes('application/json')
-      ? await response.json() : await response.text();
-    const traceId = normalizeTraceId(response.headers.get(RUNTIME_TRACE_HEADER))
-      ?? normalizeTraceId(headers.get(RUNTIME_TRACE_HEADER))
-      ?? undefined;
-    if (!response.ok) {
-      const details = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-      throw new RuntimeApiError(response.status,
-        typeof details.error === 'string' ? details.error : 'GROUP_HTTP_ERROR',
-        typeof details.message === 'string' ? details.message : '群聊 Runtime 请求失败',
-        details.issues,
-        traceId);
-    }
-    return payload as T;
   }
-}
-
-function respond(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json; charset=utf-8' },
-  });
 }
 
 function invalid(message: string): never {
@@ -178,21 +161,8 @@ export function createGroupRuntimeHttpHandler(
   api: GroupRuntimeApi,
   options: GroupRuntimeHandlerOptions = {}
 ): RuntimeHttpHandler {
-  return async (request) => {
-    const startedAt = Date.now();
-    const traceId = resolveTraceId(request);
-    const response = await dispatchGroupRequest(api, options, request);
-    // 服务端回显关联 ID，并上报方法/路径/状态/耗时，便于按 ID 排障。
-    response.headers.set(RUNTIME_TRACE_HEADER, traceId);
-    options.onTrace?.({
-      traceId,
-      method: request.method.toUpperCase(),
-      path: new URL(request.url).pathname,
-      status: response.status,
-      durationMs: Date.now() - startedAt,
-    });
-    return response;
-  };
+  // 服务端回显关联 ID，并上报方法/路径/状态/耗时（与单聊共用同一层外壳）
+  return withRuntimeTrace((request) => dispatchGroupRequest(api, options, request), options.onTrace);
 }
 
 async function dispatchGroupRequest(
@@ -202,13 +172,11 @@ async function dispatchGroupRequest(
 ): Promise<Response> {
   {
     try {
-      const principal = await resolveRuntimePrincipal(request, options);
-      if (!principal && !options.allowAnonymous) return runtimeAuthenticationResponse();
       const url = new URL(request.url);
       const method = request.method.toUpperCase();
-      if (principal && options.tenantId && principal.tenantId !== options.tenantId) {
-        return runtimeAuthorizationResponse();
-      }
+      const access = await resolveRuntimeAccess(request, options, url.pathname);
+      if (!access.granted) return access.response;
+      const { principal } = access;
       let body: Record<string, unknown> | undefined;
       if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
         try {
