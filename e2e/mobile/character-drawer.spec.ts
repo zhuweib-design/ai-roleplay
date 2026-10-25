@@ -60,6 +60,28 @@ async function seedCharacters(page: Page): Promise<void> {
   );
 }
 
+test('角色卡有可见的对话入口，且仍保持一屏 ≥3 卡', async ({ page }) => {
+  await page.setViewportSize({ width: VIEW_W, height: VIEW_H });
+  await seedCharacters(page);
+  await page.goto('/character');
+  const myCard = page.locator('.char-card', { hasText: '抽屉角色1' });
+  await expect(myCard).toBeVisible();
+
+  const chatButton = myCard.getByRole('button', { name: /对话/ });
+  await expect(chatButton).toBeVisible();
+
+  const visibleCards = await page.locator('.char-card').evaluateAll((els) =>
+    els.filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.top >= 0 && r.bottom <= window.innerHeight && r.height > 40;
+    }).length
+  );
+  expect(visibleCards, '新增对话入口不应把一屏可用卡数压到 3 张以下').toBeGreaterThanOrEqual(3);
+
+  await chatButton.click();
+  await expect(page).toHaveURL(/\/chat$/);
+});
+
 test('角色卡抽屉：一屏 ≥3 卡、动作全在抽屉、桌面不变', async ({ page }) => {
   await page.setViewportSize({ width: VIEW_W, height: VIEW_H });
   await seedCharacters(page);

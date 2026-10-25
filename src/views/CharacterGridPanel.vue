@@ -98,6 +98,16 @@ function tagsPreview(tags: string[]): string {
           <Icon name="git-branch" :size="12" aria-hidden="true" />
           <span>{{ t('characters.trackedTag') }}</span>
         </button>
+        <button
+          v-if="isMobile"
+          type="button"
+          class="meta-item meta-chat-btn"
+          :aria-label="t('characters.chatAria')"
+          @click.stop="$emit('chat', char.id)"
+        >
+          <Icon name="chat-circle" :size="12" aria-hidden="true" />
+          <span>{{ t('characters.chat') }}</span>
+        </button>
       </div>
 
       <!-- 手机：四个动作在详情抽屉里（批次 1-5 方案乙）；桌面保留卡面内联 -->
@@ -297,6 +307,27 @@ function tagsPreview(tags: string[]): string {
   gap: 4px;
 }
 
+/* 手机卡面保留一个可见的对话入口：不新增行高，避免把"一屏 ≥3 卡"挤掉 */
+.meta-chat-btn {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--secondary-text);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.meta-tracked + .meta-chat-btn {
+  margin-left: 8px;
+}
+
+.meta-chat-btn:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
 .card-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -388,6 +419,25 @@ function tagsPreview(tags: string[]): string {
     grid-template-columns: 1fr 1fr;
   }
 
+}
+
+/* 手机卡面对话入口：命中区撑到 44，用批次 3-3 的伪元素手法（同 .favorite-btn）。
+   不用 padding+负 margin：`margin` 简写会顶掉 .meta-chat-btn 的 margin-left:auto，
+   入口从行尾挪到「已跟踪」旁边，版式跟着变。伪元素只吃命中，不吃布局。 */
+@media (max-width: 640px) {
+  .meta-chat-btn {
+    position: relative;
+  }
+  .meta-chat-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* 46 而不是 44：探针按 1px 步进，正好 44 时边界像素不属于元素，量出来是 43 */
+    width: calc(var(--touch-min) + 2px);
+    height: calc(var(--touch-min) + 2px);
+    transform: translate(-50%, -50%);
+  }
 }
 
 /* 批次 3-3：卡片星标命中区撑到 44，视觉仍是 24（卡面密度不变） */

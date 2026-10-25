@@ -41,27 +41,16 @@ const SELF_TEST = argv.includes('--self-test');
  * "这里收敛 5 处、别的文件新长 5 处"会互相抵消成平局，实测那种抵消态下总数正好等于基线
  * 而按文件锁照样变红。
  */
-const BASELINE_UNDEF_BARE = {
-  'src/views/StoryEngineView.vue': 12,
-  'src/components/story/StoryDetailCharacters.vue': 12,
-  'src/views/CommunityMarketView.vue': 6,
-  // 2026-10-19 R2-4：市场页拆分，4 处裸 --text 随样式搬到子组件，值一处未改：
-  // .card-author(--text) → MarketCard；.search-input 的 --text → MarketToolbar；
-  // .detail-desc/.review-comment 各 1 处 --text → MarketDetailModal。总数 77 不变。
-  'src/components/market/MarketCard.vue': 1,
-  'src/components/market/MarketToolbar.vue': 1,
-  'src/components/market/MarketDetailModal.vue': 2,
-  'src/components/story/StoryUploadModal.vue': 10,
-  'src/components/story/StoryDetailWorld.vue': 9,
-  'src/components/story/StoryDetailPanel.vue': 6,
-  'src/components/worldbook/LorebookBindings.vue': 5,
-  'src/components/story/StoryCard.vue': 4,
-  'src/components/story/StoryProtagonistModal.vue': 4,
-  // 2026-10-19 R2-1：4 处（.wb-bind-info 的 --text 与三条 --border-subtle）随
-  // "世界书绑定"段搬到 CharacterEditorWorldBookSection，值一处未改，只是换了归属。
-  'src/components/character/editor/CharacterEditorWorldBookSection.vue': 4,
-  'src/components/story/StoryQuickSetupPanel.vue': 1,
-};
+/**
+ * A 类（组件层裸引用未定义 token）按文件锁的棘轮基线。
+ *
+ * 2026-10-24 归零转硬卡：此前登记 77 处 / 14 个文件（StoryEngineView 12、
+ * StoryDetailCharacters 12、StoryUploadModal 10、StoryDetailWorld 9 等），
+ * 随 M23 系列的 token 映射与对比度收敛（对比度棘轮 67→52→0 同批）逐条清零，
+ * 但基线一直没跟着下调，等于"债已还、闸门还开着"。现在起任何一处新增即红。
+ * 历史逐条归属见 git 记录与本文件的历史版本，不在这里保留旧数字。
+ */
+const BASELINE_UNDEF_BARE = {};
 
 const SKIP_RE = /(node_modules|dist|public[\\/]vendor|src[\\/]runtime)/;
 
