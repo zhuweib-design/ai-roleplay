@@ -69,6 +69,8 @@ export const SPEC_WEIGHTS = {
   'e2e/tablet-form.spec.ts': 34.0,
   'e2e/mobile/mobile-layout.spec.ts': 5.5,
   'e2e/mobile/mobile-nav-groups.spec.ts': 2.1,
+  // 手工登记（2026-10-25）：弹窗内部命中区，2 条各含一次整页加载，单 worker 实测 1.1 + 1.3 = 2.4s。
+  'e2e/mobile/modal-touch-target.spec.ts': 2.4,
   'e2e/mobile/narrow-squeeze.spec.ts': 41.2,
   'e2e/model-install-web.spec.ts': 1.8,
   'e2e/theme-flow.spec.ts': 1.7,
@@ -113,7 +115,8 @@ export const E2E_GROUPS = [
     'e2e/ux-gap-visibility.spec.ts',
     'e2e/ux-narrow-editor-preview.spec.ts',
   ],
-  // 第 2 组：实测 220s（2026-10-18 手工加入 group-composition 10s、force-desktop 28s、worldbook-composition 16s ⇒ 约 275s）
+  // 第 2 组：实测 220s（2026-10-18 手工加入 group-composition 10s、force-desktop 28s、worldbook-composition 16s ⇒ 约 275s；
+  // 2026-10-25 手工加入 modal-touch-target 2.4s ⇒ 约 277s）
   [
     'e2e/backup-restore.spec.ts',
     'e2e/character-batch-import.spec.ts',
@@ -123,6 +126,7 @@ export const E2E_GROUPS = [
     'e2e/mobile/chat-touch-composer.spec.ts',
     'e2e/mobile/force-desktop.spec.ts',
     'e2e/mobile/group-composition.spec.ts',
+    'e2e/mobile/modal-touch-target.spec.ts',
     'e2e/mobile/worldbook-composition.spec.ts',
     'e2e/model-install-web.spec.ts',
     'e2e/ux-interaction-feedback.spec.ts',
