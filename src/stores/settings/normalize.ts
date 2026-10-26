@@ -1,5 +1,5 @@
 import type { CustomTheme, SamplingOverrides } from '@/types';
-import { generateThemeTokens } from '@/core/theme-extractor';
+import { generateThemeTokens } from '@/core/theme-tokens';
 import {
   createDefaultProviderConfig,
   type ImageProviderConfig,

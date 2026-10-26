@@ -14,13 +14,13 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  generateThemeTokens,
   contrastRatio,
   hslToRgb,
   rgbToHex,
   type ExtractedPalette,
   type Rgb,
 } from '@/core/theme-extractor';
+import { generateThemeTokens } from '@/core/theme-tokens';
 
 const AA = 4.5;
 

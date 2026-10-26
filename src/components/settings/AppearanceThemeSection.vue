@@ -10,7 +10,8 @@ import { computed, nextTick, ref, useTemplateRef } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import type { CustomTheme, ThemeName } from '@/types';
-import { auditThemeContrast, extractPaletteFromImage, generateThemeTokens } from '@/core/theme-extractor';
+import { extractPaletteFromImage } from '@/core/theme-extractor';
+import { auditThemeContrast, generateThemeTokens } from '@/core/theme-tokens';
 import { showToast } from '@/utils/toast-service';
 import { t } from '@/i18n';
 

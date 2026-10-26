@@ -1,5 +1,5 @@
 import { normalizeThemeName, type BubbleStyle, type ChatBackground, type CustomTheme, type ThemeName } from '@/types';
-import { buildCustomThemeCss, type ThemeTokens } from '@/core/theme-extractor';
+import { buildCustomThemeCss, type ThemeTokens } from '@/core/theme-tokens';
 import { setLocale as setI18nLocale, writeLocaleMirror, type Locale } from '@/i18n';
 import { normalizeCustomTheme } from './normalize';
 import type { SettingsCtx } from './ctx';
