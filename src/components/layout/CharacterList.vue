@@ -183,7 +183,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
     @touchend="onDrawerTouchEnd"
   >
     <!-- 搜索区 -->
-    <div class="character-search" style="position: relative">
+    <div class="character-search">
       <span class="search-icon" aria-hidden="true">
         <Icon name="search" :size="16" />
       </span>
@@ -327,7 +327,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
 
       <!-- 全部角色分组 -->
       <template v-if="characterStore.others.length">
-        <div class="char-group-header" aria-hidden="true" style="padding-top: 14px">{{ t('charList.all') }}</div>
+        <div class="char-group-header char-group-header--spaced" aria-hidden="true">{{ t('charList.all') }}</div>
         <button
           v-for="c in characterStore.others"
           :key="c.id"
@@ -372,6 +372,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
 
 <style scoped>
 .character-search {
+  position: relative; /* 搜索图标绝对定位的参照（原先是内联 style，F4 挪进来） */
   padding: 12px;
   border-bottom: 1px solid var(--border);
 }
@@ -421,6 +422,12 @@ function onDrawerTouchEnd(e: TouchEvent) {
   font-size: 12px;
   letter-spacing: 0.04em;
   font-weight: 500;
+}
+
+/* 「全部角色」这一组离上面的分组条远一点（原先是内联 style="padding-top:14px"）。
+   14px 在间距阶梯里没有对应档位（--space-3=12 / --space-4=16），保留字面量。 */
+.char-group-header--spaced {
+  padding-top: 14px;
 }
 
 .char-row {

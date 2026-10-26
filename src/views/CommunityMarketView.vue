@@ -564,12 +564,6 @@ type="button"
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-  }
-}
-
 @media (max-width: 640px) {
   /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1）。
      `.search-input` 随搜索框搬到 MarketToolbar，覆盖块在该组件里（守卫按同文件判）。 */

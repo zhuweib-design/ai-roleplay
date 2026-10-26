@@ -400,8 +400,10 @@ const {
 .is-rejected:focus-visible {
   border-color: var(--destructive);
 }
-.state-row {
-  flex-direction: row !important;
+/* 与 `.event-editor-grid .form-row`（列方向）同层级写，靠选择器压过它，
+   不再用 !important（F4，2026-10-26；同文件 `.form-row-inline` 本来就是这个写法） */
+.event-editor-grid .state-row {
+  flex-direction: row;
   align-items: center;
   gap: 12px;
   padding: var(--spacing-sm) 12px;
@@ -455,8 +457,9 @@ const {
     color: var(--on-accent);
   }
 }
-.form-row-actions {
-  flex-direction: row !important;
+/* 同上：用 `.event-editor-grid .form-row-actions` 压过列方向，不用 !important */
+.event-editor-grid .form-row-actions {
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   margin-top: var(--spacing-xs);

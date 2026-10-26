@@ -146,10 +146,12 @@ onBeforeUnmount(() => {
   overflow-y: auto;
 }
 
-/* 桌面端：ContextPanel 在文档流中显示，无需遮罩 */
+/* 桌面端：ContextPanel 在文档流中显示，无需遮罩。
+   不用 !important（F4）：base.css 的 `.overlay-mask` / `.overlay-mask.active` 都没声明
+   display，这条 scoped 规则（0,2,0）本身就能生效。 */
 @media (min-width: 1025px) {
   .overlay-mask {
-    display: none !important;
+    display: none;
   }
 }
 </style>
