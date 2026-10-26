@@ -480,14 +480,14 @@ async function handleExportChatMarkdown() {
   display: block;
 }
 
+/* 只写与 base.css `.tk-input` 基类的差值（F2，2026-10-26）：font-size 13px / color /
+   background var(--video-bg, var(--card)) / border / border-radius 与基类同值（--video-bg
+   在 tokens.css 与 8 个主题里都有定义，那个 fallback 从来没生效过），5 条已删。
+   留下的：height 32（基类只有 min-height 36，两者叠起来实际按 36 渲染，这条等尺寸决策再动）、
+   padding 右侧 28 给下拉箭头让位、outline/appearance 去原生样式、下方的 svg 箭头。 */
 .data-mgmt-select {
   height: 32px;
   padding: 0 28px 0 10px;
-  font-size: 13px;
-  color: var(--foreground);
-  background: var(--video-bg, var(--card));
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
   outline: none;
   cursor: pointer;
   appearance: none;

@@ -76,14 +76,15 @@ const presetIds = PRESET_IDS;
 </template>
 
 <style scoped>
-/* EXP-01：创作模式绑定选择器 */
+/* EXP-01：创作模式绑定选择器。12px 是相对基类 13px 的差值，保留。
+   ≤640 的 16px 覆盖必须留着：这条 scoped 规则（0,2,0）比基类 `.tk-input`（0,1,0）高，
+   不写就会让手机上的 12px 压过基类的 16px，iOS 聚焦会放大整页（i7 守卫盯着这条）。 */
 .ctx-preset-select {
   width: 100%;
   font-size: 12px;
 }
 
 @media (max-width: 640px) {
-  /* 控件字号兜底：<16px 的 select 在 iOS 聚焦时会放大整页 */
   .ctx-preset-select {
     font-size: 16px;
   }

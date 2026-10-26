@@ -213,10 +213,11 @@ const schemaOpen = ref(false);
   color: var(--muted-foreground);
 }
 
+/* 只写与 base.css `.tk-input` 基类的差值（F2，2026-10-26）：font-size:13px 与基类
+   var(--font-size-sm)=13px 同值，已删；下面 ≤640 的 16px 副本同理由基类断点兜住。 */
 .status-field-input {
   width: 100%;
   min-width: 0;
-  font-size: 13px;
 }
 
 .status-field-remove {
@@ -250,10 +251,5 @@ const schemaOpen = ref(false);
   outline-offset: 1px;
 }
 
-@media (max-width: 640px) {
-  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
-  .status-field-input {
-    font-size: 16px;
-  }
-}
+/* ≤640 的 16px 由 base.css `.tk-input` 的移动断点给，原先同值副本已删（F2，2026-10-26）。 */
 </style>
