@@ -16,6 +16,8 @@ const { char } = useContextPanel();
     <header class="ctx-section-header">
       <span id="ctx-runtime-title" class="ctx-section-title">{{ t('runtime.title') }}</span>
     </header>
-    <RuntimeStatePanel :character="char" />
+    <!-- RuntimeStatePanel 的 character 是必填 prop：没有当前角色时整段不渲染，
+         否则空安装下打开上下文面板会抛 prop 类型告警（2026-10-26 角色库改为从空开始） -->
+    <RuntimeStatePanel v-if="char" :character="char" />
   </section>
 </template>

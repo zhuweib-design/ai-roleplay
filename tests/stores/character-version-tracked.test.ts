@@ -11,6 +11,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import 'fake-indexeddb/auto';
 import { useCharacterVersionStore } from '@/stores/character-version';
 import { useCharacterStore } from '@/stores/character';
+import { seedCharacter } from '../helpers/character-fixtures';
 
 describe('trackedCharacterIds / hasRepository', () => {
   let store: ReturnType<typeof useCharacterVersionStore>;
@@ -20,6 +21,8 @@ describe('trackedCharacterIds / hasRepository', () => {
     localStorage.clear();
     setActivePinia(createPinia());
     charStore = useCharacterStore();
+    // 角色库从空开始：版本跟踪要按 id 找得到角色，先造一个 seraphina
+    seedCharacter(charStore as never, { id: 'seraphina', name: 'Seraphina' });
     store = useCharacterVersionStore();
     store.setStorageAdapter(null);
     store._resetForTesting();

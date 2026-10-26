@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { seedCharacter } from '../helpers/seed-character';
 
 /**
  * E2E · MOBILE_PLAN 批次 0（"一行到十行的修复"）几何断言
@@ -85,6 +86,8 @@ test.describe('批次 0-1 · 设置分类条 7/7 可达', () => {
 test.describe('批次 0-2 · 横屏无死预留', () => {
   test('844×390：.chat-main 不再为不存在的底部导航留 56px', async ({ page }) => {
     await page.setViewportSize({ width: 844, height: 390 });
+    // 角色库从空开始：没有角色时 /chat 是空态，.chat-main 不渲染
+    await seedCharacter(page, { favorite: true });
     await page.goto('/chat');
     // 同 0-5：懒加载 chunk 的挂载竞态，先等元素再量
     await page.waitForSelector('.chat-main');
@@ -137,6 +140,7 @@ test.describe('批次 0-3 · Toast 不再压页头', () => {
 test.describe('批次 0-4 · 就绪条单行', () => {
   test('390×844：就绪条高度 ≤44px 且不换行', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
+    await seedCharacter(page, { favorite: true });
     await page.goto('/chat');
 
     const bar = page.locator('.readiness-bar');
@@ -189,6 +193,7 @@ test.describe('批次 0-6 · 焦点不逃逸到离屏抽屉', () => {
 
   test('抽屉打开时：Tab 不离开抽屉（遮罩后面的主区 inert）', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
+    await seedCharacter(page, { favorite: true });
     await page.goto('/chat');
 
     // 打开方式沿用 mobile-layout.spec.ts（S-4）里已验证的那条：

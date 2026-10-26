@@ -80,10 +80,11 @@ beforeEach(() => {
 });
 
 describe('版本页 ?char= 的角色归属', () => {
-  it('版本历史必须挂在 URL 指定的那条角色上（读库没完成时会绑到种子角色）', async () => {
+  it('版本历史必须挂在 URL 指定的那条角色上（读库没完成时不许先选任何角色）', async () => {
     const cs = useCharacterStore();
-    const seedFirst = cs.characters[0]!.id;
-    expect(seedFirst, '角色 store 以 mock 种子初始化，第一条就是那个陷阱').not.toBe(ARCHIVED.id);
+    // 2026-10-26 起角色库从空开始（不再有 mock 种子）：读库完成前内存里一条都没有，
+    // 这时若视图"自动选中第一条"就会选中 undefined / 空 id，把版本历史挂到空气上。
+    expect(cs.characters, '角色库初值应为空').toEqual([]);
 
     const times = { loads: 0 };
     const release = holdCharacterLoad(cs, times);
@@ -92,9 +93,9 @@ describe('版本页 ?char= 的角色归属', () => {
     const wrapper = mount(CharacterVersionView, { global: { plugins: [router], stubs: { Modal: true, Toast: true, Icon: true, Collapse: true } } });
     await flushPromises();
 
-    // 反证点：这一句在修复前是 `seraphina`（自动选中第一条）
+    // 反证点：撤掉等待后这里会被写成某条"先到的"角色（过去是种子第一条）
     expect(vs.currentCharacterId, '读库还没完成时不应该已经选好角色').toBeNull();
-    expect(vs.trackedCharacterIds.has(seedFirst), '不能给种子角色建仓库').toBe(false);
+    expect(vs.trackedCharacterIds.size, '读库没完成时不该给任何角色建仓库').toBe(0);
 
     release();
     await flushPromises();

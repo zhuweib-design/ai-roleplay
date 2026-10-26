@@ -9,6 +9,7 @@
  * 第二个用例是 E17（群成员可点进编辑）——同一批"看见但跳不过去"的边，宿主在群聊页。
  */
 import { test, expect, type Page } from '@playwright/test';
+import { seedCharacter } from './helpers/seed-character';
 
 /** 造一本带"常驻"条目的全局世界书（与 ux-prompt-trace 同一造数范式） */
 async function seedGlobalLorebook(page: Page): Promise<void> {
@@ -66,6 +67,7 @@ async function seedGlobalLorebook(page: Page): Promise<void> {
 
 test.describe('角色关联面板（M2-b5）', () => {
   test('裸角色老实说"没有"，造了世界书后给出真实计数并能一跳带回路', async ({ page }) => {
+    await seedCharacter(page, { id: 'seraphina', name: 'Seraphina' });
     await page.goto('/character/seraphina/edit');
     const panel = page.locator('.relations');
     await expect(panel).toBeVisible();
@@ -96,6 +98,8 @@ test.describe('角色关联面板（M2-b5）', () => {
 
   test('群成员名字可点进该角色的编辑页，并带回来路（E17）', async ({ page }) => {
     const name = `关联E2E-${Date.now()}`;
+    // 这条用例要从成员选择器里挑 Seraphina（原先由示例角色提供），现在自己造一个
+    await seedCharacter(page, { id: 'seed-seraphina', name: 'Seraphina' });
     await page.goto('/character');
     await page.getByRole('button', { name: '新建角色' }).click();
     await page.getByRole('button', { name: '完整表单' }).click(); // 新建角色默认落在快速档；这些用例走完整表单，先切档再填字段

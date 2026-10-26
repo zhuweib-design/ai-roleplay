@@ -11,6 +11,7 @@
  * 900 是横屏阈值，本来与形态切换无关。
  */
 import { test, expect, type Page } from '@playwright/test';
+import { seedCharacter } from './helpers/seed-character';
 
 /** 平板档两端的代表宽度：下边界附近与上边界附近，用来证明"整档一个形态" */
 const TABLET_WIDTHS = [820, 1000];
@@ -25,6 +26,8 @@ interface Form {
 
 async function readForm(page: Page, width: number): Promise<Form> {
   await page.setViewportSize({ width, height: 1180 });
+  // 角色库从空开始：没有角色时对话列是空态，量不到 .chat-shell 的布局
+  await seedCharacter(page, { favorite: true });
   await page.goto('/chat');
   // 路由组件是懒加载 chunk：等它挂载，别等 app 外壳（A13 踩过）
   await page.waitForSelector('#app-main > *');

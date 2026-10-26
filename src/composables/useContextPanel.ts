@@ -36,7 +36,8 @@ export function useContextPanel() {
   const chatStore = useChatStore();
   const settingsStore = useSettingsStore();
 
-  const char = computed(() => characterStore.currentCharacter!);
+  // 不再用 `!` 撒谎：角色库从空开始，没有当前角色时各段必须自己兜住（2026-10-26）
+  const char = computed(() => characterStore.currentCharacter);
 
   /**
    * 当前角色实际生效的 API Profile：per-role 绑定优先，否则跟随全局激活 Profile。
@@ -119,18 +120,24 @@ export function useContextPanel() {
   // ── 生成参数：本地编辑 → 写回 store ──
 
   function onTemperature(e: Event) {
+    const c = char.value;
+    if (!c) return;
     const v = Number((e.target as HTMLInputElement).value);
-    characterStore.updateCharacter(char.value.id, { temperature: v });
+    characterStore.updateCharacter(c.id, { temperature: v });
   }
 
   function onAuthorNote(e: Event) {
+    const c = char.value;
+    if (!c) return;
     const v = (e.target as HTMLTextAreaElement).value;
-    characterStore.updateCharacter(char.value.id, { authorNote: v });
+    characterStore.updateCharacter(c.id, { authorNote: v });
   }
 
   function onAuthorDepth(e: Event) {
+    const c = char.value;
+    if (!c) return;
     const v = Number((e.target as HTMLInputElement).value);
-    characterStore.updateCharacter(char.value.id, { authorDepth: v });
+    characterStore.updateCharacter(c.id, { authorDepth: v });
   }
 
   // ── P0-2 思考强度 / P0-3 采样参数（角色级覆盖） ──
@@ -149,7 +156,7 @@ export function useContextPanel() {
   );
 
   /** 角色级采样覆盖（可能为 null） */
-  const charSampling = computed<SamplingOverrides | null>(() => char.value.sampling ?? null);
+  const charSampling = computed<SamplingOverrides | null>(() => char.value?.sampling ?? null);
 
   /** 三档合并后的实际生效值（角色级 ?? Profile 级 ?? 全局默认） */
   const resolvedSampling = computed(() =>
@@ -175,12 +182,14 @@ export function useContextPanel() {
 
   /** 实际展示/下发的思考强度：角色级 ?? Profile 级 */
   const effectiveReasoningEffort = computed<ReasoningEffort | null>(
-    () => char.value.reasoningEffort ?? effectiveProfile.value?.reasoningEffort ?? null
+    () => char.value?.reasoningEffort ?? effectiveProfile.value?.reasoningEffort ?? null
   );
 
   function onReasoningEffort(value: string | null): void {
     if (value !== 'low' && value !== 'medium' && value !== 'high') return;
-    characterStore.updateCharacter(char.value.id, { reasoningEffort: value });
+    const c = char.value;
+    if (!c) return;
+    characterStore.updateCharacter(c.id, { reasoningEffort: value });
   }
 
   // ── EXP-01：角色级创作模式（Preset）绑定 ──
@@ -188,9 +197,11 @@ export function useContextPanel() {
   const presetIds = PRESET_IDS;
 
   const presetBindingValue = computed<PresetId | ''>({
-    get: () => char.value.boundPresetId ?? '',
+    get: () => char.value?.boundPresetId ?? '',
     set: (raw) => {
-      characterStore.updateCharacter(char.value.id, {
+      const c = char.value;
+      if (!c) return;
+      characterStore.updateCharacter(c.id, {
         boundPresetId: raw === '' ? null : (raw as PresetId),
       });
     },
@@ -208,7 +219,9 @@ export function useContextPanel() {
       if (typeof v === 'number' && Number.isFinite(v)) next[k] = v;
       else delete next[k];
     }
-    characterStore.updateCharacter(char.value.id, { sampling: next });
+    const c = char.value;
+    if (!c) return;
+    characterStore.updateCharacter(c.id, { sampling: next });
   }
 
   /** 恢复默认（把角色级覆盖置回未设置） */
@@ -256,17 +269,19 @@ export function useContextPanel() {
 
   /** 当前角色的状态指令（未设置显示为"继承全局"） */
   const statusInstruction = computed<string>(() => {
-    const v = char.value.statusInstruction;
+    const v = char.value?.statusInstruction;
     return v === 'on' || v === 'off' ? v : 'inherit';
   });
 
   function onStatusInstruction(value: string | null): void {
     const next = value === 'on' || value === 'off' ? value : null;
-    characterStore.updateCharacter(char.value.id, { statusInstruction: next });
+    const c = char.value;
+    if (!c) return;
+    characterStore.updateCharacter(c.id, { statusInstruction: next });
   }
 
   /** schema 编辑器的字段快照（来自角色卡；无 schema 时为空数组） */
-  const statusFields = computed<StatusFieldDef[]>(() => char.value.statusSchema?.fields ?? []);
+  const statusFields = computed<StatusFieldDef[]>(() => char.value?.statusSchema?.fields ?? []);
 
   /** 图标下拉选项（全部来自 icons.ts 白名单，本轮零新增图标） */
   const statusIconOptions: string[] = [...STATUS_ICON_NAMES];
@@ -276,7 +291,9 @@ export function useContextPanel() {
    * 全部字段被删空时写 null = 回到"纯嗅探模式"
    */
   function writeStatusSchema(fields: StatusFieldDef[]): void {
-    const prev = char.value.statusSchema;
+    const c = char.value;
+    if (!c) return;
+    const prev = c.statusSchema;
     const next =
       normalizeStatusSchema({
         version: 1,
@@ -284,7 +301,7 @@ export function useContextPanel() {
         unknownKeyPolicy: prev?.unknownKeyPolicy,
         maxFields: prev?.maxFields,
       }) ?? null;
-    characterStore.updateCharacter(char.value.id, { statusSchema: next });
+    characterStore.updateCharacter(c.id, { statusSchema: next });
   }
 
   function addStatusField(): void {

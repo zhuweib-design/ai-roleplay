@@ -143,10 +143,10 @@ describe('角色 store 的加载窗口', () => {
     setActivePinia(createPinia());
   });
 
-  it('mock 种子不算"用户在窗口内新建的记录"，存档仍覆盖它', async () => {
+  it('角色库从空开始，存档载入后以存档为准', async () => {
     const store = useCharacterStore();
-    const seedIds = store.characters.map((c) => c.id);
-    expect(seedIds.length, '角色 store 以 mock 种子初始化').toBeGreaterThan(0);
+    // 2026-10-26 起不再有 mock 种子：首次启动必须为空
+    expect(store.characters, '角色 store 初值应为空').toEqual([]);
 
     store.setStorageAdapter({
       loadCharacters: () =>

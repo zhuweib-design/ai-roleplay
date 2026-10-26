@@ -16,6 +16,7 @@
  * 结论：这条链路是提示与着色的证据，不该顺带改用户数据。
  */
 import { test, expect, type Page, type Locator } from '@playwright/test';
+import { seedCharacter } from './helpers/seed-character';
 
 async function dismissWelcomeModal(page: Page): Promise<void> {
   await page.keyboard.press('Escape');
@@ -74,6 +75,7 @@ test.describe('滑块进度着色', () => {
   });
 
   test('聊天面板的 .tk-range 同样着色（只读检查，不改角色数据）', async ({ page }) => {
+    await seedCharacter(page, { favorite: true }); // 上下文面板的滑杆要有当前角色
     await page.goto('/chat');
     await dismissWelcomeModal(page);
     const slider = page.locator('input.tk-range').first();
@@ -135,6 +137,7 @@ async function raiseInfoToast(page: Page): Promise<Locator> {
 
 test.describe('提示弹窗自动关闭', () => {
   test('提示几秒后自己消失，且带倒计时条', async ({ page }) => {
+    await seedCharacter(page, { favorite: true }); // raiseInfoToast 走发送链路，需要可用的会话
     await page.goto('/chat');
     await dismissWelcomeModal(page);
     const toast = await raiseInfoToast(page);
@@ -155,6 +158,7 @@ test.describe('提示弹窗自动关闭', () => {
   });
 
   test('鼠标停在提示上时计时冻结，移开后继续关闭', async ({ page }) => {
+    await seedCharacter(page, { favorite: true });
     await page.goto('/chat');
     await dismissWelcomeModal(page);
     const toast = await raiseInfoToast(page);

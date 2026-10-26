@@ -16,6 +16,7 @@ import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';
 import { useLorebookStore } from '@/stores/lorebook';
 import { useDataBankStore } from '@/stores/data-bank';
+import { seedCharacter } from '../helpers/character-fixtures';
 
 const STATE_KEY = 'ai-roleplay:guided-tasks.v1';
 
@@ -73,6 +74,9 @@ describe('判据读真实数据', () => {
 
   it('删掉全部角色后，"已有角色"的任务自动退回未完成（不是"看过就算"）', () => {
     const characterStore = useCharacterStore();
+    // 角色库从空开始：这条任务两步分别是"≥1 个角色"与"≥2 个角色"，得造两个才算完成
+    seedCharacter(characterStore as never, { id: 'guide-char' });
+    seedCharacter(characterStore as never, { id: 'guide-char-2', name: '第二个角色' }, false);
     expect(task('t2-character')?.complete).toBe(true);
 
     characterStore.characters.splice(0, characterStore.characters.length);
@@ -81,6 +85,8 @@ describe('判据读真实数据', () => {
   });
 
   it('世界书任务：建一本全局书会同时点亮"已有书"和"已生效"（全局书自动激活），再加条目才三步齐', () => {
+    // 世界书这一步读"当前角色的生效集合"，得先有当前角色
+    seedCharacter(useCharacterStore() as never, { id: 'guide-char' });
     const lorebook = useLorebookStore();
     lorebook.lorebooks.splice(0, lorebook.lorebooks.length);
     expect(task('t4-worldbook')?.doneCount).toBe(0);

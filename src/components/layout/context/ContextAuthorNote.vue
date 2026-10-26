@@ -11,7 +11,8 @@ const { char, onAuthorNote, onAuthorDepth } = useContextPanel();
 </script>
 
 <template>
-  <section class="ctx-section" aria-labelledby="ctx-author-title">
+  <!-- 没有当前角色（空安装）时整段不渲染：作者笔记是写进角色的字段 -->
+  <section v-if="char" class="ctx-section" aria-labelledby="ctx-author-title">
     <header class="ctx-section-header">
       <span id="ctx-author-title" class="ctx-section-title">{{ t('ctx.authorTitle') }}</span>
       <span class="ctx-section-value">{{ t('ctx.authorDepth', { depth: char.authorDepth }) }}</span>

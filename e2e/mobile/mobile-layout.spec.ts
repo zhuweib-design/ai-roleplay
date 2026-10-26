@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { seedCharacter } from '../helpers/seed-character';
 
 /**
  * E2E · 移动端布局与抽屉层级（P1-6）
@@ -69,6 +70,7 @@ test.describe('移动端（≤640px）', () => {
   });
 
   test('抽屉打开时遮罩层级正确，点击底部导航区域被拦截（S-4）', async ({ page }) => {
+    await seedCharacter(page, { favorite: true }); // 抽屉里要有角色行才谈得上遮罩层级
     await page.goto('/chat');
 
     const bottomNav = page.locator('nav.bottom-nav');

@@ -12,8 +12,8 @@ const { char, effectiveProfile, modelLabel, worldUserProfileName, chatStore } = 
 </script>
 
 <template>
-  <!-- 角色信息卡 -->
-  <section class="ctx-section" aria-labelledby="ctx-char-title">
+  <!-- 角色信息卡：没有当前角色时（空安装）给一句提示，不再读 char.name 崩掉 -->
+  <section v-if="char" class="ctx-section" aria-labelledby="ctx-char-title">
     <header class="ctx-section-header">
       <Avatar :character="char" :size="40" />
       <div class="ctx-char-info">
@@ -27,6 +27,9 @@ const { char, effectiveProfile, modelLabel, worldUserProfileName, chatStore } = 
     <div v-if="char.tags.length" class="ctx-tags">
       <span v-for="tag in char.tags" :key="tag" class="ctx-tag">{{ tag }}</span>
     </div>
+  </section>
+  <section v-else class="ctx-section">
+    <p class="ctx-no-character">{{ t('characters.emptyNoChar') }}</p>
   </section>
 
   <!-- 当前世界用户资料：在世界书中编辑 -->
@@ -80,6 +83,12 @@ const { char, effectiveProfile, modelLabel, worldUserProfileName, chatStore } = 
   font-weight: 600;
   color: var(--foreground);
   line-height: 1.2;
+}
+
+.ctx-no-character {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--muted-foreground);
 }
 
 .ctx-char-model {

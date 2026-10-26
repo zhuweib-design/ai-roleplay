@@ -29,7 +29,8 @@ const presetIds = PRESET_IDS;
     <header class="ctx-section-header">
       <span id="ctx-gen-title" class="ctx-section-title">{{ t('ctx.genTitle') }}</span>
     </header>
-    <label class="ctx-range-label">
+    <!-- 温度写在当前角色上：空安装（没有角色）时这一行不渲染；创作模式绑定是全局的，保留 -->
+    <label v-if="char" class="ctx-range-label">
       <span>{{ t('ctx.temperature') }}</span>
       <input
         v-range

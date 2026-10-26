@@ -38,6 +38,7 @@ import { test, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import { THEME_PRESETS } from '../src/types';
 import { applyThemeAndWait, waitForPersistedTheme } from './theme-persistence';
+import { seedCharacter } from './helpers/seed-character';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -256,6 +257,8 @@ const SSE_BODY =
  */
 /** 建一个指向 /mock 的 API 配置并激活：走真实 UI，已有就只激活（幂等） */
 async function ensureMockProfile(page: Page): Promise<void> {
+  // 角色库从空开始（2026-10-26）：对话区要有一个"收藏"角色，会话行与输入框才在
+  await seedCharacter(page, { favorite: true });
   const port = process.env.E2E_PORT ?? '5173';
   await page.goto('/settings?cat=model');
   const profile = page.getByText('E2E 中性网夹具').first();
@@ -338,6 +341,8 @@ async function seedConversation(page: Page): Promise<void> {
  * 整份基线就采成了另一套皮肤（实测 brutal 一条红 143 处，实得值全是 dark 的）。
  */
 async function applyTheme(page: Page, theme: string): Promise<void> {
+  // 采样目标是对话页的一族元素：没有角色时整片是空态，采样自然全空（2026-10-26）
+  await seedCharacter(page, { favorite: true });
   await applyThemeAndWait(page, theme);
   // 主题切换带颜色过渡，过渡中间态会让"半混合色"进基线（axe 那边为此踩过 450ms 的坑）。
   // 这里不用固定等待：轮询到连续两次读数相同才算稳，最多 2.5s。

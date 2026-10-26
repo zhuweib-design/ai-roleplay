@@ -11,6 +11,7 @@
  * 判据：`.chat-title` ≥200px（MOBILE_PLAN §8 2-4）。
  */
 import { test, expect, type Page } from '@playwright/test';
+import { seedCharacter } from '../helpers/seed-character';
 
 async function titleBox(page: Page) {
   return page.evaluate(() => {
@@ -24,6 +25,7 @@ async function titleBox(page: Page) {
 test.describe('A15 · 单聊页头', () => {
   test('390 宽：角色名拿到剩余宽度（.chat-title ≥200px），分段控件不挂', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
+    await seedCharacter(page, { favorite: true }); // 页头标题要有当前角色
     await page.goto('/chat');
     await page.waitForSelector('#app-main > *');
     await expect(page.locator('.chat-title')).toBeVisible();
@@ -44,6 +46,7 @@ test.describe('A15 · 单聊页头', () => {
 
   test('桌面 1280：分段控件仍在（没有底栏，切换需要它）', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
+    await seedCharacter(page, { favorite: true });
     await page.goto('/chat');
     await page.waitForSelector('#app-main > *');
 

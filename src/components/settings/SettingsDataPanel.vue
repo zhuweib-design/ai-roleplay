@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
 import { t } from '@/i18n';
 import SettingsDataDailySection from './SettingsDataDailySection.vue';
@@ -9,7 +8,8 @@ import SettingsDataModals from './SettingsDataModals.vue';
 /**
  * R3-2：设置-数据面板的装配层。
  *
- * 只留分区外壳、页头与「无角色时不渲染」的判据；内容按使用频率分三层：
+ * 只留分区外壳与页头；内容按使用频率分三层（2026-10-26 起不再按"有无角色"隐藏整段，
+ * 空安装的用户也要能点到"导入备份"）：
  *   日常段  资料档案 / 全量备份 / 角色卡 PNG / 对话 Markdown（每天会点的）
  *   高级段  QR 互导 / PWA 持久性 / 嵌入优化 / 审计日志（默认收起的运维项）
  *   弹窗    导入结果 / 审计日志 / 清空确认 / 主密码（Modal 走 Teleport 到 body）
@@ -17,15 +17,15 @@ import SettingsDataModals from './SettingsDataModals.vue';
  * 弹窗单独成组件而不是留在宿主：Modal 传送后不在本组件的 DOM 子树里，
  * 样式必须写在弹窗自己所在的组件才命中。
  */
-
-const characterStore = useCharacterStore();
 </script>
 
 <template>
   <div>
-    <!-- F13 数据管理 -->
+    <!-- F13 数据管理。
+         2026-10-26：原先整段以"有角色"为显示条件。角色库改为从空开始后，空安装的用户
+         在设置→数据里会看到一片空白，连"导入备份"都点不到——而恢复数据正是空安装最需要
+         的操作。门槛去掉，子区块自己处理"没有角色"的情况（下拉只剩占位项）。 -->
     <section
-      v-if="characterStore.characters.length > 0"
       class="settings-section data-mgmt-section"
       aria-labelledby="data-mgmt-title"
     >

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { clearToasts } from './helpers/toasts';
 
 function replyBody(): string {
   return 'data: ' + JSON.stringify({ choices: [{ delta: { content: '群聊真实回复' }, finish_reason: null }] }) +
@@ -57,6 +58,8 @@ test('两个角色群聊使用真实模型、独立 Runtime Context 与 Event', 
   await dialog.locator('#new-group-name').fill('测试双角色群');
   for (const name of names) await dialog.locator('.char-pick').filter({ hasText: name }).click();
   await dialog.getByRole('button', { name: '创建', exact: true }).click();
+  // 群聊创建成功的 toast 在移动档会盖住输入区，先清掉再点发送
+  await clearToasts(page);
 
   const input = page.getByLabel('消息输入');
   await input.fill('第一轮讨论');
@@ -150,6 +153,7 @@ test('群聊生成中可中止，且中止后不提交公共回合与旁听事�
   await dialog.locator('#new-group-name').fill('中止测试群');
   for (const name of names) await dialog.locator('.char-pick').filter({ hasText: name }).click();
   await dialog.getByRole('button', { name: '创建', exact: true }).click();
+  await clearToasts(page);
 
   const input = page.getByLabel('消息输入');
   await input.fill('这轮将被中止');

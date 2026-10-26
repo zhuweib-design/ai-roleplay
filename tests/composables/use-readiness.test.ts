@@ -15,6 +15,7 @@ import { useRandomEventsStore } from '@/stores/random-events';
 import { useSettingsStore } from '@/stores/settings';
 import { useLorebookStore } from '@/stores/lorebook';
 import { useDataBankStore } from '@/stores/data-bank';
+import { seedCharacter } from '../helpers/character-fixtures';
 
 function chipById(id: string) {
   return useReadinessChips().value.find((c) => c.id === id);
@@ -24,6 +25,8 @@ describe('useReadinessChips', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     setVectorRagEnabled(false);
+    // 角色库已改为从空开始：世界书/文档芯片要看"当前角色"，先造一个并选中
+    seedCharacter(useCharacterStore() as never, { id: 'ready-char' });
   });
 
   afterEach(() => {
@@ -138,6 +141,8 @@ describe('useDataBankPrereqs', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     setVectorRagEnabled(false);
+    // 第二行"静态通道"读的是当前角色的世界书
+    seedCharacter(useCharacterStore() as never, { id: 'ready-char' });
   });
 
   it('三行前提：初始全部未满足，且各带跳转', () => {

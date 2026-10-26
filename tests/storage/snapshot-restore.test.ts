@@ -23,10 +23,11 @@ import { useCharacterStore } from '@/stores/character';
 // 整个模块的 transform 成本被算进这一条用例的计时（隔离 1.8s，全量并发下 5.07s
 // 撞破 5s 默认超时）。同目录其他用例本来就是静态导入，成本挪到文件加载阶段。
 import { useChatStore } from '@/stores/chat';
+import { seedCharacter } from '../helpers/character-fixtures';
 
 const PENDING_KEY = 'runtime:pending-group-turns:v1';
 const VERSIONS_KEY = 'ai-roleplay:character-versions';
-/** mock 数据里已存在的角色 ID，character store 启动即载入。 */
+/** 夹具角色的 ID（角色库从空开始，不再有 mock 种子，由 beforeEach 造）。 */
 const EXISTING_CHARACTER = 'seraphina';
 
 describe('迁移后恢复验证：旧快照经迁移可被真实加载端消费', () => {
@@ -34,6 +35,8 @@ describe('迁移后恢复验证：旧快照经迁移可被真实加载端消费'
 
   beforeEach(async () => {
     setActivePinia(createPinia());
+    // 角色库从空开始，版本仓库要按 id 找得到角色
+    seedCharacter(useCharacterStore() as never, { id: EXISTING_CHARACTER, name: 'Seraphina' });
     adapter = new IndexedDBAdapter();
     await adapter.init();
   });

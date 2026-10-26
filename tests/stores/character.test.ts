@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import 'fake-indexeddb/auto';
 import { useCharacterStore } from '../../src/stores/character';
+import { seedCharacter } from '../helpers/character-fixtures';
 import { IndexedDBAdapter } from '@storage/indexeddb-adapter';
 import type { StorageAdapter } from '@storage/storage-adapter';
 
@@ -78,24 +79,33 @@ describe('useCharacterStore — E5 单元测试', () => {
   });
 
   describe('初始状态', () => {
-    it('应预填 mock 角色数据', () => {
+    // 2026-10-26：角色库从空开始（打包与正式环境要求首次启动零数据），不再预填示例角色
+    it('首次启动没有任何角色', () => {
       const store = useCharacterStore();
-      expect(store.characters.length).toBeGreaterThan(0);
+      expect(store.characters).toEqual([]);
     });
 
-    it('应有默认的 currentCharacterId', () => {
+    it('没有角色时 currentCharacterId 为空', () => {
       const store = useCharacterStore();
-      expect(store.currentCharacterId).toBeTruthy();
+      expect(store.currentCharacterId).toBe('');
     });
 
-    it('currentCharacter 应返回当前激活角色', () => {
+    it('选中角色后 currentCharacter 返回它', () => {
       const store = useCharacterStore();
+      const char = seedCharacter(store as never);
       expect(store.currentCharacter).toBeDefined();
-      expect(store.currentCharacter!.id).toBe(store.currentCharacterId);
+      expect(store.currentCharacter!.id).toBe(char.id);
+      expect(store.currentCharacterId).toBe(char.id);
     });
   });
 
   describe('搜索过滤', () => {
+    beforeEach(() => {
+      const store = useCharacterStore();
+      seedCharacter(store as never, { id: 'seed-a', name: 'Kael', tags: ['奇幻'], favorite: true }, false);
+      seedCharacter(store as never, { id: 'seed-b', name: 'Lyra', tags: ['日常'], favorite: false }, false);
+    });
+
     it('searchQuery 为空时应返回全部角色', () => {
       const store = useCharacterStore();
       store.setSearchQuery('');
@@ -169,7 +179,7 @@ describe('useCharacterStore — E5 单元测试', () => {
 
     it('selectCharacter 应更新 currentCharacterId', () => {
       const store = useCharacterStore();
-      const target = store.characters[0]!;
+      const target = seedCharacter(store as never, { id: 'pick-me' }, false);
       store.selectCharacter(target.id);
       expect(store.currentCharacterId).toBe(target.id);
     });

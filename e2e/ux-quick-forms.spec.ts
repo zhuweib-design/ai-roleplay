@@ -6,6 +6,7 @@
  * 后者尤其重要——它同时是 E03 的下游验证（面板列的是真正注入的那批书）。
  */
 import { test, expect, type Page } from '@playwright/test';
+import { seedCharacter } from './helpers/seed-character';
 
 async function dismissWelcome(page: Page): Promise<void> {
   await page.keyboard.press('Escape');
@@ -60,6 +61,7 @@ test.describe('角色快速档', () => {
 
 test.describe('世界书最小生效三步', () => {
   test('三步做完后，这本书出现在上下文面板里（说明真的生效了）', async ({ page }) => {
+    await seedCharacter(page); // 上下文面板要有当前角色才有"生效"可言
     await page.goto('/worldbook');
     await dismissWelcome(page);
 
