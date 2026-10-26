@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+// GroupRuntimeError 的家在 group-runtime-contract；它此前是从 barrel 顺带出来的，
+// 而 barrel 现在不再转导出 postgres-*（服务端模块），所以按真实出处导入。
+import { GroupRuntimeError } from '@/runtime/group-runtime-contract';
 import {
-  GroupRuntimeError,
   HttpGroupRuntimeApi,
   createGroupRuntimeHttpHandler,
   type GroupRuntimeApi,
