@@ -30,7 +30,7 @@ import Modal from '@/components/common/Modal.vue';
 import PrereqNotice from '@/components/common/PrereqNotice.vue';
 import DocCard from '@/components/databank/DocCard.vue';
 import DataBankUploadModal from '@/components/databank/DataBankUploadModal.vue';
-import { useDataBankPrereqs } from '@/core/readiness';
+import { useDataBankPrereqs } from '@/composables/useReadiness';
 import Toast from '@/components/common/Toast.vue';
 import { formatFileSize, formatDate } from '@/utils/format';
 import { t } from '@/i18n';

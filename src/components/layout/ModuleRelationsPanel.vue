@@ -4,13 +4,13 @@
  *
  * 角色编辑页此前只有"绑定/解绑"控件本身，用户配完不知道：绑了没有生效、
  * 模型/预设是角色级还是跟随全局、有没有版本可回滚、这个角色还被哪些群聊用着。
- * 面板**只渲染 `core/relations.ts` 的判定结果**，不在此处做任何数据判断，
+ * 面板**只渲染 `composables/useCharacterRelations.ts` 的判定结果**，不在此处做任何数据判断，
  * 这样角色卡、编辑页、以后的市场详情页可以共用同一份真相。
  */
 import { toRef } from 'vue';
 import Icon from '@/components/common/Icon.vue';
 import { t } from '@/i18n';
-import { useCharacterRelations, type RelationRow } from '@/core/relations';
+import { useCharacterRelations, type RelationRow } from '@/composables/useCharacterRelations';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useGroupChatStore } from '@/stores/group-chat';
 

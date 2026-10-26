@@ -4,12 +4,12 @@
  *
  * 页头一眼看清"这轮对话依赖的四件事各自到什么程度"，未就绪时给出原因 + 一步跳转，
  * 取代此前"只有发失败才知道缺什么"（ChatMain.vue:746 的被动徽标）。
- * 状态一律来自 core/readiness.ts，本组件不做任何判断。
+ * 状态一律来自 composables/useReadiness.ts，本组件不做任何判断。
  */
 import { computed } from 'vue';
 import { t, type MessageKey } from '@/i18n';
 import Icon from '@/components/common/Icon.vue';
-import { useReadinessChips, type ReadinessChip, type ReadinessState } from '@/core/readiness';
+import { useReadinessChips, type ReadinessChip, type ReadinessState } from '@/composables/useReadiness';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 
 defineProps<{ compact?: boolean }>();

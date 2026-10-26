@@ -282,7 +282,7 @@ function handleExport() {
           @notify="showToast"
         />
 
-        <!-- L 层：角色关联（只读 core/relations.ts，编辑模式下才有确定的角色身份） -->
+        <!-- L 层：角色关联（只读 composables/useCharacterRelations.ts，编辑模式下才有确定的角色身份） -->
         <ModuleRelationsPanel v-if="isEditMode && props.id" :character-id="props.id" />
 
         <!-- 表单底部按钮（移动端使用） -->

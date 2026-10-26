@@ -22,7 +22,7 @@ import { useRouter } from 'vue-router';
 import { useRandomEventsStore } from '@/stores/random-events';
 import Icon from '@/components/common/Icon.vue';
 import PrereqNotice from '@/components/common/PrereqNotice.vue';
-import { useRandomEventPrereqs } from '@/core/readiness';
+import { useRandomEventPrereqs } from '@/composables/useReadiness';
 import Toast from '@/components/common/Toast.vue';
 import RandomEventsTemplatesPanel from './RandomEventsTemplatesPanel.vue';
 import RandomEventsScenesPanel from './RandomEventsScenesPanel.vue';

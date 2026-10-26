@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useReadinessChips, useDataBankPrereqs, useRandomEventPrereqs, modelReadiness } from '@core/readiness';
+import { useReadinessChips, useDataBankPrereqs, useRandomEventPrereqs, modelReadiness } from '@/composables/useReadiness';
 import { setVectorRagEnabled } from '@core/dual-channel-runtime';
 import { useCharacterStore } from '@/stores/character';
 import { useRandomEventsStore } from '@/stores/random-events';

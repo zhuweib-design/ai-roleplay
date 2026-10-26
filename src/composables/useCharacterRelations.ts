@@ -19,7 +19,7 @@ import { useDataBankStore } from '@/stores/data-bank';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useCharacterVersionStore } from '@/stores/character-version';
 import { collectLorebooksForCharacter } from '@/stores/chat-context';
-import type { ReadinessJump } from '@/core/readiness';
+import type { ReadinessJump } from '@/composables/useReadiness';
 import type { PresetId } from '@core/creation-preset';
 import { t, type MessageKey } from '@/i18n';
 

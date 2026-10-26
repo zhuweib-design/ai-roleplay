@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { ref } from 'vue';
-import { useCharacterRelations } from '@core/relations';
+import { useCharacterRelations } from '@/composables/useCharacterRelations';
 import { t } from '@/i18n';
 import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';

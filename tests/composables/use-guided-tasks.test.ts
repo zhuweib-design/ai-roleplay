@@ -11,7 +11,7 @@ import {
   toggleSkip,
   setCollapsed,
   loadTaskIntent,
-} from '@core/guided-tasks';
+} from '@/composables/useGuidedTasks';
 import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';
 import { useLorebookStore } from '@/stores/lorebook';

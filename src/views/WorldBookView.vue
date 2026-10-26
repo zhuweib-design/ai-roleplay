@@ -250,7 +250,7 @@ function selectLorebook(id: string) {
 /**
  * 深链 `/worldbook?book=<id>`（M17-b，第二条按 URL 寻址的新深链）。
  *
- * 闸门由登记表给（src/core/deep-link-keys.ts 的 `book` → 世界书库）：视图只说键名。
+ * 闸门由登记表给（src/stores/deep-link-gate.ts 的 `book` → 世界书库）：视图只说键名。
  * 读完了仍没有这本书时必须说出来 —— 世界书页在读库完成后会默认选中第一本，
  * 不说就是"打开的是另一本书"，正是 M12-a 那类静默换目标的形状。
  */

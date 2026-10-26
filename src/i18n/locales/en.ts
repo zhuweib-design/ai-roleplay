@@ -91,7 +91,7 @@ const en: Record<MessageKey, string> = {
   'navDesc.version': 'Snapshots and rollback for character cards',
   'navDesc.market': 'Browse and import community character cards',
   'navDesc.more': 'All feature entries',
-  // L 层：就绪状态条与前置条件横幅（判定唯一来源 src/core/readiness.ts）
+  // L 层：就绪状态条与前置条件横幅（判定唯一来源 src/composables/useReadiness.ts）
   'readiness.aria': 'Configuration status this chat depends on',
   'readiness.allSet': 'Key dependencies are ready',
   'readiness.needsAttention': '{count} item(s) need attention',
@@ -139,7 +139,7 @@ const en: Record<MessageKey, string> = {
   'trace.retrievalMemory': 'Memory',
   'trace.retrievalDocument': 'Document',
   'trace.retrievalLore': 'Lore',
-  // L 层：角色关联面板（判据唯一来源 src/core/relations.ts）
+  // L 层：角色关联面板（判据唯一来源 src/composables/useCharacterRelations.ts）
   'rel.title': 'Character links',
   'rel.hint': 'Each row jumps straight to the module it refers to',
   'rel.worldbook': 'Lorebooks',
@@ -164,7 +164,7 @@ const en: Record<MessageKey, string> = {
   'rel.open': 'View',
   'rel.goto': 'Configure',
   'rel.openAria': 'Open the module linked to {name}',
-  // G 层：任务中心（判据唯一来源 src/core/guided-tasks.ts）
+  // G 层：任务中心（判据唯一来源 src/composables/useGuidedTasks.ts）
   'nav.guide': 'Guide',
   'navDesc.guide': 'Step-by-step list for the key tasks',
   'router.guide': 'Guide',

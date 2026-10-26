@@ -10,7 +10,7 @@
  */
 import { computed, ref, type ComputedRef } from 'vue';
 import type { MessageKey } from '@/i18n';
-import type { ReadinessJump } from '@/core/readiness';
+import type { ReadinessJump } from '@/composables/useReadiness';
 import { useCharacterStore } from '@/stores/character';
 import { useSettingsStore } from '@/stores/settings';
 import { useDataBankStore } from '@/stores/data-bank';
@@ -18,7 +18,7 @@ import { useLorebookStore } from '@/stores/lorebook';
 import { useGroupChatStore } from '@/stores/group-chat';
 import { useStoryStore } from '@/stores/story';
 import { useLocalModelStore } from '@/stores/local-model';
-import { useReadinessChips, useDataBankPrereqs } from '@/core/readiness';
+import { useReadinessChips, useDataBankPrereqs } from '@/composables/useReadiness';
 
 const STATE_KEY = 'ai-roleplay:guided-tasks.v1';
 

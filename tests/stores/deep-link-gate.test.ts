@@ -12,7 +12,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { createRouter, createMemoryHistory } from 'vue-router';
-import { DEEP_LINK_GATES, REGISTERED_DEEP_LINK_KEYS, ensureDeepLinkLoaded } from '@/core/deep-link-keys';
+import { DEEP_LINK_GATES, REGISTERED_DEEP_LINK_KEYS, ensureDeepLinkLoaded } from '@/stores/deep-link-gate';
 import { useDeepLinkId } from '@/composables/useDeepLinkId';
 import { useGroupChatStore } from '@/stores/group-chat';
 

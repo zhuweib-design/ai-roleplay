@@ -13,7 +13,7 @@ import Icon from '@/components/common/Icon.vue';
 import { t, type MessageKey } from '@/i18n';
 import { markOnboardingDone } from '@/utils/onboarding';
 import { useReadinessJump } from '@/composables/useReadinessJump';
-import { useGuidedTasks } from '@/core/guided-tasks';
+import { useGuidedTasks } from '@/composables/useGuidedTasks';
 
 defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>();

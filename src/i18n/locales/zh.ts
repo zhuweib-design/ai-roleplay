@@ -91,7 +91,7 @@ export default {
   'navDesc.version': '角色卡的快照与回滚',
   'navDesc.market': '浏览并导入社区角色卡',
   'navDesc.more': '全部功能入口',
-  // L 层：就绪状态条与前置条件横幅（判定唯一来源 src/core/readiness.ts）
+  // L 层：就绪状态条与前置条件横幅（判定唯一来源 src/composables/useReadiness.ts）
   'readiness.aria': '当前对话依赖的配置状态',
   'readiness.allSet': '关键依赖已就绪',
   'readiness.needsAttention': '有 {count} 项需要先处理',
@@ -139,7 +139,7 @@ export default {
   'trace.retrievalMemory': '记忆',
   'trace.retrievalDocument': '资料',
   'trace.retrievalLore': '设定',
-  // L 层：角色关联面板（判据唯一来源 src/core/relations.ts）
+  // L 层：角色关联面板（判据唯一来源 src/composables/useCharacterRelations.ts）
   'rel.title': '角色关联',
   'rel.hint': '每一行都能一跳到达对应模块',
   'rel.worldbook': '世界书',
@@ -164,7 +164,7 @@ export default {
   'rel.open': '查看',
   'rel.goto': '去配置',
   'rel.openAria': '打开{name}相关模块',
-  // G 层：任务中心（判据唯一来源 src/core/guided-tasks.ts）
+  // G 层：任务中心（判据唯一来源 src/composables/useGuidedTasks.ts）
   'nav.guide': '引导',
   'navDesc.guide': '关键任务的分步清单',
   'router.guide': '引导',

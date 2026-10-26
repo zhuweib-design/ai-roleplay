@@ -13,7 +13,7 @@ import { useRouter } from 'vue-router';
 import Icon from '@/components/common/Icon.vue';
 import { t } from '@/i18n';
 import { NAV_ENTRIES, NAV_GROUPS, moreEntries, type NavEntry } from '@/core/nav-model';
-import { useGuidedTasks, guideProgress } from '@/core/guided-tasks';
+import { useGuidedTasks, guideProgress } from '@/composables/useGuidedTasks';
 import {
   editableRailEntries,
   hiddenRailCount,

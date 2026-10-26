@@ -10,7 +10,7 @@ import { createRouter, createMemoryHistory } from 'vue-router';
 import ContextReadinessBar from '@/components/layout/ContextReadinessBar.vue';
 import PrereqNotice from '@/components/common/PrereqNotice.vue';
 import { useSettingsStore } from '@/stores/settings';
-import { useDataBankPrereqs, useReadinessChips } from '@/core/readiness';
+import { useDataBankPrereqs, useReadinessChips } from '@/composables/useReadiness';
 import { setVectorRagEnabled } from '@/core/dual-channel-runtime';
 
 function makeRouter() {

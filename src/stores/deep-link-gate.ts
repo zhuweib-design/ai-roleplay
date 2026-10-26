@@ -47,7 +47,7 @@ export function ensureDeepLinkLoaded(key: string): Promise<void> {
     return Promise.reject(
       // 开发者面向的编程错误，不是 UI 文案：i18n 门禁（strict）豁免 logger/console 行，
       // 但不豁免 new Error，所以这里用英文，避免为了过门把一个不该进文案表的串塞进 i18n。
-      new Error(`Deep link key "${key}" has no registered gate; add it to DEEP_LINK_GATES in src/core/deep-link-keys.ts`)
+      new Error(`Deep link key "${key}" has no registered gate; add it to DEEP_LINK_GATES in src/stores/deep-link-gate.ts`)
     );
   }
   return gate();

@@ -18,7 +18,7 @@ import {
   toggleSkip,
   taskIntent,
   type TaskView,
-} from '@/core/guided-tasks';
+} from '@/composables/useGuidedTasks';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 
 const tasks = useGuidedTasks();

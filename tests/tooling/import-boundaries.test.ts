@@ -6,6 +6,10 @@
  * （单文件行数、控件尺寸、!important 都靠同一套"登记 + 只许降"的棘轮守住）。
  * 所以先把跨层引用变成红/绿判据，再逐条搬迁。
  *
+ * B3 第二步已把这 4 个读 store 的文件搬出 core（`readiness` / `relations` / `guided-tasks`
+ * 进 `src/composables/`，`deep-link-keys` 进 `src/stores/deep-link-gate.ts`），
+ * 所以 `core -> stores` 这条从棘轮改成 `zero`：以后任何 core 文件 import store 直接红。
+ *
  * 判据用解析后的真实目标层，不是字符串前缀：同一份依赖既可能写 `@/stores/x`，
  * 也可能写 `../stores/x`，只搜别名会漏（快照最初量 "core → api = 0" 就是这么漏的，
  * 实际有 `../api/api-client` 的 type 导入）。
@@ -24,12 +28,7 @@ const RULES: Array<{
   mode: 'zero' | 'ratchet';
   baseline?: Record<string, number>;
 }> = [
-  { from: 'core', to: 'stores', mode: 'ratchet', baseline: {
-    'src/core/guided-tasks.ts': 7,
-    'src/core/readiness.ts': 6,
-    'src/core/relations.ts': 6,
-    'src/core/deep-link-keys.ts': 4,
-  } },
+  { from: 'core', to: 'stores', mode: 'zero' },
   { from: 'core', to: 'api', mode: 'ratchet', baseline: {
     'src/core/summarizer.ts': 2,
     'src/core/character-card.ts': 1,
