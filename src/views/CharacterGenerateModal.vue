@@ -258,25 +258,10 @@ function closeGenerateModal() {
 
 }
 
-/* O-6：Modal 走 Teleport，footer 按钮的共用样式须 plain 各留一份
-   （宿主那份服务 delete footer，本面板这份服务 generate footer） */
-.modal-btn {
-  height: 32px;
-  padding: 0 16px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--card-elevated);
-  color: var(--foreground);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease;
-}
-
-.modal-btn:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-}
-
+/* O-6：Modal 走 Teleport，scoped 规则到不了被传送的内容；
+   但全局 `.modal-btn` 不受 scoped 影响，所以这里不再需要 per-component 的 plain 副本（Q8）。 */
+/* 弹窗按钮的盒模型、焦点环、禁用态与过渡统一由 primitives.css 的 `.modal-btn` 提供
+   （Q8，2026-10-26）：这里不再复制基类，只保留下面与语义有关的配色变体。 */
 @media (hover: hover) and (pointer: fine) {
   .modal-cancel:hover {
     background: var(--video-bg);

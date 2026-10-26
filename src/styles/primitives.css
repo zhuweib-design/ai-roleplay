@@ -78,23 +78,12 @@
 }
 
 /* ── 弹窗动作按钮族 ──
-   18 个文件使用 .modal-btn，但只有 10 个各自抄了基础样式；缺定义的 7 个组件
-   直接落成浏览器原生按钮（首次引导弹窗就在其中）。这里补全局基类：
-   组件内 scoped 规则是 0,2,0，稳定压过本文件的 0,1,0，已有外观零变化。
-
-   变体档位（2026-10-26 F1 逐文件实测，不是估算；`.modal-btn {` 的 10 个副本）：
-   · A 档 4 个：NewConversationModal、settings/ModelProfileForm、settings/ModelProfileList、
-     settings/SettingsDataModals —— 已收成只差 3-4 条：padding 0 14px（基类 0 12px=--space-3）、
-     焦点环 --secondary（基类 --ring）、过渡只 background/border 150ms ease
-     （基类 --transition-colors 含 color、140ms、cubic-bezier）；NewConversationModal 另差
-     :disabled 0.5（基类 --opacity-disabled 0.45）。同值的 10-12 条已删。
-   · B 档 3 个：CharacterEditorView、CharacterGenerateModal、CharactersView ——
-     padding 0 16px、焦点环 --secondary、过渡同 A，且仍抄着 height:32px 等同值条。
-   · C 档 1 个：archives/ArchiveDetailModal —— padding 8px 16px、--radius-md，
-     不声明 height/background/color（走基类）。
-   · D 档 2 个：databank/DataBankUploadModal、DataBankView —— padding 6px 16px、--radius-md、
-     background: --card（基类 --card-elevated）、过渡只 background-color .15s。
-   把 A/B/C/D 的 padding 与焦点环统一掉是视觉改动（要像素核对），不在精简批次里做。 */
+   18 个文件使用 .modal-btn。本文件是**唯一**的外观来源（Q8，2026-10-26）：
+   此前 10 个组件各自复制了一份基类，实测分 A/B/C/D 四档（padding 14/16/8-16/6-16、
+   焦点环 --secondary、圆角 8、底色 --card、禁用 0.5…）。按用户决定统一为设计系统值后，
+   这 10 份副本连同它们的焦点环/禁用态一起删除，组件里只保留与**语义**有关的配色变体：
+   `.modal-confirm` / `.modal-next`（主色实心）、`.modal-cancel`（悬停底色）、
+   `.modal-btn.danger`（危险色）。加新的弹窗按钮不要再抄盒模型，只写颜色差异。 */
 .modal-btn {
   display: inline-flex;
   align-items: center;
@@ -128,12 +117,14 @@
   }
 }
 
-/* 手机命中区撑到 44 用透明伪元素，不改 height：10 份 scoped `.modal-btn` 各自写着
-   `height:32px`（特异性 0,2,0，压过本文件的 0,1,0），改全局高度只会让"有 scoped 复制的
-   弹窗"与"缺定义的 7 个弹窗"在手机上分成两档。伪元素不吃布局，两类弹窗同一档、视觉零变化。
-   统一把 height 抬到 44 仍属 2D-P1-04（要连那 10 份复制一起改并做像素核对），排下一周期。
-   46 而不是 44：探针按 1px 步进，正好 44 时边界像素不属于元素，量出来是 43。 */
-@media (max-width: 640px) {
+/* 手机命中区撑到 44 用透明伪元素，不改 height（视觉零变化）。
+   Q8（2026-10-26）已把 10 份 scoped 副本并掉，所以"抬高全局 height 会被组件压住"这个
+   理由不再成立——现在抬高度是**能做**的，但那属于"改控件高度"的视觉决定（Q10 的待办），
+   不在"统一按钮与焦点环"的范围里。伪元素先保证手指够得着，观感不动。
+   46 而不是 44：探针按 1px 步进，正好 44 时边界像素不属于元素，量出来是 43。
+   判据用 (pointer: coarse) 而不是宽度（Q10，2026-10-26）：平板上手指一样够不着，
+   而纯宽度断点在 768/834 两档实测整片失效。 */
+@media (pointer: coarse) {
   .modal-btn,
   .modal-close {
     position: relative;

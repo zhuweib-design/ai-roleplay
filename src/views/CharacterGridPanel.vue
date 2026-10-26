@@ -421,10 +421,11 @@ function tagsPreview(tags: string[]): string {
 
 }
 
-/* 手机卡面对话入口：命中区撑到 44，用批次 3-3 的伪元素手法（同 .favorite-btn）。
+/* 卡面对话入口：命中区撑到 44，用批次 3-3 的伪元素手法（同 .favorite-btn）。
+   判据是 (pointer: coarse) 而不是宽度（Q10）：平板上手指一样够不着。
    不用 padding+负 margin：`margin` 简写会顶掉 .meta-chat-btn 的 margin-left:auto，
    入口从行尾挪到「已跟踪」旁边，版式跟着变。伪元素只吃命中，不吃布局。 */
-@media (max-width: 640px) {
+@media (pointer: coarse) {
   .meta-chat-btn {
     position: relative;
   }
@@ -441,7 +442,7 @@ function tagsPreview(tags: string[]): string {
 }
 
 /* 批次 3-3：卡片星标命中区撑到 44，视觉仍是 24（卡面密度不变） */
-@media (max-width: 640px) {
+@media (pointer: coarse) {
   .favorite-btn {
     position: relative;
   }

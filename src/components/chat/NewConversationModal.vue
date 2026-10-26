@@ -695,29 +695,9 @@ watch(
   font-size: 13px;
 }
 
-/* 底部按钮：只写与 `src/styles/primitives.css` 的 `.modal-btn` 基类的**差值**（F1 A 档）。
-   基类已给 display/align/gap/height/圆角/边框/底色/字色/字号/光标/过渡/居中/字体族，
-   这里原先把基类已经给的声明整段抄了一遍（12 条里有 10 条同值，已删）。保留的 4 条是真差异，实测见
-   `evidence/screenshots/f1-modal-btn/`：
-   - padding 基类 12px(--space-3)，本弹窗 14px
-   - 焦点环基类用 --ring，本弹窗用 --secondary（同主题下两色不同）
-   - 禁用态基类 0.45(--opacity-disabled)，本弹窗 0.5
-   - 过渡基类是 --transition-colors（含 color、cubic-bezier、--duration-fast 140ms），
-     本弹窗只过渡 background-color / border-color 且用 ease 150ms
-   要不要把这四条收敛到基类是视觉改动，归 Q8 拍板；本条只保证删同值副本后像素不变。 */
-.modal-btn {
-  padding: 0 14px;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.modal-btn:focus-visible {
-  outline-color: var(--secondary);
-}
-
-.modal-btn:disabled {
-  opacity: 0.5;
-}
-
+/* 底部按钮 */
+/* 弹窗按钮的盒模型、焦点环、禁用态与过渡统一由 primitives.css 的 `.modal-btn` 提供
+   （Q8，2026-10-26）：这里不再复制基类，只保留下面与语义有关的配色变体。 */
 @media (hover: hover) and (pointer: fine) {
   .modal-cancel:hover:not(:disabled) {
     background: var(--video-bg);

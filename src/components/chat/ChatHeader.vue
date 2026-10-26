@@ -494,6 +494,11 @@ defineExpose({ closeSearch });
     min-width: var(--touch-min);
     min-height: var(--touch-min);
   }
+}
+
+/* 汉堡键的命中区：只扩点击范围、不改布局，所以判据用触屏能力而不是宽度（Q10，2026-10-26）。
+   上面的 640 块里那些会改布局的（padding/gap/min-size）仍按宽度走。 */
+@media (pointer: coarse) {
   .mobile-menu-btn {
     position: relative;
   }

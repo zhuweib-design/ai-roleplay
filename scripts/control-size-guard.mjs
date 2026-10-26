@@ -41,6 +41,8 @@ const LIST = argv.includes('--list');
  * 它们没有对应的 token，硬映射会改变桌面密度，留给下一轮设计系统决策。
  */
 const BASELINE = {
+  // 2026-10-26 Q8：CharacterEditorView / CharacterGenerateModal 的数值归零（弹窗按钮外观统一，
+  // 各自那份 height:32px 已删），按"未列出即 0"销账。
   // 2026-10-26 F1 A 档：settings 三个弹窗各删掉一条与全局基类同值的 `height: 32px`，
   // 计数归零 ⇒ 按"未列出即 0"的口径销账（ModelProfileForm / ModelProfileList / SettingsDataModals）。
   // 2026-10-19 R1-5：7 → 1。页头三键 32×3 + 搜索条 min-height 44 / 输入 32 / 按钮 30 与
@@ -100,7 +102,6 @@ const BASELINE = {
   // 2026-10-19 R2-1：7 → 1（.preset-swatch 32 / .upload-btn 32 搬到 AvatarSection，
   // .add-stat-btn 26 / .stat-input 32 / .stat-select 32 / .stat-remove 32 搬到 AttrSection，
   // 值一处未改，只是换了归属；剩下 1 处是 .modal-btn 32）。
-  'src/views/CharacterEditorView.vue': 1,
   'src/components/character/editor/CharacterEditorAvatarSection.vue': 2,
   'src/components/character/editor/CharacterEditorAttrSection.vue': 4,
   // 2026-10-19 R2-2：1 → 0（.commit-dot 的 24px 随提交列表搬到 VersionHistoryPanel）。
@@ -108,10 +109,10 @@ const BASELINE = {
   'src/components/character/version/VersionHistoryPanel.vue': 1,
   // 2026-10-21 R3-5：3 → 2（.card-desc 的 min-height:39px 随卡片网格搬到
   // CharacterGridPanel；下面两行登记拆出文件，总数 60 不变）。
-  'src/views/CharactersView.vue': 2,
+  // 2026-10-26 Q8：2 → 1。少的是 .modal-btn 里的 height:32px（外观统一到全局基类，已删）
+  'src/views/CharactersView.vue': 1,
   'src/views/CharacterGridPanel.vue': 1,
   // .modal-btn 的 height:32px 复制副本（O-6：Modal 走 Teleport，footer 共用样式须 plain 各留一份）。
-  'src/views/CharacterGenerateModal.vue': 1,
   // 2026-10-19 R2-4：1 → 0（.form-textarea 的 min-height:60px 整体搬到 MarketDetailModal，
   // 宿主无 textarea；总数 62 不变）。
   'src/views/CommunityMarketView.vue': 0,

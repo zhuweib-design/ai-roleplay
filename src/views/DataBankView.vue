@@ -393,27 +393,13 @@ const prereqRows = useDataBankPrereqs();
   gap: 12px;
 }
 
-/* Modal 按钮（删除确认弹窗用；上传弹窗自带一份） */
-.modal-btn {
-  padding: 6px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--card);
-  color: var(--foreground);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
+/* Modal 按钮（删除确认弹窗用）
+/* 弹窗按钮的盒模型、焦点环、禁用态与过渡统一由 primitives.css 的 `.modal-btn` 提供
+   （Q8，2026-10-26）：这里不再复制基类，只保留下面与语义有关的配色变体。 */
 @media (hover: hover) and (pointer: fine) {
   .modal-btn:hover:not(:disabled) {
     background: var(--card-elevated);
   }
-}
-
-.modal-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .modal-delete {
