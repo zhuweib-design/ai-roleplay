@@ -4,9 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { GroupRuntimeError } from '@/runtime/group-runtime-contract';
 import {
   HttpGroupRuntimeApi,
-  createGroupRuntimeHttpHandler,
   type GroupRuntimeApi,
 } from '@/runtime';
+// handler 属服务端侧模块，barrel 不再转导出
+import { createGroupRuntimeHttpHandler } from '@/runtime/runtime-group-http-handler';
 
 function fakeApi(): GroupRuntimeApi & { calls: Array<{ method: string; args: unknown[] }> } {
   const calls: Array<{ method: string; args: unknown[] }> = [];

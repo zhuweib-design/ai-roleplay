@@ -25,8 +25,8 @@ import {
  * 有测试钉着，抽公共函数不该顺手改它。
  */
 
-/** 与 `runtime-http.ts` 同义；放在这里是为了让两个 handler 共用同一个签名。 */
-export type RuntimeHttpHandlerFn = (request: Request) => Promise<Response>;
+/** 两个 handler 共用的签名；放在这里是为了让客户端文件不必为了一个类型转导出 handler */
+export type RuntimeHttpHandler = (request: Request) => Promise<Response>;
 
 export class RuntimeApiError extends Error {
   constructor(
@@ -105,7 +105,7 @@ export async function resolveRuntimeAccess(
 export function withRuntimeTrace(
   handle: (request: Request, traceId: string) => Promise<Response>,
   onTrace?: RuntimeTraceSink
-): RuntimeHttpHandlerFn {
+): RuntimeHttpHandler {
   return async (request) => {
     const startedAt = Date.now();
     const traceId = resolveTraceId(request);

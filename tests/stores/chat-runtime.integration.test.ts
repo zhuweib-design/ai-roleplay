@@ -11,8 +11,9 @@ import { buildChatRuntimeContext } from '@/runtime/chat-bridge';
 import { RuntimeApiAdapter } from '@/runtime/runtime-api';
 import { RuntimeCore } from '@/runtime/runtime-core';
 import { InMemoryRuntimeStore } from '@/runtime/store';
-import { createRuntimeHttpHandler } from '@/runtime/runtime-http';
-import { createGroupRuntimeHttpHandler, type GroupRuntimeApi } from '@/runtime/runtime-group-http';
+import { createRuntimeHttpHandler } from '@/runtime/runtime-http-handler';
+import { createGroupRuntimeHttpHandler } from '@/runtime/runtime-group-http-handler';
+import type { GroupRuntimeApi } from '@/runtime/runtime-group-http';
 import { GroupRuntimeError } from '@/runtime/group-runtime-contract';
 
 function makeCharacter(id = `runtime-chat-${Date.now()}-${Math.random().toString(16).slice(2)}`): UICharacter {

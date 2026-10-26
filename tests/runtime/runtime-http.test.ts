@@ -5,9 +5,10 @@ import {
   RuntimeApiAdapter,
   RuntimeApiError,
   RuntimeCore,
-  createRuntimeHttpHandler,
   stableChatConversationTurnIds,
 } from '@/runtime';
+// handler 是服务端专用模块，已从前端 barrel 挪到 runtime/server 一侧
+import { createRuntimeHttpHandler } from '@/runtime/runtime-http-handler';
 
 describe('Runtime HTTP 持久化边界', () => {
   it('Fetch Handler 可以承载角色、Event、Snapshot 和 Context 的完整请求链', async () => {

@@ -2,9 +2,7 @@ import type {
   RuntimeApi,
   RuntimeApiRequest,
   RuntimeBatchCreateResult,
-  RuntimeRoute,
 } from './runtime-api';
-import { handleRuntimeRequest } from './runtime-api';
 import type {
   CharacterCompileInput,
   RuntimeContext,
@@ -20,23 +18,18 @@ import type {
   RuntimeCharacterListResult,
   MemoryReviewAction,
 } from './types';
-import {
-  authorizeRuntimeRequest,
-  runtimeAuthorizationResponse,
-  type RuntimeTenantBindingOptions,
-} from './runtime-auth';
-import { createTraceId, type RuntimeTraceSink } from './runtime-trace';
+import { createTraceId } from './runtime-trace';
 import {
   joinUrl,
-  resolveRuntimeAccess,
-  runtimeJsonResponse,
   sendRuntimeRequest,
-  withRuntimeTrace,
   type RuntimeFetch,
 } from './http-envelope';
 
-/** 错误类型与 fetch 注入点已上移到 http-envelope；这里再导出，保持既有导入路径不变 */
-export { RuntimeApiError, type RuntimeFetch } from './http-envelope';
+/**
+ * 错误类型、fetch 注入点与 handler 签名已上移到 http-envelope；这里再导出，
+ * 保持既有导入路径不变。服务端 handler 本体在 `runtime-http-handler.ts`。
+ */
+export { RuntimeApiError, type RuntimeFetch, type RuntimeHttpHandler } from './http-envelope';
 
 export interface RuntimeHttpApiOptions {
   /** 服务端根地址，例如 https://runtime.example.com。 */
@@ -153,81 +146,4 @@ export class HttpRuntimeApi implements RuntimeApi {
       fallbackMessage: 'Runtime HTTP 请求失败',
     });
   }
-}
-
-/** 不带凭据也必须通过的探针路径 */
-const HEALTH_PATH = '/v1/runtime/health';
-
-export type RuntimeHttpHandler = (request: Request) => Promise<Response>;
-
-export type RuntimeHttpHandlerOptions = RuntimeTenantBindingOptions & {
-  /** 关联事件接收器；宿主据此落日志或指标。缺省时不产生任何日志副作用。 */
-  onTrace?: RuntimeTraceSink;
-};
-
-/**
- * 把框架无关的 RuntimeApiRequest 适配成标准 Fetch Handler。
- *
- * 认证解析器由宿主服务注入。开启 requireAuthentication 后，除健康检查外的
- * 请求必须携带可信 principal；数据库连接和事务只存在于 api 实例。
- *
- * 关联可观测：解析（或生成）关联 ID，在响应头回显，并通过 onTrace 上报
- * 方法、路径、状态与耗时，用于分布式排障与时延观测。
- */
-export function createRuntimeHttpHandler(
-  api: RuntimeApi,
-  options: RuntimeHttpHandlerOptions = {}
-): RuntimeHttpHandler {
-  return withRuntimeTrace(async (request) => {
-    const method = request.method.toUpperCase();
-    if (method !== 'GET' && method !== 'POST') {
-      return runtimeJsonResponse(405, { error: 'METHOD_NOT_ALLOWED' });
-    }
-    const url = new URL(request.url);
-    // 判定顺序保持原样：方法 → 认证 → 租户 → 授权 → 领域
-    const access = await resolveRuntimeAccess(request, options, url.pathname, [HEALTH_PATH]);
-    if (!access.granted) return access.response;
-    const { principal } = access;
-    const boundTenantId = access.tenantId;
-    let body: unknown;
-    if (method === 'POST') {
-      try {
-        body = await request.json();
-      } catch {
-        return runtimeJsonResponse(400, { error: 'INVALID_JSON' });
-      }
-      if (boundTenantId && url.pathname === '/v1/runtime/characters/batch' &&
-        body && typeof body === 'object' && !Array.isArray(body)) {
-        const payload = body as Record<string, unknown>;
-        if (Array.isArray(payload.characters)) {
-          body = { ...payload, characters: payload.characters.map((item) =>
-            item && typeof item === 'object' && !Array.isArray(item)
-              ? { ...(item as Record<string, unknown>), tenantId: boundTenantId }
-              : item
-          ) };
-        }
-      }
-      const isTenantBoundWrite =
-        url.pathname === '/v1/runtime/characters' || url.pathname.endsWith('/events') ||
-        url.pathname.endsWith('/turns') || url.pathname.endsWith('/review');
-      if (boundTenantId && isTenantBoundWrite && body && typeof body === 'object' && !Array.isArray(body)) {
-        body = { ...(body as Record<string, unknown>), tenantId: boundTenantId };
-      }
-    }
-    if (!await authorizeRuntimeRequest(request, principal, options, {
-      path: url.pathname,
-      method,
-      body,
-      query: url.searchParams,
-    })) {
-      return runtimeAuthorizationResponse('MEMBER_FORBIDDEN');
-    }
-    const result = await handleRuntimeRequest(api, {
-      method,
-      path: url.pathname as RuntimeRoute,
-      body,
-      query: { ...Object.fromEntries(url.searchParams), ...(boundTenantId ? { tenantId: boundTenantId } : {}) },
-    });
-    return runtimeJsonResponse(result.status, result.body);
-  }, options.onTrace);
 }

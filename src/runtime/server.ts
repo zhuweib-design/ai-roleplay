@@ -11,6 +11,8 @@
  * 整文件挪到服务端入口会把客户端一起带走。要彻底分开得先按客户端/服务端拆文件，
  * 那是下一步（B2 的续），不在这里靠"挪 barrel"制造一个跑不起来的中间状态。
  */
+export * from './runtime-http-handler';
+export * from './runtime-group-http-handler';
 export * from './postgres-store';
 export * from './postgres-executor';
 export * from './postgres-group-runtime';

@@ -25,6 +25,8 @@ const SERVER_ONLY_FILES = [
   'src/runtime/server-runtime.ts',
   // 这两个只被上面那几个引用，但既然它们也是服务端专用，直接进名单更稳：
   // 少一个"靠上游文件挡住"的间接前提
+  'src/runtime/runtime-http-handler.ts',
+  'src/runtime/runtime-group-http-handler.ts',
   'src/runtime/postgres-sql-port.ts',
   'src/runtime/postgres-store-writer.ts',
 ];

@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+// handler 属服务端侧模块，barrel 不再转导出，按真实文件导入
+import { createRuntimeHttpHandler } from '@/runtime/runtime-http-handler';
+import { createGroupRuntimeHttpHandler } from '@/runtime/runtime-group-http-handler';
 import {
   HttpGroupRuntimeApi,
   HttpRuntimeApi,
@@ -7,8 +10,6 @@ import {
   RuntimeApiAdapter,
   RuntimeApiError,
   RuntimeCore,
-  createGroupRuntimeHttpHandler,
-  createRuntimeHttpHandler,
   createTraceId,
   normalizeTraceId,
   type GroupRuntimeApi,

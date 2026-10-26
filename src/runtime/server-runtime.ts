@@ -1,13 +1,15 @@
 import { RuntimeApiAdapter, type RuntimeApi } from './runtime-api';
 import {
   createRuntimeHttpHandler,
+} from './runtime-http-handler';
+import {
   type RuntimeHttpHandler,
-} from './runtime-http';
+} from './http-envelope';
 import { PostgresRuntimeStore, type SqlExecutor } from './postgres-store';
 import { createPgPoolExecutor, type PgPoolLike } from './postgres-executor';
 import { RuntimeCore, type RuntimeCoreOptions } from './runtime-core';
 import { PostgresGroupRuntime } from './postgres-group-runtime';
-import { createGroupRuntimeHttpHandler } from './runtime-group-http';
+import { createGroupRuntimeHttpHandler } from './runtime-group-http-handler';
 import type { RuntimeAuthOptions } from './runtime-auth';
 import type { RuntimeTraceSink } from './runtime-trace';
 
