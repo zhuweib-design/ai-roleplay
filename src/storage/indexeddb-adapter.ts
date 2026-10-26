@@ -2,6 +2,8 @@ import type { CharacterCard } from '@core/character-card';
 import type { Lorebook } from '@core/lorebook';
 import type { GroupChat } from '@core/group-chat';
 import type { DataBankDocument, DataBankScope } from '@core/data-bank';
+import { documentMatchesScope } from '@core/data-bank';
+import { toPlainJson } from '@core/json-utils';
 import type { StoryAnalysisResult } from '@core/story-types';
 import type { Chat } from './types';
 import type { AppSettings, Persona } from '@/types';
@@ -20,6 +22,11 @@ const STORE_DOCUMENTS = 'documents';
 const STORE_STORIES = 'stories';
 const STORE_SNAPSHOTS = 'snapshots';
 const SETTINGS_KEY = 'app';
+
+/** 列表读取统一的降序规则（Tauri 端由 Rust 排序，两端各自负责） */
+function byUpdatedAtDesc(a: { updatedAt: string }, b: { updatedAt: string }): number {
+  return b.updatedAt.localeCompare(a.updatedAt);
+}
 
 /**
  * IndexedDB 存储适配器（Web 降级版）
@@ -208,7 +215,7 @@ export class IndexedDBAdapter implements StorageAdapter {
    * JSON round-trip 保证可克隆。集中到一处，避免「靠人记住逐点解包」的维护风险。
    */
   private serialize<T>(value: T): T {
-    return JSON.parse(JSON.stringify(value)) as T;
+    return toPlainJson(value);
   }
 
   /** 获取对象存储 */
@@ -293,9 +300,7 @@ export class IndexedDBAdapter implements StorageAdapter {
   async loadLorebooks(): Promise<Lorebook[]> {
     const all = await this.wrap(this.store(STORE_LOREBOOKS, 'readonly').getAll());
     // 按 updatedAt 降序
-    return (all as Lorebook[]).sort((a, b) =>
-      b.updatedAt.localeCompare(a.updatedAt)
-    );
+    return (all as Lorebook[]).sort(byUpdatedAtDesc);
   }
 
   async deleteLorebook(id: string): Promise<void> {
@@ -316,9 +321,7 @@ export class IndexedDBAdapter implements StorageAdapter {
 
   async loadGroupChats(): Promise<GroupChat[]> {
     const all = await this.wrap(this.store(STORE_GROUPS, 'readonly').getAll());
-    return (all as GroupChat[]).sort((a, b) =>
-      b.updatedAt.localeCompare(a.updatedAt)
-    );
+    return (all as GroupChat[]).sort(byUpdatedAtDesc);
   }
 
   async deleteGroupChat(id: string): Promise<void> {
@@ -339,9 +342,7 @@ export class IndexedDBAdapter implements StorageAdapter {
 
   async loadPersonas(): Promise<Persona[]> {
     const all = await this.wrap(this.store(STORE_PERSONAS, 'readonly').getAll());
-    return (all as Persona[]).sort((a, b) =>
-      b.updatedAt.localeCompare(a.updatedAt)
-    );
+    return (all as Persona[]).sort(byUpdatedAtDesc);
   }
 
   async deletePersona(id: string): Promise<void> {
@@ -362,9 +363,7 @@ export class IndexedDBAdapter implements StorageAdapter {
 
   async loadDocuments(): Promise<DataBankDocument[]> {
     const all = await this.wrap(this.store(STORE_DOCUMENTS, 'readonly').getAll());
-    return (all as DataBankDocument[]).sort((a, b) =>
-      b.updatedAt.localeCompare(a.updatedAt)
-    );
+    return (all as DataBankDocument[]).sort(byUpdatedAtDesc);
   }
 
   async loadDocumentsByScope(
@@ -373,19 +372,7 @@ export class IndexedDBAdapter implements StorageAdapter {
     chatId?: string
   ): Promise<DataBankDocument[]> {
     const all = await this.loadDocuments();
-    return all.filter((doc) => {
-      // 全局文档始终包含
-      if (doc.scope === 'global') return true;
-      // 角色级：scope='character' 且 characterId 匹配
-      if (scope === 'character' && doc.scope === 'character' && doc.characterId === characterId) {
-        return true;
-      }
-      // 聊天级：scope='chat' 且 chatId 匹配
-      if (scope === 'chat' && doc.scope === 'chat' && doc.chatId === chatId) {
-        return true;
-      }
-      return false;
-    });
+    return all.filter((doc) => documentMatchesScope(doc, scope, characterId, chatId));
   }
 
   async deleteDocument(id: string): Promise<void> {

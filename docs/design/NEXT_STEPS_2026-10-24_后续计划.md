@@ -121,7 +121,7 @@ C-03 记忆可见化只读面板：0.5 人周。上下文面板列出本轮实�
 ### 3.4 优化与精简（不影响功能，按两份计划执行）
 
 - 前端：`D:\AI_data\qoder_交付\2026-10-23_AIjiuguan_radar\evidence\optimization\frontend-plan-2026-10-24.md`。要点：10 份 `.modal-btn` 实测是 4 个不同变体，只有 4 份接近同值且仍差居中与字体族，必须先做像素核对再删（见 Q8）；`.tk-input` 7 个使用点的同值声明可去冗余；双份气泡样式、第二份主题色值表、死开关样式各一条；20 个 >500 行的 .vue 只做纯搬移拆分。
-- 核心层：`D:\AI_data\qoder_交付\2026-10-23_AIjiuguan_radar\evidence\optimization\backend-plan-2026-10-24.md`。**进度：B1 已完成（2026-10-25，提交 `1773905`）；B2 已完成（2026-10-26，barrel 拆出 `runtime/server.ts` + 一条入口隔离守卫）；B2 的续也已完成（2026-10-26，把 `runtime-http.ts` / `runtime-group-http.ts` 按客户端/服务端拆成两对文件，handler 进 `server.ts`，守卫名单从 6 个扩到 8 个）**；B3 的第一步（分层边界守卫）已完成；B4 经评估不做；剩下的：B3 的搬迁、B5（存储双后端共享部分）。要点：单聊与群聊 HTTP Handler 的 trace/认证/错误外壳重复可抽公共函数（约 60-90 行）；Runtime barrel 混装客户端与服务端模块，拆 `runtime/server.ts`；先加一条 import 边界测试再搬 4 个 `core → stores` 反向依赖；测试里 19 处 `allowAnonymous` 收进 helper；存储双后端共享解析与键名逻辑。
+- 核心层：`D:\AI_data\qoder_交付\2026-10-23_AIjiuguan_radar\evidence\optimization\backend-plan-2026-10-24.md`。**进度：B1 已完成（2026-10-25，提交 `1773905`）；B2 已完成（2026-10-26，barrel 拆出 `runtime/server.ts` + 一条入口隔离守卫）；B2 的续也已完成（2026-10-26，把 `runtime-http.ts` / `runtime-group-http.ts` 按客户端/服务端拆成两对文件，handler 进 `server.ts`，守卫名单从 6 个扩到 8 个）**；B3 的第一步（分层边界守卫）已完成；B4 经评估不做；B5 已完成（2026-10-26，真正成双的只有资料库 scope 判定，抽到 `@core/data-bank`；计划原文写的"键名映射/错误包装也各写一份"经实测不成立，src 行数净 +7 不是减少）。剩下的：B3 的搬迁。要点：单聊与群聊 HTTP Handler 的 trace/认证/错误外壳重复可抽公共函数（约 60-90 行）；Runtime barrel 混装客户端与服务端模块，拆 `runtime/server.ts`；先加一条 import 边界测试再搬 4 个 `core → stores` 反向依赖；测试里 19 处 `allowAnonymous` 收进 helper；存储双后端共享解析与键名逻辑。
 
 ### 3.5 明确不做（本周期，理由见路线图第 4 节）
 

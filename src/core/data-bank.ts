@@ -92,3 +92,22 @@ export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 /** 单块最大字符数 */
 export const MAX_CHUNK_LENGTH = 2000;
+
+/**
+ * 判断一份文档是否属于当前查询范围（IndexedDB 与 Tauri 两个存储适配器共用）。
+ *
+ * 规则：全局文档恒包含；角色级/聊天级只在自己的 id 相等时命中。
+ * 放在 core 而不是 storage/shared 是因为它取决于 DataBankDocument 这个形状本身，
+ * 且原先两份副本的 drift 不会被契约测试抓到（改一端，另一端照样绿）。
+ */
+export function documentMatchesScope(
+  doc: Pick<DataBankDocument, 'scope' | 'characterId' | 'chatId'>,
+  scope: DataBankScope,
+  characterId?: string,
+  chatId?: string
+): boolean {
+  if (doc.scope === 'global') return true;
+  if (scope === 'character' && doc.scope === 'character') return doc.characterId === characterId;
+  if (scope === 'chat' && doc.scope === 'chat') return doc.chatId === chatId;
+  return false;
+}
