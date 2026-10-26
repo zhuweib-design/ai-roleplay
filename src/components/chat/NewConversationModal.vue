@@ -695,30 +695,27 @@ watch(
   font-size: 13px;
 }
 
-/* 底部按钮 */
+/* 底部按钮：只写与 `src/styles/primitives.css` 的 `.modal-btn` 基类的**差值**（F1 A 档）。
+   基类已给 display/align/gap/height/圆角/边框/底色/字色/字号/光标/过渡/居中/字体族，
+   这里原先把基类已经给的声明整段抄了一遍（12 条里有 10 条同值，已删）。保留的 4 条是真差异，实测见
+   `evidence/screenshots/f1-modal-btn/`：
+   - padding 基类 12px(--space-3)，本弹窗 14px
+   - 焦点环基类用 --ring，本弹窗用 --secondary（同主题下两色不同）
+   - 禁用态基类 0.45(--opacity-disabled)，本弹窗 0.5
+   - 过渡基类是 --transition-colors（含 color、cubic-bezier、--duration-fast 140ms），
+     本弹窗只过渡 background-color / border-color 且用 ease 150ms
+   要不要把这四条收敛到基类是视觉改动，归 Q8 拍板；本条只保证删同值副本后像素不变。 */
 .modal-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
   padding: 0 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--card-elevated);
-  color: var(--foreground);
-  font-size: 13px;
-  cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .modal-btn:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
+  outline-color: var(--secondary);
 }
 
 .modal-btn:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
 }
 
 @media (hover: hover) and (pointer: fine) {

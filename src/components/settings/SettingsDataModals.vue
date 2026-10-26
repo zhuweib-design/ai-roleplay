@@ -209,24 +209,20 @@ function handleMasterPasswordSuccess(): void {
 
 <style scoped>
 /* ── Modal 按钮 ── */
+/* 只写与 `src/styles/primitives.css` 的 `.modal-btn` 基类的**差值**（F1 A 档，实测见
+   `evidence/screenshots/f1-modal-btn/`）：基类是 padding 0 12px(--space-3)、焦点环 --ring、
+   过渡 --transition-colors（含 color、cubic-bezier、--duration-fast 140ms）；本弹窗是
+   14px / --secondary / 只过渡背景与边框且 ease 150ms。其余 10 条与基类同值，已删。
+   把这三条收敛到基类属视觉改动，归 Q8 拍板。
+   下面那段 `prefers-reduced-motion` 副本理论上被 base.css 的 `transition-duration: .01ms
+   !important` 全局兜住，可以删；但那是另一个弹窗的另一条判定路径，没实测就不动。 */
 .modal-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
   padding: 0 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--card-elevated);
-  color: var(--foreground);
-  font-size: 13px;
-  cursor: pointer;
   transition: background-color .15s ease, border-color .15s ease;
 }
 
 .modal-btn:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
+  outline-color: var(--secondary);
 }
 
 @media (hover: hover) and (pointer: fine) {

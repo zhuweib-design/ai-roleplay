@@ -80,7 +80,21 @@
 /* ── 弹窗动作按钮族 ──
    18 个文件使用 .modal-btn，但只有 10 个各自抄了基础样式；缺定义的 7 个组件
    直接落成浏览器原生按钮（首次引导弹窗就在其中）。这里补全局基类：
-   组件内 scoped 规则是 0,2,0，稳定压过本文件的 0,1,0，已有外观零变化。 */
+   组件内 scoped 规则是 0,2,0，稳定压过本文件的 0,1,0，已有外观零变化。
+
+   变体档位（2026-10-26 F1 逐文件实测，不是估算；`.modal-btn {` 的 10 个副本）：
+   · A 档 4 个：NewConversationModal、settings/ModelProfileForm、settings/ModelProfileList、
+     settings/SettingsDataModals —— 已收成只差 3-4 条：padding 0 14px（基类 0 12px=--space-3）、
+     焦点环 --secondary（基类 --ring）、过渡只 background/border 150ms ease
+     （基类 --transition-colors 含 color、140ms、cubic-bezier）；NewConversationModal 另差
+     :disabled 0.5（基类 --opacity-disabled 0.45）。同值的 10-12 条已删。
+   · B 档 3 个：CharacterEditorView、CharacterGenerateModal、CharactersView ——
+     padding 0 16px、焦点环 --secondary、过渡同 A，且仍抄着 height:32px 等同值条。
+   · C 档 1 个：archives/ArchiveDetailModal —— padding 8px 16px、--radius-md，
+     不声明 height/background/color（走基类）。
+   · D 档 2 个：databank/DataBankUploadModal、DataBankView —— padding 6px 16px、--radius-md、
+     background: --card（基类 --card-elevated）、过渡只 background-color .15s。
+   把 A/B/C/D 的 padding 与焦点环统一掉是视觉改动（要像素核对），不在精简批次里做。 */
 .modal-btn {
   display: inline-flex;
   align-items: center;

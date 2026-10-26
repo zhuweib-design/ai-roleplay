@@ -41,6 +41,8 @@ const LIST = argv.includes('--list');
  * 它们没有对应的 token，硬映射会改变桌面密度，留给下一轮设计系统决策。
  */
 const BASELINE = {
+  // 2026-10-26 F1 A 档：settings 三个弹窗各删掉一条与全局基类同值的 `height: 32px`，
+  // 计数归零 ⇒ 按"未列出即 0"的口径销账（ModelProfileForm / ModelProfileList / SettingsDataModals）。
   // 2026-10-19 R1-5：7 → 1。页头三键 32×3 + 搜索条 min-height 44 / 输入 32 / 按钮 30 与
   // 回到底部 34 随 ChatHeader / ChatComposer / ChatMessageArea 搬走，总数不变（7）。
   'src/components/chat/ChatMain.vue': 1,
@@ -49,7 +51,10 @@ const BASELINE = {
   // R1-5 新增：回到底部浮动按钮 34
   'src/components/chat/ChatMessageArea.vue': 1,
   'src/components/chat/MessageActionSheet.vue': 1,
-  'src/components/chat/NewConversationModal.vue': 3,
+  // 2026-10-26 F1 A 档：3 → 2。少的那条是 `.modal-btn` 里与全局基类同值的 `height: 32px`
+  // （primitives.css 的 .modal-btn 已给同一条，浏览器实测按钮高度没变）。
+  // 剩下 2 条与 .modal-btn 无关：`.search-input` 的 height:32px 与 `.check-icon` 的 20px。
+  'src/components/chat/NewConversationModal.vue': 2,
   'src/components/chat/RuntimeStatePanel.vue': 1,
   'src/components/chat/StatusHud.vue': 1,
   'src/components/chat/ThinkingBlock.vue': 1,
@@ -80,14 +85,11 @@ const BASELINE = {
   // 2026-10-20 R3-2：宿主 2 → 0，.data-mgmt-select 32 搬到 SettingsDataDailySection、
   // .modal-btn 32 搬到 SettingsDataModals。总数 60 不变，只换归属。
   'src/components/settings/SettingsDataDailySection.vue': 1,
-  'src/components/settings/SettingsDataModals.vue': 1,
   // 2026-10-19 R1-4：4 → 2（.data-mgmt-btn 32 / .modal-btn 32 仍留在宿主的两段
   // section 骨架里；.modal-btn 32 与 .data-mgmt-btn 32 各被搬到 ModelProfileForm /
   // ModelLocalSection，值未改，只是换了归属）。
   'src/components/settings/SettingsModelPanel.vue': 2,
   'src/components/settings/ModelLocalSection.vue': 1,
-  'src/components/settings/ModelProfileForm.vue': 1,
-  'src/components/settings/ModelProfileList.vue': 1,
   'src/components/settings/SettingsSecurityPanel.vue': 1,
   'src/components/settings/VectorModelPanel.vue': 1,
   'src/components/worldbook/QuickLorebookFlow.vue': 1,
