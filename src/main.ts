@@ -39,13 +39,6 @@ app.directive('range', vRange);
 app.directive('tip', vTip);
 // 全局行为：有预设值的输入框聚焦清空、未改动失焦回填（见 src/core/preset-input.ts）
 installPresetInputBehavior();
-// 等首次导航解析完再挂载（B6 之后补的，2026-10-27）：
-// 不等的话，首帧 `useRoute().fullPath` 还是 vue-router 的 START_LOCATION `'/'`，
-// 而首启欢迎窗恰好就在这一帧可点——它里面每个跳转按钮都要读"当前在哪"当返回来源，
-// 于是 `from` 被写成 `/`（实测：拦住聊天页分包 1.5s 时 100% 复现）。
-// 等 isReady 的代价是首屏空白延长到首个路由分包加载完，本地壳里是毫秒级；
-// 换来的是"任何一次跳转记下的来源都是真实所在页"。
-await router.isReady();
 app.mount('#app');
 // 键盘只缩视觉视口的引擎（iOS Safari 一类）靠这里把 --keyboard-inset 写出来；
 // Android 上布局视口已经缩过，差值恒为 0，不会重复抬升（见该模块注释）
