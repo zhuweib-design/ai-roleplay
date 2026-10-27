@@ -25,8 +25,8 @@ import { useCharacterStore } from '@/stores/character';
 import type { StorageAdapter } from '@storage/storage-adapter';
 import type { CharacterCard } from '@core/character-card';
 
-/** 拆分前后必须保持不变的指纹（2026-10-27 实测：拆分前的基线，连跑三次同值） */
-const EXPECTED_FINGERPRINT = 'ff8698a15a51a22ad8d3898ee57679d6ec80415aad2dee4e36d2b15efce16d6e';
+/** 拆分前后必须保持不变的指纹（拆分前 749 行实现与拆分后装配层各跑一次，同值） */
+const EXPECTED_FINGERPRINT = 'cd6827baadd1ca8d15bbafcd571b40bd2188ed2ff06095f971115a032d96517f';
 
 // ── 夹具 ──
 
@@ -189,7 +189,7 @@ describe('community-market store 行为指纹（B6 拆分护栏）', () => {
     store.toggleFeaturedOnly();
     sample('18-featured-only');
     store.toggleFeaturedOnly();
-    for (const sort of ['popular', 'rating', 'newest', 'name'] as const) {
+    for (const sort of ['popular', 'rating', 'newest', 'downloads', 'alphabetical'] as const) {
       store.setSortBy(sort);
       sample(`19-sort-${sort}`);
     }
@@ -220,7 +220,7 @@ describe('community-market store 行为指纹（B6 拆分护栏）', () => {
     store.toggleFavorite('card_mc1');
     log.push({ step: '31-fav-cards', ids: store.getFavoriteCards().map((c) => c.marketId) });
     log.push({ step: '32-preferred', tags: [...store.getPreferredTags()].sort() });
-    log.push({ step: '33-recommend', ids: store.getRecommendations({ limit: 4 }).map((r) => r.marketId) });
+    log.push({ step: '33-recommend', ids: store.getRecommendations({ limit: 4 }).map((r) => r.card.marketId) });
     log.push({ step: '34-recommend-default', count: store.getRecommendations().length });
 
     // ── 发布（直接发布 + 从角色库发布）──
@@ -240,6 +240,7 @@ describe('community-market store 行为指纹（B6 拆分护栏）', () => {
     } as never);
     const fromChar = store.publishCurrentCharacter('c-fp', ['测试']);
     sample('36-publish-from-character');
+    log.push({ step: '36b-published-shape', ok: fromChar !== null });
     expect(store.publishCurrentCharacter('no-such-char')).toBeNull();
     sample('37-publish-missing-character');
 
@@ -250,7 +251,7 @@ describe('community-market store 行为指纹（B6 拆分护栏）', () => {
     sample('39-review-bad-rating');
     const reviewId = store.getReviews('card_mc2')[0]?.id ?? '';
     store.likeReview(reviewId);
-    log.push({ step: '40-like', liked: store.getReviews('card_mc2')[0]?.liked ?? null });
+    log.push({ step: '40-like', likes: store.getReviews('card_mc2')[0]?.likes ?? null });
 
     expect(store.reportCard('card_mc2', 'spam', '垃圾内容')).toBe(true);
     sample('41-report');
@@ -319,7 +320,7 @@ describe('community-market store 行为指纹（B6 拆分护栏）', () => {
     // 指纹之外再留一份采样点数：红的时候先看出是不是漏走了一步
     expect({ fingerprint, steps: log.length }).toEqual({
       fingerprint: EXPECTED_FINGERPRINT,
-      steps: 63,
+      steps: 65,
     });
   });
 
