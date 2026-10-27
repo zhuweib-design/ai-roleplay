@@ -14,7 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
 import { setLocale } from '@/i18n';
-import { exportCharacterPng, importCharacterPng } from '@/services/backup-service';
+import { exportCharacterPng, importCharacterPng } from '@/services/character-png';
 import type { CharacterCard } from '@core/character-card';
 
 /** 搬前后必须一致的六组读数（3 种卡形 × 导出字节 / 导入读回，2026-10-27 在搬之前的实现上实测） */

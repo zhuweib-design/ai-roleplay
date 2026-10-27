@@ -14,7 +14,7 @@ import { useRandomEventsStore } from '@/stores/random-events';
 import { getStorageAdapter, getStorageEnv } from '@storage/storage-factory';
 import { initStoragePersistence } from '@/core/storage-persistence';
 import { TauriFSAdapter } from '@storage/tauri-fs-adapter';
-import { importCharacterPng } from '@/services/backup-service';
+import { importCharacterPng } from '@/services/character-png';
 import { cardToUiChar } from '@/services/type-adapters';
 import Toast from '@/components/common/Toast.vue';
 import { useActiveToast, dismissToast } from '@/utils/toast-service';

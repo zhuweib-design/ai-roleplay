@@ -15,9 +15,8 @@ import {
   importBackup,
   parseBackupFile,
   exportChatMarkdown,
-  exportCharacterPng,
-  importCharacterPng,
 } from '../../src/services/backup-service';
+import { exportCharacterPng, importCharacterPng } from '../../src/services/character-png';
 import type { BackupData } from '../../src/core/backup';
 import type { StorageAdapter } from '../../src/storage/storage-adapter';
 import type { CharacterCard } from '../../src/core/character-card';

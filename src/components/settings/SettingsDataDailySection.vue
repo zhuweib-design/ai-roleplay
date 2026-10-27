@@ -12,9 +12,9 @@ import {
   importBackup,
   downloadBackupFile,
   parseBackupFile,
-  downloadCharacterPng,
   downloadChatMarkdown,
 } from '@/services/backup-service';
+import { downloadCharacterPng } from '@/services/character-png';
 import { getActiveProfileId, setActiveProfileId, DEFAULT_PROFILE } from '@/storage/storage-factory';
 import { getStorageAdapter, getStorageCapability } from '@/storage';
 import { getWorldUserDisplayName } from '@/stores/chat-context';
