@@ -11,6 +11,7 @@ import { showToast } from '@/utils/toast-service';
 import { saveBlob, describeSaveResult } from '@/utils/save-blob';
 import { t } from '@/i18n';
 import { auditModalOpen, auditClearConfirmOpen } from './useDataPanelState';
+import SettingsTrialSection from './SettingsTrialSection.vue';
 
 /**
  * R3-2：数据管理的运维与兼容四段——SillyTavern Quick Reply 互导、PWA 数据持久性、
@@ -279,6 +280,9 @@ function handleClearAuditLog() {
       </div>
     </div>
   </div>
+
+  <!-- C-01：首聊验收记录（五人试用的采集表，收在同一段折叠里） -->
+  <SettingsTrialSection />
   </Collapse>
 </template>
 

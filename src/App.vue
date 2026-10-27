@@ -13,6 +13,7 @@ import { useCharacterVersionStore } from '@/stores/character-version';
 import { useRandomEventsStore } from '@/stores/random-events';
 import { getStorageAdapter, getStorageEnv } from '@storage/storage-factory';
 import { initStoragePersistence } from '@/core/storage-persistence';
+import { markAppReady } from '@/core/boot-timing';
 import { TauriFSAdapter } from '@storage/tauri-fs-adapter';
 import { importCharacterPng } from '@/services/character-png';
 import { cardToUiChar } from '@/services/type-adapters';
@@ -332,6 +333,8 @@ onMounted(async () => {
 
   // 性能可观测性：存储初始化完成标记，供 scripts/measure-startup.mjs 量化启动时延（无 UI 副作用）
   document.documentElement.dataset.appReady = '1';
+  // 同一个时刻的数字留给设置页的首聊验收表（C-01）：只存内存，刷新即重置
+  markAppReady();
 });
 
 // AC20 主密码弹窗：解锁成功后注入 API Profile（同样遵循 per-role 绑定）

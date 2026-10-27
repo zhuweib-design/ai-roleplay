@@ -101,6 +101,8 @@ export const SPEC_WEIGHTS = {
   'e2e/ux-readiness.spec.ts': 6.6,
   'e2e/ux-relations-panel.spec.ts': 4.8,
   'e2e/ux-status-color.spec.ts': 4.9,
+  // 2026-10-27 新增（C-01 首聊验收表），单 worker 实测三条 2.3+1.2+1.1=4.6s（只有 msedge 跑它）
+  'e2e/ux-trial-sheet.spec.ts': 4.6,
   'e2e/worldbook-flow.spec.ts': 3.9,
 };
 
@@ -142,7 +144,8 @@ export const E2E_GROUPS = [
     'e2e/ux-status-color.spec.ts',
     'e2e/worldbook-flow.spec.ts',
   ],
-  // 第 3 组：实测 221s（2026-10-17 手工加入 batch0-composition 约 10s ⇒ 约 231s）
+  // 第 3 组：实测 221s（2026-10-17 手工加入 batch0-composition 约 10s ⇒ 约 231s；
+  // 2026-10-27 手工加入 ux-trial-sheet 4.6s ⇒ 约 286s，加完四组极差 1.076 → 1.058）
   [
     'e2e/character-crud.spec.ts',
     'e2e/databank-flow.spec.ts',
@@ -158,6 +161,7 @@ export const E2E_GROUPS = [
     'e2e/ux-guided-tasks.spec.ts',
     'e2e/ux-modal-describedby-version.spec.ts',
     'e2e/ux-prompt-trace.spec.ts',
+    'e2e/ux-trial-sheet.spec.ts',
   ],
   // 第 4 组：实测 221s（2026-10-18 手工加入 settings-composition 约 8s、detail-nav 约 13s ⇒ 约 242s；
   // 2026-10-25 手工加入 chat-empty-setup 4.0s ⇒ 约 285s）
