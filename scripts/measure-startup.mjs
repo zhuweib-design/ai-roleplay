@@ -4,7 +4,9 @@
  *
  * 目的：给「优化前 / 优化后」提供可复现的量化对比数据，替代估算值。
  * 指标：
- *   - readyMs：导航开始 → 存储初始化完成（html[data-app-ready="1"]），即 App.vue onMounted 全部 await 结束
+ *   - readyMs：导航开始 → 存储初始化完成（html[data-app-ready="1"]），即 App.vue onMounted 全部 await 结束。
+ *     2026-10-27 起这个窗口还包含"首次导航解析"——`main.ts` 在 `app.mount` 前 `await router.isReady()`，
+ *     所以与更早的读数对比时要先扣掉首个路由分包的加载时间（本地壳里是毫秒级），否则会读成"变慢了"。
  *   - DCL / load：浏览器导航指标
  *   - FCP：首次内容绘制
  *

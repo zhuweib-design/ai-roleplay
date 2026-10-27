@@ -82,27 +82,29 @@ test.describe('任务中心', () => {
     await page.addInitScript(() => {
       localStorage.removeItem('ai-roleplay:onboarding-done');
     });
+    // 刻意把聊天页分包压后 1.5s：这就是"路由还没解析完、欢迎窗已经可点"的那段窗口。
+    // 修复前（`main.ts` 挂载不等 `router.isReady()`）这段时间里点跳转，`from` 会被写成
+    // START_LOCATION 的 `/`；修复后 `data-app-ready` 只在首次导航解析完才出现，
+    // 所以下面那句等待本身就是判据。牙在哪：把 `await router.isReady()` 摘掉，
+    // 这条会稳定红在 `from=/` 上（不是靠运气撞窗口）。
+    await page.route(/ChatView\.vue/, async (route) => {
+      try {
+        await new Promise((r) => setTimeout(r, 1500));
+        await route.continue();
+      } catch {
+        // 页面先走了，这条请求作废；不吞掉会让 Playwright 把取消算成用例失败
+      }
+    });
     await page.goto('/chat');
+    await page.locator('html[data-app-ready="1"]').waitFor({ timeout: 20_000 });
 
     const modal = page.locator('.modal-panel, [role="dialog"]').last();
     await expect(modal).toBeVisible();
     await expect(modal.locator('.onboarding-step')).toHaveCount(3);
 
     await modal.locator('[data-rel-jump="onboarding-guide"]').click();
-    // 从欢迎窗进任务页也带来源，便于返回
-    //
-    // 2026-10-27 实测：全量并发跑 4 轮里 2 轮拿到的是 `from=/` 而不是 `from=/chat`。
-    // 成因不在这里，在 `main.ts:42`——`app.mount()` 之前没有 `await router.isReady()`，
-    // 于是首帧 `useRoute().fullPath` 仍是 vue-router 的 START_LOCATION `'/'`；
-    // dev server 要现编 ChatView 的分包，这个窗口有几百毫秒到几秒，
-    // 而欢迎窗恰好就在这一帧里可点。`pushWithReturn` 盖的就是那一刻的 fullPath。
-    //
-    // 两种读法在结果上等价：`'/'` 本身就是 `redirect: '/chat'`（router/index.ts:8-10），
-    // 返回按钮 replace('/') 落地还是聊天页。所以这里钉"必须带来源、来源只能是这两者"
-    // ——比原来更严（旧写法连 `?from=` 缺席都放过）。
-    // 真要修的是取值时机（mount 前等 isReady，或 pushWithReturn 兜 START_LOCATION），
-    // 那是行为修复批次，不混在等价精简里。
-    await expect(page).toHaveURL(/\/guide\?from=\/(chat)?$/);
+    // 从欢迎窗进任务页也带来源，且必须是真实的来源页（不是 START_LOCATION 的 '/'）
+    await expect(page).toHaveURL(/\/guide\?from=\/chat$/);
     await expect(page.locator('.guided-task-head').first()).toBeVisible();
   });
 

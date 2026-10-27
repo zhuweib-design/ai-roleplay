@@ -504,10 +504,14 @@ export async function downloadChatMarkdown(
   const md = exportChatMarkdown(chat, characterName, userName);
   const safeName = characterName.replace(/[^\w\u4e00-\u9fa5-]/g, '_');
   const safeDate = new Date(chat.updatedAt).toISOString().slice(0, 10);
-  return saveBlob(
+  const outcome = await saveBlob(
     `${safeName}-${t('backup.mdFilenameChat')}-${safeDate}.md`,
     () => new Blob([md], { type: 'text/markdown;charset=utf-8' })
   );
-  // T-06 审计
-  auditLogger.record('chat_export_md', `${characterName} / ${chat.messages.length} msgs`, 'ok');
+  // T-06 审计：这句原来挂在 `return` 之后，永远执行不到（Markdown 导出的审计一直没落账）。
+  // 现在按真实落点记：用户取消保存面板不算一次导出，不写条目。
+  if (outcome.outcome === 'saved') {
+    auditLogger.record('chat_export_md', `${characterName} / ${chat.messages.length} msgs`, 'ok');
+  }
+  return outcome;
 }
