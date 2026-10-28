@@ -34,7 +34,7 @@ test('配置 API → 新建角色 → 对话流式回复', async ({ page }) => {
   // 1. 配置 API Profile
   await page.goto('/settings');
   // 设置页为分类侧边栏：API 配置位于"模型"分类，先切换再操作
-  await page.getByRole('tab', { name: /模型/ }).click();
+  await page.getByRole('tab', { name: /^模型/ }).click();
   await page.getByRole('button', { name: '新增 API 配置' }).click();
   await expect(page.getByRole('dialog', { name: '新增 API 配置' })).toBeVisible();
   await page.locator('#p-name').fill('E2E 模型');

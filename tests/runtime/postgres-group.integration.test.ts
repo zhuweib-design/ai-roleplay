@@ -105,7 +105,9 @@ integration('PostgreSQL 群聊公共回合与多角色原子事务', () => {
       await expect(group.createGroup({ groupId: randomUUID(), name: '非法成员', memberIds: [a, outsider] }))
         .rejects.toThrow('成员不存在');
       // 经真实 HTTP 客户端、统一 Fetch Handler 和 PostgreSQL 验证，而非分别模拟各层。
-      const handler = createPgPoolRuntimeHttpHandler(pool, tenant);
+      // allowAnonymous 是测试侧的显式放开（见 server-runtime.ts 的 httpAuth 注释）：
+      // B1/B2 之后信封层默认拒未认证请求，而这条用例验的是群聊事务与成员边界，不是认证宿主。
+      const handler = createPgPoolRuntimeHttpHandler(pool, tenant, { httpAuth: { allowAnonymous: true } });
       // 使用真实回环 HTTP 传输；此适配器仅用于测试，不代替生产认证宿主。
       server = createServer((request, response) => {
         void (async () => {

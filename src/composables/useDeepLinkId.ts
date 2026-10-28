@@ -1,6 +1,6 @@
 import { watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { ensureDeepLinkLoaded, type DeepLinkKey } from '@/core/deep-link-keys';
+import { ensureDeepLinkLoaded, type DeepLinkKey } from '@/stores/deep-link-gate';
 import { logger } from '@/utils/logger';
 
 /**
@@ -14,7 +14,7 @@ import { logger } from '@/utils/logger';
  *
  * M16-b 关掉剩下那个错法：调用方可以给 `load` 传**别的库**的闸门（键对了、等错了库，
  * 深链静默不命中也不报错）。现在 `key` 是登记过的键名（`DeepLinkKey`），不传 `load` 时
- * 闸门由 `src/core/deep-link-keys.ts` 的登记表决定；确实要等多个库的视图才自己传
+ * 闸门由 `src/stores/deep-link-gate.ts` 的登记表决定；确实要等多个库的视图才自己传
  * （版本页就是那一条例外）。
  *
  * 守卫（tests/views/deep-link-store-gate.test.ts）要求：凡是按 URL 记录 id 找数据的

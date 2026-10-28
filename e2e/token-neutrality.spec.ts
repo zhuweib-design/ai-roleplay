@@ -38,6 +38,7 @@ import { test, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import { THEME_PRESETS } from '../src/types';
 import { applyThemeAndWait, waitForPersistedTheme } from './theme-persistence';
+import { seedCharacter } from './helpers/seed-character';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -256,6 +257,8 @@ const SSE_BODY =
  */
 /** 建一个指向 /mock 的 API 配置并激活：走真实 UI，已有就只激活（幂等） */
 async function ensureMockProfile(page: Page): Promise<void> {
+  // 角色库从空开始（2026-10-26）：对话区要有一个"收藏"角色，会话行与输入框才在
+  await seedCharacter(page, { favorite: true });
   const port = process.env.E2E_PORT ?? '5173';
   await page.goto('/settings?cat=model');
   const profile = page.getByText('E2E 中性网夹具').first();
@@ -338,6 +341,8 @@ async function seedConversation(page: Page): Promise<void> {
  * 整份基线就采成了另一套皮肤（实测 brutal 一条红 143 处，实得值全是 dark 的）。
  */
 async function applyTheme(page: Page, theme: string): Promise<void> {
+  // 采样目标是对话页的一族元素：没有角色时整片是空态，采样自然全空（2026-10-26）
+  await seedCharacter(page, { favorite: true });
   await applyThemeAndWait(page, theme);
   // 主题切换带颜色过渡，过渡中间态会让"半混合色"进基线（axe 那边为此踩过 450ms 的坑）。
   // 这里不用固定等待：轮询到连续两次读数相同才算稳，最多 2.5s。
@@ -544,9 +549,16 @@ if (UPDATE) {
   /**
    * 一条主题一条用例，理由是量出来的：整条串在一起时单跑 5.7s，但 4 worker 全量并发下要
    * 39–50s，而配置的单测预算是 60s（playwright.config.ts 的注释就写着"并发下随机红 1–3 条"）。
-   * 贴着上限的安全网会被当噪声忽略，所以切成 5 条各测一套主题——单条并发下 ~12s，余量 5 倍，
-   * 而且红了直接说出是哪套主题出的问题。
+   * 切成 9 条各测一套主题，红了能直接说出是哪套皮肤出的问题。
+   *
+   * 但"切细就有余量"这句当年是错的，2026-10-27 在本机重测：每条用例仍然要做
+   * 6 次整页导航（套皮肤 1 次 + 5 个目标各 1 次），dev server 每次导航都要现编模块，
+   * 于是单条并发下不是 ~12s 而是 43–60s——两条最慢的分别用掉 59.9s 与 58.0s，
+   * 预算 60s 等于零余量，全量跑必然随机红 2–4 条（实测同一棵树跑两轮：4 条红、0 条红）。
+   * 安全网贴着上限就是噪声，所以按实测把这一族的预算抬到 180s（与上面重生成基线那条同值）。
+   * CI 不受影响：`workers: isCI ? 1 : 4`，单 worker 没有并发，本来就用不到这份余量。
    */
+  test.setTimeout(180_000);
   for (const theme of THEMES) {
     test(`像素中性网：「${theme}」主题下 ${TARGETS.length} 个目标的计算样式与基线一致`, async ({ page }) => {
       assertViewport(page);

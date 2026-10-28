@@ -26,8 +26,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const SRC = join(ROOT, 'src');
 
-/** 当前存量基线（2026-09-22 实测，已剥离注释）。只允许下调，不允许上调。 */
-const BASELINE_TOTAL = 26;
+/** 当前存量基线（2026-09-22 实测，已剥离注释）。只允许下调，不允许上调。
+ *  2026-10-26 F4：24 → 20。去掉的四条都在组件层，且每条都有实测——
+ *  WorldBookEventEditor 的 `.state-row` / `.form-row-actions` 改成
+ *  `.event-editor-grid .state-row` 这种同层级选择器压过列方向（真实浏览器量到
+ *  flex-direction 仍是 row，普通行仍是 column）；ChatView 的 `.overlay-mask` 去掉
+ *  !important 后在 1280 与 900 两档量到的 display 分别是 none / block，与带 !important 时一致
+ *  （base.css 的 .overlay-mask 根本没声明 display，没有对手）；
+ *  CommunityMarketView 的 `@media (prefers-reduced-motion) { * { transition: none !important } }`
+ *  整块删除，base.css 的全局 reduce 兜底已把时长压到 .01ms（实测 transitionDuration 从 0s 变 1e-05s，
+ *  肉眼无差，且与同页 `.search-input` 原本的行为对齐）。 */
+const BASELINE_TOTAL = 20;
 /** S-1 的历史目标（responsive.css 收敛到个位数）—— 仅作提示，不阻断 */
 const RESPONSIVE_TARGET_FILE = 'src/styles/responsive.css';
 const RESPONSIVE_TARGET_MAX = 9;

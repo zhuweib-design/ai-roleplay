@@ -287,7 +287,13 @@ onBeforeUnmount(() => stopRaf());
 
 @media (max-width: 640px) {
   .toast {
-    top: 12px;
+    /* 批次 0-3：原 `top: 12px` 与 56px 的页头重叠 44px，正压住角色名与「对话/群聊」分段控件。
+       改为贴底部导航上方——手机上拇指够得着的是下半屏，顶部是最贵的地方（角色名与模式）。
+       `z-index` 不动：`--z-toast` 已是全站最高（rail 30 < mask 60 < drawer 70 < modal 100 < toast 200），
+       问题从来是**位置**不是层级，去动 z 是白费。
+       注：`--mobile-nav-h` 是 56px 而实测导航高 53px（差 3px），偏大一点点更安全。 */
+    top: auto;
+    bottom: calc(var(--mobile-nav-h, 56px) + env(safe-area-inset-bottom, 0px) + 12px);
     right: 12px;
     left: 12px;
     max-width: none;

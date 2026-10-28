@@ -78,6 +78,10 @@ function formatConvTime(iso: string): string {
 
 function switchChat(chat: Chat) {
   if (!current.value) return;
+  if (chatStore.isGenerating) {
+    showToast('info', t('charList.generatingBusy'));
+    return;
+  }
   void chatStore.openSession(current.value, chat.id);
   characterStore.closeAllDrawers();
 }
@@ -85,6 +89,10 @@ function switchChat(chat: Chat) {
 /** 新建会话：清空当前角色消息缓冲并进入聊天 */
 function newChat() {
   if (!current.value) return;
+  if (chatStore.isGenerating) {
+    showToast('info', t('charList.generatingBusy'));
+    return;
+  }
   chatStore.newSession(current.value);
   characterStore.closeAllDrawers();
   // O-14（REAL_DEVICE_TEST_2026-10-03）：懒创建草稿不进列表，原高亮消失——
@@ -114,6 +122,11 @@ function cancelDelete() {
   confirmDeleteId.value = null;
 }
 function confirmDelete(chat: Chat) {
+  if (chatStore.isGenerating && chat.id === chatStore.activeChatId) {
+    confirmDeleteId.value = null;
+    showToast('info', t('charList.generatingBusy'));
+    return;
+  }
   confirmDeleteId.value = null;
   const name = chat.title;
   void chatStore.deleteSession(current.value ?? null, chat.id).then(() => {
@@ -170,7 +183,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
     @touchend="onDrawerTouchEnd"
   >
     <!-- 搜索区 -->
-    <div class="character-search" style="position: relative">
+    <div class="character-search">
       <span class="search-icon" aria-hidden="true">
         <Icon name="search" :size="16" />
       </span>
@@ -314,7 +327,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
 
       <!-- 全部角色分组 -->
       <template v-if="characterStore.others.length">
-        <div class="char-group-header" aria-hidden="true" style="padding-top: 14px">{{ t('charList.all') }}</div>
+        <div class="char-group-header char-group-header--spaced" aria-hidden="true">{{ t('charList.all') }}</div>
         <button
           v-for="c in characterStore.others"
           :key="c.id"
@@ -359,6 +372,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
 
 <style scoped>
 .character-search {
+  position: relative; /* 搜索图标绝对定位的参照（原先是内联 style，F4 挪进来） */
   padding: 12px;
   border-bottom: 1px solid var(--border);
 }
@@ -373,17 +387,18 @@ function onDrawerTouchEnd(e: TouchEvent) {
   pointer-events: none;
 }
 
+/* 只写与 base.css `.tk-input` 基类的**差值**（F2，2026-10-26）：基类已给
+   min-height/padding/background/border/border-radius/color/font-family/font-size(=13px)，
+   这里原先把同值的 6 条抄了一遍，已删。留下的：
+   - height（基类只有 min-height，这里要钉死 36）
+   - width 100%
+   - padding 左 32px 给搜索图标让位
+   - outline: none（搜索框不要浏览器默认外框） */
 .char-search-input {
-  height: 36px;
+  height: var(--size-control-md);
   width: 100%;
-  background: var(--video-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
   padding: 0 12px 0 32px;
-  color: var(--foreground);
-  font-size: 13px;
   outline: none;
-  font-family: var(--font-sans);
 }
 
 .char-close-btn {
@@ -407,6 +422,12 @@ function onDrawerTouchEnd(e: TouchEvent) {
   font-size: 12px;
   letter-spacing: 0.04em;
   font-weight: 500;
+}
+
+/* 「全部角色」这一组离上面的分组条远一点（原先是内联 style="padding-top:14px"）。
+   14px 在间距阶梯里没有对应档位（--space-3=12 / --space-4=16），保留字面量。 */
+.char-group-header--spaced {
+  padding-top: 14px;
 }
 
 .char-row {
@@ -550,7 +571,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
   align-items: center;
   justify-content: center;
   width: 24px;
-  height: 24px;
+  height: var(--size-control-xs);
   background: none;
   border: none;
   color: var(--muted-foreground);
@@ -608,7 +629,7 @@ function onDrawerTouchEnd(e: TouchEvent) {
   justify-content: center;
   gap: 6px;
   width: 100%;
-  height: 36px;
+  height: var(--size-control-md);
   border: 1px dashed var(--border);
   border-radius: var(--radius-md);
   color: var(--muted-foreground);
@@ -637,10 +658,17 @@ function onDrawerTouchEnd(e: TouchEvent) {
   }
 }
 
+/* 搜索框在 ≤640 的 16px（防 iOS 聚焦放大）由 base.css 的 `.tk-input` 移动断点给，
+   这里原先那条同值副本已删（F2，2026-10-26）。基类若改了那条断点，这里会跟着变。 */
+
+/* 批次 3-2：手指端独立可点元素 ≥44px */
 @media (max-width: 640px) {
-  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
-  .char-search-input {
-    font-size: 16px;
+  .new-char-btn,
+  .char-close-btn {
+    min-height: var(--touch-min);
+  }
+  .char-close-btn {
+    min-width: var(--touch-min);
   }
 }
 </style>

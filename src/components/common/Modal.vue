@@ -9,8 +9,11 @@
  * - 打开时焦点移到首个可交互元素
  * - 关闭时焦点恢复到打开前焦点
  * - 点击遮罩关闭（可配置）
+ * - 手机端系统返回键关掉这一层（`useBackLayer`，批次 2-3）；`dismissible: false`
+ *   的强制模态不参与——刻意不吞返回键，把用户锁在弹窗里比直接离开更糟
  */
 import { ref, watch, nextTick, onBeforeUnmount, useTemplateRef, useId } from 'vue';
+import { useBackLayer } from '@/composables/useBackLayer';
 import { t } from '@/i18n';
 
 const props = withDefaults(
@@ -53,6 +56,13 @@ function close() {
   emit('update:modelValue', false);
   emit('close');
 }
+
+// 手机端系统返回键 = 关掉这一层（批次 2-3）。dismissible:false 的强制模态不压历史。
+useBackLayer({
+  isOpen: () => props.modelValue,
+  canDismiss: () => props.dismissible,
+  onBack: close,
+});
 
 function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && props.dismissible) {

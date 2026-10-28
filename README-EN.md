@@ -102,11 +102,12 @@ npm run test:coverage         # Vitest + coverage (statements 78 / branches 73 /
 npm run build                 # vue-tsc + vite production build
 npm run check:csp             # CSP contract guard (must run after build)
 npm run check:ort             # ORT first-screen isolation guard (must run after build)
+npm run check:readme-gates    # Reconciles this list against CI (every gate CI runs must appear here, and vice versa)
 ```
 
 > A 2026-10-16 lesson: a `.load-earlier-btn:hover` violation reached `master` because local verification only ran the familiar subset. Walk the full `ci.yml` step list; treat CI's 4 parallel E2E groups as the E2E verdict (the local full serial run takes ~15 minutes and is memory-hungry).
 
-> CI (`.github/workflows/ci.yml`) has three jobs. `quality-gates` (ubuntu-latest, with a postgres:16 service) runs, in order: dependency audit (high and above) → lint → runtime schema drift → snapshot migration plan → i18n strict → eval manifest self-check → CSS conventions guard (breakpoints / viewport / hover / `!important` ratchet / editable control font size I-7) → per-file line-count ratchet → control-height literal ratchet → shared-primitive guard → save-blob guard (+ self-test) → no-artifact-in-git guard (+ self-test) → no-release-assets guard (+ self-test) → token dead-reference ratchet (+ self-test) → contrast audit (+ self-test) → test and coverage gate (78/73/78/78; the same step carries the real PostgreSQL integration cases, so no duplicate job) → build → CSP guard → ORT first-screen guard. `e2e` runs Playwright in 4 weight-balanced groups derived from measured single-worker durations (`e2e/shard-groups.mjs`, guarded by a "every spec belongs to exactly one group" census test), chromium for desktop and the Pixel 5 viewport, webkit as the Safari-class engine. `tauri-build` checks that the desktop release binary compiles (`--no-bundle`; no installer is built or uploaded). GitHub Releases keep only the automatically generated source archives.
+> CI (`.github/workflows/ci.yml`) has three jobs. `quality-gates` (ubuntu-latest, with a postgres:16 service) runs, in order: dependency audit (high and above) → lint → runtime schema drift → snapshot migration plan → i18n strict → eval manifest self-check → CSS conventions guard (breakpoints / viewport / hover / `!important` ratchet / editable control font size I-7) → per-file line-count ratchet → control-height literal ratchet → shared-primitive guard → save-blob guard (+ self-test) → no-artifact-in-git guard (+ self-test) → no-release-assets guard (+ self-test) → token dead-reference ratchet (+ self-test) → contrast audit (+ self-test) → test and coverage gate (78/73/78/78; the same step carries the real PostgreSQL integration cases, so no duplicate job) → build → CSP guard → ORT first-screen guard → README gate parity guard (+ self-test: the gates CI runs and the list above are reconciled in both directions, one missing line is red). `e2e` runs Playwright in 4 weight-balanced groups derived from measured single-worker durations (`e2e/shard-groups.mjs`, guarded by a "every spec belongs to exactly one group" census test), chromium for desktop and the Pixel 5 viewport, webkit as the Safari-class engine. `tauri-build` checks that the desktop release binary compiles (`--no-bundle`; no installer is built or uploaded). GitHub Releases keep only the automatically generated source archives.
 
 **Runtime changes (`src/runtime/`, `migrations/`) add:**
 
@@ -147,7 +148,17 @@ VITE_RUNTIME_BASE_URL=https://runtime.example.com npm run build
 
 ```ts
 // Server composition entry point (tenantId must come from auth middleware)
-const handler = createPgPoolRuntimeHttpHandler(pool, tenantId);
+const handler = createPgPoolRuntimeHttpHandler(pool, tenantId, {
+  // Fail-closed by default: every route except /health returns 401 without a principal.
+  // Use allowAnonymous: true only for trusted loopback debugging.
+  httpAuth: {
+    requireAuthentication: true,
+    authenticate: async (request) => {
+      const session = await verifySession(request); // host-owned session/gateway check
+      return session ? { subject: session.userId, tenantId: session.tenantId } : null;
+    },
+  },
+});
 ```
 
 Server routes:

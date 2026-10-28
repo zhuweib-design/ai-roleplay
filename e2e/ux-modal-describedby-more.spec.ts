@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { auditOpenDialog } from './a11y-dup-audit';
+import { seedCharacter } from './helpers/seed-character';
 
 /**
  * E2E · 对话框级说明的覆盖补全（M9-d，接 M8-c）
@@ -213,6 +214,9 @@ test.describe('设置页', () => {
 
 test.describe('群聊页', () => {
   test('删除群聊确认：说明带上了"消息一并删除"', async ({ page }) => {
+    // 创建群聊要求至少两名成员（GroupCreateModal.confirmCreate 的硬门槛），
+    // 示例角色没了之后这里得自备第二个成员
+    await seedCharacter(page, { id: 'e2e-extra-member', name: 'E2E备选成员' });
     await createCharacter(page, `E2E群成员A-${Date.now()}`);
     const groupName = `E2E说明接力群-${Date.now()}`;
     await createGroup(page, groupName);
@@ -223,6 +227,7 @@ test.describe('群聊页', () => {
   });
 
   test('添加成员：那句"从已创建的角色里挑"接进了无障碍树', async ({ page }) => {
+    await seedCharacter(page, { id: 'e2e-extra-member', name: 'E2E备选成员' });
     await createCharacter(page, `E2E群成员B-${Date.now()}`);
     await createGroup(page, `E2E挑成员群-${Date.now()}`);
     await page.getByRole('button', { name: '添加成员' }).click();
@@ -233,6 +238,7 @@ test.describe('群聊页', () => {
 
   test('生成临时 NPC：说明讲清"会建一个并直接进群"', async ({ page }) => {
     await createApiProfile(page);
+    await seedCharacter(page, { id: 'e2e-extra-member', name: 'E2E备选成员' });
     await createCharacter(page, `E2E群成员C-${Date.now()}`);
     await createGroup(page, `E2E临时NPC群-${Date.now()}`);
     await page.getByRole('button', { name: '生成随机 NPC' }).click();

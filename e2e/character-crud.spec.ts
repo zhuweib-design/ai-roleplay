@@ -23,7 +23,14 @@ test('角色完整生命周期：新建→保存→列表→编辑→删除', as
   await expect(page.getByRole('article', { name: `角色：${name}` })).toBeVisible();
 
   // 4. 进入编辑：改名
+  // 手机视口（≤640）点卡不再直进编辑，而是开详情抽屉（方案乙），「编辑」在抽屉里；
+  // 桌面保持点卡直进。用视口宽度判断而非 DOM 探测，与 chat-flow 的写法一致，
+  // 也避免组件挂载前探测的时序竞态。
+  const isNarrow = (page.viewportSize()?.width ?? 1280) <= 640;
   await page.getByRole('article', { name: `角色：${name}` }).click();
+  if (isNarrow) {
+    await page.locator('.bs-panel').getByRole('button', { name: '编辑' }).click();
+  }
   await expect(page).toHaveURL(/\/character\/.+\/edit/);
   const renamed = `${name}-已改名`;
   await page.getByLabel('名称').fill(renamed);
@@ -32,7 +39,11 @@ test('角色完整生命周期：新建→保存→列表→编辑→删除', as
   await expect(page.getByRole('article', { name: `角色：${renamed}` })).toBeVisible();
 
   // 5. 删除：编辑页删除 + 确认弹窗
+  // 与第 4 步同一个分叉：窄视口要先从抽屉里点「编辑」才到编辑页。
   await page.getByRole('article', { name: `角色：${renamed}` }).click();
+  if (isNarrow) {
+    await page.locator('.bs-panel').getByRole('button', { name: '编辑' }).click();
+  }
   await expect(page).toHaveURL(/\/character\/.+\/edit/);
   await page.getByRole('button', { name: '删除角色' }).click();
   // 确认弹窗（modal-confirm 按钮文本「删除」）

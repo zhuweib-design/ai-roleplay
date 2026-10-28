@@ -2,6 +2,8 @@ import type { CharacterCard } from '@core/character-card';
 import type { Lorebook } from '@core/lorebook';
 import type { GroupChat } from '@core/group-chat';
 import type { DataBankDocument, DataBankScope } from '@core/data-bank';
+import { documentMatchesScope } from '@core/data-bank';
+import { toPlainJson } from '@core/json-utils';
 import type { StoryAnalysisResult } from '@core/story-types';
 import type { Chat } from './types';
 import type { AppSettings, Persona } from '@/types';
@@ -149,7 +151,7 @@ export class TauriFSAdapter implements StorageAdapter {
 
   async saveLorebook(lorebook: Lorebook): Promise<void> {
     // 修复: Vue 响应式 Proxy 不能 structured clone 跨 IPC, 需 JSON 解包(同 indexeddb saveLorebook)
-    const plain = JSON.parse(JSON.stringify(lorebook)) as Lorebook;
+    const plain = toPlainJson(lorebook);
     await TauriFSAdapter.invoke<void>('save_lorebook_file', {
       id: plain.id,
       lorebook: plain,
@@ -256,21 +258,8 @@ export class TauriFSAdapter implements StorageAdapter {
     chatId?: string
   ): Promise<DataBankDocument[]> {
     const all = await this.loadDocuments();
-    // 与 IndexedDB 端语义对齐（契约测试 R1）：global 文档在任意 scope 查询中恒包含
-    return all.filter((doc) => {
-      if (doc.scope === 'global') return true;
-      if (
-        scope === 'character' &&
-        doc.scope === 'character' &&
-        doc.characterId === characterId
-      ) {
-        return true;
-      }
-      if (scope === 'chat' && doc.scope === 'chat' && doc.chatId === chatId) {
-        return true;
-      }
-      return false;
-    });
+    // 与 IndexedDB 端共用同一条判定（契约测试 R1）：global 文档在任意 scope 查询中恒包含
+    return all.filter((doc) => documentMatchesScope(doc, scope, characterId, chatId));
   }
 
   async deleteDocument(id: string): Promise<void> {
@@ -310,7 +299,7 @@ export class TauriFSAdapter implements StorageAdapter {
   async saveSnapshot(key: string, value: unknown): Promise<void> {
     // JSON 规范化（与 IndexedDB 端一致）：保证快照为纯 JSON 数据，
     // 兼容 Vue 响应式 proxy 等不可直接序列化的对象。
-    const plain = JSON.parse(JSON.stringify(value));
+    const plain = toPlainJson(value);
     await TauriFSAdapter.invoke<void>('save_snapshot_file', { key, value: plain });
   }
 

@@ -12,6 +12,7 @@
  * 再发含关键词的那条才有。夹具完全相同，只有消息文本不同。
  */
 import { test, expect, type Page } from '@playwright/test';
+import { seedCharacter } from './helpers/seed-character';
 
 const PROFILE_NAME = 'E2E 手配事件模型';
 const LOREBOOK_ID = 'lb-e2e-manual';
@@ -121,6 +122,7 @@ test.describe('世界书手工配置的事件被注入（E11 第二条路径）'
       })
     );
 
+    await seedCharacter(page, { favorite: true });
     await page.goto('/chat');
     await configureMockProfile(page);
     await seedGlobalLorebook(page);

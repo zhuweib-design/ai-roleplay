@@ -7,6 +7,7 @@ import ThinkingBlock from './ThinkingBlock.vue';
 import StatusHud from './StatusHud.vue';
 import PromptTraceSummary from './PromptTraceSummary.vue';
 import EventTraceSummary from './EventTraceSummary.vue';
+import RetrievalTraceSummary from './RetrievalTraceSummary.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { computed, getCurrentInstance, onBeforeUnmount } from 'vue';
 import { t } from '@/i18n';
@@ -209,6 +210,8 @@ onBeforeUnmount(cancelLongPress);
       <PromptTraceSummary :items="msg.promptTrace" />
       <!-- E11：本轮带入了哪几条随机事件（可跳随机事件页）；无事件时不渲染 -->
       <EventTraceSummary :items="msg.eventTrace" />
+      <!-- C-03：本轮检索命中了哪几条（记忆 / 设定，含相关度）；无命中时不渲染 -->
+      <RetrievalTraceSummary :items="msg.retrievalTrace" />
     </div>
   </div>
 </template>
@@ -261,46 +264,20 @@ onBeforeUnmount(cancelLongPress);
   }
 }
 
+/* 气泡外观的**唯一来源**是 `src/styles/layout.css` 的同名类（.msg-bubble / .msg-assistant /
+   .msg-user / .msg-narration*），这里只留组件独有的那一条（操作条要相对气泡定位）。
+   2026-10-26 F3 实测：删掉的 8 条与全局逐条同值（浏览器计算样式改前改后 0 差异）；
+   圆角其实由 ChatMain 的 `:deep(.msg-bubble)` 用 `--bubble-radius` 控制（设置页可调，
+   实测改到 20px 生效），这里原先那条 `var(--radius-md)` 只是同值垫底。 */
 .msg-bubble {
-  max-width: min(70%, 40em);
-  width: fit-content;
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--font-size-md);
-  line-height: 1.7;
-  word-wrap: break-word;
-  white-space: pre-wrap;
   position: relative;
 }
 
-.msg-assistant {
-  background: color-mix(in srgb, var(--secondary) 5%, transparent);
-  border-left: 2px solid var(--secondary);
-  color: var(--foreground);
-}
-
-.msg-user {
-  background: color-mix(in srgb, var(--primary) 8%, transparent);
-  color: var(--foreground);
-}
+/* .msg-assistant / .msg-user 的底色、左边线、对齐、上边距全部由 layout.css 提供，
+   原先这里重复的 3 + 2 条声明已删。 */
 
 .msg-text {
   margin: 0;
-}
-
-.msg-narration,
-.msg-narration-after {
-  font-style: italic;
-  color: var(--muted-foreground);
-  display: block;
-}
-
-.msg-narration {
-  margin-bottom: 6px;
-}
-
-.msg-narration-after {
-  margin-top: 6px;
 }
 
 .gen-dot {
@@ -323,22 +300,13 @@ onBeforeUnmount(cancelLongPress);
   font-size: var(--font-size-xs);
 }
 
+/* 操作条的定位、底色、边框、隐藏与过渡全部由 layout.css 给，这里只留组件独有的两条：
+   - pointer-events：只靠 opacity:0 隐藏时这排按钮依然可被点中——气泡上方 top:-13px
+     那条看不见的带子会吃掉本该落在消息上的点击。隐藏即不可点，显现才恢复命中。
+   - 鼠标悬停分支里的 pointer-events: auto（见下）。
+   2026-10-26 F3：其余 13 条与全局逐条同值，已删。 */
 .msg-toolbar {
-  position: absolute;
-  top: -13px;
-  right: 6px;
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  padding: 3px;
-  border-radius: var(--radius-sm);
-  background: var(--card-elevated);
-  border: 1px solid var(--border);
-  opacity: 0;
-  /* 只靠 opacity:0 隐藏时这排按钮依然可被点中——气泡上方 top:-13px 那条看不见的带子
-     会吃掉本该落在消息上的点击。改成"隐藏即不可点，显现才恢复命中"。 */
   pointer-events: none;
-  transition: opacity 0.15s ease;
 }
 
 /* I-5（P2-5）：hover 分支按设备能力分流，避免触屏 tap 后操作栏粘滞 */
@@ -373,24 +341,12 @@ onBeforeUnmount(cancelLongPress);
   right: auto;
 }
 
+/* 操作条按钮的盒模型、配色、hover 全由 layout.css 给；这里只留两条组件独有：
+   height 用控件档位 token（全局写的是字面量 24px，同值但少了"跟着档位走"的语义），
+   以及 color 过渡（全局那条没有过渡）。2026-10-26 F3 删掉其余 9 条与同值 hover 块。 */
 .msg-toolbar-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-xs);
-  color: var(--muted-foreground);
-  cursor: pointer;
-  background: none;
-  border: none;
+  height: var(--size-control-xs);
   transition: color 0.15s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .msg-toolbar-btn:hover {
-    color: var(--foreground);
-  }
 }
 
 .msg-toolbar-btn:focus-visible {

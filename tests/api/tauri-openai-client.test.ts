@@ -686,3 +686,128 @@ describe('TauriOpenAIClient — P0-1 思考通道', () => {
     expect(events.find((e) => e.type === 'done')?.fullThinking).toBeUndefined();
   });
 });
+
+/**
+ * 2B-P1-04：桌面端"流卡住时点停止"必须立刻回到可输入
+ *
+ * 现场：Rust 侧只在 `stream.next().await` 返回后才检查取消标志，所以"TCP 连上但服务端
+ * 一个字节都不发"（本地模型冷启动、代理黑洞）时，前端既唤不醒挂在 waiter 上的消费者，
+ * 又要在收尾前 `await` 那个还要等 300 秒总超时的 invoke promise —— 点停止等于没点。
+ *
+ * 夹具形状刻意只挂 `chat_stream` 这一个 invoke（永不 settle），其余照常返回，
+ * 这样"1 秒内收尾"只能来自 abort 分支，不可能来自 Rust 正常返回。
+ */
+describe('TauriOpenAIClient — 桌面端停止即回到可输入（2B-P1-04）', () => {
+  const stalledClient = () => {
+    const channel = createMockChannel();
+    invokeMock.mockImplementation((cmd: string) => {
+      if (cmd === 'chat_stream') return new Promise<string>(() => {});
+      if (cmd === 'cancel_chat_stream') return Promise.resolve(true);
+      return Promise.resolve(null);
+    });
+    return {
+      client: new TauriOpenAIClient({ baseUrl: 'https://stalled.test/v1', apiKey: 'k' }),
+      channel,
+    };
+  };
+
+  /** 生成器在 ms 毫秒内是否产出下一条事件 */
+  const nextWithin = async (
+    iter: AsyncIterator<unknown>,
+    ms: number
+  ): Promise<{ settled: boolean; value?: unknown }> => {
+    const pending = iter.next();
+    const timer = new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), ms));
+    const raced = await Promise.race([pending.then(() => 'settled' as const), timer]);
+    if (raced === 'timeout') {
+      // 让挂住的 promise 不至于在 teardown 时变成未处理拒绝
+      void pending.catch(() => undefined);
+      return { settled: false };
+    }
+    return { settled: true, value: (await pending).value };
+  };
+
+  it('对照：不点停止时它确实一直挂着（证明夹具真的复现了"卡住"）', async () => {
+    const { client } = stalledClient();
+    const controller = new AbortController();
+    const iter = client.chatStream({
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'm',
+      signal: controller.signal,
+    })[Symbol.asyncIterator]();
+
+    const r = await nextWithin(iter, 300);
+    expect(r.settled, '夹具没复现出卡住：一个字节都没回却产出了事件').toBe(false);
+  });
+
+  it('一个字节都没回时点停止，1 秒内以"已停止"收尾且不再等 Rust', async () => {
+    const { client } = stalledClient();
+    const controller = new AbortController();
+    const iter = client.chatStream({
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'm',
+      signal: controller.signal,
+    })[Symbol.asyncIterator]();
+
+    // 先让生成器跑到挂在 waiter 上的位置
+    const pending = iter.next();
+    await new Promise((r) => setTimeout(r, 30));
+    controller.abort();
+
+    const timer = new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), 1000));
+    const raced = await Promise.race([pending.then((r) => r.value), timer]);
+    expect(
+      raced,
+      '点停止后 1 秒内没有收尾：消费者仍挂在等待 Rust 的路径上'
+    ).toEqual({ type: 'error', error: '已停止生成' });
+  });
+
+  it('停止时把取消指令发给 Rust（带本次 channel）', async () => {
+    const { client } = stalledClient();
+    const controller = new AbortController();
+    const iter = client.chatStream({
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'm',
+      signal: controller.signal,
+    })[Symbol.asyncIterator]();
+    const pending = iter.next();
+    await new Promise((r) => setTimeout(r, 30));
+    controller.abort();
+    await Promise.race([pending, new Promise((r) => setTimeout(r, 1000))]);
+
+    // 收尾变快之后，取消调用是在 `await import('@tauri-apps/api/core')` 里发出的，
+    // 不保证与生成器返回落在同一个宏任务，所以轮询而不是直接断言。
+    await vi.waitFor(
+      () =>
+        expect(
+          invokeMock.mock.calls.find(([cmd]) => cmd === 'cancel_chat_stream')
+        ).toBeDefined(),
+      { timeout: 1000, interval: 20 }
+    );
+    const cancel = invokeMock.mock.calls.find(([cmd]) => cmd === 'cancel_chat_stream');
+    expect(cancel, '点停止后没有调用 cancel_chat_stream，Rust 侧任务会继续占着连接').toBeDefined();
+    expect(cancel?.[1]).toEqual(expect.objectContaining({ channel: expect.stringMatching(/^chat-stream-/) }));
+  });
+
+  it('信号在开始之前就已 abort：不发 Rust 请求，直接以"已停止"收尾', async () => {
+    const { client } = stalledClient();
+    const controller = new AbortController();
+    controller.abort();
+    const iter = client.chatStream({
+      messages: [{ role: 'user', content: 'hi' }],
+      model: 'm',
+      signal: controller.signal,
+    })[Symbol.asyncIterator]();
+
+    const timer = new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), 1000));
+    const raced = await Promise.race([iter.next().then((r) => r.value), timer]);
+    expect(raced, 'abort 事件已经派发过了，只挂监听器等于永远等不到 ⇒ 必须先看一眼当前状态').toEqual({
+      type: 'error',
+      error: '已停止生成',
+    });
+    expect(
+      invokeMock.mock.calls.some(([cmd]) => cmd === 'chat_stream'),
+      '已经停止还去发这条注定要等的请求'
+    ).toBe(false);
+  });
+});

@@ -1,11 +1,8 @@
 import type {
   RuntimeApi,
   RuntimeApiRequest,
-  RuntimeApiResponse,
   RuntimeBatchCreateResult,
-  RuntimeRoute,
 } from './runtime-api';
-import { handleRuntimeRequest } from './runtime-api';
 import type {
   CharacterCompileInput,
   RuntimeContext,
@@ -21,25 +18,18 @@ import type {
   RuntimeCharacterListResult,
   MemoryReviewAction,
 } from './types';
+import { createTraceId } from './runtime-trace';
 import {
-  authorizeRuntimeRequest,
-  resolveRuntimePrincipal,
-  runtimeAuthorizationResponse,
-  runtimeAuthenticationResponse,
-  type RuntimeTenantBindingOptions,
-} from './runtime-auth';
-import {
-  RUNTIME_TRACE_HEADER,
-  createTraceId,
-  normalizeTraceId,
-  resolveTraceId,
-  type RuntimeTraceSink,
-} from './runtime-trace';
+  joinUrl,
+  sendRuntimeRequest,
+  type RuntimeFetch,
+} from './http-envelope';
 
-export type RuntimeFetch = (
-  input: RequestInfo | URL,
-  init?: RequestInit
-) => Promise<Response>;
+/**
+ * 错误类型、fetch 注入点与 handler 签名已上移到 http-envelope；这里再导出，
+ * 保持既有导入路径不变。服务端 handler 本体在 `runtime-http-handler.ts`。
+ */
+export { RuntimeApiError, type RuntimeFetch, type RuntimeHttpHandler } from './http-envelope';
 
 export interface RuntimeHttpApiOptions {
   /** 服务端根地址，例如 https://runtime.example.com。 */
@@ -49,28 +39,6 @@ export interface RuntimeHttpApiOptions {
   headers?: HeadersInit;
   /** 关联 ID 生成器；默认使用 createTraceId，测试可注入确定性值。 */
   traceId?: () => string;
-}
-
-export class RuntimeApiError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly code: string,
-    message: string,
-    public readonly details?: unknown,
-    /** 本次失败请求的关联 ID，便于用同一 ID 捞取服务端日志。 */
-    public readonly traceId?: string
-  ) {
-    super(message);
-    this.name = 'RuntimeApiError';
-  }
-}
-
-function joinUrl(baseUrl: string, path: string): string {
-  return baseUrl.replace(/\/+$/, '') + path;
-}
-
-function isJsonResponse(response: Response): boolean {
-  return response.headers.get('content-type')?.includes('application/json') ?? false;
 }
 
 /**
@@ -167,130 +135,15 @@ export class HttpRuntimeApi implements RuntimeApi {
     method: RuntimeApiRequest['method'],
     body?: unknown
   ): Promise<T> {
-    const headers = new Headers(this.headers);
-    headers.set('Accept', 'application/json');
-    if (body !== undefined) headers.set('Content-Type', 'application/json');
-    // 每个请求注入关联 ID；服务端会原样回显，失败时一并带在错误上。
-    headers.set(RUNTIME_TRACE_HEADER, this.generateTraceId());
-    const response = await this.fetcher(joinUrl(this.baseUrl, path), {
+    return sendRuntimeRequest<T>({
+      fetcher: this.fetcher,
+      url: joinUrl(this.baseUrl, path),
       method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      baseHeaders: this.headers ?? {},
+      generateTraceId: this.generateTraceId,
+      body,
+      fallbackCode: 'RUNTIME_HTTP_ERROR',
+      fallbackMessage: 'Runtime HTTP 请求失败',
     });
-    const payload = isJsonResponse(response) ? await response.json() : await response.text();
-    // 以服务端回显为准（服务端可能生成了兜底 ID），否则退回客户端注入值。
-    const traceId = normalizeTraceId(response.headers.get(RUNTIME_TRACE_HEADER))
-      ?? normalizeTraceId(headers.get(RUNTIME_TRACE_HEADER))
-      ?? undefined;
-    if (!response.ok) {
-      const errorBody = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-      throw new RuntimeApiError(
-        response.status,
-        typeof errorBody.error === 'string' ? errorBody.error : 'RUNTIME_HTTP_ERROR',
-        typeof errorBody.message === 'string' ? errorBody.message : 'Runtime HTTP 请求失败',
-        errorBody.issues,
-        traceId
-      );
-    }
-    return payload as T;
   }
-}
-
-export type RuntimeHttpHandler = (request: Request) => Promise<Response>;
-
-export type RuntimeHttpHandlerOptions = RuntimeTenantBindingOptions & {
-  /** 关联事件接收器；宿主据此落日志或指标。缺省时不产生任何日志副作用。 */
-  onTrace?: RuntimeTraceSink;
-};
-
-function jsonResponse(response: RuntimeApiResponse, traceId?: string): Response {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json; charset=utf-8' };
-  if (traceId) headers[RUNTIME_TRACE_HEADER] = traceId;
-  return new Response(JSON.stringify(response.body), {
-    status: response.status,
-    headers,
-  });
-}
-
-/**
- * 把框架无关的 RuntimeApiRequest 适配成标准 Fetch Handler。
- *
- * 认证解析器由宿主服务注入。开启 requireAuthentication 后，除健康检查外的
- * 请求必须携带可信 principal；数据库连接和事务只存在于 api 实例。
- *
- * 关联可观测：解析（或生成）关联 ID，在响应头回显，并通过 onTrace 上报
- * 方法、路径、状态与耗时，用于分布式排障与时延观测。
- */
-export function createRuntimeHttpHandler(
-  api: RuntimeApi,
-  options: RuntimeHttpHandlerOptions = {}
-): RuntimeHttpHandler {
-  return async (request) => {
-    const startedAt = Date.now();
-    const traceId = resolveTraceId(request);
-    const finish = (response: Response): Response => {
-      response.headers.set(RUNTIME_TRACE_HEADER, traceId);
-      options.onTrace?.({
-        traceId,
-        method: request.method.toUpperCase(),
-        path: new URL(request.url).pathname,
-        status: response.status,
-        durationMs: Date.now() - startedAt,
-      });
-      return response;
-    };
-    const method = request.method.toUpperCase();
-    if (method !== 'GET' && method !== 'POST') {
-      return finish(jsonResponse({ status: 405, body: { error: 'METHOD_NOT_ALLOWED' } }));
-    }
-    const url = new URL(request.url);
-    const principal = await resolveRuntimePrincipal(request, options);
-    if (options.requireAuthentication && url.pathname !== '/v1/runtime/health' && !principal) {
-      return finish(runtimeAuthenticationResponse());
-    }
-    if (principal && options.tenantId && principal.tenantId !== options.tenantId) {
-      return finish(runtimeAuthorizationResponse());
-    }
-    const boundTenantId = principal?.tenantId ?? options.tenantId;
-    let body: unknown;
-    if (method === 'POST') {
-      try {
-        body = await request.json();
-      } catch {
-        return finish(jsonResponse({ status: 400, body: { error: 'INVALID_JSON' } }));
-      }
-      if (boundTenantId && url.pathname === '/v1/runtime/characters/batch' &&
-        body && typeof body === 'object' && !Array.isArray(body)) {
-        const payload = body as Record<string, unknown>;
-        if (Array.isArray(payload.characters)) {
-          body = { ...payload, characters: payload.characters.map((item) =>
-            item && typeof item === 'object' && !Array.isArray(item)
-              ? { ...(item as Record<string, unknown>), tenantId: boundTenantId }
-              : item
-          ) };
-        }
-      }
-      const isTenantBoundWrite =
-        url.pathname === '/v1/runtime/characters' || url.pathname.endsWith('/events') ||
-        url.pathname.endsWith('/turns') || url.pathname.endsWith('/review');
-      if (boundTenantId && isTenantBoundWrite && body && typeof body === 'object' && !Array.isArray(body)) {
-        body = { ...(body as Record<string, unknown>), tenantId: boundTenantId };
-      }
-    }
-    if (!await authorizeRuntimeRequest(request, principal, options, {
-      path: url.pathname,
-      method,
-      body,
-      query: url.searchParams,
-    })) {
-      return finish(runtimeAuthorizationResponse('MEMBER_FORBIDDEN'));
-    }
-    const result = await handleRuntimeRequest(api, {
-      method,
-      path: url.pathname as RuntimeRoute,
-      body,
-      query: { ...Object.fromEntries(url.searchParams), ...(boundTenantId ? { tenantId: boundTenantId } : {}) },
-    });
-    return finish(jsonResponse(result));
-  };
 }

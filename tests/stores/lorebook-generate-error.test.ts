@@ -39,6 +39,8 @@ vi.mock('@/stores/settings', () => ({
 }));
 
 import { useLorebookStore } from '@/stores/lorebook';
+import { useCharacterStore } from '@/stores/character';
+import { collectLorebooksForCharacter } from '@/stores/chat-context';
 import { measureInputTokens } from '@core/token-budget';
 import type { ChatMessage } from '@core/token-counter';
 import { t } from '@/i18n';
@@ -164,5 +166,32 @@ describe('lorebook · 生成结果的归属角色', () => {
     const id = await store.generateRandomWorldbook('fantasy');
     expect(store.updateLorebook(id!, { scope: 'character', characterId: 'char-3' })).toBe(true);
     expect(store.lorebooks.find((l) => l.id === id)?.characterId).toBe('char-3');
+  });
+
+  /**
+   * OPT_PLAN §7.4 第一条，**负向是关键**：证明它"不是又一本全局书"。
+   *
+   * 这条断言走的是界面真实路径（WorldBookView.confirmGenerate 的两步）：
+   *   1. generateRandomWorldbook(..., 'character', undefined, ownerId)
+   *   2. characterStore.bindWorldBook(ownerId, lbId)
+   * 少第二步的话，书上有 characterId 但角色侧 boundWorldBookIds 里没有——
+   * 生效判定 `collectLorebooksForCharacter` 仍然吃 `lb.characterId === id`
+   * 这条兼容分支，所以只看正向会"碰巧通过"，必须靠负向对照才验得出。
+   */
+  it('在某角色语境里生成 ⇒ 对该角色生效、对另一角色不生效（负向对照）', async () => {
+    const lorebook = useLorebookStore();
+    const character = useCharacterStore();
+    const ownerId = character.createCharacter();
+    const otherId = character.createCharacter();
+    expect(ownerId).not.toBe(otherId);
+
+    const lbId = await lorebook.generateRandomWorldbook('fantasy', 'character', undefined, ownerId);
+    expect(lbId).not.toBeNull();
+    character.bindWorldBook(ownerId, lbId!);
+
+    const forOwner = collectLorebooksForCharacter(ownerId).map((l) => l.id);
+    const forOther = collectLorebooksForCharacter(otherId).map((l) => l.id);
+    expect(forOwner, '生成的书必须对该角色生效').toContain(lbId);
+    expect(forOther, '生成的书不许对另一个角色生效（否则它就是一本全局书）').not.toContain(lbId);
   });
 });

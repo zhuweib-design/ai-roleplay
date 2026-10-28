@@ -15,9 +15,8 @@ import {
   importBackup,
   parseBackupFile,
   exportChatMarkdown,
-  exportCharacterPng,
-  importCharacterPng,
 } from '../../src/services/backup-service';
+import { exportCharacterPng, importCharacterPng } from '../../src/services/character-png';
 import type { BackupData } from '../../src/core/backup';
 import type { StorageAdapter } from '../../src/storage/storage-adapter';
 import type { CharacterCard } from '../../src/core/character-card';
@@ -334,6 +333,23 @@ describe('backup-service — F13 单元测试', () => {
       await expect(
         exportAll(adapter as unknown as StorageAdapter)
       ).rejects.toThrow('未加密的 API Key');
+    });
+
+    it('存在图像生成明文 API Key 时拒绝导出', async () => {
+      adapter.settingsData = {
+        theme: 'light',
+        imageGenConfig: {
+          type: 'openai',
+          endpoint: 'https://api.example.com/v1',
+          apiKey: 'sk-image-plaintext',
+          model: 'gpt-image-1',
+          enabled: true,
+        },
+      } as Partial<AppSettings>;
+
+      await expect(
+        exportAll(adapter as unknown as StorageAdapter)
+      ).rejects.toThrow('图像生成 API Key');
     });
 
     it('全部 API Key 已加密时正常导出', async () => {

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
+// GroupRuntimeError 的家在 group-runtime-contract；它此前是从 barrel 顺带出来的，
+// 而 barrel 现在不再转导出 postgres-*（服务端模块），所以按真实出处导入。
+import { GroupRuntimeError } from '@/runtime/group-runtime-contract';
 import {
-  GroupRuntimeError,
   HttpGroupRuntimeApi,
-  createGroupRuntimeHttpHandler,
   type GroupRuntimeApi,
 } from '@/runtime';
+// handler 属服务端侧模块，barrel 不再转导出
+import { createGroupRuntimeHttpHandler } from '@/runtime/runtime-group-http-handler';
 
 function fakeApi(): GroupRuntimeApi & { calls: Array<{ method: string; args: unknown[] }> } {
   const calls: Array<{ method: string; args: unknown[] }> = [];
@@ -113,7 +116,7 @@ describe('群聊 Runtime HTTP 边界', () => {
 
   it('Handler 路由全部群组操作并映射领域错误', async () => {
     const api = fakeApi();
-    const handler = createGroupRuntimeHttpHandler(api);
+    const handler = createGroupRuntimeHttpHandler(api, { allowAnonymous: true });
     const create = await handler(new Request('http://runtime.test/v1/runtime/groups', {
       method: 'POST', body: JSON.stringify({ groupId: 'g', name: '群聊', memberIds: ['a', 'b'] }),
     }));
@@ -151,7 +154,7 @@ describe('群聊 Runtime HTTP 边界', () => {
 
   it('Handler 路由服务端 outbox 的入队、查询与重放', async () => {
     const api = fakeApi();
-    const handler = createGroupRuntimeHttpHandler(api);
+    const handler = createGroupRuntimeHttpHandler(api, { allowAnonymous: true });
 
     const enqueue = await handler(new Request('http://runtime.test/v1/runtime/groups/g/outbox', {
       method: 'POST',
@@ -196,7 +199,7 @@ describe('群聊 Runtime HTTP 边界', () => {
 
   it('拒绝非法 status 与 expectedVersion 且不调用领域层', async () => {
     const api = fakeApi();
-    const handler = createGroupRuntimeHttpHandler(api);
+    const handler = createGroupRuntimeHttpHandler(api, { allowAnonymous: true });
 
     const badStatus = await handler(new Request('http://runtime.test/v1/runtime/groups/g/status', {
       method: 'PUT', body: JSON.stringify({ status: 'deleted' }),
@@ -272,7 +275,7 @@ describe('群聊 Runtime HTTP 边界', () => {
     const handler = createGroupRuntimeHttpHandler({
       ...fakeApi(),
       async commitTurn() { throw new Error('数据库连接串不应返回'); },
-    });
+    }, { allowAnonymous: true });
     const response = await handler(new Request('http://runtime.test/v1/runtime/groups/g/turns', {
       method: 'POST', body: JSON.stringify({ turnId: 'r', speakerId: 's', userMessage: '问', assistantMessage: '答' }),
     }));
@@ -283,7 +286,7 @@ describe('群聊 Runtime HTTP 边界', () => {
   it('领域错误按状态和错误码返回', async () => {
     const api = fakeApi();
     api.createGroup = async () => { throw new GroupRuntimeError(409, 'GROUP_CONFLICT', '群组定义冲突'); };
-    const response = await createGroupRuntimeHttpHandler(api)(new Request('http://runtime.test/v1/runtime/groups', {
+    const response = await createGroupRuntimeHttpHandler(api, { allowAnonymous: true })(new Request('http://runtime.test/v1/runtime/groups', {
       method: 'POST', body: JSON.stringify({ groupId: 'g', name: '群聊', memberIds: ['a', 'b'] }),
     }));
     expect(response.status).toBe(409);
@@ -291,7 +294,7 @@ describe('群聊 Runtime HTTP 边界', () => {
   });
   it.each(['turns/extra', 'context/extra', 'members/a/extra', ''])('拒绝不存在的子路由 %s 且不调用领域层', async (suffix) => {
     const api = fakeApi();
-    const response = await createGroupRuntimeHttpHandler(api)(new Request(
+    const response = await createGroupRuntimeHttpHandler(api, { allowAnonymous: true })(new Request(
       'http://runtime.test/v1/runtime/groups/g' + (suffix ? '/' + suffix : ''),
       { method: 'POST', body: JSON.stringify({ memberId: 'a', turnId: 't', speakerId: 'a', userMessage: '问', assistantMessage: '答' }) }
     ));
@@ -304,7 +307,7 @@ describe('群聊 Runtime HTTP 边界', () => {
     { query: [] }, { targetId: 1 }, { now: '无效时间' }, { now: 1 },
   ])('拒绝无效的 Context 参数 %j', async (request) => {
     const api = fakeApi();
-    const response = await createGroupRuntimeHttpHandler(api)(new Request('http://runtime.test/v1/runtime/groups/g/context', {
+    const response = await createGroupRuntimeHttpHandler(api, { allowAnonymous: true })(new Request('http://runtime.test/v1/runtime/groups/g/context', {
       method: 'POST', body: JSON.stringify({ memberId: 'a', request }),
     }));
     expect(response.status).toBe(400);
@@ -314,7 +317,7 @@ describe('群聊 Runtime HTTP 边界', () => {
   it('Context 零数量限制有效', async () => {
     const api = fakeApi();
     const request = { maxEvents: 0, maxMemories: 0, maxEpisodes: 0, query: '', now: '2026-09-23T00:00:00.000Z' };
-    const response = await createGroupRuntimeHttpHandler(api)(new Request('http://runtime.test/v1/runtime/groups/g/context', {
+    const response = await createGroupRuntimeHttpHandler(api, { allowAnonymous: true })(new Request('http://runtime.test/v1/runtime/groups/g/context', {
       method: 'POST', body: JSON.stringify({ memberId: 'a', request }),
     }));
     expect(response.status).toBe(200);

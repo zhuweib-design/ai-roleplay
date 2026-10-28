@@ -12,6 +12,8 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import CharacterEditorView from '@/views/CharacterEditorView.vue';
+import { useCharacterStore } from '@/stores/character';
+import { seedCharacter } from '../helpers/character-fixtures';
 import { t } from '@/i18n';
 
 async function mountEditor() {
@@ -36,6 +38,8 @@ async function mountEditor() {
 beforeEach(() => {
   setActivePinia(createPinia());
   document.body.innerHTML = '';
+  // 角色库从空开始：编辑器按 id 找角色，先造一条头像类型为 image 的
+  seedCharacter(useCharacterStore() as never, { id: 'seraphina', name: 'Seraphina', avatarType: 'image', temperature: 1 } as never);
 });
 
 describe('新建角色时的世界书绑定区（OPT_PLAN 专项 B 第二条）', () => {

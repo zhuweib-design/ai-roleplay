@@ -8,6 +8,7 @@
  * - 群聊显式声明它不加载世界书与文档检索
  */
 import { test, expect } from '@playwright/test';
+import { seedCharacter } from './helpers/seed-character';
 
 test.describe('就绪状态与关联跳转', () => {
   /**
@@ -17,6 +18,7 @@ test.describe('就绪状态与关联跳转', () => {
    * 所以这里在真实浏览器里量计算样式，钉住"换成半档后画面没动"这一件事。
    */
   test('就绪条换成结构层 token 后，计算样式仍是原来的像素值', async ({ page }) => {
+    await seedCharacter(page); // 就绪条挂在有当前角色的对话页上
     await page.goto('/chat');
     const bar = page.locator('.readiness-bar');
     await expect(bar).toBeVisible();
@@ -46,6 +48,7 @@ test.describe('就绪状态与关联跳转', () => {
   });
 
   test('对话页就绪条渲染五个依赖芯片，未配置模型时点击可直达模型类并返回', async ({ page }) => {
+    await seedCharacter(page);
     await page.goto('/chat');
 
     const bar = page.locator('.readiness-bar');

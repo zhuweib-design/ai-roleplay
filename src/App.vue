@@ -13,8 +13,9 @@ import { useCharacterVersionStore } from '@/stores/character-version';
 import { useRandomEventsStore } from '@/stores/random-events';
 import { getStorageAdapter, getStorageEnv } from '@storage/storage-factory';
 import { initStoragePersistence } from '@/core/storage-persistence';
+import { markAppReady } from '@/core/boot-timing';
 import { TauriFSAdapter } from '@storage/tauri-fs-adapter';
-import { importCharacterPng } from '@/services/backup-service';
+import { importCharacterPng } from '@/services/character-png';
 import { cardToUiChar } from '@/services/type-adapters';
 import Toast from '@/components/common/Toast.vue';
 import { useActiveToast, dismissToast } from '@/utils/toast-service';
@@ -22,7 +23,6 @@ import NavRail from '@/components/layout/NavRail.vue';
 import BottomNav from '@/components/mobile/BottomNav.vue';
 import Icon from '@/components/common/Icon.vue';
 import { useReadinessJump } from '@/composables/useReadinessJump';
-import { isDetailRoute } from '@/core/mobile-nav';
 import MasterPasswordModal from '@/components/common/MasterPasswordModal.vue';
 import type { MasterPasswordMode } from '@/components/common/MasterPasswordModal.vue';
 import OnboardingModal from '@/components/common/OnboardingModal.vue';
@@ -45,12 +45,16 @@ const randomEventsStore = useRandomEventsStore();
 
 // 移动端底部导航:仅主 Tab 页显示(二级详情页全屏)
 const route = useRoute();
-// 底栏显隐改由"是否二级沉浸页"决定（isDetailRoute 此前零消费者，实际门禁一直是 isMainTab，
-// 导致 /group 既不是主 Tab 又被当成沉浸页处理——进入后底部导航消失，成为单向门）。
-// 现在的口径：移动端 + 非沉浸页 => 显示底栏；沉浸页仍是角色编辑/新建两页。
-const showBottomNav = computed(
-  () => isMobile.value && !isDetailRoute(route.name as string | undefined)
-);
+// A13（批次 2-2）：底栏在移动端**所有页面**都在场，不再有"二级沉浸页"例外。
+//
+// 演进史：早期用 isMainTab 门禁（只有主 Tab 页显示），导致 9 条路由成了单向门——
+// 进去之后唯一的出路是浏览器返回键，而手机 PWA 里连返回键都没有。A12 把 /group
+// 从 DETAIL_ROUTES 摘出来时只修了一条，剩下的 8 个视图（角色编辑/新建、数据银行、
+// 记录、故事引擎、随机事件、本地模型、生图、角色版本）仍是同一个病。
+//
+// 现在的口径：移动端 => 底栏恒在。二级页的归属感靠高亮表达（见 BottomNav 的
+// activeEntryForRoute），而不是靠"把导航藏起来"。
+const showBottomNav = computed(() => isMobile.value);
 
 // L 层深链的回程。`?from=` 契约此前只有设置页兑现（它自己有一枚位置更贴合的面板头按钮），
 // 世界书 / 数据银行 / 版本 / 群聊这些目标把用户带过去后给不出回头路。
@@ -329,6 +333,8 @@ onMounted(async () => {
 
   // 性能可观测性：存储初始化完成标记，供 scripts/measure-startup.mjs 量化启动时延（无 UI 副作用）
   document.documentElement.dataset.appReady = '1';
+  // 同一个时刻的数字留给设置页的首聊验收表（C-01）：只存内存，刷新即重置
+  markAppReady();
 });
 
 // AC20 主密码弹窗：解锁成功后注入 API Profile（同样遵循 per-role 绑定）

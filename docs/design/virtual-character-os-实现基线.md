@@ -284,10 +284,18 @@ const handler = createPostgresRuntimeHttpHandler(sqlExecutor, tenantId);
 
 // 服务端直接使用 node-postgres Pool 时：
 const poolApi = createPgPoolRuntimeApi(pool, tenantId);
-const poolHandler = createPgPoolRuntimeHttpHandler(pool, tenantId);
+const poolHandler = createPgPoolRuntimeHttpHandler(pool, tenantId, {
+  httpAuth: {
+    requireAuthentication: true,
+    authenticate: async (request) => {
+      const session = await verifySession(request);
+      return session ? { subject: session.userId, tenantId: session.tenantId } : null;
+    },
+  },
+});
 ```
 
-其中 `tenantId` 必须来自认证中间件；HTTP Handler 会覆盖写请求体中的伪造租户字段，并在入口校验基础请求结构、对内部 500 消息脱敏。`createPgPoolRuntimeApi` 和 `createPgPoolRuntimeHttpHandler` 接受真实 `pg.Pool`，事务内固定使用同一个 client。认证中间件和部署路由仍由宿主服务负责。
+其中 `tenantId` 必须来自认证中间件；HTTP Handler 会覆盖写请求体中的伪造租户字段，并在入口校验基础请求结构、对内部 500 消息脱敏。未传 `httpAuth` 时 Handler 默认拒绝未认证请求（除 `/health`），只有显式 `allowAnonymous: true` 才放开，且仅适合受信任的本地回环调试。`createPgPoolRuntimeApi` 和 `createPgPoolRuntimeHttpHandler` 接受真实 `pg.Pool`，事务内固定使用同一个 client。认证中间件和部署路由仍由宿主服务负责。
 
 该工厂会自动复用现有存储：
 

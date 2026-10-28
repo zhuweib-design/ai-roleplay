@@ -23,6 +23,18 @@ export function deepClone<T>(obj: T): T {
 }
 
 /**
+ * 存储层用的 JSON 规范化：把 Vue 响应式 Proxy / Map 等不可 structuredClone 的对象
+ * 变成纯 JSON 数据。
+ *
+ * 故意不复用上面的 deepClone：deepClone 优先走 structuredClone，成功时 Date 仍是 Date、
+ * Map 仍是 Map，落进 IndexedDB / 文件后就是一种新的数据形状。存储写入点要的是
+ * "只可能是 JSON 能表达的字段"，所以这里固定 JSON round-trip，失败就该抛。
+ */
+export function toPlainJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/**
  * 从 AI 返回的文本中提取 JSON 字符串
  *
  * 容错处理：

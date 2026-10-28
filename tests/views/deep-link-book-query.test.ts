@@ -2,7 +2,7 @@
  * 世界书深链 `?book=<id>` 必须等列表读完再解析（M17-b）
  *
  * 这是 M16-b 闸门登记表之后的**第二条**新接深链，用途之一就是验证那张表真的省事：
- * 视图只说键名（`book`），"该等哪个库"由 `src/core/deep-link-keys.ts` 决定，
+ * 视图只说键名（`book`），"该等哪个库"由 `src/stores/deep-link-gate.ts` 决定，
  * 接线过程没有再出现"自己挑一个 ensureLoaded"的机会。
  *
  * 世界书页有一个角色页没有的陷阱：读库完成后它会**默认选中第一本**
@@ -153,7 +153,7 @@ describe('世界书页的 ?book= 深链', () => {
    * 这条是 M16-b 登记表存在的理由，直接在这里验一次：
    * `book` 这个键等的是**世界书库**，不是随便哪个 ensureLoaded。
    * 视图不传 load，所以挑库的机会根本没有；一旦有人把 book 登记到别的库，
-   * 这条会红（同 tests/core/deep-link-keys.test.ts 的注入形状）。
+   * 这条会红（同 tests/stores/deep-link-gate.test.ts 的注入形状）。
    */
   it('闸门取自登记表：book 等的是世界书库', async () => {
     const store = useLorebookStore();

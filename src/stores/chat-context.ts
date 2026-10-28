@@ -12,6 +12,7 @@
 import { useLorebookStore } from './lorebook';
 import { useCharacterStore } from './character';
 import { useDataBankStore } from './data-bank';
+import type { RetrievedChunk } from '@/core/data-bank';
 import { useStoryStore } from './story';
 import { useEventsStore } from './events';
 import { scanTriggers, buildActiveEventsInjection } from '@/core/trigger-engine';
@@ -45,6 +46,11 @@ export interface ChatSessionContext extends PromptContexts {
    * 界面上的"本轮注入了哪条事件"读它，不做事后回查（事件表不落盘，回查必然说谎）。
    */
   activatedEvents?: StoryEvent[];
+  /**
+   * C-03：资料库关键词检索本轮的命中分块（`ragContext` 的结构化同一体）。
+   * 只在这一刻拿得到——文档会被改、检索缓存会失效，事后重算对不上当时那一份。
+   */
+  ragChunks?: RetrievedChunk[];
 }
 
 /**
@@ -167,12 +173,13 @@ export function buildChatSessionContext(
   const worldUserProfile = getWorldUserProfileForCharacter(character.id);
   const userName = worldUserProfile?.name?.trim() || 'User';
 
-  // 迭代26 · F09.2: RAG 检索
-  const ragContext = useDataBankStore().retrieveAndBuildContext(
+  // 迭代26 · F09.2: RAG 检索（C-03 起同时交出命中分块，供"本轮检索命中"回显）
+  const ragRetrieval = useDataBankStore().retrieveAndBuildContextDetailed(
     ragMessages,
     'character',
     character.id
   );
+  const ragContext = ragRetrieval.context;
 
   // F16.3/F16.4: 故事主角身份与时间上下文
   const storyStore = useStoryStore();
@@ -200,6 +207,8 @@ export function buildChatSessionContext(
     userName,
     worldUserProfile,
     ragContext: ragContext || undefined,
+    // C-03：命中分块随上下文一起传出去，回显只用它，不做事后重查
+    ragChunks: ragRetrieval.chunks.length ? ragRetrieval.chunks : undefined,
     eventsContext: eventsContext || undefined,
     // 在两个注入构建器之后取：scanAndApplyTriggers 会就地改事件状态
     activatedEvents: relevantEvents.filter((e) => e.state === 'active'),

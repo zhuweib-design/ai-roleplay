@@ -335,3 +335,34 @@ describe('IndexedDBAdapter — 数据完整性', () => {
     expect(loaded!.messages[0]!.swipeIndex).toBe(1);
   });
 });
+
+describe('IndexedDBAdapter — 列表读取顺序', () => {
+  let adapter: StorageAdapter;
+
+  beforeEach(async () => {
+    await resetDatabase('test-db-order');
+    adapter = new IndexedDBAdapter('test-db-order');
+    await adapter.init();
+  });
+
+  afterEach(async () => {
+    await adapter.close();
+  });
+
+  test('世界书与群聊按 updatedAt 降序返回', async () => {
+    const book = (id: string, updatedAt: string) =>
+      ({ id, name: id, description: '', entries: [], updatedAt }) as never;
+    const group = (id: string, updatedAt: string) =>
+      ({ id, name: id, members: [], messages: [], mode: 'auto', updatedAt }) as never;
+
+    await adapter.saveLorebook(book('old', '2026-01-01T00:00:00Z'));
+    await adapter.saveLorebook(book('new', '2026-06-01T00:00:00Z'));
+    await adapter.saveLorebook(book('mid', '2026-03-01T00:00:00Z'));
+    await adapter.saveGroupChat(group('g-old', '2026-01-01T00:00:00Z'));
+    await adapter.saveGroupChat(group('g-new', '2026-06-01T00:00:00Z'));
+
+    // 写入顺序故意不是时间顺序：getAll() 按主键返回，顺序不成立就说明排序没生效
+    expect((await adapter.loadLorebooks()).map((b) => b.id)).toEqual(['new', 'mid', 'old']);
+    expect((await adapter.loadGroupChats()).map((g) => g.id)).toEqual(['g-new', 'g-old']);
+  });
+});

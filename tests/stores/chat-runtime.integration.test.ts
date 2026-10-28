@@ -11,8 +11,9 @@ import { buildChatRuntimeContext } from '@/runtime/chat-bridge';
 import { RuntimeApiAdapter } from '@/runtime/runtime-api';
 import { RuntimeCore } from '@/runtime/runtime-core';
 import { InMemoryRuntimeStore } from '@/runtime/store';
-import { createRuntimeHttpHandler } from '@/runtime/runtime-http';
-import { createGroupRuntimeHttpHandler, type GroupRuntimeApi } from '@/runtime/runtime-group-http';
+import { createRuntimeHttpHandler } from '@/runtime/runtime-http-handler';
+import { createGroupRuntimeHttpHandler } from '@/runtime/runtime-group-http-handler';
+import type { GroupRuntimeApi } from '@/runtime/runtime-group-http';
 import { GroupRuntimeError } from '@/runtime/group-runtime-contract';
 
 function makeCharacter(id = `runtime-chat-${Date.now()}-${Math.random().toString(16).slice(2)}`): UICharacter {
@@ -36,7 +37,6 @@ function makeCharacter(id = `runtime-chat-${Date.now()}-${Math.random().toString
     authorNote: '',
     authorDepth: 4,
     temperature: 0.7,
-    worldEntries: [],
     tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
   };
 }
@@ -254,8 +254,8 @@ describe('Chat Store — Runtime 实际链路', () => {
       createGroup: create, getGroupState, setGroupStatus, commitTurn: commit, buildMemberContext: context,
       enqueueTurn, listPendingTurns, retryPendingTurns,
       addMember, removeMember, listTurns,
-    });
-    const single = createRuntimeHttpHandler(characterApi);
+    }, { allowAnonymous: true });
+    const single = createRuntimeHttpHandler(characterApi, { allowAnonymous: true });
     const paths: string[] = [];
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const request = new Request(input, init);

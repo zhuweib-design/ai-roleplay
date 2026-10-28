@@ -1,0 +1,12 @@
+import { webkit } from '@playwright/test';
+import { writeFileSync } from 'node:fs';
+const b = await webkit.launch();
+const p = await b.newPage();
+const log = [];
+p.on('response', (r) => log.push(`${r.status()} ${r.headers()['content-type'] || '-'} ${r.url().slice(0, 100)}`));
+p.on('requestfailed', (r) => log.push(`FAIL ${r.failure()?.errorText} ${r.url().slice(0, 100)}`));
+p.on('pageerror', (e) => log.push('PAGEERROR: ' + String(e).slice(0, 300)));
+await p.goto('http://localhost:5173/', { waitUntil: 'load', timeout: 20000 }).catch((e) => log.push('GOTO: ' + e.message.slice(0, 200)));
+await p.waitForTimeout(4000);
+writeFileSync('scripts/archive/r3-5-characters-split/webkit-smoke2.txt', log.join('\n'));
+await b.close();

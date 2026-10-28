@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+// PostgresRuntimeStore / SqlExecutor 属服务端专用模块，barrel 已不再转导出它们，
+// 改从 runtime/server 导入（这条边界由 tests/tooling/runtime-entry-boundary.test.ts 守着）
+import { PostgresRuntimeStore, type SqlExecutor } from '@/runtime/server';
 import {
   CharacterCompileError,
   InMemoryRuntimeStore,
@@ -6,7 +9,6 @@ import {
   SnapshotRuntimeStore,
   RuntimeCore,
   RuntimeAlreadyExistsError,
-  PostgresRuntimeStore,
   OptimisticLockError,
   replayRuntimeEvents,
   stableChatTargetId,
@@ -17,7 +19,6 @@ import {
   handleRuntimeRequest,
   type RuntimeSnapshot,
   type RuntimeSnapshotStore,
-  type SqlExecutor,
   type DomainEvent,
   type StateChange,
   type Episode,

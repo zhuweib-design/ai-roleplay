@@ -2,14 +2,10 @@
 /**
  * CommunityMarketView — 角色卡社区市场页面 (模块5)
  *
- * 功能：
- * - 顶部：返回按钮 + 登录/用户信息
- * - Tab 1 市场：搜索/筛选/排序 + 角色卡卡片网格
- * - Tab 2 推荐：个性化推荐列表（基于收藏标签）
- * - Tab 3 收藏：已收藏的角色卡
- * - Tab 4 我的发布：已发布的角色卡管理
- * - Tab 5 管理：审核/举报管理（所有用户可见 pending 状态）
- * - Modal：登录、角色卡详情、发布、评论、举报
+ * R2-4 拆分后宿主只留外壳与编排：Tab 骨架、Toast、昵称/发布两扇 Modal、
+ * 详情入口（selectedCardId）与共享样式。子组件见 components/market/：
+ * MarketHeader（页头）/ MarketRemotePanel（远程+更新横幅）/ MarketToolbar（搜索排序筛选）/
+ * MarketCard（四网格共用卡）/ MarketAdminSection（管理）/ MarketDetailModal（详情/评论/举报）。
  *
  * 无障碍：
  * - 语义化 main/header/nav/section
@@ -19,30 +15,23 @@
  * - Toast role=alert
  */
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useReadinessJump } from '@/composables/useReadinessJump';
 import { useCommunityMarketStore } from '@/stores/community-market';
-import { MARKET_INDEX_URL } from '@/core/market-index';
 import { useCharacterStore } from '@/stores/character';
 import Icon from '@/components/common/Icon.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
 import Toast from '@/components/common/Toast.vue';
 import Modal from '@/components/common/Modal.vue';
-import FilterTabs, { type FilterTab } from '@/components/common/FilterTabs.vue';
-import type { MarketCharacterCard, SortOption, ReportReason } from '@core/community-market';
+import MarketHeader from '@/components/market/MarketHeader.vue';
+import MarketRemotePanel from '@/components/market/MarketRemotePanel.vue';
+import MarketToolbar from '@/components/market/MarketToolbar.vue';
+import MarketCard from '@/components/market/MarketCard.vue';
+import MarketAdminSection from '@/components/market/MarketAdminSection.vue';
+import MarketDetailModal from '@/components/market/MarketDetailModal.vue';
+import type { MarketCharacterCard } from '@core/community-market';
 import { t } from '@/i18n';
 
-const router = useRouter();
 const store = useCommunityMarketStore();
 const characterStore = useCharacterStore();
-const { pushWithReturn } = useReadinessJump();
-
-// §14.4 更新检查：有可用更新的已装远程条目
-const updates = computed(() => store.getUpdatableInstalls());
-
-function handleUpdateInstall(itemId: string) {
-  void handleRemoteInstall(itemId);
-}
 
 // ── 启动 ──
 onMounted(() => {
@@ -60,22 +49,7 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'admin', label: t('market.tabAdmin') },
 ];
 
-// ── 需求1：市场内分类筛选 Tab（单选） ──────────────────────────────
-const categoryFilterTabs = computed<FilterTab[]>(() => {
-  const counts = store.categoryCounts;
-  return store.allCategories.slice(0, 12).map((cat) => ({
-    value: cat,
-    label: cat,
-    count: counts[cat] ?? 0,
-  }));
-});
-
-const filterCategory = computed({
-  get: () => store.currentCategory,
-  set: (v: string) => store.setCategory(v),
-});
-
-// ── Toast ──
+// ── Toast（全页单实例；子组件经 notify 事件冒泡到这里）──
 const toastOpen = ref(false);
 const toastType = ref<'info' | 'success' | 'error'>('info');
 const toastMessage = ref('');
@@ -111,15 +85,7 @@ watch(
   }
 );
 
-// ── 排序选项 ──
-const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
-  { value: 'popular', label: t('market.sortPopular') },
-  { value: 'rating', label: t('market.sortRating') },
-  { value: 'newest', label: t('market.sortNewest') },
-  { value: 'alphabetical', label: t('market.sortName') },
-];
-
-// ── 登录 Modal ──
+// ── 昵称 Modal（本地身份，无凭据、无后端）──
 const loginModalOpen = ref(false);
 const loginName = ref('');
 
@@ -142,71 +108,13 @@ function handleLogout(): void {
   store.logout();
 }
 
-// ── 角色卡详情 Modal ──
+// ── 详情入口（状态留宿主：四个网格都往这开；三扇详情相关 Modal 在 MarketDetailModal）──
 const detailModalOpen = ref(false);
 const selectedCardId = ref<string | null>(null);
-const selectedCard = computed<MarketCharacterCard | null>(() => {
-  if (!selectedCardId.value) return null;
-  return store.getCard(selectedCardId.value);
-});
-const selectedCardReviews = computed(() => {
-  if (!selectedCardId.value) return [];
-  return store.getReviews(selectedCardId.value);
-});
 
 function openDetail(marketId: string): void {
   selectedCardId.value = marketId;
   detailModalOpen.value = true;
-}
-
-// ── 下载 ──
-function handleDownload(marketId: string): void {
-  store.downloadCard(marketId);
-}
-
-// ── 远程市场（T-11 真实下载流） ──
-function handleLoadRemote(): void {
-  void store.loadRemoteIndex();
-}
-
-/**
- * E20：安装完成后必须看得见落点。此前只有一句 toast（`lastInfo`），
- * 用户不知道角色去了哪、也没有入口；现在把新角色 id 接住，就地给一条可点结果。
- */
-const lastInstalled = ref<{ id: string; name: string } | null>(null);
-
-async function handleRemoteInstall(itemId: string): Promise<void> {
-  const installedId = await store.installRemoteItem(itemId);
-  if (!installedId) return;
-  const name = characterStore.characters.find((c) => c.id === installedId)?.name ?? installedId;
-  lastInstalled.value = { id: installedId, name };
-}
-
-function jumpInstalled(to: 'edit' | 'list'): void {
-  const id = lastInstalled.value?.id;
-  if (!id) return;
-  pushWithReturn(to === 'edit' ? { name: 'character-edit', params: { id } } : { name: 'character-list' });
-}
-
-function remotePercent(itemId: string): number {
-  const p = store.downloadProgress[itemId];
-  if (!p || p.total <= 0) return 0;
-  return Math.min(100, Math.round((p.received / p.total) * 100));
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-// ── 收藏 ──
-function handleToggleFavorite(marketId: string): void {
-  if (!store.isLoggedIn) {
-    showToast('error', t('market.needLogin'));
-    return;
-  }
-  store.toggleFavorite(marketId);
 }
 
 // ── 发布 Modal ──
@@ -266,85 +174,6 @@ function getCharacterCard(characterId: string) {
   };
 }
 
-// ── 评论 Modal ──
-const reviewModalOpen = ref(false);
-const reviewRating = ref(5);
-const reviewComment = ref('');
-
-function openReviewModal(): void {
-  if (!store.isLoggedIn) {
-    showToast('error', t('market.needLogin'));
-    return;
-  }
-  reviewRating.value = 5;
-  reviewComment.value = '';
-  reviewModalOpen.value = true;
-}
-
-function handleReview(): void {
-  if (!selectedCardId.value) return;
-  if (!reviewComment.value.trim()) {
-    showToast('error', t('market.needReviewText'));
-    return;
-  }
-  if (store.addReview(selectedCardId.value, reviewRating.value, reviewComment.value)) {
-    reviewModalOpen.value = false;
-  }
-}
-
-// ── 举报 Modal ──
-const reportModalOpen = ref(false);
-const reportReason = ref<ReportReason>('inappropriate');
-const reportDescription = ref('');
-
-const REPORT_REASONS: Array<{ value: ReportReason; label: string }> = [
-  { value: 'inappropriate', label: t('market.reasonInappropriate') },
-  { value: 'copyright', label: t('market.reasonCopyright') },
-  { value: 'spam', label: t('market.reasonSpam') },
-  { value: 'misleading', label: t('market.reasonMisleading') },
-  { value: 'other', label: t('market.reasonOther') },
-];
-
-function openReportModal(): void {
-  if (!store.isLoggedIn) {
-    showToast('error', t('market.needLogin'));
-    return;
-  }
-  reportReason.value = 'inappropriate';
-  reportDescription.value = '';
-  reportModalOpen.value = true;
-}
-
-function handleReport(): void {
-  if (!selectedCardId.value) return;
-  if (!reportDescription.value.trim()) {
-    showToast('error', t('market.needReportText'));
-    return;
-  }
-  if (store.reportCard(selectedCardId.value, reportReason.value, reportDescription.value)) {
-    reportModalOpen.value = false;
-  }
-}
-
-// ── D6 补完：管理操作 ──
-function handleApprove(marketId: string): void {
-  if (store.setModerationStatus(marketId, 'approved')) {
-    showToast('success', t('market.approved'));
-  }
-}
-
-function handleReject(marketId: string): void {
-  if (store.setModerationStatus(marketId, 'rejected')) {
-    showToast('error', t('market.rejected'));
-  }
-}
-
-function handleResolveReport(reportId: string, status: 'resolved' | 'dismissed'): void {
-  if (store.resolveReport(reportId, status)) {
-    showToast('success', status === 'resolved' ? t('market.reportResolved') : t('market.reportDismissed'));
-  }
-}
-
 // ── 推荐 ──
 const recommendations = computed(() => {
   if (!store.isLoggedIn) return [];
@@ -361,68 +190,11 @@ const myPublishedCards = computed<MarketCharacterCard[]>(() => {
 
 // ── 收藏列表 ──
 const favoriteCards = computed(() => store.getFavoriteCards());
-
-// ── 辅助 ──
-function goBack(): void {
-  if (window.history.state?.back) {
-    void router.back();
-  } else {
-    void router.push('/chat');
-  }
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function formatCount(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
-}
-
-function ratingStars(rating: number): string {
-  const full = Math.floor(rating);
-  const half = rating - full >= 0.5;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - (half ? 1 : 0));
-}
 </script>
 
 <template>
   <div class="community-market-view">
-    <header class="page-header">
-      <button type="button" class="header-btn" :aria-label="t('market.backAria')" @click="goBack">
-        <Icon name="arrow-left" :size="18" aria-hidden="true" />
-      </button>
-      <h1 class="page-title">
-        {{ t('market.title') }}
-        <!--
-          这条披露原来只在 title 里：触屏点不到、键盘聚焦也不显示，而它是本页最重要的免责。
-          改成页头下面一行可见文字，不再依赖悬停。
-        -->
-        <span class="beta-badge">{{ t('market.beta') }}</span>
-      </h1>
-      <p class="beta-disclosure">{{ t('market.betaTitle') }}</p>
-      <!--
-        E21：索引地址只有构建期一个来源，界面上必须说清楚——否则提交信息里的
-        "市场 URL 可配"会被理解成"这里能改"。连同当前值一起显示，claim 可核对。
-      -->
-      <p class="beta-disclosure">
-        {{ t('market.sourceNote') }}<code class="market-source-url">{{ MARKET_INDEX_URL }}</code>
-      </p>
-      <div class="header-right">
-        <template v-if="store.isLoggedIn">
-          <span class="user-info">
-            <Icon name="user" :size="16" />
-            {{ store.currentUser?.name }}
-          </span>
-          <button type="button" class="btn btn-ghost" @click="handleLogout">{{ t('market.logout') }}</button>
-        </template>
-        <template v-else>
-          <button type="button" class="btn btn-primary" @click="openLoginModal">{{ t('market.login') }}</button>
-        </template>
-      </div>
-    </header>
+    <MarketHeader @login="openLoginModal" @logout="handleLogout" />
 
     <nav class="tabs" role="tablist" :aria-label="t('market.tabsAria')">
       <button
@@ -441,144 +213,8 @@ type="button"
     <main class="page-content">
       <!-- Tab 1: 市场 -->
       <section v-if="activeTab === 'market'" role="tabpanel" class="tab-panel">
-        <!-- §14.4 更新检查横幅 -->
-        <div v-if="updates.length" class="updates-banner" role="region" :aria-label="t('market.updatesAria')">
-          <div class="updates-title">
-            <Icon name="refresh-cw" :size="16" aria-hidden="true" />
-            <span>{{ t('market.updatesTitle', { count: updates.length }) }}</span>
-          </div>
-          <ul class="updates-list">
-            <li v-for="u in updates" :key="u.itemId" class="updates-item">
-              <span class="updates-name">{{ u.name }}</span>
-              <span class="updates-version">{{ u.installedVersion }} → {{ u.latestVersion }}</span>
-              <button
-                type="button"
-                class="updates-btn"
-                :disabled="store.downloadProgress[u.itemId]?.status === 'downloading' || store.downloadProgress[u.itemId]?.status === 'installing'"
-                @click="handleUpdateInstall(u.itemId)"
-              >
-                {{
-                  store.downloadProgress[u.itemId]?.status === 'downloading' || store.downloadProgress[u.itemId]?.status === 'installing'
-                    ? t('market.updating')
-                    : t('market.update')
-                }}
-              </button>
-            </li>
-          </ul>
-        </div>
-        <!-- 远程市场（T-11 真实下载流） -->
-        <div class="remote-panel">
-          <div class="remote-panel-head">
-            <span class="remote-title">{{ t('market.remoteTitle') }}</span>
-            <button
-              type="button"
-              class="remote-refresh"
-              :disabled="store.remoteLoading"
-              @click="handleLoadRemote"
-            >
-              {{ store.remoteLoading ? t('market.remoteLoading') : t('market.remoteLoad') }}
-            </button>
-          </div>
-          <p v-if="store.remoteError" class="remote-error">{{ store.remoteError }}</p>
-          <ul v-if="store.remoteItems.length > 0" class="remote-list">
-            <li v-for="item in store.remoteItems" :key="item.id" class="remote-item">
-              <div class="remote-item-info">
-                <span class="remote-item-name">{{ item.name }}</span>
-                <span class="remote-item-meta">
-                  {{ item.type }} · v{{ item.version }} · {{ item.author }} · {{ formatBytes(item.size) }}
-                </span>
-                <span v-if="item.description" class="remote-item-desc">{{ item.description }}</span>
-              </div>
-              <div class="remote-item-action">
-                <span v-if="store.downloadProgress[item.id]?.status === 'done'" class="remote-done">
-                  {{ t('market.remoteInstalledOk') }}
-                </span>
-                <template v-else-if="store.downloadProgress[item.id]?.status === 'downloading'">
-                  <div class="remote-progress" role="progressbar" :aria-valuenow="remotePercent(item.id)" :aria-valuemin="0" :aria-valuemax="100" :aria-label="t('market.remoteProgressAria')">
-                    <div class="remote-progress-fill" :style="{ width: remotePercent(item.id) + '%' }"></div>
-                  </div>
-                  <span class="remote-progress-text">{{ remotePercent(item.id) }}%</span>
-                </template>
-                <button
-                  v-else
-                  type="button"
-                  class="remote-install"
-                  :disabled="store.downloadProgress[item.id]?.status === 'installing'"
-                  @click="handleRemoteInstall(item.id)"
-                >
-                  {{ store.downloadProgress[item.id]?.status === 'installing' ? t('market.remoteInstalling') : t('market.download') }}
-                </button>
-              </div>
-            </li>
-          </ul>
-          <p v-else-if="!store.remoteLoading" class="remote-hint">{{ t('market.remoteHint') }}</p>
-          <!-- E20：安装结果就地可见，且给两条去路（看这个角色 / 看整个角色列表） -->
-          <div v-if="lastInstalled" class="installed-result" role="status">
-            <Icon name="check" :size="14" aria-hidden="true" />
-            <span class="installed-result-text">{{ t('market.installedToLib', { name: lastInstalled.name }) }}</span>
-            <button type="button" class="installed-go" data-rel-jump="rel-market-edit" @click="jumpInstalled('edit')">
-              {{ t('market.installedGoEdit') }}
-            </button>
-            <button
-              type="button"
-              class="installed-go ghost"
-              data-rel-jump="rel-market-chars"
-              @click="jumpInstalled('list')"
-            >
-              {{ t('market.installedGoList') }}
-            </button>
-          </div>
-        </div>
-
-        <div class="toolbar">
-          <div class="search-box">
-            <Icon name="search" :size="16" />
-            <input
-              :value="store.searchQuery"
-              type="text"
-              :placeholder="t('market.searchPlaceholder')"
-              :aria-label="t('market.searchAria')"
-              class="search-input"
-              @input="store.setSearch(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-          <div class="sort-buttons" role="group" :aria-label="t('market.sortAria')">
-            <button
-type="button"
-              v-for="opt in SORT_OPTIONS"
-              :key="opt.value"
-              :class="['sort-btn', { active: store.sortBy === opt.value }]"
-              @click="store.setSortBy(opt.value)"
-            >
-              {{ opt.label }}
-            </button>
-          </div>
-        </div>
-
-        <div class="filter-bar">
-          <div class="filter-chips">
-            <button
-type="button"
-              :class="['chip', { active: store.featuredOnly }]"
-              @click="store.toggleFeaturedOnly()"
-            >
-              {{ t('market.featured') }}
-            </button>
-          </div>
-          <!-- 需求1：分类 Tab 筛选（单选） -->
-          <FilterTabs
-            v-if="categoryFilterTabs.length > 0"
-            v-model="filterCategory"
-            :tabs="categoryFilterTabs"
-            :label="t('market.filterLabel')"
-            :all-label="t('market.filterAll')"
-            :all-value="''"
-            :all-count="store.filteredCards.length"
-          />
-          <button type="button" v-if="store.searchQuery || store.selectedTags.length || store.selectedCategories.length || store.featuredOnly" class="btn btn-ghost btn-sm" @click="store.clearFilters()">
-            {{ t('market.clearFilters') }}
-          </button>
-        </div>
+        <MarketRemotePanel />
+        <MarketToolbar />
 
         <EmptyState
           v-if="store.filteredCards.length === 0"
@@ -586,29 +222,16 @@ type="button"
           icon="search"
         />
         <div v-else class="card-grid">
-          <article
+          <MarketCard
             v-for="card in store.filteredCards"
             :key="card.marketId"
-            class="market-card"
-            tabindex="0"
-            @click="openDetail(card.marketId)"
-            @keydown.enter="openDetail(card.marketId)"
-          >
-            <div class="card-header">
-              <span v-if="card.featured" class="badge badge-featured">{{ t('market.featured') }}</span>
-              <span class="card-name">{{ card.card.name }}</span>
-            </div>
-            <p class="card-desc">{{ card.card.description }}</p>
-            <div class="card-tags">
-              <span v-for="tag in card.card.tags.slice(0, 3)" :key="tag" class="tag">{{ tag }}</span>
-            </div>
-            <div class="card-footer">
-              <span class="rating" :aria-label="t('market.ratingAria', { rating: card.averageRating })">{{ ratingStars(card.averageRating) }}</span>
-              <span class="stat"><Icon name="download" :size="14" /> {{ formatCount(card.downloadCount) }}</span>
-              <span class="stat"><Icon name="heart" :size="14" /> {{ formatCount(card.favoriteCount) }}</span>
-            </div>
-            <div class="card-author">{{ t('market.author', { name: card.authorName }) }}</div>
-          </article>
+            :card="card"
+            :badge="card.featured ? 'featured' : undefined"
+            show-author
+            show-favorite-stat
+            aria-rating
+            @open="openDetail(card.marketId)"
+          />
         </div>
       </section>
 
@@ -626,27 +249,13 @@ type="button"
           icon="star"
         />
         <div v-else class="card-grid">
-          <article
+          <MarketCard
             v-for="item in recommendations"
             :key="item.card.marketId"
-            class="market-card"
-            tabindex="0"
-            @click="openDetail(item.card.marketId)"
-            @keydown.enter="openDetail(item.card.marketId)"
-          >
-            <div class="recommend-score">{{ t('market.recommendScore', { score: item.score }) }}</div>
-            <div class="card-header">
-              <span class="card-name">{{ item.card.card.name }}</span>
-            </div>
-            <p class="card-desc">{{ item.card.card.description }}</p>
-            <div class="card-tags">
-              <span v-for="tag in item.card.card.tags.slice(0, 3)" :key="tag" class="tag">{{ tag }}</span>
-            </div>
-            <div class="card-footer">
-              <span class="rating">{{ ratingStars(item.card.averageRating) }}</span>
-              <span class="stat"><Icon name="download" :size="14" /> {{ formatCount(item.card.downloadCount) }}</span>
-            </div>
-          </article>
+            :card="item.card"
+            :score="item.score"
+            @open="openDetail(item.card.marketId)"
+          />
         </div>
       </section>
 
@@ -658,26 +267,12 @@ type="button"
           icon="heart"
         />
         <div v-else class="card-grid">
-          <article
+          <MarketCard
             v-for="card in favoriteCards"
             :key="card.marketId"
-            class="market-card"
-            tabindex="0"
-            @click="openDetail(card.marketId)"
-            @keydown.enter="openDetail(card.marketId)"
-          >
-            <div class="card-header">
-              <span class="card-name">{{ card.card.name }}</span>
-            </div>
-            <p class="card-desc">{{ card.card.description }}</p>
-            <div class="card-tags">
-              <span v-for="tag in card.card.tags.slice(0, 3)" :key="tag" class="tag">{{ tag }}</span>
-            </div>
-            <div class="card-footer">
-              <span class="rating">{{ ratingStars(card.averageRating) }}</span>
-              <span class="stat"><Icon name="download" :size="14" /> {{ formatCount(card.downloadCount) }}</span>
-            </div>
-          </article>
+            :card="card"
+            @open="openDetail(card.marketId)"
+          />
         </div>
       </section>
 
@@ -700,130 +295,28 @@ type="button"
             icon="upload"
           />
           <div v-else class="card-grid">
-            <article
+            <MarketCard
               v-for="card in myPublishedCards"
               :key="card.marketId"
-              class="market-card"
-              tabindex="0"
-              @click="openDetail(card.marketId)"
-              @keydown.enter="openDetail(card.marketId)"
-            >
-              <div class="card-header">
-                <span :class="['badge', `badge-${card.moderationStatus}`]">
-                  {{ card.moderationStatus === 'approved' ? t('market.statusApproved') : card.moderationStatus === 'pending' ? t('market.statusPending') : t('market.statusRejected') }}
-                </span>
-                <span class="card-name">{{ card.card.name }}</span>
-              </div>
-              <p class="card-desc">{{ card.card.description }}</p>
-              <div class="card-footer">
-                <span class="rating">{{ ratingStars(card.averageRating) }}</span>
-                <span class="stat"><Icon name="download" :size="14" /> {{ formatCount(card.downloadCount) }}</span>
-                <span class="stat"><Icon name="star" :size="14" /> {{ t('market.reviewCount', { count: card.reviewCount }) }}</span>
-              </div>
-            </article>
+              :card="card"
+              :badge="card.moderationStatus"
+              :show-tags="false"
+              :review-count="card.reviewCount"
+              @open="openDetail(card.marketId)"
+            />
           </div>
         </template>
       </section>
 
       <!-- Tab 5: 管理 -->
       <section v-if="activeTab === 'admin'" role="tabpanel" class="tab-panel">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <span class="stat-value">{{ store.stats.totalCards }}</span>
-            <span class="stat-label">{{ t('market.statTotalCards') }}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ store.stats.totalUsers }}</span>
-            <span class="stat-label">{{ t('market.statUsers') }}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ store.stats.totalReviews }}</span>
-            <span class="stat-label">{{ t('market.statReviews') }}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ store.stats.totalDownloads }}</span>
-            <span class="stat-label">{{ t('market.statDownloads') }}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ store.stats.pendingCards }}</span>
-            <span class="stat-label">{{ t('market.statPending') }}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ store.stats.totalReports }}</span>
-            <span class="stat-label">{{ t('market.statReports') }}</span>
-          </div>
-        </div>
-
-        <!-- D6 补完：待审核角色卡操作 -->
-        <h3 class="admin-section-title">{{ t('market.adminPendingTitle') }}</h3>
-        <ul class="admin-list" role="list">
-          <li
-            v-for="card in store.filteredCards.filter((c) => c.moderationStatus === 'pending')"
-            :key="card.marketId"
-            class="admin-row"
-            role="listitem"
-          >
-            <span class="admin-name">{{ card.card.name }}</span>
-            <span class="admin-meta">{{ t('market.author', { name: card.authorName }) }}</span>
-            <div class="admin-actions">
-              <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                @click="handleApprove(card.marketId)"
-              >
-                {{ t('market.adminApprove') }}
-              </button>
-              <button
-                type="button"
-                class="btn btn-ghost btn-sm"
-                @click="handleReject(card.marketId)"
-              >
-                {{ t('market.adminReject') }}
-              </button>
-            </div>
-          </li>
-          <li v-if="store.filteredCards.filter((c) => c.moderationStatus === 'pending').length === 0" class="empty-mini">
-            {{ t('market.adminNoPending') }}
-          </li>
-        </ul>
-
-        <!-- D6 补完：举报处理 -->
-        <h3 class="admin-section-title">{{ t('market.adminReportsTitle') }}</h3>
-        <ul class="admin-list" role="list">
-          <li
-            v-for="report in store.getReports().filter((r) => r.status === 'pending')"
-            :key="report.id"
-            class="admin-row"
-            role="listitem"
-          >
-            <span class="admin-name">{{ report.marketId }}</span>
-            <span class="admin-meta">{{ t('market.adminReportMeta', { reason: report.reason, desc: report.description }) }}</span>
-            <div class="admin-actions">
-              <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                @click="handleResolveReport(report.id, 'resolved')"
-              >
-                {{ t('market.adminResolve') }}
-              </button>
-              <button
-                type="button"
-                class="btn btn-ghost btn-sm"
-                @click="handleResolveReport(report.id, 'dismissed')"
-              >
-                {{ t('market.adminDismiss') }}
-              </button>
-            </div>
-          </li>
-          <li v-if="store.getReports().filter((r) => r.status === 'pending').length === 0" class="empty-mini">
-            {{ t('market.adminNoReports') }}
-          </li>
-        </ul>
+        <MarketAdminSection @notify="showToast" />
       </section>
     </main>
 
-    <!-- 登录 Modal -->
+    <!-- 昵称 Modal（批次 2-7：本地模拟、无凭据、无后端） -->
     <Modal v-model="loginModalOpen" :title="t('market.loginTitle')">
+      <p class="login-hint">{{ t('market.nicknameHint') }}</p>
       <div class="form-group">
         <label for="login-name" class="form-label">{{ t('market.username') }}</label>
         <input
@@ -841,60 +334,12 @@ type="button"
       </template>
     </Modal>
 
-    <!-- 角色卡详情 Modal -->
-    <Modal
-      v-if="selectedCard"
+    <!-- 角色卡详情 + 评论 + 举报（共用 selectedCardId） -->
+    <MarketDetailModal
       v-model="detailModalOpen"
-      :title="selectedCard.card.name"
-    >
-      <div class="detail-content">
-        <p class="detail-desc">{{ selectedCard.card.description }}</p>
-        <div class="detail-tags">
-          <span v-for="tag in selectedCard.card.tags" :key="tag" class="tag">{{ tag }}</span>
-        </div>
-        <div class="detail-meta">
-          <span>{{ t('market.detailAuthor', { name: selectedCard.authorName }) }}</span>
-          <span>{{ t('market.detailDate', { date: formatDate(selectedCard.publishedAt) }) }}</span>
-          <span>{{ t('market.detailDownload', { count: selectedCard.downloadCount }) }}</span>
-          <span>{{ t('market.detailRating', { rating: selectedCard.averageRating, count: selectedCard.reviewCount }) }}</span>
-        </div>
-
-        <h3 class="detail-section-title">{{ t('market.detailReviews') }}</h3>
-        <div v-if="selectedCardReviews.length === 0" class="empty-mini">{{ t('market.detailNoReviews') }}</div>
-        <ul v-else class="review-list">
-          <li v-for="review in selectedCardReviews" :key="review.id" class="review-item">
-            <div class="review-header">
-              <span class="review-author">{{ review.userName }}</span>
-              <span class="rating">{{ ratingStars(review.rating) }}</span>
-            </div>
-            <p class="review-comment">{{ review.comment }}</p>
-            <span class="review-date">{{ formatDate(review.createdAt) }}</span>
-          </li>
-        </ul>
-      </div>
-      <template #footer>
-        <button type="button" class="btn btn-ghost" @click="openReviewModal">
-          <Icon name="star" :size="14" />
-          {{ t('market.reviewBtn') }}
-        </button>
-        <button type="button" class="btn btn-ghost" @click="openReportModal">
-          <Icon name="alert-triangle" :size="14" />
-          {{ t('market.reportBtn') }}
-        </button>
-        <button
-type="button"
-          :class="['btn', store.isFavorite(selectedCard.marketId) ? 'btn-primary' : 'btn-ghost']"
-          @click="handleToggleFavorite(selectedCard.marketId)"
-        >
-          <Icon name="heart" :size="14" />
-          {{ store.isFavorite(selectedCard.marketId) ? t('market.favorited') : t('market.favorite') }}
-        </button>
-        <button type="button" class="btn btn-primary" @click="handleDownload(selectedCard.marketId)">
-          <Icon name="download" :size="14" />
-          {{ t('market.download') }}
-        </button>
-      </template>
-    </Modal>
+      :card-id="selectedCardId"
+      @notify="showToast"
+    />
 
     <!-- 发布 Modal -->
     <Modal v-model="publishModalOpen" :title="t('market.publishTitle')">
@@ -923,64 +368,6 @@ type="button"
       </template>
     </Modal>
 
-    <!-- 评论 Modal -->
-    <Modal v-model="reviewModalOpen" :title="t('market.reviewTitle')">
-      <div class="form-group">
-        <label class="form-label">{{ t('market.reviewLabel') }}</label>
-        <div class="rating-input" role="radiogroup" :aria-label="t('market.reviewAria')">
-          <button
-            v-for="n in 5"
-            :key="n"
-            type="button"
-            role="radio"
-            :aria-checked="reviewRating === n"
-            :class="['star-btn', { active: reviewRating >= n }]"
-            @click="reviewRating = n"
-          >
-            ★
-          </button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="review-comment" class="form-label">{{ t('market.reviewComment') }}</label>
-        <textarea
-          id="review-comment"
-          v-model="reviewComment"
-          class="form-input form-textarea"
-          :placeholder="t('market.reviewPlaceholder')"
-          rows="3"
-        ></textarea>
-      </div>
-      <template #footer>
-        <button type="button" class="btn btn-ghost" @click="reviewModalOpen = false">{{ t('market.cancel') }}</button>
-        <button type="button" class="btn btn-primary" @click="handleReview">{{ t('market.publishReview') }}</button>
-      </template>
-    </Modal>
-
-    <!-- 举报 Modal -->
-    <Modal v-model="reportModalOpen" :title="t('market.reportTitle')">
-      <div class="form-group">
-        <label class="form-label">{{ t('market.reportReason') }}</label>
-        <select v-model="reportReason" class="form-input">
-          <option v-for="r in REPORT_REASONS" :key="r.value" :value="r.value">{{ r.label }}</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="report-desc" class="form-label">{{ t('market.reportDesc') }}</label>
-        <textarea
-          id="report-desc"
-          v-model="reportDescription"
-          class="form-input form-textarea"
-          :placeholder="t('market.reportPlaceholder')"
-          rows="3"
-        ></textarea>
-      </div>
-      <template #footer>
-        <button type="button" class="btn btn-ghost" @click="reportModalOpen = false">{{ t('market.cancel') }}</button>
-        <button type="button" class="btn btn-primary" @click="handleReport">{{ t('market.submitReport') }}</button>
-      </template>
-    </Modal>
-
     <Toast v-model="toastOpen" :type="toastType" :message="toastMessage" />
   </div>
 </template>
@@ -990,74 +377,8 @@ type="button"
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
-  color: var(--text);
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  /* 下面那两句说明写的是 flex:1 1 100%（本意独占一行），但这个容器一直没开 wrap，
-     于是"标题 + 两句说明 + 右侧登录"全挤在同一行里按比例缩——真机量到「登录」按钮
-     被压成 42×48（两个字竖排两行）。开 wrap 才是这段样式原本想表达的样子。 */
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border);
   background: var(--card);
-}
-
-.page-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 0;
-  flex: 1;
-}
-
-/* T-14: 市场 Beta 徽标 */
-.beta-disclosure {
-  flex: 1 1 100%;
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--muted-foreground);
-}
-
-/* E21：地址本身是数据，用等宽并允许断行，避免撑破页头 */
-.market-source-url {
-  margin-inline-start: 6px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  word-break: break-all;
-}
-
-.beta-badge {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--warning, #f59e0b) 15%, transparent);
-  /* warning 作文字叠在同色 15% 染层上，light 下仅 4.08:1；
-     改用派生 token --warning-text（warning 与 foreground 混合，主题自适应）。 */
-  color: var(--warning-text);
-  font-size: 11px;
-  font-weight: 600;
-  vertical-align: middle;
-  letter-spacing: 0.5px;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-  color: var(--muted-foreground);
+  color: var(--foreground);
 }
 
 .tabs {
@@ -1081,7 +402,7 @@ type="button"
 
 @media (hover: hover) and (pointer: fine) {
   .tab:hover {
-    color: var(--text);
+    color: var(--foreground);
   }
 }
 
@@ -1096,639 +417,21 @@ type="button"
   padding: 1rem;
 }
 
-.remote-panel {
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  border: 1px dashed var(--border);
-  border-radius: 0.5rem;
-  background: var(--card);
-}
-
-/* §14.4 更新检查横幅 */
-.updates-banner {
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--secondary) 45%, transparent);
-  border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--secondary) 8%, transparent);
-}
-.updates-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--foreground);
-}
-.updates-list {
-  list-style: none;
-  margin: 0.5rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.updates-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-.updates-name {
-  font-weight: 500;
-  color: var(--foreground);
-  flex: 1;
-  min-width: 120px;
-}
-.updates-version {
-  color: var(--muted-foreground);
-  font-size: 0.8rem;
-  font-family: var(--font-mono);
-}
-.updates-btn {
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--secondary);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--secondary-text);
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-.updates-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.remote-panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-.remote-title {
-  font-weight: 600;
-  color: var(--foreground);
-}
-/* E20：安装结果条 */
-.installed-result {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.5rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 0.4rem;
-  background: var(--card-elevated);
-  color: var(--foreground);
-  font-size: 0.8rem;
-}
-.installed-result-text {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.installed-go {
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--secondary);
-  border-radius: 0.4rem;
-  background: transparent;
-  color: var(--secondary-text);
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-.installed-go.ghost {
-  border-color: var(--border);
-  color: var(--muted-foreground);
-}
-@media (hover: hover) {
-  .installed-go:hover {
-    background: var(--secondary);
-    color: var(--on-secondary);
-  }
-  .installed-go.ghost:hover {
-    background: var(--border);
-    color: var(--on-border-fill);
-  }
-}
-.installed-go:focus-visible {
-  outline: 2px solid var(--ring, var(--secondary));
-  outline-offset: 1px;
-}
-.remote-refresh,
-.remote-install {
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.4rem;
-  border: 1px solid var(--border);
-  background: var(--card-elevated);
-  color: var(--foreground);
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-.remote-refresh:disabled,
-.remote-install:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-.remote-error {
-  color: var(--error-fg);
-  font-size: 0.8rem;
-  margin: 0.25rem 0;
-}
-.remote-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.remote-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.4rem;
-}
-.remote-item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-.remote-item-name {
-  font-weight: 600;
-  color: var(--foreground);
-}
-.remote-item-meta {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-}
-.remote-item-desc {
-  font-size: 0.8rem;
-  color: var(--foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.remote-item-action {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-.remote-progress {
-  width: 120px;
-  height: 0.5rem;
-  background: var(--border);
-  border-radius: 0.25rem;
-  overflow: hidden;
-}
-.remote-progress-fill {
-  height: 100%;
-  background: var(--primary);
-  transition: width 0.15s ease;
-}
-.remote-progress-text {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  min-width: 2.5rem;
-  text-align: right;
-}
-.remote-done {
-  color: var(--success);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-.remote-hint {
-  color: var(--muted-foreground);
-  font-size: 0.8rem;
-  margin: 0.25rem 0;
-}
-
-.toolbar {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.search-box {
-  flex: 1;
-  min-width: 200px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-}
-
-.search-input {
-  flex: 1;
-  border: none;
-  background: none;
-  color: var(--text);
-  font-size: 0.875rem;
-  outline: none;
-}
-
-.sort-buttons {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.sort-btn {
-  padding: 0.375rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  background: var(--card);
-  color: var(--muted-foreground);
-  font-size: 0.8125rem;
-  cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-}
-
-.sort-btn.active {
-  background: var(--primary);
-  color: var(--on-primary);
-  border-color: var(--primary);
-}
-
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.filter-chips {
-  display: flex;
-  gap: 0.25rem;
-  flex-wrap: wrap;
-}
-
-.chip {
-  padding: 0.25rem 0.625rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: var(--card);
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-}
-
-.chip.active {
-  background: var(--primary);
-  color: var(--on-primary);
-  border-color: var(--primary);
-}
-
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
 }
 
-.market-card {
-  padding: 1rem;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  outline: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .market-card:hover {
-    border-color: var(--primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  }
-}
-
-/* focus-visible 分支不加 hover 守卫：键盘可达性不受设备 hover 能力影响 */
-.market-card:focus-visible {
-  border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.recommend-score {
-  font-size: 0.75rem;
-  color: var(--primary-fg, var(--primary));
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.card-name {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--text);
-}
-
-.badge {
-  padding: 0.125rem 0.5rem;
-  border-radius: 1rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-}
-
-.badge-featured {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-
-.badge-approved {
-  background: var(--success);
-  color: var(--on-accent);
-}
-
-.badge-pending {
-  background: var(--warning-fg);
-  color: var(--on-accent);
-}
-
-.badge-rejected {
-  background: var(--error);
-  color: var(--on-accent);
-}
-
-.card-desc {
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-  margin: 0 0 0.5rem 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-tags {
-  display: flex;
-  gap: 0.25rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.5rem;
-}
-
-.tag {
-  padding: 0.125rem 0.5rem;
-  background: var(--background);
-  border-radius: 0.25rem;
-  font-size: 0.6875rem;
-  color: var(--muted-foreground);
-}
-
-.card-footer {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  margin-bottom: 0.25rem;
-}
-
-.stat {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.rating {
-  color: var(--warning-fg);
-}
-
-.card-author {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-}
-
-.empty-mini {
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-  padding: 1rem 0;
-}
-
-/* D6 管理 Tab 操作区 */
-.admin-section-title {
-  margin: 18px 0 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.admin-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.admin-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-secondary);
-  font-size: 13px;
-}
-.admin-name {
-  font-weight: 600;
-  color: var(--text-primary);
-  flex: 0 0 auto;
-  max-width: 40%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.admin-meta {
-  flex: 1;
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.admin-actions {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.btn-sm {
+/* ── 页级共享基类：留在宿主，用 :deep() 一次作用到子组件内部（R2-2/R2-3 同判据——
+   会不会被别处引用。Teleport 进 Modal 的内容收不到 :deep()（不在本节点祖先下），
+   那部分由 MarketDetailModal 自带副本，见该组件注释）。── */
+.community-market-view :deep(.btn-sm) {
   padding: 4px 10px;
   font-size: 12px;
 }
-.empty-mini {
-  padding: 10px 12px;
-  color: var(--muted-foreground);
-  font-size: 13px;
-}
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 1rem;
-}
-
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1.5rem 1rem;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-}
-
-.stat-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--primary-fg, var(--primary));
-}
-
-.stat-label {
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-  margin-top: 0.25rem;
-}
-
-/* 详情 Modal */
-.detail-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.detail-desc {
-  font-size: 0.875rem;
-  color: var(--text);
-  margin: 0;
-}
-
-.detail-tags {
-  display: flex;
-  gap: 0.25rem;
-  flex-wrap: wrap;
-}
-
-.detail-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  padding: 0.75rem;
-  background: var(--background);
-  border-radius: 0.5rem;
-}
-
-.detail-section-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin: 0.5rem 0 0.25rem 0;
-}
-
-.review-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.review-item {
-  padding: 0.75rem;
-  background: var(--background);
-  border-radius: 0.5rem;
-}
-
-.review-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.25rem;
-}
-
-.review-author {
-  font-weight: 600;
-  font-size: 0.8125rem;
-}
-
-.review-comment {
-  font-size: 0.8125rem;
-  color: var(--text);
-  margin: 0 0 0.25rem 0;
-}
-
-.review-date {
-  font-size: 0.6875rem;
-  color: var(--muted-foreground);
-}
-
-/* 表单 */
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-label {
-  display: block;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  margin-bottom: 0.375rem;
-  color: var(--text);
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: var(--background);
-  color: var(--text);
-  font-size: 0.875rem;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  border-color: var(--primary);
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 60px;
-}
-
-.rating-input {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.star-btn {
-  font-size: 1.5rem;
-  color: var(--border);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.15s;
-}
-
-.star-btn.active {
-  color: var(--warning-fg);
-}
-
-/* 按钮 */
-.btn {
+.community-market-view :deep(.btn) {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -1740,9 +443,95 @@ type="button"
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.btn-sm {
+.community-market-view :deep(.btn-sm) {
   padding: 0.25rem 0.625rem;
   font-size: 0.75rem;
+}
+
+.community-market-view :deep(.btn-primary) {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .community-market-view :deep(.btn-primary:hover) {
+    opacity: 0.9;
+  }
+}
+
+.community-market-view :deep(.btn-ghost) {
+  background: var(--card);
+  color: var(--text, inherit);
+  border-color: var(--border);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .community-market-view :deep(.btn-ghost:hover) {
+    background: var(--background);
+  }
+}
+
+.community-market-view :deep(.empty-mini) {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+  padding: 1rem 0;
+}
+
+.community-market-view :deep(.empty-mini) {
+  padding: 10px 12px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+/* ── 宿主自己（昵称 / 发布两扇 Modal）用的共享基类：Teleport 里靠本节点 data-v 命中，
+   保持普通 scoped 形态 ── */
+.login-hint {
+  margin: 0 0 var(--space-3, 12px);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-bottom: 0.375rem;
+  color: var(--foreground);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  border-color: var(--primary);
+}
+
+/* 按钮（宿主两扇 Modal 自用；子组件内部靠上面的 :deep() 族） */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .btn-primary {
@@ -1759,7 +548,7 @@ type="button"
 
 .btn-ghost {
   background: var(--card);
-  color: var(--text);
+  color: var(--foreground);
   border-color: var(--border);
 }
 
@@ -1769,59 +558,15 @@ type="button"
   }
 }
 
-.header-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--foreground);
-  cursor: pointer;
-  font-size: 13px;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .header-btn:hover {
-    background: var(--background);
-  }
-}
-
-.header-btn:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
 @media (max-width: 640px) {
   .card-grid {
     grid-template-columns: 1fr;
   }
-
-  .toolbar {
-    flex-direction: column;
-  }
-
-  .search-box {
-    width: 100%;
-  }
-
-  .sort-buttons {
-    overflow-x: auto;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-  }
 }
 
 @media (max-width: 640px) {
-  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
-  .search-input,
+  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1）。
+     `.search-input` 随搜索框搬到 MarketToolbar，覆盖块在该组件里（守卫按同文件判）。 */
   .form-input {
     font-size: 16px;
   }

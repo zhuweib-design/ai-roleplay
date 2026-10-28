@@ -1,0 +1,261 @@
+#!/usr/bin/env node
+/**
+ * file-size-guard.mjs — 单文件行数棘轮守卫（DEV_PLAN §7 大文件拆分专项的配套门禁）
+ *
+ * 为什么需要它：§7 拆完 24 个文件、新增 92 个文件，是 20–30 人日的投入。但拆分本身
+ * 不带自锁——没有门禁的话，半年后同样的文件会重新长回去，这笔投入就白花了。
+ * 项目已有 `important-guard`（!important 棘轮）、`token-guard`（死引用棘轮）两套成熟
+ * 套路，这里沿用同一形状：**白名单 + 只许降不许升**。
+ *
+ * 判定规则：
+ *   1. 不在白名单、且 > FAIL（1000 行）       → 失败（新长出来的大文件）
+ *   2. 不在白名单、且 > WARN（800 行）        → 警告（不阻断，但要在评审里说明）
+ *   3. 在白名单、且当前行数 > 登记行数        → 失败（拆过的文件又长回去了）
+ *   4. 在白名单、且当前行数 ≤ WARN            → 通过，提示把条目删掉（它的债已经还完）
+ *
+ * 为什么白名单里锁"登记行数"而不只锁"存在性"：只锁存在性时，文件从 1000 长到 2000
+ * 也算通过。§7 的价值全在"它会一直变小"，所以必须对增长有反应。
+ *
+ * 用法：
+ *   node scripts/file-size-guard.mjs            # 报告（默认，不阻断）
+ *   node scripts/file-size-guard.mjs --strict   # CI：按上面四条判定
+ *   node scripts/file-size-guard.mjs --list     # 只看白名单现状
+ */
+
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(__dirname, '..');
+const SRC = join(ROOT, 'src');
+
+const STRICT = process.argv.includes('--strict');
+const LIST = process.argv.includes('--list');
+
+/** 失败阈值：超过即视为"大文件" */
+const FAIL = 1000;
+/** 警告阈值：超过即进入观察名单（拆分目标就是把这个数压到 0） */
+const WARN = 800;
+
+/**
+ * 白名单：`文件 → { lines, reason }`。
+ *
+ * 纪律（与 important-guard 的棘轮同构）：
+ * - 只允许**下调** lines，不允许上调；文件变小了就顺手改小，还完债就整条删掉；
+ * - 新增条目必须在 reason 里写清"为什么现在不能拆"，否则评审直接打回；
+ * - **数据文件例外（`ratchet: false`）**：i18n 字典随功能增长是常态，每个新 key
+ *   都合法。对它们套棘轮，守卫会频繁假红、然后被绕过——那比没有守卫更糟。
+ *   `ratchet: false` 的条目只展示现状，不参与增长判定，也不能用"行数没变"当
+ *   不拆的理由（它们的理由写在 reason 里，与行数无关）。
+ *
+ * 现状基线：2026-10-18 实测（`wc -l`，含空行），26 个文件。明细与拆分计划见
+ * `docs/design/DEV_PLAN_2026-10-17_开发计划.md` §7。
+ */
+/** 条目形状：lines=登记行数；reason=为什么在名单里；ratchet=false 时不判增长（数据文件） */
+const ALLOWLIST = {
+  // ── i18n 字典：数据文件，不拆（§7.2 已论证）──
+  'src/i18n/locales/en.ts': { lines: 3417, ratchet: false, reason: 'i18n 字典，键平铺即其形状；随功能增长是常态，棘轮对它无意义' },
+  'src/i18n/locales/zh.ts': { lines: 3416, ratchet: false, reason: '同上（中英键数严格相等，拆分会引入同步面）' },
+
+  // ── R1 批（§7.3，优先拆分）──
+  // 2026-10-19 R1-2 拆完：StoryEngineView 3326 → 652，已 ≤800，条目按 §7.10 删除。
+  // 拆出 11 个文件：StoryQuickSetupPanel / StoryCard / StoryDetailPanel /
+  // StoryDetailCharacters / StoryDetailWorld / StoryUploadModal / StoryImportModal /
+  // StoryProtagonistModal + useStoryGeneration / useStoryFilters + story-display.ts
+  // 2026-10-19 R1-3 拆完：WorldBookView 3115 → 741（≤800），条目按 §7.10 删除。
+  // 拆出 9 个组件：LorebookHeader / LorebookListPanel / LorebookMetaSection /
+  // LorebookWorldSections / LorebookBindings / LorebookEntryTree / LorebookEntryForm /
+  // LorebookGenerateModal；+3 composable：useLorebookTree / useLorebookEntryForm / useLorebookIO。
+  // 外壳（.worldbook-body / .lorebook-list-panel / .lorebook-editor-panel /
+  // .editor-content / .entries-layout / .entries-list-panel / .entry-editor-panel）
+  // 刻意留在视图里 —— 手机两级互换与第三态互斥都靠属性/后代选择器圈它们。
+  // 2026-10-19 R1-4 拆完：SettingsModelPanel 2544 → 369（≤800），条目按 §7.10 删除。
+  // 拆出 6 个组件：ModelCloudList / ModelLocalSection / ModelProfileList /
+  // ModelProfileForm / ModelThinkingSection / ModelPresetSection
+  // + composable：useModelProfileForm.ts。宿主只留 5 个 section 的顺序、云端/本地
+  // Tab 切换、以及"两处新增入口 → 同一扇表单弹窗"的接线（`defineExpose` 转发）。
+  // 2026-10-22 R4-9 拆完：GroupChatView 864 → 764（-100），条目按 §7.10 删除。
+  // 拆出 useGroupActions.ts（182）：建群/删群/ST 导入导出/随机 NPC/发言模式，
+  // 连同三扇弹窗开关与"上线校验"一起下沉。toast 三件套**留在宿主**——
+  // 四个 composable 共用同一出口，下沉会让同一操作在两处弹不同 toast。
+  // R1-1 遗留记录：2486 → 864（-1622），拆出 9 个文件：GroupListPanel /
+  // GroupMessageList / GroupMessageInput / GroupCreateModal / GroupMemberModals /
+  // GroupNpcModal / CharacterPickerList + useGroupComposer / useGroupMembers /
+  // useGroupLifecycle。
+  // 2026-10-19 R1-5 拆完：1742 → 583（-1159），销账。
+  // 拆出 4 个文件：ChatHeader / ChatMessageArea / ChatComposer + useChatWindowing.ts。
+  // 宿主只剩接线：三个子组件 + 四扇浮层 + 消息动作分发 + 导出 + API 错误诊断。
+
+  // ── R2 批 ──
+  // 2026-10-19 R2-1：CharacterEditorView 已拆（2320 → 532），本条销账。
+  // 2026-10-19 R2-2：CharacterVersionView 已拆（1999 → 597），本条销账。
+  // 2026-10-20 R3-1：SettingsAppearancePanel 已拆（1893 → 32 行装配层），
+  // 分区落到 Appearance{Locale,Theme,FontSize,UiCustom}Section.vue（154/601/259/614），
+  // 顺带删掉 447 行从 SettingsView 搬过来的死样式（模板里不存在的选择器），本条销账。
+  // 2026-10-19 R2-4：CommunityMarketView 已拆（1838 → 580），本条销账。
+  // 2026-10-19 R2-3：ContextPanel 已拆（1269 → 284），本条销账。
+  // 2026-10-20 R2-5：settings.ts 已拆（1621 → 335，拆入 src/stores/settings/ 四个域模块），本条销账。
+
+  // ── R3 批 ──
+  // 2026-10-20 R3-2：SettingsDataPanel 已拆（1389 → 97，拆入 DailySection 600 /
+  // AdvancedSection 359 / Modals 383 / useDataPanelState 15），本条销账。
+  // 2026-10-20 R3-3：LocalModelView 已拆（1267 → 568，拆入 5 个 tab 面板组件 +
+  // local-model-format.ts；共用样式走宿主 :deep() 不重复），本条销账。
+  // 2026-10-20 R3-4：RandomEventsView 已拆（实测 1268 → 555，拆入 Templates/Scenes/
+  // Generator/Results 四个面板 + random-events-shared.ts；共用样式走宿主 :deep()），
+  // 本条销账。
+  // 2026-10-22 O-9：CharactersView 二次瘦身完成（815 → 725），本条销账。
+  // R3-5 首拆只降到 815（>800 观察线），按规则 4 保留棘轮；本轮把「导入 / 拖拽 /
+  // 运行时同步重试」整块（约 100 行：4 个状态 ref + 9 个函数）抽成
+  // `views/useCharacterImport.ts`（158 行 composable，deps 只三个入口：
+  // showToast / pendingRuntimeIds / fileInput），宿主降到 725 ≤ 800 故删除条目。
+  // 2026-10-20 R3-6：ImageGeneratorView 已拆（1230 → 470 行装配层，拆入 Generate /
+  // Gallery / Settings 三个 tab 面板 + image-gen-format.ts；跨面板共用的表单与按钮族
+  // 留宿主 `.image-gen-view :deep()` 单点定义），本条销账。
+
+  // ── R4 批 ──
+  // 2026-10-20 R4-1：VectorModelPanel 已拆（1023 → 285 装配层，拆入 Enhance / Install /
+  // User / Remote 四个子面板；共用皮肤留宿主 `.settings-section :deep()` 单点定义），本条销账。
+  // 2026-10-20 R4-2：WorldBookEventsPanel 已拆（1161 → 235 装配层，拆入 EventList /
+  // EventEditor 两个子组件 + useWorldBookEvents 模块级单例；共用徽标留宿主
+  // `.events-section :deep()` 单点定义），本条销账。
+  // 2026-10-21 R4-4：chat-generation 已拆（1501 → 738 装配层，拆入 random-event 139 /
+  // commands 148 / persistence 216 / profile 326 + helpers 133；持久化与 Profile 用工厂
+  // 收实例状态，执行体不 import store），销账 9 → 8。
+  // 2026-10-21 R4-5：story 已拆（1228 → 230 装配层，拆入 persistence 117 / analysis 391 /
+  // import 218 / protagonist 247 / time 219；五个工厂收实例状态），销账 8 → 7。
+  // 2026-10-21 R4-6：group-chat 已拆（1077 → 218 装配层，拆入 persistence 108 / st 106 /
+  // crud 182 / members 284 / speaking 165 / messages 128 / npc 167；七个工厂收实例状态，
+  // 单 ref 薄方法留宿主），销账 7 → 6。
+  // 2026-10-22 R4-7：community-market 已拆（1273 → 679 装配层，拆入 types 227 /
+  // queries 153 / mock 295；筛选/排序/推荐提为无副作用自由函数，宿主与 Mock 装配留
+  // 原地避免反向依赖成环），销账 6 → 5。
+  // 2026-10-22 R4-8：random-event-generator 已拆（1063 → 86 纯 barrel，拆入 core 203 /
+  // types 221 / factories 185 / runtime 525；types 层零函数、中立共享，使 factories 与
+  // runtime 两条依赖边互不对向，四层单向无环），R-F 批收官，销账 5 → 4。
+};
+
+function walk(dir, out = []) {
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    const st = statSync(full);
+    if (st.isDirectory()) {
+      if (name === 'node_modules' || name === 'dist' || name.startsWith('.')) continue;
+      walk(full, out);
+    } else if (/\.(vue|ts|css|mjs|js)$/.test(name)) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+function countLines(file) {
+  const text = readFileSync(file, 'utf8');
+  // 与 `wc -l` 严格对齐：只数换行符（末尾无换行的最后一行，wc 也不算）。
+  // 不对齐会让"末尾少一个换行"被误判成"文件缩小了"，棘轮直接失真。
+  let n = 0;
+  for (let i = 0; i < text.length; i += 1) if (text.charCodeAt(i) === 10) n += 1;
+  return n;
+}
+
+const files = walk(SRC);
+const findings = [];
+
+for (const file of files) {
+  const rel = relative(ROOT, file).replace(/\\/g, '/');
+  const lines = countLines(file);
+  const allowed = ALLOWLIST[rel];
+
+  if (allowed) {
+    // 数据文件（ratchet: false）不判增长：它们只进展示，不进判定
+    if (allowed.ratchet === false) {
+      continue;
+    }
+    if (lines > allowed.lines) {
+      findings.push({
+        level: 'fail',
+        rel,
+        lines,
+        msg: `白名单文件长大了：${allowed.lines} → ${lines}（+${lines - allowed.lines}）。棘轮只许降不许升`,
+      });
+    } else if (lines <= WARN) {
+      findings.push({
+        level: 'note',
+        rel,
+        lines,
+        msg: `已降到警告线以下（${lines} ≤ ${WARN}），请从白名单删除这一条`,
+      });
+    }
+  } else if (lines > FAIL) {
+    findings.push({
+      level: 'fail',
+      rel,
+      lines,
+      msg: `新增大文件 ${lines} 行（阈值 ${FAIL}）。要么拆开，要么在白名单登记并写明为什么现在不能拆`,
+    });
+  } else if (lines > WARN) {
+    findings.push({
+      level: 'warn',
+      rel,
+      lines,
+      msg: `${lines} 行，进入观察名单（>${WARN}）。拆分目标是把这类文件清零`,
+    });
+  }
+}
+
+if (LIST) {
+  console.log('[file-size] 白名单现状（登记行数 → 当前行数）：');
+  for (const [rel, meta] of Object.entries(ALLOWLIST)) {
+    const full = join(ROOT, rel);
+    let cur;
+    try {
+      cur = countLines(full);
+    } catch {
+      cur = '不存在';
+    }
+    const flag = typeof cur === 'number' && cur > meta.lines ? ' ← 超登记' : '';
+    console.log(`  ${String(meta.lines).padStart(5)} → ${String(cur).padStart(5)}  ${rel}${flag}`);
+  }
+  console.log(`[file-size] 共 ${Object.keys(ALLOWLIST).length} 条`);
+  process.exit(0);
+}
+
+const fails = findings.filter((f) => f.level === 'fail');
+const warns = findings.filter((f) => f.level === 'warn');
+const notes = findings.filter((f) => f.level === 'note');
+
+const allowedFiles = Object.keys(ALLOWLIST);
+const scanned = files.length;
+
+console.log(`[file-size] 扫描 src 下 ${scanned} 个文件；白名单 ${allowedFiles.length} 个；阈值 warn ${WARN} / fail ${FAIL}`);
+
+if (warns.length) {
+  console.log(`\n[file-size] 观察名单（${warns.length} 个，>${WARN} 行且不在白名单）：`);
+  for (const w of warns) console.log(`  ! ${String(w.lines).padStart(5)}  ${w.rel}`);
+}
+
+if (notes.length) {
+  console.log(`\n[file-size] 已还完债（${notes.length} 个，可从白名单删除）：`);
+  for (const n of notes) console.log(`  ✓ ${String(n.lines).padStart(5)}  ${n.rel}`);
+}
+
+if (fails.length) {
+  console.error(`\n[file-size] 失败 ${fails.length} 项：`);
+  for (const f of fails) console.error(`  ✗ ${f.rel} — ${f.msg}`);
+}
+
+if (!STRICT) {
+  console.log(
+    fails.length
+      ? `\n[file-size] 非严格模式：以上 ${fails.length} 项在 --strict 下会失败（CI 用 --strict）`
+      : '\n[file-size] 通过（非严格模式）'
+  );
+  process.exit(0);
+}
+
+if (fails.length) {
+  console.error(`\n[file-size] 严格模式失败：${fails.length} 项。见 docs/design/DEV_PLAN_2026-10-17_开发计划.md §7`);
+  process.exit(1);
+}
+console.log('\n[file-size] 严格模式通过：没有新增/长大的大文件');

@@ -16,6 +16,7 @@
  */
 import { defineStore, storeToRefs } from 'pinia';
 import type { StorageAdapter } from '../storage/storage-adapter';
+import type { UICharacter } from '@/types';
 import { useChatSessionStore } from './chat-session';
 import { useChatGenerationStore } from './chat-generation';
 import { useChatRuntimeStore } from './chat-runtime';
@@ -61,6 +62,29 @@ export const useChatStore = defineStore('chat', () => {
     runtimeStore.setStorageAdapter(adapter);
     groupRuntimeStore.setStorageAdapter(adapter);
     memoryStore.setStorageAdapter(adapter);
+  }
+
+  /**
+   * 生成中的会话闸门（2B-P1-02）
+   *
+   * 流式回调写的是 sendMessage 捕获的那条消息对象；此时切换/新建/删除会话会
+   * 整体替换或清空 character.messages，回复就静默丢在旧对象里（极端时序下
+   * persistChat 还会把旧缓冲写到新选中的会话 id 上）。UI 层负责给提示，
+   * 这一层负责让"绕过 UI 的调用方"也改不动。
+   */
+  async function openSessionGuarded(character: UICharacter, chatId: string): Promise<void> {
+    if (isGenerating.value) return;
+    await sessionStore.openSession(character, chatId);
+  }
+
+  function newSessionGuarded(character: UICharacter): void {
+    if (isGenerating.value) return;
+    sessionStore.newSession(character);
+  }
+
+  async function deleteSessionGuarded(character: UICharacter | null, chatId: string): Promise<void> {
+    if (isGenerating.value && chatId === activeChatId.value) return;
+    await sessionStore.deleteSession(character, chatId);
   }
 
   return {
@@ -127,12 +151,12 @@ export const useChatStore = defineStore('chat', () => {
 
     // 多会话（§14.2）
     loadAllSessions: sessionStore.loadAllSessions,
-    openSession: sessionStore.openSession,
+    openSession: openSessionGuarded,
     restoreLatestSession: sessionStore.restoreLatestSession,
-    newSession: sessionStore.newSession,
+    newSession: newSessionGuarded,
     togglePin: sessionStore.togglePin,
     toggleArchive: sessionStore.toggleArchive,
-    deleteSession: sessionStore.deleteSession,
+    deleteSession: deleteSessionGuarded,
     renameSession: sessionStore.renameSession,
   };
 });

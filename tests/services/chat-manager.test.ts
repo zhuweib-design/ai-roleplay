@@ -326,6 +326,32 @@ describe('ChatManager', () => {
       expect(manager.isGenerating).toBe(false);
     }, 10000);
 
+    it('prompt 构建期间（还没拿到 AbortController）点停止也必须在发请求前收口', async () => {
+      const apiClient = makeFakeApiClient([
+        { type: 'delta', delta: '不该出现' },
+        { type: 'done', fullContent: '不该出现', finishReason: 'stop' },
+      ]);
+      const manager = new ChatManager({ apiClient, model: 'gpt-4o' });
+
+      const doneEvents: string[] = [];
+      const errors: Error[] = [];
+      const promise = manager.sendMessage(
+        { card: makeCard(), history: [], userMessage: 'hi' },
+        {
+          onDone: (full) => doneEvents.push(full),
+          onError: (err) => errors.push(err),
+        }
+      );
+
+      // 同步调用：此刻 prompt 还在构建，abortController 尚未创建
+      manager.stop();
+      await promise;
+
+      expect(doneEvents).toEqual([]);
+      expect(errors).toHaveLength(1);
+      expect(errors[0]!.message).toContain('已停止生成');
+    });
+
     it('无生成任务时 stop 应为 no-op', () => {
       const apiClient = makeFakeApiClient([]);
       const manager = new ChatManager({ apiClient, model: 'gpt-4o' });

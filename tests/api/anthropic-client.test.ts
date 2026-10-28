@@ -224,6 +224,22 @@ describe('AnthropicClient', () => {
       ]);
     });
 
+    it('应支持 CRLF 事件分隔符（部分网关按 SSE 规范用 \\r\\n\\r\\n）', async () => {
+      const client = makeClient();
+      const raw =
+        `event: content_block_delta\r\ndata: ${JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: '你好' } })}\r\n\r\n` +
+        `event: message_stop\r\ndata: ${JSON.stringify({ type: 'message_stop' })}\r\n\r\n`;
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        mockResponse(makeReadableStream([new TextEncoder().encode(raw)]))
+      );
+
+      const events = await collect(client.chatStream({ messages: [], model: 'm' }));
+      expect(events).toEqual([
+        { type: 'delta', delta: '你好' },
+        { type: 'done', fullContent: '你好', finishReason: undefined },
+      ]);
+    });
+
     it('流中 error 事件转为 error 事件', async () => {
       const client = makeClient();
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(

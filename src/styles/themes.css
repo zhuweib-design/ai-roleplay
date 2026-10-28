@@ -35,7 +35,11 @@
   --secondary: #0A7A77;
 
   /* Success / Error */
-  --success: #059669;
+  /* --success 与 --error 同口径：它在这套主题里主要当「填充 + --on-accent 白字」
+     （MarketCard 的 badge-approved、WorldBookEventEditor 的 trigger 悬停填充）。
+     原值 #059669 配白字只有 3.77:1，压一档到 #047857 得 5.48:1。
+     作文字的那几处（test-result.ok 等）一律改走 --success-fg，不用本值。 */
+  --success: #047857;
   --success-bg: #D1FAE5;
   --success-fg: #065F46;
 
@@ -57,6 +61,28 @@
   --warning-border: rgba(180, 83, 9, 0.30);
   --danger-bg: rgba(220, 38, 38, 0.10);
   --danger-border: rgba(220, 38, 38, 0.30);
+
+  /* 状态标签色 · 浅色主题专用深色变体（2026-10-23）
+     
+     `--tag-*` 在 tokens.css 的 `:root` 里按**深色主题**定值（亮色，用于在暗底上做色块），
+     浅色主题此前**没有覆盖**这四个 token，于是直接继承了那组亮色。后果是同一批 token
+     被当文字色用时全线不合格：实测 tag-green 1.73、tag-blue 2.24、tag-purple 2.32、
+     tag-gray 2.25（均 on 15% 自染底），最低处 StoryCard 的完成态徽章只有 1.69:1。
+     
+     为什么是「补 light 覆盖」而不是「全局改成派生 token」：
+     `--tag-*` 有两种用法——① 文字色（StoryCard 徽章、WorldBookEventEditor 按钮边线）；
+     ② **填充色块**（WorldBookEventEditor 悬停时把 `--tag-blue` 当 background、
+     `useLorebookTree` 的圆点）。改成 color-mix 派生色会把色块一起压暗，破坏色相辨识；
+     而补一层 light 覆盖只影响浅色主题，且色块与文字在同一主题下同时达标。
+     
+     取值经逐档实测（on 15% 自染 + on 白卡两个基准都要过 AA）：
+       green #046C4E → 5.13 / 6.44    blue   #1D4ED8 → 5.28 / 6.70
+       purple #7E22CE → 5.44 / 6.98   gray   #4B5563 → 6.04 / 7.56
+     其余 8 套主题实测本就 ≥4.5（最低 brutal 的 tag-blue 4.86），故各自无需改动。 */
+  --tag-green: #046C4E;
+  --tag-blue: #1D4ED8;
+  --tag-purple: #7E22CE;
+  --tag-gray: #4B5563;
 }
 
 /* ─── 午夜蓝主题 ─── */
@@ -457,6 +483,9 @@ html[data-theme='brutal'] {
   --foreground: #111111;
   --muted-foreground: #3D3A33;
   --on-media: #111111;
+  /* 这套的 --on-media 是黑字，图片浮层遮罩必须反过来用浅色（见 tokens.css 的说明） */
+  --media-scrim: rgba(255, 255, 255, 0.78);
+  --media-scrim-hover: rgba(255, 255, 255, 0.92);
   /* 亮粉填充上要黑字（白字实测 2.94），暗红/电光蓝填充上要白字 —— 两个槽分开才立得住 */
   --on-accent: #FFFFFF;
   --on-secondary: #111111;

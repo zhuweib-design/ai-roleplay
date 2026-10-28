@@ -16,26 +16,23 @@ import { useCharacterStore } from '@/stores/character';
 import { useChatStore } from '@/stores/chat';
 import { getActiveProfileId } from '@/storage/storage-factory';
 import { useSettingsStore } from '@/stores/settings';
-import { useCharacterVersionStore } from '@/stores/character-version';
+import { useViewport } from '@/core/viewport';
+import CharacterDetailDrawer from '@/components/character/CharacterDetailDrawer.vue';
+import CharacterGenerateModal from './CharacterGenerateModal.vue';
+import CharacterGridPanel from './CharacterGridPanel.vue';
+import { useCharacterImport } from './useCharacterImport';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 import Icon from '@/components/common/Icon.vue';
-import EmptyState from '@/components/common/EmptyState.vue';
-import Avatar from '@/components/common/Avatar.vue';
 import Modal from '@/components/common/Modal.vue';
 import Toast from '@/components/common/Toast.vue';
 import FilterTabs, { type FilterTab } from '@/components/common/FilterTabs.vue';
 import type { UICharacter } from '@/types';
-import {
-  CHARACTER_TEMPLATES,
-  type CharacterTemplateId,
-} from '@/core/character-generator';
 import { t } from '@/i18n';
 
 const router = useRouter();
 const characterStore = useCharacterStore();
 const chatStore = useChatStore();
 const settingsStore = useSettingsStore();
-const versionStore = useCharacterVersionStore();
 const { pushWithReturn } = useReadinessJump();
 
 // 删除确认对话框
@@ -50,11 +47,6 @@ const toastMessage = ref('');
 // 隐藏的文件输入
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput');
 
-// 拖拽状态
-const isDragging = ref(false);
-const importBusy = ref(false);
-const importProgress = ref(0);
-const importTotal = ref(0);
 const pendingRuntimeKey = `ai-roleplay:pending-runtime-imports:${getActiveProfileId()}`;
 function loadPendingRuntimeIds(): string[] {
   try {
@@ -78,10 +70,8 @@ watch(pendingRuntimeIds, (ids) => {
 // 当前操作中的角色（用于 UI 反馈）
 const busyCharacterId = ref<string | null>(null);
 
-// F01.7 随机生成
+// F01.7 随机生成（模板选择状态在 CharacterGenerateModal 内部）
 const generateModalOpen = ref(false);
-const selectedTemplate = ref<CharacterTemplateId | null>(null);
-const templates = CHARACTER_TEMPLATES;
 
 /** 是否有可用的 API 连接 */
 const hasApiProfile = computed(
@@ -151,13 +141,57 @@ function startConversation(id: string) {
   void router.push({ name: 'chat' });
 }
 
-function toggleFavorite(id: string, e: Event) {
-  e.stopPropagation();
-  characterStore.toggleFavorite(id);
+const { isMobile } = useViewport();
+
+/**
+ * 手机端角色详情抽屉（批次 1-5，方案乙）：点卡不再直进编辑，开抽屉。
+ * 卡面四个动作全部移出（桌面保留原样），抽屉里「开始对话」是唯一主动作。
+ */
+const detailCharacterId = ref<string | null>(null);
+const detailCharacter = computed(
+  () => characterList.value.find((c) => c.id === detailCharacterId.value) ?? null
+);
+
+function onCardClick(id: string): void {
+  if (isMobile.value) {
+    detailCharacterId.value = id;
+    return;
+  }
+  editCharacter(id);
 }
 
-async function exportCharacter(id: string, e: Event) {
-  e.stopPropagation();
+function closeDetailDrawer(): void {
+  detailCharacterId.value = null;
+}
+
+function chatFromDrawer(): void {
+  const id = detailCharacterId.value;
+  closeDetailDrawer();
+  if (id) startConversation(id);
+}
+
+function editFromDrawer(): void {
+  const id = detailCharacterId.value;
+  closeDetailDrawer();
+  if (id) editCharacter(id);
+}
+
+function exportFromDrawer(): void {
+  const id = detailCharacterId.value;
+  if (!id) return;
+  closeDetailDrawer();
+  void exportCharacter(id);
+}
+
+function deleteFromDrawer(): void {
+  const char = detailCharacter.value;
+  if (!char) return;
+  // 先关抽屉再开确认：两个浮层叠着会让 Esc 语义变成"关一层"而不是"取消删除"
+  detailCharacterId.value = null;
+  confirmDelete(char);
+}
+
+async function exportCharacter(id: string) {
   busyCharacterId.value = id;
   try {
     // false = 找不到（lastError 显示）/ 用户取消保存面板，两种情况都不报成功
@@ -167,8 +201,7 @@ async function exportCharacter(id: string, e: Event) {
   }
 }
 
-function confirmDelete(char: UICharacter, e: Event) {
-  e.stopPropagation();
+function confirmDelete(char: UICharacter) {
   deleteTarget.value = char;
   deleteModalOpen.value = true;
 }
@@ -183,145 +216,30 @@ function executeDelete() {
   showToast('success', t('characters.deleted', { name }));
 }
 
-// ── F01.7 随机生成 ──
+// ── F01.7 随机生成（闸门留宿主，Modal 在 CharacterGenerateModal） ──
 
 function openGenerateModal() {
   if (!hasApiProfile.value) {
     showToast('error', t('characters.generateApiRequired'));
     return;
   }
-  selectedTemplate.value = null;
   generateModalOpen.value = true;
 }
 
-function selectTemplate(id: CharacterTemplateId) {
-  selectedTemplate.value = id;
-}
+// ── 导入（拖拽 / 文件选择 / 运行时同步重试 → useCharacterImport） ──
 
-async function handleGenerate() {
-  if (!selectedTemplate.value) {
-    showToast('error', t('characters.generateSelectTemplate'));
-    return;
-  }
-  if (characterStore.isGeneratingCharacter) return;
-
-  const templateId = selectedTemplate.value;
-  const id = await characterStore.generateRandomCharacter(templateId);
-  if (id) {
-    generateModalOpen.value = false;
-    // 生成成功后自动跳转到编辑页查看结果
-    setTimeout(() => {
-      void router.push({ name: 'character-edit', params: { id } });
-    }, 300);
-  }
-  // 失败时 lastError 会通过 watch 显示 toast，保持 Modal 打开允许重试
-}
-
-function closeGenerateModal() {
-  if (characterStore.isGeneratingCharacter) return; // 生成中不允许关闭
-  generateModalOpen.value = false;
-}
-
-// ── 导入 ──
-
-function triggerFileInput() {
-  fileInput.value?.click();
-}
-
-async function syncImportedCharacters(ids: string[]): Promise<number> {
-  const characters = ids.map((id) => characterStore.characters.find((character) => character.id === id))
-    .filter((character): character is UICharacter => Boolean(character));
-  const failed: string[] = [];
-  let synced = 0;
-  for (let index = 0; index < characters.length; index += 50) {
-    const batch = characters.slice(index, index + 50);
-    const result = await chatStore.createRuntimeCharactersBatch(batch);
-    if (!result) {
-      failed.push(...batch.map((character) => character.id));
-      continue;
-    }
-    failed.push(...result.items.filter((item) => item.status === 'invalid')
-      .map((item) => batch[item.index]?.id)
-      .filter((id): id is string => Boolean(id)));
-    synced += result.items.filter((item) => item.status !== 'invalid').length;
-  }
-  pendingRuntimeIds.value = [...new Set([...pendingRuntimeIds.value.filter((id) => !ids.includes(id)), ...failed])];
-  return synced;
-}
-
-async function importFiles(files: File[]): Promise<void> {
-  if (importBusy.value || files.length === 0) return;
-  if (files.length > 50) {
-    showToast('error', t('characters.importLimit'));
-    return;
-  }
-  importBusy.value = true;
-  importTotal.value = files.length;
-  importProgress.value = 0;
-  const importedIds: string[] = [];
-  let failed = 0;
-  try {
-    for (const file of files) {
-      if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
-        failed += 1;
-      } else {
-        const id = await characterStore.importV2File(file);
-        if (id) importedIds.push(id);
-        else failed += 1;
-      }
-      importProgress.value += 1;
-    }
-    const synced = importedIds.length ? await syncImportedCharacters(importedIds) : 0;
-    if (failed > 0 || synced < importedIds.length) {
-      showToast('error', t('characters.importSummary', {
-        count: importedIds.length, synced, failed: failed + importedIds.length - synced,
-      }));
-    } else {
-      showToast('success', t('characters.importSummary', { count: importedIds.length, synced, failed: 0 }));
-    }
-  } finally {
-    importBusy.value = false;
-  }
-}
-
-async function retryRuntimeSync(): Promise<void> {
-  if (importBusy.value || pendingRuntimeIds.value.length === 0) return;
-  importBusy.value = true;
-  try {
-    const ids = [...pendingRuntimeIds.value];
-    const synced = await syncImportedCharacters(ids);
-    showToast(pendingRuntimeIds.value.length ? 'error' : 'success', t('characters.importSummary', {
-      count: ids.length, synced, failed: pendingRuntimeIds.value.length,
-    }));
-  } finally {
-    importBusy.value = false;
-  }
-}
-
-async function handleFileSelected(e: Event) {
-  const input = e.target as HTMLInputElement;
-  const files = [...(input.files ?? [])];
-  input.value = '';
-  await importFiles(files);
-}
-
-async function handleDrop(e: DragEvent) {
-  e.preventDefault();
-  isDragging.value = false;
-  await importFiles([...(e.dataTransfer?.files ?? [])]);
-}
-
-function handleDragOver(e: DragEvent) {
-  e.preventDefault();
-  isDragging.value = true;
-}
-
-function handleDragLeave(e: DragEvent) {
-  e.preventDefault();
-  if (e.currentTarget === e.target) {
-    isDragging.value = false;
-  }
-}
+const {
+  isDragging,
+  importBusy,
+  importProgress,
+  importTotal,
+  triggerFileInput,
+  retryRuntimeSync,
+  handleFileSelected,
+  handleDrop,
+  handleDragOver,
+  handleDragLeave,
+} = useCharacterImport({ characterStore, chatStore, showToast, pendingRuntimeIds, fileInput });
 
 // 角色卡片列表
 const characterList = computed(() => characterStore.filteredCharacters);
@@ -342,9 +260,6 @@ const filterTabs = computed<FilterTab[]>(() => {
   });
 });
 
-function tagsPreview(tags: string[]): string {
-  return tags.slice(0, 3).join(' · ') + (tags.length > 3 ? ` +${tags.length - 3}` : '');
-}
 </script>
 
 <template>
@@ -466,114 +381,33 @@ function tagsPreview(tags: string[]): string {
     </div>
 
     <!-- 角色卡片网格（不使用 main landmark 避免与页面 main 冲突） -->
-    <div class="characters-grid tk-scroll">
-      <article
-        v-for="char in characterList"
-        :key="char.id"
-        class="char-card hover-surface"
-        :class="{ 'is-busy': busyCharacterId === char.id }"
-        tabindex="0"
-        :aria-label="t('characters.cardAria', { name: char.name })"
-        @click="editCharacter(char.id)"
-        @keydown.enter="editCharacter(char.id)"
-        @keydown.space.prevent="editCharacter(char.id)"
-      >
-        <div class="card-header">
-          <Avatar :character="char" :size="56" />
-          <button
-            type="button"
-            class="favorite-btn"
-            :class="{ active: char.favorite }"
-            :aria-label="char.favorite ? t('characters.unfavorite') : t('characters.favorite')"
-            :aria-pressed="char.favorite"
-            @click="toggleFavorite(char.id, $event)"
-          >
-            <Icon name="star" :size="16" />
-          </button>
-        </div>
+    <CharacterGridPanel
+      :list="characterList"
+      :busy-id="busyCharacterId"
+      :dragging="isDragging"
+      @card-click="onCardClick"
+      @edit="editCharacter"
+      @chat="startConversation"
+      @export="exportCharacter"
+      @delete="confirmDelete"
+      @versions="openVersions"
+    />
 
-        <h2 class="card-name">{{ char.name }}</h2>
-        <p class="card-tags">{{ tagsPreview(char.tags) }}</p>
-        <p class="card-desc">{{ char.description }}</p>
-
-        <div class="card-meta">
-          <span class="meta-item">
-            <Icon name="chat-circle" :size="12" />
-            <span>{{ t('characters.convCount', { count: char.conversations.length }) }}</span>
-          </span>
-          <span class="meta-item">
-            <Icon name="gear" :size="12" />
-            <span>{{ settingsStore.activeProfile?.model ?? char.model }}</span>
-          </span>
-          <button
-            v-if="versionStore.hasRepository(char.id)"
-            type="button"
-            class="meta-item meta-tracked"
-            data-rel-jump="char-tracked"
-            :aria-label="t('characters.trackedAria', { name: char.name })"
-            v-tip="t('characters.trackedHint')"
-            @click.stop="openVersions(char.id)"
-          >
-            <Icon name="git-branch" :size="12" aria-hidden="true" />
-            <span>{{ t('characters.trackedTag') }}</span>
-          </button>
-        </div>
-
-        <div class="card-actions">
-          <button
-            type="button"
-            class="action-btn edit"
-            :aria-label="t('characters.editAria')"
-            @click.stop="editCharacter(char.id)"
-          >
-            <Icon name="pencil" :size="14" />
-            <span>{{ t('characters.edit') }}</span>
-          </button>
-          <button
-            type="button"
-            class="action-btn chat"
-            :aria-label="t('characters.chatAria')"
-            @click.stop="startConversation(char.id)"
-          >
-            <Icon name="chat-circle" :size="14" />
-            <span>{{ t('characters.chat') }}</span>
-          </button>
-          <button
-            type="button"
-            class="action-btn export"
-            :aria-label="t('characters.exportAria')"
-            :disabled="busyCharacterId === char.id"
-            @click.stop="exportCharacter(char.id, $event)"
-          >
-            <Icon name="download" :size="14" />
-            <span>{{ t('characters.export') }}</span>
-          </button>
-          <button
-            type="button"
-            class="action-btn delete"
-            :aria-label="t('characters.deleteAria')"
-            @click.stop="confirmDelete(char, $event)"
-          >
-            <Icon name="trash-2" :size="14" />
-            <span>{{ t('characters.delete') }}</span>
-          </button>
-        </div>
-      </article>
-
-      <!-- 空状态 -->
-      <EmptyState
-        v-if="characterList.length === 0"
-        :title-key="characterStore.searchQuery ? 'characters.emptySearch' : 'characters.emptyNoChar'"
-        :desc-key="characterStore.searchQuery ? 'characters.emptySearchHint' : 'characters.emptyNoCharHint'"
-        icon="user"
-      />
-
-      <!-- 拖拽提示 -->
-      <div v-if="isDragging" class="drag-overlay" aria-hidden="true">
-        <Icon name="upload" :size="48" />
-        <p>{{ t('characters.dropHint') }}</p>
-      </div>
-    </div>
+    <!--
+      手机角色详情抽屉（批次 1-5 方案乙）。桌面不挂：isMobile 为 false 时抽屉
+      状态恒为 null，这里再加一层 v-if 保证组件根本不挂载。
+    -->
+    <CharacterDetailDrawer
+      v-if="isMobile"
+      :open="detailCharacter !== null"
+      :character="detailCharacter"
+      :busy="busyCharacterId !== null"
+      @close="closeDetailDrawer"
+      @chat="chatFromDrawer"
+      @edit="editFromDrawer"
+      @export="exportFromDrawer"
+      @delete="deleteFromDrawer"
+    />
 
     <!-- 删除确认对话框 -->
     <Modal
@@ -614,72 +448,7 @@ function tagsPreview(tags: string[]): string {
     />
 
     <!-- F01.7 随机生成 Modal -->
-    <Modal
-      v-model="generateModalOpen"
-      :title="t('characters.generateModalTitle')"
-      :aria-label="t('characters.generateModalAria')"
-      described-by="char-generate-desc"
-    >
-      <div class="generate-content">
-        <p id="char-generate-desc" class="generate-hint">
-          {{ t('characters.generateHint') }}
-          <span class="generate-cost">{{ t('characters.generateCost') }}</span>
-        </p>
-
-        <div class="template-grid" role="radiogroup" :aria-label="t('characters.templateAria')">
-          <button
-            v-for="tpl in templates"
-            :key="tpl.id"
-            type="button"
-            class="template-card"
-            :class="{ active: selectedTemplate === tpl.id }"
-            role="radio"
-            :aria-checked="selectedTemplate === tpl.id"
-            :aria-label="t('characters.templateSelect', { label: tpl.label, description: tpl.description })"
-            :disabled="characterStore.isGeneratingCharacter"
-            @click="selectTemplate(tpl.id)"
-          >
-            <span class="template-label">{{ tpl.label }}</span>
-            <span class="template-desc">{{ tpl.description }}</span>
-          </button>
-        </div>
-
-        <!-- 生成中加载提示 -->
-        <div
-          v-if="characterStore.isGeneratingCharacter"
-          class="generate-loading"
-          role="status"
-          aria-live="polite"
-        >
-          <Icon name="refresh-cw" :size="20" class="spin-icon" />
-          <span>{{ t('characters.generating') }}</span>
-        </div>
-      </div>
-
-      <template #footer>
-        <button
-          type="button"
-          class="modal-btn modal-cancel"
-          :disabled="characterStore.isGeneratingCharacter"
-          @click="closeGenerateModal"
-        >
-          {{ t('common.cancel') }}
-        </button>
-        <button
-          type="button"
-          class="modal-btn modal-generate"
-          :disabled="!selectedTemplate || characterStore.isGeneratingCharacter"
-          @click="handleGenerate"
-        >
-          <Icon
-            v-if="!characterStore.isGeneratingCharacter"
-            name="refresh-cw"
-            :size="14"
-          />
-          <span>{{ characterStore.isGeneratingCharacter ? t('characters.generatingBtn') : t('characters.generateBtn') }}</span>
-        </button>
-      </template>
-    </Modal>
+    <CharacterGenerateModal v-model="generateModalOpen" @notify="showToast" />
   </main>
 </template>
 
@@ -740,7 +509,7 @@ function tagsPreview(tags: string[]): string {
 
 .search-input {
   width: 100%;
-  height: 36px;
+  height: var(--size-control-md);
   padding: 0 12px 0 36px;
   background: var(--video-bg);
   border: 1px solid var(--border);
@@ -764,7 +533,7 @@ function tagsPreview(tags: string[]): string {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
+  height: var(--size-control-md);
   padding: 0 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -814,16 +583,6 @@ function tagsPreview(tags: string[]): string {
   display: none;
 }
 
-.characters-grid {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
-  align-content: start;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
 /* §14.3 排序控制条 */
 .sort-bar {
   display: flex;
@@ -849,224 +608,14 @@ function tagsPreview(tags: string[]): string {
   cursor: pointer;
 }
 
-.char-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  transition: border-color .15s ease, transform .15s ease, background-color .15s ease;
-  outline: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .char-card:hover {
-    border-color: var(--secondary);
-    background: var(--card-elevated);
-  }
-}
-
-/* focus-visible 分支不加 hover 守卫：键盘可达性不受设备 hover 能力影响 */
-.char-card:focus-visible {
-  border-color: var(--secondary);
-  background: var(--card-elevated);
-}
-
-.char-card:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-}
-
-.char-card.is-busy {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.favorite-btn {
-  background: none;
-  border: none;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  padding: 4px;
-  display: inline-flex;
-  border-radius: var(--radius-sm);
-  transition: color .15s ease, background-color .15s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .favorite-btn:hover {
-    color: var(--primary-fg);
-    background: color-mix(in srgb, var(--primary) 8%, transparent);
-  }
-}
-
-.favorite-btn.active {
-  color: var(--primary-fg);
-}
-
-.favorite-btn:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-}
-
-.card-name {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--foreground);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.card-tags {
-  font-size: 12px;
-  /* --secondary 作文字在 theatre 的 --card-elevated 上仅 4.37:1；
-     改用派生 token --secondary-text（= secondary 与 foreground 混合，主题自适应）。 */
-  color: var(--secondary-text);
-  margin: 0;
-}
-
-.card-desc {
-  font-size: 13px;
-  color: var(--muted-foreground);
-  margin: 0;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 39px;
-}
-
-.card-meta {
-  display: flex;
-  gap: 12px;
-  font-size: 11px;
-  color: var(--muted-foreground);
-  padding-top: 4px;
-  border-top: 1px solid var(--border);
-}
-
-/* "已跟踪"是可点的（跳该角色版本历史），但视觉仍是元信息行的一员，不做成按钮块 */
-.meta-tracked {
-  margin-left: auto;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.meta-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.card-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 28px;
-  padding: 0 8px;
-  border-radius: var(--radius-sm);
-  background: var(--video-bg);
-  border: 1px solid var(--border);
-  color: var(--muted-foreground);
-  font-size: 12px;
-  cursor: pointer;
-  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .action-btn:hover {
-    background: var(--card-elevated);
-    color: var(--foreground);
-  }
-}
-
-.action-btn:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .action-btn.delete:hover {
-    border-color: var(--destructive);
-    color: var(--destructive);
-  }
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-
-
-
-.drag-overlay {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--secondary) 8%, var(--background));
-  border: 2px dashed var(--secondary);
-  border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: var(--secondary-text);
-  font-size: 16px;
-  pointer-events: none;
-  z-index: 5;
-}
-
 .delete-warning {
   margin-top: 8px;
   color: var(--error-fg);
   font-size: 13px;
 }
 
-.modal-btn {
-  height: 32px;
-  padding: 0 16px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--card-elevated);
-  color: var(--foreground);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease;
-}
-
-.modal-btn:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-}
-
+/* 弹窗按钮的盒模型、焦点环、禁用态与过渡统一由 primitives.css 的 `.modal-btn` 提供
+   （Q8，2026-10-26）：这里不再复制基类，只保留下面与语义有关的配色变体。 */
 @media (hover: hover) and (pointer: fine) {
   .modal-cancel:hover {
     background: var(--video-bg);
@@ -1105,124 +654,6 @@ function tagsPreview(tags: string[]): string {
   cursor: not-allowed;
 }
 
-.generate-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.generate-hint {
-  font-size: 13px;
-  color: var(--muted-foreground);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.generate-cost {
-  display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--secondary-text);
-}
-
-.template-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.template-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  background: var(--video-bg);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color .15s ease, background-color .15s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .template-card:hover:not(:disabled) {
-    border-color: var(--secondary);
-    background: var(--card-elevated);
-  }
-}
-
-.template-card:focus-visible {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-}
-
-.template-card.active {
-  border-color: var(--secondary);
-  background: color-mix(in srgb, var(--secondary) 10%, var(--video-bg));
-}
-
-.template-card:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.template-label {
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--foreground);
-}
-
-.template-desc {
-  font-size: 11px;
-  color: var(--muted-foreground);
-  line-height: 1.4;
-}
-
-.generate-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 16px;
-  color: var(--secondary-text);
-  font-size: 13px;
-  background: color-mix(in srgb, var(--secondary) 8%, transparent);
-  border-radius: var(--radius-md);
-}
-
-.spin-icon {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.modal-generate {
-  background: var(--secondary);
-  border-color: var(--secondary);
-  color: var(--on-secondary);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .modal-generate:hover:not(:disabled) {
-    filter: brightness(1.1);
-  }
-}
-
-.modal-generate:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spin-icon {
-    animation: none;
-  }
-}
-
 @media (max-width: 640px) {
   .characters-view {
     padding: var(--spacing-md);
@@ -1244,15 +675,16 @@ function tagsPreview(tags: string[]): string {
     flex-basis: 100%;
   }
 
-  .characters-grid {
-    grid-template-columns: 1fr;
+  .characters-header .header-btn.back {
+    display: none;
   }
-
-  .card-actions {
-    grid-template-columns: 1fr 1fr;
+  /* chrome 也得让位：容器 padding 与块间距是"一屏 ≥3 卡"的另一半 */
+  .characters-view {
+    padding: 12px;
+    gap: 12px;
   }
-  .template-grid {
-    grid-template-columns: 1fr;
+  .sort-bar {
+    padding: 0 0 4px;
   }
 }
 
@@ -1263,4 +695,16 @@ function tagsPreview(tags: string[]): string {
     font-size: 16px;
   }
 }
+
+/* 批次 3-2：页头动作与排序选择器 */
+@media (max-width: 640px) {
+  .header-btn,
+  .sort-select {
+    min-height: var(--touch-min);
+  }
+  .header-btn {
+    min-width: var(--touch-min);
+  }
+}
+
 </style>

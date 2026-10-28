@@ -305,6 +305,43 @@ describe('OpenAIClient', () => {
       expect(done?.fullContent).toBe('Hello');
     });
 
+    it('应支持 CRLF 事件分隔符（部分网关按 SSE 规范用 \\r\\n\\r\\n）', async () => {
+      const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+      const raw = [
+        `data: ${deltaChunk('Hello')}\r\n\r\n`,
+        `data: ${deltaChunk(' world', 'stop')}\r\n\r\n`,
+        'data: [DONE]\r\n\r\n',
+      ].join('');
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        mockResponse(makeReadableStream([new TextEncoder().encode(raw)]))
+      );
+
+      const events = await collect(client.chatStream({ messages: [], model: 'm' }));
+      const deltas = events.filter((e) => e.type === 'delta');
+      const done = events.find((e) => e.type === 'done');
+
+      expect(deltas.map((d) => d.delta)).toEqual(['Hello', ' world']);
+      expect(done?.fullContent).toBe('Hello world');
+    });
+
+    it('流中返回 error 事件时应冒泡为错误，而不是空回复', async () => {
+      const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-test' });
+      const raw = [
+        `data: ${deltaChunk('部分')}\n\n`,
+        `data: ${JSON.stringify({ error: { message: '上游超时' } })}\n\n`,
+      ].join('');
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        mockResponse(makeReadableStream([new TextEncoder().encode(raw)]))
+      );
+
+      const events = await collect(client.chatStream({ messages: [], model: 'm' }));
+      const error = events.find((e) => e.type === 'error');
+      const done = events.find((e) => e.type === 'done');
+
+      expect(error?.error).toContain('上游超时');
+      expect(done).toBeUndefined();
+    });
+
     it('应在 HTTP 错误时抛出 ApiError', async () => {
       const client = new OpenAIClient({ baseUrl: 'https://api.openai.com', apiKey: 'sk-bad' });
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(
