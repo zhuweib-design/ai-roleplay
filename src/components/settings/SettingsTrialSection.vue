@@ -12,7 +12,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { useChatGenerationStore } from '@/stores/chat-generation';
 import { useSettingsStore } from '@/stores/settings';
-import { getAppReadyMs } from '@/core/boot-timing';
+import { APP_READY_EVENT, getAppReadyMs } from '@/core/boot-timing';
 import {
   TRIAL_MAX_RECORDS,
   TRIAL_STEP_IDS,
@@ -47,6 +47,20 @@ const verdict = ref<TrialVerdict>('ok');
 const blockedStep = ref('');
 const notes = ref('');
 
+/**
+ * 启动耗时要在**真人看得见的那一刻**是准的。
+ *
+ * 直接冷启动进设置页时，本组件的首帧渲染早于 `App.onMounted` 的存储注入，
+ * 那一刻 `getAppReadyMs()` 还是 null；它又不是响应式来源，所以写成 computed
+ * 会把 null 永久定住（2026-10-28 实测过，环境行恒显"未取到"）。
+ * 这里改成"先取一次 + 听一次性事件补上"，`markAppReady` 在写入数字之后派事件。
+ */
+const readyMs = ref<number | null>(getAppReadyMs());
+function onAppReady(): void {
+  readyMs.value = getAppReadyMs();
+}
+window.addEventListener(APP_READY_EVENT, onAppReady, { once: true });
+
 /** 最近 20 条、新的在上：表格是给人扫的，全量在导出的文件里 */
 const recentRecords = computed(() => [...records.value].reverse().slice(0, 20));
 
@@ -54,7 +68,7 @@ const profile = computed(() => settings.activeProfile);
 
 const envLine = computed(() =>
   t('settingsView.trialEnvLine', {
-    ready: getAppReadyMs() === null ? t('settingsView.trialNoValue') : `${getAppReadyMs()} ms`,
+    ready: readyMs.value === null ? t('settingsView.trialNoValue') : `${readyMs.value} ms`,
     ttft: generation.ttftStats.count > 0 ? `${generation.ttftStats.lastMs} ms` : t('settingsView.trialNoValue'),
     count: generation.ttftStats.count,
   }),
@@ -158,6 +172,8 @@ function handleClear(): void {
 
 onBeforeUnmount(() => {
   if (clearTimer) clearTimeout(clearTimer);
+  // 事件没派过的时候监听还在，组件走了就要摘掉（派过则 once 已自动摘）
+  window.removeEventListener(APP_READY_EVENT, onAppReady);
 });
 </script>
 

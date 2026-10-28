@@ -34,6 +34,9 @@ test('记一行：结论与被卡住的步骤都进表格，刷新后还在', as
   const section = trialSection(page);
   await expect(section.locator('tbody tr')).toHaveCount(0);
   await expect(section).toContainText('还没有记录');
+  // 环境行的启动数字不在这里断言：dev 模式下设置页分包比存储初始化晚到，
+  // 首帧渲染必然已经拿到数字，这条判据在这个模式下咬不住任何东西。
+  // 时序由 tests/components/settings-trial-env-line.test.ts 自己造（先渲染、后打点）。
 
   await section.getByLabel('参与者代号').fill('E2E-P1');
   await section.getByLabel('结论').selectOption('blocked');
