@@ -42,6 +42,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # CSS 等价性守卫要与 PR 基线提交做 git 比对，浅克隆取不到历史提交。
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
