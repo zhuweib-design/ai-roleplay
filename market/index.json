@@ -1,13 +1,17 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-22T00:00:00.000Z",
+  "updatedAt": "2026-11-05T00:00:00.000Z",
   "items": [
     {
       "id": "seraphina-elf-mage",
       "type": "character",
       "name": "Seraphina 精灵法师",
-      "description": "一位守护迷雾森林的精灵法师，温柔而坚韧。社区市场示例角色卡。",
-      "tags": ["奇幻", "精灵", "温柔"],
+      "description": "一位守护迷雾森林的精灵法师，温柔而坚韧。",
+      "tags": [
+        "奇幻",
+        "精灵",
+        "温柔"
+      ],
       "author": "ai-roleplay",
       "version": "1.0.0",
       "size": 827,
@@ -15,6 +19,69 @@
       "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/cards/seraphina.json",
       "license": "Apache-2.0",
       "source": "ai-roleplay/market/cards/seraphina.json",
+      "dependencies": [],
+      "permissions": []
+    },
+    {
+      "id": "lin-wan-night-radio",
+      "type": "character",
+      "name": "林晚 · 深夜电台",
+      "description": "凌晨两点仍在播音的城市电台主持人，用听众的故事填补自己的夜班。",
+      "tags": [
+        "现代",
+        "都市",
+        "治愈",
+        "电台"
+      ],
+      "author": "ai-roleplay",
+      "version": "1.0.0",
+      "size": 1189,
+      "sha256": "797762a15c5e830b006c0dbd9e3cea625d5e945289bd8eb22b61e3af4f765ec9",
+      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/cards/lin-wan.json",
+      "license": "Apache-2.0",
+      "source": "ai-roleplay/market/cards/lin-wan.json",
+      "dependencies": [],
+      "permissions": []
+    },
+    {
+      "id": "kepler-observatory",
+      "type": "character",
+      "name": "开普勒 · 轨道观测站",
+      "description": "静默运行两百年的深空观测站里，唯一还醒着的值守人格。",
+      "tags": [
+        "科幻",
+        "太空",
+        "人工智能",
+        "孤独"
+      ],
+      "author": "ai-roleplay",
+      "version": "1.0.0",
+      "size": 1234,
+      "sha256": "79e3a0fe9f1b090c6f8e8f74def3b00d6c3a36bc6c6b2efa4ad5f3a4c554875f",
+      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/cards/kepler.json",
+      "license": "Apache-2.0",
+      "source": "ai-roleplay/market/cards/kepler.json",
+      "dependencies": [],
+      "permissions": []
+    },
+    {
+      "id": "shen-yan-wanderer",
+      "type": "character",
+      "name": "沈砚 · 江湖游侠",
+      "description": "背着旧剑走遍南北的游侠，替人办事只收一顿饭钱。",
+      "tags": [
+        "古风",
+        "武侠",
+        "游侠",
+        "江湖"
+      ],
+      "author": "ai-roleplay",
+      "version": "1.0.0",
+      "size": 1034,
+      "sha256": "3c1b4564c13ee1fdda589bf842e26f1d7621a80af8e97d5bcf3073d95a31a355",
+      "url": "https://raw.githubusercontent.com/zhuweib-design/ai-roleplay/main/market/cards/shen-yan.json",
+      "license": "Apache-2.0",
+      "source": "ai-roleplay/market/cards/shen-yan.json",
       "dependencies": [],
       "permissions": []
     }
