@@ -14,7 +14,7 @@ import axe from 'axe-core';
  * 3) 2026-09 全路由审计中出过违规的 7 条路由 · 每条皮肤各扫一遍（7 次/条）
  */
 // 清单来自 src/types 的 THEME_PRESETS（唯一的内置皮肤来源），新增皮肤不必再改这里
-import { THEME_PRESETS } from '../src/types';
+import { DEFAULT_THEME, THEME_PRESETS } from '../src/types';
 import { applyThemeAndWait } from './theme-persistence';
 
 const THEMES: string[] = [...THEME_PRESETS];
@@ -49,12 +49,12 @@ async function axeContrast(page: Page) {
 }
 
 /**
- * 切换到指定主题：dark 为默认主题无需切换。
+ * 切换到指定主题：默认皮肤（DEFAULT_THEME）无需切换。
  * 落盘判据用 `theme-persistence.ts` 里那份（直接读 IndexedDB，不导航不 reload）——
- * 本用例是在同一个页面里连着切 9 款皮肤，用 reload 验证会稳定失败。
+ * 本用例是在同一个页面里连着切全部内置皮肤，用 reload 验证会稳定失败。
  */
 async function applyTheme(page: Page, theme: string) {
-  if (theme === 'dark') return;
+  if (theme === DEFAULT_THEME) return;
   await applyThemeAndWait(page, theme, '/settings');
   await page.waitForTimeout(300);
 }
@@ -64,8 +64,8 @@ async function applyTheme(page: Page, theme: string) {
  *
  * 原先是固定 `waitForTimeout(450)`：实测对话页消息淡入期间元素处于半透明中间态，
  * ~350ms 采样会让 axe 把混合后的中间色误判为对比度不足（dark /chat 曾误报 6 个
- * `.msg-narration`，稳定后为 0）。但固定时长是**猜的**：皮肤加到 9 款、4 worker 并发时
- * 它就不够了——实测「theatre + 9 款皮肤 + 4 worker」会红在 `.nav-item.active` 上，
+ * `.msg-narration`，稳定后为 0）。但固定时长是**猜的**：皮肤数量增多、4 worker 并发时
+ * 它就不够了——实测「theatre + 当时 9 款皮肤 + 4 worker」会红在 `.nav-item.active` 上，
  * axe 报的字色 #2d2618、底色 #ca536f 两个都不属于任何一套皮肤，正是 .15s 颜色过渡的中间帧。
  *
  * 改成问浏览器"还有在跑的动画吗"：`document.getAnimations()` 覆盖 transition 与 animation
@@ -85,10 +85,10 @@ async function settle(page: Page) {
 }
 
 /**
- * 同样按主题拆成每条一款，而不是每条跑完 9 款。
+ * 同样按主题拆成每条一款，而不是每条跑完全部皮肤。
  *
- * 理由与文件末尾那条 7 路由审计完全一样，而且是被同一件事逼出来的：内置皮肤从 5 款
- * 涨到 9 款后，这两条各要 9 次「goto + 切皮肤 + 等动画静止 + 跑 axe」，实测在 8 worker
+ * 理由与文件末尾那条 7 路由审计完全一样，而且是被同一件事逼出来的：内置皮肤曾有 9 款时，
+ * 这两条各要 9 次「goto + 切皮肤 + 等动画静止 + 跑 axe」，实测在 8 worker
  * 并发下**双双用掉整整 60s 撞穿预算**（红相是 timeout，不是对比度违规），4 worker 也会
  * 随机红。拆开之后每条只做一款一件事，红的时候直接说出是哪款出的问题。
  * 先例见本文件末尾 `for (const theme of THEMES)` 那段——它当初就是为同样的撞穿拆的。

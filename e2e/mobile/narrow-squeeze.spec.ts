@@ -136,7 +136,25 @@ const SCAN = `(function(){
     var inner=r.height-(parseFloat(cs.paddingTop)||0)-(parseFloat(cs.paddingBottom)||0)
       -(parseFloat(cs.borderTopWidth)||0)-(parseFloat(cs.borderBottomWidth)||0);
     var innerW=r.width-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0);
-    var lines=Math.round(inner/lh);
+    /*
+     * 行数用**真实行盒**数，不用「高度 ÷ 行高」估。
+     *
+     * 估法的前提是"盒子高度 ≈ 文字占的高度"，一旦控件按手指标准长高（批次 3-2
+     * 把 md 从 36 抬到 44），单行按钮也会被算成 44/16≈3 行 —— 实测把
+     * /character/new 的「取消」按钮（56×44、单行）判成竖排。判据说的是
+     * "文字被压成多行"，那就量文字的盒，别量容器的盒。
+     */
+    var lineCount=(function(){
+      try{
+        var rg=document.createRange();
+        rg.selectNodeContents(e);
+        var rs=rg.getClientRects();
+        var tops=new Set();
+        for(var i=0;i<rs.length;i++){ if(rs[i].width>0.5) tops.add(Math.round(rs[i].top)); }
+        return tops.size;
+      }catch(err){ return 0; }
+    })();
+    var lines=lineCount>0?lineCount:Math.round(inner/lh);
     if(lines>=3&&innerW<64) out.push({sel:path(e),text:t,w:Math.round(r.width),h:Math.round(r.height),innerW:Math.round(innerW),lines:lines});
   }
   var seen=new Set();

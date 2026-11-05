@@ -245,7 +245,9 @@ integration('PostgreSQL Runtime 真实连接集成', () => {
       expect(Number(crossBoundaryLinks.rows[0]?.count)).toBe(0);
 
       // 经真实 HTTP 序列化边界进入同一 PostgreSQL RuntimeStore，而非直接调用 Core。
-      const handler = createPgPoolRuntimeHttpHandler(pool, tenantId);
+      // allowAnonymous 是测试侧的显式放开（见 server-runtime.ts 的 httpAuth 注释）：
+      // B1/B2 之后信封层默认拒未认证请求，而这条用例验的是数据库与租户边界，不是认证宿主。
+      const handler = createPgPoolRuntimeHttpHandler(pool, tenantId, { httpAuth: { allowAnonymous: true } });
       const httpApi = new HttpRuntimeApi({
         baseUrl: 'http://runtime.test',
         fetch: (input, init) => handler(new Request(input, init)),
@@ -303,7 +305,7 @@ integration('PostgreSQL Runtime 真实连接集成', () => {
       const raceInput = JSON.stringify({
         tenantId, id: raceId, profile: { displayName: '并发创建角色' },
       });
-      const raceHandler = createPgPoolRuntimeHttpHandler(pool, tenantId);
+      const raceHandler = createPgPoolRuntimeHttpHandler(pool, tenantId, { httpAuth: { allowAnonymous: true } });
       const raceRequest = () => new Request('http://runtime.test/v1/runtime/characters', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -357,7 +359,9 @@ integration('PostgreSQL Runtime 真实连接集成', () => {
         ...httpInput,
         turn: { ...httpInput.turn, userMessage: '相同幂等键但修改了原文' },
       })).rejects.toMatchObject({ status: 409, code: 'IDEMPOTENCY_CONFLICT' });
-      const foreignHandler = createPgPoolRuntimeHttpHandler(pool, otherTenantId);
+      // 匿名放开后合成主体绑的是 otherTenantId，读别人租户的角色仍然应当 404——
+      // 这条要的正是"过了认证、但仍被租户边界挡住"
+      const foreignHandler = createPgPoolRuntimeHttpHandler(pool, otherTenantId, { httpAuth: { allowAnonymous: true } });
       const foreignHttpApi = new HttpRuntimeApi({
         baseUrl: 'http://runtime.test',
         fetch: (input, init) => foreignHandler(new Request(input, init)),

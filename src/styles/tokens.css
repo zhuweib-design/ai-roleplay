@@ -73,6 +73,12 @@
   --foreground: #F5F5F7;
   --muted-foreground: #AEB2C0;
   --on-media: #FFFFFF;
+  /* 叠在**图片**上的控件遮罩。与 --on-media 成对使用：--on-media 是白字的皮肤要深遮罩，
+     是黑字的皮肤要浅遮罩（brutal 单独覆盖）。不能用固定的 rgba(255,255,255,.2) ——
+     白 20% 蒙版落在浅色图片上时几乎不可读（2026-10-23 静态门禁实测 1.00:1）。 */
+  --media-scrim: rgba(0, 0, 0, 0.55);
+  /* 同上的 hover 档：遮罩加浓，不靠改文字色来做反馈 */
+  --media-scrim-hover: rgba(0, 0, 0, 0.72);
   /* 压在饱和填充（error / primary-fg / accent-orange 这类）上的反色文字 */
   --on-accent: #161823;
   /* 压在**亮**辅色填充上的反色文字（导航激活项、空态主按钮这类"亮辅色整块填充 + 反色文字"）。
@@ -268,4 +274,26 @@
   --warning-text: color-mix(in srgb, var(--warning, #f59e0b) 78%, var(--foreground));
   --accent-blue-text: color-mix(in srgb, var(--accent-blue) 78%, var(--foreground));
   --accent-orange-text: color-mix(in srgb, var(--accent-orange) 78%, var(--foreground));
+
+  /* Provider 品牌色的「作文字」变体（MOBILE_PLAN 批次 4）
+     品牌色写死 #10A37F / #D97757 只适合做色块；10px 徽章文字直接用它们时
+     light 下达 1.93~2.10:1。与 --foreground 按 38% 品牌色 / 62% 前景混合后
+     浅色主题变深、深色主题变亮，色相保留；派生 token 故各主题无需分别定义。
+     为何是 38% 而非 --secondary-text 的 22%：徽章底本身是同色 20% 淡染，
+     底与字的明度差被压小，需要更强的前景占比才能过 AA。
+     --brand-accent-blue-text / --brand-primary-text 供 deepseek / custom 两种
+     徽章用：它们原本直接引用 --accent-blue / --primary-fg，前者是 78% 的
+     通用强调文字色（4.47:1，差 0.03）、后者是「主色底上的前景色」语义
+     （落在淡底上语义与对比度双错），故同样走各主题自适应的派生色。 */
+  --brand-openai-text: color-mix(in srgb, var(--brand-openai) 38%, var(--foreground));
+  --brand-anthropic-text: color-mix(in srgb, var(--brand-anthropic) 38%, var(--foreground));
+  --brand-accent-blue-text: color-mix(in srgb, var(--accent-blue) 38%, var(--foreground));
+  --brand-primary-text: color-mix(in srgb, var(--primary) 38%, var(--foreground));
+
+  /* 危险/错误语义的「作文字」变体（2026-10-23 对比度存量收敛）
+     --tk-red-500 的注释（见上方 Brand 段）已写明「供头像渐变等非文本场景使用」，
+     但 ModelLocalSection 的体积徽章 / 状态徽章直接拿它当文字色：深色主题 2.54、
+     light 2.71，全线不合格。与 --foreground 按 38% 混合后各主题实测最低 ink 8.33，
+     色相保留；派生 token 故各主题无需分别定义。比例沿用上面同一批的 38%。 */
+  --tk-red-text: color-mix(in srgb, var(--tk-red-500) 38%, var(--foreground));
 }

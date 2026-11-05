@@ -10,6 +10,7 @@ import type { ReasoningEffort } from '@api/types';
 import type { CharacterStatus, StatusSchema, StatusHudConfig } from '@core/status-schema';
 import type { PromptTraceItem } from '@core/lorebook-scanner'
 import type { EventTraceItem } from '@core/event-trace';
+import type { RetrievalTraceItem } from '@core/retrieval-trace';
 import { t } from '@/i18n';
 
 /**
@@ -70,6 +71,11 @@ export interface UIMessage {
    * 必须在组装提示词那一刻写——事件表只在内存里，刷新后当初那条就没了。
    */
   eventTrace?: EventTraceItem[];
+  /**
+   * C-03：本轮双通道检索实际命中了哪几条（记忆 / 设定资料，含相关度）。
+   * 与 promptTrace 同构：可选字段，旧数据无此字段 → undefined → 不渲染，零迁移。
+   */
+  retrievalTrace?: RetrievalTraceItem[];
   timestamp: number;
 }
 
@@ -79,12 +85,6 @@ export interface Conversation {
   updatedAt: string;
   /** F11.2 局部变量（随对话持久化，由斜杠命令 /setvar 设置） */
   variables?: Record<string, string>;
-}
-
-export interface WorldEntry {
-  id: string;
-  name: string;
-  enabled: boolean;
 }
 
 export interface TokenBudget {
@@ -120,7 +120,6 @@ export interface UICharacter {
   authorNote: string;
   authorDepth: number;
   temperature: number;
-  worldEntries: WorldEntry[];
   tokenBudget: TokenBudget;
   /** P0-2：角色级思考强度覆盖；undefined/null = 跟随 Profile */
   reasoningEffort?: ReasoningEffort | null;
@@ -228,18 +227,22 @@ export const MODEL_CATEGORIES: readonly ModelCategoryMeta[] = [
   { value: 'embedding', label: t('types.catEmbedding'), description: t('types.catEmbeddingDesc') },
 ] as const;
 
-/** 主题名：深色（默认）/ 亮色 / 午夜蓝 / OLED 黑 / 暗夜剧场 / 新终端 / 极光夜曲 / 墨纸 / 新粗野 / 自定义（图片提取） */
+/** 主题名：新终端 / 极光夜曲（默认）/ 墨纸 / 新粗野 / 自定义（图片提取） */
 export type ThemeName =
-  | 'dark'
-  | 'light'
-  | 'midnight'
-  | 'oled'
-  | 'theatre'
   | 'terminal'
   | 'aurora'
   | 'ink'
   | 'brutal'
   | 'custom';
+
+/**
+ * 默认内置皮肤。
+ * 2026-11 删除最初的 dark / light / midnight / oled / theatre 五套后，取极光夜曲作为
+ * 首屏皮肤：它仍是深色底（聊天产品的默认预期），且主色与品牌粉同色相。
+ * `index.html` 的 `<html data-theme>` 与 `theme-color` 必须与这个名字保持一致，
+ * 否则 JS 启动前会先闪一帧 `:root` 的旧深色值。
+ */
+export const DEFAULT_THEME: ThemeName = 'aurora';
 
 /** 字号档位：12 / 14 / 16 / 18 */
 export type FontSizePreset = 12 | 14 | 16 | 18;
@@ -271,11 +274,6 @@ export interface CustomTheme {
  * 未知值会原样写进 `data-theme` ⇒ CSS 找不到选择器就静默回落默认皮肤，随后又被回写盘。
  */
 export const THEME_PRESETS: readonly ThemeName[] = [
-  'dark',
-  'light',
-  'midnight',
-  'oled',
-  'theatre',
   'terminal',
   'aurora',
   'ink',
@@ -283,7 +281,7 @@ export const THEME_PRESETS: readonly ThemeName[] = [
 ] as const;
 
 /** 读档归一：不在白名单里的值（旧版本存档、手改数据）落回默认皮肤 */
-export function normalizeThemeName(value: unknown, fallback: ThemeName = 'dark'): ThemeName {
+export function normalizeThemeName(value: unknown, fallback: ThemeName = DEFAULT_THEME): ThemeName {
   if (value === 'custom') return 'custom';
   return (THEME_PRESETS as readonly string[]).includes(String(value)) ? (value as ThemeName) : fallback;
 }

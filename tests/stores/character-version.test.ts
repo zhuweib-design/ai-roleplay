@@ -20,6 +20,7 @@ import { useCharacterVersionStore } from '../../src/stores/character-version';
 import { useCharacterStore } from '../../src/stores/character';
 import { IndexedDBAdapter } from '../../src/storage/indexeddb-adapter';
 import type { CharacterCard } from '@core/character-card';
+import { seedCharacter } from '../helpers/character-fixtures';
 
 // ── 测试夹具 ──
 
@@ -71,6 +72,8 @@ describe('character-version store', () => {
     adapter = new IndexedDBAdapter('character-version-test-db');
     await adapter.init();
     charStore = useCharacterStore();
+    // 角色库已改为从空开始（不再有 mock 种子），版本引擎要跟踪的角色得自己造
+    seedCharacter(charStore as never, { id: 'seraphina', name: 'Seraphina' });
     store = useCharacterVersionStore();
     store.setStorageAdapter(adapter);
     // 重置测试状态（不清空存储，由数据库重建负责）

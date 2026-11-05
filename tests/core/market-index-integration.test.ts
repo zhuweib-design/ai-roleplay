@@ -323,7 +323,9 @@ describe('Real download flow with character store', () => {
     const charStore = useCharacterStore();
     charStore.setStorageAdapter(adapter);
 
-    // Check character is not already there
+    // 角色库从空开始（不再有 mock 种子）：先放一条同名角色，才能验"重名加 (Imported)"这条分支
+    const { seedCharacter } = await import('../helpers/character-fixtures');
+    seedCharacter(charStore as never, { id: 'seed-seraphina', name: 'Seraphina' }, false);
     const initialCount = charStore.characters.length;
 
     // Import the downloaded content as a character

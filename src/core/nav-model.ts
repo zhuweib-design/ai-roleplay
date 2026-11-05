@@ -84,7 +84,11 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     icon: 'chat-circle',
     labelKey: 'nav.group',
     descKey: 'navDesc.group',
-    mobileTab: false,
+    // A12（2-1）：群聊升为底部 Tab。它此前"既不在 Tab、又属二级沉浸页（隐藏底栏）"，
+    // 进去就是单向门——这是 N 层导航改造留下的最后一个形态问题。
+    mobileTab: true,
+    mobileTabOrder: 3,
+    mobileLabelKey: 'mobile.tabGroup',
     inMore: true,
   },
   {
@@ -108,10 +112,10 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     icon: 'compass',
     labelKey: 'nav.worldbook',
     descKey: 'navDesc.worldbook',
-    mobileTab: true,
-    mobileTabOrder: 4,
-    mobileLabelKey: 'mobile.tabWorldbook',
-    inMore: false,
+    // A12（2-1）：退出底部 Tab、改从「更多」进。若不置 inMore，它会变成第二个
+    // 没有移动端入口的孤儿（判据里那条"无 mobileTab:false + inMore:false"就是防这个）
+    mobileTab: false,
+    inMore: true,
   },
   {
     id: 'databank',
@@ -198,10 +202,9 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     icon: 'store',
     labelKey: 'nav.market',
     descKey: 'navDesc.market',
-    mobileTab: true,
-    mobileTabOrder: 3,
-    mobileLabelKey: 'mobile.tabMarket',
-    inMore: false,
+    // 同 worldbook：退出 Tab 必须同时进"更多"，否则成为孤儿
+    mobileTab: false,
+    inMore: true,
   },
   // ── 系统项（group=null）──
   // `systemEntries()` 按声明顺序返回，桌面 rail 把这一段整体钉到底部，
@@ -216,6 +219,10 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     icon: 'info',
     labelKey: 'nav.guide',
     descKey: 'navDesc.guide',
+    // guide 不进 inMore：它在「更多」聚合页顶部有**专门的进度卡**（MoreView 的
+    // .more-guide，带"已完成 2/6 个任务"），比列表里一张卡信息更全。A12 的判据
+    // "无 mobileTab:false + inMore:false"因此对它是白名单例外——判据的意图是
+    // "任何入口都得有一条手机上的路"，而它已经有了一条更好的路。
     mobileTab: false,
     inMore: false,
   },
@@ -228,7 +235,7 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     labelKey: 'nav.more',
     descKey: 'navDesc.more',
     mobileTab: true,
-    mobileTabOrder: 5,
+    mobileTabOrder: 4,
     mobileLabelKey: 'mobile.tabMore',
     inMore: false,
   },
@@ -241,7 +248,7 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     labelKey: 'nav.settings',
     descKey: 'navDesc.settings',
     mobileTab: true,
-    mobileTabOrder: 6,
+    mobileTabOrder: 5,
     mobileLabelKey: 'mobile.tabSettings',
     inMore: false,
   },

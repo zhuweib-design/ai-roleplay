@@ -1,0 +1,33 @@
+
+Running 1 test using 1 worker
+
+  x  1 [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:264:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：Tab 切走后，可见性判定收手、文档级判定仍然报 (5.9s)
+
+
+  1) [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:264:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：Tab 切走后，可见性判定收手、文档级判定仍然报 
+
+    Error: 切走的 Tab 里的控件不该算违规（判定只看可见元素）
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "input[text] Tab 面板里只有占位符",
+    + ]
+
+      303 |
+      304 |     const offTab = await audit(page);
+    > 305 |     expect(offTab.placeholderOnly, '切走的 Tab 里的控件不该算违规（判定只看可见元素）').toEqual([]);
+          |                                                                   ^
+      306 |     expect(offTab.dupIds, '重复 id 是文档级违规，切走 Tab 也躲不掉').toContain('e2e-tab-dup');
+      307 |   });
+      308 |
+        at D:\AI_data\AIjiuguan\e2e\ux-duplicate-a11y-names.spec.ts:305:67
+
+    Error Context: test-results\ux-duplicate-a11y-names-实时-28d71-对照：Tab-切走后，可见性判定收手、文档级判定仍然报-msedge\error-context.md
+
+  1 failed
+    [msedge] › e2e\ux-duplicate-a11y-names.spec.ts:264:3 › 实时 DOM 的 id 与可访问名唯一性 › 负向对照：Tab 切走后，可见性判定收手、文档级判定仍然报 

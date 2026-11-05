@@ -5,9 +5,17 @@
  * - 管理 CommunityMarketEngine 单例（含 Mock 数据初始化）
  * - 当前登录用户状态
  * - 角色卡列表的筛选/排序/搜索
- * - 收藏列表与下载历史（localStorage 持久化）
+ * - 收藏列表与下载历史（StorageAdapter 持久化）
  * - 发布/评论/举报操作
  * - 推荐列表
+ *
+ * 本文件自 B6 起是**装配层**：状态 + 依赖引擎的派生值 + 引擎动作的薄包装。
+ * 三个内聚域各自成文件（工厂收实例状态、执行体不 import store，与
+ * `chat-generation` / `story` / `group-chat` 同一形状）：
+ * - `community-market/persistence.ts` 快照与元数据落盘、开机读回、commitTick
+ * - `community-market/filters.ts`     六个筛选状态与 toFilter() 组装
+ * - `community-market/moderation.ts`  管理 Tab 的审核/举报裁决/精选/删卡
+ * - `community-market/remote.ts`      远程市场索引与真实下载（R4-14）
  *
  * 持久化策略：
  * - 引擎全量数据（用户/角色卡/评论/交易/举报）序列化为快照存入 StorageAdapter
@@ -25,46 +33,21 @@ import {
   type MarketCharacterCard,
   type MarketReview,
   type MarketTransaction,
-  type MarketFilter,
-  type SortOption,
   type RecommendationItem,
   type RecommendationParams,
   type ReportReason,
-  type ModerationStatus,
-  type MarketReport,
-  type SerializedMarketData,
 } from '@/core/community-market';
 import type { CharacterCard } from '@/core/character-card';
-import {
-  MARKET_INDEX_URL,
-  fetchMarketIndex,
-  downloadMarketItem,
-  parseCharacterItem,
-  type MarketIndexItem,
-  type DownloadedMarketItem,
-} from '@/core/market-index';
-import { importV2Card } from '@/core/character-card';
-import { cardToUiChar } from '@/services/type-adapters';
+import type { MarketIndexItem } from '@/core/market-index';
 import { useCharacterStore } from './character';
-import type { StorageAdapter } from '@storage/storage-adapter';
-import { migrateLegacyLocalStorage } from '@storage/legacy-migration';
-import { logger } from '@/utils/logger';
-
-// ── 常量 ──
-
-/** 快照键（沿用旧 localStorage 键名，便于一次性迁移存量数据） */
-const SNAPSHOT_KEY = 'ai-roleplay:community-market';
-const CURRENT_USER_KEY = 'ai-roleplay:community-current-user';
-const FAVORITES_KEY = 'ai-roleplay:community-favorites';
-const ORIGINS_KEY = 'ai-roleplay:community-installed-origins';
+import { createMarketFilters } from './community-market/filters';
+import { createMarketModeration } from './community-market/moderation';
+import { createMarketPersistence } from './community-market/persistence';
+import { createRemoteMarketActions } from './community-market/remote';
 
 // ── 单例引擎 ──
 
 const engine = createMockEngine();
-
-// ── 依赖注入 ──
-
-let storageAdapter: StorageAdapter | null = null;
 
 // ── Store ──
 
@@ -72,24 +55,6 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
   // ── 状态 ──
 
   const currentUser = ref<MarketUser | null>(null);
-
-  /** 搜索关键词 */
-  const searchQuery = ref('');
-
-  /** 当前筛选标签 */
-  const selectedTags = ref<string[]>([]);
-
-  /** 当前筛选分类 */
-  const selectedCategories = ref<string[]>([]);
-
-  /** 最低评分筛选 */
-  const minRating = ref(0);
-
-  /** 是否仅显示精选 */
-  const featuredOnly = ref(false);
-
-  /** 排序方式 */
-  const sortBy = ref<SortOption>('popular');
 
   /** 收藏列表（marketId 数组） */
   const favorites = ref<string[]>([]);
@@ -122,6 +87,40 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
   /** §14.4 更新检查：已装本地角色 → 远程来源（characterId → {itemId, version}） */
   const installedOrigins = ref<Record<string, { itemId: string; version: string }>>({});
 
+  // ── 子域装配（传的是同一份 ref，不改变响应式边界）──
+
+  const filters = createMarketFilters();
+
+  const persistence = createMarketPersistence({
+    engine,
+    currentUser,
+    favorites,
+    installedOrigins,
+    loaded,
+    tick,
+  });
+  const { commitTick, persistMeta } = persistence;
+
+  const moderation = createMarketModeration({
+    engine,
+    favorites,
+    lastError,
+    lastInfo,
+    commitTick,
+    persistMeta,
+  });
+
+  const remote = createRemoteMarketActions({
+    remoteItems,
+    remoteLoading,
+    remoteError,
+    downloadProgress,
+    installedOrigins,
+    lastError,
+    lastInfo,
+    persistMeta,
+  });
+
   // ── 计算属性 ──
 
   /** 是否已登录 */
@@ -130,18 +129,7 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
   /** 全部角色卡（经过当前筛选+排序） */
   const filteredCards = computed<MarketCharacterCard[]>(() => {
     void tick.value;
-    const filter: MarketFilter = {
-      search: searchQuery.value || undefined,
-      tags: selectedTags.value.length > 0 ? selectedTags.value : undefined,
-      categories:
-        selectedCategories.value.length > 0
-          ? selectedCategories.value
-          : undefined,
-      minRating: minRating.value > 0 ? minRating.value : undefined,
-      featuredOnly: featuredOnly.value || undefined,
-      approvedOnly: true,
-    };
-    return engine.listCards(filter, sortBy.value);
+    return engine.listCards(filters.toFilter(), filters.sortBy.value);
   });
 
   /** 全部分类 */
@@ -175,91 +163,6 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     return engine.getStats();
   });
 
-  // ── 内部辅助 ──
-
-  /** 保存全量市场数据（fire-and-forget） */
-  async function persist(): Promise<void> {
-    if (!storageAdapter) return;
-    try {
-      await storageAdapter.saveSnapshot(SNAPSHOT_KEY, engine.toJSON());
-    } catch (err) {
-      logger.error('community-market', '持久化失败', err);
-    }
-  }
-
-  /** 保存当前用户与收藏（fire-and-forget） */
-  async function persistMeta(): Promise<void> {
-    if (!storageAdapter) return;
-    try {
-      await storageAdapter.saveSnapshot(CURRENT_USER_KEY, currentUser.value?.id ?? null);
-      await storageAdapter.saveSnapshot(FAVORITES_KEY, favorites.value);
-      await storageAdapter.saveSnapshot(ORIGINS_KEY, installedOrigins.value);
-    } catch (err) {
-      logger.error('community-market', '持久化失败', err);
-    }
-  }
-
-  function commitTick(): void {
-    tick.value++;
-    void persist();
-  }
-
-  // ── 动作：加载/持久化 ──
-
-  /**
-   * 从存储层加载市场数据（含旧 localStorage 数据一次性迁移）
-   *
-   * 应用启动时调用一次。
-   */
-  async function loadFromDisk(): Promise<void> {
-    if (!storageAdapter) {
-      loaded.value = true;
-      return;
-    }
-    await migrateLegacyLocalStorage(storageAdapter, SNAPSHOT_KEY);
-    await migrateLegacyLocalStorage(storageAdapter, CURRENT_USER_KEY);
-    await migrateLegacyLocalStorage(storageAdapter, FAVORITES_KEY);
-    try {
-      const data = await storageAdapter.loadSnapshot<SerializedMarketData>(
-        SNAPSHOT_KEY
-      );
-      if (data) {
-        engine.loadFromJSON(data);
-      }
-      // 恢复当前用户
-      const userId = await storageAdapter.loadSnapshot<string>(CURRENT_USER_KEY);
-      if (userId) {
-        engine.setCurrentUser(userId);
-        currentUser.value = engine.getCurrentUser();
-      }
-      const favs = await storageAdapter.loadSnapshot<string[]>(FAVORITES_KEY);
-      if (Array.isArray(favs)) {
-        favorites.value = favs;
-      }
-      const origins = await storageAdapter.loadSnapshot<Record<string, { itemId: string; version: string }>>(ORIGINS_KEY);
-      if (origins && typeof origins === 'object') {
-        installedOrigins.value = origins;
-      }
-    } catch (err) {
-      logger.error('community-market', '加载失败', err);
-    }
-    loaded.value = true;
-    tick.value++;
-  }
-
-  /** 强制保存到存储层 */
-  async function persistNow(): Promise<void> {
-    await persist();
-    await persistMeta();
-  }
-
-  /**
-   * 注入存储适配器（应用启动时由 App.vue 调用）
-   */
-  function setStorageAdapter(adapter: StorageAdapter | null): void {
-    storageAdapter = adapter;
-  }
-
   // ── 动作：用户认证 ──
 
   function login(name: string, avatar?: string): boolean {
@@ -282,63 +185,6 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     void persistMeta();
     lastInfo.value = t('mkt.loggedOut');
     commitTick();
-  }
-
-  // ── 动作：筛选/排序 ──
-
-  function setSearch(query: string): void {
-    searchQuery.value = query;
-  }
-
-  function toggleTag(tag: string): void {
-    const idx = selectedTags.value.indexOf(tag);
-    if (idx >= 0) {
-      selectedTags.value.splice(idx, 1);
-    } else {
-      selectedTags.value.push(tag);
-    }
-  }
-
-  function toggleCategory(cat: string): void {
-    const idx = selectedCategories.value.indexOf(cat);
-    if (idx >= 0) {
-      selectedCategories.value.splice(idx, 1);
-    } else {
-      selectedCategories.value.push(cat);
-    }
-  }
-
-  /** 需求1：单选模式设置分类（传 '' 清空，单选模式用于 FilterTabs） */
-  function setCategory(cat: string): void {
-    if (!cat) {
-      selectedCategories.value = [];
-    } else {
-      selectedCategories.value = [cat];
-    }
-  }
-
-  /** 需求1：当前单选分类（取 selectedCategories 第一个；空数组=未选） */
-  const currentCategory = computed<string>(() => selectedCategories.value[0] ?? '');
-
-  function setMinRating(rating: number): void {
-    minRating.value = rating;
-  }
-
-  function toggleFeaturedOnly(): void {
-    featuredOnly.value = !featuredOnly.value;
-  }
-
-  function setSortBy(sort: SortOption): void {
-    sortBy.value = sort;
-  }
-
-  function clearFilters(): void {
-    searchQuery.value = '';
-    selectedTags.value = [];
-    selectedCategories.value = [];
-    minRating.value = 0;
-    featuredOnly.value = false;
-    sortBy.value = 'popular';
   }
 
   // ── 动作：角色卡详情 ──
@@ -377,129 +223,6 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
   function getDownloadHistory(): MarketTransaction[] {
     if (!currentUser.value) return [];
     return engine.getUserDownloads(currentUser.value.id);
-  }
-
-  // ── 动作：远程市场（T-11 真实下载流） ──
-
-  /** 拉取远程市场索引清单（GitHub） */
-  async function loadRemoteIndex(): Promise<boolean> {
-    remoteLoading.value = true;
-    remoteError.value = null;
-    try {
-      const manifest = await fetchMarketIndex(MARKET_INDEX_URL);
-      if (!manifest) {
-        remoteError.value = t('market.remoteIndexBroken');
-        return false;
-      }
-      remoteItems.value = manifest.items;
-      return true;
-    } catch (err) {
-      remoteError.value =
-        err instanceof Error ? err.message : t('market.remoteLoadFailed');
-      return false;
-    } finally {
-      remoteLoading.value = false;
-    }
-  }
-
-  /**
-   * 从远程市场下载并导入为本地角色卡（带流式进度）
-   *
-   * 返回**新角色的 id**（E20：装完必须能一跳看到结果），失败返回 null。
-   * 此前返回 boolean，界面拿不到落点，只能弹一句"已安装"，用户不知道去了哪。
-   */
-  async function installRemoteItem(itemId: string): Promise<string | null> {
-    const item = remoteItems.value.find((i) => i.id === itemId);
-    if (!item) {
-      lastError.value = t('market.remoteItemMissing');
-      return null;
-    }
-    const prog = downloadProgress.value[itemId] ?? { received: 0, total: -1, status: 'downloading' };
-    downloadProgress.value[itemId] = { ...prog, status: 'downloading' };
-    try {
-      const downloaded = await downloadMarketItem(item, (received, total) => {
-        downloadProgress.value[itemId] = { received, total, status: 'downloading' };
-      });
-      if (!downloaded) {
-        downloadProgress.value[itemId] = { ...prog, received: 0, total: -1, status: 'failed' };
-        lastError.value = t('market.remoteVerifyFailed');
-        return null;
-      }
-      downloadProgress.value[itemId] = { received: downloaded.item.size, total: downloaded.item.size, status: 'installing' };
-      const installedId = await importRemoteAsCharacter(downloaded);
-      downloadProgress.value[itemId] = { received: 0, total: 0, status: 'done' };
-      lastInfo.value = t('market.remoteInstalled', { name: item.name });
-      return installedId;
-    } catch (err) {
-      downloadProgress.value[itemId] = { ...prog, received: 0, total: -1, status: 'failed' };
-      lastError.value = err instanceof Error ? err.message : String(err);
-      return null;
-    }
-  }
-
-  /** 将远程下载内容（角色卡）导入本地角色库，并记录安装来源（§14.4 更新检查） */
-  async function importRemoteAsCharacter(downloaded: DownloadedMarketItem): Promise<string> {
-    const charStore = useCharacterStore();
-    const raw = parseCharacterItem(downloaded.content);
-    if (!raw) {
-      throw new Error(t('market.remoteBadCharacter'));
-    }
-    let card;
-    try {
-      card = importV2Card(raw);
-      if (!card) throw new Error(t('market.remoteBadCharacter'));
-    } catch {
-      throw new Error(t('market.remoteBadCharacter'));
-    }
-    const ui = cardToUiChar(card);
-    // 避免重名
-    if (charStore.characters.some((c) => c.name === ui.name)) {
-      ui.name = `${ui.name}${t('market.remoteSuffix')}`;
-    }
-    charStore.characters.push(ui);
-    await charStore.persistCharacter(ui.id);
-    // 记录远程安装来源（版本对比基准）
-    installedOrigins.value[ui.id] = {
-      itemId: downloaded.item.id,
-      version: downloaded.item.version,
-    };
-    void persistMeta();
-    return ui.id;
-  }
-
-  /**
-   * §14.4 更新检查：比对已装远程来源与最新清单版本
-   * 返回有可用更新的条目（installVersion 低于 latestVersion）
-   */
-  function getUpdatableInstalls(): {
-    characterId: string;
-    itemId: string;
-    installedVersion: string;
-    latestVersion: string;
-    name: string;
-  }[] {
-    const list: {
-      characterId: string;
-      itemId: string;
-      installedVersion: string;
-      latestVersion: string;
-      name: string;
-    }[] = [];
-    for (const charId of Object.keys(installedOrigins.value)) {
-      const o = installedOrigins.value[charId];
-      if (!o) continue;
-      const latest = remoteItems.value.find((i) => i.id === o.itemId);
-      if (latest && latest.version !== o.version) {
-        list.push({
-          characterId: charId,
-          itemId: latest.id,
-          installedVersion: o.version,
-          latestVersion: latest.version,
-          name: latest.name,
-        });
-      }
-    }
-    return list;
   }
 
   // ── 动作：收藏 ──
@@ -685,71 +408,6 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     return Array.from(tags);
   }
 
-  // ── 动作：管理（审核） ──
-
-  function setModerationStatus(
-    marketId: string,
-    status: ModerationStatus
-  ): boolean {
-    try {
-      engine.setModerationStatus(marketId, status);
-      lastInfo.value = t('mkt.statusUpdated', { status });
-      commitTick();
-      return true;
-    } catch (err) {
-      lastError.value = err instanceof Error ? err.message : String(err);
-      return false;
-    }
-  }
-
-  /** D6 补完：获取举报列表（管理 Tab） */
-  function getReports(): MarketReport[] {
-    return engine.getReports();
-  }
-
-  /** D6 补完：解决/驳回举报（管理 Tab） */
-  function resolveReport(
-    reportId: string,
-    status: 'resolved' | 'dismissed',
-    resolution?: string
-  ): boolean {
-    try {
-      engine.resolveReport(reportId, status, resolution);
-      lastInfo.value = t('mkt.reportHandled', { status: status === 'resolved' ? t('mkt.resolved') : t('mkt.dismissed') });
-      commitTick();
-      return true;
-    } catch (err) {
-      lastError.value = err instanceof Error ? err.message : String(err);
-      return false;
-    }
-  }
-
-  function setFeatured(marketId: string, featured: boolean): boolean {
-    try {
-      engine.setFeatured(marketId, featured);
-      commitTick();
-      return true;
-    } catch (err) {
-      lastError.value = err instanceof Error ? err.message : String(err);
-      return false;
-    }
-  }
-
-  function deleteCard(marketId: string): boolean {
-    const ok = engine.deleteCard(marketId);
-    if (ok) {
-      // 从收藏中移除
-      const idx = favorites.value.indexOf(marketId);
-      if (idx >= 0) {
-        favorites.value.splice(idx, 1);
-        void persistMeta();
-      }
-      lastInfo.value = t('mkt.cardDeleted');
-      commitTick();
-    }
-    return ok;
-  }
-
   // ── 动作：错误清理 ──
 
   function clearLastError(): void {
@@ -768,12 +426,12 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     engine.loadFromJSON(data);
     currentUser.value = null;
     favorites.value = [];
-    searchQuery.value = '';
-    selectedTags.value = [];
-    selectedCategories.value = [];
-    minRating.value = 0;
-    featuredOnly.value = false;
-    sortBy.value = 'popular';
+    filters.searchQuery.value = '';
+    filters.selectedTags.value = [];
+    filters.selectedCategories.value = [];
+    filters.minRating.value = 0;
+    filters.featuredOnly.value = false;
+    filters.sortBy.value = 'popular';
     lastError.value = null;
     lastInfo.value = null;
     loaded.value = false;
@@ -783,12 +441,6 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
   return {
     // 状态
     currentUser,
-    searchQuery,
-    selectedTags,
-    selectedCategories,
-    minRating,
-    featuredOnly,
-    sortBy,
     favorites,
     lastError,
     lastInfo,
@@ -799,28 +451,34 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     allCategories,
     /** 需求1：分类计数（用于 FilterTabs 徽标） */
     categoryCounts,
-    /** 需求1：当前单选分类 */
-    currentCategory,
     allTags,
     stats,
+    // 筛选/排序（状态与方法都在 filters 子域，这里原样透出）
+    searchQuery: filters.searchQuery,
+    selectedTags: filters.selectedTags,
+    selectedCategories: filters.selectedCategories,
+    minRating: filters.minRating,
+    featuredOnly: filters.featuredOnly,
+    sortBy: filters.sortBy,
+    /** 需求1：当前单选分类 */
+    currentCategory: filters.currentCategory,
+    setSearch: filters.setSearch,
+    toggleTag: filters.toggleTag,
+    toggleCategory: filters.toggleCategory,
+    /** 需求1：单选模式设置分类 */
+    setCategory: filters.setCategory,
+    setMinRating: filters.setMinRating,
+    toggleFeaturedOnly: filters.toggleFeaturedOnly,
+    setSortBy: filters.setSortBy,
+    clearFilters: filters.clearFilters,
     // 加载/持久化
-    loadFromDisk,
-    persistNow,
+    loadFromDisk: persistence.loadFromDisk,
+    persistNow: persistence.persistNow,
     // 依赖注入
-    setStorageAdapter,
+    setStorageAdapter: persistence.setStorageAdapter,
     // 用户认证
     login,
     logout,
-    // 筛选/排序
-    setSearch,
-    toggleTag,
-    toggleCategory,
-    /** 需求1：单选模式设置分类 */
-    setCategory,
-    setMinRating,
-    toggleFeaturedOnly,
-    setSortBy,
-    clearFilters,
     // 角色卡详情
     getCard,
     getReviews,
@@ -833,11 +491,11 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     remoteLoading,
     remoteError,
     downloadProgress,
-    loadRemoteIndex,
-    installRemoteItem,
+    loadRemoteIndex: remote.loadRemoteIndex,
+    installRemoteItem: remote.installRemoteItem,
     // §14.4 更新检查
     installedOrigins,
-    getUpdatableInstalls,
+    getUpdatableInstalls: remote.getUpdatableInstalls,
     // 收藏
     isFavorite,
     toggleFavorite,
@@ -851,14 +509,14 @@ export const useCommunityMarketStore = defineStore('communityMarket', () => {
     // 举报
     reportCard,
     // 推荐
-    getReports,
-    resolveReport,
+    getReports: moderation.getReports,
+    resolveReport: moderation.resolveReport,
     getRecommendations,
     getPreferredTags,
     // 管理
-    setModerationStatus,
-    setFeatured,
-    deleteCard,
+    setModerationStatus: moderation.setModerationStatus,
+    setFeatured: moderation.setFeatured,
+    deleteCard: moderation.deleteCard,
     // 错误清理
     clearLastError,
     clearLastInfo,

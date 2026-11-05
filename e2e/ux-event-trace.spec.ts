@@ -19,6 +19,7 @@
  * （§七 #20），为 DRY 去动它不值当；两处若开始漂移，以本文件注释里的原因为准。
  */
 import { test, expect, type Page } from '@playwright/test';
+import { seedCharacter } from './helpers/seed-character';
 
 const PROFILE_NAME = 'E2E 事件模型';
 const LOREBOOK_ID = 'lb-e2e-event';
@@ -201,6 +202,7 @@ test.describe('随机事件注入回显（E11）', () => {
       });
     });
 
+    await seedCharacter(page, { favorite: true });
     await page.goto('/chat');
     await configureMockProfile(page);
     await seedGlobalLorebook(page);

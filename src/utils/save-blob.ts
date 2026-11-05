@@ -35,8 +35,48 @@
  * 换成每次弹保存面板是用户没要求的改动。
  */
 
-/** 存盘结果：调用方拿它决定要不要说"已导出"（取消了还报成功，就是界面在撒谎） */
-export type SaveOutcome = 'saved' | 'cancelled';
+import { t } from '@/i18n';
+
+/**
+ * 存盘结果。
+ *
+ * 从 `'saved' | 'cancelled'` 扩成对象，是因为两件事只有对象说得清：
+ *   1. **落点**：用户要知道文件去哪了（浏览器下载目录 / 系统下载目录 / 选定位置）；
+ *   2. **`unsupported`**：安卓 WebView 里 `showSaveFilePicker` 是个桩（14ms 抛
+ *      AbortError，见文件头），把它归进 `cancelled` 的后果是——用户点了导出，
+ *      界面既不成功也不报错，静默消失。这两种"没存成"必须分开：
+ *      `cancelled` 是用户主动取消（不该提示），`unsupported` 是环境做不到（必须说清）。
+ */
+export type SaveOutcomeKind = 'saved' | 'cancelled' | 'unsupported';
+
+/** 落点类型：决定文案，也决定用户该去哪里找文件 */
+export type SaveLocation = 'picker' | 'download' | 'system-download';
+
+export interface SaveOutcome {
+  outcome: SaveOutcomeKind;
+  /** 建议文件名（回显用；不是磁盘上的完整路径——浏览器拿不到） */
+  filename: string;
+  location: SaveLocation;
+}
+
+/**
+ * 桩式 AbortError 的判定阈值（毫秒）。
+ *
+ * 安卓 WebView 的 showSaveFilePicker 实测 14ms 抛 AbortError；真人点取消不可能
+ * 这么快。250ms 给足余量——真机上若出现"点取消被当成不支持"，先看这个数。
+ */
+const STUB_ABORT_MS = 250;
+
+/** 当前存盘环境：决定文案口径（三端各不相同，别用一句话糊住） */
+export type SaveEnv = 'tauri' | 'android-webview' | 'browser';
+
+export function detectSaveEnv(ua: string = typeof navigator !== 'undefined' ? navigator.userAgent : ''): SaveEnv {
+  if (isAndroidWebView(ua)) return 'android-webview';
+  if (typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window)) {
+    return 'tauri';
+  }
+  return 'browser';
+}
 
 /** 是否处在安卓 WebView（Capacitor 壳）里 —— 只有它需要走系统保存面板 */
 export function isAndroidWebView(ua: string = typeof navigator !== 'undefined' ? navigator.userAgent : ''): boolean {
@@ -54,29 +94,57 @@ type SavePicker = (options: { suggestedName: string }) => Promise<{
  * @param makeBlob 数据生产者；WebView 路径下它在面板弹出来之后才被调用
  */
 export async function saveBlob(filename: string, makeBlob: () => Blob | Promise<Blob>): Promise<SaveOutcome> {
-  const picker = isAndroidWebView()
+  const env = detectSaveEnv();
+  const picker = env === 'android-webview'
     ? ((window as unknown as { showSaveFilePicker?: SavePicker }).showSaveFilePicker ?? null)
     : null;
 
   if (picker) {
     let handle: Awaited<ReturnType<SavePicker>> | null = null;
+    const startedAt = Date.now();
     try {
       handle = await picker({ suggestedName: filename });
     } catch (err) {
-      // 用户取消（AbortError）⇒ 明确回 cancelled，调用方不得报"已导出"
-      if ((err as Error)?.name === 'AbortError') return 'cancelled';
-      // 其它异常（例如该 WebView 其实不实现它）落回下载路径，别把功能整个弄没
+      /*
+       * 这里**不能**一律把 AbortError 当成"用户取消"。
+       *
+       * 安卓 WebView 的 showSaveFilePicker 是桩：函数存在、能调用，14ms 就抛
+       * AbortError，既不拉界面也没有 logcat 记录（文件头记着对照探针的结论）。
+       * 把它归成 cancelled，界面按约定"取消了不报已导出"就静默了——这就是
+       * "点了导出没反应"的成因。
+       *
+       * 区分方式用**耗时**：桩在十几毫秒内就抛（实测 14ms），而真人从"面板弹出"
+       * 到"点取消"不可能这么快。250ms 是两者之间一个宽松的分界。
+       * （不用"有没有拿到 handle"判断——两者都拿不到。）
+       */
+      const aborted = (err as Error)?.name === 'AbortError';
+      const elapsed = Date.now() - startedAt;
+      if (aborted && elapsed >= STUB_ABORT_MS) {
+        // 面板真的弹过、用户真的点了取消
+        return { outcome: 'cancelled', filename, location: 'picker' };
+      }
+      // 桩（或该 WebView 根本没实现）：锚点兜底 + **如实回报 unsupported**
+      await anchorDownload(filename, makeBlob);
+      return { outcome: 'unsupported', filename, location: 'system-download' };
     }
     if (handle) {
       const writable = await handle.createWritable();
       const blob = await makeBlob();
       await writable.write(blob);
       await writable.close();
-      return 'saved';
+      return { outcome: 'saved', filename, location: 'picker' };
     }
   }
 
+  await anchorDownload(filename, makeBlob);
+  // 浏览器与 Tauri(WebView2) 都走这条：落到各自的下载目录。
+  // Tauri 这一端拿不到完整路径——全仓没有通用的"保存到用户选定路径"的 Rust 命令，
+  // 新增要连原生一起验证；所以文案只说"下载目录"，不编造路径（见 DEV_PLAN C2 边界）。
+  return { outcome: 'saved', filename, location: 'download' };
+}
 
+/** 锚点下载：浏览器与 WebView2 的既有路径（安卓 WebView 里它是静默无效的，见文件头） */
+async function anchorDownload(filename: string, makeBlob: () => Blob | Promise<Blob>): Promise<void> {
   const blob = await makeBlob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -86,5 +154,33 @@ export async function saveBlob(filename: string, makeBlob: () => Blob | Promise<
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  return 'saved';
+}
+
+/**
+ * 把存盘结果翻成一句人话（三端文案各自成立）。
+ *
+ * 返回 `null` 表示**不要提示**：用户主动取消，弹一句"已取消"只是噪音。
+ * 其余情况一律要说，且说清"文件在哪"或"为什么没成"。
+ */
+export function describeSaveResult(
+  result: SaveOutcome,
+  env: SaveEnv = detectSaveEnv()
+): { type: 'success' | 'info' | 'error'; message: string } | null {
+  if (result.outcome === 'cancelled') return null;
+
+  if (result.outcome === 'unsupported') {
+    return {
+      type: 'info',
+      message: t('save.unsupportedWebView', { name: result.filename }),
+    };
+  }
+
+  // saved：按落点分文案，三端不共用一句话
+  if (result.location === 'picker') {
+    return { type: 'success', message: t('save.savedPicked', { name: result.filename }) };
+  }
+  if (env === 'tauri') {
+    return { type: 'success', message: t('save.savedTauri', { name: result.filename }) };
+  }
+  return { type: 'success', message: t('save.savedBrowser', { name: result.filename }) };
 }

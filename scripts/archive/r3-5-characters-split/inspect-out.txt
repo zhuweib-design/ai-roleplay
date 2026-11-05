@@ -1,0 +1,168 @@
+dirs: 8
+=====
+ux-duplicate-a11y-names-实时-28d71-对照：Tab-切走后，可见性判定收手、文档级判定仍然报-webkit => error-context.md
+=====
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: ux-duplicate-a11y-names.spec.ts >> 实时 DOM 的 id 与可访问名唯一性 >> 负向对照：Tab 切走后，可见性判定收手、文档级判定仍然报
+- Location: e2e\ux-duplicate-a11y-names.spec.ts:264:3
+
+# Error details
+
+```
+Test timeout of 60000ms exceeded.
+```
+
+```
+Error: page.waitForSelector: Test timeout of 60000ms exceeded.
+Call log:
+  - waiting for locator('[role="tab"]:visible') to be visible
+
+```
+
+# Test source
+
+```ts
+  166 |    * 可见性这条规则是承重的。
+  167 |    */
+  168 |   test('负向对照：藏在展开面板里的违规必须被展开扫出来', async ({ page }) => {
+  169 |     // 选「数据」分类：M4-b2 把"运维与兼容"那几段默认收着，这里才有东西可展开
+  170 |     await page.goto('/settings?cat=data');
+  171 |     // 折叠段要等设置页读完 store 才出现，扫"半个页面"只会少扫不会报错，所以先等它出现
+  172 |     await page.waitForSelector('button.collapse-toggle:visible', { timeout: 15_000 });
+  173 |     await settle(page);
+  174 |     const { closedBefore } = await expandAllCollapsed(page);
+  175 |     expect(closedBefore, '这一页没有收着的段，换一条路由再验').toBeGreaterThan(0);
+  176 | 
+  177 |     const hostVisible = await page.evaluate(() => {
+  178 |       const panel = [.
+=====
+ux-duplicate-a11y-names-实时-500c6-唯一性-负向对照：藏在展开面板里的违规必须被展开扫出来-webkit => error-context.md
+=====
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: ux-duplicate-a11y-names.spec.ts >> 实时 DOM 的 id 与可访问名唯一性 >> 负向对照：藏在展开面板里的违规必须被展开扫出来
+- Location: e2e\ux-duplicate-a11y-names.spec.ts:168:3
+
+# Error details
+
+```
+TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator('button.collapse-toggle:visible') to be visible
+
+```
+
+# Test source
+
+```ts
+  72  |  * 原来三处扫描都是 `waitForSelector('#app button')` + `settle`，这两个证据都不够：
+  73  |  * NavRail 的 15 个按钮撑住了整页计数（M13-b 就因为这个放过死路由），而 `settle`
+  74  |  * 看的是"#app button 数量连稳两次"——主内容还空着、NavRail 已稳定，它照样返回。
+  75  |  * Vite 按需编译慢时 `/`（重定向到 /chat，视图是懒 chunk）就会出现这种半帧，
+  76  |  * 第 7 轮全量报"`/` 主内容区一个可见控件都没有"就是这么来的。
+  77  |  * 判定不变（零控件仍然算违规），只是把"等"换成看对的东西。
+  78  |  */
+  79  | async function gotoRendered(page: Page, route: string): Promise<void> {
+  80  |   await page.goto(route);
+  81  |   await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
+  82  |   await expect
+  83  |     .poll(async () => (await mainContent(page)).buttons, {
+  84  |       timeout
+=====
+ux-duplicate-a11y-names-实时-71576-与可访问名唯一性-对话页两种分支各自只有一个主内容锚点-webkit => error-context.md
+=====
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: ux-duplicate-a11y-names.spec.ts >> 实时 DOM 的 id 与可访问名唯一性 >> 对话页两种分支各自只有一个主内容锚点
+- Location: e2e\ux-duplicate-a11y-names.spec.ts:383:3
+
+# Error details
+
+```
+Test timeout of 60000ms exceeded.
+```
+
+```
+Error: page.waitForSelector: Test timeout of 60000ms exceeded.
+Call log:
+  - waiting for locator('#main-content') to be visible
+
+```
+
+# Test source
+
+```ts
+  287 |     });
+  288 |     expect(injected, '页面上找不到可见的 tabpanel').toBeTruthy();
+  289 | 
+  290 |     const onActiveTab = await audit(page);
+  291 |     expect(onActiveTab.dupIds, `注入在可见面板 #${injected} 里却没报重复 id`).toContain('e2e-tab-dup');
+  292 |     expect(onActiveTab.placeholderOnly, '可见面板里只靠 placeholder 的控件没被抓到').toEqual([
+  293 |       'input[text] Tab 面板里只有占位符',
+  294 |     ]);
+  295 | 
+  296 |     // 切到另一个 Tab：同一批节点还在 DOM 里，只是不可见
+  297 |     await page.locator('[role="tab"]:visible').nth(1).click();
+  298 |     await page.waitForTimeout(200);
+  299 |     expect(
+  300 |       await page.evaluate(() => document.querySelectorAll('#e2e-tab-dup')
+=====
+ux-duplicate-a11y-names-实时-9ca3c-由：无重复-id、无同区域同名、无仅靠占位符命名的控件-webkit => error-context.md
+=====
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: ux-duplicate-a11y-names.spec.ts >> 实时 DOM 的 id 与可访问名唯一性 >> 第 1 组共 11 条路由：无重复 id、无同区域同名、无仅靠占位符命名的控件
+- Location: e2e\ux-duplicate-a11y-names.spec.ts:102:5
+
+# Error details
+
+```
+TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator('#app button, #app [role="button"]') to be visible
+
+```
+
+# Test source
+
+```ts
+  1   | import { test, expect, type Page } from '@playwright/test';
+  2   | import fs from 'node:fs';
+  3   | import path from 'node:path';
+  4   | import { audit, expandAllCollapsed, visitTabs, settle, mainContent } from './a11y-dup-audit';
+  5   | 
+  6   | /**
+  7   |  * E2E · 实时 DOM 里的 id / 可访问名 / 命名来源审计（M10-b 立，M11-a 扩，M12-b 再扩）
+  8   |  *
+  9   |  * 来源是 M8-c 登记的一条"未做"：当时用静态扫描数出 9 处 `id="main-content"`、
+  10  |  * 3 处 `panel-settings`，以及角色编辑器页面上三处「取消」，我把它写成"既有的可访问名
+  11  |  * 重复"。**那条判断没经过运行时验证，实测是说过头了**：那些元素分属互斥的路由分支或
+  12  |  * `display:none` 的移动变体，21 条路由的真实 DOM 里重复 id 为 0。
+  13  |  *
+  14  |  * 于是这里不修代码，而是把结论钉成门禁。判定实现抽到了 `a11y-dup-audit.ts`，因为
+ 

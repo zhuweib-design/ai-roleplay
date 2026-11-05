@@ -121,6 +121,25 @@ textarea,
   .hover-bright:hover { filter: brightness(1.12); }
 }
 
+/* 共享输入框基类：此前全仓只有 .tk-input:focus，没有基础盒模型，
+   只写 .tk-input 的控件会落成浏览器原生白框（快速建角色/建世界书）。
+   已有 scoped 类（.char-search-input 等）特异性更高，不会被这里改写。 */
+.tk-input {
+  min-height: var(--size-control-md);
+  padding: var(--space-1-5) var(--space-2);
+  background: var(--video-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 640px) {
+  /* 与 app-global.css 的 16px 兜底同口径，避免 iOS 聚焦放大 */
+  .tk-input { font-size: var(--font-size-lg); }
+}
+
 /* 输入框焦点：边框变色 + 外发光环（深色主题清晰可见，WCAG 2.4.7）
    注意：不设 outline:none —— 由下方全局 :focus-visible outline(var(--ring)) 兜底，
    保证键盘焦点指示对比度 ≥3:1（P2-4） */
@@ -181,14 +200,8 @@ textarea,
   opacity: 1;
 }
 
-/* 开关 */
-.switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
-.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
-.switch .slider { position: absolute; cursor: pointer; inset: 0; background: var(--border); border-radius: var(--radius-pill); transition: background-color .2s ease; }
-.switch .slider::before { content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: var(--on-media); border-radius: 50%; transition: transform .2s cubic-bezier(.2,.8,.2,1), background-color .2s ease; }
-.switch input:checked + .slider { background: var(--secondary); }
-.switch input:checked + .slider::before { transform: translateX(16px); background: var(--on-accent); }
-.switch input:focus-visible + .slider { outline: 2px solid var(--secondary); outline-offset: 2px; }
+/* 开关：各组件自带（`.attr-switch` / `.switch-track` / `.toggle-wrap` 等，均 scoped），
+   全局不提供开关基类。原先这里那套 `.switch / .slider` 全仓零引用，删于 2026-10-26（F3）。 */
 
 /* 滑块：轨道左段按 --range-pct 着色（由 v-range 指令写到元素自身的内联变量上），
    拖动时颜色边界跟着拇指走。

@@ -148,7 +148,8 @@ describe('角色卡发布', () => {
 
   test('未注册用户发布抛错', () => {
     const engine = new CommunityMarketEngine();
-    expect(() => engine.publishCard(makeCard(), 'nonexistent')).toThrow(/用户不存在/);
+    // 批次 2-7：mkt.userNotFound 从"用户不存在"改为"该昵称不存在"（市场没有账号体系）
+    expect(() => engine.publishCard(makeCard(), 'nonexistent')).toThrow(/昵称不存在/);
   });
 });
 

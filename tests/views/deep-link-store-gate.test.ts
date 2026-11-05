@@ -91,13 +91,13 @@ function composableKeys(text: string): { literals: string[]; nonLiteral: number 
 }
 
 /**
- * 登记表里真实存在的键（`src/core/deep-link-keys.ts` 的 DEEP_LINK_GATES 成员）。
+ * 登记表里真实存在的键（`src/stores/deep-link-gate.ts` 的 DEEP_LINK_GATES 成员）。
  *
  * M16-b 起，"这个键该等哪个库"由那张表决定；视图用了没登记的键，运行时拿不到闸门。
  * 守卫这里从源码读键名，避免测试与实现各写一份清单而悄悄漂移。
  */
 function registeredKeys(): string[] {
-  const src = fs.readFileSync(path.resolve(process.cwd(), 'src/core/deep-link-keys.ts'), 'utf8');
+  const src = fs.readFileSync(path.resolve(process.cwd(), 'src/stores/deep-link-gate.ts'), 'utf8');
   const body = /DEEP_LINK_GATES\s*=\s*\{([\s\S]*?)\}\s*as const/.exec(src)?.[1] ?? '';
   const keys = [...body.matchAll(/(?:^|[\s,{])(\w+)\s*:\s*\(\)/g)].map((m) => m[1] ?? '');
   expect(keys.length, `从 DEEP_LINK_GATES 读到 0 个键，八成是正则失配`).toBeGreaterThan(0);

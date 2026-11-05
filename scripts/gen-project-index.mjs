@@ -105,6 +105,7 @@ const CURATED = {
   'icon-source.png': '应用图标设计源图（生成 PWA / Tauri 图标用）',
   'docs/dev/PROJECT_INDEX.md': '本索引文件（由 scripts/gen-project-index.mjs 生成）',
   'docs/dev/MIGRATION_LOG.md': '目录整理迁移日志',
+  'docs/dev/installer-distribution-2026-10-19.md': '安装包分发决策记录：为什么不挂 Releases、撤下的 7 个资产清单、sha256、可复制的复核命令与负向对照',
 
   '.github/workflows/ci.yml': 'CI 流水线：i18n / 断点 / 对比度 / 覆盖率 / 构建 / E2E / Tauri 七道门禁',
 
@@ -293,7 +294,13 @@ const CURATED = {
   'src/views/ArchivesView.vue': '页面：归档',
   'src/views/CommunityMarketView.vue': '页面：社区市场',
   'src/views/ImageGeneratorView.vue': '页面：图像生成',
-  'src/views/LocalModelView.vue': '页面：本地模型管理',
+  'src/views/LocalModelView.vue': '页面：本地模型管理（装配层，R3-3 拆分）',
+  'src/views/LocalModelModelsPanel.vue': '面板：本地模型-模型列表与加载卸载（R3-3 拆分）',
+  'src/views/LocalModelPerformancePanel.vue': '面板：本地模型-性能指标（R3-3 拆分）',
+  'src/views/LocalModelBenchmarkPanel.vue': '面板：本地模型-性能基准（R3-3 拆分）',
+  'src/views/LocalModelCachePanel.vue': '面板：本地模型-推理缓存（R3-3 拆分）',
+  'src/views/LocalModelSettingsPanel.vue': '面板：本地模型-设置（R3-3 拆分）',
+  'src/views/local-model-format.ts': '工具：本地模型页数值格式化（R3-3 拆分）',
   'src/views/SettingsView.vue': '页面：设置中心（含数据管理与安全）',
 
   'src/components/chat/ChatMain.vue': '组件：对话主区域',
@@ -313,9 +320,34 @@ const CURATED = {
   'src/components/layout/CharacterList.vue': '布局：角色列表侧栏',
   'src/components/layout/ContextPanel.vue': '布局：上下文信息面板',
   'src/components/mobile/BottomNav.vue': '布局：移动端底部导航',
+  'src/components/market/MarketHeader.vue': '组件：社区市场页头（R2-4 拆分）',
+  'src/components/market/MarketRemotePanel.vue': '组件：社区市场远程安装面板（R2-4 拆分）',
+  'src/components/market/MarketToolbar.vue': '组件：社区市场搜索/排序/筛选工具条（R2-4 拆分）',
+  'src/components/market/MarketCard.vue': '组件：社区市场角色卡（R2-4 拆分）',
+  'src/components/market/MarketAdminSection.vue': '组件：社区市场管理段（R2-4 拆分）',
+  'src/components/market/MarketDetailModal.vue': '组件：社区市场详情/评论/举报三扇弹窗（R2-4 拆分，Teleport 到 body）',
+  'src/components/market/market-format.ts': '工具：市场页日期/计数/星级/字节格式化（R2-4 拆分）',
+
+  // R2-5：settings store 拆出的四个域模块 + 上下文 + 纯工具
+  'src/stores/settings/ctx.ts': '上下文：settings store 各域共享的 ref 集合与持久化回调（R2-5 拆分）',
+  'src/stores/settings/normalize.ts': '工具：自定义主题/采样默认值/图像 Provider 的归一并自愈脏数据（R2-5 拆分）',
+  'src/stores/settings/appearance.ts': '模块：主题/字号/语言/背景/气泡/自定义 CSS 与主题（R2-5 拆分）',
+  'src/stores/settings/profiles.ts': '模块：API Profile CRUD/模型分类/各类配置/Quick Reply/偏好开关（R2-5 拆分）',
+  'src/stores/settings/security.ts': '模块：AC20 主密码会话与 P1-4 远程向量密钥加密（R2-5 拆分）',
+  'src/stores/settings/persistence.ts': '模块：首帧加载/串行化写入/透明加密快照（R2-5 拆分）',
   'src/components/random-events/SceneConfigModal.vue': '组件：随机事件场景配置',
   'src/components/random-events/TemplateEditorModal.vue': '组件：随机事件模板编辑器',
   'src/components/settings/SettingsModelPanel.vue': '组件：设置-模型面板',
+  'src/components/settings/SettingsAppearancePanel.vue': '组件：设置-外观（装配层，R3-1 拆分）',
+  'src/components/settings/AppearanceLocaleSection.vue': '分区：外观-语言选择（R3-1 拆分）',
+  'src/components/settings/AppearanceThemeSection.vue': '分区：外观-主题选择与自定义主题编辑器（R3-1 拆分）',
+  'src/components/settings/AppearanceFontSizeSection.vue': '分区：外观-字号选择与实时预览（R3-1 拆分）',
+  'src/components/settings/AppearanceUiCustomSection.vue': '分区：外观-界面自定义（背景/气泡/CSS/开合记忆，R3-1 拆分）',
+  'src/components/settings/SettingsDataPanel.vue': '组件：设置-数据（装配层，R3-2 拆分）',
+  'src/components/settings/SettingsDataDailySection.vue': '分区：数据-资料档案/全量备份/PNG/Markdown 导出（R3-2 拆分）',
+  'src/components/settings/SettingsDataAdvancedSection.vue': '分区：数据-QR 互导/PWA 持久性/嵌入优化/审计日志（R3-2 拆分）',
+  'src/components/settings/SettingsDataModals.vue': '弹窗：数据-导入结果/审计日志/清空确认/主密码（R3-2 拆分）',
+  'src/components/settings/useDataPanelState.ts': '状态：数据面板弹窗共享单例（R3-2 拆分）',
   'src/components/settings/VectorModelPanel.vue': '组件：设置-向量模型面板',
   'src/components/story/StoryTimeConfigPanel.vue': '组件：剧情时间轴配置面板',
   'src/components/worldbook/WorldBookEventsPanel.vue': '组件：世界书事件面板',
@@ -343,6 +375,7 @@ const CURATED = {
   'scripts/csp-audit.mjs': '工具：CSP 运行时审计（真实浏览器监听 securitypolicyviolation，手动诊断用）',
   'scripts/hover-guard.mjs': '门禁：禁止未按 (hover: hover) 分流的 :hover，防触屏 tap 后 hover 粘滞',
   'scripts/important-guard.mjs': '门禁：!important 棘轮守卫（基线锁定，只许降不许升）',
+  'scripts/control-size-guard.mjs': '门禁：控件高度字面量棘轮守卫（20–60px 未接 token 的 height，只许降不许升）',
   'scripts/css-conventions-guard.mjs': '门禁：CSS 约定守卫单一入口（编排断点 / 视口 / hover / !important / 控件字号五项子检查）',
   'scripts/i7-control-font-size-guard.mjs': '门禁：移动断点内可编辑控件字号 ≥16px 兜底（I-7，防 iOS 聚焦放大页面）',
   'scripts/skin-preview.mjs': '工具：把原型配色注入真实产品页面，出截图并逐元素实测 WCAG 对比度（换肤评审用）',
@@ -551,6 +584,10 @@ function walk(dir, relDir, acc) {
     const rel = relDir ? `${relDir}/${e.name}` : e.name;
     if (e.isDirectory()) {
       if (EXCLUDE_DIR_NAMES.has(e.name)) continue;
+      // `dist-old-<ts>` / `dist-preopt-*` / `dist-qa`：构建绕开 safe-delete 守卫时
+      // 用 mv 挪出来的副产物。它们已被 .gitignore 的 `dist-*/` 通配忽略，但本生成器
+      // 是按文件名精确匹配的，不加这条会被扫进索引（2026-10-20 实测 282 条噪音）。
+      if (e.name.startsWith('dist-')) continue;
       if (EXCLUDE_REL_DIRS.has(rel)) continue;
       walk(path.join(dir, e.name), rel, acc);
     } else if (e.isFile()) {

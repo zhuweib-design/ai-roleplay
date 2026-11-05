@@ -4,30 +4,35 @@
  *
  * 功能：
  * - 引擎能力检测与状态展示
- * - 模型列表与加载/卸载
- * - 性能指标仪表板
- * - 推理缓存管理
- * - 设置面板
+ * - 五个 tab 面板：模型 / 性能 / 性能基准 / 缓存 / 设置（R3-3 拆为子组件）
  *
  * 无障碍：
  * - 语义化结构
  * - ARIA 标签
  * - 键盘可访问
+ *
+ * R3-3 拆分说明：这个文件的样式占了一半（641/1267），且**死样式为 0**——与
+ * R3-1/R3-2 那种"整段搬运遗留"不同，这里只能靠真拆。切面是现成的：模板里
+ * 五个 `<section v-show="activeTab === ...">` 各管一个 tab，彼此没有 props 往来。
+ *
+ * 共用样式（`.panel-toolbar` / `.btn` 族 / `.stats-*` / `.metrics-*` / `.section-title`）
+ * 留在宿主并写成 `:deep()`：这五组被 2–5 个面板同时使用，各带一份会让
+ * primitives-guard 从 1 涨到 5。`primitives-guard` 对 `:deep()` 副本不计数（见其
+ * 文件头 R2-4 记录），且 `.local-model-view` 是宿主根元素，` :deep()` 能穿透到
+ * 所有子组件内部。
  */
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useLocalModelStore } from '@/stores/local-model';
 import Icon from '@/components/common/Icon.vue';
-import EmptyState from '@/components/common/EmptyState.vue';
 import Toast from '@/components/common/Toast.vue';
-import {
-  runAllBenchmarks,
-  loadBenchmarkHistory,
-  clearBenchmarkHistory,
-  type BenchmarkResult,
-} from '@/core/benchmark';
-import type { ModelSize } from '@/core/local-model-engine';
 import { t } from '@/i18n';
+import { formatSize } from './local-model-format';
+import LocalModelModelsPanel from './LocalModelModelsPanel.vue';
+import LocalModelPerformancePanel from './LocalModelPerformancePanel.vue';
+import LocalModelBenchmarkPanel from './LocalModelBenchmarkPanel.vue';
+import LocalModelCachePanel from './LocalModelCachePanel.vue';
+import LocalModelSettingsPanel from './LocalModelSettingsPanel.vue';
 
 const router = useRouter();
 const store = useLocalModelStore();
@@ -54,14 +59,6 @@ function showToast(message: string, type: 'info' | 'success' | 'error' = 'info')
   toastOpen.value = true;
 }
 
-// ── 筛选 ──
-const filterSize = ref<ModelSize | 'all'>('all');
-
-const filteredModels = computed(() => {
-  if (filterSize.value === 'all') return store.models;
-  return store.models.filter((m) => m.size === filterSize.value);
-});
-
 // ── 操作 ──
 function goBack() {
   if (window.history.state?.back) {
@@ -78,77 +75,6 @@ async function handleDetect() {
   } else {
     showToast(store.lastError ?? t('lm.engineUnavailable'), 'error');
   }
-}
-
-async function handleLoad(modelId: string) {
-  const ok = await store.loadModel(modelId);
-  if (ok) {
-    showToast(t('lm.modelLoaded'), 'success');
-  } else {
-    showToast(store.lastError ?? t('lm.loadFailed'), 'error');
-  }
-}
-
-async function handleUnload() {
-  await store.unloadModel();
-  showToast(t('lm.modelUnloaded'), 'info');
-}
-
-function handleClearCache() {
-  store.clearCache();
-  showToast(t('lm.cacheCleared'), 'info');
-}
-
-function handleClearMetrics() {
-  store.clearMetrics();
-  showToast(t('lm.metricsCleared'), 'info');
-}
-
-function handleSaveSettings() {
-  // 设置已通过 updateSettings 实时更新到 store
-  showToast(t('lm.settingsSaved'), 'success');
-}
-
-// ── T-10: 性能基准 ──
-const benchmarkRunning = ref(false);
-const benchmarkResults = ref<BenchmarkResult[] | null>(null);
-const benchmarkHistory = ref<BenchmarkResult[][]>(loadBenchmarkHistory());
-
-async function handleRunBenchmark() {
-  if (benchmarkRunning.value) return;
-  benchmarkRunning.value = true;
-  benchmarkResults.value = null;
-  try {
-    benchmarkResults.value = await runAllBenchmarks();
-    benchmarkHistory.value = loadBenchmarkHistory();
-    const allPass = benchmarkResults.value.every((r) => r.pass);
-    showToast(allPass ? t('lm.benchmarkAllPass') : t('lm.benchmarkFailed'), allPass ? 'success' : 'error');
-  } catch (err) {
-    showToast(t('lm.benchmarkRunFailed', { error: err instanceof Error ? err.message : String(err) }), 'error');
-  } finally {
-    benchmarkRunning.value = false;
-  }
-}
-
-function handleClearBenchmarkHistory() {
-  clearBenchmarkHistory();
-  benchmarkHistory.value = [];
-  showToast(t('lm.benchmarkHistoryCleared'), 'info');
-}
-
-// ── 工具 ──
-function formatSize(mb: number): string {
-  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
-  return `${mb} MB`;
-}
-
-function formatPercent(value: number): string {
-  return `${(value * 100).toFixed(1)}%`;
-}
-
-function formatMs(ms: number): string {
-  if (ms >= 1000) return `${(ms / 1000).toFixed(2)}s`;
-  return `${Math.round(ms)}ms`;
 }
 
 // ── 初始化 ──
@@ -256,7 +182,6 @@ onMounted(async () => {
     </nav>
 
     <main class="page-body">
-      <!-- 模型管理 -->
       <section
         v-show="activeTab === 'models'"
         id="panel-models"
@@ -264,103 +189,9 @@ onMounted(async () => {
         aria-labelledby="tab-models"
         class="panel"
       >
-        <div class="panel-toolbar">
-          <div class="filter-group" role="radiogroup" :aria-label="t('lm.filterAria')">
-            <button
-              type="button"
-              role="radio"
-              :aria-checked="filterSize === 'all'"
-              class="filter-chip"
-              :class="{ active: filterSize === 'all' }"
-              @click="filterSize = 'all'"
-            >
-              {{ t('lm.filterAll') }}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              :aria-checked="filterSize === 'small'"
-              class="filter-chip"
-              :class="{ active: filterSize === 'small' }"
-              @click="filterSize = 'small'"
-            >
-              {{ t('lm.filterSmall') }}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              :aria-checked="filterSize === 'medium'"
-              class="filter-chip"
-              :class="{ active: filterSize === 'medium' }"
-              @click="filterSize = 'medium'"
-            >
-              {{ t('lm.filterMedium') }}
-            </button>
-          </div>
-          <span class="model-count">{{ t('lm.modelCount', { count: filteredModels.length }) }}</span>
-        </div>
-
-        <!-- 加载进度条 -->
-        <div v-if="store.isLoading && store.loadProgress" class="progress-bar" role="status" aria-live="polite">
-          <div class="progress-info">
-            <span>{{ t('lm.loadingPhase', { phase: store.loadProgress.phase }) }}</span>
-            <span>{{ t('lm.loadingProgress', { percent: formatPercent(store.loadProgress.progress), loaded: formatSize(store.loadProgress.loadedMb), total: formatSize(store.loadProgress.totalMb) }) }}</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill" :style="{ width: `${store.loadProgress.progress * 100}%` }" />
-          </div>
-        </div>
-
-        <ul v-if="filteredModels.length > 0" class="model-list" role="list">
-          <li
-            v-for="model in filteredModels"
-            :key="model.id"
-            class="model-card"
-            :class="{ loaded: store.loadedModelId === model.id }"
-          >
-            <div class="model-header">
-              <div class="model-title">
-                <span class="title-text">{{ model.name }}</span>
-                <span class="badge size" :data-size="model.size">{{ model.size === 'small' ? t('lm.sizeSmall') : model.size === 'medium' ? t('lm.sizeMedium') : t('lm.sizeLarge') }}</span>
-                <span v-if="store.loadedModelId === model.id" class="badge loaded">{{ t('lm.loadedBadge') }}</span>
-                <span v-if="model.lowResourceFriendly" class="badge friendly">{{ t('lm.lowResourceFriendly') }}</span>
-              </div>
-            </div>
-            <p class="model-desc">{{ model.description }}</p>
-            <dl class="model-meta">
-              <div><dt>{{ t('lm.downloadSize') }}</dt><dd>{{ formatSize(model.downloadSizeMb) }}</dd></div>
-              <div><dt>{{ t('lm.vramUsage') }}</dt><dd>{{ formatSize(model.vramMb) }}</dd></div>
-              <div><dt>{{ t('lm.contextLength') }}</dt><dd>{{ model.contextLength }} tokens</dd></div>
-              <div><dt>{{ t('lm.version') }}</dt><dd>{{ model.version }}</dd></div>
-            </dl>
-            <div class="model-actions">
-              <button
-                v-if="store.loadedModelId !== model.id"
-                type="button"
-                class="btn primary"
-                :disabled="!store.isAvailable || store.isLoading"
-                @click="handleLoad(model.id)"
-              >
-                <Icon name="download" :size="14" aria-hidden="true" />
-                {{ t('lm.loadModel') }}
-              </button>
-              <button
-                v-else
-                type="button"
-                class="btn danger"
-                :disabled="store.isLoading"
-                @click="handleUnload"
-              >
-                <Icon name="stop" :size="14" aria-hidden="true" />
-                {{ t('lm.unload') }}
-              </button>
-            </div>
-          </li>
-        </ul>
-        <EmptyState v-else title-key="lm.noModels" icon="cpu" />
+        <LocalModelModelsPanel @notify="showToast" />
       </section>
 
-      <!-- 性能指标 -->
       <section
         v-show="activeTab === 'performance'"
         id="panel-performance"
@@ -368,46 +199,9 @@ onMounted(async () => {
         aria-labelledby="tab-performance"
         class="panel"
       >
-        <div class="panel-toolbar">
-          <p class="panel-hint">{{ t('lm.performanceHint') }}</p>
-          <button type="button" class="btn" @click="handleClearMetrics">
-            <Icon name="trash-2" :size="14" aria-hidden="true" />
-            {{ t('lm.clearMetrics') }}
-          </button>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stat-card">
-            <span class="stat-label">{{ t('lm.avgDecodeSpeed') }}</span>
-            <span class="stat-value">{{ store.averageMetrics.avgTokensPerSecond.toFixed(1) }} <span class="unit">tokens/s</span></span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">{{ t('lm.avgFirstToken') }}</span>
-            <span class="stat-value">{{ formatMs(store.averageMetrics.avgFirstTokenMs) }}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">{{ t('lm.avgTotal') }}</span>
-            <span class="stat-value">{{ formatMs(store.averageMetrics.avgTotalMs) }}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">{{ t('lm.inferenceCount') }}</span>
-            <span class="stat-value">{{ store.averageMetrics.count }}</span>
-          </div>
-        </div>
-
-        <h3 class="section-title">{{ t('lm.recentMetrics') }}</h3>
-        <ul v-if="store.metricsHistory.length > 0" class="metrics-list" role="list">
-          <li v-for="(m, idx) in store.metricsHistory.slice(-20).reverse()" :key="idx" class="metrics-item">
-            <span class="metrics-model">{{ m.modelId.split('-')[0] }} {{ m.modelId.split('-')[1] }}</span>
-            <span class="metrics-tps">{{ m.tokensPerSecond.toFixed(1) }} t/s</span>
-            <span class="metrics-time">{{ formatMs(m.totalMs) }}</span>
-            <span class="metrics-tokens">{{ m.outputTokens }} tokens</span>
-          </li>
-        </ul>
-        <EmptyState v-else title-key="lm.noMetrics" compact :heading-level="3" />
+        <LocalModelPerformancePanel @notify="showToast" />
       </section>
 
-      <!-- T-10: 性能基准 -->
       <section
         v-show="activeTab === 'benchmark'"
         id="panel-benchmark"
@@ -415,74 +209,9 @@ onMounted(async () => {
         aria-labelledby="tab-benchmark"
         class="panel"
       >
-        <div class="panel-toolbar">
-          <p class="panel-hint">
-            {{ t('lm.benchmarkHint') }}
-          </p>
-          <button
-            type="button"
-            class="btn primary"
-            :disabled="benchmarkRunning"
-            @click="handleRunBenchmark"
-          >
-            <Icon name="refresh-cw" :size="14" aria-hidden="true" :class="{ spinning: benchmarkRunning }" />
-            {{ benchmarkRunning ? t('lm.runningBenchmark') : t('lm.runBenchmark') }}
-          </button>
-          <button type="button" class="btn" @click="handleClearBenchmarkHistory">
-            <Icon name="trash-2" :size="14" aria-hidden="true" />
-            {{ t('lm.clearHistory') }}
-          </button>
-        </div>
-
-        <!-- 本次结果 -->
-        <ul v-if="benchmarkResults" class="benchmark-list" role="list">
-          <li
-            v-for="r in benchmarkResults"
-            :key="`${r.name}-${r.ts}`"
-            class="benchmark-item"
-          >
-            <span
-              class="benchmark-pass"
-              :class="r.pass ? 'pass' : 'fail'"
-              :aria-label="t('lm.benchmarkPassAria')"
-            >
-              {{ r.pass ? '✓' : '✗' }}
-            </span>
-            <span class="benchmark-name">{{ r.name }}</span>
-            <span class="benchmark-duration">{{ r.durationMs }} ms</span>
-            <span v-if="r.budgetMs" class="benchmark-budget">{{ t('lm.benchmarkBudget', { budget: r.budgetMs }) }}</span>
-            <span class="benchmark-detail">{{ r.detail }}</span>
-          </li>
-        </ul>
-        <EmptyState v-else title-key="lm.benchmarkNoRun" compact :heading-level="3" />
-
-        <!-- 历史 -->
-        <template v-if="benchmarkHistory.length > 0">
-          <h4 class="benchmark-history-title">{{ t('lm.benchmarkHistory') }}</h4>
-          <ul class="metrics-list" role="list">
-            <li
-              v-for="(round, ridx) in benchmarkHistory"
-              :key="ridx"
-              class="metrics-item"
-            >
-              <span class="benchmark-history-time">
-                {{ new Date(round[0]?.ts ?? '').toLocaleString() }}
-              </span>
-              <span
-                v-for="r in round"
-                :key="r.name"
-                class="benchmark-history-chip"
-                :class="r.pass ? 'pass' : 'fail'"
-                :title="t('lm.benchmarkChipTitle', { name: r.name, duration: r.durationMs, budget: r.budgetMs ? t('lm.benchmarkBudgetSuffix', { budget: r.budgetMs }) : '' })"
-              >
-                {{ r.durationMs }}ms
-              </span>
-            </li>
-          </ul>
-        </template>
+        <LocalModelBenchmarkPanel @notify="showToast" />
       </section>
 
-      <!-- 推理缓存 -->
       <section
         v-show="activeTab === 'cache'"
         id="panel-cache"
@@ -490,40 +219,9 @@ onMounted(async () => {
         aria-labelledby="tab-cache"
         class="panel"
       >
-        <div class="panel-toolbar">
-          <p class="panel-hint">{{ t('lm.cacheHint') }}</p>
-          <div class="toolbar-actions">
-            <button type="button" class="btn" @click="store.purgeExpiredCache()">
-              {{ t('lm.purgeExpired') }}
-            </button>
-            <button type="button" class="btn danger" @click="handleClearCache">
-              <Icon name="trash-2" :size="14" aria-hidden="true" />
-              {{ t('lm.clearCache') }}
-            </button>
-          </div>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stat-card">
-            <span class="stat-label">{{ t('lm.cacheEntries') }}</span>
-            <span class="stat-value">{{ store.cacheStats.size }} / {{ store.cacheStats.maxCapacity }}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">{{ t('lm.hitRate') }}</span>
-            <span class="stat-value">{{ formatPercent(store.cacheStats.hitRate) }}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">{{ t('lm.hitCount') }}</span>
-            <span class="stat-value">{{ store.cacheStats.totalHits }}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">{{ t('lm.evictionCount') }}</span>
-            <span class="stat-value">{{ store.cacheStats.totalEvictions }}</span>
-          </div>
-        </div>
+        <LocalModelCachePanel @notify="showToast" />
       </section>
 
-      <!-- 设置 -->
       <section
         v-show="activeTab === 'settings'"
         id="panel-settings"
@@ -531,87 +229,7 @@ onMounted(async () => {
         aria-labelledby="tab-settings"
         class="panel"
       >
-        <div class="settings-form">
-          <label class="setting-row">
-            <span class="setting-label">{{ t('lm.preferLocal') }}</span>
-            <input
-              type="checkbox"
-              :checked="store.settings.preferLocal"
-              @change="store.updateSettings({ preferLocal: ($event.target as HTMLInputElement).checked })"
-            />
-            <span class="setting-desc">{{ t('lm.preferLocalDesc') }}</span>
-          </label>
-
-          <label class="setting-row">
-            <span class="setting-label">{{ t('lm.cacheCapacity') }}</span>
-            <input
-              type="number"
-              min="1"
-              max="500"
-              :value="store.settings.cacheCapacity"
-              @change="store.updateSettings({ cacheCapacity: parseInt(($event.target as HTMLInputElement).value, 10) || 50 })"
-            />
-            <span class="setting-desc">{{ t('lm.cacheCapacityDesc') }}</span>
-          </label>
-
-          <label class="setting-row">
-            <span class="setting-label">{{ t('lm.cacheTtl') }}</span>
-            <input
-              type="number"
-              min="1"
-              max="1440"
-              :value="Math.round(store.settings.cacheTtlMs / 60000)"
-              @change="store.updateSettings({ cacheTtlMs: (parseInt(($event.target as HTMLInputElement).value, 10) || 30) * 60000 })"
-            />
-            <span class="setting-desc">{{ t('lm.cacheTtlDesc') }}</span>
-          </label>
-
-          <label class="setting-row">
-            <span class="setting-label">{{ t('lm.defaultTemp') }}</span>
-            <input
-              type="number"
-              min="0"
-              max="2"
-              step="0.1"
-              :value="store.settings.defaultTemperature"
-              @change="store.updateSettings({ defaultTemperature: parseFloat(($event.target as HTMLInputElement).value) || 0.7 })"
-            />
-            <span class="setting-desc">{{ t('lm.defaultTempDesc') }}</span>
-          </label>
-
-          <label class="setting-row">
-            <span class="setting-label">{{ t('lm.defaultTopP') }}</span>
-            <input
-              type="number"
-              min="0"
-              max="1"
-              step="0.05"
-              :value="store.settings.defaultTopP"
-              @change="store.updateSettings({ defaultTopP: parseFloat(($event.target as HTMLInputElement).value) || 0.95 })"
-            />
-            <span class="setting-desc">{{ t('lm.defaultTopPDesc') }}</span>
-          </label>
-
-          <label class="setting-row">
-            <span class="setting-label">{{ t('lm.defaultMaxTokens') }}</span>
-            <input
-              type="number"
-              min="64"
-              max="4096"
-              step="64"
-              :value="store.settings.defaultMaxTokens"
-              @change="store.updateSettings({ defaultMaxTokens: parseInt(($event.target as HTMLInputElement).value, 10) || 1024 })"
-            />
-            <span class="setting-desc">{{ t('lm.defaultMaxTokensDesc') }}</span>
-          </label>
-
-          <div class="setting-actions">
-            <button type="button" class="btn primary" @click="handleSaveSettings">
-              <Icon name="save" :size="14" aria-hidden="true" />
-              {{ t('lm.saveSettings') }}
-            </button>
-          </div>
-        </div>
+        <LocalModelSettingsPanel @notify="showToast" />
       </section>
     </main>
 
@@ -812,7 +430,9 @@ onMounted(async () => {
   padding: 16px 20px;
 }
 
-.panel-toolbar {
+/* ── 面板共用样式（:deep 穿透到子组件；五组被 2–5 个面板同时使用，各带一份会让
+   primitives-guard 从 1 涨到 5） ── */
+.local-model-view :deep(.panel-toolbar) {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -821,174 +441,13 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 
-.panel-hint {
+.local-model-view :deep(.panel-hint) {
   margin: 0;
   font-size: 13px;
   color: var(--muted-foreground);
 }
 
-.toolbar-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.filter-group {
-  display: flex;
-  gap: 4px;
-}
-
-.filter-chip {
-  padding: 4px 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full, 999px);
-  color: var(--muted-foreground);
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
-}
-
-.filter-chip.active {
-  background: var(--primary);
-  color: var(--on-primary);
-  border-color: var(--primary);
-}
-
-.model-count {
-  font-size: 12px;
-  color: var(--muted-foreground);
-}
-
-/* 进度条 */
-.progress-bar {
-  margin-bottom: 16px;
-  padding: 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
-
-.progress-info {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  margin-bottom: 8px;
-  color: var(--muted-foreground);
-}
-
-.progress-track {
-  height: 6px;
-  background: var(--card-elevated);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--primary);
-  transition: width .3s ease;
-}
-
-/* 模型列表 */
-.model-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 12px;
-}
-
-.model-card {
-  padding: 14px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  transition: border-color .15s ease;
-}
-
-.model-card.loaded {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1px var(--primary);
-}
-
-.model-header {
-  margin-bottom: 8px;
-}
-
-.model-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.title-text {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.badge {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  background: var(--card-elevated);
-  color: var(--muted-foreground);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.badge.size[data-size="small"] {
-  background: color-mix(in srgb, var(--success) 20%, transparent);
-  color: var(--success-fg);
-}
-
-.badge.size[data-size="medium"] {
-  background: color-mix(in srgb, var(--warning-fg) 20%, transparent);
-  color: var(--warning-text);
-}
-
-.badge.loaded {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-
-.badge.friendly {
-  background: color-mix(in srgb, var(--accent-blue) 15%, transparent);
-  color: var(--accent-blue-text);
-}
-
-.model-desc {
-  margin: 0 0 10px;
-  font-size: 12px;
-  color: var(--muted-foreground);
-  line-height: 1.5;
-}
-
-.model-meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px 12px;
-  margin: 0 0 12px;
-  font-size: 12px;
-}
-
-.model-meta dt {
-  color: var(--muted-foreground);
-  font-size: 11px;
-}
-
-.model-meta dd {
-  margin: 0;
-  font-weight: 500;
-}
-
-.model-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.btn {
+.local-model-view :deep(.btn) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1003,43 +462,38 @@ onMounted(async () => {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .btn:hover:not(:disabled) {
+  .local-model-view :deep(.btn:hover:not(:disabled)) {
     background: var(--card-elevated);
   }
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn.primary {
+.local-model-view :deep(.btn.primary) {
   background: var(--primary);
   color: var(--on-primary);
   border-color: var(--primary);
 }
 
-.btn.danger {
+.local-model-view :deep(.btn.danger) {
   background: transparent;
   color: var(--danger, #ef4444);
   border-color: var(--danger, #ef4444);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .btn.danger:hover:not(:disabled) {
+  .local-model-view :deep(.btn.danger:hover:not(:disabled)) {
     background: color-mix(in srgb, var(--danger, #ef4444) 10%, transparent);
   }
 }
 
 /* 统计卡片 */
-.stats-grid {
+.local-model-view :deep(.stats-grid) {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 }
 
-.stat-card {
+.local-model-view :deep(.stat-card) {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1049,39 +503,39 @@ onMounted(async () => {
   border-radius: var(--radius-md);
 }
 
-.stat-label {
+.local-model-view :deep(.stat-label) {
   font-size: 11px;
   color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.stat-value {
+.local-model-view :deep(.stat-value) {
   font-size: 20px;
   font-weight: 600;
   font-family: var(--font-display);
 }
 
-.stat-value .unit {
+.local-model-view :deep(.stat-value .unit) {
   font-size: 12px;
   font-weight: 400;
   color: var(--muted-foreground);
 }
 
 /* 指标列表 */
-.section-title {
+.local-model-view :deep(.section-title) {
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 10px;
 }
 
-.metrics-list {
+.local-model-view :deep(.metrics-list) {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.metrics-item {
+.local-model-view :deep(.metrics-item) {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 8px;
@@ -1091,184 +545,24 @@ onMounted(async () => {
   align-items: center;
 }
 
-.metrics-model {
+.local-model-view :deep(.metrics-model) {
   font-weight: 500;
 }
 
-.metrics-tps {
+.local-model-view :deep(.metrics-tps) {
   color: var(--primary-fg, var(--primary));
   font-weight: 600;
 }
 
-.metrics-time,
-.metrics-tokens {
+.local-model-view :deep(.metrics-time),
+.local-model-view :deep(.metrics-tokens) {
   color: var(--muted-foreground);
 }
 
-/* 设置表单 */
-.settings-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-width: 600px;
-}
-
-.setting-row {
-  display: grid;
-  grid-template-columns: 180px auto 1fr;
-  align-items: center;
-  gap: 12px;
-}
-
-.setting-label {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.setting-desc {
-  font-size: 12px;
-  color: var(--muted-foreground);
-}
-
-.setting-row input[type="number"] {
-  width: 80px;
-  padding: 4px 8px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--foreground);
-  font-size: 13px;
-}
-
-.setting-row input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--primary);
-}
-
-.setting-actions {
-  margin-top: 8px;
-}
-
-/* 空状态 */
-
-
-
-/* 响应式 */
 @media (max-width: 640px) {
-  .model-meta {
-    grid-template-columns: 1fr;
-  }
-
-  .setting-row {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-
-  .metrics-item {
+  .local-model-view :deep(.metrics-item) {
     grid-template-columns: 1fr 1fr;
     font-size: 11px;
-  }
-}
-/* T-10: 性能基准 */
-.benchmark-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.benchmark-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-  flex-wrap: wrap;
-}
-
-.benchmark-pass {
-  font-weight: 700;
-  width: 18px;
-  text-align: center;
-}
-
-.benchmark-pass.pass {
-  color: var(--green, #9ece6a);
-}
-
-.benchmark-pass.fail {
-  color: var(--danger, #f7768e);
-}
-
-.benchmark-name {
-  font-weight: 600;
-  flex: 1;
-  min-width: 200px;
-}
-
-.benchmark-duration {
-  font-family: var(--font-mono, monospace);
-  white-space: nowrap;
-}
-
-.benchmark-budget {
-  color: var(--muted-foreground);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.benchmark-detail {
-  color: var(--text-secondary);
-  font-size: 12px;
-  width: 100%;
-  padding-left: 28px;
-}
-
-.benchmark-history-title {
-  margin-top: 12px;
-  font-size: 13px;
-  color: var(--muted-foreground);
-}
-
-.benchmark-history-time {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-}
-
-.benchmark-history-chip {
-  padding: 1px 8px;
-  border-radius: var(--radius-pill);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.benchmark-history-chip.pass {
-  color: var(--green, #9ece6a);
-  background: color-mix(in srgb, var(--green, #9ece6a) 12%, transparent);
-}
-
-.benchmark-history-chip.fail {
-  color: var(--danger, #f7768e);
-  background: color-mix(in srgb, var(--danger, #f7768e) 12%, transparent);
-}
-
-.spinning {
-  animation: benchmark-spin 1s linear infinite;
-  display: inline-block;
-}
-
-@keyframes benchmark-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 640px) {
-  /* iOS 聚焦防放大：可编辑控件字号须 ≥16px（I-7 / D1） */
-  .setting-row input[type="number"] {
-    font-size: 16px;
   }
 }
 </style>

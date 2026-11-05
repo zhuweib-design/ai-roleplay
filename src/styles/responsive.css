@@ -67,13 +67,35 @@
   .chat-composer { border-radius: var(--radius-lg); }
   /* 16px 是 iOS 聚焦不放大页面的下限（I-7 守卫拦），不可降 */
   .chat-input { font-size: 16px; min-height: 38px; }
-  .composer-btn { width: 30px; height: 30px; }
-  /* 发送键是这一屏最高频的点击目标，触屏下给到 36（行高 38 之内，不额外撑高输入条） */
-  .send-btn-primary { width: 36px; height: 36px; }
+  /* 批次 3-2：发送与附件是这一屏最高频的两个目标，命中区给到 44（WCAG 2.5.5）。
+     **只扩命中区、不扩本体**：把按钮本体撑到 44 会让输入条从 73 涨到 79，
+     撞上「静止态矮 ≤76」那条判据（批次 0 的 P0：输入条不许吃掉半屏）。
+     视觉尺寸保持原样，伪元素撑命中区——这也是 B3 对密集行内工具条的统一手法。
+     46 而不是 44：探针按 1px 步进，边界像素不属于元素。 */
   .model-badge { display: none !important; }
   .chat-token { display: none; }
 
   .chat-header { padding: 0 8px; }
+}
+
+/* 输入条两个高频目标的命中区：判据用 (pointer: coarse) 而不是宽度（Q10，2026-10-26）。
+   规则本身是"只扩命中区、不扩本体"，所以与宽度无关；放在这里而不是上面的 640 块里，
+   是为了让平板上同样生效，又不牵连同块里的布局规则。 */
+@media (pointer: coarse) {
+  .composer-btn,
+  .send-btn-primary {
+    position: relative;
+  }
+  .composer-btn::after,
+  .send-btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(var(--touch-min) + 2px);
+    height: calc(var(--touch-min) + 2px);
+    transform: translate(-50%, -50%);
+  }
 }
 
 /* ═══ 极小屏（<380px） ═══ */
@@ -105,7 +127,14 @@
   .client-compact-only { display: inline-flex; }
 }
 
-/* 横屏移动端：底部导航为 sticky,主内容预留高度避免被遮挡（S-1 删除 NavRail 横屏旧规则后保留此兜底） */
-@media (max-height: 480px) and (orientation: landscape) and (max-width: 900px) {
-  .chat-main { padding-bottom: 56px; }
-}
+/* （已删除，2026-10-17 · MOBILE_PLAN 批次 0-2）
+   原规则：
+     @media (max-height: 480px) and (orientation: landscape) and (max-width: 900px) {
+       .chat-main { padding-bottom: 56px; }
+     }
+   删除理由（实测）：该媒体查询在 844×390 命中，但同一档 `.bottom-nav` **不在 DOM**——
+   844 宽 > 640 ⇒ JS 侧 `useViewport().isMobile` 为 false ⇒ 渲染的是 64px rail 而非底部导航。
+   这条 56px 是**给一个不存在的导航留的**，白吃横屏 390px 高度的 14%。
+   根因是"是不是手机"有两套互不覆盖的定义：JS 按宽度（>640 非手机），CSS 按 max-width:900 + 横屏。
+   彻底解法是 MOBILE_PLAN 批次 2-5（断点收敛成单一运行时值 + CSS 只消费它写出的标记类）。
+   在 2-5 落地之前，宁可不留——留了就是死空白。 */

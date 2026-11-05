@@ -9,7 +9,7 @@
  *
  * 覆盖形状：
  * - **每款内置皮肤各采一遍**（清单取自 THEME_PRESETS，新增一款就多一列）。结构层（尺寸/间距/字号）与主题无关，但语义层的色是每套主题
- *   重定义 25–29 个变量得来的，只测 dark 等于没测剩下四套。
+ *   重定义 25–29 个变量得来的，只测默认皮肤等于没测剩下的。
  * - **只取可见的那个匹配**。设置页 7 个面板是 v-show 互斥，全部挂在 DOM 上：
  *   `/settings?cat=extension` 下 `.settings-section` 有 13 个匹配、只有 1 个可见（探针实测）。
  *   `display:none` 的元素仍会返回它自己那份计算值，所以取错对象不会报错，只会把
@@ -38,6 +38,7 @@ import { test, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import { THEME_PRESETS } from '../src/types';
 import { applyThemeAndWait, waitForPersistedTheme } from './theme-persistence';
+import { seedCharacter } from './helpers/seed-character';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -256,6 +257,8 @@ const SSE_BODY =
  */
 /** 建一个指向 /mock 的 API 配置并激活：走真实 UI，已有就只激活（幂等） */
 async function ensureMockProfile(page: Page): Promise<void> {
+  // 角色库从空开始（2026-10-26）：对话区要有一个"收藏"角色，会话行与输入框才在
+  await seedCharacter(page, { favorite: true });
   const port = process.env.E2E_PORT ?? '5173';
   await page.goto('/settings?cat=model');
   const profile = page.getByText('E2E 中性网夹具').first();
@@ -286,7 +289,7 @@ async function seedConversation(page: Page): Promise<void> {
 
   await page.goto('/chat');
   /**
-   * 幂等：重生成基线那条用例是在**同一个页面里连着过 9 款皮肤**，本函数会被调用 9 次；
+   * 幂等：重生成基线那条用例是在**同一个页面里连着过全部皮肤**，本函数会被调用多次；
    * 每次都再发一条消息的话，助手气泡数就变成 2、3、…，断言与基线都不稳定
    * （实测 `toHaveCount(1)` 收到 2）。已经有助手气泡就直接复用，不再发。
    */
@@ -335,9 +338,11 @@ async function seedConversation(page: Page): Promise<void> {
 /**
  * 切主题：走真实 UI（设置页主题卡），并等它**真的落盘**再返回（见 `theme-persistence.ts`）。
  * 不等这一步，下面 `goto(t.route)` 会让文档重新加载、回落到默认皮肤，
- * 整份基线就采成了另一套皮肤（实测 brutal 一条红 143 处，实得值全是 dark 的）。
+ * 整份基线就采成了另一套皮肤（实测 brutal 一条红 143 处，实得值全是默认皮肤的值）。
  */
 async function applyTheme(page: Page, theme: string): Promise<void> {
+  // 采样目标是对话页的一族元素：没有角色时整片是空态，采样自然全空（2026-10-26）
+  await seedCharacter(page, { favorite: true });
   await applyThemeAndWait(page, theme);
   // 主题切换带颜色过渡，过渡中间态会让"半混合色"进基线（axe 那边为此踩过 450ms 的坑）。
   // 这里不用固定等待：轮询到连续两次读数相同才算稳，最多 2.5s。
@@ -414,7 +419,7 @@ async function sampleTheme(page: Page, theme: string): Promise<Record<string, Th
   /**
    * 准备步骤在**整轮采样之前**跑一次，不挂在单个目标上。
    * 挂在目标上实测会自相矛盾：seed 要建 API 配置，那是全局状态——重生成路径是
-   * 同一个页面连着过 9 款皮肤，第 1 款主题的 chat-surface 采在"还没建 Profile"时
+   * 同一个页面连着过全部皮肤，第 1 款主题的 chat-surface 采在"还没建 Profile"时
    * （`.model-badge` 是待处理的那档颜色），第 2 款起采在"已建"时（另一档颜色），
    * 基线里同一目标就有了两种真值。验证时每条用例是全新上下文，全部采在"未准备"态 ⇒ 红。
    */
@@ -518,7 +523,7 @@ function assertViewport(page: Page) {
 }
 
 if (UPDATE) {
-  // 只在本机手动跑：一次启动串完 5 套主题再写文件（并行写同一份 JSON 会互相盖掉）。
+  // 只在本机手动跑：一次启动串完全部皮肤再写文件（并行写同一份 JSON 会互相盖掉）。
   test.setTimeout(180_000);
   test('重生成基线：每款皮肤 × 全部目标的计算样式（NEUTRALITY_UPDATE=1 专用）', async ({ page }) => {
     assertViewport(page);
@@ -544,9 +549,16 @@ if (UPDATE) {
   /**
    * 一条主题一条用例，理由是量出来的：整条串在一起时单跑 5.7s，但 4 worker 全量并发下要
    * 39–50s，而配置的单测预算是 60s（playwright.config.ts 的注释就写着"并发下随机红 1–3 条"）。
-   * 贴着上限的安全网会被当噪声忽略，所以切成 5 条各测一套主题——单条并发下 ~12s，余量 5 倍，
-   * 而且红了直接说出是哪套主题出的问题。
+   * 切成 9 条各测一套主题，红了能直接说出是哪套皮肤出的问题。
+   *
+   * 但"切细就有余量"这句当年是错的，2026-10-27 在本机重测：每条用例仍然要做
+   * 6 次整页导航（套皮肤 1 次 + 5 个目标各 1 次），dev server 每次导航都要现编模块，
+   * 于是单条并发下不是 ~12s 而是 43–60s——两条最慢的分别用掉 59.9s 与 58.0s，
+   * 预算 60s 等于零余量，全量跑必然随机红 2–4 条（实测同一棵树跑两轮：4 条红、0 条红）。
+   * 安全网贴着上限就是噪声，所以按实测把这一族的预算抬到 180s（与上面重生成基线那条同值）。
+   * CI 不受影响：`workers: isCI ? 1 : 4`，单 worker 没有并发，本来就用不到这份余量。
    */
+  test.setTimeout(180_000);
   for (const theme of THEMES) {
     test(`像素中性网：「${theme}」主题下 ${TARGETS.length} 个目标的计算样式与基线一致`, async ({ page }) => {
       assertViewport(page);
@@ -569,11 +581,11 @@ if (UPDATE) {
  * - `color` 必须等于同一页里现搭的探针（`color: var(--green, #9ece6a)`）—— token 改名或写错当场红；
  * - `color` 必须不等于父级 `.chat-token`（`--muted-foreground`）—— 写错 token 的典型表现是
  *   "静默继承父色"，看着不像坏了，只比探针那条拦得住一半；
- * - 9 款皮肤的 `color` 至少出现 2 种不同值 —— 全一样说明它一直吃兜底色，压根没跟着皮肤走；
+ * - 全部内置皮肤的 `color` 至少出现 2 种不同值 —— 全一样说明它一直吃兜底色，压根没跟着皮肤走；
  * - `font-size` 必须等于根元素 `--font-size-2xs` 的解析值（这一条把"字面量 11px"换成 token 时不会松口，
  *   换成错档位当场红）。
  */
-test('生成中的那一刻：不重载页面切完 9 款皮肤，命中率徽标一直在且样式由皮肤驱动', async ({ page }) => {
+test('生成中的那一刻：不重载页面切完全部皮肤，命中率徽标一直在且样式由皮肤驱动', async ({ page }) => {
   assertViewport(page);
   await seedConversation(page);
 
@@ -617,18 +629,18 @@ test('生成中的那一刻：不重载页面切完 9 款皮肤，命中率徽�
   const distinct = new Set(rows.map((r) => r.color));
   expect(
     distinct.size,
-    `9 款皮肤只量出 ${distinct.size} 种颜色 ⇒ 这个徽标没跟着皮肤走（一直在吃兜底色）。逐条：\n${rows
+    `全部内置皮肤只量出 ${distinct.size} 种颜色 ⇒ 这个徽标没跟着皮肤走（一直在吃兜底色）。逐条：\n${rows
       .map((r) => `${r.theme}: ${r.color}`)
       .join('\n')}`
   ).toBeGreaterThanOrEqual(2);
 });
 
 /**
- * 这一族只跑 3 款皮肤，而不是上面的 9 款：断言的是"这条声明引用的是哪个槽位"，
+ * 这一族只跑 3 款皮肤，而不是上面的全部内置皮肤：断言的是"这条声明引用的是哪个槽位"，
  * 槽位名写错在每一款皮肤下都会塌成继承色，3 款足够把它区分出来；
  * 而"同一配对在不同皮肤下会不会撞色"那种问题由 `npm run a11y:contrast` 静态扫，两处不重复铺。
  */
-const STREAM_THEMES = ['dark', 'light', 'brutal'];
+const STREAM_THEMES = ['aurora', 'ink', 'brutal'];
 
 /**
  * 「正在生成的那一刻」一族：`.gen-text` / `.gen-dot`（M20-b 续）

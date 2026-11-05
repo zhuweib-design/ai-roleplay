@@ -10,7 +10,7 @@
 import { useRoute } from 'vue-router';
 import { computed } from 'vue';
 import Icon from '@/components/common/Icon.vue';
-import { mobileTabEntries } from '@/core/nav-model';
+import { activeEntryForRoute, mobileTabEntries } from '@/core/nav-model';
 import { t } from '@/i18n';
 
 const route = useRoute();
@@ -22,23 +22,52 @@ const route = useRoute();
  */
 const tabs = computed(() =>
   mobileTabEntries().map((entry) => ({
+    id: entry.id,
     name: entry.routeName,
     icon: entry.icon,
     label: t(entry.mobileLabelKey ?? entry.labelKey),
     desc: t(entry.descKey),
   }))
 );
+
+/**
+ * 高亮由路由派生（与 NavRail 同一口径：`activeEntryForRoute`），而不是
+ * `route.name === tab.name` 精确匹配。
+ *
+ * A13 之后底栏在二级页也在场，精确匹配会让「/character/new」「/databank」
+ * 这类页面上一个 Tab 都不亮——用户看不出自己在哪一段。改成：
+ * 1. 当前路由归属的入口就是某个 Tab ⇒ 亮那个 Tab；
+ * 2. 归属入口本身不在 Tab 上（数据银行/故事引擎/生图等都在「更多」里）
+ *    ⇒ 亮「更多」，表示"你在更多这一段里"。
+ */
+const activeEntry = computed(() => activeEntryForRoute(route.name as string | undefined));
+
+function isTabActive(tabId: string): boolean {
+  const entry = activeEntry.value;
+  if (!entry) return false;
+  if (entry.id === tabId) return true;
+  // 入口自己不在 Tab 上、但在「更多」里 ⇒ 亮「更多」，表示"你在更多这一段里"。
+  // `!entry.mobileTab` 这个条件不能少：群聊既是 Tab 又在「更多」里（A12 有意保留
+  // 两处入口），漏掉它会同时亮「群聊」和「更多」两项。
+  return tabId === 'more' && entry.inMore && !entry.mobileTab;
+}
+
+/** 精确命中当前路由标 page；只是所属段（二级页）标 location */
+function currentOf(tab: { id: string; name: string }): 'page' | 'location' | undefined {
+  if (!isTabActive(tab.id)) return undefined;
+  return route.name === tab.name ? 'page' : 'location';
+}
 </script>
 
 <template>
   <nav class="bottom-nav" :aria-label="t('mobile.navAria')">
     <router-link
       v-for="tab in tabs"
-      :key="tab.name"
+      :key="tab.id"
       :to="{ name: tab.name }"
       class="bottom-nav-item"
-      :class="{ active: route.name === tab.name }"
-      :aria-current="route.name === tab.name ? 'page' : undefined"
+      :class="{ active: isTabActive(tab.id) }"
+      :aria-current="currentOf(tab)"
       v-tip="tab.desc"
     >
       <Icon :name="tab.icon" :size="22" />

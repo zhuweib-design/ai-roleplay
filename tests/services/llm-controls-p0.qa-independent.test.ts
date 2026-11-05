@@ -393,8 +393,9 @@ describe('UI 红线 — QA 独立验证：模型输出渲染路径不得有 v-ht
     expect(src).toMatch(/return !props\.defaultCollapsed;/);
   });
 
-  it('ChatMain.vue：v-memo 依赖项包含 msg.thinking（历史消息不参与 patch）', () => {
-    const src = readComponent('components/chat/ChatMain.vue');
+  it('ChatMessageArea.vue：v-memo 依赖项包含 msg.thinking（历史消息不参与 patch）', () => {
+    // R1-5：消息气泡循环随窗口化渲染搬进 ChatMessageArea，v-memo 也在那里。
+    const src = readComponent('components/chat/ChatMessageArea.vue');
     const memo = src.match(/v-memo="(\[[^\]]*\])"/);
     expect(memo).not.toBeNull();
     const deps = memo![1]!;

@@ -82,15 +82,29 @@ test.describe('任务中心', () => {
     await page.addInitScript(() => {
       localStorage.removeItem('ai-roleplay:onboarding-done');
     });
+    // 刻意把聊天页分包压后 1.5s：这就是"路由还没解析完、欢迎窗已经可点"的那段窗口。
+    // 修复前（`main.ts` 挂载不等 `router.isReady()`）这段时间里点跳转，`from` 会被写成
+    // START_LOCATION 的 `/`；修复后 `data-app-ready` 只在首次导航解析完才出现，
+    // 所以下面那句等待本身就是判据。牙在哪：把 `await router.isReady()` 摘掉，
+    // 这条会稳定红在 `from=/` 上（不是靠运气撞窗口）。
+    await page.route(/ChatView\.vue/, async (route) => {
+      try {
+        await new Promise((r) => setTimeout(r, 1500));
+        await route.continue();
+      } catch {
+        // 页面先走了，这条请求作废；不吞掉会让 Playwright 把取消算成用例失败
+      }
+    });
     await page.goto('/chat');
+    await page.locator('html[data-app-ready="1"]').waitFor({ timeout: 20_000 });
 
     const modal = page.locator('.modal-panel, [role="dialog"]').last();
     await expect(modal).toBeVisible();
     await expect(modal.locator('.onboarding-step')).toHaveCount(3);
 
     await modal.locator('[data-rel-jump="onboarding-guide"]').click();
-    // 从欢迎窗进任务页也带来源，便于返回
-    await expect(page).toHaveURL(/\/guide(\?from=\/chat)?$/);
+    // 从欢迎窗进任务页也带来源，且必须是真实的来源页（不是 START_LOCATION 的 '/'）
+    await expect(page).toHaveURL(/\/guide\?from=\/chat$/);
     await expect(page.locator('.guided-task-head').first()).toBeVisible();
   });
 

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 
 /**
  * Playwright E2E 配置 (E2E)
@@ -24,6 +25,51 @@ const storageState = {
     localStorage: [{ name: 'ai-roleplay:onboarding-done', value: '1' }],
   }],
 };
+
+/**
+ * 复用已有 dev server 时，先验证「那台服务器确实是本项目」。
+ *
+ * 为什么需要这道防线（2026-10-23 实证）：
+ * 本机 5173 上常驻的是**另一个项目**（novel-studio，title「小说创作工作台」）的 dev server。
+ * 开启 `E2E_REUSE_SERVER=1` 后，Playwright 的 `url` 探活只要求"该端口有 HTTP 服务"，
+ * 不校验内容，于是整套 e2e 都跑在别人的页面上——表现是「换一组 spec 就换一批用例红」，
+ * 失败点每次不同且都停在最上游的第一句 `goto` + `getByRole('button')`。
+ * 这类假失败会被误读成"既有环境问题/时序竞态"，从而把真实回归埋掉
+ * （当时的 `ux-deep-link-group` 4 条就这样被挂了两轮）。
+ *
+ * 判据取 index.html 的 <title>：它是本项目独有、且在任何路由下都返回的稳定标记。
+ * 校验失败直接抛错中止——绝不"降级为不校验继续跑"，那样等于没加这道防线。
+ */
+const APP_TITLE_MARK = 'AI 酒馆';
+
+if (reuseExistingServer) {
+  // 配置求值是同步的，所以这里用同步子进程做探活：校验必须发生在"开跑之前"。
+  // 一旦进到测试里再暴露，报出来的会是某条用例在 60s 后断言超时，根因又被埋掉
+  // ——正是这次被误判成"时序竞态"两轮的原因。
+  // 用 curl 而非 node:http：配置求值阶段拿不到 await。Windows 10+ / Linux / macOS
+  // 均自带 curl；--noproxy '*' 是本机必需（环境里有 http_proxy，否则请求会被代理吃掉）。
+  let html = '';
+  try {
+    html = execFileSync('curl', ['-fsS', '--noproxy', '*', '--max-time', '5', `${baseURL}/`], {
+      encoding: 'utf8',
+      timeout: 15_000,
+    });
+  } catch {
+    throw new Error(
+      `[e2e] E2E_REUSE_SERVER=1 但 ${baseURL} 探活失败。\n` +
+        `该端口上没有可用的本项目 dev server。请先启动 npm run dev -- --port ${port}，\n` +
+        `或改用独占端口：E2E_PORT=5299 E2E_REUSE_SERVER=0 npx playwright test`
+    );
+  }
+  if (!html.includes(APP_TITLE_MARK)) {
+    const found = /<title>([^<]*)<\/title>/i.exec(html)?.[1] ?? '（无 title）';
+    throw new Error(
+      `[e2e] ${baseURL} 上跑的不是本项目：期望 title 含「${APP_TITLE_MARK}」，实际「${found}」。\n` +
+        `这通常是别的项目占着该端口（本机 5173 常驻 novel-studio）。改用独占端口重跑：\n` +
+        `  E2E_PORT=5299 E2E_REUSE_SERVER=0 npx playwright test`
+    );
+  }
+}
 
 export default defineConfig({
   testDir: './e2e',

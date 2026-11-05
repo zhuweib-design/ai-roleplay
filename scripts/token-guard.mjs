@@ -41,12 +41,16 @@ const SELF_TEST = argv.includes('--self-test');
  * "这里收敛 5 处、别的文件新长 5 处"会互相抵消成平局，实测那种抵消态下总数正好等于基线
  * 而按文件锁照样变红。
  */
-const BASELINE_UNDEF_BARE = {
-  'src/views/StoryEngineView.vue': 55,
-  'src/views/CommunityMarketView.vue': 10,
-  'src/views/WorldBookView.vue': 5,
-  'src/views/CharacterEditorView.vue': 4,
-};
+/**
+ * A 类（组件层裸引用未定义 token）按文件锁的棘轮基线。
+ *
+ * 2026-10-24 归零转硬卡：此前登记 77 处 / 14 个文件（StoryEngineView 12、
+ * StoryDetailCharacters 12、StoryUploadModal 10、StoryDetailWorld 9 等），
+ * 随 M23 系列的 token 映射与对比度收敛（对比度棘轮 67→52→0 同批）逐条清零，
+ * 但基线一直没跟着下调，等于"债已还、闸门还开着"。现在起任何一处新增即红。
+ * 历史逐条归属见 git 记录与本文件的历史版本，不在这里保留旧数字。
+ */
+const BASELINE_UNDEF_BARE = {};
 
 const SKIP_RE = /(node_modules|dist|public[\\/]vendor|src[\\/]runtime)/;
 

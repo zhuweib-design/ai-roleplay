@@ -30,6 +30,11 @@ export interface RuntimeAuthOptions {
   principal?: RuntimePrincipal;
   /** 开启后，除公开健康检查外的请求必须有可信 principal。 */
   requireAuthentication?: boolean;
+  /**
+   * 仅用于受信任的本地部署或测试：允许没有 principal 的请求继续，
+   * 并在显式传入 tenantId 时合成 legacy 租户绑定。默认关闭（fail-closed）。
+   */
+  allowAnonymous?: boolean;
   /** 可选的成员/资源授权器；返回 false 时拒绝请求。 */
   authorize?: RuntimeAuthorizer;
 }
@@ -55,7 +60,7 @@ export async function resolveRuntimePrincipal(
   try {
     const candidate = options.authenticate
       ? await options.authenticate(request)
-      : options.principal ?? (!options.requireAuthentication && options.tenantId
+      : options.principal ?? (options.allowAnonymous && options.tenantId
         ? { subject: 'legacy-tenant-binding', tenantId: options.tenantId }
         : null);
     return validPrincipal(candidate) ? candidate : null;

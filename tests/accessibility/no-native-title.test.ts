@@ -55,7 +55,7 @@ const INTERACTIVE = new Set(['button', 'a', 'router-link', 'label', 'input', 'se
 const ALLOWED_NON_INTERACTIVE: Record<string, string> = {
   // 世界书条目树与基准历史都是行数不可控的列表：每行一个气泡节点不划算，
   // 且两处的关键信息（层级首字母 / 耗时毫秒）本身就有可见文字。
-  'src/views/LocalModelView.vue': '基准历史芯片，嵌套 v-for 行数不可控',
+  'src/views/LocalModelBenchmarkPanel.vue': '基准历史芯片，嵌套 v-for 行数不可控',
 };
 
 describe('原生 title 守卫', () => {

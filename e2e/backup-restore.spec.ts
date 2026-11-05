@@ -71,7 +71,12 @@ test('灾备闭环：导出备份 → 删除数据 → 导入还原', async ({ p
 
   // ── 3. 删除该角色，制造「数据丢失」 ──
   await page.goto('/character');
+  // 手机视口点卡开详情抽屉，「编辑」在抽屉里（方案乙）；桌面点卡直进编辑。
+  const isNarrow = (page.viewportSize()?.width ?? 1280) <= 640;
   await page.getByRole('article', { name: `角色：${name}` }).click();
+  if (isNarrow) {
+    await page.locator('.bs-panel').getByRole('button', { name: '编辑' }).click();
+  }
   await expect(page).toHaveURL(/\/character\/.+\/edit/);
   await page.getByRole('button', { name: '删除角色' }).click();
   await page.getByRole('button', { name: '删除', exact: true }).click();

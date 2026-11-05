@@ -85,14 +85,21 @@ onBeforeUnmount(() => {
     新用户第一次进来面对的是空壳。这里改为空态 + 任务中心。
   -->
   <div v-if="hasCharacters" class="chat-shell">
-    <!-- 角色列表侧栏（移动端为左抽屉；右侧面板打开时 inert 防焦点逃逸） -->
-    <CharacterList :inert="characterStore.contextDrawerOpen && isCompact ? true : undefined" />
+    <!--
+      批次 0-6：`inert` 的方向此前是反的。
+      旧逻辑守的是"抽屉开着、另一个抽屉别被点到"，漏的是"抽屉关着、离屏的抽屉别被 Tab 到"
+      ——而后者才是真问题：390×844 连按 12 次 Tab，有 11 次停在 x≈-270 的不可见抽屉里。
+      正确方向：抽屉**关着**（离屏）⇒ 它自己 inert；抽屉**开着** ⇒ 遮罩后面的主区 inert。
+    -->
+    <!-- 角色列表侧栏（移动端为左抽屉）：左抽屉关着 ⇒ 自身 inert -->
+    <CharacterList :inert="!characterStore.characterDrawerOpen && isCompact ? true : undefined" />
 
-    <!-- 聊天主区（任一抽屉打开时 inert） -->
+    <!-- 聊天主区（任一抽屉打开 ⇒ 遮罩后面的主区 inert；条件原就正确，
+         但此前只落到 <footer>，第 13 次 Tab 会逃到遮罩后面——根元素已接 inert，见 ChatMain.vue） -->
     <ChatMain :inert="overlayActive && isCompact ? true : undefined" />
 
-    <!-- 右侧上下文面板（移动端为右抽屉；左侧抽屉打开时 inert） -->
-    <ContextPanel :inert="characterStore.characterDrawerOpen && isCompact ? true : undefined" />
+    <!-- 右侧上下文面板（移动端为右抽屉）：右抽屉关着 ⇒ 自身 inert -->
+    <ContextPanel :inert="!characterStore.contextDrawerOpen && isCompact ? true : undefined" />
 
     <!-- 移动端遮罩：I-12 键盘可达关闭（role=button + Enter/Space 关闭，ESC 由 handleKeydown 统一处理） -->
     <div
@@ -139,10 +146,12 @@ onBeforeUnmount(() => {
   overflow-y: auto;
 }
 
-/* 桌面端：ContextPanel 在文档流中显示，无需遮罩 */
+/* 桌面端：ContextPanel 在文档流中显示，无需遮罩。
+   不用 !important（F4）：base.css 的 `.overlay-mask` / `.overlay-mask.active` 都没声明
+   display，这条 scoped 规则（0,2,0）本身就能生效。 */
 @media (min-width: 1025px) {
   .overlay-mask {
-    display: none !important;
+    display: none;
   }
 }
 </style>

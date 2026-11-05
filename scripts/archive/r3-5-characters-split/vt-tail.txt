@@ -1,0 +1,60 @@
+    [90m124|[39m }
+    [90m125|[39m
+    [90m126|[39m describe('StoryEngineView 一键生成 (T-08)', () => {
+    [90m   |[39m [31m^[39m
+    [90m127|[39m   beforeEach(() => {
+    [90m128|[39m     vi.clearAllMocks();
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[218/221]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/views/thinking-tokens-inline-status.qa-independent.test.ts[2m [ tests/views/thinking-tokens-inline-status.qa-independent.test.ts ][22m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'config')[39m
+[36m [2m❯[22m tests/views/thinking-tokens-inline-status.qa-independent.test.ts:[2m52:1[22m[39m
+    [90m 50|[39m // ── 1. 思考 token 展示（DOM 级） ──
+    [90m 51|[39m
+    [90m 52|[39m describe('ThinkingBlock —— 思考 token 展示（QA 独立）', () => {
+    [90m   |[39m [31m^[39m
+    [90m 53|[39m   beforeEach(() => {
+    [90m 54|[39m     setActivePinia(createPinia());
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[219/221]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/views/two-views-partition.test.ts[2m [ tests/views/two-views-partition.test.ts ][22m
+[31m[1mError[22m: Vitest failed to find the runner. One of the following is possible:
+- "vitest" is imported directly without running "vitest" command
+- "vitest" is imported inside "globalSetup" (to fix this, use "setupFiles" instead, because "globalSetup" runs in a different context)
+- "vitest" is imported inside Vite / Vitest config file
+- Otherwise, it might be a Vitest bug. Please report it to https://github.com/vitest-dev/vitest/issues
+[39m
+[36m [2m❯[22m tests/views/two-views-partition.test.ts:[2m60:1[22m[39m
+    [90m 58|[39m }
+    [90m 59|[39m
+    [90m 60|[39m beforeEach(() => {
+    [90m   |[39m [31m^[39m
+    [90m 61|[39m   setActivePinia(createPinia());
+    [90m 62|[39m });
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[220/221]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/components/settings/settings-round3-gaps.test.ts[2m [ tests/components/settings/settings-round3-gaps.test.ts ][22m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'config')[39m
+[36m [2m❯[22m tests/components/settings/settings-round3-gaps.test.ts:[2m18:1[22m[39m
+    [90m 16|[39m import SettingsAboutPanel from '@/components/settings/SettingsAboutPan…
+    [90m 17|[39m
+    [90m 18|[39m describe('toast-service', () => {
+    [90m   |[39m [31m^[39m
+    [90m 19|[39m   beforeEach(() => {
+    [90m 20|[39m     // 清空模块级队列
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[221/221]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m221 failed[39m[22m[90m (221)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 13:38:45
+[2m   Duration [22m 88.41s[2m (environment 81%, setup 17%, worker 2%)[22m
+
+[2mEnvironment [22m [33mjsdom was created 221 times[39m[2m · 682.64s total, 81% of tracked time[22m
+[2m            [22m [2mcreate it once per worker with [22m[33mpool: 'vmThreads'[39m[2m (keeps per-file isolation) or [22m[33misolate: false[39m[2m (shares it across files)[22m
+[2m            [22m [2mlearn more: https://vitest.dev/guide/improving-performance#test-environments[22m
+

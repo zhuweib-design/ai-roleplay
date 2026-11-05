@@ -190,10 +190,10 @@ const themesCss = readFileSync(join(ROOT, 'src/styles/themes.css'), 'utf8');
 const tokensRules = extractRules(tokensCss);
 const themeRules = extractRules(themesCss);
 
-/** :root 是 dark 主题的基础值 */
+/** :root 只是兜底值；主题目录里不再有 dark。每套皮肤都在它之上覆盖自己那份。 */
 const baseVars = collectVars(tokensRules, (sel) => sel === ':root');
 
-const themeVars = new Map([['dark', baseVars]]);
+const themeVars = new Map();
 for (const { selector } of themeRules) {
   const m = selector.match(/\[data-theme=['"]([^'"]+)['"]\]/);
   if (!m) continue;
@@ -311,11 +311,11 @@ function evaluatePair(fgExpr, bgExpr, vars) {
 // ── 自检模式：构造违规样本，确认门禁真的能拦下 ──────────────────────────────
 
 if (process.argv.includes('--self-test')) {
-  const darkVars = themeVars.get('dark');
+  const sampleVars = themeVars.get(themeNames[0]);
   // 正样本：压在辅色填充上的文字（M23-f 之后由 --on-secondary 承担）应当达标
-  const okPair = evaluatePair('var(--on-secondary)', 'var(--secondary)', darkVars);
+  const okPair = evaluatePair('var(--on-secondary)', 'var(--secondary)', sampleVars);
   // 负样本：历史缺陷形态（白字叠亮青）——必须被判为不达标
-  const badPair = evaluatePair('var(--on-media)', 'var(--secondary)', darkVars);
+  const badPair = evaluatePair('var(--on-media)', 'var(--secondary)', sampleVars);
 
   let pass = true;
   if (!okPair || okPair.ratio < AA) {
@@ -370,8 +370,19 @@ console.log('══════════════════════�
  * `!important` 基线 46 的做法）——只允许下降，不允许新增。
  *
  * 收敛后请同步下调此值；若某次改动使数字上升，说明引入了新的低对比度配对。
+ *
+ * 2026-10-23：MOBILE_PLAN 批次 4 清掉 provider 徽章 15 处（4 provider × 4 主题，
+ * 落在 ModelCloudList / ModelProfileList 两个文件），67 → 52。
+ *
+ * 2026-10-23（同日第二轮）：52 → 0，全部产线清零，故基线归零——此后为**硬卡**，
+ * 任何新增低对比度配对都会直接判红。四类根因分别处理：
+ *   ① `--tag-*` 作文字：浅色主题此前没覆盖这四个 token，补 light 深色变体（−8）
+ *   ② `--accent-orange` / `--accent-blue` / `--primary(-fg)` / `--success` /
+ *      `--destructive` 直接作文本色：一律换成既有或新增的 -text / -fg 变体（−40）
+ *   ③ 徽章用半透明染层当底：底会随父级底色漂移，改不透明 `--badge-bg`（−3）
+ *   ④ 图片浮层白 20% 蒙版：新增与 `--on-media` 成对的 `--media-scrim`（−1）
  */
-const BASELINE_SCAN_FAILURES = 67;
+const BASELINE_SCAN_FAILURES = 0;
 
 let semanticFailed = 0;
 let scanFailed = 0;

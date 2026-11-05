@@ -71,12 +71,17 @@ async function seedGroup(page: import('@playwright/test').Page) {
   );
 }
 
-test('群聊页头部：412px 下群名保持一行、按钮文字不竖排', async ({ page }) => {
+test('群聊页头部：412px 下群名保持一行、动作按钮进抽屉后整行铺开', async ({ page }) => {
   await page.setViewportSize({ width: 412, height: 844 });
   await seedGroup(page);
   await page.goto('/group');
   await page.locator('.group-item', { hasText: '窄屏头部复验群' }).first().click();
-  await expect(page.locator('.group-header-actions .action-btn').first()).toBeVisible();
+
+  // 2026-10-18（批次 1-2）后：手机档页头不再挂动作按钮，整组搬进「群设置」抽屉。
+  // 原断言"页头里 6 个按钮不许窄于 56px"因此失去了对象——但被它守的那个缺陷
+  // （文字被压成竖排）没有消失，只是搬到了抽屉里，所以改成在抽屉里量。
+  await expect(page.locator('.group-header-actions')).toHaveCount(0);
+  await expect(page.locator('.group-settings-btn')).toBeVisible();
 
   const title = page.locator('.group-title-row h2');
   const titleBox = await title.boundingBox();
@@ -87,10 +92,13 @@ test('群聊页头部：412px 下群名保持一行、按钮文字不竖排', as
     `群名高度 ${Math.round(titleBox!.height)}px，超过单行上限 28px ⇒ 被压成一列一个字`
   ).toBeLessThanOrEqual(28);
 
-  const widths = await page.locator('.group-header-actions .action-btn').evaluateAll((els) =>
-    els.map((e) => Math.round(e.getBoundingClientRect().width))
-  );
-  expect(widths.length, '按钮一个都没量到').toBeGreaterThan(0);
+  await page.locator('.group-settings-btn').click();
+  const drawer = page.locator('.bs-panel');
+  await expect(drawer).toBeVisible();
+  const widths = await drawer
+    .locator('.action-btn')
+    .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().width)));
+  expect(widths.length, '抽屉里一个动作按钮都没量到').toBeGreaterThan(0);
   const tooNarrow = widths.filter((w) => w < 56);
   expect(
     tooNarrow,

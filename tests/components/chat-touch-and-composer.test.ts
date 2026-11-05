@@ -249,6 +249,9 @@ describe('D/E：源码漂移守卫（改回旧写法就红）', () => {
     'utf8'
   );
   const chatMainSrc = fs.readFileSync(path.join(SRC, 'components/chat/ChatMain.vue'), 'utf8');
+  // R1-5：输入区（含高度自适应）搬进 ChatComposer，判据跟着走——留在 ChatMain 上会
+  // 变成"文件里没有 Math.ceil 就绿"的空转断言。
+  const composerSrc = fs.readFileSync(path.join(SRC, 'components/chat/ChatComposer.vue'), 'utf8');
 
   it('触屏"操作栏常显"那条规则已经删掉', () => {
     expect(bubbleSrc).not.toMatch(/@media \(hover: none\)\s*\{[\s\S]{0,80}?\.msg-toolbar\s*\{[\s\S]{0,40}?opacity:\s*1/);
@@ -261,7 +264,9 @@ describe('D/E：源码漂移守卫（改回旧写法就红）', () => {
   it('输入框高度上下限只剩 CSS 一个来源（JS 里不再写死 56/200）', () => {
     expect(chatMainSrc).not.toMatch(/const\s+minH\s*=/);
     expect(chatMainSrc).not.toMatch(/const\s+maxH\s*=/);
-    expect(chatMainSrc).toContain('Math.ceil(el.scrollHeight)');
+    expect(composerSrc).not.toMatch(/const\s+minH\s*=/);
+    expect(composerSrc).not.toMatch(/const\s+maxH\s*=/);
+    expect(composerSrc).toContain('Math.ceil(el.scrollHeight)');
   });
 });
 

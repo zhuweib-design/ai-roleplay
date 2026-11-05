@@ -207,7 +207,7 @@ describe('TauriFSAdapter', () => {
     it('saveSettings 调用 save_settings_file 命令', async () => {
       const adapter = new TauriFSAdapter();
       const settings = {
-        theme: 'dark' as const,
+        theme: 'aurora' as const,
         fontSize: 14,
         apiProfiles: [],
         activeApiProfileId: null,
@@ -238,7 +238,7 @@ describe('TauriFSAdapter', () => {
     it('loadSettings 存在时返回设置对象', async () => {
       const adapter = new TauriFSAdapter();
       const mockSettings = {
-        theme: 'light',
+        theme: 'ink',
         fontSize: 16,
         apiProfiles: [{ id: 'p-1', name: 'Profile1' }],
         activeApiProfileId: 'p-1',

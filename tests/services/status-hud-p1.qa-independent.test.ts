@@ -9,7 +9,7 @@
  * 5. StatusHud.vue 纯文本插值、零 v-html（XSS 红线）
  * 6. 静态红线：icons.ts 零新增、src 零 innerHTML、只挂会话级 sticky
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
@@ -418,6 +418,10 @@ describe('5. 静态红线', () => {
     const targets = [
       'src/components/chat/StatusHud.vue',
       'src/components/chat/ChatMain.vue',
+      // R1-5：ChatMain 拆出的三个子组件同样要在"零 v-html"白名单里
+      'src/components/chat/ChatHeader.vue',
+      'src/components/chat/ChatMessageArea.vue',
+      'src/components/chat/ChatComposer.vue',
       'src/core/status-parser.ts',
       'src/core/status-schema.ts',
       'src/core/status-prompt.ts',
@@ -425,6 +429,15 @@ describe('5. 静态红线', () => {
       'src/services/type-adapters.ts',
       'src/views/GroupChatView.vue',
       'src/components/layout/ContextPanel.vue',
+      // R2-3：ContextPanel 拆出的八个 section 组件同样要在"零 v-html"白名单里
+      'src/components/layout/context/ContextCharacterCard.vue',
+      'src/components/layout/context/ContextTokenBudget.vue',
+      'src/components/layout/context/ContextWorldBooks.vue',
+      'src/components/layout/context/ContextAuthorNote.vue',
+      'src/components/layout/context/ContextRuntimeSection.vue',
+      'src/components/layout/context/ContextGenParams.vue',
+      'src/components/layout/context/ContextSamplingSection.vue',
+      'src/components/layout/context/ContextStatusSection.vue',
       'src/stores/chat.ts',
       'src/stores/settings.ts',
     ];
@@ -436,9 +449,10 @@ describe('5. 静态红线', () => {
   });
 
   it('5-4 会话级 sticky + 消息级 inline 双挂载（决策 2 已放宽：消息级补渲染）', () => {
-    const main = readFileSync(resolve(ROOT, 'src/components/chat/ChatMain.vue'), 'utf8');
+    // R1-5：消息区（含 StatusHud 的 sticky 挂载点）搬进 ChatMessageArea，判据跟着走。
+    const main = readFileSync(resolve(ROOT, 'src/components/chat/ChatMessageArea.vue'), 'utf8');
     expect(main).toContain('variant="sticky"');
-    // ChatMain 只挂会话级一条（sticky 仍是"截至当前"的唯一顶部条）
+    // ChatMessageArea 只挂会话级一条（sticky 仍是"截至当前"的唯一顶部条）
     expect(main).not.toContain('variant="inline"');
     expect([...main.matchAll(/<StatusHud\b/g)].length).toBe(1);
     // 消息级渲染：MessageBubble 挂 **inline** variant（且只在 msg.status 存在时渲染）
@@ -458,22 +472,43 @@ describe('5. 静态红线', () => {
     // 注：以上为静态守卫；运行期行为（有无 status / showInline=false 时是否真的不渲染）
     // 由 tests/views/thinking-tokens-inline-status.qa-independent.test.ts 的 DOM 级用例覆盖
     // 上下文面板（角色级配置）不挂状态条
-    const ctx = readFileSync(resolve(ROOT, 'src/components/layout/ContextPanel.vue'), 'utf8');
-    expect([...ctx.matchAll(/<StatusHud\b/g)].length, 'ContextPanel 不应挂载 StatusHud').toBe(0);
+    // R2-3：面板拆成宿主 + 八个 section 组件，判据扩到整目录（逐个列文件容易漏新组件）
+    const ctxDir = resolve(ROOT, 'src/components/layout/context');
+    const ctxFiles = [
+      resolve(ROOT, 'src/components/layout/ContextPanel.vue'),
+      ...readdirSync(ctxDir)
+        .filter((f) => f.endsWith('.vue'))
+        .map((f) => resolve(ctxDir, f)),
+    ];
+    expect(ctxFiles.length, '上下文面板拆分后应至少 8 个文件').toBeGreaterThanOrEqual(8);
+    for (const file of ctxFiles) {
+      const ctx = readFileSync(file, 'utf8');
+      expect([...ctx.matchAll(/<StatusHud\b/g)].length, `${file} 不应挂载 StatusHud`).toBe(0);
+    }
     // 群聊的成员状态条同样是"会话级派生"（绑定 resolveLatestStatus 的 memberStatuses），
-    // 不是消息级渲染 —— 允许挂载，但必须绑会话派生数据
-    const group = readFileSync(resolve(ROOT, 'src/views/GroupChatView.vue'), 'utf8');
-    const groupMounts = [...group.matchAll(/<StatusHud\b[^>]*>/g)].map((m) => m[0]);
-    expect(groupMounts.length).toBe(1);
+    // 不是消息级渲染 —— 允许挂载，但必须绑会话派生数据。
+    // 2026-10-18（批次 1-2）：这一块随群头一起搬进 GroupInfoPanel（桌面内联与手机抽屉
+    // 共用同一份模板），所以**挂载点**的断言跟着搬到新文件；"派生数据来自 GroupChatView
+    // 的 memberStatuses"这条仍守在原处，且反过来钉住旧位置不许再自己挂一份。
+    const groupPanel = readFileSync(resolve(ROOT, 'src/components/group/GroupInfoPanel.vue'), 'utf8');
+    const groupMounts = [...groupPanel.matchAll(/<StatusHud\b[^>]*>/g)].map((m) => m[0]);
+    expect(groupMounts.length, 'GroupInfoPanel 应恰好挂一处成员状态条').toBe(1);
     expect(groupMounts[0]).toContain('ms.status'); // 绑的是会话派生结果，不是 msg.status
-    expect(group).toContain('v-for="ms in memberStatuses"');
-    expect(group).toContain('resolveLatestStatus');
     expect(groupMounts[0]).not.toContain('msg.status');
+    expect(groupPanel).toContain('v-for="ms in statuses"');
+    const group = readFileSync(resolve(ROOT, 'src/views/GroupChatView.vue'), 'utf8');
+    expect(group, '群聊视图自己不应再挂 StatusHud（已移入 GroupInfoPanel）').not.toContain('<StatusHud');
+    expect(group).toContain('resolveLatestStatus');
+    expect(group).toContain('memberStatuses');
   });
 
   it('5-5 群聊不塞假 <status> 样例，真实流式状态进入成员快照', () => {
-    const raw = readFileSync(resolve(ROOT, 'src/views/GroupChatView.vue'), 'utf8');
-    const code = stripComments(raw);
+    // R1-1（2026-10-19）：流式回调随发送链路搬进 useGroupComposer.ts，
+    // 视图只剩渲染与接线。断言内容不变，两处一起守——视图不许自己再造一份
+    // 假样例，composer 必须把真实 status 落到消息上。
+    const view = stripComments(readFileSync(resolve(ROOT, 'src/views/GroupChatView.vue'), 'utf8'));
+    const code = stripComments(readFileSync(resolve(ROOT, 'src/composables/useGroupComposer.ts'), 'utf8'));
+    expect(view).not.toContain('<status>');
     expect(code).not.toContain('<status>');
     expect(code).toContain('onStatus: (status) =>');
     expect(code).toContain('groupStore.updateAssistantMessage(groupId, messageId, { status })');

@@ -4,7 +4,7 @@
  *
  * 目的：给「优化前 / 优化后」提供可复现的量化对比数据，替代估算值。
  * 指标：
- *   - readyMs：导航开始 → 存储初始化完成（html[data-app-ready="1"]），即 App.vue onMounted 全部 await 结束
+ *   - readyMs：导航开始 → 存储初始化完成（html[data-app-ready="1"]），即 App.vue onMounted 全部 await 结束。
  *   - DCL / load：浏览器导航指标
  *   - FCP：首次内容绘制
  *

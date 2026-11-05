@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="aurora">
   <head>
     <meta charset="UTF-8" />
     <!-- viewport-fit=cover：不开它，全站 4 处 env(safe-area-inset-bottom) 在安卓/刘海屏上恒取 0px -->
@@ -10,8 +10,9 @@
          不认识的浏览器会忽略这个指令（无害）。 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="description" content="AI 酒馆 — 角色扮演与多模型对话平台" />
-    <!-- 深色主题浏览器 UI & 原色渲染（与 tokens.css 默认 --background 一致） -->
-    <meta name="theme-color" content="#0B0B10" />
+    <!-- 首次绘制即套用默认皮肤「极光夜曲」（DEFAULT_THEME），避免设置读盘前闪一帧 :root 兜底色 -->
+    <!-- 深色主题浏览器 UI & 原色渲染（与 aurora 的 --background 一致） -->
+    <meta name="theme-color" content="#0A0B14" />
     <meta name="color-scheme" content="dark light" />
     <title>AI 酒馆 — 角色扮演对话</title>
     <!-- 标签页图标：不声明时浏览器会默认请求 /favicon.ico，在生产构建下产生控制台 404 -->

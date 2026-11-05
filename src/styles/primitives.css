@@ -1,0 +1,164 @@
+/* ═══════════════════════════════════════════════════════════════
+   primitives.css — 跨组件共享的 UI 原语（按钮族）
+
+   为什么存在：R1-1 / R1-2 把视图切细后，每个新组件都要复制一份 `.btn`，
+   两批合计多出约 600 行纯样板（DEV_PLAN §7.8.1 的归因）。把「完全同值」
+   的那一份提到全局，组件只写差异。
+
+   层叠关系（这是本文件敢直接定义 `.btn` 的前提）：
+   - 组件内是 `<style scoped>`，编译成 `.btn[data-v-xxx]`（特异性 0,2,0）
+   - 本文件是全局 `.btn`（特异性 0,1,0）
+   局部定义**稳定胜出**，不依赖 Vite 对 `<style>` 的注入顺序。因此：
+   1) 迁移是纯加法，未迁移文件的视觉零变化；
+   2) 组件想覆盖本文件只需写同名规则，不需要 !important。
+
+   基线取值依据（2026-10-19 全仓指纹聚类：52 条 `.btn` 规则 / 23 个变体）：
+   - `.btn` 取 5 处**实测逐字同值**的那一份（故事族 4 个组件 + StoryEngineView）
+   - 其余 5 个变体保持局部，不并入本文件：
+     · random-events（6px 14px / --card-elevated）
+     · CharacterVersion / RandomEvents（6px 12px / --card-elevated）
+     · CommunityMarket（rem 体系 / transparent 边框）
+     · ImageGenerator（--radius-sm / --foreground）
+     · LocalModel（--radius-sm / 12px）
+     它们视觉确实不同，强行合并等于改版式，不属于「原语化」范畴。
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 按钮基类 ── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 按钮内的文字标签。窄屏页头靠它防换行；此前有 7 处引用、
+   只有 2 处定义，另外 5 处是失效引用（不报错，只是不生效）。 */
+.btn-label {
+  white-space: nowrap;
+}
+
+/* ── 语义修饰符 ──
+   连字符命名（`.btn-primary`）是本文件的标准形式；历史遗留的
+   `.btn.primary` 两段式仍在 6 个文件里，语义相同但类名不同，
+   不在本文件覆盖范围内，改动它要同步改模板，单独评估。 */
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+.btn-secondary {
+  background: var(--card);
+}
+
+.btn-danger {
+  background: var(--error);
+  color: var(--on-accent);
+  border-color: var(--error);
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+  gap: 4px;
+}
+
+/* ── 弹窗动作按钮族 ──
+   18 个文件使用 .modal-btn。本文件是**唯一**的外观来源（Q8，2026-10-26）：
+   此前 10 个组件各自复制了一份基类，实测分 A/B/C/D 四档（padding 14/16/8-16/6-16、
+   焦点环 --secondary、圆角 8、底色 --card、禁用 0.5…）。按用户决定统一为设计系统值后，
+   这 10 份副本连同它们的焦点环/禁用态一起删除，组件里只保留与**语义**有关的配色变体：
+   `.modal-confirm` / `.modal-next`（主色实心）、`.modal-cancel`（悬停底色）、
+   `.modal-btn.danger`（危险色）。加新的弹窗按钮不要再抄盒模型，只写颜色差异。 */
+.modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-elevated);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.modal-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.modal-btn:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .modal-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--foreground) 8%, var(--card-elevated));
+  }
+}
+
+/* 手机命中区撑到 44 用透明伪元素，不改 height（视觉零变化）。
+   Q8（2026-10-26）已把 10 份 scoped 副本并掉，所以"抬高全局 height 会被组件压住"这个
+   理由不再成立——现在抬高度是**能做**的，但那属于"改控件高度"的视觉决定（Q10 的待办），
+   不在"统一按钮与焦点环"的范围里。伪元素先保证手指够得着，观感不动。
+   46 而不是 44：探针按 1px 步进，正好 44 时边界像素不属于元素，量出来是 43。
+   判据用 (pointer: coarse) 而不是宽度（Q10，2026-10-26）：平板上手指一样够不着，
+   而纯宽度断点在 768/834 两档实测整片失效。 */
+@media (pointer: coarse) {
+  .modal-btn,
+  .modal-close {
+    position: relative;
+  }
+  .modal-btn::after,
+  .modal-close::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(var(--touch-min) + 2px);
+    height: calc(var(--touch-min) + 2px);
+    transform: translate(-50%, -50%);
+  }
+}
+
+.modal-confirm,
+.modal-next {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.modal-danger,
+.modal-btn.danger {
+  background: var(--error);
+  border-color: var(--error);
+  color: var(--on-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .modal-confirm:hover:not(:disabled),
+  .modal-next:hover:not(:disabled) {
+    background: var(--tk-red-600);
+    border-color: var(--tk-red-600);
+  }
+}

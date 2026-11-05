@@ -9,8 +9,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 
-const { retrieveAndBuildContext } = vi.hoisted(() => ({
-  retrieveAndBuildContext: vi.fn(),
+const { retrieveAndBuildContextDetailed } = vi.hoisted(() => ({
+  // C-03 起上下文组装走 detailed 入口（要同时拿到命中分块），老入口只回字符串
+  retrieveAndBuildContextDetailed: vi.fn(),
 }));
 
 vi.mock('@/stores/lorebook', () => ({
@@ -35,7 +36,7 @@ vi.mock('@/stores/lorebook', () => ({
 
 vi.mock('@/stores/data-bank', () => ({
   useDataBankStore: () => ({
-    retrieveAndBuildContext,
+    retrieveAndBuildContextDetailed,
   }),
 }));
 
@@ -76,8 +77,8 @@ const character = { id: 'char-1', storyId: 's1' };
 describe('buildChatSessionContext 对话上下文深模块', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    retrieveAndBuildContext.mockReset();
-    retrieveAndBuildContext.mockReturnValue('检索到的文档上下文');
+    retrieveAndBuildContextDetailed.mockReset();
+    retrieveAndBuildContextDetailed.mockReturnValue({ context: '检索到的文档上下文', chunks: [] });
   });
 
   it('regenerate 语义：注入全部上下文（修复漏注入 bug）', () => {
@@ -103,7 +104,7 @@ describe('buildChatSessionContext 对话上下文深模块', () => {
       allowEventTrigger: true,
     });
 
-    expect(retrieveAndBuildContext).toHaveBeenCalledWith(
+    expect(retrieveAndBuildContextDetailed).toHaveBeenCalledWith(
       ['最近消息1', '当前输入'],
       'character',
       'char-1'
@@ -124,14 +125,26 @@ describe('buildChatSessionContext 对话上下文深模块', () => {
     expect(ctx.eventsContext).toContain('王城陷落');
   });
 
-  it('RAG 返回空串时 ragContext 归一化为 undefined', () => {
-    retrieveAndBuildContext.mockReturnValue('');
+  it('RAG 返回空串时 ragContext 归一化为 undefined，无命中分块时 ragChunks 也不写', () => {
+    retrieveAndBuildContextDetailed.mockReturnValue({ context: '', chunks: [] });
     const ctx = buildChatSessionContext(character, {
       ragMessages: ['x'],
       allowEventTrigger: false,
     });
 
     expect(ctx.ragContext).toBeUndefined();
+    expect(ctx.ragChunks).toBeUndefined();
+  });
+
+  it('有命中分块时随上下文一起交出去（C-03 回显只读它，不做事后重查）', () => {
+    const chunks = [{ chunk: { id: 'd1-0', content: '账本' }, documentName: '账本.txt', score: 2 }];
+    retrieveAndBuildContextDetailed.mockReturnValue({ context: '检索到的文档上下文', chunks });
+    const ctx = buildChatSessionContext(character, {
+      ragMessages: ['x'],
+      allowEventTrigger: false,
+    });
+
+    expect(ctx.ragChunks).toEqual(chunks);
   });
 
   it('旧 Persona 世界书不会重新成为当前身份来源', () => {

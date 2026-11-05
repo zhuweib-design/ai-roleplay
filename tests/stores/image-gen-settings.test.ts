@@ -96,7 +96,7 @@ describe('读回与脏数据', () => {
     // 带 theme：loadFromStorage 用一组"是否已有数据"的探测字段判首次启动，
     // 只带新字段的快照会被当成空快照（真实快照一定含 theme，这里不制造假场景）
     mock.loadData = {
-      theme: 'dark',
+      theme: 'aurora',
       imageGenConfig: {
         type: 'custom',
         endpoint: 'https://saved.example/v1',
@@ -118,7 +118,7 @@ describe('读回与脏数据', () => {
   it('脏字段逐项回落默认，一个好字段不该被坏字段带崩', async () => {
     const mock = new MockAdapter();
     mock.loadData = {
-      theme: 'dark',
+      theme: 'aurora',
       imageGenConfig: {
         type: 'not-a-provider',
         endpoint: 1234,
@@ -141,7 +141,7 @@ describe('读回与脏数据', () => {
 
   it('旧快照完全没有该字段时用默认值，不抛错', async () => {
     const mock = new MockAdapter();
-    mock.loadData = { theme: 'dark' } as Partial<AppSettings>;
+    mock.loadData = { theme: 'aurora' } as Partial<AppSettings>;
     const store = useSettingsStore();
     store.setStorageAdapter(mock);
 

@@ -50,7 +50,7 @@
 | **多模型对话** | OpenAI / Anthropic 等多 profile，流式生成、重新生成、翻译、TTS、自动摘要 |
 | **心理活动（旁白）** | 模型写在 `⟦ … ⟧` 里的内心戏渲染在气泡**外面**，与台词分排；可设用户自称"我"或"你"；复制 / 朗读 / 翻译 / 导出自动去标记 |
 | **自定义向量模型 + RAG** | 上传 ZIP 或登记本地目录添加自定义向量模型，驱动「动态记忆 / 静态世界设定」语义检索 |
-| **自定义主题** | 上传背景图自动提取主色调（k-means 聚类）并匹配组件配色，含深/浅主题与"暗夜剧场"字体 |
+| **自定义主题** | 上传背景图自动提取主色调（k-means 聚类）并匹配组件配色；内置「新终端 / 极光夜曲 / 墨纸 / 新粗野」四套皮肤 |
 | **世界书 / Lorebook** | 关键词门控激活，设定随语境自动注入 |
 | **角色卡与群聊** | 角色卡批量导入（单批最多 50 个）、Persona、群聊成员/发言顺序、随机 NPC |
 | **Virtual Character OS Runtime** | 批量多角色、2–8 人真实模型群聊、独立 Context/Event、PostgreSQL 事务持久化、版本 CAS、Replay 审计 |
@@ -105,6 +105,7 @@ npm run test:coverage         # Vitest + 覆盖率（statements 78 / branches 73
 npm run build                 # vue-tsc 类型检查 + vite 生产构建
 npm run check:csp             # Web 端 CSP 契约守卫（须在 build 之后跑）
 npm run check:ort             # ORT 首屏隔离守卫（须在 build 之后跑）
+npm run check:readme-gates    # 本清单与 CI 的对账守卫（CI 实跑的守卫与上面这块双向比对，缺一条即红）
 ```
 
 > 2026-10-16 的教训：一台 `.load-earlier-btn:hover` 的违规之所以能进了 master，是因为本机只跑了熟悉的那几条。**本机核对必须照 `ci.yml` 的整条 step 清单走**，不要凭记忆挑子集；E2E 的结论以 CI 的 4 组并行为准（本机全量串行约 15 分钟，且吃内存）。
@@ -115,7 +116,7 @@ npm run check:ort             # ORT 首屏隔离守卫（须在 build 之后跑�
 npm run tauri:build        # 桌面端编译验证（需 Rust 工具链，耗时较长）
 ```
 
-> CI（`.github/workflows/ci.yml`）共三个 job。`quality-gates`（ubuntu-latest，带 postgres:16 service）按序执行：依赖审计（high 及以上）→ lint → Runtime Schema 漂移检查 → 快照迁移计划检查 → i18n strict → eval manifest 自检 → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7）→ 单文件行数棘轮 → 控件高度字面量棘轮 → 共享原语复用守卫 → 存盘方式守卫（含自检）→ 产物入库守卫（安装包与大二进制不许进 git，含自检）→ Release 零资产守卫（安装包不挂 GitHub Releases，含自检）→ Token 死引用棘轮（含自检）→ 对比度审计（含自检）→ 测试与覆盖率门禁（78/73/78/78，同一步承载真实 PostgreSQL 集成用例，不再单设重复 job）→ 构建 → CSP 守卫 → ORT 首屏守卫。`e2e` 按 `e2e/shard-groups.mjs`（由单 worker 实测时长生成，并有"每个 spec 恰好属于一组"的对账守卫）分成 4 组并行，chromium 覆盖桌面与 Pixel 5 视口、webkit 覆盖 Safari 近似内核。`tauri-build` 验证桌面 release 二进制可编译（`--no-bundle`，不生成也不上传安装包）。GitHub Release 只保留自动生成的源码归档。
+> CI（`.github/workflows/ci.yml`）共三个 job。`quality-gates`（ubuntu-latest，带 postgres:16 service）按序执行：依赖审计（high 及以上）→ lint → Runtime Schema 漂移检查 → 快照迁移计划检查 → i18n strict → eval manifest 自检 → CSS 约定守卫（断点 / 视口 / hover / `!important` 棘轮 / 可编辑控件字号 I-7）→ 单文件行数棘轮 → 控件高度字面量棘轮 → 共享原语复用守卫 → 存盘方式守卫（含自检）→ 产物入库守卫（安装包与大二进制不许进 git，含自检）→ Release 零资产守卫（安装包不挂 GitHub Releases，含自检）→ Token 死引用棘轮（含自检）→ 对比度审计（含自检）→ 测试与覆盖率门禁（78/73/78/78，同一步承载真实 PostgreSQL 集成用例，不再单设重复 job）→ 构建 → CSP 守卫 → ORT 首屏守卫 → README 门禁清单对账（含自检：CI 实跑的守卫与本页上面那块清单双向比对，缺一条即红）。`e2e` 按 `e2e/shard-groups.mjs`（由单 worker 实测时长生成，并有"每个 spec 恰好属于一组"的对账守卫）分成 4 组并行，chromium 覆盖桌面与 Pixel 5 视口、webkit 覆盖 Safari 近似内核。`tauri-build` 验证桌面 release 二进制可编译（`--no-bundle`，不生成也不上传安装包）。GitHub Release 只保留自动生成的源码归档。
 
 **Runtime 改动（`src/runtime/`、`migrations/` 时追加；Schema 漂移检查已并入 CI `quality-gates`）**
 
@@ -159,6 +160,15 @@ VITE_RUNTIME_BASE_URL=https://runtime.example.com npm run build
 ```ts
 // 服务端组合入口（租户 ID 必须来自认证中间件）
 const handler = createPgPoolRuntimeHttpHandler(pool, tenantId, {
+  // 默认 fail-closed：除 /health 外，没有可信 principal 的请求一律 401。
+  // 只有在明确清楚风险时，才用 allowAnonymous: true 开放（例如仅本机回环的调试）。
+  httpAuth: {
+    requireAuthentication: true,
+    authenticate: async (request) => {
+      const session = await verifySession(request); // 宿主自己的会话/网关校验
+      return session ? { subject: session.userId, tenantId: session.tenantId } : null;
+    },
+  },
   // OBS-01：关联 ID 与耗时观测。每个请求都会带上 x-runtime-request-id，
   // 该 ID 由客户端注入（缺失时服务端兜底生成）并在响应头回显。
   // 失败时客户端 RuntimeApiError.traceId 即同一 ID，可用于对齐两端日志。
@@ -189,7 +199,7 @@ DELETE /v1/runtime/groups/:id/members/:characterId
 
 设计与验证记录见 [`docs/design/virtual-character-os-实现基线.md`](docs/design/virtual-character-os-实现基线.md) 与 [`docs/design/virtual-character-os-多角色群聊实施计划.md`](docs/design/virtual-character-os-多角色群聊实施计划.md)。
 
-> 生产部署仍需自行提供认证、网关路由、迁移备份与回滚演练；当前仓库提供的是 Runtime 边界、Schema 与可验证实现，不包含生产认证宿主。
+> 生产部署仍需自行提供认证、网关路由、迁移备份与回滚演练；当前仓库提供的是 Runtime 边界、Schema 与可验证实现，不包含生产认证宿主。未传 `httpAuth` 时 Handler 默认拒绝未认证请求；`allowAnonymous: true` 只适合受信任的本地回环调试。
 
 ## ⚠️ Web 端已知限制
 
@@ -230,7 +240,7 @@ Content-Security-Policy: frame-ancestors 'none'; report-uri /csp-report
 
 ### 3. ~~外链字体在部分网络环境下不可用~~ 已解决（2026-09-20）
 
-字体（Playfair Display 拉丁 / Noto Serif SC 中文，仅「暗夜剧场」主题的衬线标题使用）原先从 Google Fonts 引入，中国大陆网络环境下通常不可达。现已**本地镜像到 `public/fonts/`**（105 个 `unicode-range` 分片 / 约 5.8 MB，由 `scripts/vendor-fonts.mjs` 生成，可重复运行以更新字体）：
+字体（Playfair Display 拉丁 / Noto Serif SC 中文，供「墨纸」等衬线标题皮肤使用）原先从 Google Fonts 引入，中国大陆网络环境下通常不可达。现已**本地镜像到 `public/fonts/`**（105 个 `unicode-range` 分片 / 约 5.8 MB，由 `scripts/vendor-fonts.mjs` 生成，可重复运行以更新字体）：
 
 - **不再有任何第三方字体请求**，消除了向 Google 暴露访问者 IP / Referer 的问题；
 - CSP 的 `style-src` / `font-src` 已同步收窄，移除两处 CDN 放行；

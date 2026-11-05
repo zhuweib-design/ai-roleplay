@@ -5,6 +5,60 @@
 
 ## 未发布
 
+### 变更（内置主题收口为四套，默认改为「极光夜曲」）
+- 删除最初的五套主题 `dark / light / midnight / oled / theatre`（`ThemeName` 联合、`THEME_PRESETS`、
+  设置页卡片与色块、`themes.css` 五个块、i18n 中英各 12 条键）。内置皮肤自此为
+  **terminal / aurora / ink / brutal** 四套，`custom`（图片取色）保留。
+- 新默认皮肤为 `aurora`，并用 `DEFAULT_THEME` 单一常量收口：`settings` store 初值、读档归一兜底、
+  清除自定义主题后的回落都引用它；`index.html` 的 `<html data-theme="aurora">` 与 `theme-color`
+  同步改成该皮肤的底色，避免 JS 读档前闪一帧 `:root` 兜底深色。
+- 旧存档里的五个已删 id 由 `normalizeThemeName` 统一落回默认皮肤，不会写进 `data-theme` 后
+  “看起来像回落”又被回写固化。遗留的 `.dark` class 切换（已无样式依赖）一并删除。
+- 测试与基线：单测里用主题 id 当探针的夹具改用现存 id；`e2e/theme-flow` 的键盘导航改在
+  ink/brutal 上验证；`contrast-axe` 的“默认皮肤免切换”改用 `DEFAULT_THEME`；
+  `token-neutrality` 的流式采样组改为 `aurora / ink / brutal`；中性网基线按现存四套裁剪
+  （保留读数逐条比对未变）。`scripts/contrast-audit.mjs` 的手抄色值表（还漏了 light）删除，
+  改为转调唯一权威 `scripts/check-contrast.mjs`。
+- 验证：`typecheck` / `build` / 全量单测（240 文件、4240 通过）/ `i18n:check:strict` /
+  `check:css-conventions`(5/5) / `check:token-baseline` / `check:csp` / `check:readme-gates` 通过；
+  `a11y:contrast` 26 项 × 4 主题全达标、扫描 0 处不达标；`theme-flow`、`token-neutrality`(7 条)、
+  `contrast-axe`(12 条) 全绿。
+
+### 修复（CI：css-equiv 守卫取不到基线提交）
+- `quality-gates` 的 `actions/checkout` 补 `fetch-depth: 0`。守卫测试要回放硬编码的历史基线
+  `25451f8`，浅克隆只有单个提交，于是稳定报 `fatal: invalid object name '25451f8'`；
+  之前失败还会跳过后续 `build → check:csp → check:ort → check:readme-gates`。
+
+### 新增（README 的门禁清单与 CI 对账）
+- 新增门禁 `check:readme-gates`（`scripts/readme-gates-guard.mjs` + CI 两步）：把 `quality-gates`
+  里每条 `npm run X`（`X:self-test` 那种伴生步不算）与中英两份 README 的"本地开发门禁"代码块**双向**比对，
+  少抄一条红、多列一条也红；从 ci.yml 一条都没解析出来同样红（防作业改名后判据空跑）。
+  起因就在今天：给 README 补口径时发现 `check:file-size` / `check:control-size` / `check:primitives` /
+  `check:no-release-assets` 早就在 CI 里跑，README 一条没提——清单靠人手抄就会一直漂。
+  牙口实测：删掉 README 一行 → 红并指名 `check:no-artifact`；往 CI 插一条假守卫 → 中英两侧同时红；
+  在 README 多列一条 CI 不跑的 → 红并指名那条。自检 11 项另含"注释里的 `npm run` 不算实跑"这一条
+  （第一版就是被 ci.yml 的注释骗出过一个假缺口）。
+- 同一条门禁上线即发现自己的一处盲区：`ci.yml` 注释里"各子检查仍可单独运行"提到的 `check:breakpoints`
+  曾被当成 CI 实跑，已改成只认非注释行。
+
+### 修复（e2e：导出落点那条 Tauri 用例不再被别的提示抢走）
+- `e2e/save-outcome.spec.ts`：`__TAURI_INTERNALS__` 桩从"启动前注入"改为"启动后补打"，提示断言改为
+  锁定含"已保存"的那一条。旧形状下空对象桩让存储层选了原生 IPC，设置一读一写就弹
+  "`invoke` is not a function"，而提示只显示队首一条、错误提示活 5 秒，负载一高被断言的那条迟迟上不了屏。
+  合成负载下旧形状 4 次红 1 次（与 10-19 全量跑同一条报错），改后同负载 4 次 0 次；
+  产品文案双向故障注入验牙。详见 `docs/dev/release-notes-1.1.1.md` 的"已知未闭环"。
+
+### 修复（e2e：移动视口语义分歧按用例修正，全量 287/287）
+- `e2e/character-crud.spec.ts`、`e2e/backup-restore.spec.ts`、`e2e/worldbook-flow.spec.ts`：这三条在 Pixel 5
+  视口稳定红，桌面 `msedge` / `webkit` 同名用例全绿。真回归不会挑视口，红的是"实现按新设计改了、用例还按
+  旧设计断"：角色卡在窄屏点开的是详情抽屉而非编辑器，世界书改两级互换后列表与条目树各有一处"看不见"。
+  改法是按视口分叉改用例（`(page.viewportSize()?.width ?? 1280) <= 640` 判窄屏，沿用 `e2e/chat-flow.spec.ts`
+  既有先例），窄屏走"点卡开抽屉 → 点抽屉内编辑"，两级列表断"存在"（`toHaveCount(1)`）而非"可见"。
+  **没有排除用例、没有放宽断言**。读数：全量 287 条 / 0 失败 / EXIT=0 / 11.0 分钟；定向复跑 6/6、单跑 9/9。
+- 同批把 `e2e/mobile-control-font-size.spec.ts` 里"等页面挂出来"那条 `expect.poll` 的预算从默认 5 秒提到
+  15 秒：4 worker 冷模块图下 5 秒等不到 `#app button`，而该 spec 开头已自述并发下会随机超时。只加等待预算，
+  被测断言未动；属概率性加固，若复发应改为"先 `goto` 根路由预热"而不是继续加超时。
+
 ### 变更（安装包不再对外托管）
 - GitHub Release 从此只保留自动生成的源码归档，不再上传安装包。1.1.1 的安卓 debug 包曾于 2026-10-16
   挂在 `v1.1.1` 上，**2026-10-19 按要求撤下**（删除资产返回 204，原下载链接现在 404，Release 正文同步改成

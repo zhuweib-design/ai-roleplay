@@ -4,11 +4,11 @@
  *
  * 用于"功能看起来能用、实则因别处未配置而不产生效果"的页面（数据银行最典型：
  * 上传显示分块成功，但向量通道默认关闭且静态通道要求角色绑定世界书）。
- * 行数据来自 core/readiness.ts；本组件只负责呈现与跳转，不自行判断。
+ * 行数据来自 composables/useReadiness.ts；本组件只负责呈现与跳转，不自行判断。
  */
 import { t, type MessageKey } from '@/i18n';
 import Icon from '@/components/common/Icon.vue';
-import type { PrereqRow } from '@/core/readiness';
+import type { PrereqRow } from '@/composables/useReadiness';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 
 defineProps<{ rows: PrereqRow[]; titleKey?: MessageKey }>();

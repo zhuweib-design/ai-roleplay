@@ -26,7 +26,7 @@ interface Snapshot {
 }
 
 const STORED: Snapshot = {
-  theme: 'dark',
+  theme: 'terminal',
   apiProfiles: [{ id: 'p1', name: '网关甲', provider: 'openai', baseUrl: 'http://x/v1', apiKey: 'k', model: 'm' }],
   activeApiProfileId: 'p1',
 };
@@ -65,7 +65,7 @@ describe('persistSettings 与首帧加载的先后', () => {
 
     const loading = settings.loadFromStorage();
     // 用户在首帧就动了开关（e2e 里是随机事件页的"保存配置"）
-    settings.setTheme('light');
+    settings.setTheme('ink');
     expect(writes.length, '加载未完成就落盘，写的是没有存档的默认值').toBe(0);
 
     release();
@@ -83,10 +83,10 @@ describe('persistSettings 与首帧加载的先后', () => {
     const { adapter, writes } = makeAdapter(false);
     const settings = useSettingsStore();
     settings.setStorageAdapter(adapter);
-    settings.setTheme('oled');
+    settings.setTheme('brutal');
 
     expect(writes.length, '空闲时的第一次写必须同步发起').toBe(1);
-    expect(writes[0]?.theme).toBe('oled');
+    expect(writes[0]?.theme).toBe('brutal');
   });
 
   it('首次启动（没有存档）时，加载自己那次默认值写入不能把自己等死', async () => {
@@ -126,7 +126,7 @@ describe('persistSettings 与首帧加载的先后', () => {
           releaseLoad = () =>
             resolve({
               // 主题与默认值不同 ⇒ 加载一定会调 setTheme ⇒ 一定会触发一次写入
-              theme: 'midnight',
+              theme: 'terminal',
               fontSize: 16,
               apiProfiles: [{ id: 'p1', name: '网关甲', provider: 'openai', baseUrl: 'http://x/v1', apiKey: 'k', model: 'm' }],
               activeApiProfileId: 'p1',
@@ -154,7 +154,7 @@ describe('persistSettings 与首帧加载的先后', () => {
       .map((w, i) => ({ i, count: w.apiProfiles?.length ?? 0 }))
       .filter((x) => x.count === 0);
     expect(halfLoaded, '存在半加载落盘（模型配置被写成空）').toEqual([]);
-    expect(settings.theme).toBe('midnight');
+    expect(settings.theme).toBe('terminal');
   });
 
   it('加载窗口内用户改过的那一项，不被随后落地的存档盖回（M9-b）', async () => {
@@ -163,15 +163,15 @@ describe('persistSettings 与首帧加载的先后', () => {
     settings.setStorageAdapter(adapter);
 
     const loading = settings.loadFromStorage();
-    settings.setTheme('light');
+    settings.setTheme('ink');
     release();
     await loading;
     await new Promise((r) => setTimeout(r, 20));
 
     // 用户的动作赢；他刚点过，存档不该把他跳回去
-    expect(settings.theme).toBe('light');
+    expect(settings.theme).toBe('ink');
     const last = writes[writes.length - 1] as Snapshot;
-    expect(last.theme).toBe('light');
+    expect(last.theme).toBe('ink');
     // 同一份存档的其它字段照常落地，不因回写而丢
     expect(last.apiProfiles?.length).toBe(1);
     expect(last.activeApiProfileId).toBe('p1');
@@ -189,7 +189,7 @@ describe('persistSettings 与首帧加载的先后', () => {
     await new Promise((r) => setTimeout(r, 20));
 
     expect(settings.fontSize).toBe(18); // 用户改的：保留
-    expect(settings.theme).toBe('dark'); // 没改的：用存档（默认是 dark，故用主题反证）
+    expect(settings.theme).toBe('terminal'); // 没改的：用存档（默认是 aurora，故用主题反证）
   });
 
   it('集合类字段在窗口内的改动仍以存档为准（回写会换掉整批记录，比盖回更糟）', async () => {
@@ -226,8 +226,8 @@ describe('persistSettings 与首帧加载的先后', () => {
     await new Promise((r) => setTimeout(r, 20));
 
     // 只有加载末尾那次重断言主题的写（没有用户改动 ⇒ 不额外回写）
-    const themeWrites = writes.filter((w) => w.theme === 'dark');
+    const themeWrites = writes.filter((w) => w.theme === 'terminal');
     expect(themeWrites.length).toBeGreaterThanOrEqual(1);
-    expect(settings.theme).toBe('dark');
+    expect(settings.theme).toBe('terminal');
   });
 });

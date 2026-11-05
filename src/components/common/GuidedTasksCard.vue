@@ -18,7 +18,7 @@ import {
   toggleSkip,
   taskIntent,
   type TaskView,
-} from '@/core/guided-tasks';
+} from '@/composables/useGuidedTasks';
 import { useReadinessJump } from '@/composables/useReadinessJump';
 
 const tasks = useGuidedTasks();
@@ -377,7 +377,7 @@ function openGuidePage(): void {
   .guided-skip,
   .guided-next,
   .guided-step-action {
-    min-height: 44px;
+    min-height: var(--size-control-touch);
   }
 }
 

@@ -104,7 +104,6 @@ const mockCharacter: UICharacter = {
   authorNote: '',
   authorDepth: 4,
   temperature: 1.0,
-  worldEntries: [],
   tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
 };
 

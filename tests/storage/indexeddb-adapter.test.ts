@@ -60,7 +60,7 @@ function makeChat(overrides: Partial<Chat> = {}): Chat {
 
 function makeSettings(overrides: Partial<AppSettings> = {}): AppSettings {
   return {
-    theme: 'dark',
+    theme: 'aurora',
     fontSize: 14,
     apiProfiles: [],
     activeApiProfileId: null,
@@ -253,14 +253,14 @@ describe('IndexedDBAdapter — 设置读写', () => {
 
   test('saveSettings() 后 loadSettings() 读回', async () => {
     const settings = makeSettings({
-      theme: 'dark',
+      theme: 'aurora',
       fontSize: 14,
       activeApiProfileId: 'profile-1',
     });
     await adapter.saveSettings(settings);
 
     const loaded = await adapter.loadSettings();
-    expect(loaded.theme).toBe('dark');
+    expect(loaded.theme).toBe('aurora');
     expect(loaded.fontSize).toBe(14);
     expect(loaded.activeApiProfileId).toBe('profile-1');
   });
@@ -271,11 +271,11 @@ describe('IndexedDBAdapter — 设置读写', () => {
   });
 
   test('saveSettings() 覆盖更新', async () => {
-    await adapter.saveSettings(makeSettings({ theme: 'dark', fontSize: 14 }));
-    await adapter.saveSettings(makeSettings({ theme: 'light', fontSize: 16 }));
+    await adapter.saveSettings(makeSettings({ theme: 'aurora', fontSize: 14 }));
+    await adapter.saveSettings(makeSettings({ theme: 'ink', fontSize: 16 }));
 
     const loaded = await adapter.loadSettings();
-    expect(loaded.theme).toBe('light');
+    expect(loaded.theme).toBe('ink');
     expect(loaded.fontSize).toBe(16);
   });
 });
@@ -333,5 +333,36 @@ describe('IndexedDBAdapter — 数据完整性', () => {
     const loaded = await adapter.loadChat(chat.id);
     expect(loaded!.messages[0]!.swipes).toEqual(['回复1', '回复2', '回复3']);
     expect(loaded!.messages[0]!.swipeIndex).toBe(1);
+  });
+});
+
+describe('IndexedDBAdapter — 列表读取顺序', () => {
+  let adapter: StorageAdapter;
+
+  beforeEach(async () => {
+    await resetDatabase('test-db-order');
+    adapter = new IndexedDBAdapter('test-db-order');
+    await adapter.init();
+  });
+
+  afterEach(async () => {
+    await adapter.close();
+  });
+
+  test('世界书与群聊按 updatedAt 降序返回', async () => {
+    const book = (id: string, updatedAt: string) =>
+      ({ id, name: id, description: '', entries: [], updatedAt }) as never;
+    const group = (id: string, updatedAt: string) =>
+      ({ id, name: id, members: [], messages: [], mode: 'auto', updatedAt }) as never;
+
+    await adapter.saveLorebook(book('old', '2026-01-01T00:00:00Z'));
+    await adapter.saveLorebook(book('new', '2026-06-01T00:00:00Z'));
+    await adapter.saveLorebook(book('mid', '2026-03-01T00:00:00Z'));
+    await adapter.saveGroupChat(group('g-old', '2026-01-01T00:00:00Z'));
+    await adapter.saveGroupChat(group('g-new', '2026-06-01T00:00:00Z'));
+
+    // 写入顺序故意不是时间顺序：getAll() 按主键返回，顺序不成立就说明排序没生效
+    expect((await adapter.loadLorebooks()).map((b) => b.id)).toEqual(['new', 'mid', 'old']);
+    expect((await adapter.loadGroupChats()).map((g) => g.id)).toEqual(['g-new', 'g-old']);
   });
 });

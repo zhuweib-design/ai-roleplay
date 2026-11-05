@@ -19,11 +19,13 @@ import {
   adjustContrast,
   kMeans,
   extractPaletteFromPixels,
+} from '@core/theme-extractor';
+import {
   generateThemeTokens,
   auditThemeContrast,
   tokensToCss,
   buildCustomThemeCss,
-} from '@core/theme-extractor';
+} from '@core/theme-tokens';
 
 describe('颜色工具', () => {
   it('hexToRgb / rgbToHex 互转', () => {

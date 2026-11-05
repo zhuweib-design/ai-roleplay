@@ -2,7 +2,6 @@ import { t } from '@/i18n';
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { UICharacter } from '@/types';
-import { mockCharacters } from '../data/mock-data';
 import type { StorageAdapter } from '../storage/storage-adapter';
 import { getStorageAdapter } from '../storage/storage-factory';
 import { mergeKeptLocal } from '@/core/store-merge';
@@ -16,7 +15,7 @@ import {
   validateCharacterCard,
 } from '../core/character-card';
 import { useSettingsStore } from './settings';
-import { saveBlob } from '@/utils/save-blob';
+import { saveBlob, describeSaveResult } from '@/utils/save-blob';
 import { prepareGenerationPrompt, resolveContextWindow } from '@core/token-budget';
 import { isCompact } from '@/core/viewport';
 import { createApiClient } from '../api';
@@ -42,10 +41,13 @@ import {
  */
 export const useCharacterStore = defineStore('character', () => {
   // ── 状态 ──
-  const characters = ref<UICharacter[]>(structuredClone(mockCharacters));
-  /** 初始 mock 种子的 id：加载合并时不能把它们当成"用户在窗口内新建的角色" */
-  const seedCharacterIds = new Set(structuredClone(mockCharacters).map((c) => c.id));
-  const currentCharacterId = ref('seraphina');
+  /**
+   * 从空开始：首次启动不写任何示例/种子角色（2026-10-26 起）。
+   * 之前这里用 `structuredClone(mockCharacters)` 预填 4 个角色，并在存储为空时把它们写盘，
+   * 结果打包产物与正式环境一打开就带着"历史数据"。数据必须由用户自己创建。
+   */
+  const characters = ref<UICharacter[]>([]);
+  const currentCharacterId = ref('');
   const searchQuery = ref('');
   /** 需求1：当前过滤标签（空字符串表示不按标签过滤） */
   const filterTag = ref('');
@@ -64,7 +66,7 @@ export const useCharacterStore = defineStore('character', () => {
 
   /**
    * 角色库是否已从存档读完。
-   * `characters` 的初值是 mock 种子（第一条就是 `seraphina`），读库完成前
+   * `characters` 从空开始（不再预填示例角色），读库完成前
    * 任何"按 id 找角色"都会落空——深链进来的视图必须先等这个标志。
    */
   const libraryLoaded = ref(false);
@@ -160,14 +162,14 @@ export const useCharacterStore = defineStore('character', () => {
 
   /**
    * 从存储层加载全部角色卡到内存
-   * 若存储为空（首次启动），保留 mock 数据并写入存储
+   * 存储为空（首次启动/刚安装）就保持空，不写入任何示例数据
    */
   async function loadFromStorage(): Promise<void> {
     if (!storageAdapter) return;
     try {
       const cards = await storageAdapter.loadCharacters();
       if (cards.length > 0) {
-        // 用存储中的角色覆盖 mock
+        // 用存储中的角色覆盖内存里的初值（初值为空，这一步等价于直接载入）
         // P2-11 Phase1: 保留角色卡 messages(loadChatHistory 未接线, 已持久化会话历史
         // 刷新后无法进 UI; 恢复行为符合产品预期, 也是超长对话压测的前置)
         const loadedCards = cards.map((c) => {
@@ -176,15 +178,13 @@ export const useCharacterStore = defineStore('character', () => {
           if (Array.isArray(raw)) ui.messages = raw as UICharacter['messages'];
           return ui;
         });
-        // 首帧窗口内用户新建的角色要留住（存档那次读没带上它）；种子 mock 不算新建
-        characters.value = mergeKeptLocal(loadedCards, characters.value, seedCharacterIds);
+        // 首帧窗口内用户新建的角色要留住（存档那次读没带上它）
+        characters.value = mergeKeptLocal(loadedCards, characters.value);
         if (characters.value.length > 0 && !characters.value.find((c) => c.id === currentCharacterId.value)) {
           currentCharacterId.value = characters.value[0]!.id;
         }
-      } else {
-        // 首次启动：将 mock 数据写入存储
-        await Promise.all(characters.value.map((c) => persistCharacter(c.id)));
       }
+      // 存储为空就保持空：不写入任何示例角色（打包与正式环境的首次启动必须是空数据）
     } catch (err) {
       lastError.value = t('store.loadFailed', { name: t('store.entityChar'), error: err instanceof Error ? err.message : String(err) });
     }
@@ -287,7 +287,14 @@ export const useCharacterStore = defineStore('character', () => {
    * @returns 新角色 id
    */
   function createCharacter(): string {
-    const id = `char-${Date.now()}`;
+    // id = 时间戳 + 去重后缀。纯时间戳在同一毫秒内连建两个角色会撞（实测：
+    // 单测里两次 createCharacter 返回同一个 id；批量导入同样可能落在同一毫秒），
+    // 撞了就是两张卡共用一个 id，后面按 id 查找/删除会一起命中。
+    const base = `char-${Date.now()}`;
+    let id = base;
+    for (let n = 1; characters.value.some((c) => c.id === id); n += 1) {
+      id = `${base}-${n}`;
+    }
     const newChar: UICharacter = {
       id,
       name: t('store.newChar'),
@@ -309,7 +316,6 @@ export const useCharacterStore = defineStore('character', () => {
       temperature: 1.0,
       // T-16：不写 maxTokens = 未设置（回落 Profile 级 → 供应商默认）。
       // 旧实现硬编码 4096，会让角色永远携带一个显式值、无条件覆盖 Profile 级配置。
-      worldEntries: [],
       tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
     };
     characters.value.push(newChar);
@@ -342,15 +348,6 @@ export const useCharacterStore = defineStore('character', () => {
     void deleteFromStorage(id);
     if (currentCharacterId.value === id) {
       currentCharacterId.value = characters.value[0]?.id ?? '';
-    }
-  }
-
-  function toggleWorldEntry(characterId: string, entryId: string) {
-    const char = characters.value.find((c) => c.id === characterId);
-    const entry = char?.worldEntries.find((w) => w.id === entryId);
-    if (entry) {
-      entry.enabled = !entry.enabled;
-      void persistCharacter(characterId);
     }
   }
 
@@ -526,8 +523,9 @@ export const useCharacterStore = defineStore('character', () => {
     const char = characters.value.find((c) => c.id === id);
     const safeName = (char?.name ?? 'character').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
     const outcome = await saveBlob(`${safeName}.json`, () => new Blob([json], { type: 'application/json' }));
-    if (outcome === 'cancelled') return false;
-    lastInfo.value = t('char.exported2', { name: safeName });
+    const saved = describeSaveResult(outcome);
+    if (!saved) return false;
+    lastInfo.value = saved.message;
     return true;
   }
 
@@ -632,7 +630,6 @@ export const useCharacterStore = defineStore('character', () => {
          * 此前这里硬编码 4096，导致 **AI 生成的角色**同样无条件覆盖 Profile 级配置，
          * 任务 1 的死代码修复在这条路径上落空。
          */
-        worldEntries: [],
         tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
         attributes: generated.attributes,
       };
@@ -693,7 +690,6 @@ export const useCharacterStore = defineStore('character', () => {
     createCharacter,
     updateCharacter,
     deleteCharacter,
-    toggleWorldEntry,
     toggleFavorite,
     // 需求7：角色与世界书双向绑定
     getBoundWorldBookIds,

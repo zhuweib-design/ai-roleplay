@@ -13,7 +13,7 @@ import { useSettingsStore } from '@/stores/settings';
 import { useCharacterStore } from '@/stores/character';
 import { useLorebookStore } from '@/stores/lorebook';
 import { useDataBankStore } from '@/stores/data-bank';
-import { setCollapsed, toggleSkip, taskIntent } from '@/core/guided-tasks';
+import { setCollapsed, toggleSkip, taskIntent } from '@/composables/useGuidedTasks';
 
 const STATE_KEY = 'ai-roleplay:guided-tasks.v1';
 
@@ -37,7 +37,7 @@ function makeRouter() {  return createRouter({
 /**
  * 让 t1「配好一个模型」真的完成：Profile 要带全 provider/models/enabled，
  * 且设为当前——`modelReadiness` 认的是"当前生效的那个"，不是"列表里有一个"。
- * 与 tests/core/guided-tasks.test.ts 用的是同一套夹具。
+ * 与 tests/composables/use-guided-tasks.test.ts 用的是同一套夹具。
  */
 function completeModelTask(settings: ReturnType<typeof useSettingsStore>): void {
   settings.apiProfiles.push({

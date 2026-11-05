@@ -31,7 +31,6 @@ function makeCharacter(messages: UIMessage[]): UICharacter {
     authorNote: '',
     authorDepth: 4,
     temperature: 0.7,
-    worldEntries: [],
     tokenBudget: { character: 0, worldInfo: 0, chatHistory: 0, remaining: 8192 },
   } as unknown as UICharacter;
 }

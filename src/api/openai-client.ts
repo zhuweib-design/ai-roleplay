@@ -3,6 +3,7 @@ import type { ChatRequest, ChatStream, ApiErrorKind } from './types';
 import { ApiError } from './types';
 import { buildChatCompletionsUrl, buildModelsUrl, toOpenAIMessage, toDevProxyUrl } from './openai-protocol';
 import { isHostReachable } from './cors-probe';
+import { findSSEEventBoundary } from './sse-boundary';
 import { t } from '@/i18n';
 
 /**
@@ -177,14 +178,21 @@ export class OpenAIClient implements ApiClient {
 
         buffer += decoder.decode(chunk.value, { stream: true });
 
-        // 按事件边界（\n\n）切分
-        let eventEnd: number;
-        while ((eventEnd = buffer.indexOf('\n\n')) >= 0) {
-          const rawEvent = buffer.slice(0, eventEnd);
-          buffer = buffer.slice(eventEnd + 2);
+        // 按事件边界切分：SSE 规范允许 \n\n 与 \r\n\r\n 两种分隔符，
+        // 只认 \\n\\n 的实现对 CRLF 网关永远切不出事件（表现为空白回复）
+        let boundary = findSSEEventBoundary(buffer);
+        while (boundary) {
+          const rawEvent = buffer.slice(0, boundary.index);
+          buffer = buffer.slice(boundary.index + boundary.length);
+          boundary = findSSEEventBoundary(buffer);
 
           const event = parseSSEEvent(rawEvent);
           if (!event) continue;
+
+          if (event.error) {
+            yield { type: 'error', error: event.error };
+            return;
+          }
 
           if (event.done) {
             yield {
@@ -516,6 +524,8 @@ interface SSEParsed {
   reasoning?: string;
   finishReason?: string;
   done?: boolean;
+  /** 服务商在流中返回的错误正文；调用方必须把它冒泡成可见错误，不能当空回复 */
+  error?: string;
   /** T-02：流式 tool_calls 增量（按 index 分段） */
   toolCalls?: Array<{
     index: number;
@@ -613,8 +623,8 @@ function parseSSEEvent(raw: string): SSEParsed | null {
     };
 
     if (parsed.error) {
-      // 服务商在流中返回错误
-      return { delta: '', finishReason: 'error' };
+      // 服务商在流中返回错误：把消息带出去，让调用方中止而不是产出一条空回复
+      return { error: parsed.error.message || t('api.unknownError') };
     }
 
     const reasoning = usageReasoningTokens(parsed.usage);

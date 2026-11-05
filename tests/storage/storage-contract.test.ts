@@ -118,7 +118,7 @@ function makeStory(): StoryAnalysisResult {
 }
 
 function makeSettings(): Partial<AppSettings> {
-  return { theme: 'dark', fontSize: 14 };
+  return { theme: 'aurora', fontSize: 14 };
 }
 
 // ── TauriFSAdapter 的 mock invoke（内存 Map 模拟 Rust 文件命令）──
@@ -329,7 +329,7 @@ function runContractTests(
       const settings = makeSettings();
       await adapter.saveSettings(settings as never);
       const loaded = await adapter.loadSettings();
-      expect(loaded?.theme).toBe('dark');
+      expect(loaded?.theme).toBe('aurora');
     });
 
     test('快照保存/加载（null 语义 + 覆盖写 + 原始值）', async () => {

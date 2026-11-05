@@ -32,6 +32,7 @@ const ROUTES = [
   '/guide',
   '/settings',
   '/settings?cat=model',
+  '/settings?cat=retrieval',
   '/settings?cat=extension',
   '/settings?cat=data',
   '/settings?cat=security',
@@ -89,7 +90,13 @@ for (const width of [390, 640]) {
         const offenders: string[] = [];
         for (const route of group) {
           await page.goto(route);
-          await expect.poll(async () => page.locator('#app button').count()).toBeGreaterThan(0);
+          // poll 的默认 5s 不够：全量 4 worker 并发时，vite 的冷模块图会把首个路由
+          // 的首屏渲染推到 5s 以上，红相是 timeout 而不是字号违规（正是本文件开头
+          // 那条注释记的同一件事）。这里只是「等页面挂出来」的健壮性门槛，给足
+          // 15s 不削弱断言强度——最终仍要求按钮数 > 0。
+          await expect
+            .poll(async () => page.locator('#app button').count(), { timeout: 15_000 })
+            .toBeGreaterThan(0);
           await page.keyboard.press('Escape').catch(() => {});
           const bad = await collectUnderSized(page);
           offenders.push(...bad.map((b) => `${route} → ${b}`));

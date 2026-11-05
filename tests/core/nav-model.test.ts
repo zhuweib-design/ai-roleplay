@@ -51,10 +51,19 @@ describe('NAV_ENTRIES 结构', () => {
 
   it('每个内容项都能在聚合页或底部 Tab 之一露出，或个人入口已彻底移出导航', () => {
     expect(NAV_ENTRIES.some((e) => e.routeName === 'profile')).toBe(false);
-    expect(moreEntries().map((e) => e.id)).toEqual(
-      expect.arrayContaining(['group', 'databank', 'story', 'random-events', 'local-model', 'image-gen', 'archives', 'version'])
-    );
-    expect(moreEntries()).toHaveLength(8);
+    // A12（2-1）：worldbook / market 退出底部 Tab 后进"更多"；guide 从孤儿状态一并收进来
+    expect(moreEntries().map((e) => e.id)).toEqual([
+      'group',
+      'worldbook',
+      'databank',
+      'story',
+      'random-events',
+      'local-model',
+      'image-gen',
+      'archives',
+      'version',
+      'market',
+    ]);
   });
 
   it('路由 name 与 path 不一一对应，匹配只能用 name（/character → character-list）', () => {
@@ -93,15 +102,25 @@ describe('activeEntryForRoute 高亮派生', () => {
 });
 
 describe('mobileTabEntries 顺序', () => {
-  it('保持既有 6 Tab 顺序，避免移动端布局回归', () => {
+  it('A12 后的 5 Tab 顺序：会话 / 角色 / 群聊 / 更多 / 设置', () => {
     expect(mobileTabEntries().map((e) => e.routeName)).toEqual([
       'chat',
       'character-list',
-      'community-market',
-      'worldbook',
+      'group',
       'more',
       'settings',
     ]);
+  });
+
+  it('没有"既不在 Tab、又不在更多"的孤儿入口（A12 判据）', () => {
+    // 这条是 2-1 的核心：worldbook/market 退出 Tab 后必须进"更多"，
+    // 否则用户手机上没有任何路径到达它们。
+    // guide 是唯一白名单：它在「更多」页顶部有专门的进度卡（.more-guide），
+    // 不走 inMore 列表——判据的意图是"有路"，它已经有了一条更好的路。
+    const orphans = NAV_ENTRIES.filter((e) => !e.mobileTab && !e.inMore && e.id !== 'guide').map(
+      (e) => e.id
+    );
+    expect(orphans, `这些入口在手机上无路可走：${orphans.join(', ')}`).toEqual([]);
   });
 
   it('每个 Tab 都有 mobile 短称谓回退', () => {

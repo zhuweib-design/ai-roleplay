@@ -120,4 +120,11 @@ const titleId = computed(() => `${uid}-title`);
   outline: 2px solid var(--ring, var(--secondary));
   outline-offset: 2px;
 }
+
+/* 批次 3-2：空态行动按钮 */
+@media (max-width: 640px) {
+  .empty-action {
+    min-height: var(--touch-min);
+  }
+}
 </style>

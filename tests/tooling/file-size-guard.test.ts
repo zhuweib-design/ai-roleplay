@@ -1,0 +1,87 @@
+/**
+ * file-size-guard 的守卫测试（DEV_PLAN §7.10）
+ *
+ * 这道门禁的价值全在"它会失败"。所以测试只钉两件事：
+ * 1. 严格模式在当前仓库上必须通过（否则 CI 红、然后被绕过——那正是 §7.1 批评的失效模式）；
+ * 2. 白名单条目数必须等于登记值（防止有人为了让红变绿而整条删掉，
+ *    删了条目文件仍 >1000 行，第二年的"来不及拆"就变成"从来没打算拆"）。
+ */
+import { describe, it, expect } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const ROOT = process.cwd();
+
+function runGuard(args: string[]) {
+  return spawnSync(process.execPath, [resolve(ROOT, 'scripts/file-size-guard.mjs'), ...args], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+}
+
+describe('file-size-guard', () => {
+  it('严格模式在当前仓库通过', () => {
+    const r = runGuard(['--strict']);
+    expect(r.status, `守卫失败输出：\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(r.stdout).toContain('严格模式通过');
+  });
+
+  /*
+   * 2026-10-19：R1-2 把 StoryEngineView 拆到 652 行（≤800），按 §7.10「还完债就删条目」
+   * 销掉一条，白名单从 26 变 25。
+   * 2026-10-19：R1-3 把 WorldBookView 拆到 741 行（≤800），再销一条，25 → 24。
+   * 2026-10-19：R1-4 把 SettingsModelPanel 拆到 369 行（≤800），再销一条，24 → 23。
+   * 2026-10-19：R1-5 把 ChatMain 拆到 583 行（≤800），再销一条，23 → 22。
+   * 2026-10-19：R2-1 把 CharacterEditorView 拆到 532 行（≤800），再销一条，22 → 21。
+   * 2026-10-19：R2-2 把 CharacterVersionView 拆到 597 行（≤800），再销一条，21 → 20。
+   * 2026-10-19：R2-3 把 ContextPanel 拆到 284 行（≤800），再销一条，20 → 19。
+   * 2026-10-19：R2-4 把 CommunityMarketView 拆到 580 行（≤800），再销一条，19 → 18。
+   * 2026-10-20：R2-5 把 settings.ts 拆到 335 行（≤800），再销一条，18 → 17。
+   * 2026-10-20：R3-1 把 SettingsAppearancePanel 拆到 32 行（≤800），再销一条，17 → 16。
+   * 2026-10-20：R3-2 把 SettingsDataPanel 拆到 97 行（≤800），再销一条，16 → 15。
+   * 2026-10-20：R3-3 把 LocalModelView 拆到 568 行（≤800），再销一条，15 → 14。
+   * 2026-10-20：R4-1 把 VectorModelPanel 拆到 285 行（≤800），再销一条，14 → 13。
+   * 2026-10-20：R4-2 把 WorldBookEventsPanel 拆到 235 行（≤800），再销一条，13 → 12。
+   * 2026-10-20：R3-6 把 ImageGeneratorView 拆到 470 行（≤800），再销一条，12 → 11。
+   * 2026-10-20：R3-4 把 RandomEventsView 拆到 555 行（≤800），再销一条，11 → 10。
+   * 2026-10-21：R3-5 把 CharactersView 拆到 815 行——**815 > 800 观察线，不满足
+   * 「≤800 才销」的规则 4**，本条保留并把登记行数回填 1388 → 815（棘轮继续管），
+   * 条目数 10 不变。待二次瘦身到 ≤800 再销。
+   * 2026-10-21：R4-3 把 lorebook.ts 拆到 724 行（≤800，拆出 hierarchy 232 /
+   * io 242 / world-gen 167 / world-gen-run 235 / entries 184），销一条，10 → 9。
+   * 2026-10-21：R4-4 把 chat-generation.ts 拆到 735 行（≤800，拆出 random-event 139 /
+   * commands 148 / persistence 216 / profile 326 + helpers 133），销一条，9 → 8。
+   * 2026-10-21：R4-5 把 story.ts 拆到 230 行（≤800，拆出 persistence 117 /
+   * analysis 391 / import 218 / protagonist 247 / time 219），销一条，8 → 7。
+   * 2026-10-21：R4-6 把 group-chat.ts 拆到 218 行（≤800，拆出 persistence 108 /
+   * st 106 / crud 182 / members 284 / speaking 165 / messages 128 / npc 167），
+   * 销一条，7 → 6。
+   * 2026-10-22：R4-7 把 community-market.ts 拆到 679 行（≤800，拆出 types 227 /
+   * queries 153 / mock 295），销一条，6 → 5。
+   * 2026-10-22：R4-8 把 random-event-generator.ts 拆到 86 行（≤800，纯 barrel，
+   * 拆出 core 203 / types 221 / factories 185 / runtime 525），销一条，5 → 4。
+   * 2026-10-22：O-9 把 CharactersView.vue 二次瘦身到 725 行（R3-5 首拆只到 815，
+   * 本轮把导入/拖拽/运行时同步重试抽成 useCharacterImport 158 行），销一条，4 → 3。
+   * 2026-10-22：R4-9 把 GroupChatView.vue 拆到 764 行（R1-1 首拆只到 864，本轮把
+   * 建群/删群/ST 导入导出/随机 NPC/发言模式抽成 useGroupActions 182 行），销一条，3 → 2。
+   *   ⇒ 至此白名单只剩 2 个 i18n 字典（ratchet:false），§7.3 目标文件全部销账。
+   */
+  it('白名单条目数固定为 2（只剩 2 个 i18n 字典，§7.3 目标已全部拆完）', () => {
+    const r = runGuard(['--list']);
+    expect(r.status).toBe(0);
+    const m = /共 (\d+) 条/.exec(r.stdout);
+    expect(m, `输出里没有条目数：\n${r.stdout}`).not.toBeNull();
+    // 数字变小=有人删了条目；数字变大=有人塞了新的大文件进来。两边都要解释
+    expect(Number(m![1])).toBe(2);
+  });
+
+  it('白名单每一条都带 reason（没有理由的豁免等于没有门禁）', () => {
+    const src = readFileSync(resolve(ROOT, 'scripts/file-size-guard.mjs'), 'utf8');
+    const allow = src.split('const ALLOWLIST = {')[1]?.split('\n};')[0] ?? '';
+    const entries = [...allow.matchAll(/^\s{2}'[^']+':\s*\{/gm)];
+    const reasons = [...allow.matchAll(/reason:/g)];
+    expect(entries.length, '白名单条目数应为 2').toBe(2);
+    expect(reasons.length, '每条都要有 reason').toBe(entries.length);
+  });
+});

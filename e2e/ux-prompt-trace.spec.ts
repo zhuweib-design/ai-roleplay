@@ -5,6 +5,7 @@
  * 断言"本轮注入 N 条设定"确实出现、能跳回来源书、刷新后仍在（持久化生效）。
  */
 import { test, expect, type Page } from '@playwright/test';
+import { seedCharacter } from './helpers/seed-character';
 
 function sseBody(): string {
   const chunks = ['你好', '，旅人', '！'];
@@ -125,6 +126,8 @@ test.describe('注入痕迹（E02）', () => {
       })
     );
 
+    // 会话行只在"收藏"分组里渲染，这条用例要断言 .conv-row.active，所以夹具角色必须是收藏
+    await seedCharacter(page, { favorite: true });
     await page.goto('/chat');
     await configureMockProfile(page);
     await page.goto('/chat');

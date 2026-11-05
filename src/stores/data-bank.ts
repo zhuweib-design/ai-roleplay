@@ -235,17 +235,18 @@ export const useDataBankStore = defineStore('data-bank', () => {
   }
 
   /**
-   * RAG 检索并构建注入文本
+   * RAG 检索并构建注入文本，同时把命中的分块一起交出去（C-03 记忆可见化要留痕）。
    *
-   * @returns 注入文本，无匹配时返回空字符串
+   * 为什么必须在这里交出来：这轮到底检索到了什么只有此刻拿得到——文档会被改、
+   * 检索缓存会失效，事后重算对不上当时那一份。调用方只要文本时取 `.context`。
    */
-  function retrieveAndBuildContext(
+  function retrieveAndBuildContextDetailed(
     recentMessages: string[],
     scope: DataBankScope = 'global',
     characterId?: string,
     chatId?: string,
     config?: RAGConfig
-  ): string {
+  ): { context: string; chunks: RetrievedChunk[] } {
     const retrieved = retrieveForChat(
       recentMessages,
       scope,
@@ -253,7 +254,7 @@ export const useDataBankStore = defineStore('data-bank', () => {
       chatId,
       config
     );
-    return buildRagContext(retrieved);
+    return { context: buildRagContext(retrieved), chunks: retrieved };
   }
 
   // ── 辅助 ──
@@ -289,7 +290,7 @@ export const useDataBankStore = defineStore('data-bank', () => {
     deleteDocument,
     getDocumentsForScope,
     retrieveForChat,
-    retrieveAndBuildContext,
+    retrieveAndBuildContextDetailed,
     // 辅助
     selectDocument,
     setSearchQuery,

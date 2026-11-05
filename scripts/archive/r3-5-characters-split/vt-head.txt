@@ -1,0 +1,80 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.1 [39m[90mD:/AI_data/AIjiuguan[39m
+
+
+
+[31m⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 221 [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/i18n.test.ts[2m [ tests/i18n.test.ts ][22m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'config')[39m
+[36m [2m❯[22m tests/i18n.test.ts:[2m25:1[22m[39m
+    [90m 23|[39m }
+    [90m 24|[39m
+    [90m 25|[39m describe('i18n (T-13)', () => {
+    [90m   |[39m [31m^[39m
+    [90m 26|[39m   beforeEach(() => {
+    [90m 27|[39m     initLocale('zh');
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/221]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/accessibility/components-axe.test.ts[2m [ tests/accessibility/components-axe.test.ts ][22m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'config')[39m
+[36m [2m❯[22m tests/accessibility/components-axe.test.ts:[2m107:1[22m[39m
+    [90m105|[39m // 但全量 200 个文件并发时被压到 5.07s、撞破默认 5s 上限（实测红过一次）。
+    [90m106|[39m // 与 snapshot-restore 那次不同，这次成本确实在用例自己身上，所以给余量而不是搬代码。
+    [90m107|[39m describe('axe-core 基础组件无障碍审计', { timeout: 20_000 }, () => {
+    [90m   |[39m [31m^[39m
+    [90m108|[39m   it('Icon 图标组件应通过 axe 审计', async () => {
+    [90m109|[39m     const results = await mountAndAudit(Icon, {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/221]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/accessibility/modal-describedby-wired.test.ts[2m [ tests/accessibility/modal-describedby-wired.test.ts ][22m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'config')[39m
+[36m [2m❯[22m tests/accessibility/modal-describedby-wired.test.ts:[2m82:1[22m[39m
+    [90m 80|[39m }
+    [90m 81|[39m
+    [90m 82|[39m describe('Modal describedBy 的引用完整性', () => {
+    [90m   |[39m [31m^[39m
+    [90m 83|[39m   it('接上对话框级说明的弹窗数量不倒退', () => {
+    [90m 84|[39m     // M8-c 铺完之后是 20 处静态引用（23 条 id），分布在 13 个文件里，只许增不许减
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/221]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/accessibility/new-primitives-axe.test.ts[2m [ tests/accessibility/new-primitives-axe.test.ts ][22m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'config')[39m
+[36m [2m❯[22m tests/accessibility/new-primitives-axe.test.ts:[2m36:1[22m[39m
+    [90m 34|[39m }
+    [90m 35|[39m
+    [90m 36|[39m describe('StepFlow / HelpTip / FormField 无障碍', () => {
+    [90m   |[39m [31m^[39m
+    [90m 37|[39m   it('StepFlow 向导模式无违规', async () => {
+    [90m 38|[39m     await audit('wizard', StepFlow, {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/221]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/accessibility/no-native-title.test.ts[2m [ tests/accessibility/no-native-title.test.ts ][22m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'config')[39m
+[36m [2m❯[22m tests/accessibility/no-native-title.test.ts:[2m61:1[22m[39m
+    [90m 59|[39m };
+    [90m 60|[39m
+    [90m 61|[39m describe('原生 title 守卫', () => {
+    [90m   |[39m [31m^[39m
+    [90m 62|[39m   const files = vueFiles(SRC);
+    [90m 63|[39m   // 路径解析坏掉时 readdirSync 会抛，这里再钉一次：扫不到文件就让守卫失败，
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/221]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/accessibility/worldbook-group-axe.test.ts[2m [ tests/accessibility/worldbook-group-axe.test.ts ][22m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'config')[39m
+[36m [2m❯[22m tests/accessibility/worldbook-group-axe.test.ts:[2m110:1[22m[39m
+    [90m108|[39m };
+    [90m109|[39m
+    [90m110|[39m describe('axe-core 世界书与群聊视图无障碍审计', () => {
+    [90m   |[39m [31m^[39m
+    [90m111|[39m   beforeEach(() => {
+    [90m112|[39m     // 每个测试独立 Pinia
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/221]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/anthropic-client.test.ts[2m [ tests/api/anthropic-client.test.ts ][22m

@@ -10,7 +10,7 @@ import { defineComponent, h } from 'vue';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
 import { useDeepLinkId } from '../../src/composables/useDeepLinkId';
-import type { DeepLinkKey } from '@/core/deep-link-keys';
+import type { DeepLinkKey } from '@/stores/deep-link-gate';
 
 type Log = string[];
 

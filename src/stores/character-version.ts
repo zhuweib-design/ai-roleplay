@@ -4,9 +4,17 @@
  * 职责：
  * - 管理 VersionControlEngine 单例（含多角色仓库映射）
  * - 当前选中的角色 ID 与当前分支
- * - 提交、分支、合并、回滚、差异对比等动作
+ * - 提交、差异对比、回滚、仓库管理
  * - 操作锁管理（模拟本地多人协作）
  * - 存储层快照持久化（全量序列化，经 StorageAdapter 注入）
+ *
+ * 本文件是**装配层**：状态 + 依赖引擎的派生值 + 仓库/提交/差异/回滚动作。
+ * 四个内聚域各自成文件（工厂收实例状态、执行体不 import store，与
+ * `community-market` 同一形状）：
+ * - `character-version/persistence.ts` 快照键与迁移信封、commitTick、开机读回
+ * - `character-version/branching.ts`   建/切/删分支与分支锁
+ * - `character-version/merging.ts`     pendingConflicts 状态机与合并三动作
+ * - `character-version/locks.ts`       字段级操作锁的抢/放/清
  *
  * 设计说明：
  * 由于项目无后端，"多人实时协作" 以本地多用户模拟方式实现：
@@ -24,41 +32,29 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import {
   VersionControlEngine,
-  CharacterRepository,
-  isValidBranchName,
+  type CharacterRepository,
   type CharacterVersion,
   type CharacterBranch,
   type VersionDiff,
   type VersionAuthor,
-  type BranchName,
   type VersionId,
-  type MergeResult,
-  type MergeConflict,
   type RepositoryInfo,
-  type SerializedRepository,
 } from '@/core/character-version-control';
 import type { CharacterCard } from '@/core/character-card';
 import { uiCharToCard } from '@/services/type-adapters';
 import { useCharacterStore } from './character';
-import type { StorageAdapter } from '@storage/storage-adapter';
-import { migrateLegacyLocalStorage } from '@storage/legacy-migration';
-import { migrateSnapshot, wrapSnapshot } from '@storage/snapshot-migration';
-import { CHARACTER_VERSIONS_MIGRATION_PLAN } from '@storage/snapshot-plans';
-import { logger } from '@/utils/logger';
+import { createVersionBranching } from './character-version/branching';
+import { createVersionLocks } from './character-version/locks';
+import { createVersionMerging } from './character-version/merging';
+import { createVersionPersistence } from './character-version/persistence';
 
 // ── 常量 ──
 
-/** 快照键（沿用旧 localStorage 键名，便于一次性迁移存量数据） */
-const SNAPSHOT_KEY = 'ai-roleplay:character-versions';
 const DEFAULT_AUTHOR: VersionAuthor = { name: t('store.localUser') };
 
 // ── 单例引擎 ──
 
 const engine = new VersionControlEngine(DEFAULT_AUTHOR);
-
-// ── 依赖注入 ──
-
-let storageAdapter: StorageAdapter | null = null;
 
 // ── Store ──
 
@@ -79,12 +75,6 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
 
   /** 最近一次信息（UI 提示） */
   const lastInfo = ref<string | null>(null);
-
-  /** 当前是否在合并冲突待解决状态 */
-  const pendingConflicts = ref<{
-    sourceBranch: BranchName;
-    conflicts: MergeConflict[];
-  } | null>(null);
 
   /** 是否已从持久化加载 */
   const loaded = ref(false);
@@ -148,33 +138,41 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     return currentRepository.value?.getHead() ?? null;
   });
 
-  /** 是否有未解决的合并冲突 */
-  const hasPendingConflicts = computed(() => pendingConflicts.value !== null);
+  // ── 子域装配（传的是同一份 ref 与 computed，不改变响应式边界）──
+
+  const persistence = createVersionPersistence({
+    engine,
+    author,
+    loaded,
+    versionTick,
+  });
+  const { commitTick } = persistence;
+
+  const branching = createVersionBranching({
+    currentRepository,
+    author,
+    lastError,
+    lastInfo,
+    commitTick,
+  });
+
+  const merging = createVersionMerging({
+    currentRepository,
+    author,
+    lastError,
+    lastInfo,
+    commitTick,
+  });
+
+  const locks = createVersionLocks({
+    currentRepository,
+    author,
+    lastError,
+    lastInfo,
+    commitTick,
+  });
 
   // ── 内部辅助 ──
-
-  /** 触发响应式更新并持久化 */
-  function commitTick(): void {
-    versionTick.value++;
-    void persist();
-  }
-
-  /**
-   * 保存全部版本数据到存储层（fire-and-forget）
-   * 失败仅记录日志，不阻塞主流程。
-   */
-  async function persist(): Promise<void> {
-    if (!storageAdapter) return;
-    try {
-      // MIG-01：写入带版本信封，配合前向迁移链支持后续结构演进。
-      await storageAdapter.saveSnapshot(
-        SNAPSHOT_KEY,
-        wrapSnapshot(engine.toJSON(), CHARACTER_VERSIONS_MIGRATION_PLAN.currentVersion),
-      );
-    } catch (err) {
-      logger.error('character-version', '持久化失败', err);
-    }
-  }
 
   /** 设置当前角色并确保仓库存在 */
   function ensureRepositoryForCharacter(
@@ -208,53 +206,6 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     };
     const repo = engine.ensureRepository(characterId, card);
     return repo;
-  }
-
-  /**
-   * 注入存储适配器（应用启动时由 App.vue 调用）
-   */
-  function setStorageAdapter(adapter: StorageAdapter | null): void {
-    storageAdapter = adapter;
-  }
-
-  // ── 动作：加载/持久化 ──
-
-  /**
-   * 从存储层加载版本数据（含旧 localStorage 数据一次性迁移）
-   *
-   * 应用启动时调用一次。
-   */
-  async function loadFromDisk(): Promise<void> {
-    if (!storageAdapter) {
-      loaded.value = true;
-      return;
-    }
-    await migrateLegacyLocalStorage(storageAdapter, SNAPSHOT_KEY);
-    try {
-      const raw = await storageAdapter.loadSnapshot<unknown>(SNAPSHOT_KEY);
-      // MIG-01：旧裸数组经迁移链补 activeLocks；链路断裂抛错而非静默丢弃。
-      const { data, report } = raw === null
-        ? { data: null, report: null }
-        : migrateSnapshot<SerializedRepository[]>(raw, CHARACTER_VERSIONS_MIGRATION_PLAN);
-      if (report?.changed) {
-        logger.info('character-version', `版本仓库已迁移：${report.fromVersion} → ${report.toVersion}`);
-      }
-      if (Array.isArray(data) && data.length > 0) {
-        engine.loadFromJSON(data);
-      }
-    } catch (err) {
-      logger.error('character-version', '加载失败', err);
-    }
-    engine.setAuthor(author.value);
-    loaded.value = true;
-    versionTick.value++;
-  }
-
-  /**
-   * 强制保存到存储层
-   */
-  async function persistNow(): Promise<void> {
-    await persist();
   }
 
   // ── 动作：仓库管理 ──
@@ -339,91 +290,6 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     return commit(card, message);
   }
 
-  // ── 动作：分支 ──
-
-  /**
-   * 创建新分支
-   */
-  function createBranch(name: string, fromBranch?: string): boolean {
-    const repo = currentRepository.value;
-    if (!repo) {
-      lastError.value = t('cv.noCharSelected');
-      return false;
-    }
-    if (!isValidBranchName(name)) {
-      lastError.value = t('cv2.branchNameInvalid');
-      return false;
-    }
-    try {
-      repo.createBranch(name, author.value, fromBranch);
-      lastInfo.value = t('cv2.branchCreated', { name });
-      commitTick();
-      return true;
-    } catch (err) {
-      lastError.value = err instanceof Error ? err.message : String(err);
-      return false;
-    }
-  }
-
-  /**
-   * 切换分支
-   */
-  function switchBranch(name: string): boolean {
-    const repo = currentRepository.value;
-    if (!repo) {
-      lastError.value = t('cv.noCharSelected');
-      return false;
-    }
-    try {
-      repo.switchBranch(name);
-      lastInfo.value = t('cv2.branchSwitched', { name });
-      commitTick();
-      return true;
-    } catch (err) {
-      lastError.value = err instanceof Error ? err.message : String(err);
-      return false;
-    }
-  }
-
-  /**
-   * 删除分支
-   */
-  function deleteBranch(name: string): boolean {
-    const repo = currentRepository.value;
-    if (!repo) {
-      lastError.value = t('cv.noCharSelected');
-      return false;
-    }
-    try {
-      repo.deleteBranch(name);
-      lastInfo.value = t('cv2.branchDeleted', { name });
-      commitTick();
-      return true;
-    } catch (err) {
-      lastError.value = err instanceof Error ? err.message : String(err);
-      return false;
-    }
-  }
-
-  /**
-   * 锁定/解锁分支
-   */
-  function toggleBranchLock(name: string): boolean {
-    const repo = currentRepository.value;
-    if (!repo) return false;
-    const branch = repo.branches.get(name);
-    if (!branch) {
-      lastError.value = t('cv2.branchNotExist', { name });
-      return false;
-    }
-    branch.locked = !branch.locked;
-    lastInfo.value = branch.locked
-      ? t('cv2.branchLocked', { name })
-      : t('cv2.branchUnlocked', { name });
-    commitTick();
-    return true;
-  }
-
   // ── 动作：差异对比 ──
 
   /**
@@ -455,101 +321,6 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     return diff(versionId, head.id);
   }
 
-  // ── 动作：合并 ──
-
-  /**
-   * 尝试合并指定分支到当前分支
-   *
-   * 自动合并成功时直接提交新版本；
-   * 冲突时存储到 pendingConflicts，由 resolveConflicts 解决。
-   *
-   * @param sourceBranch 待合并分支
-   * @param message 提交信息（成功时使用）
-   * @returns 是否无冲突自动合并成功
-   */
-  function mergeBranch(
-    sourceBranch: string,
-    message?: string
-  ): boolean {
-    const repo = currentRepository.value;
-    if (!repo) {
-      lastError.value = t('cv.noCharSelected');
-      return false;
-    }
-    if (sourceBranch === repo.currentBranch) {
-      lastError.value = t('cv2.cannotMergeSelf');
-      return false;
-    }
-    try {
-      const result: MergeResult = repo.mergeBranch(sourceBranch);
-      if (result.success) {
-        // 自动合并成功 → 直接提交
-        const commitMessage = message ?? t('cv2.mergeCommitMsg', { branch: sourceBranch });
-        repo.commit(
-          result.mergedSnapshot!,
-          author.value,
-          commitMessage
-        );
-        lastInfo.value = t('cv2.merged', { branch: sourceBranch, count: result.autoResolvedCount });
-        commitTick();
-        return true;
-      } else {
-        // 冲突 → 暂存待解决
-        pendingConflicts.value = {
-          sourceBranch,
-          conflicts: result.conflicts,
-        };
-        lastError.value = t('cv2.mergeConflict', { count: result.conflicts.length, auto: result.autoResolvedCount });
-        commitTick();
-        return false;
-      }
-    } catch (err) {
-      lastError.value = err instanceof Error ? err.message : String(err);
-      return false;
-    }
-  }
-
-  /**
-   * 解决合并冲突
-   *
-   * @param resolutions 字段路径 → 'current' | 'source'
-   * @param message 提交信息
-   */
-  function resolveConflicts(
-    resolutions: Record<string, 'current' | 'source'>,
-    message?: string
-  ): boolean {
-    const repo = currentRepository.value;
-    if (!repo || !pendingConflicts.value) {
-      lastError.value = t('cv2.noPendingConflicts');
-      return false;
-    }
-    try {
-      const merged = repo.resolveConflicts(
-        pendingConflicts.value.sourceBranch,
-        resolutions
-      );
-      const commitMessage =
-        message ?? t('cv2.mergeResolvedMsg', { branch: pendingConflicts.value.sourceBranch });
-      repo.commit(merged, author.value, commitMessage);
-      lastInfo.value = t('cv2.conflictsResolved2');
-      pendingConflicts.value = null;
-      commitTick();
-      return true;
-    } catch (err) {
-      lastError.value = err instanceof Error ? err.message : String(err);
-      return false;
-    }
-  }
-
-  /**
-   * 取消合并（清除 pendingConflicts）
-   */
-  function cancelMerge(): void {
-    pendingConflicts.value = null;
-    lastInfo.value = t('cv2.mergeCancelled2');
-  }
-
   // ── 动作：回滚 ──
 
   /**
@@ -573,66 +344,6 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
       lastError.value = err instanceof Error ? err.message : String(err);
       return false;
     }
-  }
-
-  // ── 动作：操作锁 ──
-
-  /**
-   * 获取操作锁
-   *
-   * @param fieldPath 锁定字段（'*' 表示全字段）
-   * @param durationMs 持续时长（默认 30 分钟）
-   */
-  function acquireLock(
-    fieldPath: string,
-    durationMs?: number
-  ): boolean {
-    const repo = currentRepository.value;
-    if (!repo) {
-      lastError.value = t('cv.noCharSelected');
-      return false;
-    }
-    const ok = repo.acquireLock(fieldPath, author.value, durationMs);
-    if (!ok) {
-      lastError.value = t('cv2.fieldLockedByOther', { field: fieldPath });
-    } else {
-      lastInfo.value = t('cv2.fieldLocked', { field: fieldPath });
-    }
-    commitTick();
-    return ok;
-  }
-
-  /**
-   * 释放操作锁
-   */
-  function releaseLock(fieldPath: string): void {
-    const repo = currentRepository.value;
-    if (!repo) return;
-    repo.releaseLock(fieldPath, author.value);
-    lastInfo.value = t('cv2.fieldUnlocked', { field: fieldPath });
-    commitTick();
-  }
-
-  /**
-   * 释放当前作者持有的全部锁
-   */
-  function releaseAllLocks(): void {
-    const repo = currentRepository.value;
-    if (!repo) return;
-    repo.releaseAllLocks(author.value);
-    lastInfo.value = t('cv2.allLocksReleased');
-    commitTick();
-  }
-
-  /**
-   * 清理过期锁
-   */
-  function purgeExpiredLocks(): number {
-    const repo = currentRepository.value;
-    if (!repo) return 0;
-    const n = repo.purgeExpiredLocks();
-    if (n > 0) commitTick();
-    return n;
   }
 
   // ── 动作：作者切换（模拟多用户） ──
@@ -667,7 +378,7 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
   function _resetForTesting(): void {
     engine.loadFromJSON([]);
     currentCharacterId.value = null;
-    pendingConflicts.value = null;
+    merging.pendingConflicts.value = null;
     lastError.value = null;
     lastInfo.value = null;
     loaded.value = false;
@@ -681,7 +392,6 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     loaded,
     lastError,
     lastInfo,
-    pendingConflicts,
     // 计算属性
     repositories,
     trackedCharacterIds,
@@ -691,12 +401,11 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     branches,
     history,
     headVersion,
-    hasPendingConflicts,
     // 加载/持久化
-    loadFromDisk,
-    persistNow,
+    loadFromDisk: persistence.loadFromDisk,
+    persistNow: persistence.persistNow,
     // 依赖注入
-    setStorageAdapter,
+    setStorageAdapter: persistence.setStorageAdapter,
     // 仓库管理
     selectCharacter,
     deleteRepository,
@@ -704,24 +413,26 @@ export const useCharacterVersionStore = defineStore('characterVersion', () => {
     commit,
     commitCurrentCharacter,
     // 分支
-    createBranch,
-    switchBranch,
-    deleteBranch,
-    toggleBranchLock,
+    createBranch: branching.createBranch,
+    switchBranch: branching.switchBranch,
+    deleteBranch: branching.deleteBranch,
+    toggleBranchLock: branching.toggleBranchLock,
     // 差异
     diff,
     diffWithHead,
     // 合并
-    mergeBranch,
-    resolveConflicts,
-    cancelMerge,
+    pendingConflicts: merging.pendingConflicts,
+    hasPendingConflicts: merging.hasPendingConflicts,
+    mergeBranch: merging.mergeBranch,
+    resolveConflicts: merging.resolveConflicts,
+    cancelMerge: merging.cancelMerge,
     // 回滚
     rollbackTo,
     // 操作锁
-    acquireLock,
-    releaseLock,
-    releaseAllLocks,
-    purgeExpiredLocks,
+    acquireLock: locks.acquireLock,
+    releaseLock: locks.releaseLock,
+    releaseAllLocks: locks.releaseAllLocks,
+    purgeExpiredLocks: locks.purgeExpiredLocks,
     // 作者
     setAuthor,
     // 错误清理

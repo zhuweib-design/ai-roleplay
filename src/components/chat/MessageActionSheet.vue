@@ -7,9 +7,11 @@
  * `message-actions.ts` 那一份，这里只换承载方式。
  *
  * 焦点：打开后落到第一项，Esc / 点遮罩关闭；关闭后由父级把焦点交还那条消息。
+ * 系统返回：动作条开着时按安卓返回键只关它，不会退出对话页（`useBackLayer`，批次 2-3）。
  */
 import { nextTick, ref, watch } from 'vue';
 import Icon from '@/components/common/Icon.vue';
+import { useBackLayer } from '@/composables/useBackLayer';
 import type { MsgAction } from './message-actions';
 import { t } from '@/i18n';
 
@@ -24,6 +26,9 @@ const emit = defineEmits<{
 }>();
 
 const panel = ref<HTMLUListElement | null>(null);
+
+// 动作条也是一层：返回键先关它（批次 2-3）
+useBackLayer({ isOpen: () => props.open, onBack: () => emit('close') });
 
 /**
  * 抬手时浏览器会在触点补发一次 click（幽灵点击）。长按刚弹出的动作条正好盖在

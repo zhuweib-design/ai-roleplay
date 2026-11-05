@@ -9,7 +9,7 @@
  * - decideCompression:阈值/冷却/暂停/禁用
  * - isExempt 豁免
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   splitSentences,
   extractiveCompress,
@@ -177,16 +177,26 @@ describe('CcrStore (E-03)', () => {
     expect(store.size()).toBe(1);
   });
 
-  it('过期条目 get 返回 null 且 purgeExpired 清理', async () => {
-    const store = new CcrStore(10); // 10ms TTL
-    store.put('h', 'payload');
-    await new Promise((r) => setTimeout(r, 30));
-    expect(store.get('h')).toBeNull();
-    store.put('h2', 'p2');
-    expect(store.purgeExpired()).toBe(0); // h2 未过期
-    expect(store.size()).toBe(1);
-    store.clear();
-    expect(store.size()).toBe(0);
+  it('过期条目 get 返回 null 且 purgeExpired 清理', () => {
+    // 用假时钟推进，不靠真实 setTimeout：原先 10ms TTL + 等 30ms，在并发跑全量时
+    // （224 个 jsdom 环境争 CPU）从 put('h2') 到 purgeExpired() 那两句之间就可能超过 10ms，
+    // 于是 h2 被判过期、purge 返回 1 —— 红的是机器负载，不是 CcrStore 的行为。
+    // 2026-10-23 全量 4134 条里唯一那条红就是这个形状（该文件单跑 23/23 绿）。
+    vi.useFakeTimers();
+    try {
+      const store = new CcrStore(10); // 10ms TTL
+      store.put('h', 'payload');
+      expect(store.get('h')).toBe('payload'); // 未推进时间前必须命中，证明过期靠推进而非真实等待
+      vi.advanceTimersByTime(30);
+      expect(store.get('h')).toBeNull();
+      store.put('h2', 'p2');
+      expect(store.purgeExpired()).toBe(0); // h2 未过期
+      expect(store.size()).toBe(1);
+      store.clear();
+      expect(store.size()).toBe(0);
+    } finally {
+      vi.useRealTimers(); // 别把假时钟漏给同文件其它用例
+    }
   });
 });
 
