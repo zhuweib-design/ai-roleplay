@@ -29,6 +29,8 @@ defineEmits<{
   export: [id: string];
   delete: [char: UICharacter];
   versions: [id: string];
+  /** 空库时的「可选下载包」入口：跳社区市场（宿主负责路由） */
+  'browse-market': [];
 }>();
 
 const characterStore = useCharacterStore();
@@ -158,7 +160,21 @@ function tagsPreview(tags: string[]): string {
       :title-key="characterStore.searchQuery ? 'characters.emptySearch' : 'characters.emptyNoChar'"
       :desc-key="characterStore.searchQuery ? 'characters.emptySearchHint' : 'characters.emptyNoCharHint'"
       icon="user"
-    />
+    >
+      <!--
+        可选下载包入口（Q2）：安装包与首启不带任何角色，角色包只在社区市场按需下载。
+        只在「库里真的没有角色」时出现——搜索无结果时给这个按钮，会把人从搜索引开。
+      -->
+      <button
+        v-if="!characterStore.searchQuery"
+        type="button"
+        class="market-pack-entry"
+        data-rel-jump="characters-market-pack"
+        @click="$emit('browse-market')"
+      >
+        {{ t('characters.browseMarketPack') }}
+      </button>
+    </EmptyState>
 
     <!-- 拖拽提示 -->
     <div v-if="dragging" class="drag-overlay" aria-hidden="true">
@@ -455,6 +471,39 @@ function tagsPreview(tags: string[]): string {
     width: calc(var(--touch-min) + 2px);
     height: calc(var(--touch-min) + 2px);
     transform: translate(-50%, -50%);
+  }
+}
+/*
+ * 可选下载包入口（Q2）：首启库为空时唯一的「官方内容」来路。
+ * 视觉上次于页头的「新建」主按钮：描边而非填充，避免和主行动抢焦点。
+ */
+.market-pack-entry {
+  margin-top: 8px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+  color: var(--secondary-text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease;
+}
+
+.market-pack-entry:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .market-pack-entry:hover {
+    border-color: var(--secondary);
+    color: var(--foreground);
+  }
+}
+
+@media (max-width: 640px) {
+  .market-pack-entry {
+    min-height: var(--touch-min);
   }
 }
 </style>

@@ -108,14 +108,26 @@ export function createRemoteMarketActions(ctx: RemoteMarketCtx) {
     if (!raw) {
       throw new Error(t('market.remoteBadCharacter'));
     }
+    // 市场发布的是 V2 卡（`{spec, data}`）；扁平对象是早期条目的形状，补一层外壳再走同一条导入
+    const v2 = raw.spec === 'chara_card_v2' ? raw : { spec: 'chara_card_v2', spec_version: '2.0', data: raw };
     let card;
     try {
-      card = importV2Card(raw);
+      card = importV2Card(v2);
       if (!card) throw new Error(t('market.remoteBadCharacter'));
     } catch {
       throw new Error(t('market.remoteBadCharacter'));
     }
     const ui = cardToUiChar(card);
+    // UI 层的开场白存在 messages[0]（见 type-adapters 顶部约定）。不补这一步，
+    // 下载来的角色点进对话是空白，卡片里写的 first_mes 就白写了。
+    if (ui.messages.length === 0 && card.firstMessage.trim()) {
+      ui.messages.push({
+        id: `m-${Date.now()}`,
+        role: 'assistant',
+        content: card.firstMessage.trim(),
+        timestamp: Date.now(),
+      });
+    }
     // 避免重名
     if (charStore.characters.some((c) => c.name === ui.name)) {
       ui.name = `${ui.name}${t('market.remoteSuffix')}`;

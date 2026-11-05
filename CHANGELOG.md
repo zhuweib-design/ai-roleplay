@@ -5,6 +5,27 @@
 
 ## 未发布
 
+### 新增（内置角色包改为「可选下载包」，首启仍为空）
+- `market/` 从 1 张示例卡扩为 **4 张策展角色卡**：Seraphina（奇幻）、林晚 · 深夜电台（现代都市）、
+  开普勒 · 轨道观测站（科幻）、沈砚 · 江湖游侠（古风武侠）。清单 `market/index.json` 记录
+  每条的 `size` / `sha256` / 直链 / 许可证，下载走既有远程市场链路（清单 → 直链 → SHA-256 校验 → 导入）。
+- 角色列表空态新增入口「从社区市场下载角色包」，由宿主跳到 `community-market` 的远程市场面板；
+  搜索无结果时不显示，避免把正在找关键词的人引开。安装包与首启仍**不带任何角色**。
+- 新增 `tests/core/market-catalog.test.ts`：清单可解析、条目 ≥4、id 唯一、直链必须指向发布镜像、
+  `size`/`sha256` 与 LF 归一化后的发布字节一致、每张卡都能导入且有开场白、
+  `market/cards/` 无未登记文件；另含一条“改一字节必失配”的反向自检。
+- 新增 `tests/views/characters-market-entry.test.ts` 与 `e2e/market-pack-entry.spec.ts`：
+  空库显示入口、点击落到社区市场、搜索无结果/有角色时不显示。
+- 下载链路的两处真实缺陷一并修复：
+  - `parseCharacterItem` 此前只认顶层 `name`，而市场发布的都是 V2 卡（名字在 `data.name`），
+    用户会在校验通过之后才看到“角色卡格式无效”。现在同时接受 V2 外壳与扁平对象。
+  - 远程安装此前没有把卡片的 `first_mes` 放进 `messages[0]`，下载来的角色点进对话是空白。
+    现在按生成角色的同一约定补首条开场白。新增 `tests/stores/community-market-install-real-card.test.ts`
+    用仓库里的实际卡文件跑真实导入（只桩下载）。
+- 验证：`typecheck`、`lint`(0 errors)、`i18n:check:strict`、`check:css-conventions`(5/5)、
+  相关单测（114 文件 / 2358 条）、本地 `msedge` E2E 均通过。真实供应商 Key、Android 真机、
+  PostgreSQL 与 cargo 实测项按用户要求挂起。
+
 ### 变更（内置主题收口为四套，默认改为「极光夜曲」）
 - 删除最初的五套主题 `dark / light / midnight / oled / theatre`（`ThemeName` 联合、`THEME_PRESETS`、
   设置页卡片与色块、`themes.css` 五个块、i18n 中英各 12 条键）。内置皮肤自此为

@@ -103,6 +103,8 @@ export const SPEC_WEIGHTS = {
   'e2e/ux-status-color.spec.ts': 4.9,
   // 2026-10-27 新增（C-01 首聊验收表），单 worker 实测三条 2.3+1.2+1.1=4.6s（只有 msedge 跑它）
   'e2e/ux-trial-sheet.spec.ts': 4.6,
+  // 手工登记（2026-11-05）：空库「可选下载包」入口，单条用例（一次整页加载 + 一次跳转），实测 6.1s。
+  'e2e/market-pack-entry.spec.ts': 6.0,
   'e2e/worldbook-flow.spec.ts': 3.9,
 };
 
@@ -138,6 +140,7 @@ export const E2E_GROUPS = [
     'e2e/mobile/worldbook-composition.spec.ts',
     'e2e/model-profile-presets.spec.ts',
     'e2e/model-install-web.spec.ts',
+    'e2e/market-pack-entry.spec.ts',
     'e2e/retrieval-trace.spec.ts',
     'e2e/ux-interaction-feedback.spec.ts',
     'e2e/ux-quick-forms.spec.ts',

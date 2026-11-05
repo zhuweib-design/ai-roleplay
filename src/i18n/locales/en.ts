@@ -635,7 +635,9 @@ const en: Record<MessageKey, string> = {
   'characters.emptySearch': 'No matching characters',
   'characters.emptyNoChar': 'No characters yet',
   'characters.emptySearchHint': 'Try different keywords',
-  'characters.emptyNoCharHint': 'Click "New" or "Import" to create your first character',
+  'characters.emptyNoCharHint':
+    'Click "New" or "Import" to create one, or download a character pack from the community market',
+  'characters.browseMarketPack': 'Download character pack from community market',
   'characters.dropHint': 'Release to import V2 character card',
   'characters.deleteTitle': 'Confirm Delete',
   'characters.deleteModalAria': 'Delete character confirmation',

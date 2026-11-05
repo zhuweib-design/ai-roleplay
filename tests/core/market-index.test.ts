@@ -129,8 +129,13 @@ describe('verifySha256Hex', () => {
 });
 
 describe('内容类型解析', () => {
-  it('角色卡需要 name', () => {
+  it('角色卡接受扁平对象与 V2 外壳两种形状', () => {
     expect(parseCharacterItem({ name: 'Alice', description: 'x' })).not.toBeNull();
+    // 市场实际发布的是 V2 卡：名字在 data.name，只认顶层 name 会把所有下载判成非法
+    expect(
+      parseCharacterItem({ spec: 'chara_card_v2', data: { name: 'Bob', description: 'y' } })
+    ).not.toBeNull();
+    expect(parseCharacterItem({ spec: 'chara_card_v2', data: { description: 'y' } })).toBeNull();
     expect(parseCharacterItem({ description: 'x' })).toBeNull();
   });
 

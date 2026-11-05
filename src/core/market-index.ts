@@ -284,10 +284,24 @@ export async function verifySha256Hex(
 
 // ── 内容类型解析 ──
 
-/** 条目内容为角色卡时解析为 CharacterCard 兼容对象 */
+/**
+ * 条目内容为角色卡时解析为 CharacterCard 兼容对象
+ *
+ * 市场里的角色卡有两种发布形状，都必须接受：
+ * - V2 卡（`{spec: 'chara_card_v2', data: {...}}`）—— 目前 `market/cards/*.json` 全是这种，
+ *   直接交给 `importV2Card`；
+ * - 扁平对象（顶层就有 `name`）—— 早期条目与手工测试用，同样原样返回。
+ *
+ * 这里只做「形状认得出来」的判定，不做字段补全；字段合法性由 `importV2Card` 负责。
+ * 只认 `name` 会把所有 V2 卡判成非法，安装链路在用户点下载时才报“角色卡格式无效”。
+ */
 export function parseCharacterItem(content: unknown): Record<string, unknown> | null {
-  if (!isRecord(content) || !isString(content.name)) return null;
-  return content as Record<string, unknown>;
+  if (!isRecord(content)) return null;
+  if (isString(content.name)) return content as Record<string, unknown>;
+  if (isRecord(content.data) && isString(content.data.name)) {
+    return content as Record<string, unknown>;
+  }
+  return null;
 }
 
 /** 条目内容为世界书时解析为 Lorebook 兼容对象 */

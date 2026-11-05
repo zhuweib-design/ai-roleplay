@@ -120,6 +120,14 @@ function goToEditor(id?: string) {
 }
 
 /**
+ * Q2：首启不带任何角色，内置角色包改为可选下载包。
+ * 空库时的入口直接落到社区市场的远程市场面板——那份目录就是“角色包”。
+ */
+function goToMarketPack() {
+  void router.push({ name: 'community-market' });
+}
+
+/**
  * E19：角色卡上的"已跟踪"标记点进该角色的版本历史。
  * 版本仓库是选中角色时懒创建的，所以"有没有标记"就是"是否已被跟踪"的唯一真相；
  * 此前面界面上没有任何地方能看出这件事。
@@ -391,6 +399,7 @@ const filterTabs = computed<FilterTab[]>(() => {
       @export="exportCharacter"
       @delete="confirmDelete"
       @versions="openVersions"
+      @browse-market="goToMarketPack"
     />
 
     <!--
