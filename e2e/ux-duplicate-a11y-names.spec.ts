@@ -76,13 +76,23 @@ function registeredRoutes(): string[] {
  * 第 7 轮全量报"`/` 主内容区一个可见控件都没有"就是这么来的。
  * 判定不变（零控件仍然算违规），只是把"等"换成看对的东西。
  */
+/**
+ * 单条路由等待渲染的上限。
+ *
+ * 原为 15s。2026-11-05 的 CI（run 42023519454，group 1）里这条用例**三次尝试**都停在
+ * `/character-version` 的 15s：页面本身有控件（页头 + 三个 Tab），本地单跑 1–2s，
+ * 是冷启动 + 共享 dev server 的编译排队吃掉了预算，不是页面变空。放宽到 30s；
+ * 整条用例另有 `test.setTimeout(150_000)`，不会因此无限等待。
+ */
+const ROUTE_RENDER_TIMEOUT = 30_000;
+
 async function gotoRendered(page: Page, route: string): Promise<void> {
   await page.goto(route);
-  await page.waitForSelector('#app button, #app [role="button"]', { timeout: 15_000 });
+  await page.waitForSelector('#app button, #app [role="button"]', { timeout: ROUTE_RENDER_TIMEOUT });
   await expect
     .poll(async () => (await mainContent(page)).buttons, {
-      timeout: 15_000,
-      message: `${route} 主内容区 15 秒内没出现可见控件`,
+      timeout: ROUTE_RENDER_TIMEOUT,
+      message: `${route} 主内容区 ${ROUTE_RENDER_TIMEOUT / 1000} 秒内没出现可见控件`,
     })
     .toBeGreaterThan(0);
   await settle(page);
