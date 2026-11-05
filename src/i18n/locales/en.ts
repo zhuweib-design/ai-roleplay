@@ -2365,16 +2365,6 @@ const en: Record<MessageKey, string> = {
   'story.needLorebook': 'Select a target Lorebook first',
 
   // ── Settings page (SettingsView) ──
-  'settingsView.themeDark': 'Dark',
-  'settingsView.themeDarkDesc': 'Default dark background, TikTok style',
-  'settingsView.themeLight': 'Light',
-  'settingsView.themeLightDesc': 'Light background, friendly in bright conditions',
-  'settingsView.themeMidnight': 'Midnight',
-  'settingsView.themeMidnightDesc': 'Deep blue tone for immersive night reading',
-  'settingsView.themeOled': 'OLED Black',
-  'settingsView.themeOledDesc': 'Pure black background, OLED power saving',
-  'settingsView.themeTheatre': 'Dark Theatre',
-  'settingsView.themeTheatreDesc': 'Ink black + candle gold accents, serif headings',
   'settingsView.themeTerminal': 'Neo Terminal',
   'settingsView.themeTerminalDesc': 'Near-black canvas, neon-cyan hairlines, monospace and square corners',
   'settingsView.themeAurora': 'Aurora Nocturne',
@@ -3266,10 +3256,6 @@ const en: Record<MessageKey, string> = {
   'settings.languageEn': 'English',
   'settings.appearance': 'Appearance',
   'settings.theme': 'Theme',
-  'settings.themeDark': 'Dark',
-  'settings.themeLight': 'Light',
-  'settings.themeMidnight': 'Midnight',
-  'settings.themeOled': 'OLED Black',
   'settings.fontSize': 'Font size',
   // P0-1 chain-of-thought preferences
   'settings.thinkingTitle': 'Chain of thought',

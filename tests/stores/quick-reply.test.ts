@@ -280,7 +280,7 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
 
     it('加载时恢复 quickReplies', async () => {
       mockAdapter.loadData = {
-        theme: 'dark',
+        theme: 'aurora',
         fontSize: 14,
         quickReplies: [
           { id: 'qr-1', label: '加载A', script: '/roll 1d6', group: '', autoSend: true },
@@ -295,7 +295,7 @@ describe('useSettingsStore — F11.3 Quick Reply', () => {
     });
 
     it('无 quickReplies 数据时保持空数组', async () => {
-      mockAdapter.loadData = { theme: 'dark' };
+      mockAdapter.loadData = { theme: 'aurora' };
       await store.loadFromStorage();
       expect(store.quickReplies).toEqual([]);
     });

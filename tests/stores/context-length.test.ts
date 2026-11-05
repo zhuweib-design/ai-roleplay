@@ -204,7 +204,7 @@ describe('上下文长度 —— 持久化与兼容', () => {
 
   it('持久化往返：改值 → 存 → 新 store 读回一致', async () => {
     const mock = new MockStorageAdapter();
-    mock.loadData = { theme: 'dark' }; // 让 hasSavedData 为真，进入加载分支
+    mock.loadData = { theme: 'aurora' }; // 让 hasSavedData 为真，进入加载分支
 
     const store1 = useSettingsStore();
     store1.setStorageAdapter(mock);
@@ -227,7 +227,7 @@ describe('上下文长度 —— 持久化与兼容', () => {
 
   it('旧数据兼容：字段缺失时回落默认 8192 / 1024（不破坏既有用户）', async () => {
     const mock = new MockStorageAdapter();
-    mock.loadData = { theme: 'dark', fontSize: 14 }; // 无上下文长度字段
+    mock.loadData = { theme: 'aurora', fontSize: 14 }; // 无上下文长度字段
 
     const store = useSettingsStore();
     store.setStorageAdapter(mock);
@@ -239,7 +239,7 @@ describe('上下文长度 —— 持久化与兼容', () => {
 
   it('旧数据兼容：已存字段时按存值加载', async () => {
     const mock = new MockStorageAdapter();
-    mock.loadData = { theme: 'dark', maxContextTokens: 262144, reservedTokens: 16384 };
+    mock.loadData = { theme: 'aurora', maxContextTokens: 262144, reservedTokens: 16384 };
 
     const store = useSettingsStore();
     store.setStorageAdapter(mock);
@@ -251,7 +251,7 @@ describe('上下文长度 —— 持久化与兼容', () => {
 
   it('脏数据防御：max ≤ reserved 时整组回落默认（避免预算为 0）', async () => {
     const mock = new MockStorageAdapter();
-    mock.loadData = { theme: 'dark', maxContextTokens: 500, reservedTokens: 1000 };
+    mock.loadData = { theme: 'aurora', maxContextTokens: 500, reservedTokens: 1000 };
 
     const store = useSettingsStore();
     store.setStorageAdapter(mock);

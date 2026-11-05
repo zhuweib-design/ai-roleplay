@@ -65,7 +65,7 @@ describe('useSectionMemory', () => {
         // 注意：loadFromStorage 把"完全没有已知字段"当首次启动整段跳过，
         // 所以夹具必须带一个它认得的字段（真机快照永远带 theme/fontSize）
         return {
-          theme: 'dark',
+          theme: 'aurora',
           uiSectionOpen: { keep: true, drop: 'yes', n: 1, also: false },
         };
       },

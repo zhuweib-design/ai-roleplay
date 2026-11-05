@@ -50,7 +50,7 @@
 | **多模型对话** | OpenAI / Anthropic 等多 profile，流式生成、重新生成、翻译、TTS、自动摘要 |
 | **心理活动（旁白）** | 模型写在 `⟦ … ⟧` 里的内心戏渲染在气泡**外面**，与台词分排；可设用户自称"我"或"你"；复制 / 朗读 / 翻译 / 导出自动去标记 |
 | **自定义向量模型 + RAG** | 上传 ZIP 或登记本地目录添加自定义向量模型，驱动「动态记忆 / 静态世界设定」语义检索 |
-| **自定义主题** | 上传背景图自动提取主色调（k-means 聚类）并匹配组件配色，含深/浅主题与"暗夜剧场"字体 |
+| **自定义主题** | 上传背景图自动提取主色调（k-means 聚类）并匹配组件配色；内置「新终端 / 极光夜曲 / 墨纸 / 新粗野」四套皮肤 |
 | **世界书 / Lorebook** | 关键词门控激活，设定随语境自动注入 |
 | **角色卡与群聊** | 角色卡批量导入（单批最多 50 个）、Persona、群聊成员/发言顺序、随机 NPC |
 | **Virtual Character OS Runtime** | 批量多角色、2–8 人真实模型群聊、独立 Context/Event、PostgreSQL 事务持久化、版本 CAS、Replay 审计 |
@@ -240,7 +240,7 @@ Content-Security-Policy: frame-ancestors 'none'; report-uri /csp-report
 
 ### 3. ~~外链字体在部分网络环境下不可用~~ 已解决（2026-09-20）
 
-字体（Playfair Display 拉丁 / Noto Serif SC 中文，仅「暗夜剧场」主题的衬线标题使用）原先从 Google Fonts 引入，中国大陆网络环境下通常不可达。现已**本地镜像到 `public/fonts/`**（105 个 `unicode-range` 分片 / 约 5.8 MB，由 `scripts/vendor-fonts.mjs` 生成，可重复运行以更新字体）：
+字体（Playfair Display 拉丁 / Noto Serif SC 中文，供「墨纸」等衬线标题皮肤使用）原先从 Google Fonts 引入，中国大陆网络环境下通常不可达。现已**本地镜像到 `public/fonts/`**（105 个 `unicode-range` 分片 / 约 5.8 MB，由 `scripts/vendor-fonts.mjs` 生成，可重复运行以更新字体）：
 
 - **不再有任何第三方字体请求**，消除了向 Google 暴露访问者 IP / Referer 的问题；
 - CSP 的 `style-src` / `font-src` 已同步收窄，移除两处 CDN 放行；

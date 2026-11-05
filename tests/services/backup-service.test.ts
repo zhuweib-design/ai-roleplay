@@ -253,7 +253,7 @@ function makeBackupData(overrides: Partial<BackupData> = {}): BackupData {
     lorebooks: [makeLorebook()],
     groupChats: [makeGroupChat()],
     personas: [makePersona()],
-    settings: { theme: 'dark' } as Partial<AppSettings>,
+    settings: { theme: 'aurora' } as Partial<AppSettings>,
     ...overrides,
   };
 }
@@ -295,7 +295,7 @@ describe('backup-service — F13 单元测试', () => {
       adapter.lorebooks = [makeLorebook({ id: 'lb1' })];
       adapter.groupChats = [makeGroupChat({ id: 'gc1' })];
       adapter.personas = [makePersona({ id: 'p1' })];
-      adapter.settingsData = { theme: 'light' } as Partial<AppSettings>;
+      adapter.settingsData = { theme: 'ink' } as Partial<AppSettings>;
       adapter.snapshots.set('virtual-character-runtime:runtime-1', makeRuntimeSnapshot('runtime-1'));
       adapter.snapshots.set(
         'virtual-character-runtime:context-build:build-1',
@@ -313,7 +313,7 @@ describe('backup-service — F13 单元测试', () => {
       expect(data.personas ?? []).toHaveLength(0); // O-13 下线后不再导出
       expect(data.runtimeSnapshots).toHaveLength(1);
       expect(data.runtimeSnapshots?.[0]?.character.id).toBe('runtime-1');
-      expect(data.settings.theme).toBe('light');
+      expect(data.settings.theme).toBe('ink');
     });
 
     it('sourceEnv 在浏览器环境为 "web"', async () => {
@@ -323,7 +323,7 @@ describe('backup-service — F13 单元测试', () => {
 
     it('存在明文 API Key 时拒绝导出（防备份泄漏密钥）', async () => {
       adapter.settingsData = {
-        theme: 'light',
+        theme: 'ink',
         apiProfiles: [
           { id: 'p1', name: 'P1', apiKey: 'sk-plaintext-1' },
           { id: 'p2', name: 'P2', apiKey: 'enc:v1:abc' },
@@ -337,7 +337,7 @@ describe('backup-service — F13 单元测试', () => {
 
     it('存在图像生成明文 API Key 时拒绝导出', async () => {
       adapter.settingsData = {
-        theme: 'light',
+        theme: 'ink',
         imageGenConfig: {
           type: 'openai',
           endpoint: 'https://api.example.com/v1',
@@ -354,7 +354,7 @@ describe('backup-service — F13 单元测试', () => {
 
     it('全部 API Key 已加密时正常导出', async () => {
       adapter.settingsData = {
-        theme: 'light',
+        theme: 'ink',
         apiProfiles: [
           { id: 'p1', name: 'P1', apiKey: 'enc:v1:abc' },
           { id: 'p2', name: 'P2', apiKey: 'enc:v1:def' },
@@ -503,7 +503,7 @@ describe('backup-service — F13 单元测试', () => {
 
     it('importSettings=false 跳过设置导入', async () => {
       const data = makeBackupData({
-        settings: { theme: 'light' } as Partial<AppSettings>,
+        settings: { theme: 'ink' } as Partial<AppSettings>,
       });
 
       const result = await importBackup(adapter as unknown as StorageAdapter, data, {
@@ -515,7 +515,7 @@ describe('backup-service — F13 单元测试', () => {
 
     it('导入设置后 settingsUpdated=true', async () => {
       const data = makeBackupData({
-        settings: { theme: 'midnight' } as Partial<AppSettings>,
+        settings: { theme: 'terminal' } as Partial<AppSettings>,
       });
 
       const result = await importBackup(adapter as unknown as StorageAdapter, data);

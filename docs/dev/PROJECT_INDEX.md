@@ -651,7 +651,7 @@ ai-roleplay/
 | `src/styles/m-swap.css` | css | 程序 | 待确认 | 已跟踪 | 用途待确认 |
 | `src/styles/primitives.css` | css | 程序 | 待确认 | 已跟踪 | 用途待确认 |
 | `src/styles/responsive.css` | css | 程序 | 响应式断点样式（口径统一 640px） | 已跟踪 |  |
-| `src/styles/themes.css` | css | 程序 | 内置 5 套主题变量 | 已跟踪 |  |
+| `src/styles/themes.css` | css | 程序 | 内置 4 套主题变量 | 已跟踪 |  |
 | `src/styles/tokens-responsive.css` | css | 程序 | 响应式设计令牌 | 已跟踪 |  |
 | `src/styles/tokens-structure.css` | css | 程序 | 待确认 | 已跟踪 | 用途待确认 |
 | `src/styles/tokens.css` | css | 程序 | 设计令牌（颜色/间距/字号） | 已跟踪 |  |
@@ -1441,7 +1441,7 @@ ai-roleplay/
 | `scripts/archive/round3-settings-split/run-opt8-pipeline.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/archive/round3-settings-split/split-settings-view.py` | py | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/breakpoint-guard.mjs` | mjs | 脚本 | 门禁：禁止野断点、断点数值 L1/L4 同步校验 | 已跟踪 |  |
-| `scripts/check-contrast.mjs` | mjs | 脚本 | 门禁：5 套主题关键色对对比度 ≥ AA | 已跟踪 |  |
+| `scripts/check-contrast.mjs` | mjs | 脚本 | 门禁：各主题关键色对对比度 ≥ AA | 已跟踪 |  |
 | `scripts/check-ort-firstscreen.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/clean.mjs` | mjs | 脚本 | 待确认 | 已跟踪 | 用途待确认 |
 | `scripts/contrast-audit.mjs` | mjs | 脚本 | 审计：对比度全量扫描报告 | 已跟踪 |  |

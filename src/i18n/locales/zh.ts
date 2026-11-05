@@ -2365,16 +2365,6 @@ export default {
   'story.needLorebook': '请先选择目标 Lorebook',
 
   // ── 设置页（SettingsView） ──
-  'settingsView.themeDark': '深色',
-  'settingsView.themeDarkDesc': '默认深色背景，TikTok 风格',
-  'settingsView.themeLight': '亮色',
-  'settingsView.themeLightDesc': '浅色背景，强光环境友好',
-  'settingsView.themeMidnight': '午夜蓝',
-  'settingsView.themeMidnightDesc': '深蓝调，沉浸式夜间阅读',
-  'settingsView.themeOled': 'OLED 黑',
-  'settingsView.themeOledDesc': '纯黑背景，OLED 省电模式',
-  'settingsView.themeTheatre': '暗夜剧场',
-  'settingsView.themeTheatreDesc': '墨黑底 + 烛金强调，衬线标题',
   'settingsView.themeTerminal': '新终端',
   'settingsView.themeTerminalDesc': '纯黑底 + 荧光青细线，等宽字形与直角',
   'settingsView.themeAurora': '极光夜曲',
@@ -3266,10 +3256,6 @@ export default {
   'settings.languageEn': 'English',
   'settings.appearance': '外观',
   'settings.theme': '主题',
-  'settings.themeDark': '深色',
-  'settings.themeLight': '浅色',
-  'settings.themeMidnight': '午夜蓝',
-  'settings.themeOled': 'OLED 黑',
   'settings.fontSize': '字号',
   // P0-1 思维链偏好
   'settings.thinkingTitle': '思维链',

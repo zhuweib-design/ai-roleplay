@@ -14,7 +14,7 @@ test('主题：切换全部内置皮肤并验证 data-theme 与键盘导航', as
 
   /**
    * 清单取自 src/types 的 THEME_PRESETS（内置皮肤的唯一来源）。这里原先手写了一份八条的清单，
-   * 靠下面"卡片总数 = 清单数 + custom"那条断言兜住漏改——M23-f 加第 9 款时它确实红了，
+   * 靠下面"卡片总数 = 清单数 + custom"那条断言兜住漏改——加第 9 款皮肤时它确实红了，
    * 但红法是"记得改两处"，不是"不需要改"。改成取同一来源后，新增皮肤这一条零改动。
    */
   const themes = [...THEME_PRESETS];
@@ -30,26 +30,26 @@ test('主题：切换全部内置皮肤并验证 data-theme 与键盘导航', as
   // 卡片总数 = 内置皮肤 + custom：皮肤清单若还有别处手写而漏改，这里会露出来
   await expect(page.locator('.theme-card[data-value]')).toHaveCount(themes.length + 1);
 
-  // radiogroup 键盘导航：聚焦暗夜剧场后按 ArrowLeft 回到 OLED（验证键盘导航的即时响应）。
-  const theatre = page.locator('.theme-card[data-value="theatre"]');
-  await theatre.focus();
-  await expect(theatre).toBeFocused();
+  // radiogroup 键盘导航：聚焦最后一款「新粗野」后按 ArrowLeft 回到「墨纸」（验证键盘导航的即时响应）。
+  const brutal = page.locator('.theme-card[data-value="brutal"]');
+  await brutal.focus();
+  await expect(brutal).toBeFocused();
   await page.keyboard.press('ArrowLeft');
-  await expect(page.locator('.theme-card[data-value="oled"]')).toHaveAttribute('aria-checked', 'true');
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'oled');
+  await expect(page.locator('.theme-card[data-value="ink"]')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'ink');
 
   /**
    * 刷新后主题保持。这里刻意**不复用上面那次键盘切换**做持久化断言：
    * 主题写盘是异步的，实测 4 worker 并发跑全量时，reload 回来的是循环末尾点击的那款
-   * （brutal）而不是键盘选中的 oled —— 也就是"DOM 已切换、盘还没写"。单跑必绿，
+   * （brutal）而不是键盘选中的 ink —— 也就是"DOM 已切换、盘还没写"。单跑必绿，
    * 所以这个竞态一直藏着。（本文件旧注释先说"键盘不写持久化"，我上一轮又反向改成了
    * "键盘确实写持久化"，两句都是拿单次运行的结果当结论；实测结论是：**写，但是异步落盘**。）
    *
    * 落盘的判据用"读 IndexedDB 那条设置记录"，不用"reload 后看 data-theme"——后者看着更真实，
    * 实际会稳定失败：reload 让应用重新读盘读到旧值，那次读档回写又盖掉刚点的新值。
    */
-  await page.locator('.theme-card[data-value="oled"]').click();
-  await waitForPersistedTheme(page, 'oled');
+  await page.locator('.theme-card[data-value="aurora"]').click();
+  await waitForPersistedTheme(page, 'aurora');
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'oled');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'aurora');
 });

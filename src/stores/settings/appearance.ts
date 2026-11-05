@@ -21,8 +21,6 @@ export function createAppearanceActions(ctx: SettingsCtx) {
     ctx.theme.value = t;
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', t);
-      // 兼容遗留 dark class（部分样式依赖 .dark）
-      document.documentElement.classList.toggle('dark', t === 'dark');
     }
     void ctx.persistSettings();
   }

@@ -4,7 +4,7 @@ import { chromium } from '@playwright/test';
 import fs from 'node:fs';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5174';
-// THEME: 指定主题生成对应截图（如 THEME=light / THEME=midnight）。
+// THEME: 指定主题生成对应截图（如 THEME=aurora / THEME=ink / THEME=terminal / THEME=brutal）。
 // 省略时沿用默认主题，输出到 docs/assets/screenshots/ 根（维持 P2-6 深色基线行为）。
 // 2026-09-18 目录整理：输出根由 ui-shots/ 迁移至 docs/assets/screenshots/（见 MIGRATION_LOG.md）
 const THEME = process.env.THEME;

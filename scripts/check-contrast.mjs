@@ -190,10 +190,10 @@ const themesCss = readFileSync(join(ROOT, 'src/styles/themes.css'), 'utf8');
 const tokensRules = extractRules(tokensCss);
 const themeRules = extractRules(themesCss);
 
-/** :root 是 dark 主题的基础值 */
+/** :root 只是兜底值；主题目录里不再有 dark。每套皮肤都在它之上覆盖自己那份。 */
 const baseVars = collectVars(tokensRules, (sel) => sel === ':root');
 
-const themeVars = new Map([['dark', baseVars]]);
+const themeVars = new Map();
 for (const { selector } of themeRules) {
   const m = selector.match(/\[data-theme=['"]([^'"]+)['"]\]/);
   if (!m) continue;
@@ -311,11 +311,11 @@ function evaluatePair(fgExpr, bgExpr, vars) {
 // ── 自检模式：构造违规样本，确认门禁真的能拦下 ──────────────────────────────
 
 if (process.argv.includes('--self-test')) {
-  const darkVars = themeVars.get('dark');
+  const sampleVars = themeVars.get(themeNames[0]);
   // 正样本：压在辅色填充上的文字（M23-f 之后由 --on-secondary 承担）应当达标
-  const okPair = evaluatePair('var(--on-secondary)', 'var(--secondary)', darkVars);
+  const okPair = evaluatePair('var(--on-secondary)', 'var(--secondary)', sampleVars);
   // 负样本：历史缺陷形态（白字叠亮青）——必须被判为不达标
-  const badPair = evaluatePair('var(--on-media)', 'var(--secondary)', darkVars);
+  const badPair = evaluatePair('var(--on-media)', 'var(--secondary)', sampleVars);
 
   let pass = true;
   if (!okPair || okPair.ratio < AA) {

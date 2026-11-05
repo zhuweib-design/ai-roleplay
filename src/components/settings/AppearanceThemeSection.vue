@@ -10,6 +10,7 @@ import { computed, nextTick, ref, useTemplateRef } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
 import Icon from '@/components/common/Icon.vue';
 import type { CustomTheme, ThemeName } from '@/types';
+import { DEFAULT_THEME } from '@/types';
 import { extractPaletteFromImage } from '@/core/theme-extractor';
 import { auditThemeContrast, generateThemeTokens } from '@/core/theme-tokens';
 import { showToast } from '@/utils/toast-service';
@@ -25,36 +26,6 @@ interface ThemeOption {
 }
 
 const themeOptions = computed<ThemeOption[]>(() => [
-  {
-    value: 'dark',
-    label: t('settingsView.themeDark'),
-    description: t('settingsView.themeDarkDesc'),
-    swatchClass: 'swatch-dark',
-  },
-  {
-    value: 'light',
-    label: t('settingsView.themeLight'),
-    description: t('settingsView.themeLightDesc'),
-    swatchClass: 'swatch-light',
-  },
-  {
-    value: 'midnight',
-    label: t('settingsView.themeMidnight'),
-    description: t('settingsView.themeMidnightDesc'),
-    swatchClass: 'swatch-midnight',
-  },
-  {
-    value: 'oled',
-    label: t('settingsView.themeOled'),
-    description: t('settingsView.themeOledDesc'),
-    swatchClass: 'swatch-oled',
-  },
-  {
-    value: 'theatre',
-    label: t('settingsView.themeTheatre'),
-    description: t('settingsView.themeTheatreDesc'),
-    swatchClass: 'swatch-theatre',
-  },
   {
     value: 'terminal',
     label: t('settingsView.themeTerminal'),
@@ -226,7 +197,7 @@ function clearCustomTheme() {
   customThemePreview.value = null;
   customThemePalette.value = [];
   if (settings.theme === 'custom') {
-    settings.setTheme('dark');
+    settings.setTheme(DEFAULT_THEME);
   }
   showToast('info', t('settingsView.customThemeCleared'));
 }
@@ -417,26 +388,6 @@ function clearCustomTheme() {
 /* 每张卡片的预览色。这组规则原先只在 SettingsModelPanel.vue 里定义，
    而卡片渲染在本组件 ⇒ scoped 样式跨不过去，六张卡的色块实测是透明的
    （`getComputedStyle('.theme-swatch').backgroundImage === 'none'`）。搬进来才生效。 */
-.swatch-dark {
-  background: linear-gradient(135deg, #0b0b10, #161823);
-}
-
-.swatch-light {
-  background: linear-gradient(135deg, #f7f8fa, #ffffff);
-}
-
-.swatch-midnight {
-  background: linear-gradient(135deg, #0a0e27, #1a2048);
-}
-
-.swatch-oled {
-  background: linear-gradient(135deg, #000000, #141414);
-}
-
-.swatch-theatre {
-  background: linear-gradient(135deg, #0c0a09, #201a12);
-}
-
 .swatch-terminal {
   background: linear-gradient(135deg, #05070a, #38f2c8);
 }

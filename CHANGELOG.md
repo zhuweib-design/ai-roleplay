@@ -5,6 +5,30 @@
 
 ## 未发布
 
+### 变更（内置主题收口为四套，默认改为「极光夜曲」）
+- 删除最初的五套主题 `dark / light / midnight / oled / theatre`（`ThemeName` 联合、`THEME_PRESETS`、
+  设置页卡片与色块、`themes.css` 五个块、i18n 中英各 12 条键）。内置皮肤自此为
+  **terminal / aurora / ink / brutal** 四套，`custom`（图片取色）保留。
+- 新默认皮肤为 `aurora`，并用 `DEFAULT_THEME` 单一常量收口：`settings` store 初值、读档归一兜底、
+  清除自定义主题后的回落都引用它；`index.html` 的 `<html data-theme="aurora">` 与 `theme-color`
+  同步改成该皮肤的底色，避免 JS 读档前闪一帧 `:root` 兜底深色。
+- 旧存档里的五个已删 id 由 `normalizeThemeName` 统一落回默认皮肤，不会写进 `data-theme` 后
+  “看起来像回落”又被回写固化。遗留的 `.dark` class 切换（已无样式依赖）一并删除。
+- 测试与基线：单测里用主题 id 当探针的夹具改用现存 id；`e2e/theme-flow` 的键盘导航改在
+  ink/brutal 上验证；`contrast-axe` 的“默认皮肤免切换”改用 `DEFAULT_THEME`；
+  `token-neutrality` 的流式采样组改为 `aurora / ink / brutal`；中性网基线按现存四套裁剪
+  （保留读数逐条比对未变）。`scripts/contrast-audit.mjs` 的手抄色值表（还漏了 light）删除，
+  改为转调唯一权威 `scripts/check-contrast.mjs`。
+- 验证：`typecheck` / `build` / 全量单测（240 文件、4240 通过）/ `i18n:check:strict` /
+  `check:css-conventions`(5/5) / `check:token-baseline` / `check:csp` / `check:readme-gates` 通过；
+  `a11y:contrast` 26 项 × 4 主题全达标、扫描 0 处不达标；`theme-flow`、`token-neutrality`(7 条)、
+  `contrast-axe`(12 条) 全绿。
+
+### 修复（CI：css-equiv 守卫取不到基线提交）
+- `quality-gates` 的 `actions/checkout` 补 `fetch-depth: 0`。守卫测试要回放硬编码的历史基线
+  `25451f8`，浅克隆只有单个提交，于是稳定报 `fatal: invalid object name '25451f8'`；
+  之前失败还会跳过后续 `build → check:csp → check:ort → check:readme-gates`。
+
 ### 新增（README 的门禁清单与 CI 对账）
 - 新增门禁 `check:readme-gates`（`scripts/readme-gates-guard.mjs` + CI 两步）：把 `quality-gates`
   里每条 `npm run X`（`X:self-test` 那种伴生步不算）与中英两份 README 的"本地开发门禁"代码块**双向**比对，

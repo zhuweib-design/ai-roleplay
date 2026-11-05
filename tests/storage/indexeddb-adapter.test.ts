@@ -60,7 +60,7 @@ function makeChat(overrides: Partial<Chat> = {}): Chat {
 
 function makeSettings(overrides: Partial<AppSettings> = {}): AppSettings {
   return {
-    theme: 'dark',
+    theme: 'aurora',
     fontSize: 14,
     apiProfiles: [],
     activeApiProfileId: null,
@@ -253,14 +253,14 @@ describe('IndexedDBAdapter — 设置读写', () => {
 
   test('saveSettings() 后 loadSettings() 读回', async () => {
     const settings = makeSettings({
-      theme: 'dark',
+      theme: 'aurora',
       fontSize: 14,
       activeApiProfileId: 'profile-1',
     });
     await adapter.saveSettings(settings);
 
     const loaded = await adapter.loadSettings();
-    expect(loaded.theme).toBe('dark');
+    expect(loaded.theme).toBe('aurora');
     expect(loaded.fontSize).toBe(14);
     expect(loaded.activeApiProfileId).toBe('profile-1');
   });
@@ -271,11 +271,11 @@ describe('IndexedDBAdapter — 设置读写', () => {
   });
 
   test('saveSettings() 覆盖更新', async () => {
-    await adapter.saveSettings(makeSettings({ theme: 'dark', fontSize: 14 }));
-    await adapter.saveSettings(makeSettings({ theme: 'light', fontSize: 16 }));
+    await adapter.saveSettings(makeSettings({ theme: 'aurora', fontSize: 14 }));
+    await adapter.saveSettings(makeSettings({ theme: 'ink', fontSize: 16 }));
 
     const loaded = await adapter.loadSettings();
-    expect(loaded.theme).toBe('light');
+    expect(loaded.theme).toBe('ink');
     expect(loaded.fontSize).toBe(16);
   });
 });

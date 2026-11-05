@@ -4,7 +4,7 @@ import 'fake-indexeddb/auto';
 import { useSettingsStore } from '../../src/stores/settings';
 import { IndexedDBAdapter } from '@storage/indexeddb-adapter';
 import { initLocale } from '@/i18n';
-import type { AppSettings, ApiProfile, ThemeName } from '@/types';
+import { DEFAULT_THEME, THEME_PRESETS, type AppSettings, type ApiProfile } from '@/types';
 
 // ── 测试夹具 ──
 
@@ -65,7 +65,6 @@ describe('useSettingsStore — F5 单元测试', () => {
     if (typeof document !== 'undefined') {
       document.documentElement.removeAttribute('data-theme');
       document.documentElement.style.fontSize = '';
-      document.documentElement.classList.remove('dark');
     }
   });
 
@@ -109,7 +108,7 @@ describe('useSettingsStore — F5 单元测试', () => {
 
     it('旧数据缺 creationPreset 时保留默认值（向后兼容）', async () => {
       const mock = new MockStorageAdapter();
-      mock.loadData = { theme: 'dark' } as Partial<AppSettings>;
+      mock.loadData = { fontSize: 14 } as Partial<AppSettings>;
       const store = useSettingsStore();
       store.setStorageAdapter(mock);
       await store.loadFromStorage();
@@ -118,9 +117,9 @@ describe('useSettingsStore — F5 单元测试', () => {
   });
 
   describe('初始状态', () => {
-    it('默认主题为 dark', () => {
+    it('默认主题为 aurora', () => {
       const store = useSettingsStore();
-      expect(store.theme).toBe('dark');
+      expect(store.theme).toBe(DEFAULT_THEME);
     });
 
     it('默认字号为 14', () => {
@@ -149,28 +148,28 @@ describe('useSettingsStore — F5 单元测试', () => {
   describe('主题切换', () => {
     it('setTheme 应更新 theme 状态', () => {
       const store = useSettingsStore();
-      store.setTheme('light');
-      expect(store.theme).toBe('light');
+      store.setTheme('ink');
+      expect(store.theme).toBe('ink');
     });
 
     it('setTheme 应将 data-theme 属性应用到 <html>', () => {
       const store = useSettingsStore();
-      store.setTheme('midnight');
-      expect(document.documentElement.getAttribute('data-theme')).toBe('midnight');
+      store.setTheme('terminal');
+      expect(document.documentElement.getAttribute('data-theme')).toBe('terminal');
     });
 
-    it('setTheme("dark") 应为 <html> 添加 dark class（兼容遗留样式）', () => {
+    it('旧主题 id 会归一回落默认皮肤', () => {
       const store = useSettingsStore();
-      store.setTheme('light');
-      expect(document.documentElement.classList.contains('dark')).toBe(false);
-      store.setTheme('dark');
-      expect(document.documentElement.classList.contains('dark')).toBe(true);
+      for (const legacy of ['dark', 'light', 'midnight', 'oled', 'theatre']) {
+        store.setTheme(legacy as never);
+        expect(store.theme).toBe(DEFAULT_THEME);
+        expect(document.documentElement.getAttribute('data-theme')).toBe(DEFAULT_THEME);
+      }
     });
 
-    it('支持切换到全部主题（含暗夜剧场）', () => {
+    it('支持切换到全部主题', () => {
       const store = useSettingsStore();
-      const themes: ThemeName[] = ['dark', 'light', 'midnight', 'oled', 'theatre'];
-      for (const t of themes) {
+      for (const t of THEME_PRESETS) {
         store.setTheme(t);
         expect(store.theme).toBe(t);
         expect(document.documentElement.getAttribute('data-theme')).toBe(t);
@@ -416,23 +415,23 @@ describe('useSettingsStore — F5 单元测试', () => {
       const store = useSettingsStore();
       store.setStorageAdapter(null);
       // 后续 persistSettings 不应抛错（无适配器时静默忽略）
-      expect(() => store.setTheme('light')).not.toThrow();
+      expect(() => store.setTheme('ink')).not.toThrow();
     });
 
     it('无 storageAdapter 时 setTheme 不抛错', () => {
       const store = useSettingsStore();
-      expect(() => store.setTheme('midnight')).not.toThrow();
-      expect(store.theme).toBe('midnight');
+      expect(() => store.setTheme('terminal')).not.toThrow();
+      expect(store.theme).toBe('terminal');
     });
 
     it('setTheme 后应自动调用 saveSettings', async () => {
       const mock = new MockStorageAdapter();
       const store = useSettingsStore();
       store.setStorageAdapter(mock);
-      store.setTheme('light');
+      store.setTheme('ink');
       await new Promise((r) => setTimeout(r, 10));
       expect(mock.saveCallCount).toBeGreaterThanOrEqual(1);
-      expect(mock.saved?.theme).toBe('light');
+      expect(mock.saved?.theme).toBe('ink');
     });
 
     it('setFontSize 后应自动调用 saveSettings', async () => {
@@ -541,7 +540,7 @@ describe('useSettingsStore — F5 单元测试', () => {
     it('持久化的语言选择优先于浏览器语言（不被覆盖）', async () => {
       await withEnglishBrowser(async () => {
         const mock = new MockStorageAdapter();
-        mock.loadData = { theme: 'dark', locale: 'zh' }; // 用户此前显式选了中文
+        mock.loadData = { theme: DEFAULT_THEME, locale: 'zh' }; // 用户此前显式选了中文
         const store = useSettingsStore();
         store.setStorageAdapter(mock);
         await store.loadFromStorage();
@@ -567,7 +566,7 @@ describe('useSettingsStore — F5 单元测试', () => {
       localStorage.removeItem('aijiuguan.locale');
       await withEnglishBrowser(async () => {
         const mock = new MockStorageAdapter();
-        mock.loadData = { theme: 'dark', locale: 'zh' };
+        mock.loadData = { theme: DEFAULT_THEME, locale: 'zh' };
         const store = useSettingsStore();
         store.setStorageAdapter(mock);
         await store.loadFromStorage();
@@ -600,23 +599,23 @@ describe('useSettingsStore — F5 单元测试', () => {
       store.setStorageAdapter(mock);
       await store.loadFromStorage();
       // 默认值
-      expect(store.theme).toBe('dark');
+      expect(store.theme).toBe(DEFAULT_THEME);
       expect(store.fontSize).toBe(14);
       expect(store.apiProfiles).toEqual([]);
       expect(store.activeApiProfileId).toBeNull();
       // 首次启动应写入默认设置
       expect(mock.saveCallCount).toBeGreaterThanOrEqual(1);
-      expect(mock.saved?.theme).toBe('dark');
+      expect(mock.saved?.theme).toBe(DEFAULT_THEME);
     });
 
     it('存储有 theme 时应加载 theme', async () => {
       const mock = new MockStorageAdapter();
-      mock.loadData = { theme: 'midnight' };
+      mock.loadData = { theme: 'terminal' };
       const store = useSettingsStore();
       store.setStorageAdapter(mock);
       await store.loadFromStorage();
-      expect(store.theme).toBe('midnight');
-      expect(document.documentElement.getAttribute('data-theme')).toBe('midnight');
+      expect(store.theme).toBe('terminal');
+      expect(document.documentElement.getAttribute('data-theme')).toBe('terminal');
     });
 
     it('存储有 fontSize 时应加载并应用', async () => {
@@ -676,7 +675,7 @@ describe('useSettingsStore — F5 单元测试', () => {
       mock.saveShouldThrow = true;
       const store = useSettingsStore();
       store.setStorageAdapter(mock);
-      store.setTheme('light');
+      store.setTheme('ink');
       await new Promise((r) => setTimeout(r, 10));
       expect(store.lastError).toContain('保存设置失败');
       expect(store.lastError).toContain('mock save error');
@@ -706,14 +705,14 @@ describe('useSettingsStore — F5 单元测试', () => {
 
       const store = useSettingsStore();
       store.setStorageAdapter(adapter);
-      store.setTheme('midnight');
+      store.setTheme('terminal');
       await store.persistSettings();
       // 等待 void persistSettings 也完成
       await new Promise((r) => setTimeout(r, 30));
 
       expect(store.lastError).toBeNull();
       const persisted = await adapter.loadSettings();
-      expect(persisted.theme).toBe('midnight');
+      expect(persisted.theme).toBe('terminal');
 
       await adapter.close();
     });
@@ -727,7 +726,7 @@ describe('useSettingsStore — F5 单元测试', () => {
       store1.setStorageAdapter(adapter);
 
       // 单步操作 + 等待
-      store1.setTheme('midnight');
+      store1.setTheme('terminal');
       await new Promise((r) => setTimeout(r, 20));
       store1.setFontSize(18);
       await new Promise((r) => setTimeout(r, 20));
@@ -740,7 +739,7 @@ describe('useSettingsStore — F5 单元测试', () => {
 
       // 直接读 adapter 验证数据已持久化
       const persisted = await adapter.loadSettings();
-      expect(persisted.theme).toBe('midnight');
+      expect(persisted.theme).toBe('terminal');
       expect(persisted.fontSize).toBe(18);
       expect(persisted.apiProfiles).toHaveLength(2);
       expect(persisted.activeApiProfileId).toBe('p2');
@@ -752,7 +751,7 @@ describe('useSettingsStore — F5 单元测试', () => {
       await store2.loadFromStorage();
       await new Promise((r) => setTimeout(r, 50));
 
-      expect(store2.theme).toBe('midnight');
+      expect(store2.theme).toBe('terminal');
       expect(store2.fontSize).toBe(18);
       expect(store2.apiProfiles).toHaveLength(2);
       expect(store2.apiProfiles[0]!.id).toBe('p1');

@@ -14,7 +14,7 @@ import type { StatusHudConfig } from '@core/status-schema';
 import { DEFAULT_STATUS_HUD_CONFIG } from '@core/status-schema';
 import type { PresetId } from '@core/creation-preset';
 import type { NarrationPerspective } from '@core/narration';
-import { DEFAULT_THINKING_CONFIG, DEFAULT_MAX_CONTEXT_TOKENS, DEFAULT_RESERVED_TOKENS } from '@/types';
+import { DEFAULT_THEME, DEFAULT_THINKING_CONFIG, DEFAULT_MAX_CONTEXT_TOKENS, DEFAULT_RESERVED_TOKENS } from '@/types';
 import type { TTSConfig } from '@services/tts-service';
 import { DEFAULT_TTS_CONFIG } from '@services/tts-service';
 import type { TranslationConfig } from '@services/translator';
@@ -33,14 +33,14 @@ import type { SettingsCtx } from './settings/ctx';
  * Settings Store (Phase F)
  *
  * 职责：
- * 1. 全局主题切换（dark / light / midnight / oled）—— 实时应用到 <html data-theme>
+ * 1. 全局主题切换（terminal / aurora / ink / brutal / custom）—— 实时应用到 <html data-theme>
  * 2. 全局字号档位（12 / 14 / 16 / 18 px）—— 实时应用到 <html style="font-size">
  * 3. API Profile CRUD（增删改查 + 切换激活）
  * 4. 设置项持久化到 IndexedDB（运行时由 App.vue 注入 StorageAdapter）
  * 5. F08.2 聊天背景 + 气泡样式配置（v1.1）
  * 6. F08.3 自定义 CSS 注入（v1.1）
  *
- * 主题 CSS 变量在 src/styles/themes.css 中定义，对应 [data-theme="dark"] 等。
+ * 主题 CSS 变量在 src/styles/themes.css 中定义，对应 [data-theme="aurora"] 等。
  *
  * **R2-5 拆分**：本文件只做状态声明 + 装配 + 对外导出；具体行为在
  * `./settings/` 下的四个域模块里（外观 / 业务数据 / 安全 / 持久化）。
@@ -48,7 +48,7 @@ import type { SettingsCtx } from './settings/ctx';
  */
 export const useSettingsStore = defineStore('settings', () => {
   // ── 状态 ──
-  const theme = ref<ThemeName>('dark');
+  const theme = ref<ThemeName>(DEFAULT_THEME);
   const fontSize = ref<number>(14);
   /** T-13：界面语言（与 i18n 模块 localeRef 同步，持久化到 AppSettings.locale） */
   // 初值向 i18n 要（它同步读过镜像/浏览器语言），否则 store 里的 'zh' 会与已渲染的语言不一致
